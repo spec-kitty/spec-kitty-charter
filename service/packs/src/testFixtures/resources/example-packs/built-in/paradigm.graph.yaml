@@ -5,4 +5,13 @@ nodes:
 - urn: paradigm:atomic-design
   kind: paradigm
   label: Atomic Design
+- urn: paradigm:execution-lanes
+  kind: paradigm
+  label: Execution Lanes
+- urn: paradigm:git-flow
+  kind: paradigm
+  label: Git Flow
+- urn: paradigm:trunk-based
+  kind: paradigm
+  label: Trunk-Based Development
 edges: []

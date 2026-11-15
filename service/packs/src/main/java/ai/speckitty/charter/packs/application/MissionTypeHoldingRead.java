@@ -53,13 +53,15 @@ public final class MissionTypeHoldingRead {
      * @param stepContracts the step contracts of the pack whose {@code mission} is the type, by id in code-point order
      * @param stepFiles the stored prompt and guidelines files of each step, by step id
      * @param fingerprint the source fingerprint the read verified
+     * @param packName the name the pack's descriptor declares
      */
     public record Holding(
             CharterArtifact missionType,
             List<Template> skeletons,
             List<MissionStepContract> stepContracts,
             Map<String, PackCompanionFiles.StepFiles> stepFiles,
-            String fingerprint) {
+            String fingerprint,
+            String packName) {
 
         /**
          * A holding, its lists and map copied.
@@ -69,6 +71,7 @@ public final class MissionTypeHoldingRead {
          * @param stepContracts the step contracts bound to it
          * @param stepFiles its step files
          * @param fingerprint the verified fingerprint
+         * @param packName the name the pack's descriptor declares, which a candidate written with it names the pack by
          */
         public Holding {
             Objects.requireNonNull(missionType, "missionType");
@@ -76,6 +79,7 @@ public final class MissionTypeHoldingRead {
             stepContracts = List.copyOf(stepContracts);
             stepFiles = Map.copyOf(stepFiles);
             Objects.requireNonNull(fingerprint, "fingerprint");
+            Objects.requireNonNull(packName, "packName");
         }
     }
 
@@ -159,11 +163,16 @@ public final class MissionTypeHoldingRead {
                         .filter(contract -> contract.mission().equals(missionTypeId))
                         .sorted(Comparator.comparing(MissionStepContract::localId, MissionTypeHoldingRead::byCodePoint))
                         .toList();
-        return new Held(type, skeletons, contracts, companions.stepFiles(pack, type));
+        return new Held(
+                type,
+                skeletons,
+                contracts,
+                companions.stepFiles(pack, type),
+                held.descriptor().name());
     }
 
     private static Holding holdingOf(Held held, String fingerprint) {
-        return new Holding(held.type(), held.skeletons(), held.contracts(), held.files(), fingerprint);
+        return new Holding(held.type(), held.skeletons(), held.contracts(), held.files(), fingerprint, held.packName());
     }
 
     /** What the verified read loaded, before it carries its fingerprint. */
@@ -171,7 +180,8 @@ public final class MissionTypeHoldingRead {
             CharterArtifact type,
             List<Template> skeletons,
             List<MissionStepContract> contracts,
-            Map<String, PackCompanionFiles.StepFiles> files) {}
+            Map<String, PackCompanionFiles.StepFiles> files,
+            String packName) {}
 
     /** Code-point order, which {@link String#compareTo} is not beyond the Basic Multilingual Plane. */
     private static int byCodePoint(String left, String right) {

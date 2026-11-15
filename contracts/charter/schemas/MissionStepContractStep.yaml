@@ -34,7 +34,7 @@ properties:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java
       symbol: ContractStep.inputs
   delegatesTo:
-    $ref: MissionStepDelegation.yaml
+    $ref: MissionSubstepDelegation.yaml
   guidance:
     type: string
     description: The step's guidance text, as stored; absent when it declares none.

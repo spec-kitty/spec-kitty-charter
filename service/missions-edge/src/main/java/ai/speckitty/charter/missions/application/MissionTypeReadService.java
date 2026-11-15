@@ -130,7 +130,8 @@ public final class MissionTypeReadService {
                         files.prompt().map(file -> utf8(file, read)),
                         files.guidelines().map(file -> utf8(file, read)),
                         boundContract(holding, stepId),
-                        outputs),
+                        outputs,
+                        holding.held()),
                 holding.fingerprint());
     }
 

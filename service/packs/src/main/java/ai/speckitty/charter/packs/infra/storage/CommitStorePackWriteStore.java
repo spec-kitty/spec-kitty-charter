@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.WriteFacts;
+import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import java.io.IOException;
@@ -292,6 +293,24 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     @Override
     public Authored authored(PackIdentifier pack) {
         return reading(pack, directory -> authored(pack, directory));
+    }
+
+    @Override
+    public List<MissionTypeFacts> missionTypes(PackIdentifier pack) {
+        return reading(pack, directory -> {
+            Path parent = directory.getParent();
+            if (parent == null || directory.getFileName() == null) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
+            }
+            PackIdentifier key = new PackIdentifier(directory.getFileName().toString());
+            List<MissionTypeFacts> types = new ArrayList<>();
+            for (MissionTypeDso type :
+                    new FilesystemPackStore(parent, strategy).readAll(key, MissionTypeBinding.INSTANCE)) {
+                types.add(DomainRepositoryService.missionTypeFacts(
+                        MissionTypeBinding.INSTANCE.fileName(type.id()), type));
+            }
+            return types;
+        });
     }
 
     private Authored authored(PackIdentifier pack, Path directory) {

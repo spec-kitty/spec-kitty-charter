@@ -1,19 +1,26 @@
 package ai.speckitty.charter.missions.infra.packs;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.missions.application.HeldArtifact;
 import ai.speckitty.charter.missions.application.MissionTypeHolding;
 import ai.speckitty.charter.missions.application.MissionTypeNarrowing;
 import ai.speckitty.charter.missions.application.PackMissionTypes;
 import ai.speckitty.charter.missions.application.PackRead;
 import ai.speckitty.charter.missions.application.StoredFile;
 import ai.speckitty.charter.missions.domain.MissionType;
+import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.MissionTypeHoldingRead;
 import ai.speckitty.charter.packs.application.Revised;
 import ai.speckitty.charter.packs.domain.Payload;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
 
 /**
@@ -69,7 +76,27 @@ public final class PacksMissionTypes implements PackMissionTypes {
                         .map(contract -> new MissionTypeHolding.BoundContract(contract.localId(), contract.action()))
                         .toList(),
                 files,
-                held.fingerprint());
+                held.fingerprint(),
+                ownCandidates(type, held.packName()));
+    }
+
+    /**
+     * The candidates of the type's substeps that the pack holds, of a kind the pack-scoped artifact read serves, each by
+     * its kind and the candidate as written: one written bare or with the pack's own name, which the pack's load has
+     * resolved in the pack (FR-005). One written with another pack's name is resolved in a closure, which a
+     * pack-scoped read does not have, so it is not held here, even when the pack holds an artifact of the same id.
+     */
+    private static Set<HeldArtifact> ownCandidates(MissionType type, String packName) {
+        List<ArtifactKind> listed = ArtifactReadService.listed();
+        return Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
+                .flatMap(step -> step.substeps().stream())
+                .flatMap(substep -> substep.delegatesTo().stream())
+                .filter(delegation -> listed.contains(delegation.kind()))
+                .flatMap(delegation -> delegation.candidates().stream()
+                        .filter(candidate ->
+                                candidate.packName().map(packName::equals).orElse(true))
+                        .map(candidate -> new HeldArtifact(delegation.kind(), candidate.toString())))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private static Optional<StoredFile> stored(Optional<Payload> payload) {

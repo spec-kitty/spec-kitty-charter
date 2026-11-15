@@ -56,7 +56,8 @@ public final class WriteFacts {
                 facts.languages(),
                 facts.bindings(),
                 facts.prompts(),
-                facts.terms());
+                facts.terms(),
+                facts.delegations());
     }
 
     /**
@@ -113,6 +114,10 @@ public final class WriteFacts {
                                 .flatMap(GlossaryTerm::contextOf)
                                 .filter(artifact::equals)
                                 .isPresent())
+                        .toList(),
+                edgeless.delegations().stream()
+                        .filter(candidate ->
+                                !Urn.missionType(candidate.missionTypeId()).equals(artifact))
                         .toList());
     }
 
@@ -182,7 +187,8 @@ public final class WriteFacts {
                 facts.languages(),
                 facts.bindings(),
                 facts.prompts(),
-                facts.terms());
+                facts.terms(),
+                facts.delegations());
     }
 
     /** The {@code overrides} targets: those of the dropped edges go unless another edge still overrides them. */

@@ -1206,3 +1206,392 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
       """
     When I GET "/offering"
     Then the response status is 200
+
+  # FR-004 (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9): a step's substeps are served in authored order, every field
+  # kept. A candidate the pack holds, written bare, links its pack-scoped read; one written with another pack's name is
+  # resolved in a closure, which a pack read does not have, so it links nothing.
+  Scenario: A step serves its substeps in authored order, each bare candidate linked to its read in the pack
+    Given the org pack "sdbase" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDB01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdbase
+      pack_level: org
+      """
+    And the org pack "sdbase" with the file "tactics/tdd.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: tdd
+      name: Test-Driven Development
+      purpose: Write the failing test first.
+      steps:
+        - title: Write the test
+          description: Write a test that fails.
+      """
+    And the org pack "sdext" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDE01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdext
+      pack_level: org
+      depends_on:
+      - pack_id: 01M7B19K0000000000000SDB01
+        range: '>=1.0'
+      """
+    And the org pack "sdext" with the file "tactics/own.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: own
+      name: Own
+      purpose: The pack's own tactic.
+      steps:
+        - title: Do it
+          description: Do it.
+      """
+    And the org pack "sdext" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: zeta
+          description: Load the context
+          command: spec-kitty charter context --action a --json
+          inputs:
+          - flag: --mission
+            source: mission_slug
+            optional: true
+        - id: alpha
+          description: Apply a tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - own
+            - sdbase::tdd
+          guidance: Prefer the smallest change.
+      """
+    And the org pack "sdext" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: action:rx/a
+        target: tactic:own
+        relation: scope
+      - source: action:rx/a
+        target: sdbase::tactic:tdd
+        relation: scope
+      """
+    When I GET "/packs/sdext/artifacts/mission_type/rx/steps/a"
+    Then the response status is 200
+    And the field at "/substeps" holds exactly 2 items
+    And the field at "/substeps/0/id" is "zeta"
+    And the field at "/substeps/0/command" is "spec-kitty charter context --action a --json"
+    And the field at "/substeps/0/inputs/0/flag" is "--mission"
+    And the field at "/substeps/0/inputs/0/source" is "mission_slug"
+    And the field at "/substeps/0/inputs/0/optional" is true
+    And the field at "/substeps/0/delegatesTo" is absent
+    And the field at "/substeps/1/id" is "alpha"
+    And the field at "/substeps/1/inputs" holds exactly 0 items
+    And the field at "/substeps/1/guidance" is "Prefer the smallest change."
+    And the field at "/substeps/1/delegatesTo/kind" is "tactic"
+    And the field at "/substeps/1/delegatesTo/candidates/0/id" is "own"
+    And the field at "/substeps/1/delegatesTo/candidates/0/_links/artifact/href" is "/api/v1/packs/sdext/artifacts/tactic/own"
+    And the field at "/substeps/1/delegatesTo/candidates/1/id" is "sdbase::tdd"
+    And the field at "/substeps/1/delegatesTo/candidates/1/_links/artifact" is absent
+    When I GET "/packs/main/artifacts/mission_type/software-dev/steps/plan"
+    Then the response status is 200
+    And the field at "/substeps" holds exactly 0 items
+
+  # FR-005: every candidate of a substep resolves to an artifact of its kind in the pack, and the step's action has a
+  # scope edge to it. Each is refused where it enters, at registration, at the mission type file; the twin with the
+  # tactic and its edge registers.
+  Scenario Outline: A whole-pack registration whose substep candidate is <fault> is refused with <code>
+    Given registration is switched on
+    And the archive "sdp" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDP01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdp
+      pack_level: org
+      """
+    And the archive "sdp" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: run
+          description: Run the step test first
+          delegates_to:
+            kind: tactic
+            candidates:
+            - tdd
+      """
+    And the archive "sdp" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    And the archive "sdp" holds the file "<tactic>":
+      """
+      schema_version: "1.0"
+      id: <tactic id>
+      name: A tactic
+      purpose: A purpose.
+      steps:
+        - title: Do it
+          description: Do it.
+      """
+    When I PUT "/packs/sdp" with the archive "sdp"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "<code>"
+    And the field at "/problem/violations/0/pointer" is "missions/rx/rx.mission-type.yaml"
+    And the field at "/problem/violations/0/detail" contains "the substep run of the step a of mission_type:rx delegates to tactic tdd"
+    Given the archive "fixed" is a copy of the archive "sdp"
+    And the archive "fixed" holds the file "tactics/tdd.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: tdd
+      name: Test-Driven Development
+      purpose: Write the failing test first.
+      steps:
+        - title: Write the test
+          description: Write a test that fails.
+      """
+    And the archive "fixed" holds the file "action.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: action:rx/a
+        target: tactic:tdd
+        relation: scope
+      """
+    When I PUT "/packs/sdp" with the archive "fixed"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+    Examples:
+      | fault                         | code                          | tactic                    | tactic id |
+      | not held by the pack          | substep_delegation_unresolved | tactics/other.tactic.yaml | other     |
+      | held but not scoped by action | substep_delegation_unscoped   | tactics/tdd.tactic.yaml   | tdd       |
+
+  # FR-005 at compose: a candidate written with another pack's name is resolved in the writer's closure. The named pack
+  # does not hold it, so every read of a closure that holds the writer refuses, by the candidate's own code and before
+  # the reference of its scope edge is judged; the twin, the named pack holding it, is read.
+  Scenario: A substep candidate another pack of the closure does not hold makes the closure unreadable, beside the one it holds
+    Given the org pack "sdcbase" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDC01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdcbase
+      pack_level: org
+      """
+    And the org pack "sdcbase" with the file "tactics/other.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: other
+      name: Other
+      purpose: Another tactic.
+      steps:
+        - title: Do it
+          description: Do it.
+      """
+    And the org pack "sdcext" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDC02
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdcext
+      pack_level: org
+      depends_on:
+      - pack_id: 01M7B19K0000000000000SDC01
+        range: '>=1.0'
+      """
+    And the org pack "sdcext" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates to another pack.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: run
+          description: Run the step test first
+          delegates_to:
+            kind: tactic
+            candidates:
+            - sdcbase::tdd
+      """
+    And the org pack "sdcext" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: action:rx/a
+        target: sdcbase::tactic:tdd
+        relation: scope
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field at "/detail" contains "sdcbase::tactic:tdd"
+    And the field at "/detail" contains "substep_delegation_unresolved"
+    And the field at "/violations/0/code" is "substep_delegation_unresolved"
+    And the field at "/violations/0/pointer" is "missions/rx/rx.mission-type.yaml"
+    Given the org pack "sdcbase" with the file "tactics/tdd.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: tdd
+      name: Test-Driven Development
+      purpose: Write the failing test first.
+      steps:
+        - title: Write the test
+          description: Write a test that fails.
+      """
+    When I GET "/offering"
+    Then the response status is 200
+
+  # FR-005 at registration: the registration composes the closure the pack joins as the reads do. A substep candidate
+  # written with the name of a pack of its depends_on closure that does not hold it is the author's fault, refused as
+  # an in-pack one is: 422 validation_failed with one substep_delegation_unresolved at the mission type file. The twin
+  # archive differs only in the candidate and its scope edge, which name the tactic the base holds.
+  Scenario: A registration whose substep candidate the named base pack does not hold is refused, and its twin is accepted
+    Given registration is switched on
+    And the org pack "sdqbase" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDQ01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdqbase
+      pack_level: org
+      """
+    And the org pack "sdqbase" with the file "tactics/other.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: other
+      name: Other
+      purpose: Another tactic.
+      steps:
+        - title: Do it
+          description: Do it.
+      """
+    And the archive "sdq" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDQ02
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdq
+      pack_level: org
+      depends_on:
+      - pack_id: 01M7B19K0000000000000SDQ01
+        range: '>=1.0'
+      """
+    And the archive "sdq" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates to its base.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: run
+          description: Run the step test first
+          delegates_to:
+            kind: tactic
+            candidates:
+            - sdqbase::tdd
+      """
+    And the archive "sdq" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: action:rx/a
+        target: sdqbase::tactic:tdd
+        relation: scope
+      """
+    And the archive "sdq-ok" is a copy of the archive "sdq"
+    And the archive "sdq-ok" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates to its base.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: run
+          description: Run the step test first
+          delegates_to:
+            kind: tactic
+            candidates:
+            - sdqbase::other
+      """
+    And the archive "sdq-ok" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: action:rx/a
+        target: sdqbase::tactic:other
+        relation: scope
+      """
+    When I PUT "/packs/sdq" with the archive "sdq"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/detail" contains "sdqbase::tactic:tdd"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "substep_delegation_unresolved"
+    And the field at "/problem/violations/0/pointer" is "missions/rx/rx.mission-type.yaml"
+    When I GET "/packs/sdq"
+    Then the response status is 404
+    When I PUT "/packs/sdq" with the archive "sdq-ok"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"

@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * What a scope holds of one mission type, read at one fingerprint: the type, its skeletons, the step contracts whose
@@ -16,13 +19,17 @@ import java.util.Optional;
  * @param stepContracts the step contracts whose {@code mission} is the type
  * @param stepFiles the stored prompt and guidelines files of each step, by step id; a step without an entry has none
  * @param fingerprint the source fingerprint the read verified
+ * @param held the delegation candidates of the type's substeps the scope holds, of a listed kind (a kind the service
+ *     serves), each by its kind and the candidate as written ({@code [<pack>::]<id>}): a substep's candidate links its
+ *     read only when it is one
  */
 public record MissionTypeHolding(
         MissionType type,
         List<StoredSkeleton> skeletons,
         List<BoundContract> stepContracts,
         Map<String, StepFiles> stepFiles,
-        String fingerprint) {
+        String fingerprint,
+        Set<HeldArtifact> held) {
 
     /**
      * A holding, its lists and map copied.
@@ -32,6 +39,7 @@ public record MissionTypeHolding(
      * @param stepContracts the step contracts bound to it
      * @param stepFiles its step files
      * @param fingerprint the verified fingerprint
+     * @param held the held delegation candidates
      */
     public MissionTypeHolding {
         Objects.requireNonNull(type, "type");
@@ -39,6 +47,26 @@ public record MissionTypeHolding(
         stepContracts = List.copyOf(stepContracts);
         stepFiles = Map.copyOf(stepFiles);
         Objects.requireNonNull(fingerprint, "fingerprint");
+        held = Set.copyOf(held);
+    }
+
+    /**
+     * The delegation candidates of the type's substeps that a scope holds, each by its kind and the candidate as written:
+     * under an activation the merged closure holds an artifact by its kind and id alone, so a candidate written with a
+     * pack's name is held when the closure holds the artifact of its id.
+     *
+     * @param type the mission type
+     * @param held the artifacts of a listed kind the scope holds, by kind and id
+     * @return the held candidates, by kind and the candidate as written
+     */
+    public static Set<HeldArtifact> heldCandidates(MissionType type, Set<HeldArtifact> held) {
+        return Stream.concat(type.steps().stream(), type.onDemandSteps().stream())
+                .flatMap(step -> step.substeps().stream())
+                .flatMap(substep -> substep.delegatesTo().stream())
+                .flatMap(delegation -> delegation.candidates().stream()
+                        .filter(candidate -> held.contains(new HeldArtifact(delegation.kind(), candidate.id())))
+                        .map(candidate -> new HeldArtifact(delegation.kind(), candidate.toString())))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**

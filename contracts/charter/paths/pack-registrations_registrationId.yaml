@@ -53,6 +53,10 @@ get:
               $ref: ../examples/PackRegistrationStatus.relationship-endpoint-not-allowed.yaml
             mission-step-unlinked:
               $ref: ../examples/PackRegistrationStatus.mission-step-unlinked.yaml
+            substep-delegation-unresolved:
+              $ref: ../examples/PackRegistrationStatus.substep-delegation-unresolved.yaml
+            substep-delegation-unscoped:
+              $ref: ../examples/PackRegistrationStatus.substep-delegation-unscoped.yaml
     '400':
       $ref: ../../_shared/responses/Problem.yaml
     '401':

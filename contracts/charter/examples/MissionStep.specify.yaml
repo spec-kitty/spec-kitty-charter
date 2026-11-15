@@ -1,5 +1,6 @@
 summary: >-
-  Step specify of software-dev (open-packs a2a9379), its stored prompt and guidelines shortened here to their first lines; the slot markers are served as stored.
+  Step specify of software-dev (open-packs a2a9379), its stored prompt and guidelines shortened here to their first
+  lines and its substeps to the first three; the slot markers are served as stored.
 value:
   id: specify
   title: Specification
@@ -33,6 +34,35 @@ value:
       _links:
         skeleton:
           href: /api/v1/packs/core/artifacts/mission_type/software-dev/skeletons/spec-template.md
+  substeps:
+    - id: bootstrap
+      description: Load charter context for this action
+      command: spec-kitty charter context --action specify --json
+      inputs: []
+    - id: capture-intent
+      description: Conduct or verify the human discovery interview, then capture confirmed user intent
+      inputs: []
+      delegatesTo:
+        kind: directive
+        candidates:
+          - id: DIRECTIVE_010
+            _links:
+              artifact:
+                href: /api/v1/packs/core/artifacts/directive/DIRECTIVE_010
+          - id: DIRECTIVE_037
+            _links:
+              artifact:
+                href: /api/v1/packs/core/artifacts/directive/DIRECTIVE_037
+    - id: map-examples
+      description: Capture concrete rules, examples, and open questions for the behavior slice
+      inputs: []
+      delegatesTo:
+        kind: procedure
+        candidates:
+          - id: example-mapping-workshop
+            _links:
+              artifact:
+                href: /api/v1/packs/core/artifacts/procedure/example-mapping-workshop
   _links:
     self:
       href: /api/v1/packs/core/artifacts/mission_type/software-dev/steps/specify

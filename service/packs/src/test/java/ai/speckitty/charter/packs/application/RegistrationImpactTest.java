@@ -1056,4 +1056,65 @@ class RegistrationImpactTest {
         assertThat(impact.check(base, facts -> facts)).isEqualTo(RegistrationImpact.Notices.NONE);
         assertThat(gate.judged).hasSize(2);
     }
+
+    // ---- a substep candidate of another pack (FR-005) --------------------------------------------------------------
+
+    /** A pack that builds on {@code base} and whose mission type's substep delegates to {@code base::<directive>}. */
+    private static Packs delegating(String directive) {
+        String type = """
+                schema_version: '1.0'
+                id: rx
+                title: Rx
+                description: A mission type whose step delegates to another pack.
+                steps:
+                - id: a
+                  title: A
+                  substeps:
+                  - id: run
+                    description: Apply the base directive
+                    delegates_to:
+                      kind: directive
+                      candidates:
+                      - base::%s
+                """.formatted(directive);
+        String graph = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: mission_type:rx
+                  target: action:rx/a
+                  relation: requires
+                - source: action:rx/a
+                  target: base::directive:%s
+                  relation: scope
+                """.formatted(directive);
+        return org(LEFT_ID, "left", "1.0.0", dependsOn(BASE_ID))
+                .file("missions/rx/rx.mission-type.yaml", type)
+                .file("mission_type.graph.yaml", graph);
+    }
+
+    @Test
+    void aSubstepCandidateTheNamedPackDoesNotHoldIsRefusedAtRegistrationAsValidationFailed(@TempDir Path host) {
+        Rig rig = new Rig(host.resolve("missing"));
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+
+        CharterRefusal refused =
+                refusal(() -> rig.register("left", rig.stage(delegating("MISSING")), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.getMessage()).contains("base::directive:MISSING", "substep_delegation_unresolved");
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.code()).isEqualTo("substep_delegation_unresolved");
+            assertThat(violation.pointer()).isEqualTo("missions/rx/rx.mission-type.yaml");
+        });
+        assertThat(rig.packs.resolve("left")).as("nothing is stored").doesNotExist();
+
+        Rig control = new Rig(host.resolve("held"));
+        control.register("base", control.stage(orgBase("1.0.0")), Preconditions.none());
+        assertThat(control.register("left", control.stage(delegating("BASE_ONE")), Preconditions.none())
+                        .outcome())
+                .as("the control: the named pack holds the candidate")
+                .isEqualTo(Outcome.CREATED);
+    }
 }

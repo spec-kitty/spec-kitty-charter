@@ -1,6 +1,7 @@
 summary: >-
   Step implement of the software-dev in force under activation a-1, prompt and guidelines shortened here to their first
-  lines; the step contract link names the merged closure's winner, under the activation.
+  lines and its substeps to three; the step contract link names the merged closure's winner, under the activation, and
+  each delegation candidate the merged closure holds is linked to its read under the activation.
 value:
   id: implement
   title: Implementation
@@ -24,6 +25,42 @@ value:
       pathPattern: tasks/WP*.md
       blocking: true
   expectedOutputArtifacts: []
+  substeps:
+    - id: bootstrap
+      description: Load charter context for this action
+      command: spec-kitty charter context --action implement --json
+      inputs:
+        - flag: --action
+          source: action
+          optional: false
+        - flag: --mission
+          source: mission_slug
+          optional: true
+    - id: execute
+      description: Implement the work package according to the prompt file
+      inputs: []
+      delegatesTo:
+        kind: tactic
+        candidates:
+          - id: tdd-red-green-refactor
+            _links:
+              effective-artifact:
+                href: /api/v1/activations/a-1/artifacts/tactic/tdd-red-green-refactor
+          - id: writing::acceptance-test-first
+            _links:
+              effective-artifact:
+                href: /api/v1/activations/a-1/artifacts/tactic/acceptance-test-first
+    - id: commit
+      description: Commit changes with co-author attribution
+      inputs: []
+      delegatesTo:
+        kind: directive
+        candidates:
+          - id: DIRECTIVE_029
+            _links:
+              effective-artifact:
+                href: /api/v1/activations/a-1/artifacts/directive/DIRECTIVE_029
+      guidance: Use conventional commit format. Scope the subject with the mission slug.
   _links:
     self:
       href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement

@@ -99,8 +99,8 @@ public final class EffectiveMissionTypeReadService {
         if (!place.fingerprint().equals(winner.fingerprint())) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
         }
-        MissionTypeHolding placed =
-                holding(activationId, place.pack(), missionTypeId, winner.stepContracts(), winner.fingerprint());
+        MissionTypeHolding placed = holding(
+                activationId, place.pack(), missionTypeId, winner.stepContracts(), winner.fingerprint(), winner.held());
         return new StepRead(
                 MissionTypeReadService.stepOf(placed, scopeOf(activationId), missionTypeId, stepId),
                 Optional.of(place.pack()));
@@ -172,7 +172,8 @@ public final class EffectiveMissionTypeReadService {
                 stored.skeletons(),
                 bound(activationId, winner.type().localId(), winner.stepContracts()),
                 stored.stepFiles(),
-                winner.fingerprint());
+                winner.fingerprint(),
+                MissionTypeHolding.heldCandidates(winner.type(), winner.held()));
     }
 
     /**
@@ -184,14 +185,16 @@ public final class EffectiveMissionTypeReadService {
             PackIdentifier pack,
             String missionTypeId,
             List<CharterArtifact> stepContracts,
-            String fingerprint) {
+            String fingerprint,
+            Set<HeldArtifact> held) {
         MissionTypeHolding stored = storedBeside(activationId, pack, missionTypeId, fingerprint);
         return new MissionTypeHolding(
                 stored.type(),
                 stored.skeletons(),
                 bound(activationId, missionTypeId, stepContracts),
                 stored.stepFiles(),
-                fingerprint);
+                fingerprint,
+                MissionTypeHolding.heldCandidates(stored.type(), held));
     }
 
     /** The merged closure's step contracts bound to the type, as the views bind them. */

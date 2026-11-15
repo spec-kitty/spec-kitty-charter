@@ -2,6 +2,12 @@ schema_version: '1.0'
 generated_at: STATIC
 generated_by: drg-migration-v1
 nodes:
+- urn: tactic:acceptance-test-first
+  kind: tactic
+  label: Acceptance Test Driven Development (ATDD)
+- urn: tactic:adr-drafting-workflow
+  kind: tactic
+  label: ADR Drafting Workflow
 - urn: tactic:adversarial-qa-handoff
   kind: tactic
   label: Adversarial QA Handoff
@@ -11,4 +17,28 @@ nodes:
 - urn: tactic:autonomous-operation-protocol
   kind: tactic
   label: Autonomous Operation Protocol
+- urn: tactic:change-apply-smallest-viable-diff
+  kind: tactic
+  label: Change Apply Smallest Viable Diff
+- urn: tactic:problem-decomposition
+  kind: tactic
+  label: Problem Decomposition
+- urn: tactic:quality-gate-verification
+  kind: tactic
+  label: Quality Gate Verification
+- urn: tactic:requirements-validation-workflow
+  kind: tactic
+  label: Requirements Validation Workflow
+- urn: tactic:review-intent-and-risk-first
+  kind: tactic
+  label: Review Intent and Risk First
+- urn: tactic:stopping-conditions
+  kind: tactic
+  label: Define Stopping Conditions
+- urn: tactic:tdd-red-green-refactor
+  kind: tactic
+  label: Test Driven Development (TDD)
+- urn: tactic:usage-examples-sync
+  kind: tactic
+  label: Usage Examples Sync
 edges: []

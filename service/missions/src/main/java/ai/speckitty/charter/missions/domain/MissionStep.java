@@ -24,6 +24,8 @@ import java.util.regex.Pattern;
  * @param guidelines the step's working notes, when it has them; never with a detailed description
  * @param expectedInputArtifacts the step's preconditions, in authored order
  * @param expectedOutputArtifacts the step's postconditions, in authored order
+ * @param substeps the step's substeps, in authored order: a flat list, one level deep, empty when none is authored;
+ *     their ids are unique within the step (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9, FR-004)
  */
 public record MissionStep(
         String id,
@@ -33,7 +35,8 @@ public record MissionStep(
         Optional<StepDocument> prompt,
         Optional<StepDocument> guidelines,
         List<ExpectedInput> expectedInputArtifacts,
-        List<ExpectedArtifact> expectedOutputArtifacts) {
+        List<ExpectedArtifact> expectedOutputArtifacts,
+        List<Substep> substeps) {
 
     /**
      * The longest step description, in characters (Unicode code points): a one-line summary for an overview. The
@@ -63,6 +66,8 @@ public record MissionStep(
                     guidelines -> guidelines.description().isEmpty()));
     private static final ModularRuleset<List<String>> KEY_RULES = ModularRuleset.<List<String>>emptyRules()
             .must(Constraints.of("An artifact key stands once in a list of expected artifacts.", MissionStep::unique));
+    private static final ModularRuleset<List<String>> SUBSTEP_RULES = ModularRuleset.<List<String>>emptyRules()
+            .must(Constraints.of("A substep id stands once within its step.", MissionStep::unique));
 
     /**
      * Checks every component and copies the lists.
@@ -75,9 +80,10 @@ public record MissionStep(
      * @param guidelines the guidelines, possibly empty
      * @param expectedInputArtifacts the preconditions
      * @param expectedOutputArtifacts the postconditions
+     * @param substeps the substeps
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the id, a text or the role breaks
      *     its grammar, the description is longer than {@value #DESCRIPTION_MAX_LENGTH} characters, the guidelines carry
-     *     a detailed description, or an artifact key stands twice in one list
+     *     a detailed description, an artifact key stands twice in one list, or a substep id stands twice
      */
     public MissionStep {
         ID_RULES.guard(Objects.requireNonNull(id, "id"));
@@ -96,6 +102,8 @@ public record MissionStep(
         KEY_RULES.guard(expectedOutputArtifacts.stream()
                 .map(ExpectedArtifact::artifactKey)
                 .toList());
+        substeps = List.copyOf(substeps);
+        SUBSTEP_RULES.guard(substeps.stream().map(Substep::id).toList());
     }
 
     /**

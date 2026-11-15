@@ -285,6 +285,68 @@ class DomainRoundTripTest {
     }
 
     @Test
+    void aMissionTypeKeepsItsSubstepsInAuthoredOrderWithEveryField() throws IOException {
+        // FR-004: the substeps are a flat list read and written in authored order, every field kept (ADR-0036).
+        put("missions/rx/rx.mission-type.yaml", "mission-type", """
+                schema_version: '1.0'
+                id: rx
+                title: Rx
+                description: A mission type.
+                steps:
+                - id: a
+                  title: A
+                  substeps:
+                  - id: zeta
+                    description: Load the context
+                    command: spec-kitty charter context --action a --json
+                    inputs:
+                    - flag: --action
+                      source: action
+                    - flag: --mission
+                      source: mission_slug
+                      optional: true
+                  - id: alpha
+                    description: Apply the tactic
+                    delegates_to:
+                      kind: tactic
+                      candidates:
+                      - refactoring-inline-temp
+                      - base::tdd
+                    guidance: Prefer the smallest change.
+                """);
+        put("mission_type.graph.yaml", "graph-shard", """
+                schema_version: '1.0'
+                generated_at: STATIC
+                generated_by: drg-migration-v1
+                nodes: []
+                edges:
+                - source: mission_type:rx
+                  target: action:rx/a
+                  relation: requires
+                - source: action:rx/a
+                  target: tactic:refactoring-inline-temp
+                  relation: scope
+                - source: action:rx/a
+                  target: base::tactic:tdd
+                  relation: scope
+                """);
+
+        String written = written(roundTrip(new YamlSerializationStrategy()).get("missions/rx/rx.mission-type.yaml"));
+
+        assertThat(written)
+                .containsSubsequence(
+                        "- id: zeta",
+                        "command: spec-kitty charter context --action a --json",
+                        "- flag: --action",
+                        "optional: true",
+                        "- id: alpha",
+                        "kind: tactic",
+                        "- refactoring-inline-temp",
+                        "- base::tdd",
+                        "guidance: Prefer the smallest change.");
+    }
+
+    @Test
     void theWrittenShardKeepsItsWriterAndItsEdge() throws IOException {
         String shard = written(roundTrip(new YamlSerializationStrategy()).get("tactic.graph.yaml"));
 

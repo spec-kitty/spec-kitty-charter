@@ -39,6 +39,8 @@ import java.util.Objects;
  * @param terms the terms its glossary contexts hold, as bare URNs ({@code term:<context-id>/<term-id>}), from the same
  *     assembly, in authored order. A term is an item of its context, never an artifact, so it is not among
  *     {@code defined} (ADR-0049 decision 3); empty when the pack holds no glossary context
+ * @param delegations the substep delegation candidates its mission types write with another pack's name, which the
+ *     compose resolves in the closure (FR-005, {@link SubstepDelegationRule#qualifiedCandidates}); empty when none is
  */
 public record PackCompositionFacts(
         List<String> changed,
@@ -50,7 +52,8 @@ public record PackCompositionFacts(
         Map<String, List<String>> languages,
         Map<String, String> bindings,
         PromptFacts prompts,
-        List<String> terms) {
+        List<String> terms,
+        List<SubstepDelegationRule.QualifiedCandidate> delegations) {
 
     /** A pack that changes, holds and writes nothing, declares no policy and holds no preset, prompt or enhancement. */
     public static final PackCompositionFacts NONE = new PackCompositionFacts(List.of(), List.of(), List.of());
@@ -68,6 +71,7 @@ public record PackCompositionFacts(
      * @param bindings the mission type each held artifact is bound to, by bare URN text
      * @param prompts the slots its step prompts declare and its step enhancements fill
      * @param terms the terms its glossary contexts hold, as bare URNs
+     * @param delegations the qualified substep delegation candidates it writes
      */
     public PackCompositionFacts {
         Objects.requireNonNull(changed, "changed");
@@ -80,7 +84,9 @@ public record PackCompositionFacts(
         Objects.requireNonNull(bindings, "bindings");
         Objects.requireNonNull(prompts, "prompts");
         Objects.requireNonNull(terms, "terms");
+        Objects.requireNonNull(delegations, "delegations");
         changed = List.copyOf(changed);
+        delegations = List.copyOf(delegations);
         defined = List.copyOf(defined);
         references = List.copyOf(references);
         presets = List.copyOf(presets);
@@ -116,6 +122,34 @@ public record PackCompositionFacts(
             Map<String, String> bindings,
             PromptFacts prompts) {
         this(changed, defined, references, policy, presets, edges, languages, bindings, prompts, List.of());
+    }
+
+    /**
+     * The facts of a pack whose mission types delegate to no candidate of another pack.
+     *
+     * @param changed the artifacts it changes
+     * @param defined the artifacts it holds
+     * @param references the references it writes
+     * @param policy the mutability policy it declares
+     * @param presets the presets it holds
+     * @param edges the typed edges it writes
+     * @param languages the languages each held artifact applies to, by bare URN text
+     * @param bindings the mission type each held artifact is bound to, by bare URN text
+     * @param prompts the slots its step prompts declare and its step enhancements fill
+     * @param terms the terms its glossary contexts hold, as bare URNs
+     */
+    public PackCompositionFacts(
+            List<String> changed,
+            List<String> defined,
+            List<String> references,
+            MutabilityPolicySource policy,
+            List<Preset> presets,
+            List<Relationship> edges,
+            Map<String, List<String>> languages,
+            Map<String, String> bindings,
+            PromptFacts prompts,
+            List<String> terms) {
+        this(changed, defined, references, policy, presets, edges, languages, bindings, prompts, terms, List.of());
     }
 
     /**

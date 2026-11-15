@@ -1,0 +1,26 @@
+{
+  "covers": [
+    "FR-005"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "substep_delegation_unscoped",
+      "severity": "blocking",
+      "file": "missions/rx/rx.mission-type.yaml",
+      "place": [
+        "steps",
+        "0",
+        "substeps",
+        "0",
+        "delegates_to",
+        "candidates",
+        "0"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "loads": false
+  }
+}

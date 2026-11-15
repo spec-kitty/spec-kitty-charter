@@ -34,6 +34,7 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 
@@ -54,7 +55,8 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 inputs,
-                outputs);
+                outputs,
+                List.of());
     }
 
     private static MissionType.Builder research() {
@@ -131,7 +133,8 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 List.of(),
-                List.of(outputs));
+                List.of(outputs),
+                List.of());
     }
 
     @Test
@@ -265,6 +268,7 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
+                        List.of(),
                         List.of()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThatThrownBy(() -> new MissionStep(
@@ -275,6 +279,7 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
+                        List.of(),
                         List.of()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThatCode(() -> new MissionStep(
@@ -284,6 +289,7 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        List.of(),
                         List.of(),
                         List.of()))
                 .doesNotThrowAnyException();

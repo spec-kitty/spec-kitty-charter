@@ -56,7 +56,8 @@ class EffectiveMissionTypeReadServiceTest {
                     PROJ,
                     type(),
                     List.of(new Contract("specify-contract"), new Contract("review-contract")),
-                    fingerprint);
+                    fingerprint,
+                    Set.of());
         }
 
         @Override
@@ -426,6 +427,7 @@ class EffectiveMissionTypeReadServiceTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
+                        List.of(),
                         List.of()))
                 .build();
     }
@@ -446,6 +448,7 @@ class EffectiveMissionTypeReadServiceTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        List.of(),
                         List.of(),
                         List.of()))
                 .build();
@@ -484,7 +487,8 @@ class EffectiveMissionTypeReadServiceTest {
                 List.of(new MissionTypeHolding.StoredSkeleton("spec.md", utf8("# Spec\n"))),
                 List.of(new MissionTypeHolding.BoundContract("a-proj-contract", "specify")),
                 Map.of("specify", new MissionTypeHolding.StepFiles(Optional.of(utf8("# Specify\n")), Optional.empty())),
-                fingerprint);
+                fingerprint,
+                Set.of());
     }
 
     /**
@@ -507,6 +511,7 @@ class EffectiveMissionTypeReadServiceTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
+                        List.of(),
                         List.of()))
                 .build();
         return new MissionTypeHolding(
@@ -516,7 +521,8 @@ class EffectiveMissionTypeReadServiceTest {
                 Map.of(
                         "review",
                         new MissionTypeHolding.StepFiles(Optional.of(utf8("# Review at main\n")), Optional.empty())),
-                fingerprint);
+                fingerprint,
+                Set.of());
     }
 
     /** A step contract as the activations slice hands it on: a kernel artifact, which the contracts port narrows. */

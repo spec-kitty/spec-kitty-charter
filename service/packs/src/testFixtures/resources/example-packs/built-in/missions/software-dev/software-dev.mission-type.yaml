@@ -54,6 +54,45 @@ steps:
     path_pattern: spec.md
     blocking: true
     template_path: templates/spec-template.md
+  substeps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: spec-kitty charter context --action specify --json
+  - id: capture-intent
+    description: Conduct or verify the human discovery interview, then capture confirmed user intent
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_010
+      - DIRECTIVE_037
+  - id: map-examples
+    description: Capture concrete rules, examples, and open questions for the behavior slice
+    delegates_to:
+      kind: procedure
+      candidates:
+      - example-mapping-workshop
+  - id: validate-requirements
+    description: Validate requirements against spec fidelity rules
+    delegates_to:
+      kind: tactic
+      candidates:
+      - requirements-validation-workflow
+  - id: document-decisions
+    description: Record any design decisions made during specification
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_003
+  - id: write-spec
+    description: Write spec.md to kitty-specs/{mission_slug}/
+    command: Write spec.md in kitty-specs/{mission_slug}/
+  - id: commit-spec
+    description: Commit the specification to the planning branch the CLI reports
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_003
+      - DIRECTIVE_010
 - id: plan
   title: Implementation Planning
   description: Design technical architecture
@@ -69,6 +108,45 @@ steps:
     path_pattern: plan.md
     blocking: true
     template_path: templates/plan-template.md
+  substeps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: spec-kitty charter context --action plan --json
+  - id: read-spec
+    description: Read and understand the mission specification
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_010
+  - id: design-architecture
+    description: Design the implementation architecture and component breakdown
+    delegates_to:
+      kind: tactic
+      candidates:
+      - requirements-validation-workflow
+      - adr-drafting-workflow
+  - id: document-decisions
+    description: Record architectural decisions as ADRs
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_003
+  - id: supply-chain-security-check
+    description: 'Surface install-time and dependency supply-chain risk, per DIRECTIVE_051 and the supply-chain-install-safety tactic, for any dependency the plan introduces or upgrades. Advisory in v1: visibility and evidence are required, but this step does not gate the transition.'
+    delegates_to:
+      kind: tactic
+      candidates:
+      - architectural-gate-non-vacuity
+  - id: write-plan
+    description: Write plan.md to kitty-specs/{mission_slug}/
+    command: Write plan.md in kitty-specs/{mission_slug}/
+  - id: commit-plan
+    description: Commit the plan to the planning branch the CLI reports
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_003
+      - DIRECTIVE_010
 - id: tasks
   title: Task Breakdown
   description: Create task breakdown, work package prompts, and finalized dependencies
@@ -90,6 +168,31 @@ steps:
     artifact_class: output
     path_pattern: tasks/WP*.md
     blocking: true
+  substeps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: spec-kitty charter context --action tasks --json
+  - id: outline
+    description: Produce tasks.md — work packages translated from implementation concerns in the plan
+    delegates_to:
+      kind: tactic
+      candidates:
+      - problem-decomposition
+      - requirements-validation-workflow
+  - id: packages
+    description: Generate individual tasks/WP##.md prompt files
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_010
+      - DIRECTIVE_024
+  - id: finalize
+    description: Validate dependencies and finalize WP metadata
+    command: spec-kitty agent mission finalize-tasks
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_024
 - id: analyze
   title: Analysis
   description: Cross-artifact consistency analysis, recorded as a current analysis report
@@ -114,6 +217,68 @@ steps:
   - artifact_key: output.tasks.per_wp
     path_pattern: tasks/WP*.md
     blocking: true
+  substeps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: spec-kitty charter context --action implement --json
+    inputs:
+    - flag: --action
+      source: action
+    - flag: --mission
+      source: mission_slug
+      optional: true
+  - id: workspace
+    description: Create or enter the work package workspace
+    delegates_to:
+      kind: paradigm
+      candidates:
+      - execution-lanes
+    guidance: 'The execution-lanes paradigm describes the only supported git worktree mechanism. Spec Kitty chooses the topology at `finalize-tasks` by Mission size: small Missions run `single_branch` in the write checkout, and lane topologies use the lane worktrees `spec-kitty implement` provides. Do not create or reuse a lane worktree by hand.'
+  - id: branching-paradigm
+    description: Apply trunk-based development when selected by the project charter
+    delegates_to:
+      kind: paradigm
+      candidates:
+      - trunk-based
+    guidance: Use this branch-management paradigm for trunk-based and shared-branch CI workflows. Skip it when the charter selects the Git Flow paradigm instead.
+  - id: branching-procedure
+    description: Apply Git Flow when the project charter selects that branching workflow
+    delegates_to:
+      kind: paradigm
+      candidates:
+      - git-flow
+    guidance: Skip this step unless the project charter selects Git Flow. Follow its feature, release, and hotfix branch workflow instead of trunk-based branching.
+  - id: execute
+    description: Implement the work package according to the prompt file
+    delegates_to:
+      kind: tactic
+      candidates:
+      - tdd-red-green-refactor
+      - acceptance-test-first
+      - change-apply-smallest-viable-diff
+  - id: supply-chain-security-check
+    description: 'Run the supply-chain-install-safety tactic''s checklist, per DIRECTIVE_051, for any dependency added or changed during implementation, before the standard quality gate. Advisory in v1: evidence is required, but this step does not gate the transition.'
+    delegates_to:
+      kind: tactic
+      candidates:
+      - architectural-gate-non-vacuity
+  - id: quality-gate
+    description: Run tests and type checks
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_030
+  - id: commit
+    description: Commit changes with co-author attribution
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_003
+      - DIRECTIVE_010
+    guidance: Use conventional commit format. Scope the subject with the mission slug.
+  - id: status-transition
+    description: Move WP to for_review
+    command: spec-kitty agent tasks move-task {wp_id} --to for_review --mission {mission_slug}
 - id: review
   title: Code Review
   description: Review and validate
@@ -124,6 +289,52 @@ steps:
   - artifact_key: output.tasks.per_wp
     path_pattern: tasks/WP*.md
     blocking: true
+  substeps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: spec-kitty charter context --action review --json
+  - id: verify-spec-fidelity
+    description: Verify implementation matches specification intent
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_010
+      - DIRECTIVE_037
+  - id: verify-example-sync
+    description: Verify canonical examples, acceptance checks, and docs stayed in sync
+    delegates_to:
+      kind: tactic
+      candidates:
+      - usage-examples-sync
+  - id: assess-intent-and-risk
+    description: Evaluate changes for intent alignment and risk
+    delegates_to:
+      kind: tactic
+      candidates:
+      - review-intent-and-risk-first
+  - id: supply-chain-security-review
+    description: 'Require explicit supply-chain evidence, per DIRECTIVE_051 and the supply-chain-install-safety tactic, before recommending approval for any change that touches the dependency tree. Advisory in v1 per NFR-003/C-003: this step does not add a new fail-closed transition gate -- the existing "in_progress->for_review" gate above is unchanged -- but silence or an unexamined default is treated as a gap in evidence, not a pass.'
+    delegates_to:
+      kind: tactic
+      candidates:
+      - architectural-gate-non-vacuity
+  - id: quality-gate
+    description: Verify tests pass and type checks succeed
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_030
+  - id: verify-stopping-conditions
+    description: Check that work has reached completion criteria
+    delegates_to:
+      kind: tactic
+      candidates:
+      - quality-gate-verification
+      - stopping-conditions
+  - id: status-transition
+    description: Move WP to approved or request changes
+    command: spec-kitty agent tasks move-task {wp_id} --to approved --mission {mission_slug}
+    guidance: If changes are needed, move to in_progress with a reason. If review passes, move to approved with evidence. Consolidate later records done.
 - id: accept
   title: Acceptance
   description: Validate mission completeness
@@ -159,6 +370,19 @@ on_demand_steps:
     path_pattern: tasks.md
     blocking: true
     template_path: templates/tasks-template.md
+  substeps:
+  - id: finalize
+    description: Validate dependencies and finalize WP metadata
+    command: spec-kitty agent mission finalize-tasks
+    inputs:
+    - flag: --mission
+      source: mission_slug
+      optional: true
+    delegates_to:
+      kind: directive
+      candidates:
+      - DIRECTIVE_024
+    guidance: Commit the finalized task artifacts to the planning branch the CLI reports.
 - id: tasks-outline
   title: Task Outline
   description: 'Write the work package manifest, wps.yaml: each WP''s scope, dependencies and owned files.'

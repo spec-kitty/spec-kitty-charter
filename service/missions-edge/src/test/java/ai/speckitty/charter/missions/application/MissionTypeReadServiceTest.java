@@ -21,6 +21,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -198,7 +199,7 @@ class MissionTypeReadServiceTest {
 
     private MissionTypeHolding holdingWith(MissionTypeHolding.StoredSkeleton skeleton) {
         return new MissionTypeHolding(
-                holding.type(), List.of(skeleton), holding.stepContracts(), holding.stepFiles(), FINGERPRINT);
+                holding.type(), List.of(skeleton), holding.stepContracts(), holding.stepFiles(), FINGERPRINT, Set.of());
     }
 
     private static MissionTypeHolding holding(List<MissionTypeHolding.BoundContract> contracts) {
@@ -238,7 +239,8 @@ class MissionTypeReadServiceTest {
                         new MissionTypeHolding.StepFiles(Optional.of(utf8("# Plan\n")), Optional.empty()),
                         "retrospect",
                         new MissionTypeHolding.StepFiles(Optional.of(utf8("# Retrospect\n")), Optional.empty())),
-                FINGERPRINT);
+                FINGERPRINT,
+                Set.of());
     }
 
     /** A step whose parsed documents differ from its stored files, so a test sees which one is served. */
@@ -253,7 +255,8 @@ class MissionTypeReadServiceTest {
                 prompt ? Optional.of(parsed) : Optional.empty(),
                 guidelines ? Optional.of(parsed) : Optional.empty(),
                 List.of(),
-                List.of(outputs));
+                List.of(outputs),
+                List.of());
     }
 
     private static ExpectedArtifact output(String key, Optional<String> templatePath) {

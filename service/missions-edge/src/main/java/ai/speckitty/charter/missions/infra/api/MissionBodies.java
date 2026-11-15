@@ -12,9 +12,11 @@ import ai.speckitty.charter.api.model.MissionStepContract;
 import ai.speckitty.charter.api.model.MissionStepContractGate;
 import ai.speckitty.charter.api.model.MissionStepContractInput;
 import ai.speckitty.charter.api.model.MissionStepContractStep;
-import ai.speckitty.charter.api.model.MissionStepDelegation;
-import ai.speckitty.charter.api.model.MissionStepDelegationCandidate;
 import ai.speckitty.charter.api.model.MissionStepSummary;
+import ai.speckitty.charter.api.model.MissionSubstep;
+import ai.speckitty.charter.api.model.MissionSubstepDelegation;
+import ai.speckitty.charter.api.model.MissionSubstepDelegationCandidate;
+import ai.speckitty.charter.api.model.MissionSubstepInput;
 import ai.speckitty.charter.api.model.MissionType;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
@@ -28,9 +30,12 @@ import ai.speckitty.charter.missions.application.StepContractView;
 import ai.speckitty.charter.missions.application.StepView;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
 import ai.speckitty.charter.missions.domain.PathConventions;
+import ai.speckitty.charter.missions.domain.Substep;
+import ai.speckitty.charter.missions.domain.SubstepCandidate;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -146,11 +151,45 @@ final class MissionBodies {
                                     return artifact;
                                 })
                                 .toList(),
+                        step.substeps().stream()
+                                .map(substep -> substep(substep, view.heldCandidates(), scope))
+                                .toList(),
                         MissionLinks.wire(own))
                 .description(step.description().orElse(null))
                 .role(step.role().orElse(null))
                 .prompt(view.prompt().orElse(null))
                 .guidelines(view.guidelines().orElse(null));
+    }
+
+    /**
+     * A substep as stored, each delegation candidate the scope holds linked to its read in the scope: {@code artifact}
+     * in a pack, {@code effective-artifact} under an activation (FR-004).
+     */
+    private static MissionSubstep substep(Substep substep, Set<HeldArtifact> held, MissionLinks.Scope scope) {
+        return new MissionSubstep(
+                        substep.id(),
+                        substep.description(),
+                        substep.inputs().stream()
+                                .map(input -> new MissionSubstepInput(input.flag(), input.source(), input.optional()))
+                                .toList())
+                .command(substep.command().orElse(null))
+                .delegatesTo(substep.delegatesTo()
+                        .map(delegation -> new MissionSubstepDelegation(
+                                delegation.kind().token(),
+                                delegation.candidates().stream()
+                                        .map(candidate -> substepCandidate(delegation.kind(), candidate, held, scope))
+                                        .toList()))
+                        .orElse(null))
+                .guidance(substep.guidance().orElse(null));
+    }
+
+    private static MissionSubstepDelegationCandidate substepCandidate(
+            ArtifactKind kind, SubstepCandidate candidate, Set<HeldArtifact> held, MissionLinks.Scope scope) {
+        EnumMap<MissionRelation, Link> own = new EnumMap<>(MissionRelation.class);
+        if (held.contains(new HeldArtifact(kind, candidate.toString()))) {
+            own.put(scope.artifactRelation(), scope.artifact(kind.token(), candidate.id()));
+        }
+        return new MissionSubstepDelegationCandidate(candidate.toString(), MissionLinks.wire(own));
     }
 
     /**
@@ -217,7 +256,7 @@ final class MissionBodies {
                                 .toList())
                 .command(step.command().orElse(null))
                 .delegatesTo(step.delegatesTo()
-                        .map(delegation -> new MissionStepDelegation(
+                        .map(delegation -> new MissionSubstepDelegation(
                                 delegation.kind().token(),
                                 delegation.candidates().stream()
                                         .map(candidate -> candidate(delegation.kind(), candidate, view, scope))
@@ -226,13 +265,13 @@ final class MissionBodies {
                 .guidance(step.guidance().orElse(null));
     }
 
-    private static MissionStepDelegationCandidate candidate(
+    private static MissionSubstepDelegationCandidate candidate(
             ArtifactKind kind, String candidate, EffectiveStepContractView view, MissionLinks.Scope scope) {
         EnumMap<MissionRelation, Link> own = new EnumMap<>(MissionRelation.class);
         if (view.heldCandidates().contains(new HeldArtifact(kind, candidate))) {
             own.put(MissionRelation.EFFECTIVE_ARTIFACT, scope.artifact(kind.token(), candidate));
         }
-        return new MissionStepDelegationCandidate(candidate, MissionLinks.wire(own));
+        return new MissionSubstepDelegationCandidate(candidate, MissionLinks.wire(own));
     }
 
     private static MissionStepContractGate gate(StepContractView.Gate gate) {

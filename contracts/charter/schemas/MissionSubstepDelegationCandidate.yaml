@@ -1,0 +1,25 @@
+title: MissionSubstepDelegationCandidate
+description: >-
+  One candidate of a substep's delegation: its id as stored, written [<pack>::]<id>, and, when its kind is one the
+  service lists (the kinds of ArtifactKindToken) and the scope holds the candidate, a link to its read in that scope:
+  artifact, the pack-scoped read, on a pack's step (getPackMissionStep; a candidate written bare or with the pack's
+  own name, which the pack holds); effective-artifact, the read under the activation, on a step read under an
+  activation (getEffectiveMissionStep; the activation's merged closure holds it). _links is empty otherwise: for a
+  kind the service does not list, or for a candidate written with another pack's name on a pack's step.
+type: object
+additionalProperties: false
+required:
+  - id
+  - _links
+properties:
+  id:
+    type: string
+    description: The candidate as the delegation names it, [<pack>::]<id>; its kind is the delegation's.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepCandidate.java
+      symbol: SubstepCandidate.toString
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepCandidate.java
+  symbol: SubstepCandidate

@@ -951,3 +951,94 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
       {"schemaVersion": 2, "packs": [{"packId": "main"}, {"packId": "proj"}], "selected": {"mission_type": ["software-dev"], "step_enhancement": ["reasons"]}}
       """
     Then the response status is 201
+
+  # FR-004 under an activation: the step's substeps in authored order, each candidate the merged closure holds linked to
+  # its read under the activation (effective-artifact), whether written bare or with the name of the pack that holds it.
+  Scenario: A step's substeps are served under the activation, each held candidate linked to its read there
+    Given the org pack "sdebase" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDF01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdebase
+      pack_level: org
+      """
+    And the org pack "sdebase" with the file "tactics/tdd.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: tdd
+      name: Test-Driven Development
+      purpose: Write the failing test first.
+      steps:
+        - title: Write the test
+          description: Write a test that fails.
+      """
+    And the org pack "sdeext" with the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000SDF02
+      pack_version: 1.0.0
+      parent_pack: null
+      name: sdeext
+      pack_level: org
+      depends_on:
+      - pack_id: 01M7B19K0000000000000SDF01
+        range: '>=1.0'
+      """
+    And the org pack "sdeext" with the file "tactics/own.tactic.yaml":
+      """
+      schema_version: "1.0"
+      id: own
+      name: Own
+      purpose: The pack's own tactic.
+      steps:
+        - title: Do it
+          description: Do it.
+      """
+    And the org pack "sdeext" with the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type whose step delegates.
+      steps:
+      - id: a
+        title: A
+        substeps:
+        - id: run
+          description: Apply a tactic
+          delegates_to:
+            kind: tactic
+            candidates:
+            - own
+            - sdebase::tdd
+      """
+    And the org pack "sdeext" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      - source: action:rx/a
+        target: tactic:own
+        relation: scope
+      - source: action:rx/a
+        target: sdebase::tactic:tdd
+        relation: scope
+      """
+    And the activation "sd-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "sdeext"}], "selected": {"mission_type": ["rx"]}}
+      """
+    When I GET "/activations/sd-1/artifacts/mission_type/rx/steps/a"
+    Then the response status is 200
+    And the field at "/substeps" holds exactly 1 item
+    And the field at "/substeps/0/id" is "run"
+    And the field at "/substeps/0/delegatesTo/candidates/0/id" is "own"
+    And the field at "/substeps/0/delegatesTo/candidates/0/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/own"
+    And the field at "/substeps/0/delegatesTo/candidates/1/id" is "sdebase::tdd"
+    And the field at "/substeps/0/delegatesTo/candidates/1/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/tdd"
+    When I GET "/activations/sd-1/artifacts/tactic/tdd"
+    Then the response status is 200

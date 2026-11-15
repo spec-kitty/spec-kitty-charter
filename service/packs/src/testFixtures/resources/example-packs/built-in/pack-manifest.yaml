@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: f8d4a64e6ad7d655310c6f2414c74f94c5b1f4c08d052c83935eabd02a8adf29
+manifest_hash: a0d8afa08109321dbfa87dcab30d5cc98f03ea313d8c632b36f4539b33a1b643
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -45,6 +45,18 @@ constituents:
   id: DIRECTIVE_010
   path: directives/010-specification-fidelity-requirement.directive.yaml
   content_hash: 950b30ca27d33bf2229409052012b430de651cb579281c960fc286bb41b999d3
+- kind: directive
+  id: DIRECTIVE_030
+  path: directives/030-test-and-typecheck-quality-gate.directive.yaml
+  content_hash: 201c160f0ca0497cd467b41cd6c300c094b62e71cd9e11e393ab402b693516a9
+- kind: directive
+  id: DIRECTIVE_037
+  path: directives/037-living-documentation-sync.directive.yaml
+  content_hash: f8cc220e158fb455fed30bbe4e26ce89b6b3d95945e2bbf18245aaf45bc2170b
+- kind: directive
+  id: DIRECTIVE_024
+  path: directives/024-locality-of-change.directive.yaml
+  content_hash: 51ff43e7ca3e2703929cef790b08495e8b1438f225d7504bbe6ccc676590078b
 - kind: glossary
   id: spec-kitty-core
   path: glossaries/spec-kitty-core.glossary.yaml
@@ -92,7 +104,7 @@ constituents:
 - kind: mission_type
   id: software-dev
   path: missions/software-dev/software-dev.mission-type.yaml
-  content_hash: 633a6459a7c4d5bd3a10ad4b526fb5767bfd948d66fbbed8548f19ea821edfcd
+  content_hash: 1b1eec78143f0d793add7e70837db9dc1d8dc5b2f8641afec8903cb0c20a8c65
 - kind: template
   id: software-dev/plan-template.md
   path: missions/software-dev/templates/plan-template.md
@@ -117,6 +129,18 @@ constituents:
   id: atomic-design
   path: paradigms/atomic-design.paradigm.yaml
   content_hash: 5a59b15a9a97ae09a8ce2a16e2baddf8c4ba5bcdcab8b72787515d8c590d7968
+- kind: paradigm
+  id: git-flow
+  path: paradigms/git-flow.paradigm.yaml
+  content_hash: 028fdf3402dc530dbbe9102d4d4d34de167eec345e2bd2c993d5790f871ee146
+- kind: paradigm
+  id: trunk-based
+  path: paradigms/trunk-based.paradigm.yaml
+  content_hash: 7627bbcc5367c52889e626e9c9505261eae40afa7841417d7f779ac6ffe0cf00
+- kind: paradigm
+  id: execution-lanes
+  path: paradigms/execution-lanes.paradigm.yaml
+  content_hash: 2662a544ad5da339e6265daad1a863508f1fe2dea8e6fcaaee593b013af543e0
 - kind: procedure
   id: action-item-attribution-gate
   path: procedures/action-item-attribution-gate.procedure.yaml
@@ -125,6 +149,10 @@ constituents:
   id: adversarial-squad-deployment
   path: procedures/adversarial-squad-deployment.procedure.yaml
   content_hash: 9cf80cc6660d8c7c498699564f34f22604550b254ad7993b40a8e0c13f38133b
+- kind: procedure
+  id: example-mapping-workshop
+  path: procedures/example-mapping-workshop.procedure.yaml
+  content_hash: 29218f08124840eeadc071cd01f496da26bbef90cbe77d9bea3070c168f2f07f
 - kind: skill
   id: review-checklist
   path: skills/review-checklist.skill.yaml
@@ -153,6 +181,46 @@ constituents:
   id: autonomous-operation-protocol
   path: tactics/autonomous-operation-protocol.tactic.yaml
   content_hash: 1a50ad533d46d870be5df64262205cd4147dbfbfb2288d06d8ceb374f4c39184
+- kind: tactic
+  id: tdd-red-green-refactor
+  path: tactics/tdd-red-green-refactor.tactic.yaml
+  content_hash: f7b80628d0f8727636ac436487848646b430f503ce892f863581609386476bf9
+- kind: tactic
+  id: acceptance-test-first
+  path: tactics/acceptance-test-first.tactic.yaml
+  content_hash: f46f6e12a838898b281f2460da03c41abccbbc5e4d36dfa24c6606ad82aa3b72
+- kind: tactic
+  id: change-apply-smallest-viable-diff
+  path: tactics/change-apply-smallest-viable-diff.tactic.yaml
+  content_hash: d6da622d0a7b6fa756fc4516884be737fa54880ab78ebda8567f1c96a533e039
+- kind: tactic
+  id: requirements-validation-workflow
+  path: tactics/requirements-validation-workflow.tactic.yaml
+  content_hash: 46d388bb2fe63332a16b52c95fe77e72b9b2d90b0629f86a78ca8a2b70f0b073
+- kind: tactic
+  id: adr-drafting-workflow
+  path: tactics/adr-drafting-workflow.tactic.yaml
+  content_hash: ba6d2ed3f1f6ab2c84adef50d230805fbf7f55e83e650910317e84e99adb8303
+- kind: tactic
+  id: usage-examples-sync
+  path: tactics/usage-examples-sync.tactic.yaml
+  content_hash: 2fb0bb8639377f03144f317e628e3c54900fb1be74186e4690d45d0f1d2cb004
+- kind: tactic
+  id: problem-decomposition
+  path: tactics/problem-decomposition.tactic.yaml
+  content_hash: 86f0103faa8ca1cf5cb71bc177f8044eeda81d98e0d4551ba15946a7830f2b14
+- kind: tactic
+  id: review-intent-and-risk-first
+  path: tactics/review-intent-and-risk-first.tactic.yaml
+  content_hash: 11ab916a30e25df3ff6e0076ecda65cd584062a3a8bdcd0478c09da7965e9f5e
+- kind: tactic
+  id: quality-gate-verification
+  path: tactics/quality-gate-verification.tactic.yaml
+  content_hash: 1ea589e4c4b69dbd112bca95aa4d9659aa921a44e62ccfbfa0891caafa585c45
+- kind: tactic
+  id: stopping-conditions
+  path: tactics/stopping-conditions.tactic.yaml
+  content_hash: f3000059ddf153954c87cd5fc05b246b38f6d0a25f8b07f50a2b3e2201a8b00e
 - kind: template
   id: writing/meeting-discussion-notes.md
   path: templates/writing/meeting-discussion-notes.md

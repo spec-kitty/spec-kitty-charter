@@ -5,6 +5,7 @@ import ai.speckitty.charter.missions.domain.MissionStep;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * One step as its read serves it: its stored fields, its stored prompt and guidelines as text, the step contract bound
@@ -18,6 +19,8 @@ import java.util.Optional;
  * @param stepContractId the step contract whose {@code mission} and {@code action} are the type and the step, the lowest
  *     id when several are; empty when none is
  * @param outputs its expected output artifacts, in stored order, each with the skeleton it names
+ * @param heldCandidates the delegation candidates of its substeps that the scope holds and serves, by kind and the
+ *     candidate as written: a candidate links its read only when it is one
  */
 public record StepView(
         String missionTypeId,
@@ -26,7 +29,8 @@ public record StepView(
         Optional<String> prompt,
         Optional<String> guidelines,
         Optional<String> stepContractId,
-        List<OutputView> outputs) {
+        List<OutputView> outputs,
+        Set<HeldArtifact> heldCandidates) {
 
     /**
      * A view, its outputs copied.
@@ -38,6 +42,7 @@ public record StepView(
      * @param guidelines the guidelines text
      * @param stepContractId the bound step contract's id
      * @param outputs the expected outputs
+     * @param heldCandidates the held candidates
      */
     public StepView {
         Objects.requireNonNull(missionTypeId, "missionTypeId");
@@ -46,6 +51,7 @@ public record StepView(
         Objects.requireNonNull(guidelines, "guidelines");
         Objects.requireNonNull(stepContractId, "stepContractId");
         outputs = List.copyOf(outputs);
+        heldCandidates = Set.copyOf(heldCandidates);
     }
 
     /**

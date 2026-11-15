@@ -1,0 +1,30 @@
+title: MissionSubstepInput
+description: One declared input of a substep's command.
+type: object
+additionalProperties: false
+required:
+  - flag
+  - source
+  - optional
+properties:
+  flag:
+    type: string
+    description: The flag the input is passed with.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepInput.java
+      symbol: SubstepInput.flag
+  source:
+    type: string
+    description: Where the input's value comes from.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepInput.java
+      symbol: SubstepInput.source
+  optional:
+    type: boolean
+    description: True when the command runs without the input; false when it is required.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepInput.java
+      symbol: SubstepInput.optional
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepInput.java
+  symbol: SubstepInput

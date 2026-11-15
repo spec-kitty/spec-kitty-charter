@@ -46,7 +46,22 @@ edges:
   target: directive:DIRECTIVE_001
   relation: scope
 - source: action:software-dev/implement
+  target: directive:DIRECTIVE_003
+  relation: scope
+- source: action:software-dev/implement
   target: directive:DIRECTIVE_010
+  relation: scope
+- source: action:software-dev/implement
+  target: directive:DIRECTIVE_030
+  relation: scope
+- source: action:software-dev/implement
+  target: paradigm:execution-lanes
+  relation: scope
+- source: action:software-dev/implement
+  target: paradigm:git-flow
+  relation: scope
+- source: action:software-dev/implement
+  target: paradigm:trunk-based
   relation: scope
 - source: action:software-dev/implement
   target: procedure:adversarial-squad-deployment
@@ -55,7 +70,19 @@ edges:
   target: styleguide:boring-code-review
   relation: scope
 - source: action:software-dev/implement
+  target: tactic:acceptance-test-first
+  relation: scope
+- source: action:software-dev/implement
+  target: tactic:architectural-gate-non-vacuity
+  relation: scope
+- source: action:software-dev/implement
   target: tactic:autonomous-operation-protocol
+  relation: scope
+- source: action:software-dev/implement
+  target: tactic:change-apply-smallest-viable-diff
+  relation: scope
+- source: action:software-dev/implement
+  target: tactic:tdd-red-green-refactor
   relation: scope
 - source: action:software-dev/implement
   target: toolguide:efficient-local-tooling
@@ -65,6 +92,15 @@ edges:
   relation: scope
 - source: action:software-dev/plan
   target: directive:DIRECTIVE_010
+  relation: scope
+- source: action:software-dev/plan
+  target: tactic:adr-drafting-workflow
+  relation: scope
+- source: action:software-dev/plan
+  target: tactic:architectural-gate-non-vacuity
+  relation: scope
+- source: action:software-dev/plan
+  target: tactic:requirements-validation-workflow
   relation: scope
 - source: action:software-dev/review
   target: directive:DIRECTIVE_001
@@ -76,20 +112,62 @@ edges:
   target: directive:DIRECTIVE_010
   relation: scope
 - source: action:software-dev/review
+  target: directive:DIRECTIVE_030
+  relation: scope
+- source: action:software-dev/review
+  target: directive:DIRECTIVE_037
+  relation: scope
+- source: action:software-dev/review
   target: styleguide:boring-code-review
+  relation: scope
+- source: action:software-dev/review
+  target: tactic:architectural-gate-non-vacuity
   relation: scope
 - source: action:software-dev/review
   target: tactic:autonomous-operation-protocol
   relation: scope
+- source: action:software-dev/review
+  target: tactic:quality-gate-verification
+  relation: scope
+- source: action:software-dev/review
+  target: tactic:review-intent-and-risk-first
+  relation: scope
+- source: action:software-dev/review
+  target: tactic:stopping-conditions
+  relation: scope
+- source: action:software-dev/review
+  target: tactic:usage-examples-sync
+  relation: scope
 - source: action:software-dev/specify
   target: directive:DIRECTIVE_003
   relation: scope
 - source: action:software-dev/specify
   target: directive:DIRECTIVE_010
   relation: scope
+- source: action:software-dev/specify
+  target: directive:DIRECTIVE_037
+  relation: scope
+- source: action:software-dev/specify
+  target: procedure:example-mapping-workshop
+  relation: scope
+- source: action:software-dev/specify
+  target: tactic:requirements-validation-workflow
+  relation: scope
 - source: action:software-dev/tasks
   target: directive:DIRECTIVE_003
   relation: scope
 - source: action:software-dev/tasks
   target: directive:DIRECTIVE_010
+  relation: scope
+- source: action:software-dev/tasks
+  target: directive:DIRECTIVE_024
+  relation: scope
+- source: action:software-dev/tasks
+  target: tactic:problem-decomposition
+  relation: scope
+- source: action:software-dev/tasks
+  target: tactic:requirements-validation-workflow
+  relation: scope
+- source: action:software-dev/tasks-finalize
+  target: directive:DIRECTIVE_024
   relation: scope

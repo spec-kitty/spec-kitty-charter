@@ -46,9 +46,12 @@ class ActivationsMissionTypesTest {
         MissionType type = type();
         CharterArtifact contract = new Stub(ArtifactKind.MISSION_STEP_CONTRACT, "specify-contract");
         when(effective.missionTypeWinner(ID, "software-dev"))
-                .thenReturn(new EffectiveMissionTypeWinner("proj", type, List.of(contract), SOURCE));
+                .thenReturn(new EffectiveMissionTypeWinner(
+                        "proj", type, List.of(contract), SOURCE, Set.of(new ArtifactRef(ArtifactKind.TACTIC, "tdd"))));
 
         EffectiveMissionType winner = adapter.missionType("a-1", "software-dev");
+
+        assertThat(winner.held()).containsExactly(new HeldArtifact(ArtifactKind.TACTIC, "tdd"));
 
         assertThat(winner.holder()).isEqualTo(PROJ);
         assertThat(winner.type()).isSameAs(type);
@@ -60,7 +63,7 @@ class ActivationsMissionTypesTest {
     void anArtifactThatIsNoMissionTypeIsABugAndARefusalPassesUnchanged() {
         when(effective.missionTypeWinner(ID, "software-dev"))
                 .thenReturn(new EffectiveMissionTypeWinner(
-                        "proj", new Stub(ArtifactKind.MISSION_TYPE, "software-dev"), List.of(), SOURCE));
+                        "proj", new Stub(ArtifactKind.MISSION_TYPE, "software-dev"), List.of(), SOURCE, Set.of()));
         assertThatThrownBy(() -> adapter.missionType("a-1", "software-dev"))
                 .isInstanceOf(IllegalStateException.class)
                 .as("the fault names the read that lacks its mission type")
@@ -128,6 +131,7 @@ class ActivationsMissionTypesTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        List.of(),
                         List.of(),
                         List.of()))
                 .build();

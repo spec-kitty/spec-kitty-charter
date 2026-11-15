@@ -760,6 +760,84 @@ class ArtifactRemovalServiceTest {
         assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
     }
 
+    // ---- relationship removals keep every substep candidate scoped (FR-005)
+    // ------------------------------------------
+
+    private static final String DELEGATING_TYPE = """
+            schema_version: '1.0'
+            id: rx
+            title: Rx
+            description: A mission type whose step delegates.
+            steps:
+            - id: a
+              title: A
+              substeps:
+              - id: run
+                description: Run the tactic
+                delegates_to:
+                  kind: tactic
+                  candidates:
+                  - t
+            """;
+
+    private static final Relationship RX_SCOPE =
+            Relationship.of(urn("action:rx/a"), urn("tactic:t"), RelationType.SCOPE);
+
+    private static final Relationship RX_OTHER_SCOPE =
+            Relationship.of(urn("action:rx/a"), urn("directive:D1"), RelationType.SCOPE);
+
+    /**
+     * The org pack {@code qa} with {@code rx}, whose substep delegates to the tactic {@code t}; the registered shard holds
+     * the step's link, the candidate's scope edge and a scope edge to a directive no substep names.
+     */
+    private static Packs qaWithADelegatingType() {
+        return qa().file("missions/rx/rx.mission-type.yaml", DELEGATING_TYPE)
+                .file(RelationshipShard.SHARD_PATH, linkShard(List.of(link("rx", "a")), RX_SCOPE, RX_OTHER_SCOPE));
+    }
+
+    @Test
+    void deletingTheLastScopeEdgeOfASubstepCandidateIsRefusedAndNothingIsWritten(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithADelegatingType()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        RelationshipRemovalService relationships =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, removals.gate, rig.impact);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> relationships.remove(
+                new PackIdentifier("qa"),
+                PackQualifiedReference.parse("action:rx/a"),
+                PackQualifiedReference.parse("tactic:t"),
+                "*"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).isEqualTo("/to");
+            assertThat(violation.code()).isEqualTo("substep_delegation_unscoped");
+            assertThat(violation.detail()).contains("action:rx/a", "tactic:t");
+        });
+        assertThat(removals.filesOf("qa")).as("byte-identical").isEqualTo(before);
+    }
+
+    @Test
+    void deletingAScopeEdgeNoSubstepNeedsIsAccepted(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithADelegatingType()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        RelationshipRemovalService relationships =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, removals.gate, rig.impact);
+
+        relationships.remove(
+                new PackIdentifier("qa"),
+                PackQualifiedReference.parse("action:rx/a"),
+                PackQualifiedReference.parse("directive:D1"),
+                "*");
+
+        assertThat(rig.writeStore.registeredRelationships(new PackIdentifier("qa")))
+                .doesNotContain(RX_OTHER_SCOPE)
+                .contains(RX_SCOPE, link("rx", "a"));
+    }
+
     @Test
     void aStrayStepLinkIsRefusedWhileReRegisteringAnOwnLinkIsAccepted(@TempDir Path host) {
         Rig rig = new Rig(host);

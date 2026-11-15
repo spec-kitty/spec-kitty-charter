@@ -734,7 +734,8 @@ class MissionTypeBindingTest {
                                             prompt.title(), prompt.description(), prompt.preamble(), sections)),
                                     first.guidelines(),
                                     first.expectedInputArtifacts(),
-                                    first.expectedOutputArtifacts()));
+                                    first.expectedOutputArtifacts(),
+                                    List.of()));
                     return rebuilt(type, steps, type.onDemandSteps());
                 })));
 
@@ -784,7 +785,8 @@ class MissionTypeBindingTest {
                 step.prompt(),
                 step.guidelines(),
                 step.expectedInputArtifacts(),
-                step.expectedOutputArtifacts());
+                step.expectedOutputArtifacts(),
+                List.of());
     }
 
     private static MissionType rebuilt(MissionType type, List<MissionStep> steps, List<MissionStep> onDemand) {

@@ -22,7 +22,10 @@ public enum PackFindingCode {
     DRG_SCHEMA_ERROR(Severity.BLOCKING),
     /** An artifact file breaks its schema; validate mode only. */
     ARTIFACT_SCHEMA_ERROR(Severity.BLOCKING),
-    /** A step contract declares a step id twice; validate mode only. */
+    /**
+     * A step of a mission type declares a substep id twice (FR-004), or, until the step contract is retired, a step
+     * contract declares a step id twice; validate mode only. The load refuses such a mission type in its domain.
+     */
     DUPLICATE_STEP_ID(Severity.BLOCKING),
     /** Two artifacts share an id; validate mode only. */
     DUPLICATE_ARTIFACT_ID(Severity.BLOCKING),
@@ -76,7 +79,19 @@ public enum PackFindingCode {
      * is not one of its steps ({@link MissionStepLinkRule}). It is the violation code {@value MissionStepLinkRule#CODE}
      * at registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
      */
-    MISSION_STEP_UNLINKED(Severity.BLOCKING);
+    MISSION_STEP_UNLINKED(Severity.BLOCKING),
+    /**
+     * A substep's delegation candidate that is no artifact of the delegation's kind in the pack
+     * ({@link SubstepDelegationRule}, FR-005). It is the violation code {@value SubstepDelegationRule#UNRESOLVED} at
+     * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
+     */
+    SUBSTEP_DELEGATION_UNRESOLVED(Severity.BLOCKING),
+    /**
+     * A substep's delegation candidate the step's action has no {@code scope} edge to ({@link SubstepDelegationRule},
+     * FR-005). It is the violation code {@value SubstepDelegationRule#UNSCOPED} at registration and the cause of a
+     * {@code pack_unreadable} read; it has no refusal code of its own.
+     */
+    SUBSTEP_DELEGATION_UNSCOPED(Severity.BLOCKING);
 
     /** How a finding weighs. */
     public enum Severity {
