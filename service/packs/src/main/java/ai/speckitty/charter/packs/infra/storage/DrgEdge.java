@@ -11,25 +11,17 @@ import java.util.Optional;
  *
  * <p>Record equality is the round-trip fidelity assertion (ADR-0024): two DSOs are equal exactly when every
  * field matches, present-vs-absent included. The DSO carries <strong>no</strong> cross-field rule (it is a
- * plain mirror): the {@code impacts}-iff-the-{@code impacts}-relation rule lives in {@code PackPolicy} on the
- * read side, as do {@code Relationship}'s invariants (a parseable URN per endpoint, a known relation token, no
+ * plain mirror): {@code Relationship}'s invariants live in {@code PackPolicy} on the read side (a parseable URN per endpoint, a known relation token, no
  * self-loop). This keeps the DSO a faithful byte-for-byte mirror so a malformed field surfaces as a policy
  * fact rather than being refused at the persistence shape.
  *
  * @param source the edge's source as its URN token string
  * @param target the edge's target as its URN token string
  * @param relation the relation's token string, for example {@code requires}
- * @param impacts the signed {@code impacts} strength as written; empty for every other edge
  * @param when the edge's condition, as authored; empty when it has none
  * @param reason why the edge exists, as authored; empty when it has none
  */
-record DrgEdge(
-        String source,
-        String target,
-        String relation,
-        Optional<Double> impacts,
-        Optional<String> when,
-        Optional<String> reason) {
+record DrgEdge(String source, String target, String relation, Optional<String> when, Optional<String> reason) {
 
     /**
      * Checks that every field is present, the optional ones possibly empty but never {@code null}.
@@ -37,7 +29,6 @@ record DrgEdge(
      * @param source the edge's source token
      * @param target the edge's target token
      * @param relation the relation token
-     * @param impacts the signed {@code impacts} strength
      * @param when the edge's condition
      * @param reason why the edge exists
      */
@@ -45,7 +36,6 @@ record DrgEdge(
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(relation, "relation");
-        Objects.requireNonNull(impacts, "impacts");
         Objects.requireNonNull(when, "when");
         Objects.requireNonNull(reason, "reason");
     }

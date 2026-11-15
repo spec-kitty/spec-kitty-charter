@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.snakeyaml.engine.v2.api.Dump;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
@@ -96,8 +95,7 @@ final class GraphDocumentYaml {
                         required(edge, "target"),
                         required(edge, "relation"),
                         optional(edge, "when"),
-                        optional(edge, "reason"),
-                        edge.get("impacts") instanceof Number n ? Optional.of(n.doubleValue()) : Optional.empty()));
+                        optional(edge, "reason")));
             }
         }
         return edges;
@@ -149,7 +147,6 @@ final class GraphDocumentYaml {
             out.put("source", edge.source());
             out.put("target", edge.target());
             out.put("relation", edge.relation());
-            edge.impacts().ifPresent(strength -> out.put("impacts", strength));
             edge.when().ifPresent(when -> out.put("when", when));
             edge.reason().ifPresent(reason -> out.put("reason", reason));
             edges.add(out);

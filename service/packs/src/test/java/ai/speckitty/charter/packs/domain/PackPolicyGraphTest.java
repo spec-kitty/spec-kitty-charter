@@ -32,8 +32,8 @@ class PackPolicyGraphTest {
         return new RawGraph(FRAGMENT, RawGraph.Shape.FRAGMENT, nodes, edges);
     }
 
-    private static RawEdge edge(String source, String target, String relation, Double impacts) {
-        return new RawEdge(source, target, relation, Optional.ofNullable(impacts), Optional.empty(), Optional.empty());
+    private static RawEdge edge(String source, String target, String relation) {
+        return new RawEdge(source, target, relation, Optional.empty(), Optional.empty());
     }
 
     private static List<String> details(GraphBuild build) {
@@ -160,8 +160,7 @@ class PackPolicyGraphTest {
 
     @Test
     void edgesBindBothEndpointsWithTheirOptionalTexts() {
-        RawEdge raw = new RawEdge(
-                "tactic:a", "directive:b", "requires", Optional.empty(), Optional.of("w"), Optional.of("r"));
+        RawEdge raw = new RawEdge("tactic:a", "directive:b", "requires", Optional.of("w"), Optional.of("r"));
         GraphBuild build = build(List.of(raw));
         assertThat(build.findings()).isEmpty();
         assertThat(build.graph().relationships()).singleElement().satisfies(relationship -> {
@@ -175,7 +174,7 @@ class PackPolicyGraphTest {
 
     @Test
     void aNonUrnEndpointIsAFindingAndNotAnException() {
-        GraphBuild build = build(List.of(edge("tactic:a", "QA_404", "requires", null)));
+        GraphBuild build = build(List.of(edge("tactic:a", "QA_404", "requires")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
@@ -183,13 +182,13 @@ class PackPolicyGraphTest {
                         SHARD,
                         List.of("edges", "0"),
                         "qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"));
-        assertThat(details(build(List.of(edge("nope", "tactic:a", "requires", null)))))
+        assertThat(details(build(List.of(edge("nope", "tactic:a", "requires")))))
                 .containsExactly("qa/tactic.graph.yaml: edge endpoint 'nope' is not a URN");
     }
 
     @Test
     void aSelfLoopEdgeIsAFindingAndNotAnException() {
-        GraphBuild build = build(List.of(edge("tactic:a", "tactic:a", "requires", null)));
+        GraphBuild build = build(List.of(edge("tactic:a", "tactic:a", "requires")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build))
                 .containsExactly("qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
@@ -197,14 +196,14 @@ class PackPolicyGraphTest {
 
     @Test
     void aQualifiedEndpointOntoTheSameIdIsAnotherPacksArtifactAndNotASelfLoop() {
-        GraphBuild crossPack = build(List.of(edge("rival::tactic:a", "tactic:a", "requires", null)));
+        GraphBuild crossPack = build(List.of(edge("rival::tactic:a", "tactic:a", "requires")));
         assertThat(details(crossPack)).isEmpty();
         assertThat(crossPack.graph().relationships()).singleElement().satisfies(relationship -> {
             assertThat(relationship.fromPack()).contains("rival");
             assertThat(relationship.to()).isEqualTo(A);
         });
 
-        GraphBuild reference = build(List.of(edge("tactic:a", "rival::tactic:b", "requires", null)));
+        GraphBuild reference = build(List.of(edge("tactic:a", "rival::tactic:b", "requires")));
         assertThat(reference.graph().relationships()).singleElement().satisfies(relationship -> {
             assertThat(relationship.to()).isEqualTo(new Urn(NodeKind.TACTIC, "b"));
             assertThat(relationship.toPack()).contains("rival");
@@ -213,7 +212,7 @@ class PackPolicyGraphTest {
 
     @Test
     void anUnknownRelationIsAFinding() {
-        GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "befriends", null)));
+        GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "befriends")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: unknown relation 'befriends'");
     }
@@ -221,8 +220,8 @@ class PackPolicyGraphTest {
     @Test
     void anAuthoredEdgeToOrFromAGuardOrALifecycleIsAFinding() {
         // Neither is an authored edge endpoint until its contract set lands (#156, work breakdown item 13).
-        GraphBuild build = build(List.of(
-                edge("guard:a", "directive:b", "requires", null), edge("tactic:a", "lifecycle:wp", "scope", null)));
+        GraphBuild build =
+                build(List.of(edge("guard:a", "directive:b", "requires"), edge("tactic:a", "lifecycle:wp", "scope")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build))
                 .containsExactly(
@@ -273,7 +272,7 @@ class PackPolicyGraphTest {
     @Test
     void aDerivedRelationAuthoredAsAnEdgeIsAFinding() {
         // implemented_by is derived from a guard's own field (ADR-0054 decision 3), never authored as an edge.
-        GraphBuild build = build(List.of(edge("tactic:a", "asset:b", "implemented_by", null)));
+        GraphBuild build = build(List.of(edge("tactic:a", "asset:b", "implemented_by")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build))
                 .containsExactly("qa/tactic.graph.yaml: relation 'implemented_by' is derived from an artifact's own"
@@ -283,12 +282,7 @@ class PackPolicyGraphTest {
     @Test
     void anInTensionWithEdgeBindsAsATensionAndNeverAsARelationship() {
         GraphBuild build = build(List.of(new RawEdge(
-                "tactic:a",
-                "directive:b",
-                "in_tension_with",
-                Optional.empty(),
-                Optional.of("always"),
-                Optional.of("both stay valid"))));
+                "tactic:a", "directive:b", "in_tension_with", Optional.of("always"), Optional.of("both stay valid"))));
 
         assertThat(build.findings()).isEmpty();
         assertThat(build.graph().relationships()).isEmpty();
@@ -299,8 +293,7 @@ class PackPolicyGraphTest {
     @Test
     void aTensionAndAStructuralRelationshipOnTheSamePairBothBind() {
         GraphBuild build = build(List.of(
-                edge("tactic:a", "directive:b", "in_tension_with", null),
-                edge("directive:b", "tactic:a", "requires", null)));
+                edge("tactic:a", "directive:b", "in_tension_with"), edge("directive:b", "tactic:a", "requires")));
 
         assertThat(build.findings()).isEmpty();
         assertThat(build.graph().tensions()).containsExactly(new Tension(A, B, Optional.empty(), Optional.empty()));
@@ -311,22 +304,9 @@ class PackPolicyGraphTest {
     }
 
     @Test
-    void anInTensionWithEdgeThatAlsoWritesImpactsIsAFindingWhileAValidTensionBesideItBinds() {
-        GraphBuild build = build(List.of(
-                edge("tactic:a", "directive:b", "in_tension_with", -0.5),
-                edge("tactic:a", "directive:c", "in_tension_with", null)));
-
-        assertThat(build.graph().relationships()).isEmpty();
-        assertThat(build.graph().tensions())
-                .containsExactly(new Tension(A, new Urn(NodeKind.DIRECTIVE, "c"), Optional.empty(), Optional.empty()));
-        assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: an in_tension_with edge has no 'impacts'");
-    }
-
-    @Test
     void aTensionWhoseEndpointIsNotAUrnOrThatJoinsARuleToItselfIsAFinding() {
         GraphBuild build = build(List.of(
-                edge("nonsense", "directive:b", "in_tension_with", null),
-                edge("tactic:a", "tactic:a", "in_tension_with", null)));
+                edge("nonsense", "directive:b", "in_tension_with"), edge("tactic:a", "tactic:a", "in_tension_with")));
 
         assertThat(build.graph().tensions()).isEmpty();
         assertThat(details(build))
@@ -342,8 +322,8 @@ class PackPolicyGraphTest {
                 RawGraph.Shape.SHARD,
                 List.of(),
                 List.of(
-                        edge("tactic:a", "directive:b", "requires", null),
-                        edge("tactic:a", "directive:c", "in_tension_with", null)));
+                        edge("tactic:a", "directive:b", "requires"),
+                        edge("tactic:a", "directive:c", "in_tension_with")));
 
         GraphBuild build = PackPolicy.registeredGraph("qa", registered);
 
@@ -365,58 +345,17 @@ class PackPolicyGraphTest {
                                         "registered.graph.yaml",
                                         RawGraph.Shape.SHARD,
                                         List.of(),
-                                        List.of(edge("tactic:a", "directive:b", "requires", null))))
+                                        List.of(edge("tactic:a", "directive:b", "requires"))))
                         .findings())
                 .isEmpty();
     }
 
     @Test
-    void anImpactsEdgeNeedsItsStrength() {
-        GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "impacts", null)));
-        assertThat(build.graph().relationships()).isEmpty();
-        assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: an impacts edge is missing 'impacts'");
-    }
-
-    @Test
-    void anotherRelationMustNotCarryImpacts() {
-        GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "scope", 0.5)));
-        assertThat(build.graph().relationships()).isEmpty();
-        assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: a scope edge has no 'impacts'");
-    }
-
-    @Test
-    void aStrengthInsideTheRangeBindsButIsNotCarriedOnTheRelationship() {
-        GraphBuild build = build(List.of(
-                edge("tactic:a", "directive:b", "impacts", 1.0), edge("tactic:a", "directive:b", "impacts", -1.0)));
-        assertThat(build.findings()).isEmpty();
-        assertThat(build.graph().relationships())
-                .hasSize(2)
-                .allSatisfy(relationship -> assertThat(relationship.type()).isEqualTo(RelationType.IMPACTS));
-    }
-
-    @Test
-    void aStrengthOutsideTheRangeNamesTheValueAsDoubleToStringFormatsIt() {
-        record Case(double value, String text) {}
-        for (Case c : List.of(
-                new Case(1.5, "1.5"),
-                new Case(-2.0, "-2.0"),
-                new Case(Double.NaN, "NaN"),
-                new Case(Double.POSITIVE_INFINITY, "Infinity"),
-                new Case(Double.NEGATIVE_INFINITY, "-Infinity"))) {
-            GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "impacts", c.value())));
-            assertThat(build.graph().relationships()).as(c.text()).isEmpty();
-            assertThat(details(build))
-                    .as(c.text())
-                    .containsExactly("qa/tactic.graph.yaml: 'impacts' " + c.text() + " is outside [-1, 1]");
-        }
-    }
-
-    @Test
     void anEdgeWithAFindingIsNotAddedAndItsNeighboursAre() {
         GraphBuild build = build(List.of(
-                edge("tactic:a", "directive:b", "requires", null),
-                edge("tactic:a", "QA_404", "requires", null),
-                edge("tactic:a", "directive:b", "suggests", null)));
+                edge("tactic:a", "directive:b", "requires"),
+                edge("tactic:a", "QA_404", "requires"),
+                edge("tactic:a", "directive:b", "suggests")));
         assertThat(build.graph().relationships())
                 .extracting(r -> r.type())
                 .containsExactly(RelationType.REQUIRES, RelationType.SUGGESTS);
@@ -424,10 +363,11 @@ class PackPolicyGraphTest {
     }
 
     @Test
-    void anEdgeReportsItsFirstFaultInTodaysOrderRelationBeforeStrengthBeforeEndpoint() {
-        GraphBuild build = build(List.of(edge("nope", "directive:b", "befriends", 9.0)));
+    void anEdgeReportsItsFirstFaultInTodaysOrderRelationBeforeEndpoint() {
+        GraphBuild build = build(List.of(edge("nope", "directive:b", "befriends")));
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: unknown relation 'befriends'");
-        GraphBuild second = build(List.of(edge("nope", "directive:b", "impacts", 9.0)));
-        assertThat(details(second)).containsExactly("qa/tactic.graph.yaml: 'impacts' 9.0 is outside [-1, 1]");
+        // impacts is retired (slice F): it is an unknown relation, reported before the endpoint.
+        GraphBuild second = build(List.of(edge("nope", "directive:b", "impacts")));
+        assertThat(details(second)).containsExactly("qa/tactic.graph.yaml: unknown relation 'impacts'");
     }
 }

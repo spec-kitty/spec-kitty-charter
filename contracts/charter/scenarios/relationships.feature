@@ -50,6 +50,27 @@ Feature: A relationship may be authored from a mission type
       """
     And the answer has no link "self"
 
+  Scenario: A retired relation is refused as an unknown type
+    Slice F (operator ruling DM-01M7B1YXJHQCBSYJ145NJC77V5): impacts, replaces and delegates_to are retired, so a
+    registration that names one is refused and writes nothing. scope, registered from the same source, is the control.
+    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
+      """
+      {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
+      """
+    Then the response status is 201
+    When I remember the ETag
+    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "mission_type:research", "to": "directive:GUARD", "type": "impacts"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "mission_type:research", "to": "directive:GUARD", "type": "scope"}
+      """
+    Then the response status is 201
+
   Scenario: A relationship from a mission type the pack does not hold is still a conflict
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """

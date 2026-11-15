@@ -100,8 +100,7 @@ public final class PackPolicy {
     private static final List<String> FRAGMENT_ROOT_KEYS = List.of(NODES, EDGES);
     private static final List<String> SHARD_NODE_KEYS = List.of("urn", "kind", "label", "provenance", "tags");
     private static final List<String> FRAGMENT_NODE_KEYS = List.of("id", "kind", "title", "body_path");
-    private static final List<String> SHARD_EDGE_KEYS =
-            List.of("source", "target", "relation", "when", "reason", "impacts");
+    private static final List<String> SHARD_EDGE_KEYS = List.of("source", "target", "relation", "when", "reason");
     // #509: a fragment's edge holds a when, as the org-fragment schema's _OrgDRGEdge declares, in a shard edge's order.
     private static final List<String> FRAGMENT_EDGE_KEYS = SHARD_EDGE_KEYS;
 
@@ -654,15 +653,12 @@ public final class PackPolicy {
 
     /**
      * Builds the graph of one document and collects what does not bind: the URN binding, the tension edges, which
-     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0045), and the {@code impacts} rules, NaN and
-     * the infinities included. Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
+     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0045). Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
      *
      * <p>A node or edge with a finding is left out of the graph, so the constructor checks of {@link Relationship}
      * and {@link Tension} stay programming-error guards and never fire. An edge reports its first fault only, checked
-     * in the order the adapter's reader used: relation, then {@code impacts}, then the endpoints, then a self-loop.
-     * The schema normally refuses these first; the domain check keeps the same text for a document that reaches here
-     * anyway. The {@code impacts} strength is validated here but is not carried on the bound {@link Relationship}
-     * (ADR-0025: the signed strength lives on the storage DSO, not on the domain type).
+     * in the order the adapter's reader used: relation, then the endpoints, then a self-loop. The schema normally
+     * refuses these first; the domain check keeps the same text for a document that reaches here anyway.
      *
      * @param packName the pack's configured name, which prefixes the origin in a text
      * @param raw the document as written
@@ -789,8 +785,7 @@ public final class PackPolicy {
 
     /**
      * Binds one edge; the result is the {@link Relationship}, the {@link Tension} of an {@code in_tension_with} edge, or
-     * the finding text for the first fault. The {@code impacts} strength is validated here but not carried on the
-     * {@link Relationship} (ADR-0025: the signed strength is a storage-DSO concern).
+     * the finding text for the first fault.
      */
     private static Object edge(RawEdge raw, String origin) {
         if (TENSION.equals(raw.relation())) {
@@ -803,10 +798,6 @@ public final class PackPolicy {
         if (relation.get().derived()) {
             return origin + ": relation '" + raw.relation() + "' is derived from an artifact's own field, never"
                     + " authored as an edge";
-        }
-        Optional<String> strengthProblem = strengthProblem(relation.get(), raw.impacts());
-        if (strengthProblem.isPresent()) {
-            return origin + ": " + strengthProblem.get();
         }
         Object endpoints = endpoints(raw, origin, relation);
         return endpoints instanceof Endpoints bound
@@ -822,13 +813,9 @@ public final class PackPolicy {
     }
 
     /**
-     * Binds a tension edge, kept as written (ADR-0036 Decision 4: the reader never turns it around). A tension has no
-     * strength (ADR-0028 Decision 1), so an {@code impacts} on it is a fault, never dropped.
+     * Binds a tension edge, kept as written (ADR-0036 Decision 4: the reader never turns it around).
      */
     private static Object tension(RawEdge raw, String origin) {
-        if (raw.impacts().isPresent()) {
-            return origin + ": an " + TENSION + " edge has no 'impacts'";
-        }
         Object endpoints = endpoints(raw, origin, Optional.empty());
         return endpoints instanceof Endpoints bound
                 ? new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason())
@@ -884,30 +871,6 @@ public final class PackPolicy {
         } catch (IllegalArgumentException malformed) {
             return Optional.empty();
         }
-    }
-
-    /** An {@code impacts} edge carries a strength in [-1, 1]; no other edge carries one. */
-    private static Optional<String> strengthProblem(RelationType relation, Optional<Double> impacts) {
-        if (relation != RelationType.IMPACTS) {
-            return impacts.isPresent()
-                    ? Optional.of("a " + relation.token() + " edge has no 'impacts'")
-                    : Optional.empty();
-        }
-        if (impacts.isEmpty()) {
-            return Optional.of("an impacts edge is missing 'impacts'");
-        }
-        double strength = impacts.get();
-        return isStrength(strength) ? Optional.empty() : Optional.of("'impacts' " + strength + " is outside [-1, 1]");
-    }
-
-    /**
-     * Whether {@code value} is a valid {@code impacts} strength: in [-1, 1], NaN and the infinities excluded.
-     *
-     * @param value the strength
-     * @return {@code true} when it lies in [-1, 1]
-     */
-    private static boolean isStrength(double value) {
-        return value >= -1.0 && value <= 1.0;
     }
 
     /**

@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test;
 @DisplayName("DRG documents as authored")
 class GraphDocumentTest {
 
-    private static final GraphDocument.Edge A = new GraphDocument.Edge(
-            "tactic:a", "directive:b", "requires", Optional.empty(), Optional.empty(), Optional.empty());
-    private static final GraphDocument.Edge B = new GraphDocument.Edge(
-            "tactic:c", "directive:d", "suggests", Optional.of("always"), Optional.of("why"), Optional.of(0.5));
+    private static final GraphDocument.Edge A =
+            new GraphDocument.Edge("tactic:a", "directive:b", "requires", Optional.empty(), Optional.empty());
+    private static final GraphDocument.Edge B =
+            new GraphDocument.Edge("tactic:c", "directive:d", "suggests", Optional.of("always"), Optional.of("why"));
 
     @Test
     @DisplayName("edges compare in canonical form: order and duplicates do not count")
@@ -56,7 +56,7 @@ class GraphDocumentTest {
                 List.of(new GraphDocument.FragmentNode(
                         "D", "directives", Optional.of("Title"), Optional.of("directives/d.directive.yaml"))),
                 List.of(new GraphDocument.Edge(
-                        "directive:D", "tactic:c", "suggests", Optional.empty(), Optional.of("r"), Optional.of(1.0))));
+                        "directive:D", "tactic:c", "suggests", Optional.empty(), Optional.of("r"))));
 
         FileRead<GraphDocument> read =
                 GraphDocumentYaml.read(GraphDocumentYaml.write(fragment), Shape.FRAGMENT, "drg/fragment.yaml");

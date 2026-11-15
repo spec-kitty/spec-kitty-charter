@@ -18,7 +18,7 @@ import org.snakeyaml.engine.v2.common.FlowStyle;
 /**
  * Writes a {@link DoctrineGraph} as a graph shard, or as an org fragment, in the canonical key order of the packs. Each
  * {@link Relationship} is mapped to its {@link DrgEdge} DSO via {@link RelationshipMapper} and emitted in the edge key
- * order ({@code source, target, relation, impacts?, when?, reason?}); each {@link Tension} is written back as the
+ * order ({@code source, target, relation, when?, reason?}); each {@link Tension} is written back as the
  * {@code in_tension_with} edge it was read from, with no strength (ADR-0028, ADR-0036 Decision 4, ADR-0045).
  *
  * <p>Every field the document shape holds is written, and a field it cannot hold is refused rather than dropped
@@ -108,14 +108,13 @@ public final class GraphShardWriter {
         List<Object> edges = new ArrayList<>();
         for (Relationship relationship : graph.relationships()) {
             DrgEdge edge = RelationshipMapper.toDso(relationship);
-            edges.add(edge(edge.source(), edge.target(), edge.relation(), edge.impacts(), edge.when(), edge.reason()));
+            edges.add(edge(edge.source(), edge.target(), edge.relation(), edge.when(), edge.reason()));
         }
         for (Tension tension : graph.tensions()) {
             edges.add(edge(
                     tension.fromReference(),
                     tension.toReference(),
                     PackPolicy.TENSION,
-                    Optional.empty(),
                     tension.when(),
                     tension.rationale()));
         }
@@ -123,17 +122,11 @@ public final class GraphShardWriter {
     }
 
     private static Map<String, Object> edge(
-            String source,
-            String target,
-            String relation,
-            Optional<Double> impacts,
-            Optional<String> when,
-            Optional<String> reason) {
+            String source, String target, String relation, Optional<String> when, Optional<String> reason) {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("source", source);
         out.put("target", target);
         out.put("relation", relation);
-        impacts.ifPresent(strength -> out.put("impacts", strength));
         when.ifPresent(condition -> out.put("when", condition));
         reason.ifPresent(text -> out.put("reason", text));
         return out;

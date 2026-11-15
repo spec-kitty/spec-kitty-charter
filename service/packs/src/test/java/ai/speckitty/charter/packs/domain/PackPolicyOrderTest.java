@@ -247,8 +247,7 @@ class PackPolicyOrderTest {
                 List.of(
                         new PackContents.RawNode("tactic:a", "tactic", Optional.empty()),
                         new PackContents.RawNode("bad", "tactic", Optional.empty())),
-                List.of(new PackContents.RawEdge(
-                        "tactic:a", "nope", "requires", Optional.empty(), Optional.empty(), Optional.empty())));
+                List.of(new PackContents.RawEdge("tactic:a", "nope", "requires", Optional.empty(), Optional.empty())));
         PackContents c = contents(
                 descriptor(Optional.of(PackLevel.ORG)),
                 List.of(new FileRead.Read<>("a.graph.yaml", raw)),

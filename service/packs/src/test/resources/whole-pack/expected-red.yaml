@@ -36,22 +36,4 @@ kinds:
       A companion (ADR-0066) is modelled with the step enhancement that names it, and the census classes it under the
       owner's kind; a file classed under this schema is a fragment no enhancement names, which the load refuses.
     issue: "#194"
-files:
-  - path: org-base/drg/fragment.yaml
-    at: >-
-      refused: read-back: the written fragment does not build: [PackFinding[code=DRG_SCHEMA_ERROR,
-      file=drg/fragment.yaml, place=[edges, 2], detail=org-base/drg/fragment.yaml: an impacts edge is missing
-      'impacts']]
-    reason: >-
-      The org fragment's one impacts edge loses its strength in the domain, so the written fragment does not build on
-      read-back; its written copy stays unpaired.
-    issue: "#477"
-  - path: project/project.graph.yaml
-    at: >-
-      refused: read-back: the written shard does not build: [PackFinding[code=DRG_SCHEMA_ERROR,
-      file=project.graph.yaml, place=[edges, 1], detail=project/project.graph.yaml: an impacts edge is missing
-      'impacts']]
-    reason: >-
-      The project shard's impacts edge loses its strength in the domain, so the written shard does not build on
-      read-back; its written copy stays unpaired. The project pack had no gate run before #547.
-    issue: "#477"
+files: []

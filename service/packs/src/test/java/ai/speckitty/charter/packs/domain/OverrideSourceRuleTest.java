@@ -145,8 +145,7 @@ class OverrideSourceRuleTest {
                 FILE,
                 RawGraph.Shape.SHARD,
                 List.of(),
-                List.of(new RawEdge(
-                        source, TARGET, "overrides", Optional.empty(), Optional.empty(), Optional.empty())));
+                List.of(new RawEdge(source, TARGET, "overrides", Optional.empty(), Optional.empty())));
         return new PackContents(
                 new PackRoot("main", Optional.of(PackLevel.ORG), "loc"),
                 new FileRead.Read<>(

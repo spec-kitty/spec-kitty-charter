@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -299,9 +299,11 @@ class VocabularyEqualityTest {
 
     @Test
     void theSchemasRelationsAreTheDomainsRelationsPlusExactlyTheTensionSpelling() throws IOException {
-        // A derived relation type (implemented_by, ADR-0054 decision 3) is not a Relation: no document spells it.
-        Set<String> domain = new TreeSet<>(
-                Arrays.stream(Relation.values()).map(Relation::token).toList());
+        // A derived relation type (implemented_by, ADR-0054 decision 3) is never authored: no document spells it.
+        Set<String> domain = new TreeSet<>(Arrays.stream(RelationType.values())
+                .filter(type -> !type.derived())
+                .map(RelationType::token)
+                .toList());
         Set<String> shard = new TreeSet<>(
                 texts(schema("graph-shard").get("$defs").get("Relation").get("enum")));
         Set<String> fragment = new TreeSet<>(
@@ -322,12 +324,7 @@ class VocabularyEqualityTest {
                         RawGraph.Shape.SHARD,
                         List.of(),
                         List.of(new RawEdge(
-                                "tactic:a",
-                                "tactic:b",
-                                TENSION_SPELLING,
-                                Optional.empty(),
-                                Optional.empty(),
-                                Optional.empty()))));
+                                "tactic:a", "tactic:b", TENSION_SPELLING, Optional.empty(), Optional.empty()))));
         assertThat(build.findings()).isEmpty();
         assertThat(build.graph().tensions()).hasSize(1);
         assertThat(build.graph().relationships()).isEmpty();

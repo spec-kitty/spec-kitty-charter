@@ -190,9 +190,7 @@ final class PackSchemas {
         for (NonFinite entry : nonFinite) {
             List<String> pointer = entry.pointer();
             boolean refused = violations.stream().anyMatch(v -> v.pointer().equals(pointer));
-            if (isStrengthOfAnEdge(kind, pointer)) {
-                violations.removeIf(v -> v.pointer().equals(pointer) && "type".equals(v.keyword()));
-            } else if (!refused && refusingNumbers.containsKey(pointer)) {
+            if (!refused && refusingNumbers.containsKey(pointer)) {
                 // The token string was accepted, but a number is refused here: the schema declares a string. The
                 // violation carries the arguments of the probe run's own (the expected type), one per branch, so the
                 // domain words it, and collapses a nullable, as it would a number the file really holds.
@@ -266,11 +264,8 @@ final class PackSchemas {
      * <p>A string-typed field would accept the token, so {@link #validate} validates a second tree in which each
      * non-finite value is the number 0.5, and adds a {@code type} violation at a pointer only where that run also
      * reports one: the schema refuses numbers there. A free-form location ({@code additionalProperties: true}, an
-     * untyped value) accepts a number, so it accepts the non-finite value too. The one place a number is all a schema asks is the {@code impacts} of an edge in a
-     * graph-shard or an org-fragment: its range belongs to the domain ({@code 'impacts' NaN is outside [-1, 1]}),
-     * which reads the real value from the YAML tree, so the validator's {@code type} violation there is dropped and
-     * the domain's is the only finding. Every other schema, WP08's FULL scope included, refuses a non-finite number
-     * where it declares a number or an integer.
+     * untyped value) accepts a number, so it accepts the non-finite value too. Every schema refuses a non-finite
+     * number where it declares a number or an integer.
      */
     static JsonNode toTree(@Nullable Object yamlTree) {
         if (yamlTree == null) {
@@ -318,14 +313,6 @@ final class PackSchemas {
                 path.remove(path.size() - 1);
             }
         }
-    }
-
-    /** {@code edges/<i>/impacts} of a graph shard or an org fragment: the one number whose range the domain judges. */
-    private static boolean isStrengthOfAnEdge(String kind, List<String> pointer) {
-        return ("graph-shard".equals(kind) || "org-fragment".equals(kind))
-                && pointer.size() == 3
-                && "edges".equals(pointer.get(0))
-                && "impacts".equals(pointer.get(2));
     }
 
     private static SchemaViolation violation(String file, Error error) {

@@ -71,10 +71,7 @@ final class EndpointTable {
             case OVERRIDES -> diagonal(pairs, activatableExcept(NodeKind.STEP_ENHANCEMENT));
             case REJECTS -> product(pairs, GUIDANCE, EnumSet.of(NodeKind.ANTI_PATTERN));
             case IMPLEMENTED_BY -> pairs.add(new EndpointPair(NodeKind.GUARD, NodeKind.ASSET));
-            default -> {
-                // impacts, replaces and delegates_to are retired (operator ruling DM-01M7B1YXJHQCBSYJ145NJC77V5): no
-                // row, so no edge binds.
-            }
+            default -> throw new IllegalStateException("No endpoint row for " + type);
         }
         return Collections.unmodifiableSet(pairs);
     }

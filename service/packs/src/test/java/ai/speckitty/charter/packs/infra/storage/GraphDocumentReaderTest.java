@@ -69,7 +69,7 @@ class GraphDocumentReaderTest {
                   relation: requires
                   when: always
                   reason: because
-                - {source: tactic:t, target: tactic:u, relation: impacts, impacts: -1}
+                - {source: tactic:t, target: tactic:u, relation: refines}
                 - {source: tactic:t, target: tactic:u, relation: in_tension_with}
                 """, Shape.SHARD, SHARD);
 
@@ -82,27 +82,10 @@ class GraphDocumentReaderTest {
         assertThat(raw.edges())
                 .containsExactly(
                         new RawEdge(
-                                "tactic:t",
-                                "directive:d",
-                                "requires",
-                                Optional.empty(),
-                                Optional.of("always"),
-                                Optional.of("because")),
-                        new RawEdge(
-                                "tactic:t",
-                                "tactic:u",
-                                "impacts",
-                                Optional.of(-1.0),
-                                Optional.empty(),
-                                Optional.empty()),
+                                "tactic:t", "directive:d", "requires", Optional.of("always"), Optional.of("because")),
+                        new RawEdge("tactic:t", "tactic:u", "refines", Optional.empty(), Optional.empty()),
                         // The tension's spelling is still the word on the page; the domain binds it.
-                        new RawEdge(
-                                "tactic:t",
-                                "tactic:u",
-                                "in_tension_with",
-                                Optional.empty(),
-                                Optional.empty(),
-                                Optional.empty()));
+                        new RawEdge("tactic:t", "tactic:u", "in_tension_with", Optional.empty(), Optional.empty()));
     }
 
     @Test
@@ -163,12 +146,7 @@ class GraphDocumentReaderTest {
         assertThat(raw.nodes()).containsExactly(new RawNode("QA_001", "directives", Optional.of("Traceability")));
         assertThat(raw.edges())
                 .containsExactly(new RawEdge(
-                        "directive:QA_001",
-                        "directive:DIRECTIVE_010",
-                        "suggests",
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()));
+                        "directive:QA_001", "directive:DIRECTIVE_010", "suggests", Optional.empty(), Optional.empty()));
     }
 
     @Test
@@ -242,27 +220,6 @@ class GraphDocumentReaderTest {
             assertThat(relationship.when()).contains(text);
             assertThat(relationship.rationale()).contains(text);
         });
-    }
-
-    @Test
-    void aStrengthThatIsNotFiniteIsAFactTheDomainJudgesNotAnInvalidNumber() {
-        RawGraph raw = read(
-                HEADER + "nodes: []\nedges:\n"
-                        + "- {source: tactic:t, target: tactic:u, relation: impacts, impacts: .nan}\n"
-                        + "- {source: tactic:t, target: tactic:u, relation: impacts, impacts: .inf}\n"
-                        + "- {source: tactic:t, target: tactic:u, relation: impacts, impacts: 2}\n",
-                Shape.SHARD,
-                SHARD);
-
-        assertThat(raw.edges())
-                .extracting(e -> e.impacts().orElseThrow())
-                .containsExactly(Double.NaN, Double.POSITIVE_INFINITY, 2.0);
-        assertThat(PackPolicy.graph("qa", raw).findings())
-                .extracting(PackFinding::detail)
-                .containsExactly(
-                        "qa/tactic.graph.yaml: 'impacts' NaN is outside [-1, 1]",
-                        "qa/tactic.graph.yaml: 'impacts' Infinity is outside [-1, 1]",
-                        "qa/tactic.graph.yaml: 'impacts' 2.0 is outside [-1, 1]");
     }
 
     @Test
@@ -394,19 +351,17 @@ class GraphDocumentReaderTest {
     }
 
     @Test
-    void aStrengthThatIsNoNumberIsTheKeywordTypeAtTheFieldWithTheFoundAndExpectedTypes() {
+    void anEdgeThatStillWritesImpactsIsTheKeywordAdditionalPropertiesNamingIt() {
+        // The impacts relation and its strength are retired (slice F): an edge that writes the key is refused.
         FileRead.Unreadable<RawGraph> bad = unreadable(
-                HEADER
-                        + "nodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: strong}\n",
+                HEADER + "nodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: refines, impacts: 0.5}\n",
                 Shape.SHARD,
                 SHARD);
 
         SchemaViolation violation = only(bad);
-        assertThat(violation.keyword()).isEqualTo("type");
-        assertThat(violation.pointer()).containsExactly("edges", "0", "impacts");
-        assertThat(violation.value()).contains("strong");
-        assertThat(violation.args()).containsEntry("0", "string").containsEntry("1", "number");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: 'impacts' must be a number");
+        assertThat(violation.keyword()).isEqualTo("additionalProperties");
+        assertThat(violation.pointer()).containsExactly("edges", "0");
+        assertThat(violation.property()).contains("impacts");
     }
 
     @Test
