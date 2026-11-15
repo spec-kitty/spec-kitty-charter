@@ -1,0 +1,209 @@
+{
+  "mission_slug": "slice-f-kind-taxonomy-01M7B19K",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "A client reads the kind taxonomy at GET /offering/kinds (#112): kinds[] and relations[] with allowed {source,target} endpoint pairs, in model order",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: contracts/charter/paths/offering_kinds.yaml (getKindTaxonomy); schemas KindTaxonomy/KindRow/RelationRow/EndpointPair.yaml; contracts/charter/scenarios/offering.feature 'The kind taxonomy lists every kind and every relation, each relation with the kinds it may connect' + 304/ETag scenario; root.feature 'The kinds link of the root answers the kind taxonomy'; service/packs/src/test/java/.../infra/api/OfferingControllerTest#theContractsExampleIsTheServedTaxonomy; ADR-0077 decision 1",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:56:08.158573+00:00",
+      "notes": "Ruling DM-01M7B1YE4J84K0T4ZA27M48QKG. The spec's authoredInGraphs fact is served as declarableInGraphs + edgeTarget (NodeKind split, ADR-0077 d1); links are the templated 'artifacts' link per listed kind. All suites green at 7521d546c."
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "The taxonomy carries no effective_when_absent/selection_overlayable/org_requirable fact; the merge-minor deferral of R18 is removed from the contract docs",
+      "proof_type": "inspection",
+      "evidence": "lane-j 7521d546c: contracts/charter/schemas/KindTaxonomy.yaml + KindRow.yaml (additionalProperties:false, no org facts; descriptions state they are excluded); paths/offering_kinds.yaml description 'holds none of core's organization facts'; the 'R18 deferred to the minor that brings merge' text removed (git diff main...7521d546c -- contracts docs); ADR-0077 decision 1",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:09.575155+00:00",
+      "notes": "Remaining mentions of the three facts are only the exclusion statements, docs/plans history and docs/api/python-package.md (core's in-process surface, out of scope)."
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "A parity test keeps the served taxonomy equal to the domain's kind and relation model, with skewed positive controls",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java#theServedKindTaxonomyIsTheDomainsKindsAndRelationsAndTheFileKindTable + 7 theTaxonomyCheckFailsWhen... skewed controls (plural, lost endpoint, flipped direction, listed/declarable/edgeTarget facts, artifactKind); OfferingControllerTest#theContractsExampleIsTheServedTaxonomy",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:15.453206+00:00",
+      "notes": ":packs green at 7521d546c."
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "A mission-type step authors substeps: ordered, one-level {id, description, command, inputs, delegates_to {kind, candidates}, guidance}; ids unique within the step; served in authored order in both trees",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: contracts/packs/schemas/mission-type.schema.json $defs Substep/SubstepInput/SubstepDelegation; service/missions/src/test/java/.../missions/domain/SubstepTest.java (#aStepKeepsItsSubstepsInOrderAndOnce); planted/duplicate-step-id (substep id repeat = duplicate_step_id); scenarios mission-types.feature:972 'A step serves its substeps in authored order...' and effective-mission-types.feature:737 'A step's substeps are served under the activation...'; ADR-0077 decision 2",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:20.807718+00:00",
+      "notes": "Ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9 (flat list, one level, all fields kept)."
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Every substep delegates_to candidate resolves to an artifact of the named kind and is scope-linked from the step's action; same-pack checked at load, qualified <pack>::<id> at compose and registration; delegated kind is a guidance kind (agent_profile dropped by ruling)",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: mission-types.feature:1080 outline (substep_delegation_unresolved / substep_delegation_unscoped), :1169 (compose: closure unreadable), :1253 (registration vs named base pack); planted r35-substep-delegation-unresolved, r36-substep-delegation-unscoped (SubstepDelegationPlantsTest); SubstepDelegationRuleTest, HeldCandidatesTest; SubstepTest#anAgentProfileIsNoDelegationKind; mission-type.schema.json SubstepDelegation.kind enum = directive|tactic|styleguide|toolguide|paradigm|procedure; pack-removal.feature:788/:844",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:26.747200+00:00",
+      "notes": "Amended by ruling DM-01M7DTN8JWR4G1P35NXGCMS65M: a substep never delegates to agent_profile (ADR-0032 d1); guidance kinds only. Type removal drops own requires+scope edges (DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ, DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6, DM-01M7F1ARDGCHPSB62QNY0EZW7Y)."
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "mission_step_contract is retired outright (#514): kind/node values, getEffectiveMissionStepContract, schemas, params, responses, examples, refusal code, step-contract link, preset/activation members, pack schema, file kinds, domain types; step-contract files/fragments refused as retired file kinds",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: commit 25875f871 feat(WP08); contracts/packs/file-kinds.yaml retired: **/*.step-contract.yaml and **/mission_step_contract.graph.yaml; RetiredFilesTest (store + validate mode refuse by name); contracts/charter/scenarios/registration/retired-files.feature; removed-routes.feature outlines 'A retired step contract route answers 404 kind_not_found' and '?kind= filter ... 400'; RetiredNamesScanTest (0 hits in service/*/src/main and contracts); mission-step-contract.schema.json deleted; changes/2026-11-14-kind-taxonomy-and-step-authority-breaking.md",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:31.717424+00:00",
+      "notes": "git grep of mission_step_contract|MissionStepContract over service/*/src/main, contracts/charter/{paths,schemas}, contracts/packs/schemas: 0 hits."
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "#533 is closed as moot, with evidence that the literal step-contract read no longer exists",
+      "proof_type": "inspection",
+      "evidence": "lane-j 7521d546c: docs/adr/0074-the-remaining-cutover-reads-and-their-paths.md decision 12 amendment 'the step-contract gap (#533) is closed as moot'; ADR-0077 decision 3; path activations_..._mission_step_contract_contractId.yaml deleted; removed-routes.feature covers /activations/a-1/artifacts/mission_step_contract/specify (+ /references) answering 404 kind_not_found; closing comment and 'Closes #533' in research/closeout-evidence.md (branch slice-f-537-kind-taxonomy)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:37.503475+00:00",
+      "notes": "The GitHub closure itself happens at landing via 'Closes #533' in the PR body (orchestrator posts); the moot evidence is delivered in code/ADR."
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Example packs and fixtures move step-contract content into step substeps (5 built-in files, planted and digest fixtures); the review gate becomes the foundation lifecycle guard on in_progress -> for_review",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: service/packs/src/testFixtures/resources/example-packs/built-in/missions/software-dev/software-dev.mission-type.yaml (specify/plan/tasks/implement steps with substeps), built_in_step_contracts/** and mission_step_contract.graph.yaml deleted; lifecycles/work-package.lifecycle.yaml in_progress->for_review guard ref spec-kitty-pre-review (guards/spec-kitty-pre-review.guard.yaml); planted/duplicate-step-id retargeted to substeps; digest-baseline fixture recaptured (PackDigestFixtureTest); commits 8d05393c7 (WP01), 25875f871 (WP08)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:42.743917+00:00",
+      "notes": "Deviation (low): the digest-baseline fixture's single step-contract (m-first, one 'bootstrap' substep) was removed with fingerprint recaptured, not folded into m.mission-type.yaml substeps, as WP08 T040 planned; the fixture exists for the fingerprint, not content."
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "An authored action_sequence or template_set in a mission type is refused as an unknown field by name; one invalid example pack per field and a @contract scenario (#520)",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: contracts/charter/scenarios/mission-types.feature:674 outline 'A whole-pack registration whose mission type authors <field> is refused, naming the field' (action_sequence, template_set); planted r33-authored-action-sequence, r34-authored-template-set (MissionTypePlantsTest); ADR-0077 decision 4",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:48.179557+00:00",
+      "notes": ""
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "template_set is removed from the project charter schema (#520); a charter carrying it is refused as an unknown field",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: contracts/packs/schemas/charter.schema.json (no template_set property, additionalProperties:false; only a 'retired' note); ProjectCharterYamlSchemaTest 'a catalog that carries the retired template_set is refused as an unknown field, by name (FR-010)'; contract seam per ruling DM-01M7F1B742YTQHEW5QYZJ8GTQD: activation-retired-keys.feature 'A document carrying template_set is refused at /template_set, and without it the document registers'",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:53.696927+00:00",
+      "notes": "Ruling DM-01M7B1YKY84DQHZFDXEWNJGB5E (drop outright, Breaking)."
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Every step (on-demand included) has an authored mission_type -requires-> action:<type>/<step> edge; a pack missing one is refused at load and registration, naming type and step",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: mission-types.feature:736 'A mission type that drops a step and keeps its requires edge is refused at registration...' and :917 'A closure holding a pack whose mission type has an unlinked step is unreadable and names the type file'; planted r32-mission-step-unlinked (mission_step_unlinked, MissionTypePlantsTest); MissionStepLinkRuleTest; example pack links every step (8d05393c7); changes/2026-11-14-mission-step-requires-edges.md; ADR-0077 decision 7",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:57:59.548327+00:00",
+      "notes": "Ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN."
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Each relation names its allowed source and target kinds per research R6, recorded in an ADR-0064 amendment (#515)",
+      "proof_type": "inspection",
+      "evidence": "lane-j 7521d546c: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointTable.java; docs/adr/0064-*.md Amendments 2026-11-12 and 2026-11-13 (decision 13 = ADR-0077 decision 5); EndpointTableAgreementTest#everyRelationHasRows; served as relations[].endpoints by getKindTaxonomy",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:05.064041+00:00",
+      "notes": "Ruling DM-01M7B1YTXP6QR1NQB784H4VX3W (as drafted)."
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Relationships are built only through constructors typed by endpoint kinds, so a disallowed combination does not compile",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: Relationship.java typed factories requires/suggests/applies/scope/vocabulary(KindRef<...>) over sealed kind markers (KindRef, EndpointRule as the one checked bridge); EndpointTableAgreementTest (factories equal the table; skewed table and too-wide factory caught); KindRefTest, EndpointRuleTest; ArchUnit RELATIONSHIP_IS_BOUND in service/deployable/.../HexagonalArchitectureTest with known-bad control RelationshipBuiltPastTheTable",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:10.274109+00:00",
+      "notes": "Ruling DM-01M7B3QBD0W0KTBHPHX55RB33K."
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "A disallowed edge is refused on write (putPackRelationship, whole-pack registration) as 422 validation_failed / relationship_endpoint_not_allowed naming relation and kinds; on read as pack_unreadable; validate mode reports a blocking finding",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: pack-write-refusals.feature:166 (putPackRelationship 422 at /type); override-source-kind.feature:135 (registration refusal by endpoint table beside the allowed twin); read-refusals.feature:92 (pack_unreadable naming graph document and code); planted r30/r31 expected.json severity blocking (EdgeEndpointPlantsTest); RelationshipEndpointRuleTest; examples CharterRefusal.relationship-endpoint-not-allowed.yaml, PackRegistrationStatus.relationship-endpoint-not-allowed.yaml",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:15.634219+00:00",
+      "notes": "Ruling DM-01M7F1AXQC17ARGCR0AV3DGPEX: the 500 pack_unreadable detail names relationship_endpoint_not_allowed (landing fix 7521d546c)."
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "OverrideSourceRule folds into the endpoint rule, keeping overrides_source_not_activatable for a non-activatable overrides source; an overrides edge across two kinds is relationship_endpoint_not_allowed",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: contracts/charter/scenarios/override-source-kind.feature (:81, :107, :173, :285 keep overrides_source_not_activatable; positive twins :231, :341); pack-write-refusals.feature:166 'overrides edge from a directive to a tactic is 422 ... between two directives it is written'; planted r31-edge-overrides-across-kinds (relationship_endpoint_not_allowed); EndpointRuleTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:21.325298+00:00",
+      "notes": "Ruling DM-01M7B1Z03VF9A36FBV65431HR3."
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "A procedure edge whose target is an action is refused by the table (#350), proven by an invalid example pack",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: planted r30-edge-procedure-requires-action (relationship_endpoint_not_allowed, blocking, covers #350; EdgeEndpointPlantsTest); read-refusals.feature:92 'A closure whose pack has a procedure requiring a step's action is unreadable...' with positive control :121; RelationshipBuiltPastTheTable.procedureRequiresAStep known-bad control; ADR-0077 decision 5",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:27.012544+00:00",
+      "notes": "Ruling DM-01M7B1Z30AV54T9WM2WR61EK30."
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "impacts, replaces and delegates_to are retired from domain, contract and pack schemas; an edge using one is refused as an unknown relation",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: relationships.feature:63 outline 'A retired relation is refused as an unknown type, and nothing is written' (impacts, replaces, delegates_to) with relationship_type_unknown at /type (example CharterRefusal.relationship-type-unknown.yaml); load fixture shard-retired-relation; graph-shard/org-fragment schema relation enums without them; RetiredNamesScanTest (0 IMPACTS|REPLACES|DELEGATES_TO in main)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:32.325484+00:00",
+      "notes": "Rulings DM-01M7B1YXJHQCBSYJ145NJC77V5 and DM-01M7F1B2F1Z82D4SM344JSJB4H (violation code + /type pointer)."
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Example packs, fixtures and contract examples carry only allowed edges; suggests styleguide->anti_pattern becomes rejects; impacts/replaces removed or rewritten; error fixtures exercise one fault each",
+      "proof_type": "automated_test",
+      "evidence": "lane-j 7521d546c: example-packs/built-in/styleguide.graph.yaml (relation: rejects); 0 impacts/replaces/delegates_to edges in example packs and contract examples (only the error example CharterRefusal.relationship-type-unknown); commits 8d05393c7 (WP01), caf9f38a2 (WP02 'contract scenarios author only edges the endpoint table allows'); planted r30-r36 expected.json each one finding; whole-pack round trip over example packs green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:37.160803+00:00",
+      "notes": ""
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Every breaking change of this mission is recorded in a dated ### Breaking fragment under contracts/charter/changes/",
+      "proof_type": "inspection",
+      "evidence": "lane-j 7521d546c: contracts/charter/changes/2026-11-14-kind-taxonomy-and-step-authority-breaking.md (step contract, pack schemas, retired relations; cross-references the others), 2026-11-13-relationship-endpoint-table.md, 2026-11-14-mission-step-requires-edges.md, 2026-11-14-mission-step-substeps.md, all '### Breaking'; ChangelogFragmentsTest enforces one ### block per fragment",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:42.403003+00:00",
+      "notes": "Deviation from the literal 'one fragment': four dated ### Breaking fragments (WP05/WP06/WP07/WP10), because ChangelogFragmentsTest and changes/README.md allow exactly one block per file; all assemble into the single ### Breaking section at release. Accepted at WP10 review cycle 1 (L6); to be stated in the PR body."
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Open-packs drafts with open-packs#TBD-<slug> placeholders cover step-contract removal/fold, missing scope and requires edges, foundation lifecycle + pre-review guard, relation retirement, schema change and validator update",
+      "proof_type": "inspection",
+      "evidence": "branch slice-f-537-kind-taxonomy (aa0eecbc6): kitty-specs/slice-f-kind-taxonomy-01M7B19K/research/open-packs-drafts/README.md + TBD-fold-step-contracts.md (28 contracts, 30 files), TBD-step-requires-edges.md (26 requires, 23 action nodes), TBD-delegation-scope-edges.md, TBD-pre-review-guard.md, TBD-validator-and-docs.md (schema pin, validator, replaces->overrides rule); apply-drafts.py + census-check.py: 0 refused edges/unlinked steps/unresolved/unscoped/retired files on a scratch copy of open-packs 1692a3b",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-15T07:58:48.155143+00:00",
+      "notes": "Scope-edge draft: 79 edges for 80 candidate uses (one deduplicated); no agent_profile delegation per DM-01M7DTN8JWR4G1P35NXGCMS65M. Open-packs has no retired-relation edges to migrate. Drafts live on the WP11 branch, not the coord worktree."
+    }
+  ],
+  "negative_invariants": []
+}
