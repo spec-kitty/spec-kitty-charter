@@ -4,7 +4,7 @@ description: >-
   packs that need them, each level contiguous (built-in, then org, then project), and the packs no
   dependency relates in configured-level, then pack-id code-point order, so Zeta comes before alpha.
   Merging is not applied yet (#10, #11): the offering lists the packs, not a merged result.
-  _links holds self. The list and its fingerprint come from one verified read.
+  _links holds self and kinds, the model's kind taxonomy (getKindTaxonomy). The list and its fingerprint come from one verified read.
 type: object
 additionalProperties: false
 required:

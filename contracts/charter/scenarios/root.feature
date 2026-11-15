@@ -1,8 +1,8 @@
 @contract
 Feature: The API root links to every top-level resource
   A client starts from one known place, GET / (the server prefix with its trailing slash,
-  /api/v1/), and follows links from there (ADR-0019 D2 and D4, FR-001): self, info, offering, the
-  artifacts of a pack as an RFC 6570 template, activations (the register, followed with POST) and service-desc, the
+  /api/v1/), and follows links from there (ADR-0019 D2 and D4, FR-001): self, info, offering, kinds (the kind
+  taxonomy), the artifacts of a pack as an RFC 6570 template, activations (the register, followed with POST) and service-desc, the
   contract document (RFC 8631).
   The root reads no pack file, so it carries no Charter-Source-Fingerprint. Like every operation it
   needs the worktree token.
@@ -35,6 +35,7 @@ Feature: The API root links to every top-level resource
           "self": {"href": "/api/v1/"},
           "info": {"href": "/api/v1/info"},
           "offering": {"href": "/api/v1/offering"},
+          "kinds": {"href": "/api/v1/offering/kinds"},
           "artifacts": {"href": "/api/v1/packs/{packId}/artifacts{?kind}", "templated": true},
           "activations": {"href": "/api/v1/activations", "method": "POST"},
           "service-desc": {"href": "/api/v1/openapi.yaml"}
@@ -57,6 +58,14 @@ Feature: The API root links to every top-level resource
     And I follow the link "offering"
     Then the response status is 200
     And the field at "/packs/0/packId" is "qa"
+
+  Scenario: The kinds link of the root answers the kind taxonomy
+    When I GET "/"
+    And I follow the link "kinds"
+    Then the response status is 200
+    And the field at "/kinds/0/kind" is "directive"
+    And the field at "/_links/self/href" is "/api/v1/offering/kinds"
+    And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: The service-desc link of the root answers the contract document
     When I GET "/"

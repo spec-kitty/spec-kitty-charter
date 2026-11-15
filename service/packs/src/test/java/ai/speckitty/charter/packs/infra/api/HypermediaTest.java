@@ -127,6 +127,7 @@ class HypermediaTest {
                         "collection",
                         "info",
                         "offering",
+                        "kinds",
                         "artifacts",
                         "activations",
                         "service-desc",

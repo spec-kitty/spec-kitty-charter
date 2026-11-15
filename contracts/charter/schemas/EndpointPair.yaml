@@ -1,0 +1,27 @@
+title: EndpointPair
+description: >-
+  One combination of kinds a relation may connect (ADR-0064 decision 13): an edge of the relation may run from a node
+  of the source kind to a node of the target kind.
+type: object
+additionalProperties: false
+required:
+  - source
+  - target
+properties:
+  source:
+    description: The kind of the node the edge runs from.
+    allOf:
+      - $ref: TaxonomyKind.yaml
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointPair.java
+      symbol: EndpointPair.source
+  target:
+    description: The kind of the node the edge runs to.
+    allOf:
+      - $ref: TaxonomyKind.yaml
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointPair.java
+      symbol: EndpointPair.target
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointPair.java
+  symbol: EndpointPair

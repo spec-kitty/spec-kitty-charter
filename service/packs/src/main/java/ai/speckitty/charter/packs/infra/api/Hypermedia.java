@@ -113,6 +113,31 @@ final class Hypermedia {
     }
 
     /**
+     * A templated {@code GET} link whose path holds path variables and whose query is fixed: the path made of
+     * {@code segments}, written as {@link #templated(String, String...)} writes it, followed by the query, written as
+     * {@link #link(Map, String...)} writes it. For example a kind's pack artifact list,
+     * {@code /api/v1/packs/{packId}/artifacts?kind=directive}.
+     *
+     * @param query    the query parameters, in the order they are written
+     * @param segments the path segments, unencoded, or path variables; at least one is a path variable
+     * @return the link, with {@code templated} true
+     * @throws IllegalArgumentException when no segment is a path variable, so the link would not be a template
+     */
+    LinkValue templated(Map<String, String> query, String... segments) {
+        if (Arrays.stream(segments)
+                .noneMatch(segment -> PATH_VARIABLE.matcher(segment).matches())) {
+            throw new IllegalArgumentException("no path variable in " + Arrays.toString(segments));
+        }
+        String path = Arrays.stream(segments)
+                .map(segment -> "/" + (PATH_VARIABLE.matcher(segment).matches() ? segment : encodeSegment(segment)))
+                .collect(Collectors.joining());
+        String parameters = query.entrySet().stream()
+                .map(parameter -> encodeQuery(parameter.getKey()) + "=" + encodeQuery(parameter.getValue()))
+                .collect(Collectors.joining("&"));
+        return new LinkValue(basePath + path + (parameters.isEmpty() ? "" : "?" + parameters), true, null);
+    }
+
+    /**
      * The {@code _links} of an answer: each link under its relation's wire key, in the order of {@link Relation}.
      *
      * @param links the links by relation; an {@link java.util.EnumMap} keeps the relation order

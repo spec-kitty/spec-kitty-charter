@@ -14,12 +14,15 @@ import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.EffectiveContextArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
+import ai.speckitty.charter.api.model.EndpointPair;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
+import ai.speckitty.charter.api.model.KindRow;
 import ai.speckitty.charter.api.model.LayerOverrideSide;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.api.model.OverriddenArtifact;
+import ai.speckitty.charter.api.model.RelationRow;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
 import ai.speckitty.charter.api.model.SharedSkip;
@@ -30,7 +33,9 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
+import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
 import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
@@ -122,7 +127,11 @@ class WireTokenParityTest {
             .toList();
 
     private static List<Pair> pairs() {
-        return Stream.of(activatableKindCopies(), inlinedEnumAndTokenPairs(), inlinedGraphLevelAndRelationPairs())
+        return Stream.of(
+                        activatableKindCopies(),
+                        inlinedEnumAndTokenPairs(),
+                        inlinedGraphLevelAndRelationPairs(),
+                        kindTaxonomyPairs())
                 .flatMap(List::stream)
                 .toList();
     }
@@ -252,6 +261,44 @@ class WireTokenParityTest {
                                 .toList(),
                         values(EffectiveGraphEdge.RelationEnum.values(), EffectiveGraphEdge.RelationEnum::getValue),
                         EffectiveGraphEdge.RelationEnum::fromValue));
+    }
+
+    /**
+     * The kind taxonomy's copies (R18): TaxonomyKind, every node kind, guard and lifecycle among them, in the three
+     * places the generator inlines it; TaxonomyRelation, every relation type and the tension's spelling; and how a
+     * relation is held.
+     */
+    private static List<Pair> kindTaxonomyPairs() {
+        List<String> everyKind = tokens(NodeKind.values(), NodeKind::token);
+        return List.of(
+                new Pair(
+                        "KindRow.kind (TaxonomyKind)",
+                        everyKind,
+                        values(KindRow.KindEnum.values(), KindRow.KindEnum::getValue),
+                        KindRow.KindEnum::fromValue),
+                new Pair(
+                        "EndpointPair.source (TaxonomyKind)",
+                        everyKind,
+                        values(EndpointPair.SourceEnum.values(), EndpointPair.SourceEnum::getValue),
+                        EndpointPair.SourceEnum::fromValue),
+                new Pair(
+                        "EndpointPair.target (TaxonomyKind)",
+                        everyKind,
+                        values(EndpointPair.TargetEnum.values(), EndpointPair.TargetEnum::getValue),
+                        EndpointPair.TargetEnum::fromValue),
+                new Pair(
+                        "RelationRow.relation (TaxonomyRelation)",
+                        Stream.concat(
+                                        tokens(RelationType.values(), RelationType::token).stream(),
+                                        Stream.of(PackPolicy.TENSION))
+                                .toList(),
+                        values(RelationRow.RelationEnum.values(), RelationRow.RelationEnum::getValue),
+                        RelationRow.RelationEnum::fromValue),
+                new Pair(
+                        "RelationRow.heldAs",
+                        tokens(KindTaxonomyReadService.HeldAs.values(), KindTaxonomyReadService.HeldAs::token),
+                        values(RelationRow.HeldAsEnum.values(), RelationRow.HeldAsEnum::getValue),
+                        RelationRow.HeldAsEnum::fromValue));
     }
 
     private static List<String> artifactKindTokens() {

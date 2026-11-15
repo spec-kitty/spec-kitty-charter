@@ -69,7 +69,7 @@ Feature: The compose resolves the configured packs' dependency graph
           {"packId": "right", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943T", "level": "org", "name": "right-pack", "version": "3.0.0", "dependsOn": [{"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "range": ">=1.0", "version": "1.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/right/artifacts"}}},
           {"packId": "top", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943V", "level": "org", "name": "top-pack", "version": "4.0.0", "dependsOn": [{"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943S", "range": ">=2.0", "version": "2.0.0"}, {"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943T", "range": "<4.0", "version": "3.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/top/artifacts"}}}
         ],
-        "_links": {"self": {"href": "/api/v1/offering"}}
+        "_links": {"self": {"href": "/api/v1/offering"}, "kinds": {"href": "/api/v1/offering/kinds"}}
       }
       """
 
@@ -99,7 +99,7 @@ Feature: The compose resolves the configured packs' dependency graph
     And the response header "Charter-Source-Fingerprint" appears once
     And the response body is:
       """
-      {"packs": [{"packId": "core", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "level": "built-in", "name": "core-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/core/artifacts"}}}], "_links": {"self": {"href": "/api/v1/offering"}}}
+      {"packs": [{"packId": "core", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "level": "built-in", "name": "core-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/core/artifacts"}}}], "_links": {"self": {"href": "/api/v1/offering"}, "kinds": {"href": "/api/v1/offering/kinds"}}}
       """
 
   Scenario: A dependency cycle refuses the compose naming a pack on it

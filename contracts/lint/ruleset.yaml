@@ -192,16 +192,17 @@ rules:
 
   # #175, ruling 4: the 200 of a verified read carries the digest that read verified, so its contract requires
   # it. Every GET 200 is a verified read except the root (/), which reads no pack, the contract document
-  # (/openapi.yaml), which reads no pack file either, and two reads of the activation set: the document read
+  # (/openapi.yaml), which reads no pack file either, the kind taxonomy (/offering/kinds), which is the model's and reads
+  # no pack file (R18, #112), and two reads of the activation set: the document read
   # (/activations/{activationId}), whose answer depends only on the stored document (ADR-0059 D5), and the
   # closure read (/activations/{activationId}/packs), which reports a change through its ETag, and the status of a
   # registration (/pack-registrations/{registrationId}), which reads the registration jobs, not a pack file (decision
   # DM-01M6TV6VDNHNCVWRHHC74WATV0). The rule is
   # written by shape, not by operationId.
   fingerprint-on-verified-reads:
-    description: The 200 of every GET other than /, /openapi.yaml, the activation document and closure reads and the registration status declares Charter-Source-Fingerprint with required true (#175).
+    description: The 200 of every GET other than /, /openapi.yaml, /offering/kinds, the activation document and closure reads and the registration status declares Charter-Source-Fingerprint with required true (#175).
     severity: error
-    given: "$.paths[?(@property != '/' && @property != '/openapi.yaml' && @property != '/activations/{activationId}' && @property != '/activations/{activationId}/packs' && @property != '/pack-registrations/{registrationId}')].get.responses['200'].headers"
+    given: "$.paths[?(@property != '/' && @property != '/openapi.yaml' && @property != '/offering/kinds' && @property != '/activations/{activationId}' && @property != '/activations/{activationId}/packs' && @property != '/pack-registrations/{registrationId}')].get.responses['200'].headers"
     then:
       - field: Charter-Source-Fingerprint
         function: truthy
@@ -215,16 +216,17 @@ rules:
               required: { const: true }
 
   # #175, ruling 4: no other answer carries the fingerprint, so none declares it: not a refusal, not a write's
-  # answer, not the root's or the contract document's, not a shared component response. Only a GET answers a
+  # answer, not the root's, the contract document's or the kind taxonomy's, not a shared component response. Only a GET answers a
   # verified read, so a HEAD, OPTIONS or TRACE answer declares it no more than a write's does.
   fingerprint-only-on-verified-reads:
-    description: Only the 200 of a verified read declares Charter-Source-Fingerprint; no write, refusal, root (/), /openapi.yaml, activation document, closure read or registration status answer or shared response does (#175).
+    description: Only the 200 of a verified read declares Charter-Source-Fingerprint; no write, refusal, root (/), /openapi.yaml, /offering/kinds, activation document, closure read or registration status answer or shared response does (#175).
     severity: error
     given:
       - "$.paths[*][put,post,delete,patch,head,options,trace].responses[*].headers"
       - "$.paths[*].get.responses[?(@property != '200')].headers"
       - "$.paths['/openapi.yaml'].get.responses[*].headers"
       - "$.paths['/'].get.responses[*].headers"
+      - "$.paths['/offering/kinds'].get.responses[*].headers"
       - "$.paths['/activations/{activationId}'].get.responses[*].headers"
       - "$.paths['/activations/{activationId}/packs'].get.responses[*].headers"
       - "$.paths['/pack-registrations/{registrationId}'].get.responses[*].headers"

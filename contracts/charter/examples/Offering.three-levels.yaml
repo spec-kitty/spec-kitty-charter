@@ -37,3 +37,5 @@ value:
   _links:
     self:
       href: /api/v1/offering
+    kinds:
+      href: /api/v1/offering/kinds

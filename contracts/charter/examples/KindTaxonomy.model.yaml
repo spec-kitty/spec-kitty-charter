@@ -1,0 +1,519 @@
+summary: The kind taxonomy of the model, every kind and every relation with the kinds it may connect.
+value:
+  kinds:
+    - kind: directive
+      plural: directives
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=directive
+          templated: true
+    - kind: tactic
+      plural: tactics
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=tactic
+          templated: true
+    - kind: styleguide
+      plural: styleguides
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=styleguide
+          templated: true
+    - kind: toolguide
+      plural: toolguides
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=toolguide
+          templated: true
+    - kind: paradigm
+      plural: paradigms
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=paradigm
+          templated: true
+    - kind: procedure
+      plural: procedures
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=procedure
+          templated: true
+    - kind: agent_profile
+      plural: agent_profiles
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=agent_profile
+          templated: true
+    - kind: glossary_pack
+      plural: glossary_packs
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links: {}
+    - kind: skill
+      plural: skills
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=skill
+          templated: true
+    - kind: anti_pattern
+      plural: anti_patterns
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links: {}
+    - kind: asset
+      plural: assets
+      artifact: true
+      activatable: false
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=asset
+          templated: true
+    - kind: template
+      plural: templates
+      artifact: true
+      activatable: false
+      authoredInGraphs: true
+      _links: {}
+    - kind: action
+      plural: actions
+      artifact: false
+      activatable: false
+      authoredInGraphs: true
+      _links: {}
+    - kind: mission_type
+      plural: mission_types
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links:
+        artifacts:
+          href: /api/v1/packs/{packId}/artifacts?kind=mission_type
+          templated: true
+    - kind: guard
+      plural: guards
+      artifact: true
+      activatable: false
+      authoredInGraphs: false
+      _links: {}
+    - kind: lifecycle
+      plural: lifecycles
+      artifact: true
+      activatable: false
+      authoredInGraphs: false
+      _links: {}
+    - kind: step_enhancement
+      plural: step_enhancements
+      artifact: true
+      activatable: true
+      authoredInGraphs: true
+      _links: {}
+  relations:
+    - relation: requires
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: directive, target: tactic}
+        - {source: directive, target: styleguide}
+        - {source: directive, target: toolguide}
+        - {source: directive, target: paradigm}
+        - {source: directive, target: procedure}
+        - {source: directive, target: asset}
+        - {source: directive, target: template}
+        - {source: tactic, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: tactic, target: styleguide}
+        - {source: tactic, target: toolguide}
+        - {source: tactic, target: paradigm}
+        - {source: tactic, target: procedure}
+        - {source: tactic, target: asset}
+        - {source: tactic, target: template}
+        - {source: styleguide, target: directive}
+        - {source: styleguide, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: styleguide, target: toolguide}
+        - {source: styleguide, target: paradigm}
+        - {source: styleguide, target: procedure}
+        - {source: styleguide, target: asset}
+        - {source: styleguide, target: template}
+        - {source: toolguide, target: directive}
+        - {source: toolguide, target: tactic}
+        - {source: toolguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: toolguide, target: paradigm}
+        - {source: toolguide, target: procedure}
+        - {source: toolguide, target: asset}
+        - {source: toolguide, target: template}
+        - {source: paradigm, target: directive}
+        - {source: paradigm, target: tactic}
+        - {source: paradigm, target: styleguide}
+        - {source: paradigm, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: paradigm, target: procedure}
+        - {source: paradigm, target: asset}
+        - {source: paradigm, target: template}
+        - {source: procedure, target: directive}
+        - {source: procedure, target: tactic}
+        - {source: procedure, target: styleguide}
+        - {source: procedure, target: toolguide}
+        - {source: procedure, target: paradigm}
+        - {source: procedure, target: procedure}
+        - {source: procedure, target: asset}
+        - {source: procedure, target: template}
+        - {source: agent_profile, target: directive}
+        - {source: agent_profile, target: tactic}
+        - {source: agent_profile, target: styleguide}
+        - {source: agent_profile, target: toolguide}
+        - {source: agent_profile, target: paradigm}
+        - {source: agent_profile, target: procedure}
+        - {source: agent_profile, target: asset}
+        - {source: agent_profile, target: template}
+        - {source: skill, target: directive}
+        - {source: skill, target: tactic}
+        - {source: skill, target: styleguide}
+        - {source: skill, target: toolguide}
+        - {source: skill, target: paradigm}
+        - {source: skill, target: procedure}
+        - {source: skill, target: asset}
+        - {source: skill, target: template}
+        - {source: asset, target: asset}
+        - {source: mission_type, target: action}
+    - relation: suggests
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: directive, target: tactic}
+        - {source: directive, target: styleguide}
+        - {source: directive, target: toolguide}
+        - {source: directive, target: paradigm}
+        - {source: directive, target: procedure}
+        - {source: directive, target: agent_profile}
+        - {source: directive, target: asset}
+        - {source: directive, target: template}
+        - {source: tactic, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: tactic, target: styleguide}
+        - {source: tactic, target: toolguide}
+        - {source: tactic, target: paradigm}
+        - {source: tactic, target: procedure}
+        - {source: tactic, target: agent_profile}
+        - {source: tactic, target: asset}
+        - {source: tactic, target: template}
+        - {source: styleguide, target: directive}
+        - {source: styleguide, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: styleguide, target: toolguide}
+        - {source: styleguide, target: paradigm}
+        - {source: styleguide, target: procedure}
+        - {source: styleguide, target: agent_profile}
+        - {source: styleguide, target: asset}
+        - {source: styleguide, target: template}
+        - {source: toolguide, target: directive}
+        - {source: toolguide, target: tactic}
+        - {source: toolguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: toolguide, target: paradigm}
+        - {source: toolguide, target: procedure}
+        - {source: toolguide, target: agent_profile}
+        - {source: toolguide, target: asset}
+        - {source: toolguide, target: template}
+        - {source: paradigm, target: directive}
+        - {source: paradigm, target: tactic}
+        - {source: paradigm, target: styleguide}
+        - {source: paradigm, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: paradigm, target: procedure}
+        - {source: paradigm, target: agent_profile}
+        - {source: paradigm, target: asset}
+        - {source: paradigm, target: template}
+        - {source: procedure, target: directive}
+        - {source: procedure, target: tactic}
+        - {source: procedure, target: styleguide}
+        - {source: procedure, target: toolguide}
+        - {source: procedure, target: paradigm}
+        - {source: procedure, target: procedure}
+        - {source: procedure, target: agent_profile}
+        - {source: procedure, target: asset}
+        - {source: procedure, target: template}
+        - {source: agent_profile, target: directive}
+        - {source: agent_profile, target: tactic}
+        - {source: agent_profile, target: styleguide}
+        - {source: agent_profile, target: toolguide}
+        - {source: agent_profile, target: paradigm}
+        - {source: agent_profile, target: procedure}
+        - {source: agent_profile, target: agent_profile}
+        - {source: agent_profile, target: asset}
+        - {source: agent_profile, target: template}
+        - {source: skill, target: directive}
+        - {source: skill, target: tactic}
+        - {source: skill, target: styleguide}
+        - {source: skill, target: toolguide}
+        - {source: skill, target: paradigm}
+        - {source: skill, target: procedure}
+        - {source: skill, target: agent_profile}
+        - {source: skill, target: asset}
+        - {source: skill, target: template}
+    - relation: applies
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: action, target: directive}
+        - {source: action, target: tactic}
+    - relation: scope
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: action, target: directive}
+        - {source: action, target: tactic}
+        - {source: action, target: styleguide}
+        - {source: action, target: toolguide}
+        - {source: action, target: paradigm}
+        - {source: action, target: procedure}
+        - {source: action, target: agent_profile}
+        - {source: mission_type, target: directive}
+        - {source: mission_type, target: tactic}
+        - {source: mission_type, target: styleguide}
+        - {source: mission_type, target: toolguide}
+        - {source: mission_type, target: paradigm}
+        - {source: mission_type, target: procedure}
+        - {source: mission_type, target: agent_profile}
+    - relation: vocabulary
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: glossary_pack}
+        - {source: tactic, target: glossary_pack}
+        - {source: styleguide, target: glossary_pack}
+        - {source: toolguide, target: glossary_pack}
+        - {source: paradigm, target: glossary_pack}
+        - {source: procedure, target: glossary_pack}
+        - {source: agent_profile, target: glossary_pack}
+        - {source: glossary_pack, target: glossary_pack}
+        - {source: skill, target: glossary_pack}
+        - {source: anti_pattern, target: glossary_pack}
+        - {source: asset, target: glossary_pack}
+        - {source: template, target: glossary_pack}
+        - {source: action, target: glossary_pack}
+        - {source: mission_type, target: glossary_pack}
+        - {source: step_enhancement, target: glossary_pack}
+    - relation: instantiates
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: action, target: template}
+    - relation: refines
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: directive, target: tactic}
+        - {source: directive, target: styleguide}
+        - {source: directive, target: toolguide}
+        - {source: directive, target: paradigm}
+        - {source: directive, target: procedure}
+        - {source: tactic, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: tactic, target: styleguide}
+        - {source: tactic, target: toolguide}
+        - {source: tactic, target: paradigm}
+        - {source: tactic, target: procedure}
+        - {source: styleguide, target: directive}
+        - {source: styleguide, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: styleguide, target: toolguide}
+        - {source: styleguide, target: paradigm}
+        - {source: styleguide, target: procedure}
+        - {source: toolguide, target: directive}
+        - {source: toolguide, target: tactic}
+        - {source: toolguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: toolguide, target: paradigm}
+        - {source: toolguide, target: procedure}
+        - {source: paradigm, target: directive}
+        - {source: paradigm, target: tactic}
+        - {source: paradigm, target: styleguide}
+        - {source: paradigm, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: paradigm, target: procedure}
+        - {source: procedure, target: directive}
+        - {source: procedure, target: tactic}
+        - {source: procedure, target: styleguide}
+        - {source: procedure, target: toolguide}
+        - {source: procedure, target: paradigm}
+        - {source: procedure, target: procedure}
+    - relation: specializes_from
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: agent_profile, target: agent_profile}
+    - relation: enhances
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: procedure, target: procedure}
+        - {source: agent_profile, target: agent_profile}
+        - {source: glossary_pack, target: glossary_pack}
+        - {source: skill, target: skill}
+        - {source: anti_pattern, target: anti_pattern}
+        - {source: step_enhancement, target: action}
+    - relation: overrides
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: procedure, target: procedure}
+        - {source: agent_profile, target: agent_profile}
+        - {source: glossary_pack, target: glossary_pack}
+        - {source: skill, target: skill}
+        - {source: anti_pattern, target: anti_pattern}
+        - {source: mission_type, target: mission_type}
+    - relation: reconciles_tension
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: directive, target: tactic}
+        - {source: directive, target: styleguide}
+        - {source: directive, target: toolguide}
+        - {source: directive, target: paradigm}
+        - {source: directive, target: procedure}
+        - {source: tactic, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: tactic, target: styleguide}
+        - {source: tactic, target: toolguide}
+        - {source: tactic, target: paradigm}
+        - {source: tactic, target: procedure}
+        - {source: styleguide, target: directive}
+        - {source: styleguide, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: styleguide, target: toolguide}
+        - {source: styleguide, target: paradigm}
+        - {source: styleguide, target: procedure}
+        - {source: toolguide, target: directive}
+        - {source: toolguide, target: tactic}
+        - {source: toolguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: toolguide, target: paradigm}
+        - {source: toolguide, target: procedure}
+        - {source: paradigm, target: directive}
+        - {source: paradigm, target: tactic}
+        - {source: paradigm, target: styleguide}
+        - {source: paradigm, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: paradigm, target: procedure}
+        - {source: procedure, target: directive}
+        - {source: procedure, target: tactic}
+        - {source: procedure, target: styleguide}
+        - {source: procedure, target: toolguide}
+        - {source: procedure, target: paradigm}
+        - {source: procedure, target: procedure}
+    - relation: rejects
+      heldAs: relationship
+      directed: true
+      derived: false
+      endpoints:
+        - {source: directive, target: anti_pattern}
+        - {source: tactic, target: anti_pattern}
+        - {source: styleguide, target: anti_pattern}
+        - {source: toolguide, target: anti_pattern}
+        - {source: paradigm, target: anti_pattern}
+        - {source: procedure, target: anti_pattern}
+    - relation: implemented_by
+      heldAs: relationship
+      directed: true
+      derived: true
+      endpoints:
+        - {source: guard, target: asset}
+    - relation: in_tension_with
+      heldAs: tension
+      directed: false
+      derived: false
+      endpoints:
+        - {source: directive, target: directive}
+        - {source: directive, target: tactic}
+        - {source: directive, target: styleguide}
+        - {source: directive, target: toolguide}
+        - {source: directive, target: paradigm}
+        - {source: directive, target: procedure}
+        - {source: tactic, target: directive}
+        - {source: tactic, target: tactic}
+        - {source: tactic, target: styleguide}
+        - {source: tactic, target: toolguide}
+        - {source: tactic, target: paradigm}
+        - {source: tactic, target: procedure}
+        - {source: styleguide, target: directive}
+        - {source: styleguide, target: tactic}
+        - {source: styleguide, target: styleguide}
+        - {source: styleguide, target: toolguide}
+        - {source: styleguide, target: paradigm}
+        - {source: styleguide, target: procedure}
+        - {source: toolguide, target: directive}
+        - {source: toolguide, target: tactic}
+        - {source: toolguide, target: styleguide}
+        - {source: toolguide, target: toolguide}
+        - {source: toolguide, target: paradigm}
+        - {source: toolguide, target: procedure}
+        - {source: paradigm, target: directive}
+        - {source: paradigm, target: tactic}
+        - {source: paradigm, target: styleguide}
+        - {source: paradigm, target: toolguide}
+        - {source: paradigm, target: paradigm}
+        - {source: paradigm, target: procedure}
+        - {source: procedure, target: directive}
+        - {source: procedure, target: tactic}
+        - {source: procedure, target: styleguide}
+        - {source: procedure, target: toolguide}
+        - {source: procedure, target: paradigm}
+        - {source: procedure, target: procedure}
+  _links:
+    self:
+      href: /api/v1/offering/kinds
+    offering:
+      href: /api/v1/offering

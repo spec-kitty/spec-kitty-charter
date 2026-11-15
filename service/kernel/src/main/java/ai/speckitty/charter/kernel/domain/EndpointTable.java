@@ -26,6 +26,8 @@ final class EndpointTable {
 
     private static final Map<RelationType, Set<EndpointPair>> TABLE = table();
 
+    private static final Set<EndpointPair> TENSION = tensionPairs();
+
     private EndpointTable() {}
 
     static Set<EndpointPair> of(RelationType type) {
@@ -84,7 +86,22 @@ final class EndpointTable {
      * @return whether both are guidance kinds
      */
     static boolean tensionAllows(NodeKind one, NodeKind other) {
-        return GUIDANCE.contains(one) && GUIDANCE.contains(other);
+        return TENSION.contains(new EndpointPair(one, other));
+    }
+
+    /**
+     * The kinds a tension may join, as pairs in the order of {@link NodeKind}: guidance on both sides.
+     *
+     * @return the allowed pairs
+     */
+    static Set<EndpointPair> tension() {
+        return TENSION;
+    }
+
+    private static Set<EndpointPair> tensionPairs() {
+        Set<EndpointPair> pairs = new LinkedHashSet<>();
+        product(pairs, GUIDANCE, GUIDANCE);
+        return Collections.unmodifiableSet(pairs);
     }
 
     private static Set<NodeKind> advisors() {

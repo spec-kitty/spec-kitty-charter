@@ -16,7 +16,9 @@ tags:
   - name: Service
     description: What the service says about itself, and the API root a client starts from.
   - name: Offering
-    description: The Charter Packs the service is configured with, in the merge order.
+    description: >-
+      The configured packs and the model's taxonomy: the Charter Packs the service is configured with, in the merge
+      order, and the kind taxonomy, every kind and every relation with the kinds it may connect.
   - name: Directives
     description: >-
       The directive registrations of a Charter Pack: register and replace a directive, which is read
@@ -132,6 +134,8 @@ paths:
     $ref: paths/openapi.yaml
   /offering:
     $ref: paths/offering.yaml
+  /offering/kinds:
+    $ref: paths/offering_kinds.yaml
   /packs:
     $ref: paths/packs.yaml
   /packs/{packId}:

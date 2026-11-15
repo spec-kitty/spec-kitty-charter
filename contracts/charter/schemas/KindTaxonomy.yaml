@@ -1,0 +1,31 @@
+title: KindTaxonomy
+description: >-
+  The kind taxonomy of the charter's model (R18, #112): every node kind with its facts and every relation with the
+  kinds it may connect. It is the model's, not the configured packs': the same answer whatever packs are configured.
+  It holds no core organization fact (effective_when_absent, selection_overlayable, org_requirable): the charter's
+  model has no subject for them. _links holds self and offering.
+type: object
+additionalProperties: false
+required:
+  - kinds
+  - relations
+  - _links
+properties:
+  kinds:
+    type: array
+    description: Every node kind, in NodeKind order.
+    items:
+      $ref: KindRow.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/KindTaxonomyReadService.java
+      symbol: KindTaxonomyReadService.Taxonomy.kinds
+  relations:
+    type: array
+    description: Every relation, in RelationType order, then in_tension_with.
+    items:
+      $ref: RelationRow.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/KindTaxonomyReadService.java
+      symbol: KindTaxonomyReadService.Taxonomy.relations
+  _links:
+    $ref: Links.yaml
