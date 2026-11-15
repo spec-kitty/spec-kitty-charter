@@ -128,6 +128,8 @@ public final class ProfileFixtures {
                 "sha256:" + "b".repeat(64),
                 active("agent_profile:P", "main"),
                 List.of(entries),
-                List.of(ArtifactKind.DIRECTIVE, ArtifactKind.STYLEGUIDE));
+                List.of(ArtifactKind.DIRECTIVE, ArtifactKind.STYLEGUIDE),
+                List.of(),
+                List.of());
     }
 }

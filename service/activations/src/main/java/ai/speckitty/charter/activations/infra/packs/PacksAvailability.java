@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -140,6 +141,11 @@ public class PacksAvailability implements AvailablePacks {
         @Override
         public Optional<EffectiveArtifactRead> effectiveArtifact(
                 ArtifactKind kind, String id, int depth, InForceQuery query) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<ProfileResolution> profileResolution(String id, InForceQuery query) {
             return Optional.empty();
         }
 

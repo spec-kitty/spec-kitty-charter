@@ -499,6 +499,9 @@ class ProfileCorpusTest {
                 .as("governance of java-jenny, against the contract example")
                 .isNotEmpty()
                 .containsExactlyElementsOf(governanceOf(exampleGovernance));
+        assertThat(body.get("lineage"))
+                .as("the lineage of java-jenny, against the contract example")
+                .isEqualTo(json.readTree(json.writeValueAsString(exampleValue.get("lineage"))));
         assertThat(governanceOf(body.get("governance")))
                 .as("a requires target the charter does not select is not listed")
                 .noneMatch(entry -> entry.startsWith("procedure:adversarial-squad-deployment "));

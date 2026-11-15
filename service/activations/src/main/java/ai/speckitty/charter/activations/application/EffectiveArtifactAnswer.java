@@ -3,6 +3,7 @@ package ai.speckitty.charter.activations.application;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.GovernanceFacts;
+import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -22,8 +23,11 @@ import java.util.Optional;
  * @param governanceFingerprint the digest of the closure's own packs
  * @param winner the artifact as the effective list gives it: the pack and level that hold the version in force, its
  *     state, reason, policy and, if it is one, its effective-set suggestion
- * @param artifact the winning entity, as the winner's pack stores it; a caller narrows it to its kind
- * @param governance a profile's governance; empty for every other kind
+ * @param artifact the winning entity, as the winner's pack stores it, a caller narrowing it to its kind; on the profiles
+ *     slice's route, the effective profile instead ({@link ProfileResolution}: merged with its in-force enhancers and
+ *     folded under its in-force ancestors)
+ * @param governance a profile's governance, with its lineage, on the profiles slice's route; empty for every other kind
+ *     and route
  */
 public record EffectiveArtifactAnswer(
         StoredActivation stored,
@@ -39,18 +43,28 @@ public record EffectiveArtifactAnswer(
      * @param entries the artifacts in force the walk lists, in URN order, each with the state it has
      * @param suggested the artifacts out of force that the effective set judges to be suggestions, in URN order, each with
      *     the words of the edge that reaches it
+     * @param lineage the profile's in-force {@code specializes_from} ancestors, nearest first
+     * @param enhances the ids of the agent profiles the profile enhances, in id order; empty when it enhances none
      */
-    public record Governance(List<Entry> entries, List<Suggested> suggested) {
+    public record Governance(
+            List<Entry> entries,
+            List<Suggested> suggested,
+            List<ProfileResolution.Lineage> lineage,
+            List<String> enhances) {
 
         /**
          * Checks and copies the fields.
          *
          * @param entries the entries
          * @param suggested the suggestions
+         * @param lineage the ancestors
+         * @param enhances the enhanced profiles
          */
         public Governance {
             entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
             suggested = List.copyOf(Objects.requireNonNull(suggested, "suggested"));
+            lineage = List.copyOf(Objects.requireNonNull(lineage, "lineage"));
+            enhances = List.copyOf(Objects.requireNonNull(enhances, "enhances"));
         }
     }
 

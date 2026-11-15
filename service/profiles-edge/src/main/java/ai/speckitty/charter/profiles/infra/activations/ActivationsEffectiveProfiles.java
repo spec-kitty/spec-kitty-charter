@@ -28,10 +28,12 @@ import org.springframework.stereotype.Component;
 
 /**
  * The {@link EffectiveProfiles} over the activations slice: the one class of the profiles edge that asks it, and only its
- * application ring ({@link EffectiveReadService}) and its domain values. The activations slice reads the winner of the
- * profile, its state and its governance in one session, once, and this adapter narrows the entity to the slice's own
- * {@link AgentProfile} and maps the facts and the governance to the slice's own {@link EffectiveProfileRead}, so nothing
- * above it names an activations type. It decides nothing: the refusals, the {@code 304} and the order of the judgements
+ * application ring ({@link EffectiveReadService}) and its domain values. The activations slice reads the effective
+ * profile, its state, its lineage and its governance in one session, once (the packs slice composes the profile with
+ * the profiles slice's merge and inheritance, through its {@code ProfileEnhancementGateway}, where the verified view and
+ * the packs a refusal names are), and this adapter narrows the entity to the slice's own {@link AgentProfile} and maps
+ * the facts, the lineage and the governance to the slice's own {@link EffectiveProfileRead}, so nothing above it names an
+ * activations type. It decides nothing: the refusals, the {@code 304} and the order of the judgements
  * are the service's, unchanged.
  *
  * <p>The activations slice carries the artifacts in force that the walk lists apart from the artifacts out of force that
@@ -79,7 +81,11 @@ public final class ActivationsEffectiveProfiles implements EffectiveProfiles {
                 answer.sourceFingerprint(),
                 facts(answer.winner()),
                 entries(governance),
-                effective.listedKinds());
+                effective.listedKinds(),
+                governance.lineage().stream()
+                        .map(link -> new EffectiveProfileRead.Lineage(link.id(), link.pack(), link.depth()))
+                        .toList(),
+                governance.enhances());
     }
 
     private static List<EffectiveProfileRead.Entry> entries(EffectiveArtifactAnswer.Governance governance) {

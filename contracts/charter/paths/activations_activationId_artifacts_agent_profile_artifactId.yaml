@@ -3,17 +3,23 @@ parameters:
 - $ref: ../parameters/ArtifactId.yaml
 get:
   operationId: getEffectiveAgentProfile
-  summary: Read an agent profile under an activation, with its governance and the state of each entry.
+  summary: Read the effective agent profile under an activation, with its lineage, its governance and the state of each entry.
   description: >-
-    One agent profile under an activation (ADR-0020 D7; operator decisions of 2026-11-09): the winner the layer merge
-    keeps across the levels of the activation's closure, with the pack and the level that hold it, its state, reason,
-    policy and required as listEffectiveArtifacts gives them for the same profile, the profile as that pack stores it in
-    agentProfile and, in governance, the artifacts its governance walk lists, each with how it was reached and the
-    facts of its own winner (pack, level, state, reason). The stored winner is answered: a profile's enhances edges are
-    not resolved, so this is not the effective profile of #380. _links.self is this request, with depth when the
-    request sent one; _links.artifact is the pack-scoped read of the winner's pack (the same body, read from the pack);
-    and _links.up is the activation. The generic read getEffectiveArtifact never carries a body: this literal path is
-    the read of the kind.
+    One agent profile under an activation (ADR-0020 D7; operator decisions of 2026-11-09; R8, #102): the winner the layer
+    merge keeps across the levels of the activation's closure, with the pack and the level that hold it, its state,
+    reason, policy and required as listEffectiveArtifacts gives them for the same profile, the effective profile in
+    agentProfile, its lineage and, in governance, the artifacts its governance walk lists, each with how it was reached
+    and the facts of its own winner (pack, level, state, reason). The effective profile resolves enhances and
+    specializes_from (rulings D5, D6 and D7 of ADR-0078): each profile of the chain, the in-force specializes_from
+    ancestors and the profile itself, is merged with its own in-force enhancers, then the chain is folded root to leaf by
+    per-field replacement, identity fields never merged and never inherited (EffectiveAgentProfileRead). lineage lists
+    the in-force ancestors, nearest first, each with its pack and depth, and is empty for a root. A profile that
+    enhances another agent profile answers its own stored body, and _links.enhances is the read of the profile it
+    enhances under this activation. _links.self is this request, with depth when the request sent one;
+    _links.artifact is the pack-scoped read of the winner's pack, which answers the stored profile, before any enhancer
+    is merged or any field inherited; and _links.up is the activation. The generic read getEffectiveArtifact never
+    carries a body: this literal path is the read of the kind. Selection (selectAgentProfile) judges each candidate by
+    its own declared fields, never by this effective profile.
 
     The walk is the one of getPackAgentProfile, judged by the activation instead of by the pack's closure alone: the
     lineage through specializes_from, then what the profile and its ancestors require, suggest and cite in the
@@ -40,13 +46,15 @@ get:
     activation's closure holds as an agent_profile is a 404 artifact_not_found, judged before any If-None-Match, so a
     name no pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a
     closure that cannot compose or merge, and a winner whose pack cannot read it are 500, with their code
-    (pack_unreadable also for a layer override that the mutability level forbids); stale_input and internal_error may be
-    retried. The answer is never partial. The body and the governance are one verified read against the source
-    fingerprint, which the answer carries.
+    (pack_unreadable also for a layer override that the mutability level forbids); so is an in-force enhancement of a
+    profile of the chain that would drop part of the profile it enhances, content stored before the rule that refuses
+    it at registration (profile_enhancement_drops_field, its packs member naming the enhancing pack first); stale_input
+    and internal_error may be retried. The answer is never partial. The body, the lineage and the governance are one
+    verified read against the source fingerprint, which the answer carries.
 
     ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
-    the activation's closure, and with the profile and the depth, and it does not change when a pack outside the
-    closure changes. A matching If-None-Match is a 304 without a body, and a tag of another representation never matches
+    the activation's closure, the packs of the profile's enhancers and ancestors among them, and with the profile and
+    the depth, and it does not change when a pack outside the closure changes. A matching If-None-Match is a 304 without a body, and a tag of another representation never matches
     (RFC 9110 section 13.1.2).
   tags:
   - EffectiveAgentProfiles
@@ -55,7 +63,7 @@ get:
   - $ref: ../parameters/Depth.yaml
   responses:
     '200':
-      description: The agent profile under the activation, with its governance.
+      description: The effective agent profile under the activation, with its lineage and its governance.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -105,6 +113,52 @@ get:
                 code: artifact_not_found
                 detail: No pack of the activation's closure holds the agent_profile nobody.
     '500':
-      $ref: ../responses/OfferingUnreadable.yaml
+      description: >-
+        The configured packs cannot be read, do not compose or merge, or changed while the read was answered, as
+        OfferingUnreadable describes for every effective read (pack_unreadable, the composition codes,
+        prompt_slot_missing, stale_input and internal_error); or an in-force enhancement of a profile of the chain
+        would drop part of the profile it enhances (profile_enhancement_drops_field, rulings D5 and D7): a list item,
+        a sub-field or a value of a top-level field it declares is missing or changed, or it declares a non-empty
+        excluding. That content was stored before the rule that refuses it at registration (422), so the stored packs
+        are at fault, not the request. Its detail names the enhancing pack, the profiles and the field, and its packs
+        member lists the enhancing pack first. The answer is never partial. A refusal carries no source fingerprint
+        header.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            profile-enhancement-drops-field:
+              summary: An enhancer stored before the rule leaves out the specialization of the profile it enhances.
+              value:
+                title: Profile enhancement drops field
+                status: 500
+                code: profile_enhancement_drops_field
+                detail: >-
+                  The agent profile reviewer-team of pack team enhances reviewer and would drop part of its
+                  specialization; an enhancement keeps every list item, sub-field and value of the profile it enhances
+                packs:
+                  - descriptorPackId: 01M7DFBF00000000000000TEAM
+                    packId: team
+                    name: team
+            pack-unreadable:
+              summary: A configured pack has no pack.yaml.
+              value:
+                title: Pack unreadable
+                status: 500
+                code: pack_unreadable
+                detail: pack qa has no pack.yaml
+            stale-input:
+              summary: The inputs changed while the read was answered.
+              value:
+                title: Stale input
+                status: 500
+                code: stale_input
+                detail: The inputs changed while the artifacts were read; read them again.
     default:
       $ref: ../../_shared/responses/Problem.yaml

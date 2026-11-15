@@ -5,10 +5,12 @@ import static ai.speckitty.charter.profiles.application.ProfileFixtures.effectiv
 import static ai.speckitty.charter.profiles.application.ProfileFixtures.effectiveRequires;
 import static ai.speckitty.charter.profiles.application.ProfileFixtures.urn;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.api.model.EffectiveAgentProfileRead;
 import ai.speckitty.charter.api.model.EffectiveGovernanceEntry;
 import ai.speckitty.charter.api.model.GovernanceEdgeWords;
+import ai.speckitty.charter.api.model.LineageLink;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -57,7 +59,7 @@ class EffectiveProfileDtosTest {
     }
 
     @Test
-    void theWinnerIsTheMembersOfTheReadAndTheBodyIsTheProfileAsThePackStoresIt() {
+    void theWinnerIsTheMembersOfTheReadAndTheBodyIsTheProfileTheReadAnswers() {
         EffectiveAgentProfileRead wire = dtos.read(
                 new EffectiveProfileRead(
                         ProfileFixtures.leanProfile("house", "P"),
@@ -76,6 +78,8 @@ class EffectiveProfileDtosTest {
                                 List.of(),
                                 Optional.empty()),
                         List.of(),
+                        List.of(),
+                        List.of(),
                         List.of()),
                 OptionalInt.empty());
 
@@ -93,6 +97,54 @@ class EffectiveProfileDtosTest {
         assertThat(wire.getAgentProfile().getProfileId()).isEqualTo("P");
         assertThat(wire.getAgentProfile().getName()).isEqualTo("Name of P");
         assertThat(wire.getGovernance()).isEmpty();
+        assertThat(wire.getLineage())
+                .as("a root's lineage is empty, never absent")
+                .isEmpty();
+    }
+
+    @Test
+    void theLineageIsAnsweredInTheReadsOrderWithEachAncestorsPackAndDepth() {
+        EffectiveAgentProfileRead wire = dtos.read(
+                new EffectiveProfileRead(
+                        ProfileFixtures.leanProfile("main", "P"),
+                        "a-1",
+                        "r",
+                        "g",
+                        "s",
+                        active("agent_profile:P", "main"),
+                        List.of(),
+                        List.of(),
+                        List.of(
+                                new EffectiveProfileRead.Lineage("parent", "main", 1),
+                                new EffectiveProfileRead.Lineage("root", "built-in", 2)),
+                        List.of()),
+                OptionalInt.empty());
+
+        assertThat(wire.getLineage())
+                .extracting(LineageLink::getId, LineageLink::getPack, LineageLink::getDepth)
+                .containsExactly(tuple("parent", "main", 1), tuple("root", "built-in", 2));
+        assertThat(wire.getLinks()).doesNotContainKey("enhances");
+    }
+
+    @Test
+    void anEnhancerLinksTheReadOfTheFirstProfileItEnhancesUnderTheActivation() {
+        EffectiveAgentProfileRead wire = dtos.read(
+                new EffectiveProfileRead(
+                        ProfileFixtures.leanProfile("org", "P-org"),
+                        "a-1",
+                        "r",
+                        "g",
+                        "s",
+                        active("agent_profile:P-org", "org"),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of("P", "Q")),
+                OptionalInt.empty());
+
+        assertThat(wire.getLinks().keySet()).containsExactly("self", "artifact", "up", "enhances");
+        assertThat(wire.getLinks().get("enhances").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts/agent_profile/P");
     }
 
     @Test
@@ -131,6 +183,8 @@ class EffectiveProfileDtosTest {
                                 "g",
                                 "s",
                                 active("agent_profile:P Q", "a b"),
+                                List.of(),
+                                List.of(),
                                 List.of(),
                                 List.of()),
                         OptionalInt.empty());
@@ -306,6 +360,8 @@ class EffectiveProfileDtosTest {
                                 "overridden",
                                 List.of("agent_profile:Q"),
                                 Optional.of(new EdgeWords(Optional.of("w"), Optional.of("r")))),
+                        List.of(),
+                        List.of(),
                         List.of(),
                         List.of()),
                 OptionalInt.empty());

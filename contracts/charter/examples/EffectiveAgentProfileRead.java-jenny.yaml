@@ -9,8 +9,9 @@ summary: 'java-jenny under the activation "project", read at depth=1 from the bu
   autonomous-operation-protocol is a suggests entry out of force (inactive, not_selected) with the words of its edge. The
   procedure adversarial-squad-deployment is not listed: java-jenny requires it, but the activation does not select it, so
   it is out of force and a requires target is not a suggestion; implementer-ivan is not listed either, because the activation
-  does not select it (W1). required is the member of the effective set (a preset requires the artifact or a pack locks it),
-  not the relation. self is this request, artifact the pack-scoped read of the winner''s pack, up the activation.'
+  does not select it (W1), so her lineage is empty and agentProfile, the effective profile, is her own body: no ancestor
+  is in force to inherit from and no enhancer of her is in force. required is the member of the effective set (a preset requires the artifact or a pack locks it),
+  not the relation. self is this request, artifact the pack-scoped read of the stored profile in the winner''s pack, up the activation.'
 value:
   activationId: project
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -197,6 +198,7 @@ value:
     performer: agent
     routingPriority: 80
     schemaVersion: '1.0'
+  lineage: []
   governance:
   - kind: directive
     artifactId: DIRECTIVE_001

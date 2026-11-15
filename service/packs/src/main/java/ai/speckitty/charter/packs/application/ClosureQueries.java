@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.time.Duration;
@@ -54,8 +55,12 @@ public final class ClosureQueries {
     private final ConsistentRead read;
     private final Optional<Stores> stores;
 
-    /** The ports a view reads a winner's entity and a step's stored prompt through. */
-    private record Stores(PackRepository packs, PackCompanionFiles companions) {}
+    /**
+     * The ports a view reads a winner's entity and a step's stored prompt through, and the profile merge it composes an
+     * effective agent profile with, when it has one.
+     */
+    private record Stores(
+            PackRepository packs, PackCompanionFiles companions, Optional<ProfileEnhancementGateway> profiles) {}
 
     /**
      * Queries over the offering's compose, whose views read no winner entity.
@@ -70,7 +75,7 @@ public final class ClosureQueries {
 
     /**
      * Queries over the offering's compose whose views also read the stored prompt of a step
-     * ({@link ClosureView#effectivePrompt}).
+     * ({@link ClosureView#effectivePrompt}), and compose no effective agent profile.
      *
      * @param offering the service that composes a closure and maps it to the offering's shape
      * @param catalog the configured packs, the roots are checked against before the compose
@@ -78,19 +83,51 @@ public final class ClosureQueries {
      * @param packs the port a view reads the entity of a winning artifact through ({@link ClosureView#effectiveArtifact})
      * @param companions the port a view reads the stored prompt of a step through
      */
-    @Autowired
     public ClosureQueries(
             OfferingReadService offering,
             PackCatalogRepository catalog,
             ConsistentRead read,
             PackRepository packs,
             PackCompanionFiles companions) {
+        this(offering, catalog, read, packs, companions, Optional.empty());
+    }
+
+    /**
+     * Queries whose views also compose the effective agent profile ({@link ClosureView#resolvedProfile}).
+     *
+     * @param offering the service that composes a closure and maps it to the offering's shape
+     * @param catalog the configured packs, the roots are checked against before the compose
+     * @param read the verifier that digests the inputs before and after the read
+     * @param packs the port a view reads the entity of a winning artifact through ({@link ClosureView#effectiveArtifact})
+     * @param companions the port a view reads the stored prompt of a step through
+     * @param profiles the profile enhancement merge and inheritance (rulings D5 to D7)
+     */
+    @Autowired
+    public ClosureQueries(
+            OfferingReadService offering,
+            PackCatalogRepository catalog,
+            ConsistentRead read,
+            PackRepository packs,
+            PackCompanionFiles companions,
+            ProfileEnhancementGateway profiles) {
+        this(offering, catalog, read, packs, companions, Optional.of(Objects.requireNonNull(profiles, "profiles")));
+    }
+
+    private ClosureQueries(
+            OfferingReadService offering,
+            PackCatalogRepository catalog,
+            ConsistentRead read,
+            PackRepository packs,
+            PackCompanionFiles companions,
+            Optional<ProfileEnhancementGateway> profiles) {
         this(
                 offering,
                 catalog,
                 read,
                 Optional.of(new Stores(
-                        Objects.requireNonNull(packs, "packs"), Objects.requireNonNull(companions, "companions"))));
+                        Objects.requireNonNull(packs, "packs"),
+                        Objects.requireNonNull(companions, "companions"),
+                        profiles)));
     }
 
     private ClosureQueries(
@@ -237,7 +274,13 @@ public final class ClosureQueries {
         }
         PackRepository repository = stores.get().packs();
         PackCompanionFiles companions = stores.get().companions();
+        Optional<ProfileEnhancementGateway> profiles = stores.get().profiles();
         return new ClosureView.WinnerSource() {
+            @Override
+            public Optional<ProfileEnhancementGateway> profileMerge() {
+                return profiles;
+            }
+
             @Override
             public Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id) {
                 Optional<CharterArtifact> found = artifact(repository, pack, kind, id);

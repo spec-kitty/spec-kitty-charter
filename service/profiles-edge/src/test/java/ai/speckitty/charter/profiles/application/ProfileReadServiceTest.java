@@ -181,6 +181,8 @@ class ProfileReadServiceTest {
                         "s",
                         ProfileFixtures.active("agent_profile:other", "main"),
                         List.of(),
+                        List.of(),
+                        List.of(),
                         List.of()),
                 "tag");
 

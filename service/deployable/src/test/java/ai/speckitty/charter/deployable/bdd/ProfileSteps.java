@@ -2,15 +2,26 @@ package ai.speckitty.charter.deployable.bdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The step vocabulary of the agent profile reads (agent-profile-reads.feature, effective-agent-profile.feature) and of
- * the profile selection (profile-selection.feature): the
+ * The step vocabulary of the agent profile reads (agent-profile-reads.feature, effective-agent-profile.feature), of the
+ * profile enhancement refusal (profiles.feature) and of the profile selection (profile-selection.feature). The
+ * profiles.feature steps author packs of one profile each, stored as files the way a pack configured before the rule
+ * is, so the effective profile read, not the registration, judges them: a pack is configured at its level with a
+ * descriptor of its own, an enhancing pack depends on the pack whose profile it enhances, and the effective read
+ * stores an activation over every such pack that selects every such profile. The rest is the
  * {@code governance} list of the last answer as lines of text, compared with the doc string in the order the answer gives. The order is part of what is
  * pinned: the entries are sorted by urn. A line also says whether the entry links to the pack-scoped read of its
  * artifact and where that read is, so a scenario states which entries link and which do not.
@@ -20,15 +31,157 @@ public class ProfileSteps {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String ARTIFACT_LINK_PREFIX = "/api/v1/packs/";
 
+    private static final String ACTIVATION = "effective";
+
     private final ScenarioHttp http;
+    private final ScenarioPacks packs;
+
+    /** The packs this scenario's profile steps configured, by name, with their descriptor {@code pack_id}. */
+    private final Map<String, String> descriptors = new LinkedHashMap<>();
+
+    /** The profiles this scenario's profile steps wrote, each with the pack that holds it, in the order written. */
+    private final Map<String, String> profiles = new LinkedHashMap<>();
 
     /**
-     * Steps over the scenario's exchanges.
+     * Steps over the scenario's exchanges and packs.
      *
      * @param http the scenario's HTTP client and record
+     * @param packs the scenario's packs
      */
-    public ProfileSteps(ScenarioHttp http) {
+    public ProfileSteps(ScenarioHttp http, ScenarioPacks packs) {
         this.http = http;
+        this.packs = packs;
+    }
+
+    /**
+     * One pack holding one agent profile whose specialization's primary focus is the given text; the pack is configured
+     * at the level the step names, with a descriptor of its own.
+     */
+    @Given("the {word} pack {string} holds the agent profile {string} with the specialization {string}")
+    public void packHoldsProfile(String level, String pack, String profileId, String focus) {
+        configure(level, pack, null);
+        writeProfile(level, pack, profileId, focus);
+    }
+
+    /**
+     * A pack holding an agent profile that enhances one written by an earlier step and whose specialization leaves out
+     * the base's: its primary focus is another text. The pack depends on the pack that holds the base, and the enhances
+     * edge names the base qualified by that pack.
+     */
+    @Given("the {word} pack {string} holds an agent profile that enhances {string} and leaves out its specialization")
+    public void packHoldsDroppingEnhancer(String level, String pack, String baseId) {
+        String basePack = profiles.get(baseId);
+        if (basePack == null) {
+            throw new IllegalStateException("no earlier step wrote the agent profile " + baseId);
+        }
+        configure(level, pack, basePack);
+        String enhancerId = baseId + "-" + pack;
+        writeProfile(level, pack, enhancerId, "Something else than " + baseId + " does");
+        packs.addFile(
+                level(level),
+                pack,
+                "agent_profile.graph.yaml",
+                String.join(
+                        "\n",
+                        "schema_version: '1.0'",
+                        "generated_at: STATIC",
+                        "nodes: []",
+                        "edges:",
+                        "- {source: 'agent_profile:" + enhancerId + "', target: '" + basePack + "::agent_profile:"
+                                + baseId + "', relation: enhances}"));
+    }
+
+    /**
+     * Stores an activation over every pack the profile steps configured, selecting every profile they wrote, and reads
+     * the effective profile under it.
+     */
+    @When("I read the effective agent profile {string}")
+    public void readEffectiveProfile(String profileId) throws Exception {
+        String packList = descriptors.keySet().stream()
+                .map(pack -> "{\"packId\":\"" + pack + "\"}")
+                .collect(Collectors.joining(","));
+        String selected = profiles.keySet().stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(","));
+        http.perform(
+                "PUT",
+                "/activations/" + ACTIVATION,
+                Map.of("Content-Type", "application/json"),
+                "{\"schemaVersion\":2,\"packs\":[" + packList + "],\"selected\":{\"agent_profile\":[" + selected
+                        + "]}}");
+        assertThat(http.response().getStatus())
+                .as("the activation over the scenario's packs is stored: %s", http.body())
+                .isEqualTo(201);
+        http.perform("GET", "/activations/" + ACTIVATION + "/artifacts/agent_profile/" + profileId, Map.of(), null);
+    }
+
+    /**
+     * The effective read is refused with {@code 500 profile_enhancement_drops_field}: the content was stored before the
+     * rule, so the packs are at fault, not the request. The refusal names the enhancing pack first in its packs member and
+     * in its detail, and the field in its detail.
+     */
+    @Then("the request is refused naming the pack {string} and the field {string}")
+    public void refusedNamingPackAndField(String pack, String field) throws Exception {
+        JsonNode problem = JSON.readTree(http.body());
+        assertThat(http.response().getStatus())
+                .as("the status of %s", http.body())
+                .isEqualTo(500);
+        assertThat(problem.path("code").asString()).isEqualTo("profile_enhancement_drops_field");
+        assertThat(problem.path("packs").path(0).path("packId").asString())
+                .as("the enhancing pack, named first")
+                .isEqualTo(pack);
+        assertThat(problem.path("packs").path(0).path("name").asString()).isEqualTo(pack);
+        assertThat(problem.path("detail").asString())
+                .as("the detail names the pack and the field")
+                .contains("of pack " + pack + " ")
+                .contains(" its " + field + ";");
+    }
+
+    private void configure(String level, String pack, @Nullable String dependsOn) {
+        if (descriptors.containsKey(pack)) {
+            return;
+        }
+        String packId = String.format("01M7DFBF%018d", descriptors.size() + 1);
+        descriptors.put(pack, packId);
+        StringBuilder descriptor = new StringBuilder()
+                .append("pack_id: ")
+                .append(packId)
+                .append('\n')
+                .append("pack_version: 1.0.0\n")
+                .append("parent_pack: null\n")
+                .append("name: ")
+                .append(pack)
+                .append('\n')
+                .append("pack_level: ")
+                .append(level)
+                .append('\n');
+        if (dependsOn != null) {
+            descriptor
+                    .append("depends_on:\n")
+                    .append("  - pack_id: ")
+                    .append(descriptors.get(dependsOn))
+                    .append('\n')
+                    .append("    range: \">=1.0,<2\"\n");
+        }
+        packs.addFile(level(level), pack, "pack.yaml", descriptor.toString());
+    }
+
+    private void writeProfile(String level, String pack, String profileId, String focus) {
+        profiles.put(profileId, pack);
+        packs.addFile(
+                level(level),
+                pack,
+                "agent_profiles/" + profileId + ".agent.yaml",
+                String.join(
+                        "\n",
+                        "profile-id: " + profileId,
+                        "name: " + profileId,
+                        "role: reviewer",
+                        "purpose: Review the work.",
+                        "specialization:",
+                        "  primary-focus: " + focus));
+    }
+
+    private static PackLevel level(String token) {
+        return PackLevel.fromToken(token).orElseThrow(() -> new IllegalArgumentException("no pack level " + token));
     }
 
     @Then("the governance holds exactly the entries:")
