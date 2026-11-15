@@ -6,6 +6,7 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -78,6 +79,11 @@ public final class StagedPackViewFactory implements StagedPackViews {
             @Override
             public Optional<PackRepository> packs() {
                 return repository;
+            }
+
+            @Override
+            public Optional<ProfileEnhancementGateway> enhancements() {
+                return Optional.of(AgentProfileEnhancements.INSTANCE);
             }
         };
     }

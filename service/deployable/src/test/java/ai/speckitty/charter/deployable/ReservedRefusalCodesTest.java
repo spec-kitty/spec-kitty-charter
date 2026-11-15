@@ -361,7 +361,8 @@ class ReservedRefusalCodesTest {
                 RefusalCode.ROLE_PIN_UNKNOWN,
                 RefusalCode.ROLE_PIN_NOT_FITTING,
                 RefusalCode.ROLE_PIN_CONFLICT,
-                RefusalCode.SPECIALIZATION_CYCLE
+                RefusalCode.SPECIALIZATION_CYCLE,
+                RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD
             };
         }
     }

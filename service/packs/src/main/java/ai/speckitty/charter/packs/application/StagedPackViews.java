@@ -69,6 +69,16 @@ public interface StagedPackViews {
         default Optional<ai.speckitty.charter.packs.domain.PackRepository> packs() {
             return Optional.empty();
         }
+
+        /**
+         * The profile enhancement merge (rulings D5 and D7), for the rule that judges an agent profile's enhancers;
+         * empty when the session cannot judge them.
+         *
+         * @return the merge, when there is one
+         */
+        default Optional<ai.speckitty.charter.packs.domain.ProfileEnhancementGateway> enhancements() {
+            return Optional.empty();
+        }
     }
 
     /**

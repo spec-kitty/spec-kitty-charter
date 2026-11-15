@@ -5,11 +5,14 @@ import static ai.speckitty.charter.packs.application.EdgeIndexTest.urn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.EdgeIndexTest.Closure;
 import ai.speckitty.charter.packs.application.GovernanceWalk.Entry;
+import ai.speckitty.charter.packs.application.GovernanceWalk.LineageLink;
 import ai.speckitty.charter.packs.application.GovernanceWalk.Result;
 import ai.speckitty.charter.packs.application.GovernanceWalk.Step;
 import java.util.List;
@@ -622,5 +625,112 @@ class GovernanceWalkTest {
         assertThat(listed(walk(closure, 1, GovernanceWalkTest::everything)))
                 .as("over the held links only, the term the winning copy does not hold is not reached")
                 .containsExactly("term:g/lane");
+    }
+
+    // ---- the lineage chain: held ancestors, longest in-force depth, nearest first (ruling D2, C-002)
+    // ----------------
+
+    private static final String S = "agent_profile:S";
+
+    @Test
+    void theLineageChainGivesEachAncestorItsLongestDepthNearestFirstAndLeavesTheEntriesAsTheyWere() {
+        Closure closure = closure(
+                List.of(P, Q, R, S, "directive:FromR"),
+                edge(P, RelationType.SPECIALIZES_FROM, Q),
+                edge(P, RelationType.SPECIALIZES_FROM, R),
+                edge(Q, RelationType.SPECIALIZES_FROM, R),
+                edge(R, RelationType.SPECIALIZES_FROM, S),
+                edge(R, RelationType.REQUIRES, "directive:FromR"));
+
+        Result result = walk(closure, 0, GovernanceWalkTest::everything);
+
+        assertThat(result.entries())
+                .as("the entries keep the fewest hops: R is one hop from P")
+                .extracting(Entry::urn, Entry::step, Entry::via, Entry::hops)
+                .containsExactly(
+                        tuple(urn(Q), Step.LINEAGE, urn(P), 1),
+                        tuple(urn(R), Step.LINEAGE, urn(P), 1),
+                        tuple(urn(S), Step.LINEAGE, urn(R), 2),
+                        tuple(urn("directive:FromR"), Step.REQUIRES, urn(R), 2));
+        assertThat(result.lineage())
+                .as("the chain takes the longest path: R is two deep through Q, S three")
+                .extracting(LineageLink::urn, LineageLink::depth)
+                .containsExactly(tuple(urn(Q), 1), tuple(urn(R), 2), tuple(urn(S), 3));
+    }
+
+    @Test
+    void anAncestorOutOfForceIsNotInTheChainAndShortensTheDepthsBehindIt() {
+        Closure closure = closure(
+                List.of(P, Q, R, S),
+                edge(P, RelationType.SPECIALIZES_FROM, Q),
+                edge(Q, RelationType.SPECIALIZES_FROM, R),
+                edge(P, RelationType.SPECIALIZES_FROM, R),
+                edge(R, RelationType.SPECIALIZES_FROM, S));
+
+        Result result = walk(closure, 0, inForce(R, S));
+
+        assertThat(result.lineage())
+                .as("Q is not in force: R is reached from P alone, one deep")
+                .extracting(LineageLink::urn, LineageLink::depth)
+                .containsExactly(tuple(urn(R), 1), tuple(urn(S), 2));
+    }
+
+    @Test
+    void aParentNoPackHoldsIsListedButIsNotInTheChain() {
+        Closure closure = closure(
+                List.of(P, Q),
+                edge(P, RelationType.SPECIALIZES_FROM, Q),
+                edge(P, RelationType.SPECIALIZES_FROM, "agent_profile:Gone"));
+
+        Result written = GovernanceWalk.overWritten(closure.merged()).walk(urn(P), 0, GovernanceWalkTest::everything);
+
+        assertThat(listed(written)).containsExactly("agent_profile:Gone", Q);
+        assertThat(written.lineage())
+                .extracting(LineageLink::urn, LineageLink::depth)
+                .containsExactly(tuple(urn(Q), 1));
+    }
+
+    @Test
+    @Timeout(value = 1, unit = TimeUnit.SECONDS)
+    void aCycleAmongTheAncestorsEndsWithEveryAncestorInTheChainOnce() {
+        Closure closure = closure(
+                List.of(P, Q, R),
+                edge(P, RelationType.SPECIALIZES_FROM, Q),
+                edge(Q, RelationType.SPECIALIZES_FROM, R),
+                edge(R, RelationType.SPECIALIZES_FROM, Q),
+                edge(R, RelationType.SPECIALIZES_FROM, P));
+
+        Result result = walk(closure, 0, GovernanceWalkTest::everything);
+
+        assertThat(result.lineage()).extracting(LineageLink::urn).containsExactlyInAnyOrder(urn(Q), urn(R));
+        assertThat(result.lineage()).allSatisfy(link -> assertThat(link.depth()).isBetween(1, 2));
+    }
+
+    @Test
+    void aProfileWithoutAncestorsHasAnEmptyChain() {
+        Closure closure = closure(List.of(P, "directive:Own"), edge(P, RelationType.REQUIRES, "directive:Own"));
+
+        assertThat(walk(closure, 0, GovernanceWalkTest::everything).lineage()).isEmpty();
+    }
+
+    @Test
+    void theGovernanceNamesThePackOfEachAncestorOfTheChainAndLeavesOutOneWithNoHolder() {
+        Closure closure = closure(
+                List.of(P, Q, R), edge(P, RelationType.SPECIALIZES_FROM, Q), edge(Q, RelationType.SPECIALIZES_FROM, R));
+        Result result = walk(closure, 0, GovernanceWalkTest::everything);
+        PackIdentifier builtIn = new PackIdentifier("built-in");
+
+        ProfileGovernance.Governance governance = ProfileGovernance.Governance.of(
+                result,
+                held -> held.equals(urn(R))
+                        ? Optional.empty()
+                        : Optional.of(new ClosureView.Holder(builtIn, PackLevel.BUILT_IN)));
+
+        assertThat(governance.lineage())
+                .extracting(
+                        ProfileGovernance.LineageLink::urn,
+                        ProfileGovernance.LineageLink::pack,
+                        ProfileGovernance.LineageLink::depth)
+                .containsExactly(tuple(urn(Q), builtIn, 1));
     }
 }

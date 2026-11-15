@@ -1452,6 +1452,60 @@ Feature: Registering a whole pack replaces the pack the service holds
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
+  # bound by: rulings D5 and D7 (#380): an agent profile that enhances another keeps every list item, sub-field and value of it
+  Scenario: An enhancement that drops part of the profile it enhances is refused, and one that only adds is accepted
+    Given the archive "enhanced" is a copy of the archive "v1"
+    And the archive "enhanced" holds the file "agent_profiles/reviewer-renata.agent.yaml":
+      """
+      profile-id: reviewer-renata
+      name: Reviewer Renata
+      role: reviewer
+      purpose: Review the work.
+      capabilities: [code-review, security-audit]
+      specialization:
+        primary-focus: Review
+        secondary-awareness: Architecture
+      """
+    And the archive "enhanced" holds the file "enhances.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'agent_profile:reviewer-renata-org', target: 'agent_profile:reviewer-renata', relation: enhances}
+      """
+    And the archive "sound" is a copy of the archive "enhanced"
+    And the archive "enhanced" holds the file "agent_profiles/reviewer-renata-org.agent.yaml":
+      """
+      profile-id: reviewer-renata-org
+      name: Reviewer Renata of the org
+      role: reviewer
+      purpose: Review the work as the org does.
+      specialization:
+        primary-focus: Review
+      """
+    And the archive "sound" holds the file "agent_profiles/reviewer-renata-org.agent.yaml":
+      """
+      profile-id: reviewer-renata-org
+      name: Reviewer Renata of the org
+      role: reviewer
+      purpose: Review the work as the org does.
+      capabilities: [security-audit, code-review, threat-modelling]
+      specialization:
+        primary-focus: Review
+        secondary-awareness: Architecture
+      """
+    When I PUT "/packs/acme" with the archive "enhanced"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "profile_enhancement_drops_field"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "sound"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   # bound by: WP16 (IC-15, A8, A12 and the WP15 hand-off: an edge whose two ends name one artifact of another pack)
   # A self-loop the load can see in one pack is refused first as invalid (the outline above); an edge whose ends are qualified
   # to one artifact of a pack the writer builds on is the shadow the impact check refuses, as the rule of its relation.

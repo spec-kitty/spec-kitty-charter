@@ -123,11 +123,15 @@ public class RefusalHandler {
         return Map.copyOf(byOperation);
     }
 
-    /** A registration's and each impact-checked write's: the eleven composition codes and the slot check, all 422. */
+    /**
+     * A registration's and each impact-checked write's: the eleven composition codes, the slot check and the profile
+     * enhancement merge (ruling D5), all 422.
+     */
     private static Map<RefusalCode, HttpStatus> impactCheckedStatusCodes() {
         Map<RefusalCode, HttpStatus> codes = new java.util.EnumMap<>(RefusalCode.class);
         codes.putAll(registrationStatusCodes());
         codes.put(RefusalCode.PROMPT_SLOT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT);
+        codes.put(RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD, HttpStatus.UNPROCESSABLE_CONTENT);
         return Map.copyOf(codes);
     }
 
@@ -434,6 +438,7 @@ public class RefusalHandler {
                 RefusalCode.PROMPT_SLOT_NOT_EMPTY,
                 RefusalCode.PROMPT_FRAGMENT_INVALID,
                 RefusalCode.PROMPT_SLOT_MISSING,
+                RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
                 RefusalCode.INTERNAL_ERROR,
                 RefusalCode.STALE_INPUT);
 
