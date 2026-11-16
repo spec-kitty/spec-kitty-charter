@@ -182,9 +182,8 @@ class AssetStoreTest {
         assertThat(ids(read)).containsExactly("b");
         assertThat(read.violations()).singleElement().satisfies(v -> {
             assertThat(v.file()).isEqualTo("assets/a.md.asset.yaml");
-            assertThat(v.kind()).isEqualTo("schema");
-            assertThat(v.reason())
-                    .isEqualTo("additionalProperties violated at the document: undeclared key 'surprise'");
+            assertThat(v.kind().value()).isEqualTo("artifact_schema_error");
+            assertThat(v.reason()).isEqualTo("unknown key 'surprise'");
         });
     }
 
@@ -334,7 +333,7 @@ class AssetStoreTest {
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("a/kept.bin");
         assertThat(read.violations())
                 .extracting(PackElementViolation::file, PackElementViolation::kind)
-                .containsExactly(tuple("assets/   ", "domain"));
+                .containsExactly(tuple("assets/   ", StorageCodes.ARTIFACT_SCHEMA_ERROR));
     }
 
     /**

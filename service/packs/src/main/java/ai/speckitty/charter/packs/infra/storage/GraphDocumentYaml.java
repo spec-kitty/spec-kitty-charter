@@ -43,7 +43,9 @@ final class GraphDocumentYaml {
         List<SchemaViolation> violations =
                 PackSchemas.bundled().validate(shape == Shape.SHARD ? "graph-shard" : "org-fragment", file, document);
         if (!violations.isEmpty()) {
-            return new FileRead.Unreadable<>(file, null, violations);
+            // The facts validate mode's vocabulary words a node's fault by, so both surfaces say it alike (#554, R2).
+            return new FileRead.Unreadable<>(
+                    file, null, GraphDocumentReader.withSiblingFacts(violations, document, shape));
         }
         if (!(document instanceof Map<?, ?> root)) {
             throw new IllegalStateException(file + " passed the schema but is no mapping");

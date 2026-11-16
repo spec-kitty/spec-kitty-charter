@@ -19,8 +19,8 @@
     "violations": [
       {
         "file": "glossaries/core.glossary.yaml",
-        "kind": "schema",
-        "says": "pattern violated at /id"
+        "kind": "artifact_schema_error",
+        "says": "'id' does not match its pattern"
       }
     ]
   }

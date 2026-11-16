@@ -465,8 +465,8 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "pack_unreadable"
-    And the field at "/problem/violations/0/pointer" is "pack"
-    And the field at "/problem/violations/0/detail" contains "undeclared key 'active_charter'"
+    And the field at "/problem/violations/0/pointer" is "pack.yaml"
+    And the field at "/problem/violations/0/detail" contains "unknown key 'active_charter'"
     When I GET "/packs/acme"
     Then the response status is 404
 

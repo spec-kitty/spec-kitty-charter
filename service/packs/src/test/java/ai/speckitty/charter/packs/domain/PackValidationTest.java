@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,8 @@ class PackValidationTest {
                         new FileRead.Unreadable<Object>("tactics/b.tactic.yaml", null, List.of(missing)),
                         new FileRead.Unreadable<Object>(
                                 "org-charter.yaml",
-                                ParseFailure.retired("org-charter.yaml", "org enforcement is a preset (#431)"),
+                                ParseFailure.refused(
+                                        "org-charter.yaml", "org enforcement is a preset (#431)", StorageCodes.RETIRED),
                                 List.of())));
 
         List<PackFinding> findings =
@@ -139,17 +141,17 @@ class PackValidationTest {
                 .extracting(PackFinding::code, PackFinding::file, PackFinding::severity)
                 .containsExactlyInAnyOrder(
                         org.assertj.core.api.Assertions.tuple(
-                                PackFindingCode.ARTIFACT_SCHEMA_ERROR, "tactics/a.tactic.yaml", Severity.VIOLATION),
+                                StorageCodes.UNREADABLE, "tactics/a.tactic.yaml", Severity.VIOLATION),
                         org.assertj.core.api.Assertions.tuple(
                                 PackFindingCode.ARTIFACT_SCHEMA_ERROR, "tactics/b.tactic.yaml", Severity.VIOLATION),
                         org.assertj.core.api.Assertions.tuple(
-                                PackFindingCode.ARTIFACT_SCHEMA_ERROR, "org-charter.yaml", Severity.VIOLATION));
+                                StorageCodes.RETIRED, "org-charter.yaml", Severity.VIOLATION));
         assertThat(findings)
                 .extracting(PackFinding::detail)
                 .contains(
-                        "qa/tactics/a.tactic.yaml is not valid YAML: while parsing a block mapping",
-                        "qa/tactics/b.tactic.yaml: missing 'id'",
-                        "qa/org-charter.yaml is retired: org enforcement is a preset (#431)");
+                        "tactics/a.tactic.yaml: while parsing a block mapping",
+                        "tactics/b.tactic.yaml: missing 'id'",
+                        "org-charter.yaml: org enforcement is a preset (#431)");
     }
 
     @Test

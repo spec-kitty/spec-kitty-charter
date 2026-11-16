@@ -45,6 +45,14 @@ public final class RelationshipShard {
     /** The pack-relative path registered relationships persist to: a root shard the fingerprint already covers. */
     public static final String SHARD_PATH = "registered.graph.yaml";
 
+    /**
+     * Why a {@value #SHARD_PATH} no registration wrote is refused ({@code reserved_shard}), the one wording of validate
+     * mode and the registration (#554, R2 row 28).
+     */
+    static final String RESERVED = SHARD_PATH
+            + " is reserved for the registered relationships; a file of this name without generated_by: "
+            + "charter-registration is refused. Register the edges in a shard of your own.";
+
     /** The {@code generated_by} the registration store stamps on the shard it writes; a source shard does not carry it. */
     static final String WRITTEN_BY = "charter-registration";
 

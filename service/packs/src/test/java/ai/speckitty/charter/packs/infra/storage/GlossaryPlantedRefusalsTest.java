@@ -126,7 +126,7 @@ class GlossaryPlantedRefusalsTest {
         for (int i = 0; i < violations.size(); i++) {
             JsonNode want = load.get("violations").get(i);
             PackElementViolation got = violations.get(i);
-            assertThat(got.kind()).as(plant).isEqualTo(want.get("kind").asString());
+            assertThat(got.kind().value()).as(plant).isEqualTo(want.get("kind").asString());
             assertThat(got.reason()).as(plant).isEqualTo(want.get("says").asString());
             if (want.has("file")) {
                 assertThat(got.file()).as(plant).isEqualTo(want.get("file").asString());

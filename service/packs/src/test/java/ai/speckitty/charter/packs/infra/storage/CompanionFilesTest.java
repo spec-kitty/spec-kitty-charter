@@ -101,7 +101,7 @@ class CompanionFilesTest {
 
         assertThat(read.dsos(Fixture.INSTANCE)).extracting(FixtureDso::id).containsExactly("first");
         assertThat(read.violations())
-                .allSatisfy(violation -> assertThat(violation.kind()).isEqualTo("companion"))
+                .allSatisfy(violation -> assertThat(violation.kind().value()).isEqualTo("companion"))
                 .extracting(violation -> violation.file() + ": " + violation.reason())
                 .containsExactlyInAnyOrder(
                         "absolute.tactic.yaml: /etc/hostname: leaves the pack",

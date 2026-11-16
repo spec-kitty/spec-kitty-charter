@@ -30,10 +30,7 @@ class PackFindingTest {
             PackCodes.PROMPT_SLOT_NOT_EMPTY);
 
     private static final Set<ReasonCode> LOAD_PATH_WARNINGS = Set.of(
-            PackFindingCode.PACK_LEVEL_MISSING,
-            PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
-            PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING,
-            PackFindingCode.FILE_NOT_HELD);
+            PackFindingCode.PACK_LEVEL_MISSING, PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING, PackFindingCode.FILE_NOT_HELD);
 
     /** Every code a finding is built with: the domain's codes, then the staging view's. */
     static Stream<ReasonCode> codes() {
@@ -48,9 +45,8 @@ class PackFindingTest {
                         PackFindingCode.PACK_VERSION_INVALID,
                         PackFindingCode.DEPENDENCY_RANGE_INVALID,
                         PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                        PackFindingCode.ASSET_PATH_ESCAPE,
+                        PackFindingCode.UNREADABLE,
                         PackFindingCode.ASSET_MIME_INVALID,
-                        PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
                         PackFindingCode.FILE_NOT_HELD));
     }
 

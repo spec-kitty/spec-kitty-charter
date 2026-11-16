@@ -18,6 +18,6 @@
   "load": {
     "level": "org",
     "loads": false,
-    "graphRefusal": "drg/fragment.yaml: pattern violated at /edges/0/source"
+    "graphRefusal": "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
   }
 }

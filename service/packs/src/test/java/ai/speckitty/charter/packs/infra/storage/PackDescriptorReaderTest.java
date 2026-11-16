@@ -268,7 +268,9 @@ class PackDescriptorReaderTest {
         assertThat(bad.violations()).isEmpty();
         assertThat(Wording.unreadable("qa", bad))
                 .extracting(PackFinding::detail)
-                .containsExactly("pack.yaml of qa is not valid YAML");
+                .singleElement()
+                .asString()
+                .startsWith("pack.yaml of qa is not valid YAML: ");
     }
 
     @Test

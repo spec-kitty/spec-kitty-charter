@@ -124,7 +124,7 @@ class PackPolicyGraphTest {
                         PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of("nodes", "0"),
-                        "qa/tactic.graph.yaml: node urn 'nonsense' is not <kind>:<id>"));
+                        "tactic.graph.yaml: node urn 'nonsense' is not <kind>:<id>"));
     }
 
     @Test
@@ -146,14 +146,14 @@ class PackPolicyGraphTest {
         GraphBuild build = PackPolicy.graph(
                 "qa", fragment(List.of(new RawNode("t1", "mission_steps", Optional.empty())), List.of()));
         assertThat(build.graph().nodes()).isEmpty();
-        assertThat(details(build)).containsExactly("qa/drg/fragment.yaml: node t1 has unknown kind 'mission_steps'");
+        assertThat(details(build)).containsExactly("drg/fragment.yaml: node t1 has unknown kind 'mission_steps'");
     }
 
     @Test
     void aFragmentNodeWithAnEmptyIdIsAFindingNotAnException() {
         GraphBuild build =
                 PackPolicy.graph("qa", fragment(List.of(new RawNode("", "directives", Optional.empty())), List.of()));
-        assertThat(details(build)).containsExactly("qa/drg/fragment.yaml: a node of kind 'directives' has an empty id");
+        assertThat(details(build)).containsExactly("drg/fragment.yaml: a node of kind 'directives' has an empty id");
     }
 
     // ---- edges ---------------------------------------------------------------------------------
@@ -181,9 +181,9 @@ class PackPolicyGraphTest {
                         PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of("edges", "0"),
-                        "qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"));
+                        "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"));
         assertThat(details(build(List.of(edge("nope", "tactic:a", "requires")))))
-                .containsExactly("qa/tactic.graph.yaml: edge endpoint 'nope' is not a URN");
+                .containsExactly("tactic.graph.yaml: edge endpoint 'nope' is not a URN");
     }
 
     @Test
@@ -191,7 +191,7 @@ class PackPolicyGraphTest {
         GraphBuild build = build(List.of(edge("tactic:a", "tactic:a", "requires")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build))
-                .containsExactly("qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+                .containsExactly("tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
     }
 
     @Test
@@ -214,7 +214,7 @@ class PackPolicyGraphTest {
     void anUnknownRelationIsAFinding() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "befriends")));
         assertThat(build.graph().relationships()).isEmpty();
-        assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: unknown relation 'befriends'");
+        assertThat(details(build)).containsExactly("tactic.graph.yaml: unknown relation 'befriends'");
     }
 
     @Test
@@ -225,18 +225,17 @@ class PackPolicyGraphTest {
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build))
                 .containsExactly(
-                        "qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:a'",
-                        "qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
+                        "tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:a'",
+                        "tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
         // The node path says the same: a guard or lifecycle node is not authored, in a shard or in a fragment.
         GraphBuild shardNode =
                 PackPolicy.graph("qa", shard(List.of(new RawNode("guard:x", "guard", Optional.empty())), List.of()));
         GraphBuild fragmentNode =
                 PackPolicy.graph("qa", fragment(List.of(new RawNode("wp", "lifecycles", Optional.empty())), List.of()));
         assertThat(shardNode.graph().nodes()).isEmpty();
-        assertThat(details(shardNode))
-                .containsExactly("qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:x'");
+        assertThat(details(shardNode)).containsExactly("tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:x'");
         assertThat(details(fragmentNode))
-                .containsExactly("qa/drg/fragment.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
+                .containsExactly("drg/fragment.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
     }
 
     @Test
@@ -261,12 +260,11 @@ class PackPolicyGraphTest {
         assertThat(build.graph().tensions()).isEmpty();
         assertThat(details(build))
                 .containsExactly(
-                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'term:g/t' requires 'directive:b'",
-                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT
-                                + "'term:g/t' vocabulary 'glossary_context:g'",
-                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'directive:b' overrides 'term:g/t'",
-                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'tactic:a' enhances 'rival::term:g/t'",
-                        "qa/tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'tactic:a' in_tension_with 'term:g/t'");
+                        "tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'term:g/t' requires 'directive:b'",
+                        "tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'term:g/t' vocabulary 'glossary_context:g'",
+                        "tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'directive:b' overrides 'term:g/t'",
+                        "tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'tactic:a' enhances 'rival::term:g/t'",
+                        "tactic.graph.yaml: " + PackPolicy.TERM_ENDPOINT + "'tactic:a' in_tension_with 'term:g/t'");
     }
 
     @Test
@@ -275,7 +273,7 @@ class PackPolicyGraphTest {
         GraphBuild build = build(List.of(edge("tactic:a", "asset:b", "implemented_by")));
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build))
-                .containsExactly("qa/tactic.graph.yaml: relation 'implemented_by' is derived from an artifact's own"
+                .containsExactly("tactic.graph.yaml: relation 'implemented_by' is derived from an artifact's own"
                         + " field, never authored as an edge");
     }
 
@@ -311,8 +309,8 @@ class PackPolicyGraphTest {
         assertThat(build.graph().tensions()).isEmpty();
         assertThat(details(build))
                 .containsExactly(
-                        "qa/tactic.graph.yaml: edge endpoint 'nonsense' is not a URN",
-                        "qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+                        "tactic.graph.yaml: edge endpoint 'nonsense' is not a URN",
+                        "tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
     }
 
     @Test
@@ -336,7 +334,7 @@ class PackPolicyGraphTest {
                         PackCodes.DRG_SCHEMA_ERROR,
                         "registered.graph.yaml",
                         List.of("edges", "1"),
-                        "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
+                        "registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
                                 + " authored in a pack's graph shards"));
         // Positive control: the same shard without the tension binds whole.
         assertThat(PackPolicy.registeredGraph(
@@ -365,9 +363,9 @@ class PackPolicyGraphTest {
     @Test
     void anEdgeReportsItsFirstFaultInTodaysOrderRelationBeforeEndpoint() {
         GraphBuild build = build(List.of(edge("nope", "directive:b", "befriends")));
-        assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: unknown relation 'befriends'");
+        assertThat(details(build)).containsExactly("tactic.graph.yaml: unknown relation 'befriends'");
         // impacts is retired (slice F): it is an unknown relation, reported before the endpoint.
         GraphBuild second = build(List.of(edge("nope", "directive:b", "impacts")));
-        assertThat(details(second)).containsExactly("qa/tactic.graph.yaml: unknown relation 'impacts'");
+        assertThat(details(second)).containsExactly("tactic.graph.yaml: unknown relation 'impacts'");
     }
 }

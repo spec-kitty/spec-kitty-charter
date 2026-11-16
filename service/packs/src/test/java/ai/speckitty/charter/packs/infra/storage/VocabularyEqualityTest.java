@@ -740,9 +740,8 @@ class VocabularyEqualityTest {
                 PackFindingCode.PACK_VERSION_INVALID,
                 PackFindingCode.DEPENDENCY_RANGE_INVALID,
                 PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                PackFindingCode.ASSET_PATH_ESCAPE,
+                PackFindingCode.UNREADABLE,
                 PackFindingCode.ASSET_MIME_INVALID,
-                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
                 PackFindingCode.FILE_NOT_HELD));
         return codes;
     }

@@ -74,7 +74,7 @@ class EdgeEndpointPlantsTest {
 
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(document);
-            assertThat(violation.kind()).isEqualTo(RelationshipEndpointRule.CODE);
+            assertThat(violation.kind().value()).isEqualTo(RelationshipEndpointRule.CODE);
             assertThat(violation.reason()).isEqualTo(reason);
         });
     }
@@ -165,7 +165,7 @@ class EdgeEndpointPlantsTest {
 
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo("overrides.graph.yaml");
-            assertThat(violation.kind()).isEqualTo(RelationshipEndpointRule.CODE);
+            assertThat(violation.kind().value()).isEqualTo(RelationshipEndpointRule.CODE);
             assertThat(violation.reason()).isEqualTo(reason);
         });
     }

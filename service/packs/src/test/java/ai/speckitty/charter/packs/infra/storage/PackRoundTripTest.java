@@ -264,9 +264,7 @@ class PackRoundTripTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("pack.yaml of " + id.value()
-                        + " cannot be read: additionalProperties violated at the document: undeclared key"
-                        + " 'experimental_note'");
+                .hasMessage("pack.yaml of " + id.value() + ": unknown key 'experimental_note'");
     }
 
     /** Partial tolerance: the broken file is reported, and the valid elements are still returned (the control). */
@@ -279,7 +277,7 @@ class PackRoundTripTest {
         assertThat(tactics(read)).extracting(TacticDso::id).containsExactly(ALPHA_ID, BETA_ID);
         assertThat(read.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(BROKEN_FILE);
-            assertThat(violation.kind()).isEqualTo("schema");
+            assertThat(violation.kind().value()).isEqualTo("artifact_schema_error");
         });
         assertThat(Files.exists(host.resolve("pack-a").resolve(ALPHA_FILE))).isTrue();
         assertThat(Files.exists(host.resolve("pack-a").resolve(BETA_FILE))).isTrue();

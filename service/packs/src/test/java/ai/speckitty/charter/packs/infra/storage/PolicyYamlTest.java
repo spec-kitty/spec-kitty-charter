@@ -115,12 +115,12 @@ class PolicyYamlTest {
                 .isInstanceOfSatisfying(
                         PolicyYaml.Unreadable.class,
                         failure -> assertThat(failure.getMessage())
-                                .contains("additionalProperties")
+                                .contains("unknown key 'roles'")
                                 .contains("roles"));
         assertThatThrownBy(() -> PolicyYaml.read("schema_version: 1\nartifacts: {directive:D1: frozen}\n"))
                 .isInstanceOfSatisfying(
                         PolicyYaml.Unreadable.class,
-                        failure -> assertThat(failure.getMessage()).contains("enum"));
+                        failure -> assertThat(failure.getMessage()).contains("has an unsupported value 'frozen'"));
     }
 
     @Test

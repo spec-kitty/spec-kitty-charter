@@ -40,15 +40,11 @@ public final class PackFindingCode {
     /** An artifact file breaks its schema: {@code StorageCodes.ARTIFACT_SCHEMA_ERROR}. */
     public static final ReasonCode ARTIFACT_SCHEMA_ERROR = violation("artifact_schema_error");
 
-    /** An asset path leaves the assets root; validate mode only. */
-    public static final ReasonCode ASSET_PATH_ESCAPE = violation("asset_path_escape");
+    /** A file that does not parse, or whose bytes cannot be read: {@code StorageCodes.UNREADABLE}. */
+    public static final ReasonCode UNREADABLE = violation("unreadable");
 
     /** An asset's MIME type is malformed or does not match its extension: {@code StorageCodes.ASSET_MIME_INVALID}. */
     public static final ReasonCode ASSET_MIME_INVALID = violation("asset_mime_invalid");
-
-    /** A step prompt's slot holds text in a pack whose descriptor declares no {@code schema_version}; a warning. */
-    public static final ReasonCode PROMPT_SLOT_NOT_EMPTY_UNVERSIONED =
-            new ReasonCode("prompt_slot_not_empty_unversioned", Severity.WARNING);
 
     /** A file the store does not hold: {@code StorageCodes.FILE_NOT_HELD}, a warning. */
     public static final ReasonCode FILE_NOT_HELD =
@@ -105,7 +101,7 @@ public final class PackFindingCode {
         if (code.equals(PACK_LEVEL_MISSING)) {
             return Optional.of(Diagnostic.Code.PACK_LEVEL_MISSING);
         }
-        if (code.equals(PROMPT_SLOT_NOT_EMPTY_UNVERSIONED) || code.equals(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING)) {
+        if (code.equals(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING)) {
             return Optional.of(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY);
         }
         if (code.equals(FILE_NOT_HELD)) {

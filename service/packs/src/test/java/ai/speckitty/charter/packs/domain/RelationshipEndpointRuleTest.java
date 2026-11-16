@@ -67,7 +67,7 @@ class RelationshipEndpointRuleTest {
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(FILE);
             assertThat(finding.place()).containsExactly("edges", "0");
-            assertThat(finding.detail()).startsWith("main/" + FILE + ": ").contains(relation);
+            assertThat(finding.detail()).startsWith(FILE + ": ").contains(relation);
         });
         assertThat(PackPolicy.judge(validated(twinSource, relation, twinTarget)).findings())
                 .isEmpty();
@@ -169,7 +169,7 @@ class RelationshipEndpointRuleTest {
                 MAIN);
 
         assertThat(violations)
-                .extracting(PackElementViolation::file, PackElementViolation::kind, PackElementViolation::reason)
+                .extracting(PackElementViolation::file, v -> v.kind().value(), PackElementViolation::reason)
                 .containsExactly(
                         tuple(
                                 FILE,
@@ -193,8 +193,7 @@ class RelationshipEndpointRuleTest {
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(FILE);
             assertThat(finding.place()).containsExactly("edges", "0");
-            assertThat(finding.detail())
-                    .isEqualTo("main/" + FILE + ": a requires edge may not connect procedure to action");
+            assertThat(finding.detail()).isEqualTo(FILE + ": a requires edge may not connect procedure to action");
         });
         assertThat(PackPolicy.judge(validated("procedure:p", "requires", "directive:D"))
                         .findings())
@@ -264,7 +263,7 @@ class RelationshipEndpointRuleTest {
                 .singleElement()
                 .satisfies(violation -> {
                     assertThat(violation.file()).isEqualTo(OVERRIDES_FILE);
-                    assertThat(violation.kind()).isEqualTo("overrides_source_not_activatable");
+                    assertThat(violation.kind().value()).isEqualTo("overrides_source_not_activatable");
                     assertThat(violation.reason())
                             .contains(source)
                             .contains(OVERRIDES_TARGET)
@@ -309,7 +308,7 @@ class RelationshipEndpointRuleTest {
                 MAIN);
 
         assertThat(violations)
-                .extracting(PackElementViolation::file, PackElementViolation::kind)
+                .extracting(PackElementViolation::file, v -> v.kind().value())
                 .containsExactly(
                         tuple(OVERRIDES_FILE, "overrides_source_not_activatable"),
                         tuple("other.graph.yaml", "overrides_source_not_activatable"),
@@ -328,7 +327,7 @@ class RelationshipEndpointRuleTest {
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(FILE);
             assertThat(finding.place()).containsExactly("edges", "0");
-            assertThat(finding.detail()).startsWith("main/" + FILE + ": ").contains("template:t.md");
+            assertThat(finding.detail()).startsWith(FILE + ": ").contains("template:t.md");
         });
         assertThat(PackPolicy.judge(validated("directive:E", "overrides", OVERRIDES_TARGET))
                         .findings())

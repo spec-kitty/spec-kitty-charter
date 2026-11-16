@@ -610,8 +610,7 @@ class DomainRoundTripTest {
         assertThat(MeaningOfTexts.adr0036().compareTexts("preset", PRESET, written(outcomes.get("presets/p.yaml"))))
                 .isEmpty();
         assertThat(outcomes.get("presets/q.yaml"))
-                .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'name'; "
-                        + "additionalProperties violated at the document: undeclared key 'mission_type_activations'"));
+                .isEqualTo(new Refused("unknown key 'name'; unknown key 'mission_type_activations'"));
         assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
                 .isInstanceOf(Written.class);
     }
@@ -625,9 +624,7 @@ class DomainRoundTripTest {
                 .roundTrip(source, temp.resolve("broken/built-in"), kinds);
 
         assertThat(faithful.get("presets/p.yaml")).isEqualTo(new Written("presets/p.yaml"));
-        assertThat(broken.get("presets/p.yaml"))
-                .isEqualTo(new Refused(
-                        "read-back: additionalProperties violated at the document: undeclared key 'surplus'"));
+        assertThat(broken.get("presets/p.yaml")).isEqualTo(new Refused("read-back: unknown key 'surplus'"));
     }
 
     /** The save hook of the gate's byte controls: what is written is the hook's pack, not the loaded one. */

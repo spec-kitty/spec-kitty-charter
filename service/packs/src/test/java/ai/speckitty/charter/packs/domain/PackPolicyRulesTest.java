@@ -560,7 +560,7 @@ class PackPolicyRulesTest {
     void thePathOrderIsAlsoTheOrderOfTheFindingsOfDifferentFilesInOneClass() throws IOException {
         List<String> expected = pythonPathOrder();
         List<PackFinding> shuffled = new ArrayList<>(expected.stream()
-                .map(p -> new PackFinding(PackFindingCode.ASSET_PATH_ESCAPE, p, List.of(), "d"))
+                .map(p -> new PackFinding(PackCodes.ASSET, p, List.of(), "d"))
                 .toList());
         Collections.shuffle(shuffled, new Random(3));
 
@@ -583,7 +583,7 @@ class PackPolicyRulesTest {
 
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackFindingCode.ASSET_PATH_ESCAPE,
+                        PackCodes.ASSET,
                         MANIFEST,
                         List.of(),
                         MANIFEST + ": asset path '" + path + "' escapes the pack's assets/ root"));
@@ -594,7 +594,7 @@ class PackPolicyRulesTest {
     void aPathTheAdapterFoundOutsideTheRootEscapesWhateverItsSpelling() {
         assertThat(judge(withAssets(asset("link/logo.png", "image/png", false))))
                 .extracting(PackFinding::code)
-                .containsExactly(PackFindingCode.ASSET_PATH_ESCAPE);
+                .containsExactly(PackCodes.ASSET);
     }
 
     @ParameterizedTest
@@ -625,7 +625,7 @@ class PackPolicyRulesTest {
     void aWindowsAbsoluteOrBackslashDotDotPathEscapesAsCoreFlagsIt(String path) {
         assertThat(judge(withAssets(asset(path, "image/png", true))))
                 .extracting(PackFinding::code)
-                .containsExactly(PackFindingCode.ASSET_PATH_ESCAPE);
+                .containsExactly(PackCodes.ASSET);
     }
 
     @ParameterizedTest
@@ -652,7 +652,7 @@ class PackPolicyRulesTest {
                 boolean escapes = Boolean.parseBoolean(line.substring(tab + 1));
                 rows++;
                 boolean found = judge(withAssets(asset(path, "image/png", true))).stream()
-                        .anyMatch(f -> PackFindingCode.ASSET_PATH_ESCAPE.equals(f.code()));
+                        .anyMatch(f -> PackCodes.ASSET.equals(f.code()));
                 if (found != escapes) {
                     wrong.add(line);
                 }
@@ -666,7 +666,7 @@ class PackPolicyRulesTest {
     void anEscapingAssetGetsNoMimeFindingToo() {
         assertThat(judge(withAssets(asset("../logo.png", "text/plain", true))))
                 .extracting(PackFinding::code)
-                .containsExactly(PackFindingCode.ASSET_PATH_ESCAPE);
+                .containsExactly(PackCodes.ASSET);
     }
 
     @Test
@@ -764,9 +764,6 @@ class PackPolicyRulesTest {
 
         assertThat(PackPolicy.judge(contents).findings())
                 .extracting(PackFinding::code)
-                .contains(
-                        PackCodes.DUPLICATE_STEP_ID,
-                        PackCodes.DUPLICATE_ARTIFACT_ID,
-                        PackFindingCode.ASSET_PATH_ESCAPE);
+                .contains(PackCodes.DUPLICATE_STEP_ID, PackCodes.DUPLICATE_ARTIFACT_ID, PackCodes.ASSET);
     }
 }

@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -60,7 +61,7 @@ class OrgCharterRetirementTest {
     class TheFile {
 
         @Test
-        @DisplayName("validate mode: an artifact_schema_error saying the file is retired and why")
+        @DisplayName("validate mode: a retired finding naming the file and why")
         void validateModeRefusesIt() {
             PackContents contents = new FileSystemPackInspector()
                     .inspect(new PackRoot(name(), Optional.of(PackLevel.ORG), pack.toString()), Scope.FULL);
@@ -71,9 +72,9 @@ class OrgCharterRetirementTest {
             assertThat(contents.unreadableFiles().stream().flatMap(bad -> Wording.unreadable(name(), bad).stream()))
                     .singleElement()
                     .satisfies(finding -> {
-                        assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+                        assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);
                         assertThat(finding.file()).isEqualTo(FILE);
-                        assertThat(finding.detail()).isEqualTo(name() + "/" + FILE + " is retired: " + REASON);
+                        assertThat(finding.detail()).isEqualTo(FILE + ": " + REASON);
                     });
         }
 
@@ -83,7 +84,8 @@ class OrgCharterRetirementTest {
             WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(pack);
 
             assertThat(loaded.pack().violations())
-                    .extracting(violation -> violation.file() + " " + violation.kind() + " " + violation.reason())
+                    .extracting(violation ->
+                            violation.file() + " " + violation.kind().value() + " " + violation.reason())
                     .containsExactly(FILE + " retired " + REASON);
         }
 
@@ -103,8 +105,7 @@ class OrgCharterRetirementTest {
     class TheDescriptorKey {
 
         /** The store's wording of the closed descriptor's refusal: the schema violation, naming the undeclared key. */
-        private static final String UNKNOWN_KEY = "pack.yaml of org-base cannot be read: additionalProperties violated"
-                + " at the document: undeclared key 'active_charter'";
+        private static final String UNKNOWN_KEY = "pack.yaml of org-base: unknown key 'active_charter'";
 
         @BeforeEach
         void theDescriptorDeclaresActiveCharter() throws IOException {
@@ -175,7 +176,7 @@ class OrgCharterRetirementTest {
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                         assertThat(refusal.violations())
-                                .containsExactly(new RefusalViolation("pack", "pack_unreadable", UNKNOWN_KEY));
+                                .containsExactly(new RefusalViolation("pack.yaml", "pack_unreadable", UNKNOWN_KEY));
                     });
         }
     }

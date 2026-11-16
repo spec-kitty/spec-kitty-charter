@@ -39,7 +39,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    And the field "detail" of the response body is "the file directives/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX.directive.yaml of alpha cannot be read: maxLength violated at /id"
+    And the field "detail" of the response body is "the file directives/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX.directive.yaml of alpha cannot be read: '/id' breaks schema keyword 'maxLength'"
 
   Scenario: An executable entry of exactly 255 characters is read
     Given the org pack "alpha" with the file "assets/run.py.asset.yaml":
@@ -83,7 +83,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    And the field "detail" of the response body is "the file assets/run.py.asset.yaml of alpha cannot be read: maxLength violated at /executable/entry"
+    And the field "detail" of the response body is "the file assets/run.py.asset.yaml of alpha cannot be read: '/executable/entry' breaks schema keyword 'maxLength'"
 
   Scenario: An expected artifact key of 256 characters refuses the pack as pack_unreadable
     Given the org pack "alpha" with the file "missions/long-key/long-key.mission-type.yaml":
@@ -113,7 +113,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    And the field "detail" of the response body is "the file missions/long-key/long-key.mission-type.yaml of alpha cannot be read: maxLength violated at /steps/0/expected_output_artifacts/0/artifact_key"
+    And the field "detail" of the response body is "the file missions/long-key/long-key.mission-type.yaml of alpha cannot be read: '/steps/0/expected_output_artifacts/0/artifact_key' breaks schema keyword 'maxLength'"
 
   Scenario: A kebab tactic id of 65 characters refuses the pack as pack_unreadable
     Given the org pack "alpha" with the file "tactics/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt.tactic.yaml":
@@ -127,7 +127,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    And the field "detail" of the response body is "the file tactics/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt.tactic.yaml of alpha cannot be read: maxLength violated at /id"
+    And the field "detail" of the response body is "the file tactics/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt.tactic.yaml of alpha cannot be read: '/id' breaks schema keyword 'maxLength'"
 
   Scenario: A directive written with an id of 65 characters is refused, and the pack stays readable
     When I PUT "/packs/alpha/artifacts/directive/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX" with the body:

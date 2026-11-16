@@ -239,9 +239,9 @@ class PrecedenceTest {
         assertThat(PackPolicy.judge(c).findings())
                 .extracting(PackFinding::detail)
                 .containsExactly(
-                        "qa/a.graph.yaml: unknown key 'surprise'",
-                        "qa/a.graph.yaml: '/nodes/10/label' breaks schema keyword 'uniqueItems'",
-                        "qa/a.graph.yaml: '/edges/0/impacts' breaks schema keyword 'uniqueItems'");
+                        "a.graph.yaml: unknown key 'surprise'",
+                        "a.graph.yaml: '/nodes/10/label' breaks schema keyword 'uniqueItems'",
+                        "a.graph.yaml: '/edges/0/impacts' breaks schema keyword 'uniqueItems'");
     }
 
     /** Throws the refusal of the first blocking finding, in the order {@link PackPolicy#judge} reports them. */
@@ -263,7 +263,7 @@ class PrecedenceTest {
                 .containsExactly(PackCodes.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
         assertThatThrownBy(() -> refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
-            assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml: unknown key 'surprise'");
+            assertThat(r.getMessage()).isEqualTo("a.graph.yaml: unknown key 'surprise'");
         });
     }
 

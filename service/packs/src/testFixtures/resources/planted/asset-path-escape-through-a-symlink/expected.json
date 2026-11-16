@@ -4,7 +4,7 @@
   ],
   "findings": [
     {
-      "code": "asset_path_escape",
+      "code": "asset",
       "severity": "violation",
       "file": "assets/a.asset.yaml",
       "place": []

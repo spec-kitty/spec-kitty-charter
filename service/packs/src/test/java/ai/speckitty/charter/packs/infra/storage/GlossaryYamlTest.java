@@ -298,8 +298,8 @@ class GlossaryYamlTest {
 
         assertThat(loaded.artifacts(ArtifactKind.GLOSSARY)).isEmpty();
         assertThat(loaded.violations()).singleElement().satisfies(violation -> {
-            assertThat(violation.kind()).isEqualTo("schema");
-            assertThat(violation.reason()).isEqualTo("uniqueItems violated at /terms/1/id");
+            assertThat(violation.kind().value()).isEqualTo("artifact_schema_error");
+            assertThat(violation.reason()).isEqualTo("'/terms/1/id' breaks schema keyword 'uniqueItems'");
         });
         assertThat(GlossaryYaml.INSTANCE.rules(map(Yaml.load(MINIMAL)), "glossaries/qa.glossary.yaml"))
                 .as("the control: ids that do not repeat break no rule")

@@ -595,21 +595,20 @@ class WholePackStoreTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage(
-                        "pack.yaml of pack-a cannot be read: additionalProperties violated at the document: undeclared"
-                                + " key 'surprise'");
+                .hasMessage("pack.yaml of pack-a: unknown key 'surprise'");
     }
 
     @Test
-    @DisplayName("two files declaring one id are a refusal on load, not a raw invariant breach")
-    void aDuplicateIdIsARefusal(@TempDir Path host) throws IOException {
+    @DisplayName(
+            "two files declaring one id are a duplicate_artifact_id violation of the second, not an invariant breach")
+    void aDuplicateIdIsAViolationOfTheSecondFile(@TempDir Path host) throws IOException {
         Path source = richPack(host);
         Files.copy(source.resolve(NESTED_TACTIC), source.resolve("tactics/again.tactic.yaml"));
 
-        assertThatThrownBy(() -> store.load(source))
-                .isInstanceOf(CharterRefusal.class)
-                .extracting(refusal -> ((CharterRefusal) refusal).code())
-                .isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(store.load(source).pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.kind()).isEqualTo(PackCodes.DUPLICATE_ARTIFACT_ID);
+            assertThat(violation.reason()).contains("is already declared in");
+        });
     }
 
     // ---- asset files and templates, byte for byte (T022) -------------------------------------------------------
@@ -772,7 +771,7 @@ class WholePackStoreTest {
         WholePackStore.LoadedPack loaded = store.load(claimed);
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(SKILL_FILE);
-            assertThat(violation.kind()).isEqualTo("companion");
+            assertThat(violation.kind().value()).isEqualTo("companion");
             assertThat(violation.reason()).startsWith("../README.md: is a pack file of kind pack-document");
         });
         assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
@@ -839,7 +838,7 @@ class WholePackStoreTest {
 
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(SKILL_FILE);
-            assertThat(violation.kind()).isEqualTo("companion");
+            assertThat(violation.kind().value()).isEqualTo("companion");
             assertThat(violation.reason())
                     .isEqualTo(
                             bodyPath + ": is a pack file of kind pack-document (file-kinds rule '*/README.md'), not a"

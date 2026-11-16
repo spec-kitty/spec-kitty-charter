@@ -99,7 +99,7 @@ public final class GraphBinding {
     }
 
     private static GraphBuild build(String packName, RawGraph raw, boolean registered) {
-        String origin = packName + "/" + raw.file();
+        String origin = Wording.origin(packName, raw.file());
         List<DrgNode> nodes = new ArrayList<>();
         List<Relationship> relationships = new ArrayList<>();
         List<Tension> tensions = new ArrayList<>();

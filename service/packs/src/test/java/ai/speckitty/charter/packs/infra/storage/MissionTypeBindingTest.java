@@ -241,7 +241,7 @@ class MissionTypeBindingTest {
         assertThat(read().violations())
                 .containsExactly(new PackElementViolation(
                         FILE,
-                        FilesystemPackStore.REFERENCE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "templates/spec-template.md (named by step 'scoping'): missing"));
 
         Files.createDirectories(pack.resolve("missions/research/templates"));
@@ -266,7 +266,7 @@ class MissionTypeBindingTest {
         assertThat(read().violations())
                 .extracting(PackElementViolation::reason)
                 .as("the schema refuses a template path that climbs, before the store looks for it")
-                .containsExactly("not violated at /steps/0/expected_output_artifacts/0/template_path");
+                .containsExactly("'/steps/0/expected_output_artifacts/0/template_path' breaks schema keyword 'not'");
     }
 
     @Test
@@ -350,10 +350,10 @@ class MissionTypeBindingTest {
                 + " missions/research/templates/spec-template.md";
 
         assertThat(read().violations())
-                .containsExactly(new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, reason));
+                .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason));
         assertThat(load(pack).violations())
                 .as("the type is refused once, by the file check; the resolution never sees it")
-                .containsExactly(new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, reason));
+                .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason));
         PackContents validated = new FileSystemPackInspector()
                 .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
         assertThat(validated.unreadableFiles())
@@ -430,7 +430,7 @@ class MissionTypeBindingTest {
                     .isEmpty();
             assertThat(refused.violations())
                     .as("%s", templates)
-                    .containsExactly(new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, UNRESOLVED));
+                    .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
         }
     }
 
@@ -472,7 +472,7 @@ class MissionTypeBindingTest {
                                 "missions/research/templates/spec-template.md",
                                 StorageCodes.UNREADABLE,
                                 "the file cannot be read"),
-                        new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, UNRESOLVED));
+                        new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
     }
 
     @Test
@@ -544,7 +544,7 @@ class MissionTypeBindingTest {
                 .singleElement()
                 .satisfies(bad -> assertThat(Wording.unreadable(PACK, bad))
                         .extracting(PackFinding::detail)
-                        .containsExactly(PACK + "/" + FILE + " " + refusal));
+                        .containsExactly(FILE + ": " + refusal));
         // The store refuses by file; the domain (a step id standing twice) by the type's id. The two paths
         // detect the one defect through their own checks, so their wording differs by design — parity is that
         // the load raises exactly one violation, on the same file, with a stated reason (not that it is empty).
@@ -570,7 +570,7 @@ class MissionTypeBindingTest {
                 .singleElement()
                 .satisfies(bad -> assertThat(Wording.unreadable(PACK, bad))
                         .extracting(PackFinding::detail)
-                        .containsExactly(PACK + "/" + FILE + " step 'scoping' names steps/scoping.prompt.md: missing"));
+                        .containsExactly(FILE + ": step 'scoping' names steps/scoping.prompt.md: missing"));
         assertThat(load(pack).violations())
                 .extracting(PackElementViolation::file)
                 .containsOnly(FILE);

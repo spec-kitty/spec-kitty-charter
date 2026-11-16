@@ -128,7 +128,7 @@ public final class GraphDocumentReader {
      * fragment node) or {@code urn} (a shard node), the sibling identity, on an {@code enum} violation of its
      * {@code kind}. The validator reports only the offending place; the node's other fields come from the document.
      */
-    private static List<SchemaViolation> withSiblingFacts(
+    static List<SchemaViolation> withSiblingFacts(
             List<SchemaViolation> violations, @Nullable Object document, Shape shape) {
         List<SchemaViolation> enriched = new ArrayList<>();
         for (SchemaViolation violation : violations) {

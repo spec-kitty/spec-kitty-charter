@@ -77,8 +77,7 @@ class PromptSlotLoadChecksTest {
                 .satisfies(fault -> assertThat(fault.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY));
         assertThat(faults(FILLED, UNVERSIONED))
                 .singleElement()
-                .satisfies(
-                        fault -> assertThat(fault.code()).isEqualTo(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED));
+                .satisfies(fault -> assertThat(fault.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING));
     }
 
     @Test
@@ -86,8 +85,7 @@ class PromptSlotLoadChecksTest {
     void onlyVersionOneZeroIsVersioned() {
         assertThat(faults(FILLED, Optional.of("0.9")))
                 .singleElement()
-                .satisfies(
-                        fault -> assertThat(fault.code()).isEqualTo(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED));
+                .satisfies(fault -> assertThat(fault.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING));
     }
 
     @Test
@@ -111,7 +109,7 @@ class PromptSlotLoadChecksTest {
 
         assertThat(PackPolicy.violationOf(FILE, malformed))
                 .isEqualTo(new PackElementViolation(FILE, PackCodes.PROMPT_SLOT_MALFORMED, malformed.reason()));
-        assertThat(PackPolicy.violationOf(FILE, notEmpty).kind()).isEqualTo("prompt_slot_not_empty");
+        assertThat(PackPolicy.violationOf(FILE, notEmpty).kind().value()).isEqualTo("prompt_slot_not_empty");
         assertThatThrownBy(() -> PackPolicy.violationOf(FILE, legacy)).isInstanceOf(IllegalArgumentException.class);
 
         PackFinding warning = PackPolicy.findingOf(FILE, legacy);
@@ -128,10 +126,10 @@ class PromptSlotLoadChecksTest {
                 .isEqualTo(RefusalCode.PROMPT_SLOT_MALFORMED);
         assertThat(PackFindingCode.refusal(PackCodes.PROMPT_SLOT_NOT_EMPTY))
                 .isEqualTo(RefusalCode.PROMPT_SLOT_NOT_EMPTY);
-        assertThat(PackFindingCode.diagnostic(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED))
+        assertThat(PackFindingCode.diagnostic(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING))
                 .contains(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY);
         // the warning of an unversioned descriptor never refuses a load, so it has no refusal to project onto
-        assertThatThrownBy(() -> PackFindingCode.refusal(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED))
+        assertThatThrownBy(() -> PackFindingCode.refusal(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -288,7 +286,7 @@ class PromptSlotLoadChecksTest {
             assertThat(finding.file()).isEqualTo(FILE);
         });
         assertThat(plan(new Pack(false), FILLED).validate()).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED);
+            assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING);
             assertThat(finding.severity()).isEqualTo(Severity.WARNING);
             assertThat(finding.file()).isEqualTo(FILE);
         });
@@ -302,7 +300,7 @@ class PromptSlotLoadChecksTest {
 
             assertThat(pack.violations()).singleElement().satisfies(violation -> {
                 assertThat(violation.file()).isEqualTo(FILE);
-                assertThat(violation.kind()).isEqualTo("prompt_slot_malformed");
+                assertThat(violation.kind().value()).isEqualTo("prompt_slot_malformed");
                 assertThat(violation.reason()).startsWith("line 3 of the canonical text: ");
             });
             assertThat(pack.warnings()).isEmpty();
@@ -318,7 +316,7 @@ class PromptSlotLoadChecksTest {
         Pack versioned = plan(new Pack(true), FILLED);
         assertThat(versioned.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(FILE);
-            assertThat(violation.kind()).isEqualTo(NOT_EMPTY);
+            assertThat(violation.kind().value()).isEqualTo(NOT_EMPTY);
         });
         assertThat(versioned.warnings()).isEmpty();
 
@@ -327,7 +325,7 @@ class PromptSlotLoadChecksTest {
                 .as("a warning is never a violation (A4)")
                 .isEmpty();
         assertThat(unversioned.warnings()).singleElement().satisfies(warning -> {
-            assertThat(warning.code()).isEqualTo(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED);
+            assertThat(warning.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING);
             assertThat(warning.file()).isEqualTo(FILE);
             assertThat(warning.detail()).contains("spdd:reasons-block");
         });
@@ -341,7 +339,7 @@ class PromptSlotLoadChecksTest {
 
         assertThat(pack.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(BUILD_FILE);
-            assertThat(violation.kind()).isEqualTo("prompt_slot_malformed");
+            assertThat(violation.kind().value()).isEqualTo("prompt_slot_malformed");
         });
     }
 
@@ -424,7 +422,7 @@ class PromptSlotLoadChecksTest {
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.violations())
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.kind()).isEqualTo("companion"));
+                .satisfies(violation -> assertThat(violation.kind().value()).isEqualTo("companion"));
     }
 
     @Test
@@ -435,7 +433,7 @@ class PromptSlotLoadChecksTest {
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.violations())
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.kind()).isEqualTo("companion"));
+                .satisfies(violation -> assertThat(violation.kind().value()).isEqualTo("companion"));
     }
 
     // ---- A11: the load seat parses the document the store read, and it agrees with the raw text -------------------
