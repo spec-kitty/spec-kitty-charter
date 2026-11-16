@@ -83,7 +83,7 @@ at a pointer, which is the file unless the row says otherwise.
 | 22 | `pack.yaml` breaks its schema (unknown key, missing `pack_version`) | `pack_unreadable` at `pack.yaml`, `pack.yaml of qa: unknown key 'mystery'` | refusal at pointer `pack`, `pack_unreadable`, `pack.yaml of qa cannot be read: additionalProperties violated …` | `pack_unreadable` at pointer `pack.yaml`, validate mode's wording | R (pointer, wording) | R | checked against golden: `control-unknown-pack-key-is-a-warning`, `control-retired-pack-key-is-a-warning`, `c9-pack-version-missing-at-the-org-level` |
 | 23 | `pack.yaml` is not YAML | `pack_unreadable` at `pack.yaml`, `pack.yaml of qa is not valid YAML` | refusal at pointer `pack`, `pack_unreadable`, `pack.yaml of qa cannot be read: <parser line>` | `pack_unreadable` at pointer `pack.yaml` | R (pointer) | R | checked against golden: `pack-yaml-tilde-is-null` (open case 5, the wording) |
 | 24 | No `pack.yaml` | not reported | refusal at pointer `pack`, `pack_unreadable`, `pack qa has no pack.yaml` | `pack_unreadable` at pointer `pack.yaml`, `pack qa has no pack.yaml` | R (pointer); V gains it (R1) | R, V | checked against golden: every plant without a descriptor, for example `artifact-not-utf8` |
-| 25 | Root that cannot be read, or is not a directory | not reachable (the inspector reads the root) | refusal at pointer `pack`, `pack_unreadable` | unchanged: `validation_failed` at `pack` (F4) | none | none | no golden subject; `WholePackStore.java:276, :743` |
+| 25 | Root that cannot be read, or is not a directory | not reachable (the inspector reads the root) | refusal `validation_failed`, violation at `pack` with `pack_unreadable` | unchanged: refusal `validation_failed`, violation at `pack` with `pack_unreadable` (F4) | none | none | no golden subject; `WholePackStore.java:276, :743` |
 | 26 | Any other aggregate invariant breach (`Pack.Builder.build()`) | not judged as such | aggregate `validation_failed` at `pack` | the specific code of the invariant; the fail-closed guard keeps the aggregate shape (F6) | R | R | no golden subject; `WholePackStore.java:299` (open case 4) |
 | 27 | A kind token that is not snake case | not judged | `invalid` | the specific kind code; the fallback goes (IC-04) | R | R | no golden subject reaches it; `WholePackStore.java:763` |
 | 28 | Reserved shard `registered.graph.yaml` without the stamp | `drg_schema_error`, `registered.graph.yaml is reserved for registered relationships and cannot be a source graph shard; rename the shard` | `reserved_shard`, `registered.graph.yaml is reserved for the registered relationships; … Register the edges in a shard of your own.` | `reserved_shard`, registration's | V | V | no golden subject; `FileSystemPackInspector.java:88`, `WholePackStore.java:780` |
@@ -130,3 +130,10 @@ WP04, WP05 and WP08 see it.
    `file_not_held` warnings at registration, while validate mode still judges their contents. This is a
    classification question, not a code one. WP02 must say which classification holds before the subset tests of
    WP05 run.
+7. **Asset faults are not all validate-only** (rows 12 to 15). A missing payload and a path escape are read faults
+   on all three surfaces: registration answers `asset` for them (11 golden subjects) and the compose read refuses
+   them. Only the asset mime and a repeated asset id are validate-only. The data model's R1 surface table counts
+   "asset rules" as validate-only; WP08 builds its surface profiles from the narrower reading here.
+8. **The clean control is not clean** (row 12). `planted/control-a-clean-org-pack` has a sidecar whose payload
+   `assets/doc.txt` is missing, so all three surfaces refuse it, though its `expected.json` says it loads with no
+   findings. This predates #554. WP05's plant work adds the payload so the control is clean again.
