@@ -32,7 +32,7 @@ reused.
 Entries are grouped by block, one block per mission, so that two missions never share an id:
 
 - **Context read (DIV-101..110, ADR-0018)** is below.
-- **Pack schemas (DIV-001..026, ADR-0017)** is below, after the context-read block. DIV-001 and
+- **Pack schemas (DIV-001..027, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..245, ADR-0020)** is below. DIV-201 and DIV-202 were proposed until the effective reads were
@@ -122,7 +122,7 @@ need no entry here. For an activated case the harness asserts both sides (ADR-00
 The seam does not switch its context read to the service until R9's effective-context operation
 exists (cutover stage 3).
 
-## Pack schemas (DIV-001..026, ADR-0017)
+## Pack schemas (DIV-001..027, ADR-0017)
 
 The pack-schema mission (#114) decided these in [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
 and its amendment of 2026-10-19. Core's behavior is cited at the pinned core commit `9554e7b2`.
@@ -276,7 +276,7 @@ ruling, its status and the evidence.
   - Charter: `contracts/packs/schemas/graph-shard.schema.json: the URN pattern and one prefix-equals-kind branch per node kind (import changes C3 and C4; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
   - Charter: `contracts/packs/file-kinds.yaml`
   - Charter: `contracts/charter/schemas/NodeKind.yaml: glossary_context and term replace glossary_pack (#106)`
-  - Charter: `planted cases r15-glossary-urn-as-an-edge-endpoint and r15-glossary-urn-in-a-shard: core's glossary: URN is refused`
+  - Charter: `planted case r15-glossary-urn-as-an-edge-endpoint: core's glossary: URN is refused (r15-glossary-urn-in-a-shard plants it in a nested shard, which is not held since #554 WP11: DIV-027)`
 
 ### DIV-013: Nested sections of an agent profile and of charter.yaml
 
@@ -375,7 +375,9 @@ ruling, its status and the evidence.
 - **Service:** Validates it with charter.schema.json, including cli_timeout_seconds, which refuses .nan and .inf.
 - **Rationale:** A file the pack ships should be checked against the schema that describes it, and a non-finite timeout is never meant.
 - **Ruling:** R11 register decision (2026-10-20, operator)
-- **Status:** open, since 2026-10-20
+- **Status:** retired, 2026-11-16. No `file-kinds.yaml` rule maps a `charter.yaml`, so the service no longer validates
+  one inside a pack either: it warns `file_not_held`, does not hold the file and judges nothing in it (#554 WP11, open
+  case 6, operator ruling Q1).
 - **Evidence:**
   - Core: `offering/packs/pack_validator.py:607-609` (the call) and `:2133-2157` (`_check_org_charter`), at `78c48ce9`: the only charter leg is org-charter.yaml
   - Charter: the service has no `org-charter.yaml` leg either: the file is retired and refused by name (#431, [DIV-303](#div-303-org-charteryaml-and-the-packyaml-key-active_charter))
@@ -404,6 +406,7 @@ ruling, its status and the evidence.
   - Core: `offering/packs/pack_validator.py:507` (drg_dir = pack_dir / "drg")
   - Core: `offering/packs/pack_validator.py:845` (_DRG_GRAPH_GLOB)
   - Charter: `service/packs/src/testFixtures/resources/planted/c3-root-shard-urn-malformed` (core verdict in planted/core-verdicts.json: ok, no findings)
+  - Charter: planted plants `c4-shard-urn-prefix-differs-from-kind` and `c16-shard-edge-provenance`, whose shard moved to the pack root in #554 WP11 (their core verdicts await a run of `scripts/packs/core_verdicts.py` against the pinned core)
 
 ### DIV-024: pack_level_missing on a bare path with no configured level
 
@@ -437,6 +440,18 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/drg/models.py:83-148`
   - Charter: `contracts/packs/schemas/graph-shard.schema.json` and `org-fragment.schema.json` (the Relation enum); planted plants `r30-edge-procedure-requires-action` and `r31-edge-overrides-across-kinds`; load fixture `shard-retired-relation`
+
+### DIV-027: A graph shard below the pack root (drg/<kind>.graph.yaml)
+
+- **Core:** Reads `drg/*.graph.yaml` as the pack's graph and refuses one that breaks its schema (offering/packs/pack_validator.py:507, 845).
+- **Service:** Reads graph shards at the pack root only (`*/*.graph.yaml`). A shard below the root is no pack file kind: validate mode and the registration warn `file_not_held`, the registration does not hold it, and nothing in it is judged. A plant whose nested shard core refuses is accepted here with the warning.
+- **Rationale:** The service holds only what its model reads; a file it would discard is warned about, then ignored, never judged (operator ruling Q1). The warning names a misplaced shard.
+- **Ruling:** #554 operator ruling Q1 (2026-11-16); open case 6, settled by WP11
+- **Status:** open, since 2026-11-16
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:507` (`drg_dir = pack_dir / "drg"`) and `:845` (`_DRG_GRAPH_GLOB`)
+  - Charter: `contracts/packs/file-kinds.yaml` (the graph-shard rule `*/*.graph.yaml`)
+  - Charter: planted plants `c3-shard-edge-bare-endpoint`, `c3-shard-urn-malformed`, `c7-shard-relation-extends`, `c8-shard-without-generated-by-is-accepted` and `r15-glossary-urn-in-a-shard` (core verdicts in planted/core-verdicts.json: refused at `drg/<kind>.graph.yaml`)
 
 ## Adding an entry
 
