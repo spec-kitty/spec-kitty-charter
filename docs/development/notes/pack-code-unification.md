@@ -126,10 +126,28 @@ WP04, WP05 and WP08 see it.
    whole.
 6. **Two surfaces classify files differently** (row 33). Validate mode reads `charter.yaml` and a shard under
    `drg/<kind>.graph.yaml` (it judges them, for example `charter-invalid+pack.yaml` and
-   `c16-shard-edge-provenance+pack.yaml`). Registration calls the same files `unmodelled`. After Q1 they become
-   `file_not_held` warnings at registration, while validate mode still judges their contents. This is a
-   classification question, not a code one. WP02 must say which classification holds before the subset tests of
-   WP05 run.
+   `c16-shard-edge-provenance+pack.yaml`). Registration calls the same files `unmodelled`. **Settled by WP02: the
+   registration's classification holds.** The service's model holds the root shards and `drg/fragment.yaml`, and no
+   `charter.yaml`: the compose read never reads either file (the golden records it `readable`), so neither affects
+   the service, and Q1 says such a file is warned about, then ignored. `file-kinds.yaml` mapping them does not make
+   them held: its `**/charter.yaml` rule exists "so that a stray one is validated, not silently ignored", and under Q1
+   a stray file is no longer silently ignored, it is a `file_not_held` warning that names it. A misplaced shard is the
+   spec's "typo hidden as an unmodelled file": the warning names it, and judging its contents would refuse a pack for
+   a file the service discards. So:
+   - **Registration (WP02, done).** Each of the 12 golden subjects (`c16-shard-edge-provenance`,
+     `c2-charter-nested-unknown-key`, `c3-shard-edge-bare-endpoint`, `c3-shard-urn-malformed`,
+     `c4-shard-urn-prefix-differs-from-kind`, `c7-shard-relation-extends`, `c8-shard-without-generated-by-is-accepted`,
+     `charter-cli-timeout-not-a-number`, `charter-invalid`, `charter-template-set`, `charter-valid` and
+     `r15-glossary-urn-in-a-shard`, each `+pack.yaml`) is accepted with one `file_not_held` warning,
+     `<file>: not held (no pack file kind models this file)`. These are the golden's only Q1 rows.
+   - **Validate mode (WP05 and WP08, open).** Validate mode stops judging the contents of a file the store does not
+     hold, and answers the same `file_not_held` warning, so its verdict on these 12 plants becomes valid with one
+     warning beside the descriptor findings, as spec US3 scenario 2 asks. The `drg_schema_error` and
+     `artifact_schema_error` findings at those files go (row 33, V). The packs contract follows in the same change:
+     the `**/charter.yaml` rule and the depth of `**/*.graph.yaml` (`core/graph/a.graph.yaml` is a `mapped` case
+     today) must say what the store holds, with their classifier cases and a packs `### Breaking` line, and the
+     open-packs draft (`TBD-unmodelled-not-held`) carries the same reclassification. WP02 changed neither the
+     inspector nor `file-kinds.yaml`, so the validate rows of the golden are unchanged.
 7. **Asset faults are not all validate-only** (rows 12 to 15). A missing payload and a path escape are read faults
    on all three surfaces: registration answers `asset` for them (11 golden subjects) and the compose read refuses
    them. Only the asset mime and a repeated asset id are validate-only. The data model's R1 surface table counts

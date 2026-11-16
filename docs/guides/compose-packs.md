@@ -2,7 +2,7 @@
 title: Compose packs
 description: "Declare depends_on, qualify cross-pack references, settle a sibling conflict, register and remove packs, artifacts and edges, and fix each refusal."
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-16T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -233,9 +233,9 @@ Rules of the request:
   branch with a commit need none of them.
 - A file that is not pack content is not held and not refused: a file an `exclusions` rule of `file-kinds.yaml` names
   (a `README.md` beside a mission type, `plan-field-declaration.yaml`, a hidden file under `assets/`), and a Markdown file
-  that no rule models (an author's `docs/notes.md`). The service removes it before it commits, and reports it in the
-  answer's `diagnostics` as a `file_not_held` warning whose `detail` names the file and the reason. Any other file
-  nothing models (`notes.txt`) is refused `unmodelled`.
+  that no rule models (an author's `docs/notes.md`), and any other file nothing models (`notes.txt`, #554). The service
+  removes it before it commits, and reports it in the answer's `diagnostics` as a `file_not_held` warning whose `detail`
+  names the file and the reason (`no pack file kind models this file` for a file nothing models).
 - The pack document is `README.md` at the pack root. The retired `pack.md`, `PROVENANCE.md` and `org-charter.yaml`, and a
   root file that differs from a rule's file only in letter case (`Readme.md`), are refused by name with violation code
   `retired`. A `pack.yaml` that declares `active_charter` is refused as unreadable: one `pack_unreadable` violation at
