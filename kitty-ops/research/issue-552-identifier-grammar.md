@@ -23,9 +23,9 @@ Profile: java-jenny. Kind: feature and tidy. Size: S/M. Parent epic: #549 (ADR-0
 | `StepEnhancement` id | packs | own copy of the letter-first slug, no cap | no | `isLetterFirstSlug` (adds the 64 cap) |
 | Tool guide, skill, glossary context and term, preset, mission type, mission step id, substep | packs, missions | `isLetterFirstSlug` since #546 and #106 | no | unchanged |
 | Guard, procedure, lifecycle | packs, missions | `isSlug` | no | unchanged |
-| `TacticIdentifier` | packs | not blank, 64 (schema `^[a-z][a-z0-9-]*$`) | yes | **Q1, pending** |
+| `TacticIdentifier` | packs | not blank, 64 (schema `^[a-z][a-z0-9-]*$`) | yes | `letterFirstSlug(64)`, tactic schema tightened (Q1 a) |
 | `DirectiveIdentifier` | packs | `^[A-Z][A-Z0-9_-]*$` | n/a | out: a different grammar (upper case) |
-| `PackQualifiedReference` pack name, activations `PackRef` | kernel, activations | `^[a-z0-9][a-z0-9_-]*$` | yes | **Q2, pending** |
+| `PackQualifiedReference` pack name, activations `PackRef` | kernel, activations | `^[a-z0-9][a-z0-9_-]*$` | yes | left as they are (Q2 a); follow-up drafted below |
 | profile-id (`RolePins`, `MissionSubstepDelegation`), kind tokens | packs, contract | `^[a-z0-9][a-z0-9_-]*$` | yes | out: not in decision 2, underscores are part of the grammar |
 | `ActivationId` | activations | `[A-Za-z0-9][A-Za-z0-9-]{0,63}` | yes | out: opaque id (ADR-0020 D2), not a pack identifier |
 | `SubstepCandidate.ID_GRAMMAR` | missions | `[A-Za-z0-9][A-Za-z0-9_-]{0,63}` | yes | out: a delegation candidate's id spans kinds (directive ids are upper case), not one identifier type |
@@ -64,7 +64,7 @@ list checks (`content.map(...)`, `noneMatch(String::isBlank)`), which are not a 
   and the `selectAgentProfile` role: changed. Fragment `changes/2026-11-15-identifiers-on-the-shared-grammar.md`
   (`### Breaking`).
 - **Pack schemas.** agent-profile, mission-type, paradigm, styleguide, policy (`role_pins` keys), procedure, and
-  step-enhancement (slot): changed; packs `CHANGELOG.md` `0.1.0-SNAPSHOT` `### Changed`. tactic.schema.json: Q1.
+  step-enhancement (slot): changed; packs `CHANGELOG.md` `0.1.0-SNAPSHOT` `### Changed`. tactic.schema.json: changed too (Q1 a).
 - **Scenario.** `whole-pack-registration.feature` gains the refused rows `acme--x` and `acme-`.
 - **Fixtures, example packs, contract examples.** No id, role or slot in them breaks (grep and the full test run).
 - **Architecture diagrams.** `descriptor-agent-profile.puml`, `descriptor-doctrine-kinds.puml` and
@@ -75,28 +75,21 @@ list checks (`content.map(...)`, `noneMatch(String::isBlank)`), which are not a 
 
 ## Tracked issues, dispositioned
 
-- **#552:** delivered by this Op (`Closes #552`), apart from Q1 to Q3 below.
+- **#552:** delivered by this Op (`Closes #552`), with the rulings on Q1 to Q3 below; the Q2 and Q3 remainders are drafted as follow-ups.
 - **#549:** tick slice 3 on landing.
 - **#485** (directive file slugs as directive ids): a different grammar, untouched.
 - **#466** (real packs register as they are): the census below shows no open-packs id breaks, so #552 does not
   regress it.
 - **Open PRs:** none overlap (#554 had no PR when this Op started).
 
-## Operator questions (sent to the orchestrator)
+## Operator rulings (relayed by the orchestrator, 2026-11-16)
 
-- **Q1.** Does `TacticIdentifier` join the letter-first slug? Recommended: yes.
-- **Q2.** Do the pack-name references that allow `_` (`PackQualifiedReference`, activations `PackRef`) tighten to
-  `slug(63)`? Recommended: no, leave them and record why.
-- **Q3.** `PackIdentifier` carries three values: the registered pack id (a slug), the descriptor `pack_id` (a ULID,
-  in `EdgeIndex.idOf`, `EdgeIndex` l.218, `ClosureView` l.364 and `ClosureViewSession` l.533) and the descriptor
-  `name` (`InboundReferences` l.214, which may hold `_`). The squad found more: the descriptor ULID also in
-  `WholePackStore` l.282 and `ArtifactFiles` l.42; staging directory names (`.pack-commit-…`) in `PackCommitStore`
-  l.297 and l.417; `dropped.pack()` in `ClosureView` l.885 and `ProfileEnhancementRule` l.95. A `slug(63)` constructor
-  throws on every real pack in the edge and closure reads. A stored pack directory is served under any name that does
-  not start with a dot (`StorageRootLocations.isPack`, `DomainRepositoryService` l.374), so a directory seeded by hand
-  as `a--b` is read with no grammar check; every write path (archive upload, from-source) refuses it. Recommended: the type holds the rule as `isPackId` and `GRAMMAR_DETAIL`, registration,
-  admission and the contract refuse through it, the constructor stays not blank, and the split of the type is a
-  `follow-up` after #554.
+- **Q1 (a):** `TacticIdentifier` moves to `letterFirstSlug(64)`, and `tactic.schema.json` is tightened, under the same
+  Breaking note. The census counts it: 0 of 138 tactic ids break.
+- **Q2 (a):** the pack-name reference grammars that allow `_` stay. They are recorded under "Not done", and a
+  follow-up is drafted for the orchestrator to file, because such a reference can never resolve.
+- **Q3 (b):** as applied. `PackIdentifier.isPackId` holds the rule, and registration, admission and the contract
+  refuse through it. The type split is drafted as a follow-up under #549, after #554.
 
 ## open-packs census
 
@@ -141,4 +134,48 @@ content must change.
 - **The descriptor diagrams** `descriptor-agent-profile.puml` and `descriptor-doctrine-kinds.puml` still write
   `^[a-z][a-z0-9-]*$`: their SVGs must be regenerated with PlantUML, which this session does not have. The Markdown
   beside them (`descriptor-schemas.md`) and the divergence register (DIV-401) are fixed.
-- **The tactic id** waits on Q1, and the pack-name references on Q2.
+- **The pack-name references** that allow `_` (Q2): `PackQualifiedReference.PACK_NAME_GRAMMAR`, the activations
+  `PackRef`, the contract's `PackQualifiedReference(Write)` and the glossary term-reference patterns. A pack id is
+  `slug(63)` now, so a reference whose pack name holds `_`, `a--b` or more than 63 characters names no pack. Follow-up
+  drafted below.
+
+## Draft follow-ups for the orchestrator to file
+
+### Draft: the pack-name part of a reference follows the pack-id grammar (follow-up, under #549)
+
+> **Labels:** `follow-up`, `priority:P3`. **Type:** Task. **Parent:** #549.
+>
+> Since #552 a pack id is `slug(63)` (`PackIdentifier.isPackId`, ADR-0075 decision 2). The pack-name part of a
+> reference still takes `^[a-z0-9][a-z0-9_-]*$` with a cap of 64: `PackQualifiedReference.PACK_NAME_GRAMMAR`
+> (kernel), the activations `PackRef` (`[a-z0-9][a-z0-9_-]{0,63}`), the contract's `PackQualifiedReference.yaml` and
+> `PackQualifiedReferenceWrite.yaml`, and the glossary term-reference patterns in `GlossaryTerm.yaml` and
+> `GlossaryContextTerm.yaml`. A reference whose pack name holds `_`, a doubled or trailing hyphen, or 64 characters
+> can never resolve, yet it is accepted and fails later as an unresolved reference.
+>
+> Done when the pack-name part of every reference is `slug(63)` through `PackIdentifier.isPackId`, the contract
+> patterns follow under `### Breaking`, and a test shows a reference to `a_b::...` refused at parse with the
+> grammar's detail. The descriptor `name` (`pack-descriptor.schema.json`, `^[a-z0-9][a-z0-9_-]*$`) follows too, since
+> `PackSourceStagers` requires it to equal the pack id. Count the open-packs references that break first: the #552
+> census found no pack name with `_`.
+
+### Draft: split PackIdentifier into the registered pack id and the descriptor identity (follow-up, under #549, after #554)
+
+> **Labels:** `follow-up`, `priority:P2`. **Type:** Task. **Parent:** #549. **Blocked by:** #554.
+>
+> `PackIdentifier` carries three values: the registered pack id (`slug(63)`, ADR-0075 decision 2), the descriptor's
+> `pack_id` (a ULID, the "immutable sole runtime identity" of `pack-descriptor.schema.json`) and the descriptor's
+> `name`. So its constructor checks only that the id is not blank (#552 Q3, ruling b), and a pack directory seeded on
+> disk as `a--b` is read and served (`StorageRootLocations.isPack`, `DomainRepositoryService` l.374); every write
+> path refuses it. The sites that build a `PackIdentifier` from something other than a registered id:
+>
+> - the descriptor ULID: `EdgeIndex.idOf` (l.649) and l.218, `ClosureView` l.364, `ClosureViewSession` l.533,
+>   `WholePackStore` l.282 and `ArtifactFiles` l.42;
+> - the descriptor `name`: `InboundReferences` l.214;
+> - staging directory names (`.pack-commit-...`): `PackCommitStore` l.297 and l.417;
+> - `dropped.pack()`: `ClosureView` l.885 and `ProfileEnhancementRule` l.95.
+>
+> Done when `PackIdentifier`'s constructor guards `slug(63)`, the descriptor identity has a kernel type of its own
+> (for example `PackUlid`) that the edge and closure indexes key by, the staging and dropped-pack sites name what they
+> hold, a stored directory whose name is not a pack id is refused on read with a named code, and the test fixtures
+> that build a `PackIdentifier` from a ULID (about 48 literals) use the type that fits. Lands after #554, which reworks
+> the closure rules over these indexes.
