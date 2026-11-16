@@ -425,7 +425,7 @@ class StepEnhancementLoadChecksTest {
             assertThat(violation.code()).isEqualTo(CODE);
         });
         assertThat(pack.read())
-                .as("an orphan is not held on a composing read, like every unmodelled file")
+                .as("an orphan is not held on a composing read, like every file nothing models")
                 .isEmpty();
     }
 
@@ -455,10 +455,9 @@ class StepEnhancementLoadChecksTest {
                 .graph();
 
         assertThat(pack.staged())
+                .as("a file nothing models beside them is not held, never a fault (Q1)")
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(
-                        tuple(CODE, pack.yamlOf(TYPE, "brief")),
-                        tuple("unmodelled", "missions/" + TYPE + "/enhancements/notes.txt"));
+                .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
         assertThat(pack.validate()).extracting(PackFinding::file).containsExactly(pack.yamlOf(TYPE, "brief"));
     }
 

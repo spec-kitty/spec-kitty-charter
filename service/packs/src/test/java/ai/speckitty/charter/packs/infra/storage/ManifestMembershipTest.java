@@ -127,11 +127,10 @@ class ManifestMembershipTest {
                         loaded.pack(),
                         loaded.layout(),
                         loaded.graphs(),
-                        loaded.unmodelled(),
+                        loaded.notHeld(),
                         Optional.of(skewed),
                         loaded.policy(),
-                        loaded.warnings(),
-                        loaded.excluded()),
+                        loaded.warnings()),
                 target);
 
         assertFreshAndDerived(target);

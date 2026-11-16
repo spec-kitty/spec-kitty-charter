@@ -41,7 +41,7 @@ bindings (a skill's body, a toolguide's guide), the `ignored` rules (`match` and
 nothing else took: `**/*.md`, so Markdown no rule models (an author's `docs/notes.md`) is excluded. An excluded file,
 whether an `exclusions` or an `ignored` match, is not held, not served, not digested and not refused: a registration
 removes it before it commits and reports it as a `file_not_held` diagnostic (ADR-0073). A file that no step takes
-and that is not Markdown is refused as `unmodelled`. Each
+is `unmodelled`: it is warned as `file_not_held` and not held, as an excluded file is (#554, operator ruling Q1). Each
 rule also says the file's **content form**, how it is read, held, written and compared: `yaml` (the default of a
 `files` rule), `markdown`, `text` or `bytes`. The form decides how the service holds the file: a `bytes` file is
 held by its rule's kind, an `asset-payload` as an asset file and a `template` as a template, round-tripped byte for

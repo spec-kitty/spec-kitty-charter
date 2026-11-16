@@ -488,7 +488,7 @@ class MissionTypeBindingTest {
                 .content(own.content())
                 .build();
         WholePackStore.LoadedPack moved = new WholePackStore.LoadedPack(
-                loaded.pack().with(topLevel), loaded.layout(), loaded.graphs(), loaded.unmodelled(), loaded.manifest());
+                loaded.pack().with(topLevel), loaded.layout(), loaded.graphs(), loaded.notHeld(), loaded.manifest());
         Path refused = host.resolve("refused").resolve(PACK);
 
         Path clean = host.resolve("clean").resolve(PACK);

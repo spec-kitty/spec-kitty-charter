@@ -152,7 +152,7 @@ class PackRegistrationServiceTest {
         Rig rig = new Rig(host);
         StagedPack faulty = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
                 .directive("A", "A")
-                .file("notes.txt", "a file no pack kind models"));
+                .file("PROVENANCE.md", "# Provenance\n"));
 
         CharterRefusal refused = refusal(() -> rig.register("pack-x", faulty, Preconditions.none()));
 
@@ -354,21 +354,28 @@ class PackRegistrationServiceTest {
     }
 
     @Test
-    void aFileNothingModelsThatIsNotMarkdownIsStillRefused(@TempDir Path host) {
+    void aFileNothingModelsIsWarnedAboutAndNotHeldSoTheRevisionIsThatOfThePackWithoutIt(@TempDir Path host) {
         Rig rig = new Rig(host);
-        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
-                .directive("DIRECTIVE_001", "One")
-                .file(AUTHOR_NOTE, "# Notes\n")
-                .file("notes.txt", "stray"));
+        Packs plain = Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One");
 
-        CharterRefusal refused = refusal(() -> rig.register("pack-x", upload, Preconditions.none()));
+        RegistrationOutcome noted = rig.register(
+                "pack-x",
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                        .directive("DIRECTIVE_001", "One")
+                        .file("notes.txt", "stray")),
+                Preconditions.none());
 
-        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-        assertThat(refused.violations()).singleElement().satisfies(violation -> {
-            assertThat(violation.pointer()).isEqualTo("notes.txt");
-            assertThat(violation.code()).isEqualTo("unmodelled");
+        assertThat(noted.outcome()).isEqualTo(Outcome.CREATED);
+        assertThat(noted.diagnostics()).singleElement().satisfies(diagnostic -> {
+            assertThat(diagnostic.code()).isEqualTo(Diagnostic.Code.FILE_NOT_HELD);
+            assertThat(diagnostic.detail()).isEqualTo("notes.txt: not held (no pack file kind models this file)");
         });
-        assertThat(rig.packs.resolve("pack-x")).doesNotExist();
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).doesNotContainKey("notes.txt");
+        RegistrationOutcome again = rig.register("pack-x", rig.stage(plain), Preconditions.none());
+        assertThat(again.outcome())
+                .as("the pack without the file is the pack held")
+                .isEqualTo(Outcome.UNCHANGED);
+        assertThat(again.revision()).isEqualTo(noted.revision());
     }
 
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------
@@ -591,7 +598,7 @@ class PackRegistrationServiceTest {
                         preset.replace("DIRECTIVE_001", "bad id"),
                         preset),
                 new Fault("a graph document that does not parse", "extra.graph.yaml", "edges: [unclosed\n", plain),
-                new Fault("a file nothing models", "notes/readme.txt", "stray", null),
+                new Fault("a retired pack-level file", "PROVENANCE.md", "# Provenance\n", null),
                 new Fault(
                         "a pack with no pack.yaml",
                         "pack.yaml",

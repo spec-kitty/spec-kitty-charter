@@ -77,7 +77,8 @@
 #   The sections are consulted in the order `files`, `exclusions`, `retired`, `payloads`, then a
 #   root case variant, then `ignored`; within a section the first matching rule in table order
 #   decides (a payload rule overlaps the others by design, and only the first match counts). A file that no
-#   rule takes is refused as `unmodelled`. conformance/classifier-cases.yaml states the order
+#   rule takes is `unmodelled`: it is warned as `file_not_held` and not held, as an excluded file is
+#   (#554, operator ruling Q1). conformance/classifier-cases.yaml states the order
 #   exactly, with a case for every rule, and is what another implementation is held to.
 
 node_kinds:

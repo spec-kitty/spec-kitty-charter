@@ -337,7 +337,7 @@ Feature: Registering a whole pack replaces the pack the service holds
 
     Examples: the archive carries something the pack model refuses
       | path                        | content                                      |
-      | notes.txt                   | a file the pack model does not know          |
+      | PROVENANCE.md               | a pack-level file the pack model retired     |
       | ../outside.yaml             | a path that leaves the pack                  |
       | directives/C.directive.yaml | id: C, a directive missing its required keys |
 
@@ -400,8 +400,9 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme/artifacts/directive/A"
     Then the response status is 200
 
-  # FR-022, SC-002 (#451): the retired pack-level files are refused by their own code, never as an unmodelled file.
-  Scenario: The retired pack.md and PROVENANCE.md are refused as retired, never as unmodelled
+  # FR-022, SC-002 (#451): the retired pack-level files are refused by their own code; a retired file is no file
+  # nothing models, so it is never merely not held (Q1, #554).
+  Scenario: The retired pack.md and PROVENANCE.md are refused as retired, never merely not held
     Given the archive "stale" is a copy of the archive "v1"
     And the archive "stale" holds the file "pack.md":
       """
@@ -424,8 +425,9 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme"
     Then the response status is 404
 
-  # FR-009, FR-011 (#431): the org charter is retired, so it is refused by name and not as a file nothing models.
-  Scenario: The retired org-charter.yaml is refused as retired, never as unmodelled
+  # FR-009, FR-011 (#431): the org charter is retired, so it is refused by name, never merely not held as a file nothing
+  # models (Q1, #554).
+  Scenario: The retired org-charter.yaml is refused as retired, never merely not held
     Given the archive "org-charter" is a copy of the archive "v1"
     And the archive "org-charter" holds the file "org-charter.yaml":
       """
@@ -518,8 +520,10 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme/artifacts/directive/B"
     Then the response status is 200
 
-  # FR-004: only Markdown is excluded by the fallback; any other file nothing models is still refused (the control).
-  Scenario: A text file the pack model does not know stays refused as unmodelled
+  # FR-010, SC-003 (operator ruling Q1, #554): a file no pack file kind models, Markdown or not, is an author's aid that
+  # does not affect the service. The registration warns about it, does not hold it and never round-trips it, so the
+  # stored pack is v1, with v1's revision.
+  Scenario: A text file the pack model does not know is not held
     Given the archive "stray" is a copy of the archive "v1"
     And the archive "stray" holds the file "notes.txt":
       """
@@ -527,20 +531,27 @@ Feature: Registering a whole pack replaces the pack the service holds
       """
     When I PUT "/packs/acme" with the archive "stray"
     And I poll the registration until it ends
-    Then the field at "/state" is "refused"
-    And the field at "/problem/code" is "validation_failed"
-    And the field at "/problem/violations" holds exactly 1 item(s)
-    And the field at "/problem/violations/0/code" is "unmodelled"
-    And the field at "/problem/violations/0/pointer" is "notes.txt"
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "created"
+    And the field at "/result/diagnostics" holds exactly 1 item(s)
+    And the field at "/result/diagnostics/0/code" is "file_not_held"
+    And the field at "/result/diagnostics/0/detail" contains "notes.txt: not held (no pack file kind models this file)"
+    When I GET "/packs/acme"
+    And I remember the field "revision" of the response body
+    And I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "unchanged"
+    And the field at "/result/revision" is the remembered one
 
   # Operator ruling D-1 (ADR-0066 closeout): a registration answers every fault of the pack in one report, a graph
   # document that breaks its schema included, one violation per fault at the pack-relative file of the document. A
-  # fault that is not a graph fault (a file the pack model does not know) is listed after the graph faults.
+  # fault that is not a graph fault (a retired pack-level file) is listed after the graph faults.
   Scenario: An archive with two graph documents that break their schema is refused listing both at their files
     Given the archive "bad" is a copy of the archive "v1"
-    And the archive "bad" holds the file "notes.txt":
+    And the archive "bad" holds the file "PROVENANCE.md":
       """
-      a file the pack model does not know
+      # Provenance
       """
     And the archive "bad" holds the file "zeta.graph.yaml":
       """
@@ -571,8 +582,8 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/violations/1/code" is "drg_schema_error"
     And the field at "/problem/violations/1/pointer" is "zeta.graph.yaml"
     And the field at "/problem/violations/1/detail" contains "zeta.graph.yaml"
-    And the field at "/problem/violations/2/code" is "unmodelled"
-    And the field at "/problem/violations/2/pointer" is "notes.txt"
+    And the field at "/problem/violations/2/code" is "retired"
+    And the field at "/problem/violations/2/pointer" is "PROVENANCE.md"
     When I GET "/packs/acme"
     Then the response status is 404
     And the problem code is "pack_not_found"

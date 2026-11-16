@@ -83,7 +83,7 @@ class ExamplePacksTest {
                 new WholePackStore(new YamlSerializationStrategy()).load(ExamplePacks.pack(name));
 
         assertThat(loaded.pack().violations()).as(name).isEmpty();
-        assertThat(loaded.unmodelled()).as(name).isEmpty();
+        assertThat(loaded.notHeld()).as(name).noneMatch(WholePackWriteStore.ExcludedFile::isUnmodelled);
         assertThat(loaded.warnings()).as(name).isEmpty();
     }
 
@@ -116,7 +116,7 @@ class ExamplePacksTest {
     /**
      * The example packs hold one excluded file of each kind (#451): an author's note the {@code ignored} fallback takes
      * ({@code org-base/docs/authoring-notes.md}) and an orientation README an exclusion names. Neither is unmodelled and
-     * neither is held: the write does not reproduce it.
+     * neither is held: each is listed as not held with its rule's reason, and the write does not reproduce it.
      */
     @Test
     void anAuthorNoteAndAnOrientationReadmeAreExcludedAndNotHeld(@TempDir Path host) throws IOException {
@@ -125,11 +125,12 @@ class ExamplePacksTest {
         WholePackStore.LoadedPack org = store.load(ExamplePacks.pack(ExamplePacks.ORG));
         WholePackStore.LoadedPack builtIn = store.load(ExamplePacks.pack(ExamplePacks.BUILT_IN));
 
-        assertThat(org.excluded()).singleElement().satisfies(file -> {
+        assertThat(org.notHeld()).singleElement().satisfies(file -> {
             assertThat(file.file()).isEqualTo("docs/authoring-notes.md");
             assertThat(file.reason()).startsWith("Author aid: Markdown that no files rule models");
         });
-        assertThat(builtIn.excluded())
+        assertThat(builtIn.notHeld())
+                .noneMatch(WholePackWriteStore.ExcludedFile::isUnmodelled)
                 .extracting(WholePackWriteStore.ExcludedFile::file)
                 .contains("missions/software-dev/templates/README.md");
         Path written = host.resolve("org-base");

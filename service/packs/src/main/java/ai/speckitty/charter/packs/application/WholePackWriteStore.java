@@ -23,12 +23,17 @@ import java.util.function.Supplier;
 public interface WholePackWriteStore {
 
     /**
-     * A file of a pack that is not pack content (#451): an exclusion names it, or it is Markdown nothing models.
+     * A file of a pack that is not pack content, so not held: an exclusion names it, or it is Markdown nothing models
+     * (#451), or nothing models it at all (operator ruling Q1, #554).
      *
      * @param file the pack-relative path
-     * @param reason the reviewable reason of the rule that excludes it
+     * @param reason the reviewable reason of the rule that excludes it, or {@value #UNMODELLED}
      */
     record ExcludedFile(String file, String reason) {
+
+        /** The reason of a file no pack file kind models (operator ruling Q1, #554). */
+        public static final String UNMODELLED = "no pack file kind models this file";
+
         /**
          * Checks the fields.
          *
@@ -38,6 +43,25 @@ public interface WholePackWriteStore {
         public ExcludedFile {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(reason, "reason");
+        }
+
+        /**
+         * A file no pack file kind models: warned about, then ignored (operator ruling Q1, #554).
+         *
+         * @param file the pack-relative path
+         * @return the file, with {@value #UNMODELLED} as its reason
+         */
+        public static ExcludedFile unmodelled(String file) {
+            return new ExcludedFile(file, UNMODELLED);
+        }
+
+        /**
+         * Whether no pack file kind models this file, rather than a rule excluding it.
+         *
+         * @return true for a file {@link #unmodelled(String)} made
+         */
+        public boolean isUnmodelled() {
+            return reason.equals(UNMODELLED);
         }
 
         /**
@@ -129,8 +153,8 @@ public interface WholePackWriteStore {
 
         /**
          * Reads a staged tree, refusing everything that makes the upload wrong with {@code validation_failed} (422):
-         * a read violation, an unmodelled file, an unreadable graph or descriptor, a registered shard without the
-         * registration stamp.
+         * a read violation, an orphan prompt fragment, an unreadable graph or descriptor, a registered shard without
+         * the registration stamp. A file nothing models is not held, as an excluded file is (operator ruling Q1, #554).
          *
          * @param staged the extracted upload
          * @return what the tree holds
@@ -141,8 +165,8 @@ public interface WholePackWriteStore {
 
         /**
          * Removes from the staged tree every file {@code contents} reports as not held ({@link Contents#notHeld}, each
-         * also a {@code file_not_held} warning): an excluded file is not pack content, so the revision of the tree and the commit that follow must
-         * not see it (FR-005, FR-021). Only the staging directory is touched.
+         * also a {@code file_not_held} warning): a file that is not held is not pack content, so the revision of the
+         * tree and the commit that follow must not see it (FR-005, FR-021). Only the staging directory is touched.
          *
          * @param staged the extracted upload {@link #loadStaged} read
          * @param contents what {@link #loadStaged} answered for it
