@@ -1,0 +1,132 @@
+---
+title: "Note: one code per pack fault (the R2 table)"
+description: "The R2 code table of #554: for each pack fault, what validate mode and the registration answer today, and the one code and wording kept."
+doc_status: draft
+updated: 2026-11-16T00:00:00Z
+type: Guide
+kind: Reference
+related:
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this before you change a pack check's code or wording. Each row says which surface changes and which Breaking fragment carries it.
+  - profile: core-maintainer
+    guidance_text: Read this for the codes validate mode and the registration answer for each pack fault, today and after #554.
+---
+
+# Note: one code per pack fault (the R2 table)
+
+**Status: the decision table of #554 (ADR-0075 slice 5), work package WP01.** It records what each surface answers
+today and the one code and wording each fault keeps. The code changes land in WP04 and WP09. Nothing here changes
+code.
+
+## The rule
+
+The operator's R2 ruling (b), as folded by design-r3 §7 F3, is that one fault answers one code and one wording on
+every surface. Each fault is decided by this rule:
+
+- **The specific code wins over a catch-all.** The catch-alls are `domain`, `reference`, the `invalid` fallback, the
+  aggregate `{pack, validation_failed, message}`, the load refusal at pointer `pack`, and `schema` reported once per
+  violation. Where registration answers a catch-all, registration changes.
+- **Registration's specific codes are adopted by validate mode.** These are `retired`, `manifest_membership`,
+  `reserved_shard`, `asset`, `prompt_fragment_invalid` and `relationship_endpoint_not_allowed`. Otherwise, where
+  both surfaces answer a specific code for one fault, the registration token stays, because it is the contract wire
+  (design-r3 §3).
+- **A fault only validate mode judges keeps its code.** These are the level, the org fragment, the descriptor and the
+  asset mime. R1 keeps them off the registration surface.
+- **The wording follows the kept code.** A detail names the file pack-relative, as registration's details do, and
+  never starts with the pack's name (`qa/…`, squad finding C-11). A schema fault keeps validate mode's detail
+  vocabulary (`'id' does not match its pattern`), which names the key. Registration's keyword form
+  (`pattern violated at /id`) goes.
+- **The compose read is unchanged.** Its `pack_unreadable` refusal names the first fault in the reader's order, and
+  that read keeps the faults it reports today (R1, squad A-M3). Its detail embeds a fault's wording, so a changed
+  wording shows there too, with the same code.
+
+Each row was checked against `service/packs/src/test/resources/golden/surfaces.json`. A row with no golden subject
+says so, and gives the code that answers it instead. `+pack.yaml` marks a plant judged again with the clean
+control's descriptor, because its own pack has none.
+
+Fragments:
+
+- **R** is `contracts/charter/changes/2026-11-16-registration-names-the-fault.md`.
+- **V** is `contracts/charter/changes/2026-11-16-validate-mode-speaks-the-wire-codes.md`.
+- **Q1** is `contracts/charter/changes/2026-11-16-unmodelled-files-are-not-held.md` (WP02).
+
+## The table
+
+V and R are today's answers. Validate mode places a finding at a file and a place. Registration places a violation
+at a pointer, which is the file unless the row says otherwise.
+
+| # | Fault | Validate mode today | Registration today | Kept | Changes | Fragment | Golden |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Artifact file is not YAML or not UTF-8 | `artifact_schema_error`, `qa/<file> is not valid YAML: <why>` | `unreadable`, `<file>: <why>` | `unreadable`, `<file>: <why>` | V | V | checked against golden: `artifact-not-yaml+pack.yaml`, `artifact-not-utf8+pack.yaml`, `artifact-utf16-with-a-byte-order-mark+pack.yaml` |
+| 2 | Artifact breaks its schema | `artifact_schema_error` at the key's place, `qa/<file>: 'role' does not match its pattern` | `schema`, `<file>: pattern violated at /role` | `artifact_schema_error`, `<file>: 'role' does not match its pattern` | R (code, wording); V (prefix) | R, V | checked against golden: `c10-*+pack.yaml`, `c11-*+pack.yaml`, `c2-agent-nested-unknown-key+pack.yaml`, `glossary-context-id-not-kebab`, `glossary-see-also-not-a-urn`, `glossary-term-id-*`, `r33-authored-action-sequence`, `r34-authored-template-set`, `asset-id-not-kebab` |
+| 3 | Glossary context id is not its file stem | `artifact_schema_error`, `qa/<file>: 'id' has an unsupported value 'b'` | `schema`, `<file>: glossary id 'b' is not its file stem 'a'` | `artifact_schema_error`, `<file>: glossary id 'b' is not its file stem 'a'` | R (code); V (wording) | R, V | checked against golden: `glossary-context-id-not-the-stem` |
+| 4 | Graph document breaks its schema | `drg_schema_error` at the place, `qa/<file>: edge endpoint 'X' is not a URN` (and so on) | `drg_schema_error`, `<file>: pattern violated at /edges/0/source` | `drg_schema_error`, `<file>: edge endpoint 'X' is not a URN` | R (wording); V (prefix) | R, V | checked against golden: `c3-fragment-*`, `c3-root-shard-urn-malformed+pack.yaml`, `c5-fragment-*`, `c6-*`, `c7-fragment-relation-extends`, `glossary-term-as-*`, `r15-glossary-urn-as-an-edge-endpoint` |
+| 5 | Edge relation does not allow its endpoints | `relationship_endpoint_not_allowed` at `edges/<n>`, `qa/<file>: a requires edge may not connect …` | `relationship_endpoint_not_allowed`, `<file>: a requires edge may not connect …` | registration's | V (prefix) | V | checked against golden: `r30-edge-procedure-requires-action`, `r31-edge-overrides-across-kinds` |
+| 6 | `overrides` source is not activatable | `overrides_source_not_activatable` | `overrides_source_not_activatable` | registration's | V (prefix, if any) | V | no golden subject; codes from `PackPolicy.violationKind` and `OverrideSourceRule` |
+| 7 | Mission step has no `requires` edge | `mission_step_unlinked`, `qa/<file>: the step b of …` | `mission_step_unlinked`, `<file>: the step b of …` | registration's | V (prefix) | V | checked against golden: `r32-mission-step-unlinked` |
+| 8 | Substep delegation unresolved or unscoped | `substep_delegation_unresolved` or `substep_delegation_unscoped`, `qa/<file>: …` | the same code, `<file>: …` | registration's | V (prefix) | V | checked against golden: `r35-*`, `r36-*` |
+| 9 | Duplicate step or substep id | `duplicate_step_id` at `steps/0/substeps/2/id`, `<file>: substep id 'run' is declared more than once …` | `duplicate_step_id`, same wording | unchanged | none | none | checked against golden: `duplicate-step-id` |
+| 10 | Duplicate artifact id (two files of one kind) | `duplicate_artifact_id` at the second file, `<file>: tactic id 'same' is already declared in <first>` | aggregate: `validation_failed` at `pack`, `Constraint breached: A pack must not hold two tactics …` | `duplicate_artifact_id` at the second file, validate mode's wording | R | R | checked against golden: `duplicate-artifact-id+pack.yaml` (the compose read throws the breach: open case 3) |
+| 11 | Retired file | `artifact_schema_error`, `qa/<file> is retired: <why>` | `retired`, `<file>: <why>` | `retired`, registration's | V | V | checked against golden: `glossary-pack-old-shape` |
+| 12 | Asset sidecar's payload is missing | `artifact_schema_error`, `qa/<file> payload <path> does not exist` | `asset`, `<file>: payload <path> does not exist` | `asset`, registration's | V | V | checked against golden: `asset-mime-*+pack.yaml`, `asset-path-inside-through-a-symlink-is-contained+pack.yaml`, `control-a-clean-org-pack` |
+| 13 | Asset path escapes `assets/` | two findings: `artifact_schema_error` and `asset_path_escape`, both `… asset path '<p>' escapes the pack's assets/ root` | one `asset`, `<file>: asset path '<p>' escapes the pack's assets/ root` | one `asset`, registration's | V (code, and the duplicate goes) | V | checked against golden: `asset-path-escape-absolute+pack.yaml`, `asset-path-escape-dot-dot+pack.yaml`, `asset-path-escape-windows-drive+pack.yaml` (open case 1) |
+| 14 | Asset mime is malformed or does not match the extension | `asset_mime_invalid` | not judged | `asset_mime_invalid` (validate only, R1) | none | none | checked against golden: `asset-mime-*+pack.yaml` |
+| 15 | Two asset sidecars declare one id | `duplicate_artifact_id` at the second sidecar | not reported (each sidecar answers its own `asset` fault) | `duplicate_artifact_id` (validate only, R1) | none | none | checked against golden: `asset-repeated-id-*+pack.yaml` (open case 2) |
+| 16 | Template read twice | not judged as such | `template`, `template <id> is already read from <file>` | `duplicate_artifact_id`, registration's wording | R | R | no golden subject; `FilesystemPackStore.java:535` |
+| 17 | Value-object breach in an artifact | not judged as such | `domain`, the breach's message, at the file (at the artifact id for one path, `DomainRepositoryService.java:1261`) | `artifact_schema_error` at the file, the breach's reason | R | R | no golden subject; `FilesystemPackStore.java:406`, `DomainRepositoryService.java:920, :939, :948, :1261` (open case 4) |
+| 18 | Unresolved template or reference in an artifact | not judged as such | `reference` | the specific code of the reference rule | R | R | no golden subject; `FilesystemPackStore.java:789`, `DomainRepositoryService.java:1248, :1254` (open case 4) |
+| 19 | Companion file of an artifact cannot be read | `prompt_fragment_invalid` (step enhancements) | `prompt_fragment_invalid` for an enhancement (the store's `companion` is remapped), `companion` otherwise | `prompt_fragment_invalid` for an enhancement; `companion` otherwise | none | none | no golden subject; `FilesystemPackStore.java:908`, `DomainRepositoryService.java:1199` |
+| 20 | Step enhancement or orphan prompt fragment is wrong | `prompt_fragment_invalid` | `prompt_fragment_invalid` | registration's | V (prefix, if any) | V | no golden subject; contract scenario `prompt-fragment-refusals.feature` pins registration |
+| 21 | Prompt slot malformed, or filled though not empty | `prompt_slot_malformed`, `prompt_slot_not_empty`; an unversioned descriptor makes it the warning `prompt_slot_not_empty_unversioned` | `prompt_slot_malformed`, `prompt_slot_not_empty`; the warning as diagnostic `prompt_slot_not_empty` | the two violations, and one warning answering `prompt_slot_not_empty` on both | V (warning token) | V | no golden subject; `PackFindingCode.diagnostic()` |
+| 22 | `pack.yaml` breaks its schema (unknown key, missing `pack_version`) | `pack_unreadable` at `pack.yaml`, `pack.yaml of qa: unknown key 'mystery'` | refusal at pointer `pack`, `pack_unreadable`, `pack.yaml of qa cannot be read: additionalProperties violated …` | `pack_unreadable` at pointer `pack.yaml`, validate mode's wording | R (pointer, wording) | R | checked against golden: `control-unknown-pack-key-is-a-warning`, `control-retired-pack-key-is-a-warning`, `c9-pack-version-missing-at-the-org-level` |
+| 23 | `pack.yaml` is not YAML | `pack_unreadable` at `pack.yaml`, `pack.yaml of qa is not valid YAML` | refusal at pointer `pack`, `pack_unreadable`, `pack.yaml of qa cannot be read: <parser line>` | `pack_unreadable` at pointer `pack.yaml` | R (pointer) | R | checked against golden: `pack-yaml-tilde-is-null` (open case 5, the wording) |
+| 24 | No `pack.yaml` | not reported | refusal at pointer `pack`, `pack_unreadable`, `pack qa has no pack.yaml` | `pack_unreadable` at pointer `pack.yaml`, `pack qa has no pack.yaml` | R (pointer); V gains it (R1) | R, V | checked against golden: every plant without a descriptor, for example `artifact-not-utf8` |
+| 25 | Root that cannot be read, or is not a directory | not reachable (the inspector reads the root) | refusal at pointer `pack`, `pack_unreadable` | unchanged: `validation_failed` at `pack` (F4) | none | none | no golden subject; `WholePackStore.java:276, :743` |
+| 26 | Any other aggregate invariant breach (`Pack.Builder.build()`) | not judged as such | aggregate `validation_failed` at `pack` | the specific code of the invariant; the fail-closed guard keeps the aggregate shape (F6) | R | R | no golden subject; `WholePackStore.java:299` (open case 4) |
+| 27 | A kind token that is not snake case | not judged | `invalid` | the specific kind code; the fallback goes (IC-04) | R | R | no golden subject reaches it; `WholePackStore.java:763` |
+| 28 | Reserved shard `registered.graph.yaml` without the stamp | `drg_schema_error`, `registered.graph.yaml is reserved for registered relationships and cannot be a source graph shard; rename the shard` | `reserved_shard`, `registered.graph.yaml is reserved for the registered relationships; … Register the edges in a shard of your own.` | `reserved_shard`, registration's | V | V | no golden subject; `FileSystemPackInspector.java:88`, `WholePackStore.java:780` |
+| 29 | Manifest lists files the tree does not hold, or misses some | not judged | `manifest_membership` at `manifest.yaml`, only when nothing else failed | registration's; validate mode gains it (R1) | V | V | no golden subject; `WholePackStore.java:390-396`, contract scenario `whole-pack-registration.feature` |
+| 30 | Manifest is not a regular file | not judged | `unreadable`, `the manifest is not a regular file` | registration's; validate mode gains it | V | V | no golden subject; `WholePackStore.java:388` |
+| 31 | Manifest names a preset in the wrong place | not judged | `schema` at the manifest | `artifact_schema_error` at the manifest | R; validate mode gains it | R, V | no golden subject; `WholePackStore.java:850` |
+| 32 | The policy file `mutability_policy` names cannot be read | not judged | `unreadable`, `named by mutability_policy, the file …` | registration's; validate mode gains it | V | V | no golden subject; `WholePackStore.java:869` |
+| 33 | A file no pack file kind models | silently skipped | `unmodelled`, `no pack file kind models this file; …` | `file_not_held` warning, `no pack file kind models this file` (Q1, not R2) | R, V | Q1 | checked against golden: `c8-shard-without-generated-by-is-accepted+pack.yaml` and the other `drg/*.graph.yaml` and `charter.yaml` plants (open case 6) |
+| 34 | A file an exclusion names (excluded) | lists the file, no finding | diagnostic `file_not_held` (warning), `<file>: not held (<reason>)` | registration's; validate mode gains it | V | V | checked against golden: `example-packs/built-in`, `example-packs/org-base` |
+| 35 | Configured level missing from `pack.yaml` | `pack_level_missing` (warning) | not judged | unchanged (validate only) | none | none | checked against golden: `control-no-generated-by-and-no-pack-level` |
+| 36 | Declared level differs from the configured one | `pack_level_mismatch` | not judged | unchanged (validate only) | none | none | no golden subject; `PackPolicy.java:155` |
+| 37 | Org pack has no `drg/fragment.yaml` | `org_fragment_missing` | not judged | unchanged (validate only) | none | none | checked against golden: `org-fragment-missing` and every `+pack.yaml` org plant |
+| 38 | `requires_core`, `pack_version` or a `depends_on` range is not PEP 440 | `requires_core_invalid`, `pack_version_invalid`, `dependency_range_invalid` | not judged (accepted); the offering answers the first as `pack_unreadable` | unchanged (validate only; one descriptor function, IC-03) | none | none | checked against golden: `requires-core-invalid` (registration accepts it) |
+
+38 rows. 29 change a surface: 21 change validate mode and 14 change registration, 6 of them both. Row 33 changes under
+Q1, the others under R2.
+
+## Open cases
+
+None of these needs the orchestrator to decide R2. Each is decided by the rule or by R1, and each is listed so that
+WP04, WP05 and WP08 see it.
+
+1. **The asset escape is counted twice in validate mode** (row 13). Validate mode answers `artifact_schema_error` and
+   `asset_path_escape` for one sidecar, and registration answers one `asset`. The kept answer is one `asset`, so
+   validate mode loses a finding. Through a symbolic link (`asset-path-escape-through-a-symlink+pack.yaml`,
+   `asset-path-symlink-loop+pack.yaml`), registration names the missing payload and validate mode names the escape.
+   The kept reason is the escape, because a payload outside the root is never read.
+2. **A repeated asset id** (row 15). Only validate mode reports it. Registration reports each sidecar's own `asset`
+   fault and never the repeat, so the counts differ (validate mode 3 or 4, registration 2). Under R1 registration
+   gains nothing.
+3. **The compose read throws on a duplicate artifact id** (row 10). `DomainRepositoryService.compositionFacts`
+   answers a `ConstraintBreachException`, which is a 500 with no `pack_unreadable` detail. The golden records it as
+   `threw`. R1 keeps the compose read's faults, so this stays until a ruling says otherwise.
+4. **The catch-alls with no golden subject** (rows 17, 18, 26). `domain`, `reference` and the aggregate breach give
+   way to a specific code, but no planted pack reaches them. WP05's A-M1 checklist adds one plant per reader fault.
+   The kept code for each must be checked against that plant before WP09.
+5. **The wording for a `pack.yaml` that is not YAML** (row 23). Validate mode drops the parser's line, and
+   registration keeps it. The proposed wording is validate mode's form plus the parser's line:
+   `pack.yaml of qa is not valid YAML: <parser line>`. It is the only row where neither surface's wording is kept
+   whole.
+6. **Two surfaces classify files differently** (row 33). Validate mode reads `charter.yaml` and a shard under
+   `drg/<kind>.graph.yaml` (it judges them, for example `charter-invalid+pack.yaml` and
+   `c16-shard-edge-provenance+pack.yaml`). Registration calls the same files `unmodelled`. After Q1 they become
+   `file_not_held` warnings at registration, while validate mode still judges their contents. This is a
+   classification question, not a code one. WP02 must say which classification holds before the subset tests of
+   WP05 run.

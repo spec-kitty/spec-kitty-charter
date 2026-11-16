@@ -26,3 +26,6 @@ question, the evidence gathered, and a recommendation; the decision it feeds lan
 - [Grounding for the glossary contexts and terms Mission](/development/notes/glossary-contexts-grounding/) —
   the rulings, rename surface, overlap with slice C and epic #549, and issue dispositions for #106, written
   before its spec.
+- [One code per pack fault (the R2 table)](/development/notes/pack-code-unification/) — for each pack fault, what
+  validate mode and the registration answer today and the one code and wording #554 keeps, checked against the
+  golden snapshot.
