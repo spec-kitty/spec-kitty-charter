@@ -6,7 +6,7 @@
   "findings": [
     {
       "code": "artifact_schema_error",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "missions/rx/rx.mission-type.yaml",
       "place": []
     }

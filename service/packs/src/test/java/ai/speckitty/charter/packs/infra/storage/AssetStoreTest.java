@@ -7,8 +7,10 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -200,7 +202,7 @@ class AssetStoreTest {
         assertThat(ids(read)).containsExactly("here");
         assertThat(read.violations())
                 .containsExactly(new PackElementViolation(
-                        "assets/gone.md.asset.yaml", "asset", "payload assets/gone.md does not exist"));
+                        "assets/gone.md.asset.yaml", PackCodes.ASSET, "payload assets/gone.md does not exist"));
     }
 
     /** The built-in shape: a {@code path} anchored at the pack root resolves to {@code assets/assets/...}. */
@@ -352,7 +354,8 @@ class AssetStoreTest {
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("inside.bin", "real.bin");
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation("assets/leak.bin", "unreadable", "the file leaves the pack"));
+                .containsExactly(new PackElementViolation(
+                        "assets/leak.bin", StorageCodes.UNREADABLE, "the file leaves the pack"));
     }
 
     /**
@@ -376,8 +379,8 @@ class AssetStoreTest {
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("kept.bin");
         assertThat(read.violations())
-                .containsExactly(
-                        new PackElementViolation("assets/broken.bin", "unreadable", "the file cannot be read"));
+                .containsExactly(new PackElementViolation(
+                        "assets/broken.bin", StorageCodes.UNREADABLE, "the file cannot be read"));
     }
 
     /** Creates a symbolic link and its parent directories, or skips (fails, when links are required) the test. */

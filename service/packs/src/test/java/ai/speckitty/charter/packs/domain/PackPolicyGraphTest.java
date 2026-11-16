@@ -121,7 +121,7 @@ class PackPolicyGraphTest {
         assertThat(build.graph().nodes()).isEmpty();
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of("nodes", "0"),
                         "qa/tactic.graph.yaml: node urn 'nonsense' is not <kind>:<id>"));
@@ -178,7 +178,7 @@ class PackPolicyGraphTest {
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of("edges", "0"),
                         "qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"));
@@ -333,7 +333,7 @@ class PackPolicyGraphTest {
                 .satisfies(relationship -> assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES));
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         "registered.graph.yaml",
                         List.of("edges", "1"),
                         "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"

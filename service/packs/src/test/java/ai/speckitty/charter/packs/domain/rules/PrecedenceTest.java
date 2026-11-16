@@ -7,6 +7,8 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -19,18 +21,18 @@ import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class PrecedenceTest {
 
     /** The pack-wide group {@code PackPolicy} orders by: the level rules and the missing org fragment. */
-    private static final Comparator<PackFinding> PRECEDENCE = Precedence.comparator(EnumSet.of(
+    private static final Comparator<PackFinding> PRECEDENCE = Precedence.comparator(Set.of(
             PackFindingCode.PACK_LEVEL_MISSING,
             PackFindingCode.PACK_LEVEL_MISMATCH,
             PackFindingCode.ORG_FRAGMENT_MISSING));
@@ -98,11 +100,11 @@ class PrecedenceTest {
         assertThat(PackPolicy.judge(c).findings())
                 .extracting(PackFinding::file, PackFinding::code)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("a.graph.yaml", PackFindingCode.DRG_SCHEMA_ERROR),
-                        org.assertj.core.groups.Tuple.tuple("b.graph.yaml", PackFindingCode.DRG_SCHEMA_ERROR),
-                        org.assertj.core.groups.Tuple.tuple("drg/fragment.yaml", PackFindingCode.DRG_SCHEMA_ERROR),
+                        org.assertj.core.groups.Tuple.tuple("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR),
+                        org.assertj.core.groups.Tuple.tuple("b.graph.yaml", PackCodes.DRG_SCHEMA_ERROR),
+                        org.assertj.core.groups.Tuple.tuple("drg/fragment.yaml", PackCodes.DRG_SCHEMA_ERROR),
                         org.assertj.core.groups.Tuple.tuple("pack.yaml", PackFindingCode.PACK_LEVEL_MISMATCH),
-                        org.assertj.core.groups.Tuple.tuple("nested/z.graph.yaml", PackFindingCode.DRG_SCHEMA_ERROR));
+                        org.assertj.core.groups.Tuple.tuple("nested/z.graph.yaml", PackCodes.DRG_SCHEMA_ERROR));
     }
 
     @Test
@@ -245,7 +247,7 @@ class PrecedenceTest {
     /** Throws the refusal of the first blocking finding, in the order {@link PackPolicy#judge} reports them. */
     private static void refuseOnFirstBlocking(PackContents contents) {
         for (PackFinding finding : PackPolicy.judge(contents).findings()) {
-            if (finding.severity() == PackFindingCode.Severity.BLOCKING) {
+            if (finding.severity() == Severity.VIOLATION) {
                 throw finding.toRefusal();
             }
         }
@@ -258,7 +260,7 @@ class PrecedenceTest {
         List<PackFinding> findings = PackPolicy.judge(c).findings();
         assertThat(findings)
                 .extracting(PackFinding::code)
-                .containsExactly(PackFindingCode.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
+                .containsExactly(PackCodes.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
         assertThatThrownBy(() -> refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
             assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml: unknown key 'surprise'");
@@ -313,10 +315,10 @@ class PrecedenceTest {
     @Test
     void thePrecedenceOrdersTheFindingsOfOneFileByPlaceAndPutsAShorterPlaceFirst() {
         PackFinding deep =
-                new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "1", "tags"), "d");
+                new PackFinding(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "1", "tags"), "d");
         PackFinding early =
-                new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "0", "tags"), "d");
-        PackFinding shallow = new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes"), "d");
+                new PackFinding(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "0", "tags"), "d");
+        PackFinding shallow = new PackFinding(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes"), "d");
 
         assertThat(java.util.stream.Stream.of(deep, early, shallow).sorted(PRECEDENCE))
                 .containsExactly(shallow, early, deep);

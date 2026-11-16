@@ -9,6 +9,8 @@ import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.missions.domain.SubstepDelegation;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
@@ -16,6 +18,7 @@ import ai.speckitty.charter.packs.application.KindTaxonomyReadService.HeldAs;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.KindFacts;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.RelationFacts;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.Taxonomy;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -407,11 +410,11 @@ class VocabularyEqualityTest {
             ((List<?>) document.get("enum")).forEach(v -> contract.add(String.valueOf(v)));
         }
         Set<String> projected = new LinkedHashSet<>();
-        for (PackFindingCode code : PackFindingCode.values()) {
-            if (code.severity() == PackFindingCode.Severity.WARNING) {
-                projected.add(code.diagnostic().token());
+        for (ReasonCode code : findingCodes()) {
+            if (code.severity() == Severity.WARNING) {
+                PackFindingCode.diagnostic(code).ifPresent(diagnostic -> projected.add(diagnostic.token()));
             } else if (isOnTheLoadPath(code)) {
-                projected.add(code.refusal().token());
+                projected.add(PackFindingCode.refusal(code).token());
             }
         }
 
@@ -725,10 +728,29 @@ class VocabularyEqualityTest {
         }
     }
 
+    /** Every code a finding is built with: the domain's codes, then the staging view's. */
+    private static List<ReasonCode> findingCodes() {
+        List<ReasonCode> codes = new ArrayList<>(PackCodes.CONTENT);
+        codes.addAll(List.of(
+                PackFindingCode.PACK_LEVEL_MISSING,
+                PackFindingCode.PACK_LEVEL_MISMATCH,
+                PackFindingCode.ORG_FRAGMENT_MISSING,
+                PackFindingCode.PACK_UNREADABLE,
+                PackFindingCode.REQUIRES_CORE_INVALID,
+                PackFindingCode.PACK_VERSION_INVALID,
+                PackFindingCode.DEPENDENCY_RANGE_INVALID,
+                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
+                PackFindingCode.ASSET_PATH_ESCAPE,
+                PackFindingCode.ASSET_MIME_INVALID,
+                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                PackFindingCode.FILE_NOT_HELD));
+        return codes;
+    }
+
     /** A blocking code that projects onto a refusal; the validate-only codes do not and throw. */
-    private static boolean isOnTheLoadPath(PackFindingCode code) {
+    private static boolean isOnTheLoadPath(ReasonCode code) {
         try {
-            code.refusal();
+            PackFindingCode.refusal(code);
             return true;
         } catch (IllegalStateException validateOnly) {
             return false;

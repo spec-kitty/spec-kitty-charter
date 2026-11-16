@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.validation.Severity;
 import java.util.List;
 
 /** Test view of {@link PackPolicy#judge}: what a caller sees if it refuses on the first blocking finding. */
@@ -15,7 +16,7 @@ final class Judged {
      */
     static void refuseOnFirstBlocking(PackContents contents) {
         for (PackFinding finding : PackPolicy.judge(contents).findings()) {
-            if (finding.severity() == PackFindingCode.Severity.BLOCKING) {
+            if (finding.severity() == Severity.VIOLATION) {
                 throw finding.toRefusal();
             }
         }

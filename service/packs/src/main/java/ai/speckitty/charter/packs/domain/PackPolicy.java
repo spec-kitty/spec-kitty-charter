@@ -1,10 +1,10 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -38,10 +38,7 @@ public final class PackPolicy {
     private static final String FRAGMENT = "drg/fragment.yaml";
 
     /** The rules that look at the pack as a whole; they are attached to {@code pack.yaml} and ordered last. */
-    private static final Set<PackFindingCode> PACK_WIDE = EnumSet.of(
-            PackFindingCode.PACK_LEVEL_MISSING,
-            PackFindingCode.PACK_LEVEL_MISMATCH,
-            PackFindingCode.ORG_FRAGMENT_MISSING);
+    private static final Set<ReasonCode> PACK_WIDE = PackFindingCode.PLACEMENT;
 
     private static final String STEP_ENHANCEMENT = "step_enhancement";
 
@@ -52,8 +49,6 @@ public final class PackPolicy {
             "; the descriptor declares no schema_version, so this is a warning";
 
     private static final String EDGES = "edges";
-    /** The code a step that repeats a substep id is recorded under, by validate mode and by the load alike (FR-004). */
-    private static final String DUPLICATE_STEP_ID_CODE = "duplicate_step_id";
 
     /** The finding text of an authored edge to or from a guard or a lifecycle; see {@link GraphBinding#NOT_AUTHORED}. */
     public static final String NOT_AUTHORED = GraphBinding.NOT_AUTHORED;
@@ -110,7 +105,7 @@ public final class PackPolicy {
         return List.of();
     }
 
-    private static PackFinding levelFinding(PackFindingCode code, String detail) {
+    private static PackFinding levelFinding(ReasonCode code, String detail) {
         return new PackFinding(code, PACK_YAML, List.of(), detail);
     }
 
@@ -192,7 +187,7 @@ public final class PackPolicy {
     }
 
     /**
-     * The validate-mode finding of one fault: the one code {@link PackFindingCode#PROMPT_FRAGMENT_INVALID}, at the file
+     * The validate-mode finding of one fault: the one code {@link PackCodes#PROMPT_FRAGMENT_INVALID}, at the file
      * the rule names.
      *
      * @param packName the pack's configured name, which prefixes the origin in a text
@@ -201,7 +196,7 @@ public final class PackPolicy {
      */
     public static PackFinding findingOf(String packName, StepEnhancementFault.Finding fault) {
         return new PackFinding(
-                PackFindingCode.PROMPT_FRAGMENT_INVALID,
+                PackCodes.PROMPT_FRAGMENT_INVALID,
                 fault.path(),
                 List.of(),
                 origin(packName, fault.path()) + ": " + fault.reason());
@@ -215,8 +210,7 @@ public final class PackPolicy {
      * @return the violation
      */
     public static PackElementViolation violationOf(StepEnhancementFault.Finding fault) {
-        return new PackElementViolation(
-                fault.path(), violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID), fault.reason());
+        return new PackElementViolation(fault.path(), PackCodes.PROMPT_FRAGMENT_INVALID, fault.reason());
     }
 
     /**
@@ -246,37 +240,13 @@ public final class PackPolicy {
                 .toList();
     }
 
-    /**
-     * The wire token a load fault of this code is recorded under as a {@link PackElementViolation} kind. The registration
-     * copies it into the {@code code} of the violation of {@code 422 validation_failed}.
-     *
-     * @param code the finding code
-     * @return its token
-     * @throws IllegalArgumentException for a code that is not recorded as a load violation
-     */
-    public static String violationKind(PackFindingCode code) {
-        return switch (code) {
-            case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID.token();
-            case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED.token();
-            case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY.token();
-            case OVERRIDES_SOURCE_NOT_ACTIVATABLE -> EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE;
-            case RELATIONSHIP_ENDPOINT_NOT_ALLOWED -> RelationshipEndpointRule.CODE;
-            case MISSION_STEP_UNLINKED -> MissionStepLinkRule.CODE;
-            case SUBSTEP_DELEGATION_UNRESOLVED -> SubstepDelegationRule.UNRESOLVED;
-            case SUBSTEP_DELEGATION_UNSCOPED -> SubstepDelegationRule.UNSCOPED;
-            case DUPLICATE_STEP_ID -> DUPLICATE_STEP_ID_CODE;
-            default ->
-                throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
-        };
-    }
-
     // ---- the endpoint rule: the source of an overrides edge, then the table --------------------------------------
 
     /**
      * Judges the edges of every graph document that was read by {@link RelationshipEndpointRule}, as the load does: one
      * blocking finding per refused edge, at its document and its place {@code /edges/<index>}. An {@code overrides}
-     * edge whose source kind is not activatable (FR-014) is {@link PackFindingCode#OVERRIDES_SOURCE_NOT_ACTIVATABLE};
-     * an edge whose relation does not allow its endpoint kinds is {@link PackFindingCode#RELATIONSHIP_ENDPOINT_NOT_ALLOWED}.
+     * edge whose source kind is not activatable (FR-014) is {@link PackCodes#OVERRIDES_SOURCE_NOT_ACTIVATABLE};
+     * an edge whose relation does not allow its endpoint kinds is {@link PackCodes#RELATIONSHIP_ENDPOINT_NOT_ALLOWED}.
      * The source findings come first, then the table's, each in edge order, as the load lists them. A document that
      * could not be read is refused on its own and not judged here.
      */
@@ -306,8 +276,8 @@ public final class PackPolicy {
                     (byTable ? table : sources)
                             .add(new PackFinding(
                                     byTable
-                                            ? PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
-                                            : PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+                                            ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
+                                            : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
                                     raw.file(),
                                     List.of(EDGES, Integer.toString(i)),
                                     origin(packName, raw.file()) + ": "
@@ -332,7 +302,7 @@ public final class PackPolicy {
         }
         return MissionStepLinkRule.judge(ownName(packName, contents), heldTypes(contents), edgesOf(contents)).stream()
                 .map(fault -> new PackFinding(
-                        PackFindingCode.MISSION_STEP_UNLINKED,
+                        PackCodes.MISSION_STEP_UNLINKED,
                         fault.file(),
                         List.of(),
                         origin(packName, fault.file()) + ": " + fault.reason()))
@@ -356,8 +326,8 @@ public final class PackPolicy {
                 .stream()
                 .map(fault -> new PackFinding(
                         SubstepDelegationRule.UNRESOLVED.equals(fault.code())
-                                ? PackFindingCode.SUBSTEP_DELEGATION_UNRESOLVED
-                                : PackFindingCode.SUBSTEP_DELEGATION_UNSCOPED,
+                                ? PackCodes.SUBSTEP_DELEGATION_UNRESOLVED
+                                : PackCodes.SUBSTEP_DELEGATION_UNSCOPED,
                         fault.file(),
                         fault.place(),
                         origin(packName, fault.file()) + ": " + fault.reason()))
@@ -379,7 +349,7 @@ public final class PackPolicy {
                     List<String> place = new ArrayList<>(substep.place());
                     place.add("id");
                     findings.add(new PackFinding(
-                            PackFindingCode.DUPLICATE_STEP_ID,
+                            PackCodes.DUPLICATE_STEP_ID,
                             type.file(),
                             place,
                             type.file() + ": substep id '" + substep.id() + "' is declared more than once in the step '"
@@ -400,8 +370,7 @@ public final class PackPolicy {
      */
     public static List<PackElementViolation> substepIdViolations(MissionTypeFacts type) {
         return substepIdRules(List.of(type)).stream()
-                .map(finding -> new PackElementViolation(
-                        finding.file(), violationKind(PackFindingCode.DUPLICATE_STEP_ID), finding.detail()))
+                .map(finding -> new PackElementViolation(finding.file(), PackCodes.DUPLICATE_STEP_ID, finding.detail()))
                 .toList();
     }
 
@@ -442,7 +411,7 @@ public final class PackPolicy {
      * @param code the finding code
      * @param reason what is wrong, naming the line of the marker; it does not name the file
      */
-    public record PromptSlotFault(PackFindingCode code, String reason) {
+    public record PromptSlotFault(ReasonCode code, String reason) {
         /**
          * Checks the fields.
          *
@@ -472,14 +441,13 @@ public final class PackPolicy {
             String where = "line " + fault.line() + " of the canonical text: ";
             faults.add(
                     switch (fault.kind()) {
-                        case MALFORMED ->
-                            new PromptSlotFault(PackFindingCode.PROMPT_SLOT_MALFORMED, where + fault.reason());
+                        case MALFORMED -> new PromptSlotFault(PackCodes.PROMPT_SLOT_MALFORMED, where + fault.reason());
                         case NOT_EMPTY -> {
                             String slot = fault.slot()
                                     .map(id -> "slot " + id + " holds text")
                                     .orElse(fault.reason());
                             yield versioned
-                                    ? new PromptSlotFault(PackFindingCode.PROMPT_SLOT_NOT_EMPTY, where + slot)
+                                    ? new PromptSlotFault(PackCodes.PROMPT_SLOT_NOT_EMPTY, where + slot)
                                     : new PromptSlotFault(
                                             PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
                                             where + slot + UNVERSIONED_WARNING);
@@ -523,7 +491,10 @@ public final class PackPolicy {
      * @throws IllegalArgumentException for the warning of an unversioned descriptor
      */
     public static PackElementViolation violationOf(String file, PromptSlotFault fault) {
-        return new PackElementViolation(file, violationKind(fault.code()), fault.reason());
+        if (fault.code().severity() != Severity.VIOLATION) {
+            throw new IllegalArgumentException(fault.code().value() + " is a warning, not a violation of a load fault");
+        }
+        return new PackElementViolation(file, fault.code(), fault.reason());
     }
 
     // ---- single-pack rules a schema cannot express ---------------------------------------------
@@ -582,7 +553,7 @@ public final class PackPolicy {
             String first = owners.putIfAbsent(List.of(artifact.kind(), artifact.id()), artifact.file());
             if (first != null) {
                 findings.add(new PackFinding(
-                        PackFindingCode.DUPLICATE_ARTIFACT_ID,
+                        PackCodes.DUPLICATE_ARTIFACT_ID,
                         artifact.file(),
                         List.of(),
                         artifact.file() + ": " + artifact.kind() + " id '" + artifact.id() + "' is already declared in "
@@ -616,7 +587,7 @@ public final class PackPolicy {
         return findings;
     }
 
-    private static PackFinding assetFinding(PackFindingCode code, PackContents.AssetFacts asset, String detail) {
+    private static PackFinding assetFinding(ReasonCode code, PackContents.AssetFacts asset, String detail) {
         return new PackFinding(code, asset.file(), List.of(), detail);
     }
 

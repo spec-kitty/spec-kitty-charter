@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -59,7 +61,7 @@ class SubstepDelegationPlantsTest {
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(code);
-            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(TYPE);
             assertThat(finding.place()).isEqualTo(PLACE);
             assertThat(finding.detail())
@@ -139,7 +141,7 @@ class SubstepDelegationPlantsTest {
         appendToGraph(pack, SCOPE_EDGE);
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.SUBSTEP_DELEGATION_UNSCOPED);
+            assertThat(finding.code()).isEqualTo(PackCodes.SUBSTEP_DELEGATION_UNSCOPED);
             assertThat(finding.detail()).contains("action:rx/a scope base::tactic:tdd");
         });
         assertThat(new WholePackStore(new YamlSerializationStrategy())
@@ -158,7 +160,7 @@ class SubstepDelegationPlantsTest {
         rewriteType(pack, "      - tdd\n", "      - tdd\n  - id: run\n    description: Run it again\n");
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.DUPLICATE_STEP_ID);
+            assertThat(finding.code()).isEqualTo(PackCodes.DUPLICATE_STEP_ID);
             assertThat(finding.file()).isEqualTo(TYPE);
             assertThat(finding.place()).containsExactly("steps", "0", "substeps", "1", "id");
             assertThat(finding.detail()).contains("substep id 'run' is declared more than once in the step 'a'");

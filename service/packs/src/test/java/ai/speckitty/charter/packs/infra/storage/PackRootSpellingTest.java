@@ -92,7 +92,9 @@ class PackRootSpellingTest {
     private static void assertLoadMissesOnlyTheTemplate(List<PackElementViolation> violations) {
         assertThat(violations)
                 .containsExactly(new PackElementViolation(
-                        FILE, "reference", "templates/spec-template.md (named by step 'scoping'): missing"));
+                        FILE,
+                        FilesystemPackStore.REFERENCE,
+                        "templates/spec-template.md (named by step 'scoping'): missing"));
     }
 
     @ParameterizedTest(name = "[{index}] host/{0}")

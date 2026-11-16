@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -372,7 +373,7 @@ class ReservedRefusalCodesTest {
      * reference, the stream shape a {@code callMethod} rule does not see.
      */
     static final class ReachesTheOffWireClasses {
-        List<?> reach(List<PackFinding> findings, List<PackFindingCode> codes) {
+        List<?> reach(List<PackFinding> findings, List<ReasonCode> codes) {
             return List.of(
                     findings.stream().map(PackFinding::toRefusal).toList(),
                     codes.stream().map(PackFindingCode::refusal).toList());

@@ -25,6 +25,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -239,7 +240,9 @@ class MissionTypeBindingTest {
 
         assertThat(read().violations())
                 .containsExactly(new PackElementViolation(
-                        FILE, "reference", "templates/spec-template.md (named by step 'scoping'): missing"));
+                        FILE,
+                        FilesystemPackStore.REFERENCE,
+                        "templates/spec-template.md (named by step 'scoping'): missing"));
 
         Files.createDirectories(pack.resolve("missions/research/templates"));
         Files.writeString(pack.resolve("missions/research/templates/spec-template.md"), "# Spec\n");
@@ -346,10 +349,11 @@ class MissionTypeBindingTest {
         String reason = "templates/Spec-Template.md (named by step 'scoping'): differs only in case from"
                 + " missions/research/templates/spec-template.md";
 
-        assertThat(read().violations()).containsExactly(new PackElementViolation(FILE, "reference", reason));
+        assertThat(read().violations())
+                .containsExactly(new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, reason));
         assertThat(load(pack).violations())
                 .as("the type is refused once, by the file check; the resolution never sees it")
-                .containsExactly(new PackElementViolation(FILE, "reference", reason));
+                .containsExactly(new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, reason));
         PackContents validated = new FileSystemPackInspector()
                 .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
         assertThat(validated.unreadableFiles())
@@ -426,7 +430,7 @@ class MissionTypeBindingTest {
                     .isEmpty();
             assertThat(refused.violations())
                     .as("%s", templates)
-                    .containsExactly(new PackElementViolation(FILE, "reference", UNRESOLVED));
+                    .containsExactly(new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, UNRESOLVED));
         }
     }
 
@@ -452,7 +456,9 @@ class MissionTypeBindingTest {
         assertThat(read.templates()).isEmpty();
         assertThat(read.violations())
                 .containsExactly(new PackElementViolation(
-                        "missions/research/templates/spec-template.md", "unreadable", "the file cannot be read"));
+                        "missions/research/templates/spec-template.md",
+                        StorageCodes.UNREADABLE,
+                        "the file cannot be read"));
         assertThat(read.elements().get(ArtifactKind.MISSION_TYPE))
                 .as("the type itself still reads")
                 .hasSize(1);
@@ -464,9 +470,9 @@ class MissionTypeBindingTest {
                 .containsExactly(
                         new PackElementViolation(
                                 "missions/research/templates/spec-template.md",
-                                "unreadable",
+                                StorageCodes.UNREADABLE,
                                 "the file cannot be read"),
-                        new PackElementViolation(FILE, "reference", UNRESOLVED));
+                        new PackElementViolation(FILE, FilesystemPackStore.REFERENCE, UNRESOLVED));
     }
 
     @Test
@@ -648,7 +654,8 @@ class MissionTypeBindingTest {
 
         assertThat(read.dsos(MissionTypeBinding.INSTANCE)).isEmpty();
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(FILE, "companion", "steps/scoping.prompt.md: missing"));
+                .containsExactly(
+                        new PackElementViolation(FILE, StorageCodes.COMPANION, "steps/scoping.prompt.md: missing"));
     }
 
     // ---- the gate -------------------------------------------------------------------------------------------------

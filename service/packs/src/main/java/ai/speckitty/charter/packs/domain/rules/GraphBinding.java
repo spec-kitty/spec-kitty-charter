@@ -9,11 +9,11 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -131,8 +131,8 @@ public final class GraphBinding {
                     if (registered) {
                         findings.add(new PackFinding(
                                 EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE.equals(refused.code())
-                                        ? PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE
-                                        : PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
+                                        ? PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE
+                                        : PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
                                 raw.file(),
                                 List.of(EDGES, Integer.toString(i)),
                                 origin + ": " + refused.message()));
@@ -145,8 +145,7 @@ public final class GraphBinding {
     }
 
     private static PackFinding graphFinding(RawGraph raw, String list, int index, String detail) {
-        return new PackFinding(
-                PackFindingCode.DRG_SCHEMA_ERROR, raw.file(), List.of(list, Integer.toString(index)), detail);
+        return new PackFinding(PackCodes.DRG_SCHEMA_ERROR, raw.file(), List.of(list, Integer.toString(index)), detail);
     }
 
     private static Optional<DrgNode> shardNode(RawNode node) {

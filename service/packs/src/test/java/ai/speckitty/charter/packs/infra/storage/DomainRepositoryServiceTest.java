@@ -24,6 +24,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -340,7 +341,7 @@ class DomainRepositoryServiceTest {
         assertThat(pack.violations())
                 .containsExactly(new PackElementViolation(
                         "assets/debrief/logo.png.asset.yaml",
-                        "asset",
+                        PackCodes.ASSET,
                         "payload assets/debrief/logo.png does not exist"));
         assertThat(pack.templates()).hasSize(1);
     }

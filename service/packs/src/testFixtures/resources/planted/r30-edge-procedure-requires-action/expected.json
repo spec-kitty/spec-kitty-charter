@@ -7,7 +7,7 @@
   "findings": [
     {
       "code": "relationship_endpoint_not_allowed",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "procedure.graph.yaml",
       "place": [
         "edges",

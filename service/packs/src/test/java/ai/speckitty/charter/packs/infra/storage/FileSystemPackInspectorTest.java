@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -775,7 +776,7 @@ class FileSystemPackInspectorTest {
         assertThat(verdict.findings())
                 .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
                 .containsExactly(
-                        tuple(PackFindingCode.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "qa/drg/fragment.yaml " + reason));
+                        tuple(PackCodes.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "qa/drg/fragment.yaml " + reason));
         assertThat(load.documents())
                 .as("the load reads no part of the fragment")
                 .isEmpty();
@@ -1099,7 +1100,7 @@ class FileSystemPackInspectorTest {
 
     private static List<PackFinding> promptFragmentFindings(Path dir) {
         return PackPolicy.judge(full(dir)).findings().stream()
-                .filter(finding -> finding.code() == PackFindingCode.PROMPT_FRAGMENT_INVALID)
+                .filter(finding -> PackCodes.PROMPT_FRAGMENT_INVALID.equals(finding.code()))
                 .toList();
     }
 
@@ -1308,7 +1309,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir)).isEmpty();
         assertThat(PackPolicy.judge(full(dir)).findings())
-                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR));
+                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR));
     }
 
     @Test
@@ -1343,10 +1344,10 @@ class FileSystemPackInspectorTest {
                 .filteredOn(finding -> finding.file().endsWith(".step-enhancement.yaml"))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(PackFindingCode.PROMPT_FRAGMENT_INVALID);
+                    assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_FRAGMENT_INVALID);
                     assertThat(finding.file()).isEqualTo(software + ".step-enhancement.yaml");
                 });
-        assertThat(findings).extracting(PackFinding::code).doesNotContain(PackFindingCode.DUPLICATE_ARTIFACT_ID);
+        assertThat(findings).extracting(PackFinding::code).doesNotContain(PackCodes.DUPLICATE_ARTIFACT_ID);
     }
 
     @Test
@@ -1356,7 +1357,7 @@ class FileSystemPackInspectorTest {
         write(dir, "more/same.tactic.yaml", tactic);
 
         assertThat(PackPolicy.judge(full(dir)).findings())
-                .filteredOn(finding -> finding.code() == PackFindingCode.DUPLICATE_ARTIFACT_ID)
+                .filteredOn(finding -> PackCodes.DUPLICATE_ARTIFACT_ID.equals(finding.code()))
                 .singleElement()
                 .satisfies(finding -> assertThat(finding.file()).isEqualTo("tactics/same.tactic.yaml"));
     }

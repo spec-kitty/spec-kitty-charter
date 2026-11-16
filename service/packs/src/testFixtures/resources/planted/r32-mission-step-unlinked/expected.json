@@ -6,7 +6,7 @@
   "findings": [
     {
       "code": "mission_step_unlinked",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "missions/rx/rx.mission-type.yaml",
       "place": []
     }

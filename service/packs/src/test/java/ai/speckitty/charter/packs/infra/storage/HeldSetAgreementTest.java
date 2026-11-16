@@ -203,7 +203,7 @@ class HeldSetAgreementTest {
 
     private static List<PackFinding> warnings(Path pack, PackLevel level) {
         return PackPolicy.judge(inspect(pack, level)).findings().stream()
-                .filter(finding -> finding.code() == PackFindingCode.FILE_NOT_HELD)
+                .filter(finding -> PackFindingCode.FILE_NOT_HELD.equals(finding.code()))
                 .toList();
     }
 

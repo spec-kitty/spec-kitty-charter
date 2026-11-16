@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -145,10 +146,12 @@ class MarkdownCompanionTest {
                 .containsExactlyInAnyOrder(
                         new PackElementViolation(
                                 "skills/broken.skill.yaml",
-                                "companion",
+                                StorageCodes.COMPANION,
                                 "broken.md: structure: minContains violated at /sections"),
                         new PackElementViolation(
-                                SKILL_FILE, "companion", "land.md: line 4: a carriage return is not admitted"));
+                                SKILL_FILE,
+                                StorageCodes.COMPANION,
+                                "land.md: line 4: a carriage return is not admitted"));
     }
 
     @Test

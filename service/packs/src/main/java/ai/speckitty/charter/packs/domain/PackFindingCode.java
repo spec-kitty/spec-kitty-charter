@@ -1,156 +1,120 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.kernel.validation.Severity;
+import java.util.Optional;
+import java.util.Set;
 
-/** The stable codes {@link PackPolicy} emits; each has a fixed severity. */
-public enum PackFindingCode {
-    /** The pack has no {@code pack.yaml} or declares no {@code pack_level}. */
-    PACK_LEVEL_MISSING(Severity.WARNING),
-    /** The pack declares a level other than the configured one. */
-    PACK_LEVEL_MISMATCH(Severity.BLOCKING),
-    /** The pack's files cannot be read or parsed. */
-    PACK_UNREADABLE(Severity.BLOCKING),
-    /** {@code requires_core} is not a valid specifier set. */
-    REQUIRES_CORE_INVALID(Severity.BLOCKING),
-    /** {@code pack_version} is not a PEP 440 version, so no {@code depends_on} range can be decided against it. */
-    PACK_VERSION_INVALID(Severity.BLOCKING),
-    /** A {@code depends_on[].range} is not a valid specifier set. */
-    DEPENDENCY_RANGE_INVALID(Severity.BLOCKING),
-    /** An org pack has no {@code drg/fragment.yaml}. */
-    ORG_FRAGMENT_MISSING(Severity.BLOCKING),
-    /** A graph document breaks the DRG schema. */
-    DRG_SCHEMA_ERROR(Severity.BLOCKING),
-    /** An artifact file breaks its schema; validate mode only. */
-    ARTIFACT_SCHEMA_ERROR(Severity.BLOCKING),
-    /**
-     * A step of a mission type declares a substep id twice (FR-004). Validate mode reports it at the repeat; the load
-     * holds no such mission type and records the same code at the type's file.
-     */
-    DUPLICATE_STEP_ID(Severity.BLOCKING),
-    /** Two artifacts share an id; validate mode only. */
-    DUPLICATE_ARTIFACT_ID(Severity.BLOCKING),
+/**
+ * The thin view validate mode's {@link PackPolicy} still emits through, staging inside #554's one pull request (R4 b):
+ * the codes a domain class names that {@link PackCodes} does not build. They are the three placement tokens, which
+ * {@code pack-validation}'s {@code PlacementCodes} builds once validate mode moves there (WP09), and the storage edge's
+ * tokens that today's validate mode still reports from the domain, which the storage edge's {@code StorageCodes}
+ * builds. A domain class may not name the storage edge, so until the one reader reports them (WP05, WP09) each is a
+ * constant here equal to its {@code StorageCodes} twin. WP13 deletes this class; no new caller names it.
+ */
+public final class PackFindingCode {
+
+    /** The pack has no {@code pack.yaml} or declares no {@code pack_level}: placement, a warning. */
+    public static final ReasonCode PACK_LEVEL_MISSING = new ReasonCode("pack_level_missing", Severity.WARNING);
+
+    /** The pack declares a level other than the configured one: placement. */
+    public static final ReasonCode PACK_LEVEL_MISMATCH = violation(RefusalCode.PACK_LEVEL_MISMATCH.token());
+
+    /** An org pack has no {@code drg/fragment.yaml}: placement. */
+    public static final ReasonCode ORG_FRAGMENT_MISSING = violation("org_fragment_missing");
+
+    /** The pack's descriptor cannot be read or parsed: {@code StorageCodes.PACK_UNREADABLE}. */
+    public static final ReasonCode PACK_UNREADABLE = violation(RefusalCode.PACK_UNREADABLE.token());
+
+    /** {@code requires_core} is not a valid specifier set: {@code StorageCodes.REQUIRES_CORE_INVALID}. */
+    public static final ReasonCode REQUIRES_CORE_INVALID = violation("requires_core_invalid");
+
+    /** {@code pack_version} is not a PEP 440 version: {@code StorageCodes.PACK_VERSION_INVALID}. */
+    public static final ReasonCode PACK_VERSION_INVALID = violation("pack_version_invalid");
+
+    /** A {@code depends_on[].range} is not a valid specifier set: {@code StorageCodes.DEPENDENCY_RANGE_INVALID}. */
+    public static final ReasonCode DEPENDENCY_RANGE_INVALID = violation("dependency_range_invalid");
+
+    /** An artifact file breaks its schema: {@code StorageCodes.ARTIFACT_SCHEMA_ERROR}. */
+    public static final ReasonCode ARTIFACT_SCHEMA_ERROR = violation("artifact_schema_error");
+
     /** An asset path leaves the assets root; validate mode only. */
-    ASSET_PATH_ESCAPE(Severity.BLOCKING),
-    /** An asset declares a MIME type its extension does not allow; validate mode only. */
-    ASSET_MIME_INVALID(Severity.BLOCKING),
-    /**
-     * A step enhancement or a prompt fragment breaks a rule of ADR-0066: the fragment's content, the enhancement's slots,
-     * companions, edges, directory or identity (FR-004 to FR-006). It is a violation code of the file at registration
-     * and the cause of a {@code pack_unreadable} read.
-     */
-    PROMPT_FRAGMENT_INVALID(Severity.BLOCKING),
-    /**
-     * A step prompt's slot declaration is malformed, repeated, nested or unpaired (FR-007), whatever the descriptor's
-     * version. It is a violation code of the prompt file at registration and the cause of a {@code pack_unreadable}
-     * read.
-     */
-    PROMPT_SLOT_MALFORMED(Severity.BLOCKING),
-    /**
-     * A step prompt's slot holds text in a pack whose descriptor declares {@code schema_version} {@code "1.0"}
-     * (FR-007). It is a violation code of the prompt file at registration and the cause of a {@code pack_unreadable}
-     * read.
-     */
-    PROMPT_SLOT_NOT_EMPTY(Severity.BLOCKING),
-    /**
-     * A step prompt's slot holds text in a pack whose descriptor declares no {@code schema_version}: the same
-     * condition as {@link #PROMPT_SLOT_NOT_EMPTY}, a warning for the legacy descriptor (ADR-0066 version gate). Two
-     * codes for one condition because a severity is fixed per code.
-     */
-    PROMPT_SLOT_NOT_EMPTY_UNVERSIONED(Severity.WARNING),
-    /**
-     * A file of a registered tree that is not pack content (an exclusion names it, or the {@code ignored} fallback takes
-     * it), so the registration does not hold it (#451). A warning on the registration's answer, never a violation.
-     */
-    FILE_NOT_HELD(Severity.WARNING),
-    /**
-     * An {@code overrides} edge of a graph document whose source is not of an activatable kind (FR-014,
-     * {@link RelationshipEndpointRule}). It is the violation code
-     * {@value ai.speckitty.charter.kernel.domain.EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} of the graph document at
-     * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
-     */
-    OVERRIDES_SOURCE_NOT_ACTIVATABLE(Severity.BLOCKING),
-    /**
-     * An edge of a graph document whose relation does not allow its source and target kinds (ADR-0064 decision 13,
-     * {@link RelationshipEndpointRule}). It is the violation code {@value RelationshipEndpointRule#CODE} of the graph
-     * document at registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
-     */
-    RELATIONSHIP_ENDPOINT_NOT_ALLOWED(Severity.BLOCKING),
-    /**
-     * A step of a mission type with no authored {@code requires} edge from its type, or such an edge to an action that
-     * is not one of its steps ({@link MissionStepLinkRule}). It is the violation code {@value MissionStepLinkRule#CODE}
-     * at registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
-     */
-    MISSION_STEP_UNLINKED(Severity.BLOCKING),
-    /**
-     * A substep's delegation candidate that is no artifact of the delegation's kind in the pack
-     * ({@link SubstepDelegationRule}, FR-005). It is the violation code {@value SubstepDelegationRule#UNRESOLVED} at
-     * registration and the cause of a {@code pack_unreadable} read; it has no refusal code of its own.
-     */
-    SUBSTEP_DELEGATION_UNRESOLVED(Severity.BLOCKING),
-    /**
-     * A substep's delegation candidate the step's action has no {@code scope} edge to ({@link SubstepDelegationRule},
-     * FR-005). It is the violation code {@value SubstepDelegationRule#UNSCOPED} at registration and the cause of a
-     * {@code pack_unreadable} read; it has no refusal code of its own.
-     */
-    SUBSTEP_DELEGATION_UNSCOPED(Severity.BLOCKING);
+    public static final ReasonCode ASSET_PATH_ESCAPE = violation("asset_path_escape");
 
-    /** How a finding weighs. */
-    public enum Severity {
-        /** The load goes on; the finding is reported as a diagnostic. */
-        WARNING,
-        /** The load stops; the finding is reported as a refusal. */
-        BLOCKING
-    }
+    /** An asset's MIME type is malformed or does not match its extension: {@code StorageCodes.ASSET_MIME_INVALID}. */
+    public static final ReasonCode ASSET_MIME_INVALID = violation("asset_mime_invalid");
 
-    private final Severity severity;
+    /** A step prompt's slot holds text in a pack whose descriptor declares no {@code schema_version}; a warning. */
+    public static final ReasonCode PROMPT_SLOT_NOT_EMPTY_UNVERSIONED =
+            new ReasonCode("prompt_slot_not_empty_unversioned", Severity.WARNING);
 
-    PackFindingCode(Severity severity) {
-        this.severity = severity;
-    }
+    /** A file the store does not hold: {@code StorageCodes.FILE_NOT_HELD}, a warning. */
+    public static final ReasonCode FILE_NOT_HELD =
+            new ReasonCode(Diagnostic.Code.FILE_NOT_HELD.token(), Severity.WARNING);
+
+    /** The codes of the rules that look at the pack as a whole: the placement codes. */
+    public static final Set<ReasonCode> PLACEMENT =
+            Set.of(PACK_LEVEL_MISSING, PACK_LEVEL_MISMATCH, ORG_FRAGMENT_MISSING);
+
+    private PackFindingCode() {}
 
     /**
-     * The fixed severity of the code.
+     * The refusal code a blocking load-path finding projects onto, by its constant.
      *
-     * @return the severity
-     */
-    public Severity severity() {
-        return severity;
-    }
-
-    /**
-     * The refusal code a blocking load-path finding projects onto.
-     *
+     * @param code the finding's code
      * @return the refusal code
      * @throws IllegalStateException for a code that is validate-only or a warning
      */
-    public RefusalCode refusal() {
-        return switch (this) {
-            case PACK_LEVEL_MISMATCH -> RefusalCode.PACK_LEVEL_MISMATCH;
-            case PACK_UNREADABLE,
-                    REQUIRES_CORE_INVALID,
-                    PACK_VERSION_INVALID,
-                    DEPENDENCY_RANGE_INVALID,
-                    ORG_FRAGMENT_MISSING -> RefusalCode.PACK_UNREADABLE;
-            case DRG_SCHEMA_ERROR -> RefusalCode.DRG_SCHEMA_ERROR;
-            case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID;
-            case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED;
-            case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY;
-            default -> throw new IllegalStateException(name() + " has no refusal on the load path");
-        };
+    public static RefusalCode refusal(ReasonCode code) {
+        if (code.equals(PACK_LEVEL_MISMATCH)) {
+            return RefusalCode.PACK_LEVEL_MISMATCH;
+        }
+        if (Set.of(
+                        PACK_UNREADABLE,
+                        REQUIRES_CORE_INVALID,
+                        PACK_VERSION_INVALID,
+                        DEPENDENCY_RANGE_INVALID,
+                        ORG_FRAGMENT_MISSING)
+                .contains(code)) {
+            return RefusalCode.PACK_UNREADABLE;
+        }
+        if (code.equals(PackCodes.DRG_SCHEMA_ERROR)) {
+            return RefusalCode.DRG_SCHEMA_ERROR;
+        }
+        if (code.equals(PackCodes.PROMPT_FRAGMENT_INVALID)) {
+            return RefusalCode.PROMPT_FRAGMENT_INVALID;
+        }
+        if (code.equals(PackCodes.PROMPT_SLOT_MALFORMED)) {
+            return RefusalCode.PROMPT_SLOT_MALFORMED;
+        }
+        if (code.equals(PackCodes.PROMPT_SLOT_NOT_EMPTY)) {
+            return RefusalCode.PROMPT_SLOT_NOT_EMPTY;
+        }
+        throw new IllegalStateException(code.value() + " has no refusal on the load path");
     }
 
     /**
-     * The diagnostic code a load-path warning projects onto.
+     * The diagnostic code a load-path warning projects onto, by its constant.
      *
-     * @return the diagnostic code
-     * @throws IllegalStateException for a code that is validate-only or blocking
+     * @param code the finding's code
+     * @return the diagnostic code; empty for a code that is a violation or validate-only
      */
-    public Diagnostic.Code diagnostic() {
-        return switch (this) {
-            case PACK_LEVEL_MISSING -> Diagnostic.Code.PACK_LEVEL_MISSING;
-            case PROMPT_SLOT_NOT_EMPTY_UNVERSIONED -> Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY;
-            case FILE_NOT_HELD -> Diagnostic.Code.FILE_NOT_HELD;
-            default -> throw new IllegalStateException(name() + " has no diagnostic on the load path");
-        };
+    public static Optional<Diagnostic.Code> diagnostic(ReasonCode code) {
+        if (code.equals(PACK_LEVEL_MISSING)) {
+            return Optional.of(Diagnostic.Code.PACK_LEVEL_MISSING);
+        }
+        if (code.equals(PROMPT_SLOT_NOT_EMPTY_UNVERSIONED) || code.equals(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING)) {
+            return Optional.of(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY);
+        }
+        if (code.equals(FILE_NOT_HELD)) {
+            return Optional.of(Diagnostic.Code.FILE_NOT_HELD);
+        }
+        return Optional.empty();
+    }
+
+    private static ReasonCode violation(String token) {
+        return new ReasonCode(token, Severity.VIOLATION);
     }
 }

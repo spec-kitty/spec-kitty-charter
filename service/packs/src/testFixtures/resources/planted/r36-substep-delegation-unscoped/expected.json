@@ -6,7 +6,7 @@
   "findings": [
     {
       "code": "substep_delegation_unscoped",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "missions/rx/rx.mission-type.yaml",
       "place": [
         "steps",

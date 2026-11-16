@@ -42,9 +42,6 @@ final class ManifestMembership {
     /** The {@code schema_version} every derived manifest carries. */
     static final String SCHEMA_VERSION = "1.0";
 
-    /** The violation code of a membership mismatch. */
-    static final String VIOLATION_CODE = "manifest_membership";
-
     private ManifestMembership() {}
 
     /**

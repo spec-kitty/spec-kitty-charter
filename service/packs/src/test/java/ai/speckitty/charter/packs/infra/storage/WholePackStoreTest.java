@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -24,6 +25,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
@@ -430,7 +432,8 @@ class WholePackStoreTest {
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
                                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                                .containsExactly(tuple(PackFileSet.MANIFEST, ManifestMembership.VIOLATION_CODE)));
+                                .containsExactly(
+                                        tuple(PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value())));
     }
 
     @Test
@@ -744,7 +747,7 @@ class WholePackStoreTest {
         assertThat(loaded.pack().violations())
                 .containsExactly(new PackElementViolation(
                         "assets/debrief/logo.png.asset.yaml",
-                        "asset",
+                        PackCodes.ASSET,
                         "payload assets/debrief/logo.png does not exist"));
         assertThatThrownBy(() -> store.write(loaded, target))
                 .isInstanceOfSatisfying(
@@ -865,7 +868,7 @@ class WholePackStoreTest {
         assertThat(loaded.pack().violations())
                 .containsExactly(new PackElementViolation(
                         SKILL_FILE,
-                        "companion",
+                        StorageCodes.COMPANION,
                         "../" + claimed + ": is a pack file of kind "
                                 + (claimed.startsWith("templates/") ? "template" : "asset-payload")
                                 + ", not a companion"));

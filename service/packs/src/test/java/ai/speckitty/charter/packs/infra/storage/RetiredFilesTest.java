@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -13,6 +14,7 @@ import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.rules.Wording;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -238,7 +240,7 @@ class RetiredFilesTest {
             assertThat(violations)
                     .containsExactlyInAnyOrderElementsOf(files.entrySet().stream()
                             .map(e -> new PackElementViolation(
-                                    e.getKey(), "retired", RetiredFileFixture.RULES.get(e.getValue())))
+                                    e.getKey(), StorageCodes.RETIRED, RetiredFileFixture.RULES.get(e.getValue())))
                             .toList());
         }
     }
@@ -257,9 +259,12 @@ class RetiredFilesTest {
 
             assertThat(store.read(new PackIdentifier("qa")).violations())
                     .containsExactlyInAnyOrder(
-                            new PackElementViolation("pack.md", "retired", RetiredFileFixture.RULES.get("*/pack.md")),
                             new PackElementViolation(
-                                    "PROVENANCE.md", "retired", RetiredFileFixture.RULES.get("*/PROVENANCE.md")));
+                                    "pack.md", StorageCodes.RETIRED, RetiredFileFixture.RULES.get("*/pack.md")),
+                            new PackElementViolation(
+                                    "PROVENANCE.md",
+                                    StorageCodes.RETIRED,
+                                    RetiredFileFixture.RULES.get("*/PROVENANCE.md")));
             // Spellings that differ only in case are one file on a case-insensitive file system, so each variant is
             // planted alone in a pack of its own. The pack.yaml, policy.yaml and pack-manifest.yaml variants still
             // collide there with the files every planted pack holds, so this test assumes a case-sensitive file system.
@@ -272,7 +277,7 @@ class RetiredFilesTest {
                         .as(variant.getKey())
                         .containsExactly(new PackElementViolation(
                                 variant.getKey(),
-                                "retired",
+                                StorageCodes.RETIRED,
                                 "differs only in letter case from '"
                                         + variant.getValue()
                                                 .substring(variant.getValue().indexOf('/') + 1) + "'"));
@@ -346,7 +351,7 @@ class RetiredFilesTest {
                     .filteredOn(f -> f.file().equals("mission_step_contract.graph.yaml"))
                     .singleElement()
                     .satisfies(f -> {
-                        assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+                        assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
                         assertThat(f.detail())
                                 .isEqualTo("qa/mission_step_contract.graph.yaml is retired: folded into the"
                                         + " mission-type steps' substeps (slice F)");

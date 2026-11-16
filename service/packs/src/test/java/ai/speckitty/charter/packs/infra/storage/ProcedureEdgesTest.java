@@ -71,7 +71,9 @@ class ProcedureEdgesTest {
                 .containsExactly("land-a-change");
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
-                        "ship-it.procedure.yaml", "schema", "procedure id 'land-it' is not its file stem 'ship-it'"));
+                        "ship-it.procedure.yaml",
+                        FilesystemPackStore.SCHEMA,
+                        "procedure id 'land-it' is not its file stem 'ship-it'"));
 
         PackContents validated = new FileSystemPackInspector()
                 .inspect(new PackRoot("misnamed-pack", Optional.of(PackLevel.ORG), pack.toString()), Scope.FULL);

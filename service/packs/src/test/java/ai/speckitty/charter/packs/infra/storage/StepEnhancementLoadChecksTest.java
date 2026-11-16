@@ -14,7 +14,7 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
@@ -136,7 +136,7 @@ class StepEnhancementLoadChecksTest {
         List<PackFinding> validate() {
             PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
             return PackPolicy.judge(new FileSystemPackInspector().inspect(root, Scope.FULL)).findings().stream()
-                    .filter(finding -> finding.code() == PackFindingCode.PROMPT_FRAGMENT_INVALID)
+                    .filter(finding -> PackCodes.PROMPT_FRAGMENT_INVALID.equals(finding.code()))
                     .toList();
         }
 
@@ -197,7 +197,7 @@ class StepEnhancementLoadChecksTest {
 
         assertThat(loaded.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(pack.yamlOf(TYPE, "other"));
-            assertThat(violation.kind()).isEqualTo(CODE);
+            assertThat(violation.kind().value()).isEqualTo(CODE);
         });
         assertThat(loaded.artifacts(ArtifactKind.STEP_ENHANCEMENT))
                 .as("both enhancements stay held: a rule fault withholds nothing")
@@ -369,7 +369,7 @@ class StepEnhancementLoadChecksTest {
 
         assertThat(pack.loaded().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(pack.yamlOf(TYPE, "brief"));
-            assertThat(violation.kind()).isEqualTo(CODE);
+            assertThat(violation.kind().value()).isEqualTo(CODE);
             assertThat(violation.reason()).startsWith("brief.prompt-fragment.md: ");
         });
         assertThat(pack.service().load(new PackIdentifier("enhancer")).violations())
@@ -674,7 +674,7 @@ class StepEnhancementLoadChecksTest {
                 .satisfies(violation -> assertThat(violation.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR.token()));
         assertThat(pack.service().load(new PackIdentifier("enhancer")).violations())
                 .as("the aggregate, which reads the graphs too, judges no edge rule over a graph it could not read")
-                .extracting(PackElementViolation::kind)
+                .extracting(violation -> violation.kind().value())
                 .doesNotContain(CODE);
     }
 }

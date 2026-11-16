@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +45,8 @@ class PackAggregateTest {
     @Test
     @DisplayName("the builder composes descriptor, tactics and read violations")
     void builderComposesTheAggregate() {
-        var violation = new PackElementViolation("broken.tactic.yaml", "schema", "missing steps");
+        var violation =
+                new PackElementViolation("broken.tactic.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
         Pack pack = Pack.builder()
                 .id(ID)
                 .descriptor(DESCRIPTOR)
@@ -61,7 +63,8 @@ class PackAggregateTest {
     @Test
     @DisplayName("violations are carried by the aggregate and do not affect its tactics or identity")
     void violationsLiveOnTheAggregateOnly() {
-        var violation = new PackElementViolation("broken.tactic.yaml", "schema", "missing steps");
+        var violation =
+                new PackElementViolation("broken.tactic.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
         Pack clean = Pack.builder().id(ID).descriptor(DESCRIPTOR).build();
         Pack partial = Pack.builder()
                 .id(ID)
