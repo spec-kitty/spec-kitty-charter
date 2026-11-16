@@ -122,4 +122,44 @@ follow. Where registration has no token for a fault (it does not run that rule t
 
 ## 7. Challenge pass
 
-See [design-r3-challenge.md](design-r3-challenge.md).
+See [design-r3-challenge.md](design-r3-challenge.md). Verdict: sound with folds. The folds below change §1 to §6.
+
+- **F1 (MAJOR, to the operator).** The service no longer uses `pack-validation`, and ruling 1's "through a port"
+  sentence is withdrawn. That reverses ADR-0075's founding steer: "a module the service itself uses, then repackaged
+  as a CLI". The operator confirms or rejects this as R3 (`spec.md` FR-006, C-003, the key entity, and ADR-0075's
+  title and description follow).
+- **F2 (folded).** `PackAssembly` and `PackManifest` cannot live in `packs.domain`. They consume `infra.storage` types
+  (`PackRead`, `KindBindings`, `TemplateBinding`, `GuardClosure`, `PackManifestDso`). So they become Spring-free,
+  non-bean classes in `packs.infra.storage`. `THE_PACKS_LOAD_REACHES_NO_FRAMEWORK` is their acceptance check, and
+  the inspector names them within its own package.
+- **F3 (folded; replaces §3's blanket rule).** The token is chosen per fault, in a table: **the specific code wins**.
+  - Registration's catch-alls give way to the specific code, because registration changes there:
+    - `domain`, `reference` and the `invalid` fallback;
+    - the aggregate `{pack, validation_failed, message}`;
+    - the load refusal at pointer `pack`;
+    - `schema` reported one per violation.
+  - Where registration already answers a specific code (`retired`, `manifest_membership`, `reserved_shard`, `asset`,
+    `prompt_fragment_invalid`, `relationship_endpoint_not_allowed`), validate mode adopts it.
+  - Each surface that changes gets a `### Breaking` fragment: one for registration and one for validate mode.
+  - WP01's golden snapshot lists every row before any code changes.
+- **F4 (folded).** Judging on the inspector must keep registration's shape for a root it cannot read.
+  - An I/O fault, or a root that is not a directory, answers 422 `validation_failed` at `pack`, as `loadStaged` does
+    today. It does not answer a bare `pack_unreadable`.
+  - The inspector does not follow symlinks on the registration path, as the store does not.
+  - A reverse subset test is added: `PACK(REGISTER)`'s faults ⊆ today's reader faults, over every planted, example
+    and scenario pack. Together with the forward subset test, this pins R1(a).
+- **F5 (folded; brings part of pack-check's need forward).** `CLOSURE` needs `PackUnderResolution`, which holds the
+  defined and changed artifacts and the held terms. Today only `DomainRepositoryService`, a `@Service`, builds it.
+  - #554 adds a Spring-free function that builds `PackUnderResolution` from `PackContents`.
+  - A parity test checks it against `DomainRepositoryService`'s facts over the example packs.
+  - This avoids `CLOSURE` passing on empty facts in pack-check, and avoids a second derivation.
+  - Decision 7's wording, "it needs every `pack.yaml`, never the graph", is amended: it needs every pack's contents,
+    never the closure walk.
+- **F6 to F10 (MEDIUM and MINOR, folded into the plan).**
+  - The guard answers today's aggregate shape at `VIOLATION`.
+  - The compose read's second fact source is recorded as the one remaining reader-side judgement, covered by both
+    subset tests.
+  - Registration judges once, in `PackRegistrationService`; `PackSourceStagers` calls through it.
+  - #578's mutation figure is unverified in the repo (R3-b).
+  - The ArchUnit rule wording and SC-001 are aligned.
+  - The guard runs before the gate and the impact check, which both read the reader's contents.
