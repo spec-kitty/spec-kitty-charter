@@ -25,9 +25,9 @@ import org.junit.jupiter.params.provider.CsvSource;
  * Validate mode judges nothing in a file the store does not hold (#554, open case 6; spec US3 scenarios 2 and 4). Each
  * of the golden subjects of open case 6 plants a {@code charter.yaml} or a shard below the pack root, some of them
  * invalid. Of the twelve, the C4 and C16 plants moved their shard to the pack root in WP11's review, so that those
- * rules keep a plant, and are judged there. Validate mode answers one {@code file_not_held} warning at that file, in the registration's words, and
- * no finding of its contents: on the bare plant that is the whole verdict, and with a descriptor beside it the warning
- * stands beside the descriptor's own findings.
+ * rules keep a plant, and are judged there. Validate mode answers one {@code file_not_held} warning at that file, in
+ * the registration's words, and no finding of its contents: on the bare plant that is the whole verdict, and with a
+ * descriptor beside it the warning stands beside the descriptor's own findings.
  */
 @DisplayName("validate mode warns file_not_held for a charter.yaml or a nested shard and judges nothing in it (#554)")
 class NotHeldValidateTest {

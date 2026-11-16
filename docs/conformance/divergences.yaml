@@ -478,13 +478,17 @@
 - id: DIV-027
   surface: A graph shard below the pack root (drg/<kind>.graph.yaml)
   core: >-
-    Reads drg/*.graph.yaml as the pack's graph and refuses one that breaks its schema
-    (offering/packs/pack_validator.py:507, 845).
+    Validates drg/*.graph.yaml as a graph fragment and refuses one that breaks its schema, as a
+    schema refusal at drg/<kind>.graph.yaml (offering/packs/pack_validator.py:507, 845); and refuses
+    a pack whose graph content is only under drg/*.graph.yaml, with no pack-root *.graph.yaml, as
+    drg_root_graph_missing at <pack> (r15-glossary-urn-in-a-shard), because core's runtime
+    (_drg_helpers.load_validated_graph) reads the pack-root *.graph.yaml shards and drg/fragment.yaml
+    only.
   service: >-
-    Reads graph shards at the pack root only (*/*.graph.yaml). A shard below the root is no pack
-    file kind: validate mode and the registration warn file_not_held, the registration does not
-    hold it, and nothing in it is judged. A plant whose nested shard core refuses is accepted here
-    with the warning.
+    Reads graph shards at the pack root only (*/*.graph.yaml), and drg/fragment.yaml: the same shards
+    core's runtime reads. A shard below the root is no pack file kind: validate mode and the
+    registration warn file_not_held, the registration does not hold it, and nothing in it is judged.
+    A plant whose nested shard core refuses is accepted here with the warning.
   rationale: >-
     The service holds only what its model reads; a file it would discard is warned about, then
     ignored, never judged (operator ruling Q1). The warning names a misplaced shard.
@@ -494,7 +498,8 @@
   evidence:
     - "core: offering/packs/pack_validator.py:507 (drg_dir = pack_dir / \"drg\") and 845 (_DRG_GRAPH_GLOB)"
     - "charter: contracts/packs/file-kinds.yaml (the graph-shard rule */*.graph.yaml)"
-    - "charter: planted plants c3-shard-edge-bare-endpoint, c3-shard-urn-malformed, c7-shard-relation-extends, c8-shard-without-generated-by-is-accepted and r15-glossary-urn-in-a-shard (core verdicts in planted/core-verdicts.json: refused at drg/<kind>.graph.yaml)"
+    - "core: src/charter/activation/_drg_helpers.py:load_validated_graph reads the pack-root *.graph.yaml and drg/fragment.yaml (named by core's drg_root_graph_missing message)"
+    - "charter: planted plants c3-shard-edge-bare-endpoint, c3-shard-urn-malformed, c7-shard-relation-extends and c8-shard-without-generated-by-is-accepted (core verdicts in planted/core-verdicts.json: a schema refusal at drg/<kind>.graph.yaml) and r15-glossary-urn-in-a-shard (core verdict: drg_root_graph_missing at <pack>)"
 
 # Context read (DIV-101..110), decided in ADR-0018 and moved into this single register by operator
 # ruling R10 (2026-10-19). Derived from the context-read table of divergence-register.md; the evidence

@@ -169,3 +169,29 @@ WP04, WP05 and WP08 see it.
    while validate mode judges it against its rule. A mapped file the load refused with a fault of its own is no longer
    also listed as not held (WP11). **Routed to WP05**: its census decides whether such a file is held, refused or not
    held, and with which reason; no planted or example pack holds one, so `HeldSetAgreementTest` does not meet it.
+
+## Outcomes of WP04
+
+WP04 applied the table on today's pipeline: `PackCodes` and `StorageCodes` build each token once, and both surfaces
+answer the kept code and wording of every row it changed. The golden snapshot's diff cites these rows. Where WP04
+departed from a row or settled an open case, it is recorded here.
+
+- **Rows 24 and 29 to 32: validate mode's gains are deferred to the one read (WP05, WP09).** Validate mode does not
+  yet answer `pack_unreadable` for a pack with no `pack.yaml` (row 24), nor manifest membership, a manifest that is not
+  a regular file or an unreadable policy file (rows 29, 30 and 32). Row 31 is already one answer: both surfaces
+  report a misplaced preset entry as `artifact_schema_error` in the store's words. On
+  today's pipeline each would need a second copy of the storage checks; with validate mode judging the one read's
+  verdict they come by construction. Registration answers row 24 at pointer `pack.yaml` already. Row 24 will refuse
+  34 bare plants that core accepts (core does not refuse a missing `pack.yaml`): that needs a divergence register
+  entry when WP09 lands. The orchestrator accepted the deferral.
+- **Row 18: `reference` becomes `artifact_schema_error`,** the code validate mode already answers for the same
+  mission-type refusal (a named template or companion the pack does not hold). Open case 4's plant still checks it.
+- **Open case 1: a path that escapes through a symbolic link reads `payload assets/<path> does not exist` on both
+  surfaces.** The escape wording the case preferred would change registration's answer, which row 13 does not list;
+  validate mode reports the read's refusal once, as `asset`, and its escape finding only for a sidecar the read did
+  not refuse.
+- **A schema keyword with no vocabulary row answers the fixed fallback on both surfaces.** `maxLength` has none, so an
+  over-long value reads `<file>: '/id' breaks schema keyword 'maxLength'` (the `pack-id-length` scenarios pin it in
+  the composing read's detail). Adding a row is a wording change of its own.
+- **Severity is the kernel's.** Validate mode's findings, the golden snapshot and the planted `expected.json` files
+  spell a violation `violation` where they said `blocking` (ruling 4, M-8). NFR-002 lists it.
