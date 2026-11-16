@@ -14,9 +14,9 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 `contracts/packs/README.md` ("Releasing the packs contract") has the procedure, and
 `docs/guides/pin-the-packs-contract.md` how a consumer pins and checks a release.
 
-## 0.1.0-SNAPSHOT
+## 0.1.0-rc.1
 
-The first packs contract version, not yet released (#559).
+The first packs contract version, a release candidate (operator ruling R1, 2026-11-16; #559).
 
 ### Added
 
