@@ -1,0 +1,83 @@
+package ai.speckitty.charter.packs.infra.storage.rules;
+
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.PackCodes;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * The codes only the storage edge emits (#554, R2, S3): the read faults of a pack tree, the format prechecks of its
+ * descriptor and assets (S2), and the holding codes of the tree (not held, the reserved shard, manifest membership).
+ * Each is a kernel {@link ReasonCode} that owns its severity, and each token is built exactly once: a token a core rule
+ * emits is a {@link PackCodes} constant, which the storage edge names where it reports the same fault. The wording of a
+ * fault is {@link PackCodes#detail}, the one wording of every surface.
+ *
+ * <p>Where a contract enum already spells a token ({@link RefusalCode#PACK_UNREADABLE},
+ * {@link Diagnostic.Code#FILE_NOT_HELD}), the constant is built from that spelling.
+ */
+public final class StorageCodes {
+
+    /** The pack's descriptor is missing, is not YAML or breaks its schema; or the pack root cannot be read. */
+    public static final ReasonCode PACK_UNREADABLE = violation(RefusalCode.PACK_UNREADABLE.token());
+
+    /** A file's bytes cannot be read, are not UTF-8, or do not parse; or the manifest is not a regular file. */
+    public static final ReasonCode UNREADABLE = violation("unreadable");
+
+    /** An artifact file breaks its schema, or a rule of its kind that the schema cannot state. */
+    public static final ReasonCode ARTIFACT_SCHEMA_ERROR = violation("artifact_schema_error");
+
+    /** A file the file-kinds table retires: refused by name, never read (ADR-0044 decision 6). */
+    public static final ReasonCode RETIRED = violation("retired");
+
+    /** A companion file an artifact names cannot be read, leaves the pack, or is named by two artifacts. */
+    public static final ReasonCode COMPANION = violation("companion");
+
+    /** {@code requires_core} is not a valid specifier set (S2). */
+    public static final ReasonCode REQUIRES_CORE_INVALID = violation("requires_core_invalid");
+
+    /** {@code pack_version} is not a PEP 440 version (S2). */
+    public static final ReasonCode PACK_VERSION_INVALID = violation("pack_version_invalid");
+
+    /** A {@code depends_on[].range} is not a valid specifier set (S2). */
+    public static final ReasonCode DEPENDENCY_RANGE_INVALID = violation("dependency_range_invalid");
+
+    /** An asset declares a MIME type that is malformed or that its extension does not allow (S2). */
+    public static final ReasonCode ASSET_MIME_INVALID = violation("asset_mime_invalid");
+
+    /** A {@code registered.graph.yaml} that no registration wrote. */
+    public static final ReasonCode RESERVED_SHARD = violation("reserved_shard");
+
+    /** The manifest lists files the tree does not hold, or misses some (#110). */
+    public static final ReasonCode MANIFEST_MEMBERSHIP = violation("manifest_membership");
+
+    /** A file of the tree that is not held, excluded or unmodelled (Q1): a warning, never a violation. */
+    public static final ReasonCode FILE_NOT_HELD =
+            new ReasonCode(Diagnostic.Code.FILE_NOT_HELD.token(), Severity.WARNING);
+
+    /** Every code this class builds, in this class's order. */
+    public static final List<ReasonCode> ORDERED = List.of(
+            PACK_UNREADABLE,
+            UNREADABLE,
+            ARTIFACT_SCHEMA_ERROR,
+            RETIRED,
+            COMPANION,
+            REQUIRES_CORE_INVALID,
+            PACK_VERSION_INVALID,
+            DEPENDENCY_RANGE_INVALID,
+            ASSET_MIME_INVALID,
+            RESERVED_SHARD,
+            MANIFEST_MEMBERSHIP,
+            FILE_NOT_HELD);
+
+    /** Every code this class builds. */
+    public static final Set<ReasonCode> ALL = Set.copyOf(ORDERED);
+
+    private StorageCodes() {}
+
+    private static ReasonCode violation(String token) {
+        return new ReasonCode(token, Severity.VIOLATION);
+    }
+}
