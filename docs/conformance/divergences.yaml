@@ -227,7 +227,7 @@
     - "charter: contracts/packs/schemas/graph-shard.schema.json: the URN pattern and one prefix-equals-kind branch per node kind (import changes C3 and C4; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
     - "charter: contracts/packs/file-kinds.yaml"
     - "charter: contracts/charter/schemas/NodeKind.yaml: glossary_context and term replace glossary_pack (#106)"
-    - "charter: planted cases r15-glossary-urn-as-an-edge-endpoint and r15-glossary-urn-in-a-shard: core's glossary: URN is refused"
+    - "charter: planted case r15-glossary-urn-as-an-edge-endpoint: core's glossary: URN is refused (r15-glossary-urn-in-a-shard plants it in a nested shard, which is not held since #554 WP11: DIV-027)"
 
 - id: DIV-013
   surface: Nested sections of an agent profile and of charter.yaml
@@ -373,8 +373,13 @@
     A file the pack ships should be checked against the schema that describes it, and a
     non-finite timeout is never meant.
   ruling: R11 register decision (2026-10-20, operator)
-  status: open
+  status: retired
   since: 2026-10-20
+  note: >-
+    Retired 2026-11-16 (#554 WP11, open case 6, operator ruling Q1): no file-kinds.yaml rule maps a
+    charter.yaml, so the service no longer validates one inside a pack either. It warns
+    file_not_held, does not hold the file and judges nothing in it; like core, it never refuses a
+    pack for it.
   evidence:
     - "core: offering/packs/pack_validator.py:607-609 (the call) and 2133-2157 (_check_org_charter), at 78c48ce9: the only charter leg is org-charter.yaml"
     - "charter: the service has no org-charter.yaml leg either: the file is retired and refused by name (#431, DIV-303)"
@@ -411,6 +416,7 @@
     - "core: offering/packs/pack_validator.py:507 (drg_dir = pack_dir / \"drg\")"
     - "core: offering/packs/pack_validator.py:845 (_DRG_GRAPH_GLOB)"
     - "charter: planted plant c3-root-shard-urn-malformed (core verdict in planted/core-verdicts.json: ok, no findings)"
+    - "charter: planted plants c4-shard-urn-prefix-differs-from-kind and c16-shard-edge-provenance, whose shard moved to the pack root in #554 WP11 (their core verdicts await a run of scripts/packs/core_verdicts.py against the pinned core)"
 
 - id: DIV-024
   surface: pack_level_missing on a bare path with no configured level
@@ -468,6 +474,27 @@
   evidence:
     - "core: offering/drg/models.py:83-148"
     - "charter: contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json (the Relation enum); planted plants r30-edge-procedure-requires-action and r31-edge-overrides-across-kinds; load fixture shard-retired-relation"
+
+- id: DIV-027
+  surface: A graph shard below the pack root (drg/<kind>.graph.yaml)
+  core: >-
+    Reads drg/*.graph.yaml as the pack's graph and refuses one that breaks its schema
+    (offering/packs/pack_validator.py:507, 845).
+  service: >-
+    Reads graph shards at the pack root only (*/*.graph.yaml). A shard below the root is no pack
+    file kind: validate mode and the registration warn file_not_held, the registration does not
+    hold it, and nothing in it is judged. A plant whose nested shard core refuses is accepted here
+    with the warning.
+  rationale: >-
+    The service holds only what its model reads; a file it would discard is warned about, then
+    ignored, never judged (operator ruling Q1). The warning names a misplaced shard.
+  ruling: "#554 operator ruling Q1 (2026-11-16); open case 6, settled by WP11"
+  status: open
+  since: 2026-11-16
+  evidence:
+    - "core: offering/packs/pack_validator.py:507 (drg_dir = pack_dir / \"drg\") and 845 (_DRG_GRAPH_GLOB)"
+    - "charter: contracts/packs/file-kinds.yaml (the graph-shard rule */*.graph.yaml)"
+    - "charter: planted plants c3-shard-edge-bare-endpoint, c3-shard-urn-malformed, c7-shard-relation-extends, c8-shard-without-generated-by-is-accepted and r15-glossary-urn-in-a-shard (core verdicts in planted/core-verdicts.json: refused at drg/<kind>.graph.yaml)"
 
 # Context read (DIV-101..110), decided in ADR-0018 and moved into this single register by operator
 # ruling R10 (2026-10-19). Derived from the context-read table of divergence-register.md; the evidence

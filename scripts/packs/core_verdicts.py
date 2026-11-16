@@ -40,27 +40,31 @@ OUT = PLANTED / "core-verdicts.json"
 # that has an id and agrees (stale), and a plant that differs and has none.
 REGISTER_IDS: dict[str, str] = {
     "c2-agent-nested-unknown-key": "DIV-013",
-    "c2-charter-nested-unknown-key": "DIV-013",
     "c3-fragment-bare-local-id-declared": "DIV-007",
-    "r15-glossary-urn-in-a-shard": "DIV-012",
     "r15-glossary-urn-as-an-edge-endpoint": "DIV-012",
     "c5-fragment-kind-mission-steps": "DIV-011",
     "c5-fragment-kind-mission-type": "DIV-011",
     "c5-fragment-kind-actions-is-accepted": "DIV-011",
     "c6-fragment-header-pack-name": "DIV-008",
     "c7-fragment-relation-extends": "DIV-015",
-    "c8-shard-without-generated-by-is-accepted": "DIV-009",
     "c9-pack-version-missing-at-the-org-level": "DIV-004",
     "c10-agent-role-uppercase": "DIV-010",
     "c10-agent-scalar-role": "DIV-010",
     "c10-agent-quoted-integer": "DIV-010",
     "c12-edge-impacts-valid": "DIV-018",
     "c12-impacts-edge-without-impacts": "DIV-018",
-    "c16-shard-edge-provenance": "DIV-019",
+    # #554 WP11 (open case 6): a shard below the pack root is not held, so the service warns where core refuses
+    # (DIV-027); the C4 and C16 plants hold their shard at the root, which core never reads (DIV-023). An in-pack
+    # charter.yaml is judged by neither side any more (DIV-021 retired).
+    "c3-shard-edge-bare-endpoint": "DIV-027",
+    "c3-shard-urn-malformed": "DIV-027",
+    "c7-shard-relation-extends": "DIV-027",
+    "c8-shard-without-generated-by-is-accepted": "DIV-027",
+    "r15-glossary-urn-in-a-shard": "DIV-027",
+    "c4-shard-urn-prefix-differs-from-kind": "DIV-023",
+    "c16-shard-edge-provenance": "DIV-023",
     # Proposed, not in the register yet; PlantedFilesTest names them (PROPOSED) until the orchestrator registers them.
     "c5-fragment-node-id-unsafe": "DIV-020",
-    "charter-invalid": "DIV-021",
-    "charter-cli-timeout-not-a-number": "DIV-021",
     "org-fragment-missing": "DIV-022",
     "c3-root-shard-urn-malformed": "DIV-023",
     "control-no-pack-level-on-a-bare-path": "DIV-024",
