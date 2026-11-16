@@ -591,6 +591,39 @@ class PackPolicyRulesTest {
     }
 
     @Test
+    void anEscapeTheReadAlreadyRefusedIsOneFindingTheReads() {
+        // #554, R2 row 13: a sidecar is one fault. The read refused it under asset, so the asset rule adds no second
+        // finding of the same escape; another sidecar's escape is still the rule's.
+        String reason = "asset path '../logo.png' escapes the pack's assets/ root";
+        PackContents read = new PackContents(
+                new PackRoot("qa", Optional.of(PackLevel.ORG), "loc"),
+                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())),
+                List.of(),
+                EMPTY_FRAGMENT,
+                List.of(),
+                List.of(),
+                List.of(
+                        asset("../logo.png", "image/png", true),
+                        new AssetFacts("assets/b.asset.yaml", "b", "../b.png", "", true)),
+                List.of(new FileRead.Unreadable<>(
+                        MANIFEST, PackContents.ParseFailure.refused(MANIFEST, reason, PackCodes.ASSET), List.of())),
+                StepEnhancementFacts.none(),
+                List.of(),
+                List.of(),
+                List.of());
+
+        assertThat(judge(read))
+                .filteredOn(finding -> finding.code().equals(PackCodes.ASSET))
+                .containsExactlyInAnyOrder(
+                        new PackFinding(PackCodes.ASSET, MANIFEST, List.of(), MANIFEST + ": " + reason),
+                        new PackFinding(
+                                PackCodes.ASSET,
+                                "assets/b.asset.yaml",
+                                List.of(),
+                                "assets/b.asset.yaml: asset path '../b.png' escapes the pack's assets/ root"));
+    }
+
+    @Test
     void aPathTheAdapterFoundOutsideTheRootEscapesWhateverItsSpelling() {
         assertThat(judge(withAssets(asset("link/logo.png", "image/png", false))))
                 .extracting(PackFinding::code)

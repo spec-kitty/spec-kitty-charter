@@ -41,7 +41,7 @@ class ExamplePacksTest {
 
     @ParameterizedTest
     @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
-    void everyExamplePackValidatesWithNoFinding(String name) {
+    void everyExamplePackValidatesWithOnlyFileNotHeldWarnings(String name) {
         // A file the pack does not hold (an orientation README, an author's note) is a file_not_held warning, one for
         // each file the store's load lists not held, and nothing else is found (#554, open case 6).
         assertThat(judge(name, ExamplePacks.pack(name)).findings())
