@@ -39,7 +39,8 @@ import tools.jackson.databind.JsonNode;
  * PackCompositionResolver#resolveRooted}, then each member's references ({@link PackCompositionResolver#checkReferences}
  * over {@link PackCompositionResolver#resolveReference}), then {@link PackCompositionResolver#refusePresetContests},
  * then {@link PackCompositionResolver#refuseCaseOnlyMatches}. The delegation and step-enhancement checks the offering
- * runs between them are not the resolver's, and no case here writes either.
+ * runs between them are not the resolver's, and no case here writes either. Nor is the offering's
+ * {@code refuseTargetOnlyAnUnreadablePackCouldDeclare}: every pack here is readable, so it never refuses.
  *
  * <p>The file is written only by {@code -Dgolden.update=true}, as {@code golden/surfaces.json} is.
  */
