@@ -13,10 +13,10 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -116,7 +116,7 @@ public final class RelationshipRegistrationService {
                         RefusalCode.REGISTRATION_CONFLICT,
                         "Relationship from " + draft.from() + " does not resolve within pack " + pack.value() + ".");
             }
-            if (PackPolicy.joinsItself(current.descriptor().name(), draft.fromReference(), draft.toReference())) {
+            if (GraphBinding.joinsItself(current.descriptor().name(), draft.fromReference(), draft.toReference())) {
                 throw new CharterRefusal(
                         RefusalCode.VALIDATION_FAILED,
                         "A relationship cannot be a self-loop: " + draft.from() + " to " + draft.toReference()

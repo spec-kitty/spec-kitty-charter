@@ -9,7 +9,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.RelationshipDraft;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -86,7 +86,7 @@ final class RelationshipWire {
                 toReference.asUrn().orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
         for (Urn endpoint : List.of(fromUrn, toUrn)) {
             if (!endpoint.kind().edgeTarget()) {
-                throw new IllegalArgumentException(PackPolicy.NOT_AUTHORED + endpoint);
+                throw new IllegalArgumentException(GraphBinding.NOT_AUTHORED + endpoint);
             }
         }
         RelationType relationType = RelationType.fromToken(type).orElseThrow(() -> unknownType(type));
@@ -95,7 +95,7 @@ final class RelationshipWire {
                     "relation type " + type + " is derived from an artifact's own field, never registered");
         }
         if (!fromUrn.kind().edgeSource() || !toUrn.kind().edgeTargetOf(Optional.of(relationType))) {
-            throw new IllegalArgumentException(PackPolicy.TERM_ENDPOINT + from + " " + type + " " + to);
+            throw new IllegalArgumentException(GraphBinding.TERM_ENDPOINT + from + " " + type + " " + to);
         }
         if (fromUrn.equals(toUrn) && toReference.packName().isEmpty()) {
             throw new IllegalArgumentException("A relationship cannot be a self-loop: " + fromUrn);

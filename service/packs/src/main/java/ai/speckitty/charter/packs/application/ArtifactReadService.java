@@ -19,7 +19,6 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -31,6 +30,7 @@ import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -539,7 +539,7 @@ public final class ArtifactReadService {
                 new PackQualifiedReference(Optional.empty(), referrer.urn().toString());
         Map<String, Reference> references = new LinkedHashMap<>();
         for (PackEdge edge : edges) {
-            if (PackPolicy.joinsItself(packName, self, PackQualifiedReference.parse(edge.source()))) {
+            if (GraphBinding.joinsItself(packName, self, PackQualifiedReference.parse(edge.source()))) {
                 add(references, composed, pack, PackQualifiedReference.parse(edge.target()), edge.relation());
             }
         }

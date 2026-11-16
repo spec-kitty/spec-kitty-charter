@@ -20,7 +20,7 @@ import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
-import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

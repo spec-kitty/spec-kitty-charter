@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -274,14 +275,14 @@ public final class PackCompositionResolver {
      * @throws Refusal when the graph cannot be served
      * @throws IllegalStateException when a descriptor is not well formed: the resolver decides the graph, not a
      *     descriptor, so a pack whose {@code pack_version} is no PEP 440 version or whose {@code depends_on} range is
-     *     no specifier set is {@code pack_unreadable} at the read ({@link PackPolicy#descriptorFindings}, the one
+     *     no specifier set is {@code pack_unreadable} at the read ({@link DescriptorChecks#findings}, the one
      *     predicate), and never reaches here
      */
     public static List<PackUnderResolution> resolve(List<PackUnderResolution> packs) {
         Objects.requireNonNull(packs, "packs");
         for (PackUnderResolution pack : packs) {
             List<PackFinding> findings =
-                    PackPolicy.descriptorFindings(pack.descriptor().name(), pack.descriptor());
+                    DescriptorChecks.findings(pack.descriptor().name(), pack.descriptor());
             if (!findings.isEmpty()) {
                 throw new IllegalStateException("the resolver takes only well-formed descriptors, and "
                         + findings.getFirst().detail());

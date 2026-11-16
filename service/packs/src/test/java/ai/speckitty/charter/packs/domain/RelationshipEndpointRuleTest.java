@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -148,7 +149,7 @@ class RelationshipEndpointRuleTest {
                         Optional.empty(),
                         Optional.empty())));
 
-        PackPolicy.GraphBuild build = PackPolicy.registeredGraph("main", shard);
+        GraphBinding.GraphBuild build = PackPolicy.registeredGraph("main", shard);
 
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings()).singleElement().satisfies(finding -> {

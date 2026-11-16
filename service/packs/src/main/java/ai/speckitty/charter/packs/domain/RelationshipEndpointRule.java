@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -86,7 +87,7 @@ public final class RelationshipEndpointRule {
         }
     }
 
-    private static final String TENSION = PackPolicy.TENSION;
+    private static final String TENSION = GraphBinding.TENSION;
 
     private RelationshipEndpointRule() {}
 

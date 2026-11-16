@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Edge;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Enhancement;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Entry;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault.Finding;
+import ai.speckitty.charter.packs.domain.rules.Precedence;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,7 +35,7 @@ import java.util.regex.Pattern;
  * file; each companion is named once across the pack's enhancements of that directory; no fragment is an orphan. The
  * slot id's grammar is not judged here: a bad id is a schema violation the store refuses first, never a rule fault and
  * never {@code prompt_fragment_invalid}, so {@link StepEnhancementFault} has no grammar member. Path order is
- * {@code PackPolicy.comparePaths} whatever order the caller passes.
+ * {@link Precedence#comparePaths} whatever order the caller passes.
  *
  * <p>Identity and target (FR-006, D8, D9, D12, R-OVR, C-003): exactly one {@code enhances} edge, to an {@code
  * action:<type>/<step>}, bare or qualified; no {@code overrides} edge from the enhancement at all (an enhancement only
@@ -50,7 +51,7 @@ public final class StepEnhancementRules {
     /** The id of a step action: {@code <type>/<step>}, each segment without whitespace or a further slash. */
     private static final Pattern STEP_ID = Pattern.compile("^[^/\\s]+/[^/\\s]+$");
 
-    private static final Comparator<Finding> ORDER = Comparator.comparing(Finding::path, PackPolicy::comparePaths)
+    private static final Comparator<Finding> ORDER = Comparator.comparing(Finding::path, Precedence::comparePaths)
             .thenComparing(Finding::rule)
             .thenComparing(Finding::reason);
 
@@ -64,7 +65,7 @@ public final class StepEnhancementRules {
      */
     public static List<Finding> judge(StepEnhancementFacts facts) {
         List<Enhancement> ordered = new ArrayList<>(facts.enhancements());
-        ordered.sort(Comparator.comparing(Enhancement::path, PackPolicy::comparePaths));
+        ordered.sort(Comparator.comparing(Enhancement::path, Precedence::comparePaths));
         List<Finding> found = new ArrayList<>();
         for (Companion companion : facts.companions()) {
             content(companion, found);
