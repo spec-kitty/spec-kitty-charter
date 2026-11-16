@@ -393,7 +393,19 @@ x-refusal:
       /type, mission_step_unlinked, a
       mission type step without its requires edge, or a requires edge from the type to an action that is not its step,
       and substep_delegation_unresolved and substep_delegation_unscoped, a substep's delegation candidate that is no
-      artifact of its kind or that the step's action has no scope edge to (FR-005)
+      artifact of its kind or that the step's action has no scope edge to (FR-005). Every fault of a refused
+      registration answers one specific code (#554, R2): pack_unreadable at pack.yaml (a descriptor that is missing,
+      is not YAML or breaks its schema), unreadable (a file that cannot be read or does not parse, a manifest that is
+      not a regular file, a policy file mutability_policy names that cannot be read), artifact_schema_error (an
+      artifact or manifest that breaks its schema or a rule of its kind: a file stem, a value-object invariant, a
+      reference the pack does not hold), retired (a file the file-kinds table retires), companion (a companion file
+      that cannot be read), asset (a sidecar whose path escapes assets/ or names no payload),
+      duplicate_artifact_id (a second file declaring an id, a template read twice), duplicate_step_id,
+      reserved_shard (a registered.graph.yaml no registration wrote), manifest_membership (a manifest whose lists
+      differ from the pack, judged when nothing else failed), drg_schema_error, prompt_fragment_invalid,
+      prompt_slot_malformed and prompt_slot_not_empty; a pack whose root cannot be read, or that breaks an aggregate
+      invariant no specific code names, answers the code of its refusal at pointer pack. The codes schema, domain,
+      reference, template, unmodelled and invalid are no longer answered
   registration_conflict:
     status: 409
     retryable: false
