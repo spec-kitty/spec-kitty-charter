@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
@@ -83,11 +84,11 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * @param pack the aggregate
      * @param layout each artifact's pack-relative path
      * @param graphs the DRG documents as authored, the root shards by name then the fragment
-     * @param notHeld every other file of the pack, in one path-sorted list, each with its reason: a file an
-     *     {@code exclusions} rule names or only the {@code ignored} fallback takes, with that rule's reason (#451), and a
-     *     file nothing models, with {@value ExcludedFile#UNMODELLED} (operator ruling Q1, #554). None is pack content:
-     *     the write does not reproduce them, and a registration does not hold them and reports each one as a
-     *     {@code file_not_held} warning
+     * @param notHeld every other file of the pack but a retired one, in one path-sorted list, each with its kind and
+     *     reason: a file an {@code exclusions} rule names or only the {@code ignored} fallback takes, with that rule's
+     *     reason (#451), and a file nothing models, with {@value NotHeldFile#UNMODELLED_REASON} (operator ruling Q1,
+     *     #554). None is pack content: the write does not reproduce them, and a registration does not hold them and
+     *     reports each one as a {@code file_not_held} warning
      * @param manifest the {@code pack-manifest.yaml} as read, its derived fields unchecked; empty when the pack has
      *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
      *     violation on the aggregate). This store is its only owner (ADR-0042).
@@ -235,8 +236,12 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return load(directory, false, new ArrayList<>()).pack();
     }
 
-    /** What a load read: the pack, and the graph documents that could not be read, when the load did not refuse them. */
-    private record Loaded(LoadedPack pack, List<PackElementViolation> graphFaults) {}
+    /**
+     * What a load read: the pack, the graph documents that could not be read when the load did not refuse them, and the
+     * files a rule maps that the load did not take (a file refused or withheld with a fault of its own, an orphan prompt
+     * fragment), where a registration looks for orphans.
+     */
+    private record Loaded(LoadedPack pack, List<PackElementViolation> graphFaults, List<String> untaken) {}
 
     /**
      * The one load. With {@code refuseGraphFault} it refuses on the first unreadable graph document as {@link #load}
@@ -275,16 +280,15 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
         Set<String> modelled = modelledFiles(packDir, read, places, graphs, pack, manifestFile, namedPolicy);
+        List<ExcludedFile> notHeld = new ArrayList<>();
+        List<String> untaken = new ArrayList<>();
+        Set<String> faulted = new HashSet<>();
+        pack.violations().forEach(violation -> faulted.add(violation.file()));
+        sortOut(packDir, modelled, faulted, key, notHeld, untaken);
         return new Loaded(
-                new LoadedPack(
-                        pack,
-                        new PackLayout(places),
-                        graphs.documents(),
-                        notHeld(packDir, modelled, key),
-                        manifest,
-                        policy,
-                        warnings),
-                List.copyOf(graphFaults));
+                new LoadedPack(pack, new PackLayout(places), graphs.documents(), notHeld, manifest, policy, warnings),
+                List.copyOf(graphFaults),
+                List.copyOf(untaken));
     }
 
     /** Every pack-relative file the loaded pack models, so that what is left over is not held. */
@@ -340,12 +344,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 .violations()
                 .forEach(violation ->
                         violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
-        List<String> unreported = unreportedFiles(
-                loaded.notHeld().stream()
-                        .filter(ExcludedFile::isUnmodelled)
-                        .map(ExcludedFile::file)
-                        .toList(),
-                loaded.pack().violations());
+        List<String> unreported = unreportedFiles(read.untaken(), loaded.pack().violations());
         Map<String, PackElementViolation> orphans = orphanFragments(unreported);
         unreported.stream()
                 .map(orphans::get)
@@ -377,24 +376,25 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * The unmodelled files that no violation of the pack already accounts for: one fault, one violation. A file the
+     * The untaken files (a rule maps them, the load did not take them) that no violation of the pack already accounts
+     * for: one fault, one violation. A file the
      * store refused with a violation of its own (an asset sidecar whose payload it does not hold, #382; a retired file
      * refused by name, FR-022, SC-002; a pack document it cannot read, #451) is not judged again here. An enhancement
      * file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the model, so it
-     * is unmodelled, and so are the fragments beside it; but the fault is already reported at the enhancement, so neither
+     * is untaken, and so are the fragments beside it; but the fault is already reported at the enhancement, so neither
      * the file nor the fragments of its directory are judged again as orphans. A fragment beside an enhancement that is
      * held stays listed, so that an orphan among them is refused.
      */
-    private static List<String> unreportedFiles(List<String> unmodelled, List<PackElementViolation> reported) {
+    private static List<String> unreportedFiles(List<String> untaken, List<PackElementViolation> reported) {
         Set<String> reportedFiles = new HashSet<>();
         reported.forEach(violation -> reportedFiles.add(violation.file()));
         Set<String> refusedDirectories = new HashSet<>();
-        for (String file : unmodelled) {
+        for (String file : untaken) {
             if (file.endsWith(ENHANCEMENT_SUFFIX) && reportedFiles.contains(file)) {
                 refusedDirectories.add(file.substring(0, file.lastIndexOf('/') + 1));
             }
         }
-        return unmodelled.stream()
+        return untaken.stream()
                 .filter(file -> !reportedFiles.contains(file))
                 .filter(file -> !(FRAGMENT_FILE.matcher(file).matches()
                         && refusedDirectories.contains(file.substring(0, file.lastIndexOf('/') + 1))))
@@ -402,17 +402,17 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * The unmodelled prompt fragments that are orphans (D11): named by no held enhancement, so refused here under
+     * The untaken prompt fragments that are orphans (D11): named by no held enhancement, so refused here under
      * {@code prompt_fragment_invalid} at the fragment, and in validate mode. A fragment in a directory holding an
      * enhancement that is not held (refused by the store, or withheld as a repeated id) is no orphan, and with the
      * enhancement's own fault already reported it is not listed at all ({@link #unreportedFiles}) (A4). An
      * enhancement that only has a rule fault is held and excuses nothing (fifth analysis A5). The rule and its text are
      * the step enhancement rules'.
      */
-    private static Map<String, PackElementViolation> orphanFragments(List<String> unmodelled) {
+    private static Map<String, PackElementViolation> orphanFragments(List<String> untaken) {
         Set<String> fragments = new HashSet<>();
         Set<String> notHeld = new HashSet<>();
-        for (String file : unmodelled) {
+        for (String file : untaken) {
             if (FRAGMENT_FILE.matcher(file).matches()) {
                 fragments.add(file);
             } else if (file.endsWith(ENHANCEMENT_SUFFIX)) {
@@ -897,14 +897,26 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted, each with the reason it
-     * is not held. The walk starts at the directory's real path, as {@code PackFileSet}'s does, so a pack root that is a
-     * symbolic link is entered (#284); links below the root are not followed. Unlike {@code PackFileSet}, a file that is
-     * itself a link is not listed here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks
-     * separately. A file that classifies as excluded carries its rule's reason (#451); any other file is one nothing
-     * models (operator ruling Q1, #554).
+     * Sorts out every regular file of the pack that is not in {@code modelled}, pack-relative and in path order. The walk
+     * starts at the directory's real path, as {@code PackFileSet}'s does, so a pack root that is a symbolic link is
+     * entered (#284); links below the root are not followed. Unlike {@code PackFileSet}, a file that is itself a link is
+     * not listed here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks separately.
+     *
+     * <p>A file the table excludes is not held, with its rule's reason (#451), and so is a file no rule takes (operator
+     * ruling Q1, #554): both go to {@code notHeld}, each with its kind. A file a rule maps that the load did not take
+     * goes to {@code untaken}, where a registration looks for orphan prompt fragments. When the pack has a violation at
+     * that file, the file is refused with its own fault and is not also listed as not held, so that validate mode, which
+     * judges it, and the store list the same files (#554, open case 6); otherwise it is listed not held with the
+     * unmodelled reason, as before (a fragment no entry names, a {@code policy.yaml} the descriptor does not name). A
+     * retired file goes to neither: the load refuses it by name (WP02 review L2).
      */
-    private List<ExcludedFile> notHeld(Path packDir, Set<String> modelled, PackIdentifier key) {
+    private void sortOut(
+            Path packDir,
+            Set<String> modelled,
+            Set<String> faulted,
+            PackIdentifier key,
+            List<ExcludedFile> notHeld,
+            List<String> untaken) {
         Path root;
         try {
             root = packDir.toRealPath();
@@ -923,14 +935,19 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         } catch (IOException | RuntimeException e) {
             throw PackFileSet.unlistable(key.value(), e);
         }
-        List<ExcludedFile> notHeld = new ArrayList<>();
         for (String file : files) {
-            notHeld.add(
-                    companionRules.table().classify(key.value() + "/" + file) instanceof PackFileKind.Excluded rule
-                            ? new ExcludedFile(file, rule.reason())
-                            : ExcludedFile.unmodelled(file));
+            switch (companionRules.table().classify(key.value() + "/" + file)) {
+                case PackFileKind.Excluded rule -> notHeld.add(ExcludedFile.excluded(file, rule.reason()));
+                case PackFileKind.Unclassified unclassified -> notHeld.add(ExcludedFile.unmodelled(file));
+                case PackFileKind.Mapped mapped -> {
+                    untaken.add(file);
+                    if (!faulted.contains(file)) {
+                        notHeld.add(ExcludedFile.unmodelled(file));
+                    }
+                }
+                case PackFileKind.Retired retired -> {}
+            }
         }
-        return notHeld;
     }
 
     /**
