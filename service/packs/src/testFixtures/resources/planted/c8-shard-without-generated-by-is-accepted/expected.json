@@ -3,5 +3,12 @@
     "C8",
     "R8"
   ],
-  "findings": []
+  "findings": [
+    {
+      "code": "file_not_held",
+      "severity": "warning",
+      "file": "drg/tactic.graph.yaml",
+      "place": []
+    }
+  ]
 }

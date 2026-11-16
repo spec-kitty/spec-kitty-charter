@@ -30,6 +30,12 @@ class ProjectCharterYamlSchemaTest {
 
     private static final String CHARTER = "charter";
 
+    /**
+     * The charter schema, loaded on its own: it is the schema of a project's {@code charter.yaml}, which is not pack
+     * content, so no {@code file-kinds.yaml} rule names it and the pack bundle does not load it (#554, open case 6).
+     */
+    private static final PackSchemas SCHEMAS = new PackSchemas("packs/schemas/", List.of(CHARTER));
+
     /** The activation keys this test pins, each declared in the shape of the other {@code activated_*} keys. */
     private static final List<String> KEYS =
             List.of("activated_glossaries", "activated_skills", "activated_anti_patterns");
@@ -41,7 +47,7 @@ class ProjectCharterYamlSchemaTest {
             """;
 
     private static List<SchemaViolation> validate(String file, String yaml) {
-        return PackSchemas.bundled().validate(CHARTER, file, Yaml.load(yaml));
+        return SCHEMAS.validate(CHARTER, file, Yaml.load(yaml));
     }
 
     private static List<SchemaViolation> validate(String yaml) {

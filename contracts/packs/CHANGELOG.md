@@ -30,6 +30,17 @@ The work toward the next candidate (`0.1.0-rc.2`) or the final `0.1.0`, after th
 
 The first packs contract version, a release candidate (operator ruling R1, 2026-11-16; #559).
 
+### Breaking
+
+- The file kinds say what the service holds (#554, open case 6): the `graph-shard` rule narrows from
+  `**/*.graph.yaml` to `*/*.graph.yaml`, a shard at the pack root, and the `**/charter.yaml` rule is removed, so no
+  pack file kind maps a `charter.yaml`. A shard below the root (`drg/<kind>.graph.yaml`, `graph/a.graph.yaml`) and a
+  `charter.yaml` anywhere in a pack are `unmodelled`: warned as `file_not_held`, not held and not judged, where they
+  were validated against `graph-shard` and `charter`. A `*.graph.yaml` under `assets/` or `templates/` is now that
+  place's payload. The classifier cases `core/graph/a.graph.yaml` and `project/charter.yaml` move from `mapped` to
+  `unmodelled`, and `core/a.graph.yaml` is the `graph-shard` case. `schemas/charter.schema.json` stays the schema of a
+  project's `charter.yaml`, outside any pack.
+
 ### Added
 
 - Role pins (slice G, #42; ADR-0030, ADR-0078 decision 3): `policy.schema.json` gains `role_pins`, a map from a

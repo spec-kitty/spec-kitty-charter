@@ -37,6 +37,7 @@ class PackSchemasTest {
     private static final String ID_PREFIX = "https://schemas.spec-kitty.ai/charter/packs/";
     private static final String DRAFT = "https://json-schema.org/draft/2020-12/schema";
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
+    private static final String PROJECT_CHARTER = "charter";
     private static final Pattern REF = Pattern.compile("\"\\$ref\"\\s*:\\s*\"([^\"]*)\"");
 
     private static List<String> bundledKinds() {
@@ -64,8 +65,8 @@ class PackSchemasTest {
     // ---- the bundle -------------------------------------------------------------------------
 
     @Test
-    void thereAreTwentySixBundledSchemas() {
-        assertThat(bundledKinds()).hasSize(26);
+    void thereAreTwentyFiveBundledSchemas() {
+        assertThat(bundledKinds()).hasSize(25);
     }
 
     @ParameterizedTest
@@ -127,9 +128,13 @@ class PackSchemasTest {
                     .filter(name -> name.endsWith(".schema.json"))
                     .map(name -> name.substring(0, name.length() - ".schema.json".length()))
                     .toList();
+            // The project charter.yaml schema is the one schema no pack file kind maps: a charter.yaml is not pack
+            // content (#554, open case 6). ProjectCharterYamlSchemaTest loads it on its own.
+            List<String> expected = new ArrayList<>(bundledKinds());
+            expected.add(PROJECT_CHARTER);
             assertThat(onDisk)
                     .as("schema files in contracts/packs/schemas")
-                    .containsExactlyInAnyOrderElementsOf(bundledKinds());
+                    .containsExactlyInAnyOrderElementsOf(expected);
         }
     }
 

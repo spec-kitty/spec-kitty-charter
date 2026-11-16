@@ -117,7 +117,8 @@ public final class PackPolicy {
     /**
      * Runs every rule: the level rules, the descriptor rules, the schema and parse findings of unreadable files (the
      * load path's and, for a full read, every other classified file's), the graph rules of the graph documents that
-     * were read, and the step, artifact and asset rules of a full read.
+     * were read, and the step, artifact and asset rules of a full read; and warns {@code file_not_held} once for each
+     * file no pack file kind models, whose contents no rule reads (#554, open case 6).
      *
      * @param contents what the adapter read
      * @return the verdict, with the findings in precedence order
@@ -151,8 +152,21 @@ public final class PackPolicy {
         findings.addAll(missionStepFindings(name, contents));
         findings.addAll(substepIdRules(contents.missionTypes()));
         findings.addAll(substepDelegationFindings(name, contents));
+        findings.addAll(notHeldFindings(contents.notHeld()));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
+    }
+
+    /**
+     * One {@code file_not_held} warning per file no pack file kind models, in the words a registration uses (#554, Q1,
+     * open case 6). The read judged nothing in it. An excluded file is listed in the verdict's files with its class,
+     * as before, and warned about by a registration only, which removes it.
+     */
+    private static List<PackFinding> notHeldFindings(List<NotHeldFile> notHeld) {
+        return notHeld.stream()
+                .filter(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
+                .map(NotHeldFile::finding)
+                .toList();
     }
 
     // ---- step enhancements and prompt fragments -------------------------------------------------

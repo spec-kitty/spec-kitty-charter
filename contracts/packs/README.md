@@ -4,7 +4,8 @@ JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: 
 descriptor, graph shards, the org fragment, the presets and the pack manifest,
 the artifact kinds that have a schema (a template and an anti-pattern have none), the Markdown
 files with a structure (a toolguide's guide, the pack document `README.md`, a mission step's prompt
-and guidelines, and a step enhancement's prompt fragment), and the project `charter.yaml`.
+and guidelines, and a step enhancement's prompt fragment), and the project `charter.yaml`, which is not pack
+content: no rule of `file-kinds.yaml` maps it, so a `charter.yaml` inside a pack is warned as `file_not_held` (#554).
 
 These schemas are canonical in this repository and are edited in place; core consumes them
 ([ADR-0015](../../docs/adr/0015-charter-repository-is-canonical-for-charter-structure.md) decisions 1, 2
@@ -122,7 +123,7 @@ with `raised: false` in `CharterRefusalCode` until #424 raises them. The warning
 ## Validate a file
 
 1. Find the schema for the file in `file-kinds.yaml`. `pack.yaml` at a pack root is
-   `pack-descriptor`, `*.graph.yaml` is `graph-shard`, `drg/fragment.yaml` is `org-fragment`, and
+   `pack-descriptor`, `*.graph.yaml` at a pack root is `graph-shard`, `drg/fragment.yaml` is `org-fragment`, and
    `*.tactic.yaml` is `tactic`. Files under `exclusions` have no schema, and files under `retired` are
    refused.
 2. Load the YAML and validate it against `schemas/<schema>.schema.json` with any Draft 2020-12

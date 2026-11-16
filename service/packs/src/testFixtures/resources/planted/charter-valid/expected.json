@@ -2,5 +2,12 @@
   "covers": [
     "P7"
   ],
-  "findings": []
+  "findings": [
+    {
+      "code": "file_not_held",
+      "severity": "warning",
+      "file": "charter.yaml",
+      "place": []
+    }
+  ]
 }
