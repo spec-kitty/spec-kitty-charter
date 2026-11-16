@@ -8,7 +8,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.time.Duration;
 import java.util.List;
@@ -62,7 +62,7 @@ class ParsedYamlTest {
         assertThat(read).isInstanceOf(FileRead.Unreadable.class);
         assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())
                 .isEqualTo(TOO_DEEP);
-        return PackPolicy.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read);
+        return Wording.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read);
     }
 
     /** A block sequence under a key needs its own lines; a flow value does not. */
@@ -72,7 +72,7 @@ class ParsedYamlTest {
 
     private static List<PackFinding> findings(FileRead<RawGraph> read) {
         assertThat(read).isInstanceOf(FileRead.Unreadable.class);
-        return PackPolicy.unreadable("qa", (FileRead.Unreadable<RawGraph>) read);
+        return Wording.unreadable("qa", (FileRead.Unreadable<RawGraph>) read);
     }
 
     @ParameterizedTest
@@ -141,7 +141,7 @@ class ParsedYamlTest {
         assertThat(read).isInstanceOf(FileRead.Unreadable.class);
         assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())
                 .isEqualTo(TOO_LARGE);
-        assertThat(PackPolicy.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
+        assertThat(Wording.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
                 .singleElement()
                 .satisfies(f -> {
                     assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
@@ -207,7 +207,7 @@ class ParsedYamlTest {
     void aBinaryValueInPackYamlIsAParseFailure() {
         FileRead<PackDescriptor> read =
                 PackDescriptorReader.read("pack_id: !!binary aGVsbG8=\npack_version: 1.0.0\nname: qa\n");
-        assertThat(PackPolicy.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
+        assertThat(Wording.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
                 .singleElement()
                 .satisfies(f -> {
                     assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);

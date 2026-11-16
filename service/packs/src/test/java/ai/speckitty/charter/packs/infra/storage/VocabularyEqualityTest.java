@@ -19,7 +19,7 @@ import ai.speckitty.charter.packs.application.KindTaxonomyReadService.Taxonomy;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import java.io.IOException;
 import java.io.InputStream;
@@ -328,7 +328,7 @@ class VocabularyEqualityTest {
                 .isEqualTo(accepted);
         assertThat(fragment).isEqualTo(shard);
         // The extra word is bound, not merely tolerated: the domain reads it as a tension.
-        GraphBuild build = PackPolicy.graph(
+        GraphBuild build = GraphBinding.graph(
                 "qa",
                 new RawGraph(
                         "x.graph.yaml",

@@ -13,8 +13,8 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -119,7 +119,7 @@ class GlossaryOldShapeRefusalTest {
             assertThat(contents.unreadableFiles())
                     .extracting(FileRead.Unreadable::file)
                     .containsExactly(FILE);
-            assertThat(contents.unreadableFiles().stream().flatMap(bad -> PackPolicy.unreadable(name(), bad).stream()))
+            assertThat(contents.unreadableFiles().stream().flatMap(bad -> Wording.unreadable(name(), bad).stream()))
                     .singleElement()
                     .satisfies(finding -> {
                         assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);

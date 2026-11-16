@@ -5,7 +5,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 /**
  * Converts the kernel {@link Relationship} to the storage {@link DrgEdge} DSO on the write side of the YAML
  * boundary (ADR-0025 Decision 5); the domain never sees {@code DrgEdge} and the DSO never carries domain behaviour.
- * The read side binds a shard edge through {@code PackPolicy}, the one authority for a relationship's invariants
+ * The read side binds a shard edge through {@code GraphBinding}, the one authority for a relationship's invariants
  * (a URN per endpoint, a known relation, no self-loop), so a written shard is read back through the same rules as
  * any other (FR-005, NFR-003: the relation and a present-vs-absent {@code when}/{@code rationale} survive).
  *

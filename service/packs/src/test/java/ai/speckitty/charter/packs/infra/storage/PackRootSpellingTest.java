@@ -8,8 +8,8 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackInspector;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,7 +79,7 @@ class PackRootSpellingTest {
     private static void assertOnlyTheTemplateIsMissing(PackContents validated) {
         assertThat(validated.unreadableFiles()).singleElement().satisfies(bad -> {
             assertThat(bad.file()).isEqualTo(FILE);
-            assertThat(PackPolicy.unreadable(PACK, bad))
+            assertThat(Wording.unreadable(PACK, bad))
                     .extracting(PackFinding::detail)
                     .singleElement()
                     .asString()

@@ -11,8 +11,8 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -311,7 +311,7 @@ class RetiredFilesTest {
                     .extracting(FileRead.Unreadable::file)
                     .containsExactlyInAnyOrder("pack.md", "Readme.md", "PROVENANCE.md");
             assertThat(contents.unreadableFiles().stream()
-                            .flatMap(bad -> PackPolicy.unreadable("qa", bad).stream())
+                            .flatMap(bad -> Wording.unreadable("qa", bad).stream())
                             .map(PackFinding::detail))
                     .anySatisfy(d -> assertThat(d)
                             .contains("qa/pack.md is retired: the pack document is README.md at the pack root"))
@@ -335,7 +335,7 @@ class RetiredFilesTest {
                     .extracting(FileRead.Unreadable::file)
                     .containsExactlyInAnyOrderElementsOf(files.keySet());
             List<PackFinding> findings = contents.unreadableFiles().stream()
-                    .flatMap(bad -> PackPolicy.unreadable("qa", bad).stream())
+                    .flatMap(bad -> Wording.unreadable("qa", bad).stream())
                     .toList();
             // A retired graph document is a graph document's fault, as any shard's is; every other file an artifact's.
             assertThat(findings)

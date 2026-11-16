@@ -35,7 +35,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
 import ai.speckitty.charter.packs.domain.Diagnostic;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
@@ -290,7 +290,7 @@ class WireTokenParityTest {
                         "RelationRow.relation (TaxonomyRelation)",
                         Stream.concat(
                                         tokens(RelationType.values(), RelationType::token).stream(),
-                                        Stream.of(PackPolicy.TENSION))
+                                        Stream.of(GraphBinding.TENSION))
                                 .toList(),
                         values(RelationRow.RelationEnum.values(), RelationRow.RelationEnum::getValue),
                         RelationRow.RelationEnum::fromValue),

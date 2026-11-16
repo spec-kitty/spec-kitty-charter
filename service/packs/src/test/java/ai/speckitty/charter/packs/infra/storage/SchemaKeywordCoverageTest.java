@@ -2,7 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Every keyword the bundled schemas use is accounted for (T024): it has a row in {@link PackPolicy}'s detail
+ * Every keyword the bundled schemas use is accounted for (T024): it has a row in {@link Wording}'s detail
  * vocabulary, or it is declared here as one that never reports a violation of its own (an annotation, or an
  * applicator whose children report), or as one that gets the fixed locale-free fallback text. A schema that starts to
  * use a new keyword fails this test until someone decides which of the three it is.
@@ -100,7 +100,7 @@ class SchemaKeywordCoverageTest {
 
         assertThat(inUse).as("the walk found the schemas' keywords").hasSizeGreaterThan(15);
         for (String keyword : inUse.keySet()) {
-            assertThat(PackPolicy.handles(keyword)
+            assertThat(Wording.handles(keyword)
                             || NO_VIOLATION_OF_THEIR_OWN.contains(keyword)
                             || FIXED_FALLBACK.contains(keyword))
                     .as(
@@ -115,12 +115,12 @@ class SchemaKeywordCoverageTest {
         Set<String> used = keywordsInUse().keySet();
 
         for (String keyword : NO_VIOLATION_OF_THEIR_OWN) {
-            assertThat(PackPolicy.handles(keyword))
+            assertThat(Wording.handles(keyword))
                     .as("'%s' is declared silent but has a row", keyword)
                     .isFalse();
         }
         for (String keyword : FIXED_FALLBACK) {
-            assertThat(PackPolicy.handles(keyword))
+            assertThat(Wording.handles(keyword))
                     .as("'%s' is declared fallback but has a row", keyword)
                     .isFalse();
         }
@@ -136,15 +136,15 @@ class SchemaKeywordCoverageTest {
                 "minimum",
                 "maximum",
                 "exclusiveMinimum")) {
-            assertThat(PackPolicy.handles(row)).as("'%s' has a row", row).isTrue();
+            assertThat(Wording.handles(row)).as("'%s' has a row", row).isTrue();
             assertThat(used).as("a schema uses '%s'", row).contains(row);
         }
     }
 
     @Test
     void aKeywordNoSchemaUsesYetHasNoRow() {
-        assertThat(PackPolicy.handles("dependentRequired")).isFalse();
-        assertThat(PackPolicy.handles("format")).isFalse();
-        assertThat(PackPolicy.handles("")).isFalse();
+        assertThat(Wording.handles("dependentRequired")).isFalse();
+        assertThat(Wording.handles("format")).isFalse();
+        assertThat(Wording.handles("")).isFalse();
     }
 }

@@ -9,7 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -18,7 +18,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** The reader reports {@code pack.yaml} as facts; the texts below are the ones {@link PackPolicy} writes from them. */
+/** The reader reports {@code pack.yaml} as facts; the texts below are the ones {@link Wording} writes from them. */
 class PackDescriptorReaderTest {
 
     private static final String VALID = "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\n";
@@ -38,7 +38,7 @@ class PackDescriptorReaderTest {
     }
 
     private static List<String> details(String text) {
-        return PackPolicy.unreadable("qa", unreadable(text)).stream()
+        return Wording.unreadable("qa", unreadable(text)).stream()
                 .map(PackFinding::detail)
                 .toList();
     }
@@ -266,7 +266,7 @@ class PackDescriptorReaderTest {
 
         assertThat(bad.parse()).isNotNull();
         assertThat(bad.violations()).isEmpty();
-        assertThat(PackPolicy.unreadable("qa", bad))
+        assertThat(Wording.unreadable("qa", bad))
                 .extracting(PackFinding::detail)
                 .containsExactly("pack.yaml of qa is not valid YAML");
     }
@@ -349,7 +349,7 @@ class PackDescriptorReaderTest {
     @Test
     void aNonFiniteNumberWhereAStringIsDeclaredHasTheTextOfAnyOtherNumber() {
         for (String number : List.of("1.5", ".nan", ".inf", "-.inf", "1e400")) {
-            assertThat(PackPolicy.unreadable(
+            assertThat(Wording.unreadable(
                             "qa", unreadable(VALID.replace("pack_version: 1.0.0", "pack_version: " + number))))
                     .extracting(PackFinding::detail)
                     .as(number)
