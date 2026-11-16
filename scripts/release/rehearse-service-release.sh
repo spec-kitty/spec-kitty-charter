@@ -9,7 +9,8 @@
 #   malformed tags (service-v0.1, a pre-release with a hyphen, build metadata), the placeholder 0.0.0, a -SNAPSHOT,
 #   a tag that is not the build's version, a final release whose contract is unreleased, a final release whose
 #   contract tag is not merged; then a final release whose contract tag is merged, and a pre-release of an unreleased
-#   contract, which the gate marks as such.
+#   contract, which the gate marks as such; then a final release over a contract release candidate, refused, and a
+#   pre-release over one, let through (operator ruling R1).
 # It then assembles the asset set from placeholder build outputs (scripts/release/service-release-assets.sh) and
 # expects exactly the ADR's 11 files with checksums that verify, and a refusal when a target is missing.
 # Not rehearsed here, because they need the remote: the tagged commit being on main, and the tag still naming the
@@ -90,6 +91,14 @@ set_version 0.2.0-rc.1
 set_contract 0.2.0-SNAPSHOT
 commit "pre-release 0.2.0-rc.1 of an unreleased contract"
 passes service-v0.2.0-rc.1 "version=0.2.0-rc.1" "prerelease=true" "contract=0.2.0-SNAPSHOT" "contractReleased=false"
+set_version 0.3.0
+set_contract 0.3.0-rc.1
+commit "release 0.3.0 of a contract release candidate"
+git tag contract-charter-v0.3.0-rc.1
+refused service-v0.3.0 "needs a final contract release"
+set_version 0.3.0-rc.1
+commit "pre-release 0.3.0-rc.1 of a contract release candidate"
+passes service-v0.3.0-rc.1 "version=0.3.0-rc.1" "prerelease=true" "contract=0.3.0-rc.1" "contractReleased=true"
 
 echo "== 3. The asset set"
 in="$work/in"

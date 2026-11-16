@@ -62,9 +62,16 @@ Which release is the baseline is decided by the release gate, `ReleaseGate`
 ([`ReleaseGate.java`](../src/main/java/ai/speckitty/charter/contracts/compat/ReleaseGate.java)), whose
 class Javadoc is the authority on the rules and their messages (DM 01M5986KJ7B18K7GQ25E47J989). In
 short: after checking the CHANGELOG against `info.version` and the git tags, it names the newest
-release of the same line whose tag is merged into HEAD, and a release with no such tag yet is
-*pending* and is compared against the previous one. A released contract is tagged
+final release of the same line whose tag is merged into HEAD, and a release with no such tag yet is
+*pending* and is compared against the previous final one. A released contract is tagged
 `contract-charter-v<version>` (`contract-charter-v0.1.0`).
+
+A release candidate is `X.Y.Z-<pre>`, with the service line's pre-release grammar: letters, digits and
+dots (`0.2.0-rc.1`, never `0.2.0-rc-1`), and no build metadata (operator ruling R1 of 2026-11-16,
+ADR-0022). It is published under its tag (`contract-charter-v0.2.0-rc.1`) as a GitHub pre-release,
+but it is never a baseline and never the previous release: a candidate, and the `-SNAPSHOT` after it,
+are compared against the previous final release of their line. For one `X.Y.Z` the candidates rank
+below its `-SNAPSHOT`, which ranks below the final `X.Y.Z`.
 
 The line is the major version from 1.0.0, and the major and minor while the major is 0
 (ADR-0022): the contract is published as 0.x while it iterates with core, a 0.x minor may break
@@ -84,7 +91,8 @@ A missing baseline is a stated fact, never an artifact of the checkout:
 
 ### Releasing a contract version
 
-This is the one release procedure.
+This is the one release procedure. The first releases are release candidates (operator ruling R1):
+release `0.2.0-rc.1` with the procedure below, writing `0.2.0-rc.1` where it says `1.1.0`.
 
 1. In a pull request, run `./gradlew :contracts:assembleContractChangelog`: it moves every fragment
    of `../charter/changes/` into the top CHANGELOG section and deletes them
@@ -98,14 +106,21 @@ This is the one release procedure.
    and push the tag. From then on the check compares against that tag, and a commit after it under
    the `## 1.1.0` heading is refused until step 3.
 3. Open the next version: a new top heading `## 1.2.0-SNAPSHOT` and `info.version: 1.2.0-SNAPSHOT`,
-   together in one change.
+   together in one change. After a release candidate the next version is the same `X.Y.Z`: reopen
+   `## 0.2.0-SNAPSHOT` above `## 0.2.0-rc.1`, and release from it the next candidate
+   (`0.2.0-rc.2`) or the final `0.2.0`. The gate refuses any other version (`0.2.1-SNAPSHOT`,
+   `0.3.0-SNAPSHOT`) above a candidate until its final release is recorded.
+
+The `### Breaking` subsection belongs to the first section of a new line: when `0.2.0-rc.1` holds it,
+the later `0.2.0-rc.2`, `0.2.0-SNAPSHOT` and `0.2.0` sections need not repeat it.
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/contract-release.yml` rebuilds
 the bundle at the tag and attaches `charter-openapi.yaml`, `charter-openapi.yaml.sha256`,
 `charter-scenarios.tar.gz` (the contract scenarios) and `ActivationConfig.schema.json` (the canonical activation
-document) to a GitHub Release of the tag. It refuses,
-and publishes nothing, unless the tag, `info.version` and the top heading name one released
-version (`./gradlew :contracts:checkReleaseTag -PreleaseTag=<tag>`), the contract checks pass and
+document) to a GitHub Release of the tag; a release candidate's tag makes a GitHub pre-release, never
+marked latest. It refuses,
+and publishes nothing, unless the tag, `info.version` and the top heading name one release or release
+candidate (a malformed pre-release is refused) (`./gradlew :contracts:checkReleaseTag -PreleaseTag=<tag>`), the contract checks pass and
 the tagged commit is on `main`; it also refuses a tag that moved while the assets were built.
 The workflow runs from the tagged commit, so these checks catch mistakes, not someone who can push
 tags: a tag ruleset on `contract-charter-v*` decides who can publish.
@@ -113,8 +128,11 @@ tags: a tag ruleset on `contract-charter-v*` decides who can publish.
 Nothing publishes without a tag. `service.yml` rehearses the whole path on every change
 (`scripts/release/rehearse-contract-release.sh`): in a throwaway clone with no remote it expects
 the unreleased commit to be refused, a release that leaves a changelog fragment unassembled to be
-refused, and a synthetic release, its fragments assembled, to yield the four assets. On the release
-pull request, where `info.version` is already the release, it rehearses that release as it stands:
+refused, and a synthetic release, its fragments assembled, to yield the four assets. It does the same
+for a release candidate: a malformed candidate tag and another candidate's tag are refused, the
+candidate yields the four assets, and the `-SNAPSHOT` reopened after it passes the breaking-change
+check. On the release pull request, where `info.version` is already the release or a candidate, it
+rehearses that release as it stands:
 it yields the four assets, or fails where the publishing gate refuses the tag. To
 rehearse a real release, run `scripts/release/contract-release-assets.sh <tag> <out-dir>`, or the
 workflow by hand (workflow_dispatch) with the tag, on the release pull request's branch after

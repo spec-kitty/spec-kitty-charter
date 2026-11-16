@@ -66,6 +66,47 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void aReleaseCandidateIsPublishedAndAMalformedOneIsRefused() throws IOException {
+        Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 0.1.0-rc.1\n");
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-rc.1\n");
+        List<String> args = List.of("--release", openapi.toString(), log.toString(), "contract-charter-v0.1.0-rc.1");
+        assertThat(CheckReleaseGate.run(args, out)).isZero();
+        assertThat(printed())
+                .isEqualTo("RELEASE 0.1.0-rc.1\nThe tag contract-charter-v0.1.0-rc.1, info.version and the top"
+                        + " CHANGELOG heading name release candidate 0.1.0-rc.1.\n");
+        output.reset();
+        Files.writeString(openapi, "info:\n  version: 0.1.0-rc-1\n");
+        Files.writeString(log, "## 0.1.0-rc-1\n");
+        List<String> malformed =
+                List.of("--release", openapi.toString(), log.toString(), "contract-charter-v0.1.0-rc-1");
+        assertThat(CheckReleaseGate.run(malformed, out)).isEqualTo(1);
+        assertThat(printed()).contains("not letters, digits and dots (write rc.1, not rc-1)");
+    }
+
+    @Test
+    void aPacksContractReleaseCandidateIsPublished() throws IOException {
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-rc.1\n");
+        assertThat(CheckReleaseGate.run(List.of("--packs-release", log.toString(), "contract-packs-v0.1.0-rc.1"), out))
+                .isZero();
+        assertThat(printed()).startsWith("RELEASE 0.1.0-rc.1\n").contains("name release candidate 0.1.0-rc.1.");
+        output.reset();
+        assertThat(CheckReleaseGate.run(List.of("--packs-release", log.toString(), "contract-packs-v0.1.0-rc.01"), out))
+                .isEqualTo(1);
+        assertThat(printed()).contains("leading zero");
+    }
+
+    @Test
+    void theSnapshotAfterACandidateIsComparedWithThePreviousFinalRelease() throws IOException {
+        int code = run(
+                "0.1.1-SNAPSHOT",
+                "## 0.1.1-SNAPSHOT\n\n## 0.1.1-rc.1\n\n## 0.1.0\n",
+                "contract-charter-v0.1.0\ncontract-charter-v0.1.1-rc.1\n",
+                "");
+        assertThat(code).isZero();
+        assertThat(printed()).isEqualTo("COMPARE contract-charter-v0.1.0\ncompared against 0.1.0\n");
+    }
+
+    @Test
     void aPacksContractReleaseMustBeTheVersionItsTagNamesAndTheChangelogTops() throws IOException {
         Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-SNAPSHOT\n");
         List<String> args = List.of("--packs-release", log.toString(), "contract-packs-v0.1.0");

@@ -26,7 +26,8 @@ object ServiceReleaseGate {
      * @property version the release version, the tag without `service-v`
      * @property prerelease whether the version has a pre-release suffix, which makes a GitHub pre-release
      * @property contract the bundled contract's version
-     * @property contractReleased whether that contract is released and its tag merged into the tagged commit
+     * @property contractReleased whether that contract is published, a final release or a release candidate, and its tag
+     *   merged into the tagged commit
      */
     data class Release(
         val version: String,
@@ -36,7 +37,9 @@ object ServiceReleaseGate {
     ) : Verdict {
         /** The release notes' line about the contract this release implements (ADR-0046 decision 3). */
         fun contractNote(): String =
-            if (contractReleased) {
+            if (contractReleased && contract.contains('-')) {
+                "It implements the charter contract release candidate $contract (contract-charter-v$contract)."
+            } else if (contractReleased) {
                 "It implements the charter contract $contract (released as contract-charter-v$contract)."
             } else {
                 "It implements the charter contract $contract, which is not released yet."
@@ -75,6 +78,14 @@ object ServiceReleaseGate {
         }
         val prerelease = match.groupValues[2].isNotEmpty()
         val contractReleased = !contractVersion.endsWith(SNAPSHOT, ignoreCase = true) && contractTagMerged
+        // A final service release implements a final contract release: never a release candidate (operator ruling R1,
+        // 2026-11-16). A service pre-release may bundle a contract candidate, or an unreleased contract.
+        if (!prerelease && contractReleased && contractVersion.contains('-')) {
+            return Refusal(
+                "The final release '$tag' needs a final contract release, but the bundled contract $contractVersion is" +
+                    " a release candidate: release the final contract first, or tag a pre-release (ADR-0046 decision 3)",
+            )
+        }
         if (!prerelease && !contractReleased) {
             val why = if (contractVersion.endsWith(SNAPSHOT, ignoreCase = true)) {
                 "the bundled contract $contractVersion is unreleased"

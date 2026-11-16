@@ -66,6 +66,23 @@ class ServiceReleaseGateTest {
     }
 
     @Test
+    fun aFinalReleaseOfAContractReleaseCandidateIsRefused() {
+        assertThat(refusal("service-v0.2.0", contract = "0.2.0-rc.1", merged = true))
+            .contains("needs a final contract release", "0.2.0-rc.1", "release candidate")
+        assertThat(refusal("service-v0.2.0", contract = "0.2.0-rc.1", merged = false))
+            .contains("contract-charter-v0.2.0-rc.1", "not merged")
+    }
+
+    @Test
+    fun aPreReleaseMayBundleAContractReleaseCandidateAndSaysSo() {
+        val release = ServiceReleaseGate.check("service-v0.2.0-rc.1", "0.2.0-rc.1", "0.2.0-rc.1", contractTagMerged = true)
+        assertThat(release)
+            .isEqualTo(ServiceReleaseGate.Release("0.2.0-rc.1", prerelease = true, contract = "0.2.0-rc.1", contractReleased = true))
+        assertThat((release as ServiceReleaseGate.Release).contractNote())
+            .isEqualTo("It implements the charter contract release candidate 0.2.0-rc.1 (contract-charter-v0.2.0-rc.1).")
+    }
+
+    @Test
     fun theReleaseNotesLineNamesTheContractAndWhetherItIsReleased() {
         assertThat(ServiceReleaseGate.Release("0.2.0", false, "0.1.0", true).contractNote())
             .isEqualTo("It implements the charter contract 0.1.0 (released as contract-charter-v0.1.0).")

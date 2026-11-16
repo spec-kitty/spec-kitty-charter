@@ -544,8 +544,9 @@ abstract class CompatibilityFixtures : ContractToolTask() {
  * is the authority; DM 01M5986KJ7B18K7GQ25E47J989): `info.version` equals the top CHANGELOG heading, only
  * `contract-charter-v*` tags merged into HEAD count, only a release of the same line is a baseline (the same major
  * version, and while the major is 0 the same minor: ADR-0022), and
- * a pending release (released heading, no tag yet) is compared against the previous release, and a commit after a
- * release's tag is refused until the next -SNAPSHOT is opened. A shallow clone fails,
+ * a pending release (released heading, no tag yet) is compared against the previous final release, and a commit after
+ * a release's tag is refused until the next -SNAPSHOT is opened. A release candidate (X.Y.Z-<pre>) is published under
+ * its tag but is never a baseline: it, and the -SNAPSHOT after it, are compared against the previous final release. A shallow clone fails,
  * because a released contract's tag may be missing. `-PcontractBaseline=none` skips the comparison on purpose and
  * says so, and is refused when the environment variable CI is true; the gates that read no git history (the version
  * gates and the Breaking subsection) still run.
@@ -740,7 +741,8 @@ abstract class CheckBundle @Inject constructor(private val exec: ExecOperations)
 
 /**
  * The publishing gate of a release tag (`ReleaseGate.releaseRefusal`): the tag `-PreleaseTag` names, `info.version`
- * and the top CHANGELOG heading must name one released version, and no changelog fragment may be left unassembled
+ * and the top CHANGELOG heading must name one release or release candidate (X.Y.Z-<pre>; a malformed pre-release is
+ * refused), and no changelog fragment may be left unassembled
  * in `charter/changes/` (ADR-0047). `contract-release.yml` runs it before it assembles anything; it is not part of
  * `check`, because a commit on main is not a release.
  */
@@ -922,7 +924,7 @@ val checkRefusalExamples = tasks.register<CheckBundle>("checkRefusalExamples") {
 
 tasks.register<CheckReleaseTag>("checkReleaseTag") {
     group = "contract"
-    description = "Checks that -PreleaseTag, info.version and the top CHANGELOG heading name one released version."
+    description = "Checks that -PreleaseTag, info.version and the top CHANGELOG heading name one release or release candidate."
     openapi = charterContract.file("openapi.yaml")
     changelog = charterContract.file("CHANGELOG.md")
     changes = charterContract.dir("changes").asFile.absolutePath
@@ -932,11 +934,12 @@ tasks.register<CheckReleaseTag>("checkReleaseTag") {
 }
 
 // The publishing gate of a packs contract release tag (#559, ReleaseGate.packsReleaseRefusal): -PreleaseTag must be
-// contract-packs-v<version> for the released version the top heading of contracts/packs/CHANGELOG.md names.
+// contract-packs-v<version> for the release or release candidate (X.Y.Z-<pre>) the top heading of
+// contracts/packs/CHANGELOG.md names.
 // packs-contract-release.yml runs it before it assembles anything; like checkReleaseTag, it is not part of `check`.
 tasks.register<JavaExec>("checkPacksReleaseTag") {
     group = "contract"
-    description = "Checks that -PreleaseTag and the top heading of contracts/packs/CHANGELOG.md name one released version."
+    description = "Checks that -PreleaseTag and the top heading of contracts/packs/CHANGELOG.md name one release or release candidate."
     classpath(sourceSets.main.map { it.runtimeClasspath })
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
     mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"

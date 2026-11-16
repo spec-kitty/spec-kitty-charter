@@ -2,7 +2,7 @@
 title: "ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable"
 description: Proposes publishing the charter contract as 0.x with core's generated client as the feedback loop, breaking only on a 0.x minor, and minting 1.0.0 once stable.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-16T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-24'
 type: ADR
@@ -153,6 +153,29 @@ minimal: the tag and that heading name one released version, and the heading, or
 release gate's rule 12). It has no schema-diff check yet. A tag ruleset on `contract-packs-v*` limits who can publish,
 as #196 does for `contract-charter-v*`. The release procedure is in `contracts/packs/README.md`, and how a consumer
 pins it is in [Pin the packs contract](/guides/pin-the-packs-contract/).
+
+### Note, 2026-11-16 (operator ruling R1): the first releases are release candidates
+
+The first contract releases are release candidates, not 0.x finals. This amends D1 and D5: the first published charter
+contract is `0.y.z-rc.N` (tagged `contract-charter-v0.y.z-rc.N`), and the first packs contract release is
+`0.1.0-rc.N` (`contract-packs-v0.1.0-rc.N`); a final `0.y.z` follows its candidates on the operator's call. The release
+gate (`ReleaseGate`, whose Javadoc is the authority) takes the pre-release form as follows:
+
+- **Form.** `X.Y.Z-<pre>`, with the service line's grammar (ADR-0046 decision 1): letters, digits and dots, no hyphen
+  after the first and no `+build` metadata. Each dot-separated identifier is non-empty, a numeric one has no leading
+  zero (SemVer), and none is `SNAPSHOT`. The publishing gates (`:contracts:checkReleaseTag`,
+  `:contracts:checkPacksReleaseTag`) refuse a malformed pre-release, naming the fault.
+- **Order.** For one `X.Y.Z`: its candidates, in SemVer order, then `X.Y.Z-SNAPSHOT`, then the final `X.Y.Z`. After a
+  candidate the next version is the same `X.Y.Z-SNAPSHOT`, a later candidate, or the final `X.Y.Z`; any other version
+  above a candidate is refused until its final release is recorded.
+- **Baseline.** A candidate is never a compatibility baseline and never "the previous release". A candidate, and the
+  `-SNAPSHOT` after it, are compared against the previous final release of their line. So what changes between two
+  candidates is not compared by `oasdiff`; the `### Breaking` subsection, which the first section of a new line holds
+  (a candidate's or not), is where a break between candidates is listed. Rejected: comparing against the previous
+  candidate, which would make a candidate a compatibility promise that R1 does not give.
+- **Publishing.** A candidate's tag makes a GitHub pre-release that is never marked latest.
+- **Service.** A final `service-vX.Y.Z` still needs a final contract release (ADR-0046 decision 3); a service
+  pre-release may bundle a contract candidate or an unreleased contract.
 
 ## Consequences
 
