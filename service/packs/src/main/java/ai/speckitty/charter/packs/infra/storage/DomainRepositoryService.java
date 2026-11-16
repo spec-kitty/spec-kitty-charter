@@ -765,7 +765,7 @@ public final class DomainRepositoryService
 
     /**
      * Refuses a pack whose graph edge joins an artifact to itself by a qualifier naming the pack itself, the case the
-     * schema and the bare check cannot see (see {@link PackPolicy#joinsItself}); an endpoint that is no reference is
+     * schema and the bare check cannot see (see {@link GraphBinding#joinsItself}); an endpoint that is no reference is
      * left to the reads that judge the document.
      */
     private static void refuseSelfLoop(PackIdentifier pack, String packName, String file, GraphDocument.Edge edge) {

@@ -149,7 +149,7 @@ class RelationshipEndpointRuleTest {
                         Optional.empty(),
                         Optional.empty())));
 
-        GraphBinding.GraphBuild build = PackPolicy.registeredGraph("main", shard);
+        GraphBinding.GraphBuild build = GraphBinding.registeredGraph("main", shard);
 
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings()).singleElement().satisfies(finding -> {

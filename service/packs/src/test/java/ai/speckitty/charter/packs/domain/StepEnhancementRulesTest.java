@@ -456,7 +456,7 @@ class StepEnhancementRulesTest {
         @Test
         void thePathOrderIsTheComparatorsNotTheInputOrNotStringOrder() {
             // 'plan-x/' sorts below 'plan/' as a String, so a caller listing by String order passes it first.
-            // PackPolicy.comparePaths puts the shorter 'plan' segment first, so 'plan-x' is the second file.
+            // Precedence.comparePaths puts the shorter 'plan' segment first, so 'plan-x' is the second file.
             PackFixture stringOrder = new PackFixture()
                     .enhancement("plan-x", "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
                     .fragment("plan-x", "brief.prompt-fragment.md", "Be brief.\n")

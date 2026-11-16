@@ -21,9 +21,9 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackInspector;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -536,7 +536,7 @@ class MissionTypeBindingTest {
 
         assertThat(validated.unreadableFiles())
                 .singleElement()
-                .satisfies(bad -> assertThat(PackPolicy.unreadable(PACK, bad))
+                .satisfies(bad -> assertThat(Wording.unreadable(PACK, bad))
                         .extracting(PackFinding::detail)
                         .containsExactly(PACK + "/" + FILE + " " + refusal));
         // The store refuses by file; the domain (a step id standing twice) by the type's id. The two paths
@@ -562,7 +562,7 @@ class MissionTypeBindingTest {
 
         assertThat(validated.unreadableFiles())
                 .singleElement()
-                .satisfies(bad -> assertThat(PackPolicy.unreadable(PACK, bad))
+                .satisfies(bad -> assertThat(Wording.unreadable(PACK, bad))
                         .extracting(PackFinding::detail)
                         .containsExactly(PACK + "/" + FILE + " step 'scoping' names steps/scoping.prompt.md: missing"));
         assertThat(load(pack).violations())

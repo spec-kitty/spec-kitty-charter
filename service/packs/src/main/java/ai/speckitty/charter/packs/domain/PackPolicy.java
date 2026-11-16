@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -61,9 +60,6 @@ public final class PackPolicy {
 
     /** The finding text of a term as an edge endpoint; see {@link GraphBinding#TERM_ENDPOINT}. */
     public static final String TERM_ENDPOINT = GraphBinding.TERM_ENDPOINT;
-
-    /** Today's spelling of the tension relationship in a graph document; see {@link GraphBinding#TENSION}. */
-    public static final String TENSION = GraphBinding.TENSION;
 
     /** The plan's precedence, with the pack-wide rules as their own group ({@link Precedence#comparator}). */
     private static final Comparator<PackFinding> PRECEDENCE = Precedence.comparator(PACK_WIDE);
@@ -132,7 +128,7 @@ public final class PackPolicy {
                 new ArrayList<>(level(name, contents.root().configuredLevel(), contents.descriptor()));
         switch (contents.descriptor()) {
             case FileRead.Unreadable<PackDescriptor> bad -> findings.addAll(unreadable(name, bad));
-            case FileRead.Read<PackDescriptor> read -> findings.addAll(descriptorRules(name, read.value()));
+            case FileRead.Read<PackDescriptor> read -> findings.addAll(DescriptorChecks.findings(name, read.value()));
             case FileRead.Absent<PackDescriptor> absent -> {}
         }
         findings.addAll(orgFragmentRules(name, contents));
@@ -559,22 +555,6 @@ public final class PackPolicy {
         return Wording.handles(keyword);
     }
 
-    /** The descriptor rules: {@link DescriptorChecks#findings}. */
-    private static List<PackFinding> descriptorRules(String name, PackDescriptor descriptor) {
-        return DescriptorChecks.findings(name, descriptor);
-    }
-
-    /**
-     * The descriptor rules on their own; see {@link DescriptorChecks#findings}.
-     *
-     * @param name the pack's name, for the finding text
-     * @param descriptor what the pack's {@code pack.yaml} states
-     * @return the findings; empty when the descriptor passes
-     */
-    public static List<PackFinding> descriptorFindings(String name, PackDescriptor descriptor) {
-        return DescriptorChecks.findings(name, descriptor);
-    }
-
     /** An artifact id is unique within its kind; the first file in path order owns it (core's {@code duplicate_id}).
      * Path order is pathlib's: segment by segment, so a directory sorts before a sibling that extends its name. */
     private static List<PackFinding> artifactRules(List<PackContents.ArtifactFacts> artifacts) {
@@ -690,28 +670,6 @@ public final class PackPolicy {
      */
     public static Optional<String> bodyPathEscape(String id, Optional<String> bodyPath) {
         return Paths.bodyPathEscape(id, bodyPath);
-    }
-
-    /**
-     * The reason an asset path leaves {@code assets/}; see {@link Paths#assetPathEscape}.
-     *
-     * @param path the path as the sidecar wrote it
-     * @return the reason
-     */
-    public static String assetPathEscape(String path) {
-        return Paths.assetPathEscape(path);
-    }
-
-    /**
-     * Whether two references join an artifact of the writing pack to itself; see {@link GraphBinding#joinsItself}.
-     *
-     * @param packName the descriptor name of the pack that writes both references
-     * @param from the reference on one side
-     * @param to the reference on the other side
-     * @return {@code true} when both mean the same artifact of the writing pack
-     */
-    public static boolean joinsItself(String packName, PackQualifiedReference from, PackQualifiedReference to) {
-        return GraphBinding.joinsItself(packName, from, to);
     }
 
     // ---- schema and parse findings -------------------------------------------------------------

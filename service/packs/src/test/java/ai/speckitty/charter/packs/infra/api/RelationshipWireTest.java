@@ -8,7 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.RelationshipDraft;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -72,7 +72,8 @@ class RelationshipWireTest {
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                         assertThat(refusal.getMessage())
-                                .isEqualTo(PackPolicy.TERM_ENDPOINT + refused[0] + " " + refused[2] + " " + refused[1]);
+                                .isEqualTo(
+                                        GraphBinding.TERM_ENDPOINT + refused[0] + " " + refused[2] + " " + refused[1]);
                     });
         }
     }

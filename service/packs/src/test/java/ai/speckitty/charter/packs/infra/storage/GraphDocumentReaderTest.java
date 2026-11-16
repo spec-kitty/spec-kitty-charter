@@ -15,7 +15,8 @@ import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The reader reports facts: the document as written, or why it could not be read. Every text asserted here is the
- * one {@link PackPolicy} writes from those facts, so the violations are the real output of the schema validator.
+ * one {@link Wording} writes from those facts, so the violations are the real output of the schema validator.
  */
 class GraphDocumentReaderTest {
 
@@ -48,7 +49,7 @@ class GraphDocumentReaderTest {
     }
 
     private static List<String> details(FileRead.Unreadable<RawGraph> unreadable) {
-        return PackPolicy.unreadable("qa", unreadable).stream()
+        return Wording.unreadable("qa", unreadable).stream()
                 .map(PackFinding::detail)
                 .toList();
     }
@@ -159,7 +160,7 @@ class GraphDocumentReaderTest {
     @Test
     void writingAGraphAndReadingItBackGivesTheSameGraph() {
         DoctrineGraph graph =
-                PackPolicy.graph("qa", read(HEADER + """
+                GraphBinding.graph("qa", read(HEADER + """
                                 nodes:
                                 - {urn: tactic:t, kind: tactic, label: 'A: label', provenance: p, tags: [y, x]}
                                 edges:
@@ -169,7 +170,7 @@ class GraphDocumentReaderTest {
                                 """, Shape.SHARD, SHARD)).graph();
 
         RawGraph reread = read(GraphShardWriter.write(graph), Shape.SHARD, "w.graph.yaml");
-        DoctrineGraph rebuilt = PackPolicy.graph("qa", reread).graph();
+        DoctrineGraph rebuilt = GraphBinding.graph("qa", reread).graph();
 
         assertThat(rebuilt).isEqualTo(graph);
         // Graph equality is not enough on its own: relationship equality is pair identity, so every field is named.
@@ -213,7 +214,7 @@ class GraphDocumentReaderTest {
 
         RawGraph reread = read(written, Shape.SHARD, "w.graph.yaml");
         assertThat(reread.nodes().get(0).label()).contains(text);
-        DoctrineGraph rebuilt = PackPolicy.graph("qa", reread).graph();
+        DoctrineGraph rebuilt = GraphBinding.graph("qa", reread).graph();
         assertThat(rebuilt).isEqualTo(graph);
         // The null-reading string survives on the condition and the rationale, not only the label.
         assertThat(rebuilt.relationships()).singleElement().satisfies(relationship -> {
@@ -249,7 +250,7 @@ class GraphDocumentReaderTest {
                     HEADER + "nodes: [{urn: 'tactic:x', kind: tactic, label: " + number + "}]\nedges: []\n",
                     Shape.SHARD,
                     SHARD);
-            assertThat(PackPolicy.unreadable("qa", shard))
+            assertThat(Wording.unreadable("qa", shard))
                     .extracting(PackFinding::detail)
                     .as(number)
                     .containsExactly("qa/tactic.graph.yaml: 'label' must be a string");

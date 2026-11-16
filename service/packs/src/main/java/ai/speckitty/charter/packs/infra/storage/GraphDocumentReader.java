@@ -19,9 +19,9 @@ import org.jspecify.annotations.Nullable;
  * <p>The reader decides nothing. A document that is not YAML is {@link FileRead.Unreadable} with the parse failure; a
  * document that breaks its bundled schema ({@code graph-shard} or {@code org-fragment}) is {@link FileRead.Unreadable}
  * with the validator's facts; any other document is read as written, every declared node field included, with
- * nothing bound or defaulted. Every code and every text is {@code PackPolicy}'s; {@code in_tension_with}, today's
- * spelling of a tension (ADR-0036 Decision 4), stays the word on the page here and {@code PackPolicy} binds it. It
- * never throws on content.
+ * nothing bound or defaulted. Every code and every text belongs to the pack rules ({@code Wording},
+ * {@code GraphBinding}); {@code in_tension_with}, today's spelling of a tension (ADR-0036 Decision 4), stays the word
+ * on the page here and {@code GraphBinding} binds it. It never throws on content.
  */
 public final class GraphDocumentReader {
 
@@ -123,7 +123,7 @@ public final class GraphDocumentReader {
     // ---- the facts the validator does not emit ---------------------------------------------------
 
     /**
-     * Adds the named facts of {@code PackPolicy}'s vocabulary contract to the violations that need them:
+     * Adds the named facts of {@code Wording}'s vocabulary contract to the violations that need them:
      * {@code kind}, the sibling plural kind of a fragment node, on a violation of its {@code id}; and {@code id} (a
      * fragment node) or {@code urn} (a shard node), the sibling identity, on an {@code enum} violation of its
      * {@code kind}. The validator reports only the offending place; the node's other fields come from the document.

@@ -12,7 +12,7 @@ import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.util.List;
 import java.util.Optional;
@@ -122,7 +122,7 @@ class GraphShardWriterTest {
                   relation: suggests
                   reason: because
                 """;
-        DoctrineGraph graph = PackPolicy.graph(
+        DoctrineGraph graph = GraphBinding.graph(
                         "qa",
                         ((FileRead.Read<RawGraph>)
                                         GraphDocumentReader.read(source, Shape.FRAGMENT, "drg/fragment.yaml"))
@@ -174,7 +174,7 @@ class GraphShardWriterTest {
                   relation: in_tension_with
                   when: under deadline
                 """;
-        DoctrineGraph graph = PackPolicy.graph(
+        DoctrineGraph graph = GraphBinding.graph(
                         "qa",
                         ((FileRead.Read<RawGraph>)
                                         GraphDocumentReader.read(source, Shape.FRAGMENT, "drg/fragment.yaml"))

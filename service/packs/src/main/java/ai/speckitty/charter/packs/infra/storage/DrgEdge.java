@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  * <p>Record equality is the round-trip fidelity assertion (ADR-0024): two DSOs are equal exactly when every
  * field matches, present-vs-absent included. The DSO carries <strong>no</strong> cross-field rule (it is a
- * plain mirror): {@code Relationship}'s invariants live in {@code PackPolicy} on the read side (a parseable URN per endpoint, a known relation token, no
+ * plain mirror): {@code Relationship}'s invariants live in {@code GraphBinding} on the read side (a parseable URN per endpoint, a known relation token, no
  * self-loop). This keeps the DSO a faithful byte-for-byte mirror so a malformed field surfaces as a policy
  * fact rather than being refused at the persistence shape.
  *
