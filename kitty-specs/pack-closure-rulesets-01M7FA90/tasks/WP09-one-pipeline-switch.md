@@ -12,7 +12,7 @@ requirement_refs:
 - NFR-001
 planning_base_branch: slice-5-554-pack-closure-rulesets
 merge_target_branch: slice-5-554-pack-closure-rulesets
-branch_strategy: Planning artifacts were generated on slice-5-554-pack-closure-rulesets (via the mission branch kitty/mission-pack-closure-rulesets-01M7FA90). Completed changes merge back into slice-5-554-pack-closure-rulesets, then into main by one pull request (R4).
+branch_strategy: Planning artifacts for this mission were generated on slice-5-554-pack-closure-rulesets. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into slice-5-554-pack-closure-rulesets unless the human explicitly redirects the landing branch.
 subtasks:
 - T047
 - T048
@@ -21,7 +21,6 @@ subtasks:
 - T051
 - T052
 - T053
-agent: claude
 history:
 - at: '2026-11-16T00:00:00Z'
   actor: system
