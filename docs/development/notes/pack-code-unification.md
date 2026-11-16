@@ -148,7 +148,12 @@ WP04, WP05 and WP08 see it.
      cases (`core/graph/a.graph.yaml` and `project/charter.yaml` are `unmodelled`) and a packs `### Breaking` line;
      the open-packs draft (`TBD-unmodelled-not-held`) carries the same reclassification. A not-held file carries an
      explicit kind (`EXCLUDED` or `UNMODELLED`), a retired file is no longer also listed as not held, and
-     `HeldSetAgreementTest` pins validate mode's not-held files to the store's until WP05's one census.
+     `HeldSetAgreementTest` pins validate mode's not-held files to the store's until WP05's one census. Validate mode
+     warns for every not-held file, an excluded one too, since holding is what counts and not the reason (WP11 review,
+     orchestrator decision): `example-packs/built-in` and `example-packs/org-base` gain their one warning. The C4 and
+     C16 plants (`c4-shard-urn-prefix-differs-from-kind`, `c16-shard-edge-provenance`) moved their shard to the pack
+     root so that those rules keep a plant, so ten of the twelve stay open-case-6 subjects. DIV-021 is retired, and
+     DIV-027 records that core refuses a nested shard the service does not hold.
 7. **Asset faults are not all validate-only** (rows 12 to 15). A missing payload and a path escape are read faults
    on all three surfaces: registration answers `asset` for them (11 golden subjects) and the compose read refuses
    them. Only the asset mime and a repeated asset id are validate-only. The data model's R1 surface table counts
@@ -157,3 +162,10 @@ WP04, WP05 and WP08 see it.
    `assets/doc.txt` is missing, so all three surfaces refuse it, though its `expected.json` says it loads with no
    findings. This predates #554. **Routed to WP05** (WP01 review): its plant work adds the payload so the control is
    clean again, a golden row recorded as a fixed fixture defect, not a behaviour change (NFR-002).
+9. **A mapped file the load does not take** (WP02 review L3, WP11). A file a `files` rule maps can still be left
+   untaken by the store's load with no fault of its own: a `policy.yaml` the descriptor does not name, and an orphan
+   prompt fragment (which the registration then refuses as `prompt_fragment_invalid`). Today the store lists such a
+   file as not held with kind `UNMODELLED` and the reason `no pack file kind models this file`, which is false for it,
+   while validate mode judges it against its rule. A mapped file the load refused with a fault of its own is no longer
+   also listed as not held (WP11). **Routed to WP05**: its census decides whether such a file is held, refused or not
+   held, and with which reason; no planted or example pack holds one, so `HeldSetAgreementTest` does not meet it.
