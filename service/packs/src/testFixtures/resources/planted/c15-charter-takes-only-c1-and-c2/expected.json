@@ -3,8 +3,7 @@
     "C15"
   ],
   "proven_by": [
-    "packs:PackSchemasTest#theBundleLoadsAndEveryKindIsKnown",
-    "plant:charter-valid",
-    "plant:charter-invalid"
+    "packs:ProjectCharterYamlSchemaTest#theExampleCharterYamlValidates",
+    "packs:ProjectCharterYamlSchemaTest#absentIsAccepted"
   ]
 }

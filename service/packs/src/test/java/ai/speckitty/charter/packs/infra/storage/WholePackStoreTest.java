@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -687,7 +688,7 @@ class WholePackStoreTest {
             throws IOException {
         WholePackStore.LoadedPack loaded = store.load(payloadPack(host));
 
-        assertThat(loaded.notHeld()).noneMatch(ExcludedFile::isUnmodelled);
+        assertThat(loaded.notHeld()).noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED);
         assertThat(loaded.notHeld())
                 .extracting(ExcludedFile::file)
                 .containsExactly(

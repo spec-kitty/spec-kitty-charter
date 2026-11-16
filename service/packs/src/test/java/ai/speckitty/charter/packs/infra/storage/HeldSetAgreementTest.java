@@ -33,11 +33,18 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Validate mode and the store agree on what a pack holds (#554, open case 6, IC-10): over every planted pack (and each
  * descriptor-less plant again with a descriptor, as the golden judges it), every example pack and a pack that plants
  * every class of file, the files validate mode lists as not held equal the store's {@code notHeld()}, file for file,
- * with the same kind and reason, and validate mode warns {@code file_not_held} for each unmodelled one in the store's
+ * with the same kind and reason, and validate mode warns {@code file_not_held} for each of them in the store's
  * words. A retired file is on neither list.
  *
+ * <p>Scope: the planted packs, the example packs and one synthetic pack that plants every class of file. The scenario
+ * packs are left out: they are built inside Cucumber steps in {@code :deployable}, and no feature plants a nested shard,
+ * a {@code charter.yaml} or an excluded file.
+ *
  * <p>Two derivations are pinned here until WP05 replaces them with one census; then this test is anchored to the
- * golden's {@code file_not_held} diagnostics, since one derivation compared with itself proves nothing (FR-016).
+ * golden's {@code file_not_held} diagnostics, since one derivation compared with itself proves nothing (FR-016). A
+ * mapped file the load does not take and that carries no fault (a {@code policy.yaml} the descriptor does not name, an
+ * orphan prompt fragment) is still listed by the store as unmodelled while validate mode judges it; no subject here
+ * holds one, and WP05's census decides it (open case 9 of {@code docs/development/notes/pack-code-unification.md}).
  */
 @DisplayName("validate mode and the store list the same files as not held (#554, open case 6)")
 class HeldSetAgreementTest {
@@ -103,11 +110,11 @@ class HeldSetAgreementTest {
                 .allSatisfy(file -> assertThat(PackFileKind.bundled().classify(pack.getFileName() + "/" + file.path()))
                         .isNotInstanceOfAny(PackFileKind.Mapped.class, PackFileKind.Retired.class));
         assertThat(warnings(pack, subject.level()))
-                .as("%s: one file_not_held warning per unmodelled file, in the store's words", subject)
-                .containsExactlyElementsOf(validated.stream()
-                        .filter(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
-                        .map(NotHeldFile::finding)
-                        .toList());
+                .as(
+                        "%s: one file_not_held warning per not-held file, excluded or unmodelled, in the store's words",
+                        subject)
+                .containsExactlyInAnyOrderElementsOf(
+                        validated.stream().map(NotHeldFile::finding).toList());
     }
 
     @Test
@@ -115,10 +122,20 @@ class HeldSetAgreementTest {
             + " an excluded file, and one with an unmodelled file")
     void theSubjectsCoverBothKinds(@TempDir Path host) throws IOException {
         List<NotHeldFile> seen = new ArrayList<>();
+        int loaded = 0;
+        int copies = 0;
         for (Subject subject : subjects()) {
-            Path pack = subject.copy().apply(Files.createDirectories(host.resolve(String.valueOf(seen.size()))));
-            stored(pack).ifPresent(seen::addAll);
+            // Each subject in a directory of its own: a copy into an earlier subject's directory would merge the trees.
+            Path pack = subject.copy().apply(Files.createDirectories(host.resolve(String.valueOf(copies++))));
+            Optional<List<NotHeldFile>> stored = stored(pack);
+            if (stored.isPresent()) {
+                loaded++;
+                seen.addAll(stored.get());
+            }
         }
+        assertThat(loaded)
+                .as("the subjects the store loads, so that the comparison is not vacuous")
+                .isGreaterThan(20);
         assertThat(seen).extracting(NotHeldFile::kind).contains(NotHeldFile.Kind.EXCLUDED, NotHeldFile.Kind.UNMODELLED);
     }
 

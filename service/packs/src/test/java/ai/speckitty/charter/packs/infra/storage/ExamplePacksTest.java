@@ -8,6 +8,7 @@ import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
@@ -41,7 +42,14 @@ class ExamplePacksTest {
     @ParameterizedTest
     @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
     void everyExamplePackValidatesWithNoFinding(String name) {
-        assertThat(judge(name, ExamplePacks.pack(name)).findings()).as(name).isEmpty();
+        // A file the pack does not hold (an orientation README, an author's note) is a file_not_held warning, one for
+        // each file the store's load lists not held, and nothing else is found (#554, open case 6).
+        assertThat(judge(name, ExamplePacks.pack(name)).findings())
+                .as(name)
+                .containsExactlyElementsOf(new WholePackStore(new YamlSerializationStrategy())
+                        .load(ExamplePacks.pack(name)).notHeld().stream()
+                                .map(file -> file.asNotHeld().finding())
+                                .toList());
     }
 
     @ParameterizedTest
@@ -83,7 +91,7 @@ class ExamplePacksTest {
                 new WholePackStore(new YamlSerializationStrategy()).load(ExamplePacks.pack(name));
 
         assertThat(loaded.pack().violations()).as(name).isEmpty();
-        assertThat(loaded.notHeld()).as(name).noneMatch(WholePackWriteStore.ExcludedFile::isUnmodelled);
+        assertThat(loaded.notHeld()).as(name).noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED);
         assertThat(loaded.warnings()).as(name).isEmpty();
     }
 
@@ -130,7 +138,7 @@ class ExamplePacksTest {
             assertThat(file.reason()).startsWith("Author aid: Markdown that no files rule models");
         });
         assertThat(builtIn.notHeld())
-                .noneMatch(WholePackWriteStore.ExcludedFile::isUnmodelled)
+                .noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
                 .extracting(WholePackWriteStore.ExcludedFile::file)
                 .contains("missions/software-dev/templates/README.md");
         Path written = host.resolve("org-base");

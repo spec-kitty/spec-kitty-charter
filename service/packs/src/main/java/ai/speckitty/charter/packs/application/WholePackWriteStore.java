@@ -26,6 +26,9 @@ public interface WholePackWriteStore {
      * A file of a pack that is not pack content, so not held: an exclusion names it, or it is Markdown nothing models
      * (#451), or nothing models it at all (operator ruling Q1, #554). A retired file is never one: it is refused.
      *
+     * <p>It coexists with the domain's {@link NotHeldFile}, which validate mode lists ({@link #asNotHeld}), until WP12
+     * of #554 moves the registration onto the one read and deletes this record in its favour.
+     *
      * @param file the pack-relative path
      * @param kind why the file is not held, decided where the file is classified (#554, WP02 review L1)
      * @param reason the reviewable reason of the rule that excludes it, or {@value NotHeldFile#UNMODELLED_REASON}
@@ -68,18 +71,6 @@ public interface WholePackWriteStore {
          */
         public static ExcludedFile unmodelled(String file) {
             return new ExcludedFile(file, NotHeldFile.Kind.UNMODELLED, NotHeldFile.UNMODELLED_REASON);
-        }
-
-        /**
-         * Whether no pack file kind models this file, rather than a rule excluding it.
-         *
-         * @return true for a file of kind {@link NotHeldFile.Kind#UNMODELLED}
-         */
-        public boolean isUnmodelled() {
-            return switch (kind) {
-                case UNMODELLED -> true;
-                case EXCLUDED -> false;
-            };
         }
 
         /**

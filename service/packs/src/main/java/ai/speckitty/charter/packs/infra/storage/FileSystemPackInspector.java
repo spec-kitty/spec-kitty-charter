@@ -175,7 +175,19 @@ public final class FileSystemPackInspector implements PackInspector {
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
         if (scope == Scope.LOAD_PATH) {
-            return new PackContents(root, descriptor, shards, fragment, List.of(), List.of(), List.of(), List.of());
+            return new PackContents(
+                    root,
+                    descriptor,
+                    shards,
+                    fragment,
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    StepEnhancementFacts.none(),
+                    List.of(),
+                    List.of(),
+                    List.of());
         }
         FullRead full = new FullRead(
                 directory, name, shards.stream().map(FileRead::file).toList(), table);

@@ -43,6 +43,10 @@ class PackPolicyTest {
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
+                List.of(),
+                List.of(),
                 List.of());
     }
 
@@ -143,6 +147,10 @@ class PackPolicyTest {
                 List.of(shard),
                 fragment,
                 List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
                 List.of(),
                 List.of(),
                 List.of());

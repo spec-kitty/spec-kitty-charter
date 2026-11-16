@@ -4,10 +4,14 @@
   ],
   "findings": [
     {
-      "code": "file_not_held",
-      "severity": "warning",
-      "file": "drg/tactic.graph.yaml",
-      "place": []
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "tactic.graph.yaml",
+      "place": [
+        "nodes",
+        "0",
+        "urn"
+      ]
     }
   ]
 }

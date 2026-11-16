@@ -834,8 +834,11 @@ class FileSystemPackInspectorTest {
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
         // The five software-dev step prompts each declare an empty spdd:reasons-block slot (its text lives in the
-        // org-base example's prompt fragments), which raises no slot finding.
-        assertThat(verdict.findings()).isEmpty();
+        // org-base example's prompt fragments), which raises no slot finding. The one finding is the file_not_held
+        // warning of the templates' orientation README, which the pack does not hold (#554, open case 6).
+        assertThat(verdict.findings())
+                .extracting(PackFinding::code, PackFinding::file)
+                .containsExactly(tuple(PackFindingCode.FILE_NOT_HELD, "missions/software-dev/templates/README.md"));
         for (String step : List.of("implement", "plan", "review", "specify", "tasks")) {
             assertThat(builtIn.resolve("missions/software-dev/steps/" + step + ".prompt.md"))
                     .content(StandardCharsets.UTF_8)

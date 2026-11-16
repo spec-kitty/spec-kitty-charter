@@ -1,7 +1,13 @@
 {
   "example-packs/built-in" : {
     "validate" : {
-      "findings" : [ ]
+      "findings" : [ {
+        "code" : "file_not_held",
+        "severity" : "warning",
+        "file" : "missions/software-dev/templates/README.md",
+        "place" : [ ],
+        "detail" : "missions/software-dev/templates/README.md: not held (Orientation notes beside the mission templates they describe. Not pack content and not templates.)"
+      } ]
     },
     "registration" : {
       "accepted" : {
@@ -15,7 +21,13 @@
   },
   "example-packs/org-base" : {
     "validate" : {
-      "findings" : [ ]
+      "findings" : [ {
+        "code" : "file_not_held",
+        "severity" : "warning",
+        "file" : "docs/authoring-notes.md",
+        "place" : [ ],
+        "detail" : "docs/authoring-notes.md: not held (Author aid: Markdown that no files rule models (#451). Not pack content: not held, not served, not refused.)"
+      } ]
     },
     "registration" : {
       "accepted" : {
@@ -1376,11 +1388,11 @@
   "planted/c16-shard-edge-provenance" : {
     "validate" : {
       "findings" : [ {
-        "code" : "file_not_held",
-        "severity" : "warning",
-        "file" : "drg/tactic.graph.yaml",
-        "place" : [ ],
-        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+        "code" : "drg_schema_error",
+        "severity" : "blocking",
+        "file" : "tactic.graph.yaml",
+        "place" : [ "edges", "0" ],
+        "detail" : "qa/tactic.graph.yaml edge: unknown key 'provenance'"
       } ]
     },
     "registration" : {
@@ -1397,35 +1409,43 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "pack qa has no pack.yaml"
+        "detail" : "a graph document of qa cannot be read"
       }
     }
   },
   "planted/c16-shard-edge-provenance+pack.yaml" : {
     "validate" : {
       "findings" : [ {
+        "code" : "drg_schema_error",
+        "severity" : "blocking",
+        "file" : "tactic.graph.yaml",
+        "place" : [ "edges", "0" ],
+        "detail" : "qa/tactic.graph.yaml edge: unknown key 'provenance'"
+      }, {
         "code" : "org_fragment_missing",
         "severity" : "blocking",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
-      }, {
-        "code" : "file_not_held",
-        "severity" : "warning",
-        "file" : "drg/tactic.graph.yaml",
-        "place" : [ ],
-        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
-      "accepted" : {
-        "diagnostics" : [ {
-          "code" : "file_not_held",
-          "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: additionalProperties violated at /edges/0: undeclared key 'provenance'"
         } ]
       }
     },
-    "composeRead" : "readable"
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
   },
   "planted/c2-agent-nested-unknown-key" : {
     "validate" : {
@@ -1788,11 +1808,11 @@
   "planted/c4-shard-urn-prefix-differs-from-kind" : {
     "validate" : {
       "findings" : [ {
-        "code" : "file_not_held",
-        "severity" : "warning",
-        "file" : "drg/tactic.graph.yaml",
-        "place" : [ ],
-        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+        "code" : "drg_schema_error",
+        "severity" : "blocking",
+        "file" : "tactic.graph.yaml",
+        "place" : [ "nodes", "0", "urn" ],
+        "detail" : "qa/tactic.graph.yaml: node directive:X declares kind 'tactic'"
       } ]
     },
     "registration" : {
@@ -1809,35 +1829,43 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "pack qa has no pack.yaml"
+        "detail" : "a graph document of qa cannot be read"
       }
     }
   },
   "planted/c4-shard-urn-prefix-differs-from-kind+pack.yaml" : {
     "validate" : {
       "findings" : [ {
+        "code" : "drg_schema_error",
+        "severity" : "blocking",
+        "file" : "tactic.graph.yaml",
+        "place" : [ "nodes", "0", "urn" ],
+        "detail" : "qa/tactic.graph.yaml: node directive:X declares kind 'tactic'"
+      }, {
         "code" : "org_fragment_missing",
         "severity" : "blocking",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
-      }, {
-        "code" : "file_not_held",
-        "severity" : "warning",
-        "file" : "drg/tactic.graph.yaml",
-        "place" : [ ],
-        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
-      "accepted" : {
-        "diagnostics" : [ {
-          "code" : "file_not_held",
-          "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: pattern violated at /nodes/0/urn"
         } ]
       }
     },
-    "composeRead" : "readable"
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
   },
   "planted/c5-fragment-kind-actions-is-accepted" : {
     "validate" : {
