@@ -136,8 +136,9 @@ shape.
   warning and is ignored (Q1). The warning names the file, so the author sees it.
 - **A pack whose only faults are unmodelled files.** It is now accepted. Scenarios that used `notes.txt` as a
   convenient second fault are rewritten to use a fault that still refuses.
-- **The reserved shard.** Validate mode reports it as `drg_schema_error`, and registration as `reserved_shard`. Each
-  surface keeps its current code.
+- **The reserved shard.** Validate mode reports it as `drg_schema_error` today, and registration as `reserved_shard`.
+  Under R2 it answers one code on both surfaces, as the R2 table decides (`reserved_shard`, the specific code).
+  Validate mode's change goes under `### Breaking`.
 - **A pack the inspector cannot read.** It is still `unreadable` or `pack_unreadable`, as today.
 - **Slice F's endpoint check.** If F has landed, the graph rule calls F's endpoint bridge, and
   `relationship_endpoint_not_allowed` is unchanged.
