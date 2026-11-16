@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -65,7 +66,7 @@ class NotHeldValidateTest {
         assertThat(alone.findings())
                 .as("the bare plant: valid, with the one warning")
                 .containsExactly(warning)
-                .noneMatch(finding -> finding.severity() == PackFindingCode.Severity.BLOCKING);
+                .noneMatch(finding -> finding.severity() == Severity.VIOLATION);
 
         Path described = PlantedPacks.copyOf(plant, host.resolve("described"));
         Files.writeString(described.resolve(PACK_YAML), DESCRIPTOR, StandardCharsets.UTF_8);

@@ -223,7 +223,7 @@ final class SurfaceAnswers {
                     .validate(new PackRoot(subject.name(), subject.configuredLevel(), pack.toString()))
                     .findings()) {
                 Map<String, Object> row = new LinkedHashMap<>();
-                row.put("code", finding.code().name().toLowerCase(Locale.ROOT));
+                row.put("code", finding.code().value());
                 row.put("severity", finding.severity().name().toLowerCase(Locale.ROOT));
                 row.put("file", normaliser.apply(finding.file()));
                 row.put("place", List.copyOf(finding.place()));

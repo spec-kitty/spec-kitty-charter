@@ -6,7 +6,7 @@
   "findings": [
     {
       "code": "drg_schema_error",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "tactic.graph.yaml",
       "place": [
         "nodes",

@@ -145,7 +145,7 @@ class OrgCharterRetirementTest {
                     .findings();
 
             assertThat(findings)
-                    .filteredOn(finding -> finding.code() == PackFindingCode.PACK_UNREADABLE)
+                    .filteredOn(finding -> PackFindingCode.PACK_UNREADABLE.equals(finding.code()))
                     .singleElement()
                     .satisfies(finding -> {
                         assertThat(finding.file()).isEqualTo("pack.yaml");

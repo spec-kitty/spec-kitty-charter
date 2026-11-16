@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -129,7 +130,7 @@ class TemplateStoreTest {
 
         PackElementViolation duplicate = new PackElementViolation(
                 "templates/plan/x.md",
-                "template",
+                FilesystemPackStore.TEMPLATE,
                 "template plan/x.md is already read from missions/plan/templates/x.md");
         assertThat(read.violations()).containsExactly(duplicate);
         assertThat(read.templates())
@@ -170,8 +171,8 @@ class TemplateStoreTest {
                 .extracting(FilesystemPackStore.TemplateFile::path)
                 .containsExactly("inside.md", "real.md");
         assertThat(read.violations())
-                .containsExactly(
-                        new PackElementViolation("templates/leak.md", "unreadable", "the file leaves the pack"));
+                .containsExactly(new PackElementViolation(
+                        "templates/leak.md", StorageCodes.UNREADABLE, "the file leaves the pack"));
     }
 
     /**

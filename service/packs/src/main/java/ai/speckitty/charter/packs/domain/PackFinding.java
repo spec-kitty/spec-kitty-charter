@@ -1,18 +1,20 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * One thing {@link PackPolicy} found in a pack.
  *
- * @param code what was found
+ * @param code what was found: a {@link PackCodes} constant, or one of {@link PackFindingCode}'s staging view
  * @param file the pack-relative path of the file the finding belongs to
  * @param place the pointer segments inside the file; empty for the whole file
  * @param detail a sentence for the reader; it names pack-relative paths only
  */
-public record PackFinding(PackFindingCode code, String file, List<String> place, String detail) {
+public record PackFinding(ReasonCode code, String file, List<String> place, String detail) {
     /**
      * Checks the fields and copies the place.
      *
@@ -33,7 +35,7 @@ public record PackFinding(PackFindingCode code, String file, List<String> place,
      *
      * @return the severity
      */
-    public PackFindingCode.Severity severity() {
+    public Severity severity() {
         return code.severity();
     }
 
@@ -44,7 +46,7 @@ public record PackFinding(PackFindingCode code, String file, List<String> place,
      * @throws IllegalStateException when the code has no wire refusal
      */
     public CharterRefusal toRefusal() {
-        return new CharterRefusal(code.refusal(), detail);
+        return new CharterRefusal(PackFindingCode.refusal(code), detail);
     }
 
     /**
@@ -54,6 +56,10 @@ public record PackFinding(PackFindingCode code, String file, List<String> place,
      * @throws IllegalStateException when the code has no wire diagnostic
      */
     public Diagnostic toDiagnostic() {
-        return new Diagnostic(code.diagnostic(), detail);
+        return new Diagnostic(
+                PackFindingCode.diagnostic(code)
+                        .orElseThrow(
+                                () -> new IllegalStateException(code.value() + " has no diagnostic on the load path")),
+                detail);
     }
 }

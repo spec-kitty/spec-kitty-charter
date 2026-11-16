@@ -5,7 +5,9 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -15,6 +17,7 @@ import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -257,8 +260,15 @@ final class FilesystemPackStore {
         }
     }
 
-    /** The kind of a violation of a companion the store refuses; the load seat reads it back to remap it. */
-    static final String COMPANION_KIND = "companion";
+    /** The code of a violation of a companion the store refuses; the load seat reads it back to remap it. */
+    static final ReasonCode COMPANION_KIND = StorageCodes.COMPANION;
+
+    // Staging (#554 WP04): the catch-all kinds of the read, kept for one commit so that the retyping alone leaves every
+    // surface's answer as it was; R2 replaces each with its specific code in the next commit.
+    static final ReasonCode SCHEMA = ReasonCode.of("schema");
+    static final ReasonCode DOMAIN = ReasonCode.of("domain");
+    static final ReasonCode REFERENCE = ReasonCode.of("reference");
+    static final ReasonCode TEMPLATE = ReasonCode.of(ArtifactKind.TEMPLATE.token());
 
     private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
@@ -403,7 +413,7 @@ final class FilesystemPackStore {
                 try {
                     assetFiles.add(new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes)));
                 } catch (ConstraintBreachException breach) {
-                    violations.add(new PackElementViolation(file, "domain", String.valueOf(breach.getMessage())));
+                    violations.add(new PackElementViolation(file, DOMAIN, String.valueOf(breach.getMessage())));
                 }
             });
         }
@@ -481,7 +491,7 @@ final class FilesystemPackStore {
                     Optional<String> mismatch =
                             PresetFiles.stemMismatch(file, good.value().id());
                     if (mismatch.isPresent()) {
-                        violations.add(new PackElementViolation(file, "schema", mismatch.get()));
+                        violations.add(new PackElementViolation(file, SCHEMA, mismatch.get()));
                     } else {
                         out.add(new Stored<>(file, good.value()));
                     }
@@ -510,8 +520,7 @@ final class FilesystemPackStore {
         for (SidecarPayloads.Refused one : SidecarPayloads.refused(
                 read, assetFiles.stream().map(AssetFile::path).toList())) {
             refused.add(one.file());
-            violations.add(new PackElementViolation(
-                    one.file(), AssetBinding.INSTANCE.kind().token(), one.reason()));
+            violations.add(new PackElementViolation(one.file(), PackCodes.ASSET, one.reason()));
         }
         List<Stored<?>> kept = new ArrayList<>(sidecars);
         kept.removeIf(stored -> refused.contains(stored.file()));
@@ -533,7 +542,7 @@ final class FilesystemPackStore {
             String claimant = readFrom.get(id);
             if (claimant != null) {
                 violations.add(new PackElementViolation(
-                        file, ArtifactKind.TEMPLATE.token(), "template " + id + " is already read from " + claimant));
+                        file, TEMPLATE, "template " + id + " is already read from " + claimant));
             } else {
                 readPayload(directory, file, violations).ifPresent(bytes -> {
                     readFrom.put(id, file);
@@ -550,7 +559,8 @@ final class FilesystemPackStore {
      */
     private static List<PackElementViolation> retiredViolations(PackFileSet.Listing listing) {
         List<PackElementViolation> out = new ArrayList<>();
-        listing.retired().forEach((file, reason) -> out.add(new PackElementViolation(file, "retired", reason)));
+        listing.retired()
+                .forEach((file, reason) -> out.add(new PackElementViolation(file, StorageCodes.RETIRED, reason)));
         return out;
     }
 
@@ -564,7 +574,7 @@ final class FilesystemPackStore {
                 directory,
                 file,
                 payloadRead,
-                reason -> violations.add(new PackElementViolation(file, "unreadable", reason)));
+                reason -> violations.add(new PackElementViolation(file, StorageCodes.UNREADABLE, reason)));
     }
 
     /**
@@ -741,7 +751,7 @@ final class FilesystemPackStore {
         return fragment.nodes().stream()
                 .flatMap(node -> Paths.bodyPathEscape(node.id(), node.bodyPath()).stream())
                 .findFirst()
-                .map(reason -> new PackElementViolation(document.file(), RefusalCode.DRG_SCHEMA_ERROR.token(), reason))
+                .map(reason -> new PackElementViolation(document.file(), PackCodes.DRG_SCHEMA_ERROR, reason))
                 .stream()
                 .toList();
     }
@@ -780,13 +790,13 @@ final class FilesystemPackStore {
                     // The stem rule validate mode applies too (FileStems): a misnamed file is refused, not loaded.
                     Optional<String> misnamed = FileStems.mismatch(kind, file, kind.idOf(good.value()));
                     if (misnamed.isPresent()) {
-                        violations.add(new PackElementViolation(file, "schema", misnamed.get()));
+                        violations.add(new PackElementViolation(file, SCHEMA, misnamed.get()));
                         continue;
                     }
                     Optional<String> unnamed =
                             missingNamedFile(directory, file, kind.namedFiles(good.value()), companionRules.table());
                     if (unnamed.isPresent()) {
-                        violations.add(new PackElementViolation(file, "reference", unnamed.get()));
+                        violations.add(new PackElementViolation(file, REFERENCE, unnamed.get()));
                         continue;
                     }
                     withCompanions(companionRules, directory, file, kind, good.value(), violations, claimed)
@@ -1395,11 +1405,11 @@ final class FilesystemPackStore {
     static List<PackElementViolation> violationsOf(FileRead.Unreadable<?> bad) {
         if (bad.parse() != null) {
             return List.of(new PackElementViolation(
-                    bad.file(), "unreadable", bad.parse().firstLine()));
+                    bad.file(), StorageCodes.UNREADABLE, bad.parse().firstLine()));
         }
         List<PackElementViolation> out = new ArrayList<>();
         for (SchemaViolation v : bad.violations()) {
-            out.add(new PackElementViolation(bad.file(), "schema", schemaReason(v)));
+            out.add(new PackElementViolation(bad.file(), SCHEMA, schemaReason(v)));
         }
         return out;
     }

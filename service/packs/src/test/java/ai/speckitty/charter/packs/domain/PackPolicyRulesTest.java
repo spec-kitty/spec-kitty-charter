@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -79,7 +80,7 @@ class PackPolicyRulesTest {
 
     private static List<PackFinding> judge(PackContents contents) {
         return PackPolicy.judge(contents).findings().stream()
-                .filter(f -> f.code() != PackFindingCode.PACK_LEVEL_MISSING)
+                .filter(f -> !PackFindingCode.PACK_LEVEL_MISSING.equals(f.code()))
                 .toList();
     }
 
@@ -95,7 +96,7 @@ class PackPolicyRulesTest {
                         "pack.yaml",
                         List.of("requires_core"),
                         "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test
@@ -180,16 +181,16 @@ class PackPolicyRulesTest {
                 List.of(),
                 List.of(),
                 List.of());
-        assertThat(judge(contents)).noneMatch(f -> f.code() == PackFindingCode.REQUIRES_CORE_INVALID);
+        assertThat(judge(contents)).noneMatch(f -> PackFindingCode.REQUIRES_CORE_INVALID.equals(f.code()));
     }
 
     // ---- pack_unknown_key: retired (ADR-0036 decision 3) ----------------------------------------------
 
     @Test
     void theUnknownKeyCodeIsRetiredFromTheFindingsAndTheDiagnostics() {
-        assertThat(PackFindingCode.values()).extracting(PackFindingCode::name).doesNotContain("PACK_UNKNOWN_KEY");
         assertThat(Diagnostic.Code.values()).extracting(Diagnostic.Code::name).doesNotContain("PACK_UNKNOWN_KEY");
-        assertThat(PackFindingCode.PACK_LEVEL_MISSING.diagnostic()).isEqualTo(Diagnostic.Code.PACK_LEVEL_MISSING);
+        assertThat(PackFindingCode.diagnostic(PackFindingCode.PACK_LEVEL_MISSING))
+                .contains(Diagnostic.Code.PACK_LEVEL_MISSING);
     }
 
     @Test
@@ -251,7 +252,7 @@ class PackPolicyRulesTest {
 
     private static List<PackFinding> fragmentFindings(PackContents contents) {
         return PackPolicy.judge(contents).findings().stream()
-                .filter(f -> f.code() == PackFindingCode.ORG_FRAGMENT_MISSING)
+                .filter(f -> PackFindingCode.ORG_FRAGMENT_MISSING.equals(f.code()))
                 .toList();
     }
 
@@ -267,7 +268,7 @@ class PackPolicyRulesTest {
                         "pack.yaml",
                         List.of(),
                         "org pack lonely has no drg/fragment.yaml"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
         assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(contents))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
@@ -369,11 +370,11 @@ class PackPolicyRulesTest {
 
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DUPLICATE_STEP_ID,
+                        PackCodes.DUPLICATE_STEP_ID,
                         TYPE,
                         List.of("steps", "0", "substeps", "2", "id"),
                         TYPE + ": substep id 'a' is declared more than once in the step 's'"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test
@@ -407,7 +408,7 @@ class PackPolicyRulesTest {
         assertThat(PackPolicy.substepIdViolations(type(TYPE, "a", "b", "a")))
                 .containsExactly(new PackElementViolation(
                         TYPE,
-                        "duplicate_step_id",
+                        PackCodes.DUPLICATE_STEP_ID,
                         TYPE + ": substep id 'a' is declared more than once in the step 's'"));
         assertThat(PackPolicy.substepIdViolations(type(TYPE, "a", "b"))).isEmpty();
     }
@@ -430,12 +431,12 @@ class PackPolicyRulesTest {
 
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DUPLICATE_ARTIFACT_ID,
+                        PackCodes.DUPLICATE_ARTIFACT_ID,
                         "directives/z.directive.yaml",
                         List.of(),
                         "directives/z.directive.yaml: directive id 'D1' is already declared in"
                                 + " directives/a.directive.yaml"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test
@@ -470,7 +471,7 @@ class PackPolicyRulesTest {
 
     private static PackFinding duplicate(String file, String owner) {
         return new PackFinding(
-                PackFindingCode.DUPLICATE_ARTIFACT_ID,
+                PackCodes.DUPLICATE_ARTIFACT_ID,
                 file,
                 List.of(),
                 file + ": styleguide id 'x' is already declared in " + owner);
@@ -586,7 +587,7 @@ class PackPolicyRulesTest {
                         MANIFEST,
                         List.of(),
                         MANIFEST + ": asset path '" + path + "' escapes the pack's assets/ root"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test
@@ -651,7 +652,7 @@ class PackPolicyRulesTest {
                 boolean escapes = Boolean.parseBoolean(line.substring(tab + 1));
                 rows++;
                 boolean found = judge(withAssets(asset(path, "image/png", true))).stream()
-                        .anyMatch(f -> f.code() == PackFindingCode.ASSET_PATH_ESCAPE);
+                        .anyMatch(f -> PackFindingCode.ASSET_PATH_ESCAPE.equals(f.code()));
                 if (found != escapes) {
                     wrong.add(line);
                 }
@@ -686,7 +687,7 @@ class PackPolicyRulesTest {
                         MANIFEST,
                         List.of(),
                         MANIFEST + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test
@@ -764,8 +765,8 @@ class PackPolicyRulesTest {
         assertThat(PackPolicy.judge(contents).findings())
                 .extracting(PackFinding::code)
                 .contains(
-                        PackFindingCode.DUPLICATE_STEP_ID,
-                        PackFindingCode.DUPLICATE_ARTIFACT_ID,
+                        PackCodes.DUPLICATE_STEP_ID,
+                        PackCodes.DUPLICATE_ARTIFACT_ID,
                         PackFindingCode.ASSET_PATH_ESCAPE);
     }
 }

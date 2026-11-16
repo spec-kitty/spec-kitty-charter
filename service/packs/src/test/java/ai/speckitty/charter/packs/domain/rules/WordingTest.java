@@ -2,6 +2,8 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -54,12 +56,12 @@ class WordingTest {
     @Test
     void theCodeFollowsTheFileKind() {
         assertThat(code(PACK_YAML)).isEqualTo(PackFindingCode.PACK_UNREADABLE);
-        assertThat(code(SHARD)).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
-        assertThat(code(FRAGMENT)).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+        assertThat(code(SHARD)).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
+        assertThat(code(FRAGMENT)).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
         assertThat(code("tactics/x.tactic.yaml")).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
     }
 
-    private static PackFindingCode code(String file) {
+    private static ReasonCode code(String file) {
         List<PackFinding> findings = Wording.schemaFindings("qa", List.of(typeAt(file, "array", "object")));
         assertThat(findings).hasSize(1);
         assertThat(findings.get(0).file()).isEqualTo(file);
@@ -75,7 +77,7 @@ class WordingTest {
                 new FileRead.Unreadable<>(SHARD, new ParseFailure(SHARD, "while parsing a block mapping"), List.of()));
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of(),
                         "qa/tactic.graph.yaml is not valid YAML: while parsing a block mapping"));
@@ -88,7 +90,7 @@ class WordingTest {
                         new FileRead.Unreadable<>(
                                 FRAGMENT, new ParseFailure(FRAGMENT, "while scanning a quoted"), List.of())))
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         FRAGMENT,
                         List.of(),
                         "qa/drg/fragment.yaml is not valid YAML: while scanning a quoted"));
@@ -141,10 +143,7 @@ class WordingTest {
                         List.of(violation(SHARD, List.of(), "additionalProperties", "surprise", null, Map.of()))));
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
-                        SHARD,
-                        List.of(),
-                        "qa/tactic.graph.yaml: unknown key 'surprise'"));
+                        PackCodes.DRG_SCHEMA_ERROR, SHARD, List.of(), "qa/tactic.graph.yaml: unknown key 'surprise'"));
     }
 
     // ---- type ----------------------------------------------------------------------------------

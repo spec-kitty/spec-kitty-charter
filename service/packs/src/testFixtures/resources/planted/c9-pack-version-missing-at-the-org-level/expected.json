@@ -7,7 +7,7 @@
   "findings": [
     {
       "code": "pack_unreadable",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "pack.yaml",
       "place": []
     }

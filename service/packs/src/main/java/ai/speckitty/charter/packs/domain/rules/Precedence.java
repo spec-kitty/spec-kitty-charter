@@ -6,8 +6,8 @@ import static ai.speckitty.charter.packs.domain.rules.Paths.FRAGMENT;
 import static ai.speckitty.charter.packs.domain.rules.Paths.PACK_YAML;
 import static ai.speckitty.charter.packs.domain.rules.Paths.isFragment;
 
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -43,14 +43,14 @@ public final class Precedence {
      * @param packWide the codes of the rules that look at the pack as a whole
      * @return the order
      */
-    public static Comparator<PackFinding> comparator(Set<PackFindingCode> packWide) {
-        Set<PackFindingCode> wide = Set.copyOf(packWide);
+    public static Comparator<PackFinding> comparator(Set<ReasonCode> packWide) {
+        Set<ReasonCode> wide = Set.copyOf(packWide);
         return Comparator.<PackFinding>comparingInt(finding -> group(wide, finding))
                 .thenComparing(PackFinding::file, Precedence::comparePaths)
                 .thenComparing((a, b) -> comparePlaces(a.file(), a.place(), b.place()));
     }
 
-    private static int group(Set<PackFindingCode> packWide, PackFinding finding) {
+    private static int group(Set<ReasonCode> packWide, PackFinding finding) {
         if (packWide.contains(finding.code())) {
             return 4;
         }

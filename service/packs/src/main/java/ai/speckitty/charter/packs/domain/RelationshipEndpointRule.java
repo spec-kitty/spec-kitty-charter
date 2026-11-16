@@ -199,7 +199,12 @@ public final class RelationshipEndpointRule {
         for (Edge edge : edges) {
             refusal(edge, scope)
                     .ifPresent(refused -> (CODE.equals(refused.code()) ? table : sources)
-                            .add(new PackElementViolation(edge.file(), refused.code(), refused.reason())));
+                            .add(new PackElementViolation(
+                                    edge.file(),
+                                    CODE.equals(refused.code())
+                                            ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
+                                            : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+                                    refused.reason())));
         }
         List<PackElementViolation> out = new ArrayList<>(sources);
         out.addAll(table);

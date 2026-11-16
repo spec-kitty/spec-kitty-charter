@@ -6,6 +6,8 @@ import static ai.speckitty.charter.packs.domain.rules.GraphBinding.emptyId;
 import static ai.speckitty.charter.packs.domain.rules.Paths.PACK_YAML;
 import static ai.speckitty.charter.packs.domain.rules.Paths.isFragment;
 
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -161,15 +163,15 @@ public final class Wording {
         };
     }
 
-    private static PackFindingCode codeFor(String file) {
+    private static ReasonCode codeFor(String file) {
         if (PACK_YAML.equals(file)) {
             return PackFindingCode.PACK_UNREADABLE;
         }
         if (isPromptFragment(file)) {
-            return PackFindingCode.PROMPT_FRAGMENT_INVALID;
+            return PackCodes.PROMPT_FRAGMENT_INVALID;
         }
         if (file.endsWith(".graph.yaml") || isFragment(file)) {
-            return PackFindingCode.DRG_SCHEMA_ERROR;
+            return PackCodes.DRG_SCHEMA_ERROR;
         }
         return PackFindingCode.ARTIFACT_SCHEMA_ERROR;
     }

@@ -1,10 +1,10 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Companion;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Edge;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Enhancement;
@@ -230,8 +230,8 @@ class PackPolicyStepEnhancementTest {
 
         assertThat(findings).hasSize(1);
         PackFinding finding = findings.getFirst();
-        assertThat(finding.code()).isEqualTo(PackFindingCode.PROMPT_FRAGMENT_INVALID);
-        assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_FRAGMENT_INVALID);
+        assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
         assertThat(finding.file()).isEqualTo(fileOf(fault));
         assertThat(finding.place()).isEmpty();
         assertThat(finding.detail()).startsWith("enhancer/" + fileOf(fault) + ": ");
@@ -251,15 +251,8 @@ class PackPolicyStepEnhancementTest {
 
     @Test
     void theCodeProjectsOntoTheRefusalCodeOfTheSameToken() {
-        assertThat(PackFindingCode.PROMPT_FRAGMENT_INVALID.refusal()).isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID);
-        assertThat(PackPolicy.violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID))
-                .isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID.token());
-    }
-
-    @Test
-    void aCodeWithoutAViolationKindIsRefused() {
-        assertThatThrownBy(() -> PackPolicy.violationKind(PackFindingCode.PACK_UNREADABLE))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("PACK_UNREADABLE");
+        assertThat(PackFindingCode.refusal(PackCodes.PROMPT_FRAGMENT_INVALID))
+                .isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID);
+        assertThat(PackCodes.PROMPT_FRAGMENT_INVALID.value()).isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID.token());
     }
 }

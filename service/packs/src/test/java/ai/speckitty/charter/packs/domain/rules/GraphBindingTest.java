@@ -8,11 +8,11 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import java.util.List;
 import java.util.Optional;
@@ -74,7 +74,7 @@ class GraphBindingTest {
         assertThat(build.graph().relationships()).hasSize(1);
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of("edges", "1"),
                         "qa/tactic.graph.yaml: unknown relation 'befriends'"));
@@ -101,7 +101,7 @@ class GraphBindingTest {
         assertThat(build.graph().tensions()).isEmpty();
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        PackCodes.DRG_SCHEMA_ERROR,
                         REGISTERED,
                         List.of("edges", "0"),
                         "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
@@ -119,7 +119,7 @@ class GraphBindingTest {
 
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings()).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
+            assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
             assertThat(finding.file()).isEqualTo(REGISTERED);
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).startsWith("main/registered.graph.yaml: ");

@@ -75,7 +75,7 @@ class GuardAndLifecycleLoadTest {
     private static PackElementViolation lifecycleLoses(String guard) {
         return new PackElementViolation(
                 LIFECYCLE,
-                "reference",
+                FilesystemPackStore.REFERENCE,
                 "lifecycle 'work-package' transition in_progress -> for_review names guard '" + guard
                         + "', which the pack does not hold");
     }
@@ -200,12 +200,12 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         new PackElementViolation(
                                 ASSET_GUARD,
-                                "reference",
+                                FilesystemPackStore.REFERENCE,
                                 "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack does"
                                         + " not hold"),
                         new PackElementViolation(
                                 LIFECYCLE,
-                                "reference",
+                                FilesystemPackStore.REFERENCE,
                                 "lifecycle 'work-package' transition in_progress -> for_review names guard"
                                         + " 'traceability-ready', which the pack does not hold"));
     }
@@ -224,7 +224,7 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         new PackElementViolation(
                                 ASSET_GUARD,
-                                "reference",
+                                FilesystemPackStore.REFERENCE,
                                 "guard 'traceability-ready' is implemented_by asset:notes, which declares no executable"
                                         + " block"),
                         lifecycleLoses("traceability-ready"));
@@ -244,7 +244,7 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         new PackElementViolation(
                                 ASSET_GUARD,
-                                "reference",
+                                FilesystemPackStore.REFERENCE,
                                 "guard 'traceability-ready' is implemented_by qa::asset:qa-traceability-lint, a"
                                         + " pack-qualified reference; it is refused until the pack dependency closure"
                                         + " resolves it"),
@@ -264,7 +264,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         LIFECYCLE,
-                        "reference",
+                        FilesystemPackStore.REFERENCE,
                         "lifecycle 'work-package' transition in_progress -> for_review names guard qa::guard:other,"
                                 + " a pack-qualified reference; it is refused until the pack dependency closure"
                                 + " resolves it"));
@@ -304,7 +304,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         LIFECYCLE,
-                        "reference",
+                        FilesystemPackStore.REFERENCE,
                         "lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
                                 + " 'traceability-ready' does not fit its config_schema: required at /"));
     }
@@ -325,7 +325,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         LIFECYCLE,
-                        "reference",
+                        FilesystemPackStore.REFERENCE,
                         "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready' declares no"
                                 + " config_schema, so its config cannot be checked"));
     }
@@ -507,7 +507,7 @@ class GuardAndLifecycleLoadTest {
     private static PackElementViolation guardLosesItsAsset() {
         return new PackElementViolation(
                 ASSET_GUARD,
-                "reference",
+                FilesystemPackStore.REFERENCE,
                 "guard 'traceability-ready' is implemented_by asset:carrier-lint, which the pack does not hold");
     }
 

@@ -7,9 +7,10 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
@@ -52,8 +53,8 @@ class EdgeEndpointPlantsTest {
         List<PackFinding> findings = validate(pack);
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
-            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
+            assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(document);
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).endsWith(": " + reason);

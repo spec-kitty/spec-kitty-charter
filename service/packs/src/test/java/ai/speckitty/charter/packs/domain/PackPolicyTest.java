@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import java.util.List;
@@ -80,7 +81,7 @@ class PackPolicyTest {
                         "pack.yaml",
                         List.of(),
                         "Pack 'rogue' is configured as org but declares pack_level built-in"));
-        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test

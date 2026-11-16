@@ -7,7 +7,7 @@
   "findings": [
     {
       "code": "drg_schema_error",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "drg/fragment.yaml",
       "place": [
         "edges",

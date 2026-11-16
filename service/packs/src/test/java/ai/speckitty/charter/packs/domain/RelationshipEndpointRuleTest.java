@@ -8,12 +8,12 @@ import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -63,8 +63,8 @@ class RelationshipEndpointRuleTest {
                 PackPolicy.judge(validated(source, relation, target)).findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
-            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
+            assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(FILE);
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).startsWith("main/" + FILE + ": ").contains(relation);
@@ -122,7 +122,7 @@ class RelationshipEndpointRuleTest {
 
         assertThat(findings)
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR));
+                .satisfies(finding -> assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR));
     }
 
     @Test
@@ -131,8 +131,8 @@ class RelationshipEndpointRuleTest {
         assertThat(PackPolicy.judge(validated("step_enhancement:ghost", "enhances", "directive:D"))
                         .findings())
                 .singleElement()
-                .satisfies(finding ->
-                        assertThat(finding.code()).isEqualTo(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED));
+                .satisfies(
+                        finding -> assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED));
     }
 
     @Test
@@ -153,7 +153,7 @@ class RelationshipEndpointRuleTest {
 
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings()).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
+            assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
             assertThat(finding.place()).containsExactly("edges", "0");
         });
     }
@@ -189,8 +189,8 @@ class RelationshipEndpointRuleTest {
                 .findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
-            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
+            assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(FILE);
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail())
@@ -203,10 +203,7 @@ class RelationshipEndpointRuleTest {
 
     @Test
     void theFindingCodeAndTheViolationCodeAreOneToken() {
-        assertThat(PackPolicy.violationKind(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED))
-                .isEqualTo(RelationshipEndpointRule.CODE);
-        assertThat(PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED.name().toLowerCase(Locale.ROOT))
-                .isEqualTo(RelationshipEndpointRule.CODE);
+        assertThat(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED.value()).isEqualTo(RelationshipEndpointRule.CODE);
     }
 
     private static PackContents validated(String source, String relation, String target) {
@@ -327,8 +324,8 @@ class RelationshipEndpointRuleTest {
                 .findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
-            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.code()).isEqualTo(PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
+            assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(FILE);
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).startsWith("main/" + FILE + ": ").contains("template:t.md");
@@ -340,9 +337,7 @@ class RelationshipEndpointRuleTest {
 
     @Test
     void theSourceRulesFindingCodeAndViolationCodeAreOneToken() {
-        assertThat(PackPolicy.violationKind(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE))
-                .isEqualTo(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
-        assertThat(PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE.name().toLowerCase(Locale.ROOT))
+        assertThat(PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE.value())
                 .isEqualTo(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
     }
 }

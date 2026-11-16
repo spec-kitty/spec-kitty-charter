@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.ClassifiedFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
@@ -91,7 +92,7 @@ class PackValidationTest {
         assertThat(verdict.files()).extracting(ClassifiedFile::file).containsExactly("pack.yaml");
         assertThat(verdict.findings())
                 .containsExactly(new PackFinding(
-                        PackFindingCode.DUPLICATE_STEP_ID,
+                        PackCodes.DUPLICATE_STEP_ID,
                         "rx.mission-type.yaml",
                         List.of("steps", "0", "substeps", "2", "id"),
                         "rx.mission-type.yaml: substep id 'a' is declared more than once in the step 's'"));
@@ -138,17 +139,11 @@ class PackValidationTest {
                 .extracting(PackFinding::code, PackFinding::file, PackFinding::severity)
                 .containsExactlyInAnyOrder(
                         org.assertj.core.api.Assertions.tuple(
-                                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                                "tactics/a.tactic.yaml",
-                                PackFindingCode.Severity.BLOCKING),
+                                PackFindingCode.ARTIFACT_SCHEMA_ERROR, "tactics/a.tactic.yaml", Severity.VIOLATION),
                         org.assertj.core.api.Assertions.tuple(
-                                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                                "tactics/b.tactic.yaml",
-                                PackFindingCode.Severity.BLOCKING),
+                                PackFindingCode.ARTIFACT_SCHEMA_ERROR, "tactics/b.tactic.yaml", Severity.VIOLATION),
                         org.assertj.core.api.Assertions.tuple(
-                                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                                "org-charter.yaml",
-                                PackFindingCode.Severity.BLOCKING));
+                                PackFindingCode.ARTIFACT_SCHEMA_ERROR, "org-charter.yaml", Severity.VIOLATION));
         assertThat(findings)
                 .extracting(PackFinding::detail)
                 .contains(

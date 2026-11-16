@@ -199,7 +199,7 @@ class CharterWiringTest {
         runner.run(context -> assertThat(context.getBean(PackValidation.class)
                         .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), dir.toString()))
                         .findings())
-                .extracting(f -> f.code().name())
-                .containsExactly("PACK_UNREADABLE"));
+                .extracting(f -> f.code().value())
+                .containsExactly("pack_unreadable"));
     }
 }

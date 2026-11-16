@@ -14,6 +14,8 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
@@ -30,6 +32,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents;
@@ -41,7 +44,6 @@ import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -818,8 +820,8 @@ public final class DomainRepositoryService
         Pack assembled = assemble(pack, read, graphs);
         if (!assembled.violations().isEmpty()) {
             PackElementViolation first = assembled.violations().getFirst();
-            String reason = RelationshipEndpointRule.CODE.equals(first.kind())
-                    ? first.kind() + ": " + first.reason()
+            String reason = PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED.equals(first.kind())
+                    ? first.kind().value() + ": " + first.reason()
                     : first.reason();
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
@@ -918,7 +920,8 @@ public final class DomainRepositoryService
             try {
                 templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                templateViolations.add(new PackElementViolation(place, "domain", String.valueOf(breach.getMessage())));
+                templateViolations.add(new PackElementViolation(
+                        place, FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
             }
         }
         Set<String> namable = MissionTemplates.namable(templates.values());
@@ -936,8 +939,8 @@ public final class DomainRepositoryService
             try {
                 builder.preset(PresetFiles.toPreset(stored.dso()));
             } catch (ConstraintBreachException breach) {
-                builder.violation(
-                        new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
+                builder.violation(new PackElementViolation(
+                        stored.file(), FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
             }
         }
         // #260: the document's parts are the read model's; one the domain refuses is a violation, never a failed load.
@@ -945,8 +948,8 @@ public final class DomainRepositoryService
             try {
                 builder.document(PackDocumentMarkdown.toDomain(stored.dso()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(
-                        new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
+                builder.violation(new PackElementViolation(
+                        stored.file(), FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
             }
         });
         return builder;
@@ -1022,7 +1025,7 @@ public final class DomainRepositoryService
             return List.of();
         }
         return MissionStepLinkRule.judge(read.descriptor().name(), heldTypes(read, places), edgesOf(graphs)).stream()
-                .map(fault -> new PackElementViolation(fault.file(), MissionStepLinkRule.CODE, fault.reason()))
+                .map(fault -> new PackElementViolation(fault.file(), PackCodes.MISSION_STEP_UNLINKED, fault.reason()))
                 .toList();
     }
 
@@ -1041,7 +1044,12 @@ public final class DomainRepositoryService
         places.keySet().forEach(urn -> held.add(urn.toString()));
         return SubstepDelegationRule.judge(read.descriptor().name(), heldTypes(read, places), held, edgesOf(graphs))
                 .stream()
-                .map(fault -> new PackElementViolation(fault.file(), fault.code(), fault.reason()))
+                .map(fault -> new PackElementViolation(
+                        fault.file(),
+                        SubstepDelegationRule.UNRESOLVED.equals(fault.code())
+                                ? PackCodes.SUBSTEP_DELEGATION_UNRESOLVED
+                                : PackCodes.SUBSTEP_DELEGATION_UNSCOPED,
+                        fault.reason()))
                 .toList();
     }
 
@@ -1126,7 +1134,7 @@ public final class DomainRepositoryService
                 PromptSlots.Parse parse =
                         PromptSlots.parse(MarkdownCodec.write(step.prompt().get()));
                 for (PackPolicy.PromptSlotFault fault : PackPolicy.promptSlotFaults(parse, version)) {
-                    if (fault.code().severity() == PackFindingCode.Severity.BLOCKING) {
+                    if (fault.code().severity() == Severity.VIOLATION) {
                         builder.violation(PackPolicy.violationOf(file, fault));
                     } else {
                         warnings.add(PackPolicy.findingOf(file, fault));
@@ -1197,7 +1205,7 @@ public final class DomainRepositoryService
                 withheld.add(fault.path());
             }
         }
-        String kind = PackPolicy.violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID);
+        ReasonCode kind = PackCodes.PROMPT_FRAGMENT_INVALID;
         List<PackElementViolation> violations = read.violations().stream()
                 .map(violation -> FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
                                 && violation.file().endsWith(enhancementSuffix())
@@ -1247,12 +1255,13 @@ public final class DomainRepositoryService
                 Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
                 if (unresolved.isPresent()) {
                     builder.violation(new PackElementViolation(
-                            stored.file(), "reference", MissionTemplates.reason(unresolved.get())));
+                            stored.file(), FilesystemPackStore.REFERENCE, MissionTemplates.reason(unresolved.get())));
                     continue;
                 }
                 Optional<String> unclosed = closure.firstUnresolved(entity);
                 if (unclosed.isPresent()) {
-                    builder.violation(new PackElementViolation(stored.file(), "reference", unclosed.get()));
+                    builder.violation(
+                            new PackElementViolation(stored.file(), FilesystemPackStore.REFERENCE, unclosed.get()));
                     continue;
                 }
                 Urn urn = entity.urn();
@@ -1260,7 +1269,7 @@ public final class DomainRepositoryService
                 places.put(urn, stored.file());
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(new PackElementViolation(
-                        kind.idOf(stored.dso()), "domain", String.valueOf(breach.getMessage())));
+                        kind.idOf(stored.dso()), FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
             }
         }
     }

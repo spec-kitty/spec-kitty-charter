@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -613,7 +614,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         Map<String, List<String>> byFile = new TreeMap<>();
         for (PackElementViolation violation : violations) {
             byFile.computeIfAbsent(violation.file(), file -> new ArrayList<>())
-                    .add(prefix + violation.kind() + ": " + violation.reason());
+                    .add(prefix + violation.kind().value() + ": " + violation.reason());
         }
         return byFile;
     }
@@ -627,7 +628,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     private static Map<String, List<String>> missingPayloads(Pack pack) {
         Map<String, List<String>> byFile = new TreeMap<>();
         for (PackElementViolation violation : pack.violations()) {
-            if (ASSET.equals(violation.kind()) && violation.reason().startsWith("payload ")) {
+            if (PackCodes.ASSET.equals(violation.kind()) && violation.reason().startsWith("payload ")) {
                 byFile.computeIfAbsent(violation.file(), file -> new ArrayList<>())
                         .add(violation.reason());
             }

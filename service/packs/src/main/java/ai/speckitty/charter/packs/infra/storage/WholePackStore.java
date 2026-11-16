@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -28,6 +29,7 @@ import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -342,28 +344,30 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         List<RefusalViolation> violations = new ArrayList<>(graphViolations(read.graphFaults()));
         loaded.pack()
                 .violations()
-                .forEach(violation ->
-                        violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
+                .forEach(violation -> violations.add(
+                        violationOf(violation.file(), violation.kind().value(), violation.reason())));
         List<String> unreported = unreportedFiles(read.untaken(), loaded.pack().violations());
         Map<String, PackElementViolation> orphans = orphanFragments(unreported);
         unreported.stream()
                 .map(orphans::get)
                 .filter(Objects::nonNull)
-                .forEach(orphan -> violations.add(violationOf(orphan.file(), orphan.kind(), orphan.reason())));
+                .forEach(orphan ->
+                        violations.add(violationOf(orphan.file(), orphan.kind().value(), orphan.reason())));
         reservedShard(directory).ifPresent(violations::add);
         Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
         if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
                 && !Files.isRegularFile(manifestFile, LinkOption.NOFOLLOW_LINKS)) {
             // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
-            violations.add(violationOf(PackFileSet.MANIFEST, "unreadable", "the manifest is not a regular file"));
+            violations.add(violationOf(
+                    PackFileSet.MANIFEST, StorageCodes.UNREADABLE.value(), "the manifest is not a regular file"));
         }
         if (violations.isEmpty()) {
             // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
             loaded.manifest()
                     .ifPresent(listed -> ManifestMembership.mismatch(
                                     listed, ManifestMembership.derived(loaded.pack(), loaded.layout()))
-                            .forEach(reason -> violations.add(
-                                    violationOf(PackFileSet.MANIFEST, ManifestMembership.VIOLATION_CODE, reason))));
+                            .forEach(reason -> violations.add(violationOf(
+                                    PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
         }
         if (!violations.isEmpty()) {
             throw CharterRefusal.withViolations(
@@ -438,7 +442,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
                     "The pack cannot be registered: " + detail,
-                    List.of(violationOf("pack", "unreadable", detail)));
+                    List.of(violationOf("pack", StorageCodes.UNREADABLE.value(), detail)));
         }
     }
 
@@ -723,15 +727,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     private static List<RefusalViolation> graphViolations(List<PackElementViolation> faults) {
         return faults.stream()
                 .sorted(Comparator.comparing(PackElementViolation::file))
-                .map(fault -> violationOf(fault.file(), RefusalCode.DRG_SCHEMA_ERROR.token(), fault.reason()))
+                .map(fault -> violationOf(fault.file(), PackCodes.DRG_SCHEMA_ERROR.value(), fault.reason()))
                 .toList();
     }
 
-    /** A violation of the refusal; a kind that is no snake-case token is told as {@code invalid}. */
+    /**
+     * A violation of the refusal, in the one wording ({@link PackCodes#detail}): the detail names the file as the
+     * pointer does, so a client that shows only the detail still says where. Every code is a typed code's token.
+     */
     private static RefusalViolation violationOf(String pointer, String code, String detail) {
-        // The detail names the file as the pointer does, so a client that shows only the detail still says where.
-        String named = pointer.isEmpty() || detail.contains(pointer) ? detail : pointer + ": " + detail;
-        return new RefusalViolation(pointer, code.matches("[a-z][a-z0-9_]*") ? code : "invalid", named);
+        return new RefusalViolation(pointer, code, PackCodes.detail(pointer, detail));
     }
 
     /** The reserved shard, when the tree holds one that no registration wrote. */
@@ -750,7 +755,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 ? Optional.empty()
                 : Optional.of(violationOf(
                         RelationshipShard.SHARD_PATH,
-                        "reserved_shard",
+                        StorageCodes.RESERVED_SHARD.value(),
                         RelationshipShard.SHARD_PATH
                                 + " is reserved for the registered relationships; a file of this name"
                                 + " without generated_by: charter-registration is refused. Register the edges in a shard of"
@@ -817,8 +822,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         switch (readManifest(manifestFile)) {
             case FileRead.Read<PackManifestDso> good -> {
                 List<String> misplaced = misplacedPresetEntries(good.value());
-                misplaced.forEach(
-                        reason -> builder.violation(new PackElementViolation(PackFileSet.MANIFEST, "schema", reason)));
+                misplaced.forEach(reason -> builder.violation(
+                        new PackElementViolation(PackFileSet.MANIFEST, FilesystemPackStore.SCHEMA, reason)));
                 return misplaced.isEmpty() ? Optional.of(good.value()) : Optional.empty();
             }
             case FileRead.Unreadable<PackManifestDso> bad ->
@@ -838,7 +843,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             return Optional.of(PolicyYaml.readNamed(packDir, named).text());
         } catch (PolicyYaml.Unreadable invalid) {
             builder.violation(new PackElementViolation(
-                    named, "unreadable", "named by mutability_policy, the file " + invalid.getMessage()));
+                    named, StorageCodes.UNREADABLE, "named by mutability_policy, the file " + invalid.getMessage()));
             return Optional.empty();
         }
     }

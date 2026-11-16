@@ -6,8 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -63,8 +65,8 @@ class MissionTypePlantsTest {
         List<PackFinding> findings = validate(planted(host, UNLINKED));
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.MISSION_STEP_UNLINKED);
-            assertThat(finding.severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+            assertThat(finding.code()).isEqualTo(PackCodes.MISSION_STEP_UNLINKED);
+            assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(TYPE);
             assertThat(finding.detail()).contains("the step b of mission_type:rx has no requires edge");
         });
@@ -114,8 +116,8 @@ class MissionTypePlantsTest {
         assertThat(validate(pack))
                 .extracting(PackFinding::code, PackFinding::file)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(PackFindingCode.MISSION_STEP_UNLINKED, GRAPH),
-                        org.assertj.core.groups.Tuple.tuple(PackFindingCode.MISSION_STEP_UNLINKED, TYPE));
+                        org.assertj.core.groups.Tuple.tuple(PackCodes.MISSION_STEP_UNLINKED, GRAPH),
+                        org.assertj.core.groups.Tuple.tuple(PackCodes.MISSION_STEP_UNLINKED, TYPE));
         assertThat(validate(pack).getFirst().detail()).isEqualTo("qa/" + GRAPH + ": " + stray);
         assertThat(new WholePackStore(new YamlSerializationStrategy())
                         .load(pack)
@@ -141,7 +143,7 @@ class MissionTypePlantsTest {
         Files.writeString(pack.resolve(TYPE), broken, StandardCharsets.UTF_8);
 
         assertThat(validate(pack)).extracting(PackFinding::file).containsExactly(TYPE);
-        assertThat(validate(pack)).extracting(PackFinding::code).doesNotContain(PackFindingCode.MISSION_STEP_UNLINKED);
+        assertThat(validate(pack)).extracting(PackFinding::code).doesNotContain(PackCodes.MISSION_STEP_UNLINKED);
         // The load names a domain refusal by the type's id and a check refusal by its file (as before WP06); either way
         // it is the type's one fault, and the step links are not judged.
         assertThat(new WholePackStore(new YamlSerializationStrategy())

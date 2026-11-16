@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFinding;
@@ -79,7 +80,7 @@ class ParsedYamlTest {
     @MethodSource("nested")
     void aShardNestedTooDeeplyIsADrgSchemaErrorWithTheFixedFirstLine(String value) {
         assertThat(shard(value)).singleElement().satisfies(f -> {
-            assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+            assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
             assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + TOO_DEEP);
         });
     }
@@ -88,7 +89,7 @@ class ParsedYamlTest {
     @MethodSource("nested")
     void aFragmentNestedTooDeeplyIsADrgSchemaErrorWithTheFixedFirstLine(String value) {
         assertThat(fragment(value)).singleElement().satisfies(f -> {
-            assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+            assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
             assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + TOO_DEEP);
         });
     }
@@ -161,13 +162,13 @@ class ParsedYamlTest {
         FileRead<RawGraph> shard = assertTimeoutPreemptively(
                 HANG_CAP, () -> GraphDocumentReader.read(HEADER + "nodes: []\n" + bomb, Shape.SHARD, SHARD));
         assertThat(findings(shard)).singleElement().satisfies(f -> {
-            assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+            assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
             assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + TOO_LARGE);
         });
         FileRead<RawGraph> fragment = assertTimeoutPreemptively(
                 HANG_CAP, () -> GraphDocumentReader.read("nodes: []\n" + bomb, Shape.FRAGMENT, FRAGMENT));
         assertThat(findings(fragment)).singleElement().satisfies(f -> {
-            assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+            assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
             assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + TOO_LARGE);
         });
     }
@@ -188,7 +189,7 @@ class ParsedYamlTest {
         assertThat(fragment("[{id: !!binary aGVsbG8=, kind: directives}]"))
                 .singleElement()
                 .satisfies(f -> {
-                    assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+                    assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
                     assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + NOT_PLAIN);
                 });
     }

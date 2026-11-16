@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -339,7 +340,7 @@ class ToolguideGuideTest {
 
         assertThat(read.dsos(ToolguideBinding.INSTANCE)).isEmpty();
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(TOOLGUIDE_FILE, "companion", GUIDE + ": missing"));
+                .containsExactly(new PackElementViolation(TOOLGUIDE_FILE, StorageCodes.COMPANION, GUIDE + ": missing"));
     }
 
     @Test
@@ -353,7 +354,7 @@ class ToolguideGuideTest {
 
         assertThat(read.violations())
                 .containsExactly(new PackElementViolation(
-                        TOOLGUIDE_FILE, "companion", GUIDE + ": structure: const violated at /preamble"));
+                        TOOLGUIDE_FILE, StorageCodes.COMPANION, GUIDE + ": structure: const violated at /preamble"));
     }
 
     @Test
@@ -370,7 +371,7 @@ class ToolguideGuideTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         ID,
-                        "domain",
+                        FilesystemPackStore.DOMAIN,
                         "the guide has the H1 'Another title', which differs from the toolguide title '" + TITLE
                                 + "'"));
     }
@@ -389,7 +390,7 @@ class ToolguideGuideTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         ID,
-                        "domain",
+                        FilesystemPackStore.DOMAIN,
                         "the guide has no H1; a stored guide carries its toolguide's title '" + TITLE + "' as its H1"));
 
         Files.writeString(pack.resolve(GUIDE_FILE), "# " + TITLE + "\n\n## Overview\n\nO.\n");

@@ -196,7 +196,7 @@ class GlossaryPlantedRefusalsTest {
     private static String row(PackFinding finding) {
         return String.join(
                 " ",
-                finding.code().name().toLowerCase(Locale.ROOT),
+                finding.code().value(),
                 finding.severity().name().toLowerCase(Locale.ROOT),
                 finding.file(),
                 String.join("/", finding.place()));

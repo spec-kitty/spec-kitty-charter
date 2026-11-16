@@ -6,7 +6,7 @@
   "findings": [
     {
       "code": "duplicate_step_id",
-      "severity": "blocking",
+      "severity": "violation",
       "file": "missions/rx/rx.mission-type.yaml",
       "place": [
         "steps",
