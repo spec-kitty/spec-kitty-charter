@@ -1,0 +1,630 @@
+{
+  "parent-names-itself" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `loop` (01LOOP) names itself as its parent_pack",
+      "packs" : [ {
+        "descriptorPackId" : "01LOOP",
+        "packId" : "01LOOP",
+        "name" : "loop"
+      } ]
+    }
+  },
+  "parents-name-each-other" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `first` (01FIRST) is on a dependency cycle: `first` -> `second` -> `first`",
+      "packs" : [ {
+        "descriptorPackId" : "01FIRST",
+        "packId" : "01FIRST",
+        "name" : "first"
+      }, {
+        "descriptorPackId" : "01SECOND",
+        "packId" : "01SECOND",
+        "name" : "second"
+      } ]
+    }
+  },
+  "parent-cycle-through-a-dependency" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `child` (01CHILD) is on a dependency cycle: `child` -> `parent` -> `child`",
+      "packs" : [ {
+        "descriptorPackId" : "01CHILD",
+        "packId" : "01CHILD",
+        "name" : "child"
+      }, {
+        "descriptorPackId" : "01PARENT",
+        "packId" : "01PARENT",
+        "name" : "parent"
+      } ]
+    }
+  },
+  "preset-contest-of-two-unrelated-packs" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both hold the preset `team`, and neither extends the other by parent_pack",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "preset-contest-of-two-children-of-one-parent" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `one` (01ONE) and `two` (01TWO) at org both hold the preset `team`, and neither extends the other by parent_pack",
+      "packs" : [ {
+        "descriptorPackId" : "01TWO",
+        "packId" : "01TWO",
+        "name" : "two"
+      }, {
+        "descriptorPackId" : "01ONE",
+        "packId" : "01ONE",
+        "name" : "one"
+      } ]
+    }
+  },
+  "mention-of-a-held-id-only-by-case" : {
+    "refused" : {
+      "code" : "pack_reference_artifact_missing",
+      "detail" : "pack `mentioner` (01MENT) names `directive:directive_001`, but pack `holder` (01HOLD) holds `directive:DIRECTIVE_001`: ids differ only by case and are matched exactly",
+      "packs" : [ {
+        "descriptorPackId" : "01MENT",
+        "packId" : "01MENT",
+        "name" : "mentioner"
+      }, {
+        "descriptorPackId" : "01HOLD",
+        "packId" : "01HOLD",
+        "name" : "holder"
+      } ]
+    }
+  },
+  "cycle-with-a-pack-downstream-of-it" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `b` (01BBB) is on a dependency cycle: `b` -> `c` -> `b`",
+      "packs" : [ {
+        "descriptorPackId" : "01BBB",
+        "packId" : "01BBB",
+        "name" : "b"
+      }, {
+        "descriptorPackId" : "01CCC",
+        "packId" : "01CCC",
+        "name" : "c"
+      } ]
+    }
+  },
+  "pack-depends-on-itself" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `self` (01SELF) depends on itself",
+      "packs" : [ {
+        "descriptorPackId" : "01SELF",
+        "packId" : "01SELF",
+        "name" : "self"
+      } ]
+    }
+  },
+  "unknown-dependency" : {
+    "refused" : {
+      "code" : "pack_dependency_unknown",
+      "detail" : "pack `dependent` (01DEP) depends on pack `01GONE`, which no configured pack declares",
+      "packs" : [ {
+        "descriptorPackId" : "01DEP",
+        "packId" : "01DEP",
+        "name" : "dependent"
+      } ]
+    }
+  },
+  "ranges-no-version-satisfies-together" : {
+    "refused" : {
+      "code" : "pack_dependency_out_of_range",
+      "detail" : "packs `one` (01ONE) and `two` (01TWO) require pack `base` (01BASE) in ranges `>=1.0,<2` and `>=2.0`, which no version satisfies together",
+      "packs" : [ {
+        "descriptorPackId" : "01TWO",
+        "packId" : "01TWO",
+        "name" : "two"
+      }, {
+        "descriptorPackId" : "01ONE",
+        "packId" : "01ONE",
+        "name" : "one"
+      } ]
+    }
+  },
+  "two-packs-with-one-name" : {
+    "refused" : {
+      "code" : "pack_name_conflict",
+      "detail" : "packs `shared-name` (01AAA) and `shared-name` (01BBB) both declare the name `shared-name`",
+      "packs" : [ {
+        "descriptorPackId" : "01BBB",
+        "packId" : "01BBB",
+        "name" : "shared-name"
+      }, {
+        "descriptorPackId" : "01AAA",
+        "packId" : "01AAA",
+        "name" : "shared-name"
+      } ]
+    }
+  },
+  "parent-unresolved" : {
+    "refused" : {
+      "code" : "pack_parent_unresolved",
+      "detail" : "pack `orphan` (01ORPH) names parent_pack `01MISSING`, which no configured pack declares",
+      "packs" : [ {
+        "descriptorPackId" : "01ORPH",
+        "packId" : "01ORPH",
+        "name" : "orphan"
+      } ]
+    }
+  },
+  "siblings-changing-one-artifact" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "siblings-defining-one-artifact" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both define the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "siblings-defining-one-mission-type-and-its-step" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both define the artifact `mission_type:m`, and no pack of the compose declares an overrides edge settling it",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "a-qualifier-does-not-make-two-contests" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "two-packs-naming-different-winners" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it name different winners, 01LEFT, 01RIGHT",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "a14-two-settlements-naming-two-winners" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it name different winners, 01LEFT, 01RIGHT",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "overrides-naming-a-member-outside-the-compose" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01GHOST, which is not a contestant",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "overrides-naming-a-member-that-is-not-a-contestant" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01DSTR, which is not a contestant",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "qualified-reference-to-an-artifact-the-pack-does-not-hold" : {
+    "refused" : {
+      "code" : "pack_reference_artifact_missing",
+      "detail" : "pack `reader` (01REA) writes the reference `writing::directive:DIRECTIVE_009`, but pack `writing` (01WRI) does not hold `directive:DIRECTIVE_009`",
+      "packs" : [ {
+        "descriptorPackId" : "01REA",
+        "packId" : "01REA",
+        "name" : "reader"
+      }, {
+        "descriptorPackId" : "01WRI",
+        "packId" : "01WRI",
+        "name" : "writing"
+      } ]
+    }
+  },
+  "qualified-reference-to-a-pack-only-another-pack-depends-on" : {
+    "refused" : {
+      "code" : "pack_reference_pack_missing",
+      "detail" : "pack `reader` (01REA) writes the reference `writing::directive:DIRECTIVE_009`, but pack `writing` (01WRI) is outside its depends_on closure",
+      "packs" : [ {
+        "descriptorPackId" : "01REA",
+        "packId" : "01REA",
+        "name" : "reader"
+      }, {
+        "descriptorPackId" : "01WRI",
+        "packId" : "01WRI",
+        "name" : "writing"
+      } ]
+    }
+  },
+  "bare-reference-that-resolves-only-in-another-pack" : {
+    "refused" : {
+      "code" : "pack_reference_unqualified",
+      "detail" : "pack `reader` (01REA) writes the bare reference `anti_pattern:big-ball-of-mud`, which resolves only in pack `writing` (01WRI); a cross-pack reference is written pack-qualified",
+      "packs" : [ {
+        "descriptorPackId" : "01REA",
+        "packId" : "01REA",
+        "name" : "reader"
+      }, {
+        "descriptorPackId" : "01WRI",
+        "packId" : "01WRI",
+        "name" : "writing"
+      } ]
+    }
+  },
+  "qualified-reference-to-a-pack-outside-the-compose" : {
+    "refused" : {
+      "code" : "pack_reference_pack_missing",
+      "detail" : "pack `reader` (01REA) writes the reference `writing::directive:DIRECTIVE_009`, but the compose holds no pack named `writing`",
+      "packs" : [ {
+        "descriptorPackId" : "01REA",
+        "packId" : "01REA",
+        "name" : "reader"
+      } ]
+    }
+  },
+  "rooted-parent-cycle" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `first` (01FIRST) is on a dependency cycle: `first` -> `second` -> `first`",
+      "packs" : [ {
+        "descriptorPackId" : "01FIRST",
+        "packId" : "01FIRST",
+        "name" : "first"
+      }, {
+        "descriptorPackId" : "01SECOND",
+        "packId" : "01SECOND",
+        "name" : "second"
+      } ]
+    }
+  },
+  "whole-compose-duplicate-pack-id" : {
+    "refused" : {
+      "code" : "pack_duplicate_id",
+      "detail" : "packs `gamma` (01GAMMA) and `gamma-twin` (01GAMMA) both declare the pack_id 01GAMMA",
+      "packs" : [ {
+        "descriptorPackId" : "01GAMMA",
+        "packId" : "twin",
+        "name" : "gamma-twin"
+      }, {
+        "descriptorPackId" : "01GAMMA",
+        "packId" : "01GAMMA",
+        "name" : "gamma"
+      } ]
+    }
+  },
+  "whole-compose-duplicate-name" : {
+    "refused" : {
+      "code" : "pack_name_conflict",
+      "detail" : "packs `gamma` (01GAMMA) and `gamma` (01OTHER) both declare the name `gamma`",
+      "packs" : [ {
+        "descriptorPackId" : "01OTHER",
+        "packId" : "01OTHER",
+        "name" : "gamma"
+      }, {
+        "descriptorPackId" : "01GAMMA",
+        "packId" : "01GAMMA",
+        "name" : "gamma"
+      } ]
+    }
+  },
+  "rooted-missing-dependency" : {
+    "refused" : {
+      "code" : "pack_dependency_unknown",
+      "detail" : "pack `dependent` (01DEP) depends on pack `01GONE`, which no configured pack declares",
+      "packs" : [ {
+        "descriptorPackId" : "01DEP",
+        "packId" : "01DEP",
+        "name" : "dependent"
+      } ]
+    }
+  },
+  "rooted-duplicate-pack-id-inside-the-closure" : {
+    "refused" : {
+      "code" : "pack_duplicate_id",
+      "detail" : "packs `beta` (01BETA) and `beta-twin` (01BETA) both declare the pack_id 01BETA",
+      "packs" : [ {
+        "descriptorPackId" : "01BETA",
+        "packId" : "beta-twin",
+        "name" : "beta-twin"
+      }, {
+        "descriptorPackId" : "01BETA",
+        "packId" : "01BETA",
+        "name" : "beta"
+      } ]
+    }
+  },
+  "rooted-dependency-cycle" : {
+    "refused" : {
+      "code" : "pack_dependency_cycle",
+      "detail" : "pack `first` (01FIRST) is on a dependency cycle: `first` -> `second` -> `first`",
+      "packs" : [ {
+        "descriptorPackId" : "01FIRST",
+        "packId" : "01FIRST",
+        "name" : "first"
+      }, {
+        "descriptorPackId" : "01SECOND",
+        "packId" : "01SECOND",
+        "name" : "second"
+      } ]
+    }
+  },
+  "level-violation-dependency-built-in-to-org" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at built-in depends on pack `target` (01TRGT) at org; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "level-violation-dependency-built-in-to-project" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at built-in depends on pack `target` (01TRGT) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "level-violation-dependency-org-to-project" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at org depends on pack `target` (01TRGT) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "level-violation-parent-built-in-to-org" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at built-in names pack `target` (01TRGT) at org as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "level-violation-parent-built-in-to-project" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at built-in names pack `target` (01TRGT) at project as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "level-violation-parent-org-to-project" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at org names pack `target` (01TRGT) at project as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "multi-cycle-and-unknown-dependency" : {
+    "refused" : {
+      "code" : "pack_dependency_unknown",
+      "detail" : "pack `c` (01CCC) depends on pack `01GONE`, which no configured pack declares",
+      "packs" : [ {
+        "descriptorPackId" : "01CCC",
+        "packId" : "01CCC",
+        "name" : "c"
+      } ]
+    }
+  },
+  "multi-name-conflict-and-sibling-contest" : {
+    "refused" : {
+      "code" : "pack_name_conflict",
+      "detail" : "packs `shared-name` (01AAA) and `shared-name` (01BBB) both declare the name `shared-name`",
+      "packs" : [ {
+        "descriptorPackId" : "01BBB",
+        "packId" : "01BBB",
+        "name" : "shared-name"
+      }, {
+        "descriptorPackId" : "01AAA",
+        "packId" : "01AAA",
+        "name" : "shared-name"
+      } ]
+    }
+  },
+  "multi-preset-contest-and-unqualified-reference" : {
+    "refused" : {
+      "code" : "pack_reference_unqualified",
+      "detail" : "pack `right` (01RIGHT) writes the bare reference `anti_pattern:big-ball-of-mud`, which resolves only in pack `left` (01LEFT); a cross-pack reference is written pack-qualified",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "multi-duplicate-id-and-out-of-range" : {
+    "refused" : {
+      "code" : "pack_duplicate_id",
+      "detail" : "packs `base` (01BASE) and `base-twin` (01BASE) both declare the pack_id 01BASE",
+      "packs" : [ {
+        "descriptorPackId" : "01BASE",
+        "packId" : "base-twin",
+        "name" : "base-twin"
+      }, {
+        "descriptorPackId" : "01BASE",
+        "packId" : "01BASE",
+        "name" : "base"
+      } ]
+    }
+  },
+  "multi-level-violation-and-parent-unresolved" : {
+    "refused" : {
+      "code" : "pack_level_violation",
+      "detail" : "pack `own` (01OWN0) at built-in depends on pack `target` (01TRGT) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in",
+      "packs" : [ {
+        "descriptorPackId" : "01OWN0",
+        "packId" : "01OWN0",
+        "name" : "own"
+      }, {
+        "descriptorPackId" : "01TRGT",
+        "packId" : "01TRGT",
+        "name" : "target"
+      } ]
+    }
+  },
+  "multi-sibling-contest-and-case-only-mention" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "multi-unknown-dependency-and-missing-artifact" : {
+    "refused" : {
+      "code" : "pack_dependency_unknown",
+      "detail" : "pack `dependent` (01DEP) depends on pack `01GONE`, which no configured pack declares",
+      "packs" : [ {
+        "descriptorPackId" : "01DEP",
+        "packId" : "01DEP",
+        "name" : "dependent"
+      } ]
+    }
+  },
+  "multi-unqualified-reference-preset-contest-and-case-only-mention" : {
+    "refused" : {
+      "code" : "pack_reference_unqualified",
+      "detail" : "pack `reader` (01REA) writes the bare reference `anti_pattern:big-ball-of-mud`, which resolves only in pack `writing` (01WRI); a cross-pack reference is written pack-qualified",
+      "packs" : [ {
+        "descriptorPackId" : "01REA",
+        "packId" : "01REA",
+        "name" : "reader"
+      }, {
+        "descriptorPackId" : "01WRI",
+        "packId" : "01WRI",
+        "name" : "writing"
+      } ]
+    }
+  }
+}
