@@ -3,10 +3,10 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -24,55 +24,81 @@ public interface WholePackWriteStore {
 
     /**
      * A file of a pack that is not pack content, so not held: an exclusion names it, or it is Markdown nothing models
-     * (#451), or nothing models it at all (operator ruling Q1, #554).
+     * (#451), or nothing models it at all (operator ruling Q1, #554). A retired file is never one: it is refused.
      *
      * @param file the pack-relative path
-     * @param reason the reviewable reason of the rule that excludes it, or {@value #UNMODELLED}
+     * @param kind why the file is not held, decided where the file is classified (#554, WP02 review L1)
+     * @param reason the reviewable reason of the rule that excludes it, or {@value NotHeldFile#UNMODELLED_REASON}
      */
-    record ExcludedFile(String file, String reason) {
-
-        /** The reason of a file no pack file kind models (operator ruling Q1, #554). */
-        public static final String UNMODELLED = "no pack file kind models this file";
+    record ExcludedFile(String file, NotHeldFile.Kind kind, String reason) {
 
         /**
-         * Checks the fields.
+         * Checks the fields: an unmodelled file carries {@value NotHeldFile#UNMODELLED_REASON}.
          *
          * @param file the pack-relative path
+         * @param kind why the file is not held
          * @param reason the rule's reason
          */
         public ExcludedFile {
             Objects.requireNonNull(file, "file");
+            Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(reason, "reason");
+            if (kind == NotHeldFile.Kind.UNMODELLED && !reason.equals(NotHeldFile.UNMODELLED_REASON)) {
+                throw new IllegalArgumentException(
+                        "an unmodelled file's reason is '" + NotHeldFile.UNMODELLED_REASON + "': " + file);
+            }
+        }
+
+        /**
+         * A file an {@code exclusions} rule or the {@code ignored} fallback takes.
+         *
+         * @param file the pack-relative path
+         * @param reason the rule's reason
+         * @return the file
+         */
+        public static ExcludedFile excluded(String file, String reason) {
+            return new ExcludedFile(file, NotHeldFile.Kind.EXCLUDED, reason);
         }
 
         /**
          * A file no pack file kind models: warned about, then ignored (operator ruling Q1, #554).
          *
          * @param file the pack-relative path
-         * @return the file, with {@value #UNMODELLED} as its reason
+         * @return the file, with {@value NotHeldFile#UNMODELLED_REASON} as its reason
          */
         public static ExcludedFile unmodelled(String file) {
-            return new ExcludedFile(file, UNMODELLED);
+            return new ExcludedFile(file, NotHeldFile.Kind.UNMODELLED, NotHeldFile.UNMODELLED_REASON);
         }
 
         /**
          * Whether no pack file kind models this file, rather than a rule excluding it.
          *
-         * @return true for a file {@link #unmodelled(String)} made
+         * @return true for a file of kind {@link NotHeldFile.Kind#UNMODELLED}
          */
         public boolean isUnmodelled() {
-            return reason.equals(UNMODELLED);
+            return switch (kind) {
+                case UNMODELLED -> true;
+                case EXCLUDED -> false;
+            };
+        }
+
+        /**
+         * The same file as the domain's not-held file, which validate mode reports too.
+         *
+         * @return the file
+         */
+        public NotHeldFile asNotHeld() {
+            return new NotHeldFile(file, kind, reason);
         }
 
         /**
          * The {@code file_not_held} warning a registration reports for this file (FR-021): the file named and the rule's
-         * reason given.
+         * reason given, in the words validate mode uses ({@link NotHeldFile#finding}).
          *
          * @return the warning
          */
         public PackFinding notHeld() {
-            return new PackFinding(
-                    PackFindingCode.FILE_NOT_HELD, file, List.of(), file + ": not held (" + reason + ")");
+            return asNotHeld().finding();
         }
     }
 

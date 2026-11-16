@@ -362,8 +362,8 @@ class WholePackStoreTest {
 
         assertThat(loaded.notHeld())
                 .containsExactly(
-                        new ExcludedFile("docs/notes.md", FALLBACK_REASON),
-                        new ExcludedFile("missions/x/README.md", exclusionReason("*/missions/*/README.md")),
+                        ExcludedFile.excluded("docs/notes.md", FALLBACK_REASON),
+                        ExcludedFile.excluded("missions/x/README.md", exclusionReason("*/missions/*/README.md")),
                         ExcludedFile.unmodelled("notes.txt"));
         assertThat(filesUnder(target)).doesNotContain("docs/notes.md", "missions/x/README.md", "notes.txt");
     }
