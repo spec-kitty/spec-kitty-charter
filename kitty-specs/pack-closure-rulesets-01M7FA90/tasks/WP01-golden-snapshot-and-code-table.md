@@ -25,16 +25,22 @@ create_intent:
 - service/packs/src/test/java/ai/speckitty/charter/packs/golden/SurfaceGoldenTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/golden/SurfaceAnswers.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/golden/CompositionGoldenTest.java
+- service/packs/src/test/resources/golden/surfaces.json
+- service/packs/src/test/resources/golden/composition.json
+- service/packs/src/testFixtures/resources/planted/artifact-not-utf8/expected.json
 - docs/development/notes/pack-code-unification.md
 execution_mode: code_change
 owned_files:
-- service/packs/src/test/java/ai/speckitty/charter/packs/golden/**
-- service/packs/src/test/resources/golden/**
-- service/packs/src/testFixtures/resources/planted/**
 - service/packs/src/test/resources/planted/**
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPlantedRefusalsTest.java
 - scripts/packs/core_verdicts.py
 - docs/development/notes/pack-code-unification.md
+- service/packs/src/test/java/ai/speckitty/charter/packs/golden/SurfaceGoldenTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/golden/SurfaceAnswers.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/golden/CompositionGoldenTest.java
+- service/packs/src/test/resources/golden/surfaces.json
+- service/packs/src/test/resources/golden/composition.json
+- service/packs/src/testFixtures/resources/planted/artifact-not-utf8/expected.json
 role: implementer
 tags: []
 tracker_refs:

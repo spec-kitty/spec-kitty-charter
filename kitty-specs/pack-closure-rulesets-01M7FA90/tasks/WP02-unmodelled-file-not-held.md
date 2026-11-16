@@ -38,7 +38,7 @@ owned_files:
 - service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackDrift.java
 - service/pack-validation/src/driftTest/java/ai/speckitty/charter/packvalidation/roundtrip/OpenPacksDriftTest.java
 - contracts/charter/scenarios/registration/whole-pack-registration.feature
-- contracts/charter/scenarios/retired-files.feature
+- contracts/charter/scenarios/registration/retired-files.feature
 - contracts/charter/scenarios/prompt-fragment-refusals.feature
 - contracts/charter/changes/2026-11-11-excluded-files-are-not-held.md
 - contracts/charter/changes/2026-11-16-unmodelled-files-are-not-held.md

@@ -39,7 +39,6 @@ owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCodesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackFindingTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStoreTest.java
 - contracts/charter/changes/2026-11-16-registration-names-the-fault.md
 - contracts/charter/changes/2026-11-16-validate-mode-speaks-the-wire-codes.md
 - contracts/charter/schemas/CharterRefusalCode.yaml
