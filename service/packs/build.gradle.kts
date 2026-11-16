@@ -213,6 +213,13 @@ tasks.test {
     useJUnitPlatform { excludeTags(*unitTestExcludedTags.toTypedArray()) }
     systemProperties(unitTestSystemProperties)
     readsTheUnitTestInputs()
+    // The golden snapshot of every pack-judging surface (#554, IC-01): SurfaceGoldenTest and CompositionGoldenTest
+    // compare with src/test/resources/golden/, and `-Dgolden.update=true` makes them rewrite those files instead, the
+    // only way they are written. The switch is an input, so a cached comparison never stands in for a rewrite.
+    val goldenUpdate = providers.systemProperty("golden.update").orElse("false")
+    inputs.property("goldenUpdate", goldenUpdate)
+    systemProperty("golden.update", goldenUpdate.get())
+    systemProperty("charter.goldenDir", layout.projectDirectory.dir("src/test/resources/golden").asFile.absolutePath)
 }
 
 // The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
