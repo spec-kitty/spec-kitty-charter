@@ -10,7 +10,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
-import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

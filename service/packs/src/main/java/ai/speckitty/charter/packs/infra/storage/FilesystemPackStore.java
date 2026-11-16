@@ -10,10 +10,10 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -731,7 +731,7 @@ final class FilesystemPackStore {
 
     /**
      * The first fragment node whose {@code body_path} leaves the pack root (#254), as one graph fault of the fragment in
-     * {@link PackPolicy#bodyPathEscape}'s words. The fragment is refused whole, so it carries one fault, as any graph
+     * {@link Paths#bodyPathEscape}'s words. The fragment is refused whole, so it carries one fault, as any graph
      * document that cannot be read does, and validate mode reports the same one.
      */
     private static List<PackElementViolation> bodyPathEscapes(GraphDocument document) {
@@ -739,7 +739,7 @@ final class FilesystemPackStore {
             return List.of();
         }
         return fragment.nodes().stream()
-                .flatMap(node -> PackPolicy.bodyPathEscape(node.id(), node.bodyPath()).stream())
+                .flatMap(node -> Paths.bodyPathEscape(node.id(), node.bodyPath()).stream())
                 .findFirst()
                 .map(reason -> new PackElementViolation(document.file(), RefusalCode.DRG_SCHEMA_ERROR.token(), reason))
                 .stream()

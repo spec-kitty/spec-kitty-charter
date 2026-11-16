@@ -16,9 +16,9 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -552,7 +552,7 @@ public final class OfferingReadService {
                 .find(pack.id())
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE, "pack " + pack.id().value() + " has no pack.yaml"));
-        PackPolicy.descriptorFindings(pack.id().value(), descriptor).stream()
+        DescriptorChecks.findings(pack.id().value(), descriptor).stream()
                 .findFirst()
                 .ifPresent(finding -> {
                     throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, finding.detail());

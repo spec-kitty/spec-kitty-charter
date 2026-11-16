@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,11 +7,18 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +26,13 @@ import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-class PackPolicyOrderTest {
+class PrecedenceTest {
+
+    /** The pack-wide group {@code PackPolicy} orders by: the level rules and the missing org fragment. */
+    private static final Comparator<PackFinding> PRECEDENCE = Precedence.comparator(EnumSet.of(
+            PackFindingCode.PACK_LEVEL_MISSING,
+            PackFindingCode.PACK_LEVEL_MISMATCH,
+            PackFindingCode.ORG_FRAGMENT_MISSING));
 
     private static SchemaViolation fallback(String file, String... pointer) {
         return new SchemaViolation(file, List.of(pointer), "uniqueItems", Optional.empty(), Optional.empty(), Map.of());
@@ -224,6 +237,15 @@ class PackPolicyOrderTest {
                         "qa/a.graph.yaml: '/edges/0/impacts' breaks schema keyword 'uniqueItems'");
     }
 
+    /** Throws the refusal of the first blocking finding, in the order {@link PackPolicy#judge} reports them. */
+    private static void refuseOnFirstBlocking(PackContents contents) {
+        for (PackFinding finding : PackPolicy.judge(contents).findings()) {
+            if (finding.severity() == PackFindingCode.Severity.BLOCKING) {
+                throw finding.toRefusal();
+            }
+        }
+    }
+
     @Test
     void aTwoFaultPackRefusesWithTheShardsFindingNotTheLevelMismatch() {
         FileRead<RawGraph> shard = broken("a.graph.yaml", unknownKey("a.graph.yaml", "surprise"));
@@ -232,7 +254,7 @@ class PackPolicyOrderTest {
         assertThat(findings)
                 .extracting(PackFinding::code)
                 .containsExactly(PackFindingCode.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
-        assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+        assertThatThrownBy(() -> refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
             assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml: unknown key 'surprise'");
         });
@@ -260,7 +282,7 @@ class PackPolicyOrderTest {
 
     @Test
     void aShorterPointerComesBeforeALongerOneThatExtendsIt() {
-        assertThat(PackPolicy.schemaFindings(
+        assertThat(Wording.schemaFindings(
                                 "qa",
                                 List.of(
                                         fallback("a.graph.yaml", "nodes", "0", "tags"),
@@ -273,7 +295,7 @@ class PackPolicyOrderTest {
 
     @Test
     void schemaFindingsPutTheEarlierPlaceFirstWhateverTheInputOrder() {
-        assertThat(PackPolicy.schemaFindings(
+        assertThat(Wording.schemaFindings(
                                 "qa",
                                 List.of(
                                         fallback("a.graph.yaml", "nodes", "1", "tags"),
@@ -291,7 +313,7 @@ class PackPolicyOrderTest {
                 new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "0", "tags"), "d");
         PackFinding shallow = new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes"), "d");
 
-        assertThat(java.util.stream.Stream.of(deep, early, shallow).sorted(PackPolicy.PRECEDENCE))
+        assertThat(java.util.stream.Stream.of(deep, early, shallow).sorted(PRECEDENCE))
                 .containsExactly(shallow, early, deep);
     }
 
@@ -310,17 +332,17 @@ class PackPolicyOrderTest {
 
     @Test
     void pathsCompareSegmentBySegmentAndByCodePoint() {
-        assertThat(PackPolicy.comparePaths("a", "a")).isZero();
-        assertThat(PackPolicy.comparePaths("a", "a/b")).isNegative();
-        assertThat(PackPolicy.comparePaths("a/b", "a")).isPositive();
-        assertThat(PackPolicy.comparePaths("a", "ab")).isNegative();
-        assertThat(PackPolicy.comparePaths("ab", "a")).isPositive();
-        assertThat(PackPolicy.comparePaths("a.yaml", "a/b.yaml")).isPositive();
-        assertThat(PackPolicy.comparePaths("python-legacy/y", "python/x")).isPositive();
+        assertThat(Precedence.comparePaths("a", "a")).isZero();
+        assertThat(Precedence.comparePaths("a", "a/b")).isNegative();
+        assertThat(Precedence.comparePaths("a/b", "a")).isPositive();
+        assertThat(Precedence.comparePaths("a", "ab")).isNegative();
+        assertThat(Precedence.comparePaths("ab", "a")).isPositive();
+        assertThat(Precedence.comparePaths("a.yaml", "a/b.yaml")).isPositive();
+        assertThat(Precedence.comparePaths("python-legacy/y", "python/x")).isPositive();
         // U+FF5E (one UTF-16 unit) sorts below U+1F600 (a surrogate pair) by code point, above it by UTF-16 unit.
-        assertThat(PackPolicy.comparePaths("\uff5e", "\ud83d\ude00")).isNegative();
-        assertThat(PackPolicy.comparePaths("\ud83d\ude00", "\uff5e")).isPositive();
-        assertThat(PackPolicy.comparePaths("", "a")).isNegative();
+        assertThat(Precedence.comparePaths("\uff5e", "\ud83d\ude00")).isNegative();
+        assertThat(Precedence.comparePaths("\ud83d\ude00", "\uff5e")).isPositive();
+        assertThat(Precedence.comparePaths("", "a")).isNegative();
     }
 
     @Test
@@ -370,15 +392,15 @@ class PackPolicyOrderTest {
 
     @Test
     void theOrderOfPlacesIsAntisymmetricAndTransitiveOverAFixedSample() {
-        List<PackFinding> all = SAMPLE.stream().map(PackPolicyOrderTest::at).toList();
+        List<PackFinding> all = SAMPLE.stream().map(PrecedenceTest::at).toList();
         for (PackFinding a : all) {
             for (PackFinding b : all) {
-                assertThat(Integer.signum(PackPolicy.PRECEDENCE.compare(a, b)))
+                assertThat(Integer.signum(PRECEDENCE.compare(a, b)))
                         .as("antisymmetry of %s and %s", a.place(), b.place())
-                        .isEqualTo(-Integer.signum(PackPolicy.PRECEDENCE.compare(b, a)));
+                        .isEqualTo(-Integer.signum(PRECEDENCE.compare(b, a)));
                 for (PackFinding c : all) {
-                    if (PackPolicy.PRECEDENCE.compare(a, b) <= 0 && PackPolicy.PRECEDENCE.compare(b, c) <= 0) {
-                        assertThat(PackPolicy.PRECEDENCE.compare(a, c))
+                    if (PRECEDENCE.compare(a, b) <= 0 && PRECEDENCE.compare(b, c) <= 0) {
+                        assertThat(PRECEDENCE.compare(a, c))
                                 .as("transitivity of %s, %s, %s", a.place(), b.place(), c.place())
                                 .isLessThanOrEqualTo(0);
                     }
@@ -391,9 +413,9 @@ class PackPolicyOrderTest {
     void indexesSortByValueBeforeEveryOtherKeyAndLeadingZerosDoNotChangeTheValue() {
         List<PackFinding> sorted = new ArrayList<>(Stream.of(
                         "pack_id", "10", "Nx", "9", "07", "1a", "7", "", "12345678901234567890", "9223372036854775808")
-                .map(PackPolicyOrderTest::at)
+                .map(PrecedenceTest::at)
                 .toList());
-        sorted.sort(PackPolicy.PRECEDENCE);
+        sorted.sort(PRECEDENCE);
         assertThat(sorted.stream().map(f -> f.place().get(0)))
                 .containsExactly(
                         "07", "7", "9", "10", "9223372036854775808", "12345678901234567890", "pack_id", "", "1a", "Nx");
@@ -402,14 +424,12 @@ class PackPolicyOrderTest {
     @Test
     void manyShuffledMixesSortWithoutAnExceptionAndToOneOrder() {
         Random random = new Random(20260620);
-        List<PackFinding> reference = SAMPLE.stream()
-                .map(PackPolicyOrderTest::at)
-                .sorted(PackPolicy.PRECEDENCE)
-                .toList();
+        List<PackFinding> reference =
+                SAMPLE.stream().map(PrecedenceTest::at).sorted(PRECEDENCE).toList();
         for (int round = 0; round < 500; round++) {
             List<PackFinding> shuffled = new ArrayList<>(reference);
             Collections.shuffle(shuffled, random);
-            shuffled.sort(PackPolicy.PRECEDENCE);
+            shuffled.sort(PRECEDENCE);
             assertThat(shuffled).isEqualTo(reference);
         }
         // Many keys at once, the shape that made TimSort check its contract: 217 keys of "N" and "Nx" mixed.
@@ -419,8 +439,8 @@ class PackPolicyOrderTest {
                 int n = random.nextInt(2000);
                 keys.add(at(random.nextBoolean() ? Integer.toString(n) : n + "x"));
             }
-            keys.sort(PackPolicy.PRECEDENCE);
-            assertThat(keys).isSortedAccordingTo(PackPolicy.PRECEDENCE);
+            keys.sort(PRECEDENCE);
+            assertThat(keys).isSortedAccordingTo(PRECEDENCE);
         }
     }
 }

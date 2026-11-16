@@ -1,17 +1,19 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** One test per row of the plan's detail vocabulary, with the exact text each produces. */
-class PackPolicyVocabularyTest {
+class WordingTest {
 
     private static final String SHARD = "tactic.graph.yaml";
     private static final String FRAGMENT = "drg/fragment.yaml";
@@ -38,7 +40,7 @@ class PackPolicyVocabularyTest {
     }
 
     private static List<String> details(SchemaViolation... violations) {
-        return PackPolicy.schemaFindings("qa", List.of(violations)).stream()
+        return Wording.schemaFindings("qa", List.of(violations)).stream()
                 .map(PackFinding::detail)
                 .toList();
     }
@@ -58,7 +60,7 @@ class PackPolicyVocabularyTest {
     }
 
     private static PackFindingCode code(String file) {
-        List<PackFinding> findings = PackPolicy.schemaFindings("qa", List.of(typeAt(file, "array", "object")));
+        List<PackFinding> findings = Wording.schemaFindings("qa", List.of(typeAt(file, "array", "object")));
         assertThat(findings).hasSize(1);
         assertThat(findings.get(0).file()).isEqualTo(file);
         return findings.get(0).code();
@@ -68,7 +70,7 @@ class PackPolicyVocabularyTest {
 
     @Test
     void aParseFailureNamesTheOriginAndTheParsersFirstLine() {
-        List<PackFinding> findings = PackPolicy.unreadable(
+        List<PackFinding> findings = Wording.unreadable(
                 "qa",
                 new FileRead.Unreadable<>(SHARD, new ParseFailure(SHARD, "while parsing a block mapping"), List.of()));
         assertThat(findings)
@@ -81,7 +83,7 @@ class PackPolicyVocabularyTest {
 
     @Test
     void aFragmentParseFailureIsADrgSchemaError() {
-        assertThat(PackPolicy.unreadable(
+        assertThat(Wording.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(
                                 FRAGMENT, new ParseFailure(FRAGMENT, "while scanning a quoted"), List.of())))
@@ -94,7 +96,7 @@ class PackPolicyVocabularyTest {
 
     @Test
     void aRetiredOrgCharterIsAnArtifactSchemaErrorLikeEveryRetiredFile() {
-        assertThat(PackPolicy.unreadable(
+        assertThat(Wording.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(
                                 "org-charter.yaml",
@@ -110,7 +112,7 @@ class PackPolicyVocabularyTest {
     @Test
     void anArtifactParseFailureIsAnArtifactSchemaError() {
         String artifact = "tactics/x.tactic.yaml";
-        assertThat(PackPolicy.unreadable(
+        assertThat(Wording.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(artifact, new ParseFailure(artifact, "found a tab"), List.of())))
                 .containsExactly(new PackFinding(
@@ -122,7 +124,7 @@ class PackPolicyVocabularyTest {
 
     @Test
     void aDescriptorParseFailureHasNoParserLine() {
-        List<PackFinding> findings = PackPolicy.unreadable(
+        List<PackFinding> findings = Wording.unreadable(
                 "qa", new FileRead.Unreadable<>(PACK_YAML, new ParseFailure(PACK_YAML, "while scanning"), List.of()));
         assertThat(findings)
                 .containsExactly(new PackFinding(
@@ -131,7 +133,7 @@ class PackPolicyVocabularyTest {
 
     @Test
     void unreadableCarryingViolationsGivesThemTheirSchemaTexts() {
-        List<PackFinding> findings = PackPolicy.unreadable(
+        List<PackFinding> findings = Wording.unreadable(
                 "qa",
                 new FileRead.Unreadable<>(
                         SHARD,

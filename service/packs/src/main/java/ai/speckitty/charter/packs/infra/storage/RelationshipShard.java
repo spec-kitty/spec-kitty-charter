@@ -7,8 +7,9 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
-import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -96,9 +97,9 @@ public final class RelationshipShard {
     public static ShardRead read(String packName, String shardYamlText) {
         FileRead<RawGraph> read = GraphDocumentReader.read(shardYamlText, Shape.SHARD, SHARD_PATH);
         return switch (read) {
-            case FileRead.Unreadable<RawGraph> bad -> new ShardRead(List.of(), PackPolicy.unreadable(packName, bad));
+            case FileRead.Unreadable<RawGraph> bad -> new ShardRead(List.of(), Wording.unreadable(packName, bad));
             case FileRead.Read<RawGraph> ok -> {
-                GraphBuild build = PackPolicy.registeredGraph(packName, ok.value());
+                GraphBuild build = GraphBinding.registeredGraph(packName, ok.value());
                 yield new ShardRead(build.graph().relationships(), build.findings());
             }
             case FileRead.Absent<RawGraph> absent -> new ShardRead(List.of(), List.of());

@@ -67,6 +67,7 @@ import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
@@ -456,7 +457,7 @@ public final class DomainRepositoryService
         List<PackEdge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
-                if (PackPolicy.TENSION.equals(edge.relation())) {
+                if (GraphBinding.TENSION.equals(edge.relation())) {
                     // A tension is read as a tension, never answered as a relationship (Relation.yaml).
                     continue;
                 }
@@ -769,7 +770,7 @@ public final class DomainRepositoryService
      */
     private static void refuseSelfLoop(PackIdentifier pack, String packName, String file, GraphDocument.Edge edge) {
         try {
-            if (PackPolicy.joinsItself(
+            if (GraphBinding.joinsItself(
                     packName,
                     PackQualifiedReference.parse(edge.source()),
                     PackQualifiedReference.parse(edge.target()))) {

@@ -17,10 +17,10 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackInspector;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.io.IOException;
@@ -941,7 +941,7 @@ public final class FileSystemPackInspector implements PackInspector {
                 GraphDocumentReader.read(text, GraphDocumentReader.Shape.FRAGMENT, PackFileSet.FRAGMENT);
         if (read instanceof FileRead.Read<RawGraph> good) {
             for (PackContents.RawNode node : good.value().nodes()) {
-                Optional<String> escape = PackPolicy.bodyPathEscape(node.ref(), node.bodyPath());
+                Optional<String> escape = Paths.bodyPathEscape(node.ref(), node.bodyPath());
                 if (escape.isPresent()) {
                     return new FileRead.Unreadable<>(
                             PackFileSet.FRAGMENT, ParseFailure.refused(PackFileSet.FRAGMENT, escape.get()), List.of());

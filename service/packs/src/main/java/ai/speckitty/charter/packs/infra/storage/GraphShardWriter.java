@@ -4,7 +4,7 @@ import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -114,7 +114,7 @@ public final class GraphShardWriter {
             edges.add(edge(
                     tension.fromReference(),
                     tension.toReference(),
-                    PackPolicy.TENSION,
+                    GraphBinding.TENSION,
                     tension.when(),
                     tension.rationale()));
         }

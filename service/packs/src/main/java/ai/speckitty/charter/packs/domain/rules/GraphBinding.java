@@ -1,0 +1,303 @@
+package ai.speckitty.charter.packs.domain.rules;
+
+import ai.speckitty.charter.kernel.domain.DoctrineGraph;
+import ai.speckitty.charter.kernel.domain.DrgNode;
+import ai.speckitty.charter.kernel.domain.EndpointRule;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
+import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.domain.PackContents.RawNode;
+import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Binds a graph document as written to a {@link DoctrineGraph}, for a pack's graph documents and for the store's
+ * registered-relationship shard alike, and collects what does not bind as findings.
+ */
+public final class GraphBinding {
+
+    /** The list of a graph document's nodes. */
+    static final String NODES = "nodes";
+
+    /** The list of a graph document's edges. */
+    static final String EDGES = "edges";
+
+    /** The finding text of an authored edge to or from a guard or a lifecycle (#156), before the endpoint. */
+    public static final String NOT_AUTHORED =
+            "a guard or a lifecycle is not an authored edge endpoint until its contract set lands: ";
+
+    /**
+     * The finding text of an authored or registered edge that names a term anywhere but as the target of a
+     * {@code vocabulary} edge (ADR-0049 decision 4; operator ruling of 2026-11-14), before the edge.
+     */
+    public static final String TERM_ENDPOINT = "a term is an edge endpoint only as the target of a vocabulary edge: ";
+
+    /**
+     * Today's spelling of the tension relationship in a graph document (ADR-0036 Decision 4). The domain binds it to a
+     * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
+     * a tension back with it.
+     */
+    public static final String TENSION = Tension.TOKEN;
+
+    private GraphBinding() {}
+
+    /**
+     * A graph built from facts, with what could not be bound.
+     *
+     * @param graph the nodes and edges that bound
+     * @param findings one finding for each node or edge that did not bind, in document order
+     */
+    public record GraphBuild(DoctrineGraph graph, List<PackFinding> findings) {
+        /**
+         * Copies the findings.
+         *
+         * @param graph the graph
+         * @param findings the findings
+         */
+        public GraphBuild {
+            findings = List.copyOf(findings);
+        }
+    }
+
+    /**
+     * Builds the graph of one document and collects what does not bind: the URN binding, the tension edges, which
+     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0045). Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
+     *
+     * <p>A node or edge with a finding is left out of the graph, so the constructor checks of {@link Relationship}
+     * and {@link Tension} stay programming-error guards and never fire. An edge reports its first fault only, checked
+     * in the order the adapter's reader used: relation, then the endpoints, then a self-loop. The schema normally
+     * refuses these first; the domain check keeps the same text for a document that reaches here anyway.
+     *
+     * @param packName the pack's configured name, which prefixes the origin in a text
+     * @param raw the document as written
+     * @return the graph and the findings
+     */
+    public static GraphBuild graph(String packName, RawGraph raw) {
+        return build(packName, raw, false);
+    }
+
+    /**
+     * Builds the graph of the registered-relationship shard, which holds structural relationships only: a tension is
+     * authored in a pack's graph shards and never registered, so one found here is a finding and is not bound. The
+     * store then refuses to rewrite the shard rather than drop the tension in silence.
+     *
+     * @param packName the pack's configured name, which prefixes the origin in a text
+     * @param raw the registered shard as written
+     * @return the graph and the findings
+     */
+    public static GraphBuild registeredGraph(String packName, RawGraph raw) {
+        return build(packName, raw, true);
+    }
+
+    private static GraphBuild build(String packName, RawGraph raw, boolean registered) {
+        String origin = packName + "/" + raw.file();
+        List<DrgNode> nodes = new ArrayList<>();
+        List<Relationship> relationships = new ArrayList<>();
+        List<Tension> tensions = new ArrayList<>();
+        List<PackFinding> findings = new ArrayList<>();
+        for (int i = 0; i < raw.nodes().size(); i++) {
+            RawNode node = raw.nodes().get(i);
+            Optional<DrgNode> bound = switch (raw.shape()) {
+                case SHARD -> shardNode(node);
+                case FRAGMENT -> fragmentNode(node);
+            };
+            if (bound.isPresent()) {
+                nodes.add(bound.get());
+            } else {
+                findings.add(graphFinding(raw, NODES, i, nodeProblem(raw.shape(), node, origin)));
+            }
+        }
+        for (int i = 0; i < raw.edges().size(); i++) {
+            RawEdge edge = raw.edges().get(i);
+            Object outcome = registered && TENSION.equals(edge.relation())
+                    ? origin + ": a registered relationship is never a tension; " + TENSION
+                            + " is authored in a pack's graph shards"
+                    : edge(edge, origin);
+            switch (outcome) {
+                case Relationship relationship -> relationships.add(relationship);
+                case Tension tension -> tensions.add(tension);
+                // Refused by the table or by the source rule. In a pack's graph documents each pack-level pass reports
+                // it under its own code; the registered shard is read on its own, so its read reports it here.
+                case EndpointRule.Fault refused -> {
+                    if (registered) {
+                        findings.add(new PackFinding(
+                                EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE.equals(refused.code())
+                                        ? PackFindingCode.OVERRIDES_SOURCE_NOT_ACTIVATABLE
+                                        : PackFindingCode.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
+                                raw.file(),
+                                List.of(EDGES, Integer.toString(i)),
+                                origin + ": " + refused.message()));
+                    }
+                }
+                default -> findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
+            }
+        }
+        return new GraphBuild(new DoctrineGraph(nodes, relationships, tensions), findings);
+    }
+
+    private static PackFinding graphFinding(RawGraph raw, String list, int index, String detail) {
+        return new PackFinding(
+                PackFindingCode.DRG_SCHEMA_ERROR, raw.file(), List.of(list, Integer.toString(index)), detail);
+    }
+
+    private static Optional<DrgNode> shardNode(RawNode node) {
+        return Urn.parse(node.ref())
+                .filter(urn -> urn.kind().declarableInGraphs())
+                .map(urn -> boundNode(urn, node));
+    }
+
+    /** The node with every field written for it; a fragment node has a body path, a shard node provenance and tags. */
+    private static DrgNode boundNode(Urn urn, RawNode node) {
+        return new DrgNode(urn, node.label(), node.provenance(), node.tags(), node.bodyPath());
+    }
+
+    private static Optional<DrgNode> fragmentNode(RawNode node) {
+        if (node.ref().isEmpty()) {
+            return Optional.empty();
+        }
+        return NodeKind.fromPlural(node.kind())
+                .filter(NodeKind::declarableInGraphs)
+                .map(kind -> boundNode(new Urn(kind, node.ref()), node));
+    }
+
+    private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
+        return switch (shape) {
+            case SHARD ->
+                Urn.parse(node.ref()).isPresent()
+                        ? origin + ": " + NOT_AUTHORED + "'" + node.ref() + "'"
+                        : origin + ": node urn '" + node.ref() + "' is not <kind>:<id>";
+            case FRAGMENT ->
+                node.ref().isEmpty()
+                        ? origin + ": " + emptyId(node.kind())
+                        : NodeKind.fromPlural(node.kind())
+                                .map(kind -> origin + ": " + NOT_AUTHORED + "'" + new Urn(kind, node.ref()) + "'")
+                                .orElseGet(() ->
+                                        origin + ": node " + node.ref() + " has unknown kind '" + node.kind() + "'");
+        };
+    }
+
+    /** The text of a fragment node with an empty id; the detail vocabulary gives a schema violation the same. */
+    static String emptyId(String kind) {
+        return "a node of kind '" + kind + "' has an empty id";
+    }
+
+    /**
+     * Binds one edge; the result is the {@link Relationship}, the {@link Tension} of an {@code in_tension_with} edge, the
+     * {@link EndpointRule.Fault} of an edge whose relation does not allow its endpoints, or the finding text for the
+     * first other fault.
+     */
+    private static Object edge(RawEdge raw, String origin) {
+        if (TENSION.equals(raw.relation())) {
+            return tension(raw, origin);
+        }
+        Optional<RelationType> relation = RelationType.fromToken(raw.relation());
+        if (relation.isEmpty()) {
+            return origin + ": unknown relation '" + raw.relation() + "'";
+        }
+        if (relation.get().derived()) {
+            return origin + ": relation '" + raw.relation() + "' is derived from an artifact's own field, never"
+                    + " authored as an edge";
+        }
+        Object endpoints = endpoints(raw, origin, relation);
+        if (!(endpoints instanceof Endpoints bound)) {
+            return endpoints;
+        }
+        return switch (EndpointRule.bind(
+                relation.get(), bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason())) {
+            case EndpointRule.Bound typed -> typed.relationship();
+            case EndpointRule.Fault fault -> fault;
+        };
+    }
+
+    /**
+     * Binds a tension edge, kept as written (ADR-0036 Decision 4: the reader never turns it around).
+     */
+    private static Object tension(RawEdge raw, String origin) {
+        Object endpoints = endpoints(raw, origin, Optional.empty());
+        if (!(endpoints instanceof Endpoints bound)) {
+            return endpoints;
+        }
+        Optional<EndpointRule.Fault> fault = EndpointRule.bindTension(bound.from(), bound.to());
+        return fault.isPresent()
+                ? fault.get()
+                : new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason());
+    }
+
+    /** The two endpoints of an edge: each a bare URN and the pack its reference names, if it is pack-qualified. */
+    private record Endpoints(Urn from, Optional<String> fromPack, Urn to, Optional<String> toPack) {}
+
+    /**
+     * The endpoints of an edge, or the finding text for the first that does not bind.
+     *
+     * @param relation the edge's relation type; empty for a tension
+     */
+    private static Object endpoints(RawEdge raw, String origin, Optional<RelationType> relation) {
+        Optional<PackQualifiedReference> source = reference(raw.source());
+        Optional<Urn> sourceUrn = source.flatMap(PackQualifiedReference::asUrn);
+        if (sourceUrn.isEmpty()) {
+            return origin + ": edge endpoint '" + raw.source() + "' is not a URN";
+        }
+        Optional<PackQualifiedReference> target = reference(raw.target());
+        Optional<Urn> targetUrn = target.flatMap(PackQualifiedReference::asUrn);
+        if (targetUrn.isEmpty()) {
+            return origin + ": edge endpoint '" + raw.target() + "' is not a URN";
+        }
+        // Only a bare endpoint pair is a self-loop: a qualifier names another pack's artifact of the same id
+        // (`a::directive:X -> directive:X` joins two artifacts), which is legal (ADR-0053 decision 7).
+        if (sourceUrn.get().equals(targetUrn.get())
+                && source.get().packName().isEmpty()
+                && target.get().packName().isEmpty()) {
+            return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
+        }
+        for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
+            if (!endpoint.kind().edgeTarget()) {
+                return origin + ": " + NOT_AUTHORED + "'" + endpoint + "'";
+            }
+        }
+        if (!sourceUrn.get().kind().edgeSource() || !targetUrn.get().kind().edgeTargetOf(relation)) {
+            return origin + ": " + TERM_ENDPOINT + "'" + raw.source() + "' " + raw.relation() + " '" + raw.target()
+                    + "'";
+        }
+        return new Endpoints(
+                sourceUrn.get(),
+                source.get().packName(),
+                targetUrn.get(),
+                target.get().packName());
+    }
+
+    /** The endpoint text split by {@link PackQualifiedReference}; empty when its qualifier is malformed. */
+    private static Optional<PackQualifiedReference> reference(String text) {
+        try {
+            return Optional.of(PackQualifiedReference.parse(text));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * The one rule for a self-loop in a pack named {@code packName}: two references join an artifact to itself when
+     * they name the same URN and both mean the writing pack, a bare one by default and a qualified one by naming it
+     * ({@code pack-a::directive:X} inside {@code pack-a}). A reference qualified with another pack names another
+     * pack's artifact of the same id, which is legal (ADR-0053 decision 7).
+     *
+     * @param packName the descriptor name of the pack that writes both references
+     * @param from the reference on one side
+     * @param to the reference on the other side
+     * @return {@code true} when both mean the same artifact of the writing pack
+     */
+    public static boolean joinsItself(String packName, PackQualifiedReference from, PackQualifiedReference to) {
+        Objects.requireNonNull(packName, "packName");
+        return from.urn().equals(to.urn())
+                && from.packName().orElse(packName).equals(packName)
+                && to.packName().orElse(packName).equals(packName);
+    }
+}

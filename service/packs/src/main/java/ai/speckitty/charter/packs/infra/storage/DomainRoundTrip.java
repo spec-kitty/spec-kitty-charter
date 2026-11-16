@@ -12,7 +12,7 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,7 +39,7 @@ import org.jspecify.annotations.Nullable;
  * <p>A {@link DomainRepositoryService} over the source directory loads the {@link Pack} aggregate (descriptor and every
  * kind bound in {@link KindBindings}, with every read violation); a second one over the target directory saves the
  * descriptor and each artefact; loading the target is the read-back. Graph shards go through
- * {@link GraphDocumentReader} → {@link PackPolicy#graph} → {@link GraphShardWriter}, keeping the source's
+ * {@link GraphDocumentReader} → {@link GraphBinding#graph} → {@link GraphShardWriter}, keeping the source's
  * {@code generated_by}; an org fragment ({@code drg/fragment.yaml}, #509) takes the same path in the fragment's shape,
  * through {@link GraphShardWriter#writeFragment}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
  *
@@ -798,7 +798,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!(GraphDocumentReader.read(text, shape, path) instanceof FileRead.Read<RawGraph> raw)) {
             return new Refused("the " + noun + " does not read");
         }
-        PackPolicy.GraphBuild build = PackPolicy.graph(name, raw.value());
+        GraphBinding.GraphBuild build = GraphBinding.graph(name, raw.value());
         if (!build.findings().isEmpty()) {
             return new Refused("the graph does not build: " + build.findings());
         }
@@ -817,7 +817,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!(GraphDocumentReader.read(writtenText, shape, path) instanceof FileRead.Read<RawGraph> reread)) {
             return new Refused("read-back: the written " + noun + " does not read");
         }
-        PackPolicy.GraphBuild rebuilt = PackPolicy.graph(name, reread.value());
+        GraphBinding.GraphBuild rebuilt = GraphBinding.graph(name, reread.value());
         if (!rebuilt.findings().isEmpty()) {
             return new Refused("read-back: the written " + noun + " does not build: " + rebuilt.findings());
         }

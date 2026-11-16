@@ -6,7 +6,7 @@ import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Tension;
-import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>The kinds are in {@link NodeKind} order. The relations are in {@link RelationType} order, then the tension, which
  * the model holds beside the relationships (ADR-0028, ADR-0045) and which the pack files write
- * {@value PackPolicy#TENSION}. The endpoints of a relation are sorted by source kind, then by target kind, in
+ * {@value GraphBinding#TENSION}. The endpoints of a relation are sorted by source kind, then by target kind, in
  * {@link NodeKind} order, so the answer is the same on every run.
  */
 @Service
@@ -132,7 +132,7 @@ public final class KindTaxonomyReadService {
                     sorted(type.endpoints())));
         }
         relations.add(new RelationFacts(
-                PackPolicy.TENSION,
+                GraphBinding.TENSION,
                 HeldAs.TENSION,
                 Tension.directionality() == Directionality.DIRECTED,
                 Tension.derived(),
