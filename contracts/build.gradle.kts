@@ -30,6 +30,9 @@ plugins {
 
 dependencies {
     implementation(libs.snakeyaml.engine)
+    // IdentifierPatternParityTest (#585) compares the contracts' identifier patterns with the kernel's predicates.
+    // Test scope only: the contract's checkers stay free of the service, and the kernel is pure Java with no edge back.
+    testImplementation(project(":kernel"))
 }
 
 // This project builds into the root build/contracts, not contracts/build. That is not what keeps :charter-api's
@@ -896,6 +899,9 @@ tasks.test {
         .map { repositoryRoot.dir("service/${it.name}/src/main/java") }
     inputs.files(serviceSourceDirs, repositoryRoot.dir("docs/adr"), repositoryRoot.dir("contracts/offering"))
         .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("xSourceTargets")
+    // IdentifierPatternParityTest walks every schema root for its identifier sites (#585).
+    inputs.files(layout.projectDirectory.dir("_shared"), layout.projectDirectory.dir("packs/schemas"))
+        .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("identifierSchemaRoots")
     systemProperty("charter.contractDir", charterContractDir.asFile.absolutePath)
     systemProperty("charter.repositoryRoot", repositoryRoot.asFile.absolutePath)
 }
