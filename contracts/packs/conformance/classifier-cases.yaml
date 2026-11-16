@@ -39,7 +39,7 @@
 cases:
   # files: one case per rule.
   - {path: core/pack.yaml, expect: mapped, rule: "*/pack.yaml", kind: pack-descriptor, schema: schemas/pack-descriptor.schema.json, content_form: yaml}
-  - {path: core/graph/a.graph.yaml, expect: mapped, rule: "**/*.graph.yaml", kind: graph-shard, schema: schemas/graph-shard.schema.json, content_form: yaml}
+  - {path: core/a.graph.yaml, expect: mapped, rule: "*/*.graph.yaml", kind: graph-shard, schema: schemas/graph-shard.schema.json, content_form: yaml}
   - {path: org/drg/fragment.yaml, expect: mapped, rule: "*/drg/fragment.yaml", kind: org-fragment, schema: schemas/org-fragment.schema.json, content_form: yaml}
   - {path: core/directives/a.directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
   - {path: core/tactics/a.tactic.yaml, expect: mapped, rule: "**/*.tactic.yaml", kind: tactic, schema: schemas/tactic.schema.json, content_form: yaml}
@@ -54,7 +54,6 @@ cases:
   - {path: core/presets/minimal.yaml, expect: mapped, rule: "*/presets/*.yaml", kind: preset, schema: schemas/preset.schema.json, content_form: yaml}
   - {path: core/pack-manifest.yaml, expect: mapped, rule: "*/pack-manifest.yaml", kind: pack-manifest, schema: schemas/pack-manifest.schema.json, content_form: yaml}
   - {path: core/policy.yaml, expect: mapped, rule: "*/policy.yaml", kind: policy, schema: schemas/policy.schema.json, content_form: yaml}
-  - {path: project/charter.yaml, expect: mapped, rule: "**/charter.yaml", kind: charter, schema: schemas/charter.schema.json, content_form: yaml}
   - {path: core/toolguides/a.guide.md, expect: mapped, rule: "**/toolguides/*.guide.md", kind: toolguide-guide, schema: schemas/toolguide-guide.schema.json, content_form: markdown}
   - {path: core/README.md, expect: mapped, rule: "*/README.md", kind: pack-document, schema: schemas/pack-document.schema.json, content_form: markdown}
   - {path: core/missions/plan/plan.mission-type.yaml, expect: mapped, rule: "**/*.mission-type.yaml", kind: mission-type, schema: schemas/mission-type.schema.json, content_form: yaml}
@@ -131,3 +130,9 @@ cases:
   - {path: core/notes.txt, expect: unmodelled}
   - {path: core/directives/a.directive.yml, expect: unmodelled}
   - {path: core/data.json, expect: unmodelled}
+  # The service reads graph shards at the pack root only, and no charter.yaml (#554, open case 6).
+  - {path: core/graph/a.graph.yaml, expect: unmodelled}
+  - {path: core/drg/tactic.graph.yaml, expect: unmodelled}
+  - {path: project/charter.yaml, expect: unmodelled}
+  # A shard below the root of assets/ or templates/ is a payload of that place, as any other file there is.
+  - {path: core/assets/a.graph.yaml, expect: mapped, rule: "*/assets/**/*", kind: asset-payload, content_form: bytes}

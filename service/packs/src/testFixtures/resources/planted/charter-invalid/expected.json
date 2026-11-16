@@ -4,8 +4,8 @@
   ],
   "findings": [
     {
-      "code": "artifact_schema_error",
-      "severity": "blocking",
+      "code": "file_not_held",
+      "severity": "warning",
       "file": "charter.yaml",
       "place": []
     }

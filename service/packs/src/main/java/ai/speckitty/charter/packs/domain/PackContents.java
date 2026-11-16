@@ -19,13 +19,16 @@ import org.jspecify.annotations.Nullable;
  * @param files every file of the pack with its classification; filled by a full read only
  * @param artifacts the kind and id each artifact declares; filled by a full read only
  * @param assets the path and MIME type each asset declares; filled by a full read only
- * @param unreadableFiles every other classified file that could not be parsed or broke its schema: an artifact, an
- *     org charter, a project charter or a graph document outside the load path; filled by a full read only
+ * @param unreadableFiles every other classified file that could not be parsed or broke its schema: an artifact or a
+ *     pack-level file outside the load path; filled by a full read only
  * @param stepEnhancements the step enhancements, their companions and the pack's graph edges as plain facts; filled by
  *     a full read only, empty in the load-path scope
  * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
  *     full read only. A prompt the codec refuses is listed in {@code unreadableFiles} instead and has no parse (A5).
  * @param missionTypes the id and step ids of each mission type the read could parse; filled by a full read only
+ * @param notHeld every file of the pack the store does not hold, path-sorted, each with its kind and reason: an
+ *     excluded file and a file no pack file kind models, never a retired one (#554, open case 6). Nothing in such a
+ *     file is read or judged. Filled by a full read only
  */
 public record PackContents(
         PackRoot root,
@@ -38,7 +41,8 @@ public record PackContents(
         List<FileRead.Unreadable<?>> unreadableFiles,
         StepEnhancementFacts stepEnhancements,
         List<PromptSlotFacts> promptSlots,
-        List<MissionTypeFacts> missionTypes) {
+        List<MissionTypeFacts> missionTypes,
+        List<NotHeldFile> notHeld) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -53,6 +57,7 @@ public record PackContents(
      * @param stepEnhancements the step enhancement facts
      * @param promptSlots the slot parse of each step prompt
      * @param missionTypes the mission type facts
+     * @param notHeld the files the store does not hold
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
@@ -66,6 +71,49 @@ public record PackContents(
         Objects.requireNonNull(stepEnhancements, "stepEnhancements");
         promptSlots = List.copyOf(promptSlots);
         missionTypes = List.copyOf(missionTypes);
+        notHeld = List.copyOf(notHeld);
+    }
+
+    /**
+     * Contents that list no file as not held: the call sites that predate the held set (#554).
+     *
+     * @param root the pack that was read
+     * @param descriptor what {@code pack.yaml} gave
+     * @param shards the root shards
+     * @param fragment what {@code drg/fragment.yaml} gave
+     * @param files the classified files
+     * @param artifacts the artifact facts
+     * @param assets the asset facts
+     * @param unreadableFiles the other files that could not be read
+     * @param stepEnhancements the step enhancement facts
+     * @param promptSlots the slot parse of each step prompt
+     * @param missionTypes the mission type facts
+     */
+    public PackContents(
+            PackRoot root,
+            FileRead<PackDescriptor> descriptor,
+            List<FileRead<RawGraph>> shards,
+            FileRead<RawGraph> fragment,
+            List<ClassifiedFile> files,
+            List<ArtifactFacts> artifacts,
+            List<AssetFacts> assets,
+            List<FileRead.Unreadable<?>> unreadableFiles,
+            StepEnhancementFacts stepEnhancements,
+            List<PromptSlotFacts> promptSlots,
+            List<MissionTypeFacts> missionTypes) {
+        this(
+                root,
+                descriptor,
+                shards,
+                fragment,
+                files,
+                artifacts,
+                assets,
+                unreadableFiles,
+                stepEnhancements,
+                promptSlots,
+                missionTypes,
+                List.of());
     }
 
     /**

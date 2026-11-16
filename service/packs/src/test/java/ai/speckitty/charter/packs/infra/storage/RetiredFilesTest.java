@@ -177,7 +177,7 @@ class RetiredFilesTest {
                     // The one declared overlap with a files rule: the retired rule is consulted first and refuses it.
                     assertThat(TABLE.matchingRules("qa/" + path))
                             .as(path)
-                            .containsExactly("**/*.graph.yaml", "**/mission_step_contract.graph.yaml");
+                            .containsExactly("*/*.graph.yaml", "**/mission_step_contract.graph.yaml");
                     assertThat(TABLE.classify("qa/" + path)).as(path).isInstanceOf(PackFileKind.Retired.class);
                 } else {
                     assertThat(TABLE.matchingRules("qa/" + path)).as(path).hasSize(1);

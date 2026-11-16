@@ -30,7 +30,7 @@ class PackFileKindTest {
     /** One sample path for each {@code files} rule, with the schema it must map to. */
     private static final Map<String, String> MAPPED = Map.ofEntries(
             Map.entry("core/pack.yaml", "pack-descriptor"),
-            Map.entry("core/graph/a.graph.yaml", "graph-shard"),
+            Map.entry("core/a.graph.yaml", "graph-shard"),
             Map.entry("org/drg/fragment.yaml", "org-fragment"),
             Map.entry("core/directives/a.directive.yaml", "directive"),
             Map.entry("core/tactics/a.tactic.yaml", "tactic"),
@@ -50,7 +50,6 @@ class PackFileKindTest {
             Map.entry("core/assets/a.asset.yaml", "asset"),
             Map.entry("core/glossaries/a.glossary.yaml", "glossary"),
             Map.entry("core/skills/a.skill.yaml", "skill"),
-            Map.entry("project/charter.yaml", "charter"),
             Map.entry("core/presets/minimal.yaml", "preset"),
             Map.entry("core/pack-manifest.yaml", "pack-manifest"),
             Map.entry("core/policy.yaml", "policy"),
@@ -201,7 +200,13 @@ class PackFileKindTest {
         "pack.yaml",
         "core/deep/er/pack.yaml",
         "core/docs/pack.txt",
-        "built-in/missions/templates/spec-template.txt"
+        "built-in/missions/templates/spec-template.txt",
+        // The service reads graph shards at the pack root only, and no charter.yaml (#554, open case 6).
+        "core/drg/tactic.graph.yaml",
+        "core/graph/a.graph.yaml",
+        "x.graph.yaml",
+        "core/charter.yaml",
+        "project/sub/charter.yaml"
     })
     void anUnknownFileIsUnclassified(String path) {
         assertThat(KINDS.classify(path)).isEqualTo(PackFileKind.Unclassified.INSTANCE);
@@ -315,12 +320,12 @@ class PackFileKindTest {
     @Test
     void aSingleStarStaysInOneSegmentAndDoubleStarSpansSegments() {
         assertThat(KINDS.classify("a/b/pack.yaml")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
-        assertThat(KINDS.classify("x.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
-        assertThat(KINDS.classify("a/b/c/d.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
+        assertThat(KINDS.classify("x.directive.yaml")).isInstanceOf(PackFileKind.Mapped.class);
+        assertThat(KINDS.classify("a/b/c/d.directive.yaml")).isInstanceOf(PackFileKind.Mapped.class);
         assertThat(KINDS.classify("a/xdirective.yaml")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
         // The build-logic RegexRecursionGuardTest allow-lists PackFileKind on this: a very deep path neither
         // overflows the stack nor goes unmapped.
-        assertThat(KINDS.classify("a/".repeat(20_000) + "d.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
+        assertThat(KINDS.classify("a/".repeat(20_000) + "d.directive.yaml")).isInstanceOf(PackFileKind.Mapped.class);
     }
 
     /**
@@ -362,7 +367,7 @@ class PackFileKindTest {
                 .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(26);
+        assertThat(KINDS.fileRules()).hasSize(25);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
                         + " README.md's (#260, #451)")

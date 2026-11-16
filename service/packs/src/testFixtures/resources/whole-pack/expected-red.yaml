@@ -11,11 +11,6 @@
 # Every modelled kind has a file in some example pack (ADR-0070), so a missing kind is fixed in an example pack, never
 # listed here.
 kinds:
-  - kind: charter
-    reason: >-
-      A project's charter.yaml is not pack content: the store leaves it unmodelled, and the table's rule exists only so
-      that a stray one is validated rather than ignored. A stray one in an example pack fails the gate.
-    issue: "#547"
   - kind: toolguide-guide
     reason: >-
       A companion (ADR-0039) is modelled with the toolguide that names it, and the census classes it under the owner's

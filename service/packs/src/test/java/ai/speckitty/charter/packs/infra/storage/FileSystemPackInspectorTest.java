@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -339,22 +340,23 @@ class FileSystemPackInspectorTest {
         write(dir, "paradigms/utf.paradigm.yaml", "a: b\n");
         Files.write(dir.resolve("paradigms/utf.paradigm.yaml"), new byte[] {(byte) 0xC3, 0x28});
 
-        List<FileRead.Unreadable<?>> unreadable = full(dir).unreadableFiles();
+        PackContents contents = full(dir);
+        List<FileRead.Unreadable<?>> unreadable = contents.unreadableFiles();
 
         assertThat(unreadable)
                 .extracting(FileRead::file)
                 .containsExactly(
                         "directives/bytes.directive.yaml",
                         "paradigms/utf.paradigm.yaml",
-                        "project/charter.yaml",
                         "tactics/bad.tactic.yaml",
                         "tactics/short.tactic.yaml");
         assertThat(unreadable.get(0).parse()).isNotNull();
         assertThat(unreadable.get(1).parse())
                 .isEqualTo(new PackContents.ParseFailure("paradigms/utf.paradigm.yaml", "the file is not valid UTF-8"));
-        assertThat(unreadable.get(2).violations()).isNotEmpty();
-        assertThat(unreadable.get(3).parse()).isNotNull();
-        assertThat(unreadable.get(4).violations()).isNotEmpty();
+        assertThat(unreadable.get(2).parse()).isNotNull();
+        assertThat(unreadable.get(3).violations()).isNotEmpty();
+        // No rule maps a charter.yaml: it is not held and never read, however it breaks the charter schema (#554).
+        assertThat(contents.notHeld()).containsExactly(NotHeldFile.unmodelled("project/charter.yaml"));
     }
 
     @Test

@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -55,7 +57,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>{@link Scope#FULL} reads those the same way and then every other {@code *.yaml} file of the pack, in path order:
  * each is classified by {@link PackFileKind} (mapped to a schema, or excluded for a reviewed reason; a file no rule
- * covers is left out of the classification), and each mapped file that has a schema is parsed and validated through
+ * covers is left out of the classification and listed as not held, #554), and each mapped file that has a schema is
+ * parsed and validated through
  * {@link PackSchemas}; a schema-less payload (a {@code payloads} rule's kind, such as an asset payload that happens to
  * be YAML) is listed with its kind and not read. The step ids, artifact ids and asset declarations of the files that passed their schema are the
  * facts the validate-only rules judge; a file that did not is {@link PackContents#unreadableFiles()}.
@@ -188,7 +191,8 @@ public final class FileSystemPackInspector implements PackInspector {
                 full.unreadable,
                 full.stepEnhancementFacts(edgesOf(shards, fragment, ownName(descriptor, name))),
                 full.promptSlots,
-                full.missionTypes);
+                full.missionTypes,
+                full.notHeld);
     }
 
     /** The step enhancement edges of the pack's graph documents that were read: the root shards, then the fragment. */
@@ -320,6 +324,7 @@ public final class FileSystemPackInspector implements PackInspector {
         private final List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
         private final List<StepEnhancementFacts.Companion> companions = new ArrayList<>();
         final List<PackContents.PromptSlotFacts> promptSlots = new ArrayList<>();
+        final List<NotHeldFile> notHeld = new ArrayList<>();
         private final Set<String> fragmentFiles = new HashSet<>();
         private final Set<String> unparsedEnhancements = new HashSet<>();
         private final Set<String> assetIds = new HashSet<>();
@@ -347,6 +352,28 @@ public final class FileSystemPackInspector implements PackInspector {
             listing.retired()
                     .forEach((file, reason) -> unreadable.add(
                             new FileRead.Unreadable<>(file, ParseFailure.retired(file, reason), List.of())));
+            listNotHeld(prefix);
+        }
+
+        /**
+         * Lists every file the store does not hold, as the store's load lists it ({@code WholePackStore}): each regular
+         * file of the pack that is not itself a link, in {@link String} order, that the table excludes or no rule
+         * models, unless a held artifact claims it as a companion (a skill body). A retired file is refused by name,
+         * never listed (#554, WP02 review L2). None is read, so no rule judges it (#554, open case 6).
+         */
+        private void listNotHeld(String prefix) {
+            Set<String> held = Set.copyOf(PackFileSet.digested(directory, table));
+            for (String file : unlinkedFiles(directory, name)) {
+                if (held.contains(file)) {
+                    continue;
+                }
+                switch (table.classify(prefix + file)) {
+                    case PackFileKind.Excluded excluded -> notHeld.add(NotHeldFile.excluded(file, excluded.reason()));
+                    case PackFileKind.Unclassified unclassified -> notHeld.add(NotHeldFile.unmodelled(file));
+                    case PackFileKind.Mapped mapped -> {}
+                    case PackFileKind.Retired retired -> {}
+                }
+            }
         }
 
         /** Classifies every YAML file of the pack, and reads each mapped one the load path has not read. */
@@ -816,6 +843,28 @@ public final class FileSystemPackInspector implements PackInspector {
                     .map(p -> directory.resolve(root.relativize(p)))
                     .sorted(Comparator.comparing(
                             (Path p) -> slashed(directory.relativize(p)), FileSystemPackInspector::comparePaths))
+                    .toList();
+        } catch (IOException | UncheckedIOException e) {
+            throw PackFileSet.unlistable(packName, e);
+        }
+    }
+
+    /**
+     * Every regular file under the pack directory that is not itself a symbolic link, pack-relative and {@code /}-
+     * separated, in {@link String} order: the files the store's load lists as held or not held. The walk starts at the
+     * directory's real path, as {@link #packFiles}' does (#284).
+     */
+    private static List<String> unlinkedFiles(Path directory, String packName) {
+        Path root;
+        try {
+            root = directory.toRealPath();
+        } catch (IOException e) {
+            throw PackFileSet.unlistable(packName, e);
+        }
+        try (Stream<Path> walk = Files.walk(root)) {
+            return walk.filter(p -> Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS))
+                    .map(p -> slashed(root.relativize(p)))
+                    .sorted()
                     .toList();
         } catch (IOException | UncheckedIOException e) {
             throw PackFileSet.unlistable(packName, e);

@@ -5,13 +5,10 @@
   ],
   "findings": [
     {
-      "code": "drg_schema_error",
-      "severity": "blocking",
+      "code": "file_not_held",
+      "severity": "warning",
       "file": "drg/tactic.graph.yaml",
-      "place": [
-        "edges",
-        "0"
-      ]
+      "place": []
     }
   ]
 }

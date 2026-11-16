@@ -1376,11 +1376,11 @@
   "planted/c16-shard-edge-provenance" : {
     "validate" : {
       "findings" : [ {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "edges", "0" ],
-        "detail" : "qa/drg/tactic.graph.yaml edge: unknown key 'provenance'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1410,11 +1410,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "edges", "0" ],
-        "detail" : "qa/drg/tactic.graph.yaml edge: unknown key 'provenance'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1492,11 +1492,11 @@
   "planted/c2-charter-nested-unknown-key" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
-        "place" : [ "catalog" ],
-        "detail" : "qa/charter.yaml: unknown key 'bogus'"
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1526,11 +1526,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
-        "place" : [ "catalog" ],
-        "detail" : "qa/charter.yaml: unknown key 'bogus'"
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1680,11 +1680,11 @@
   "planted/c3-shard-edge-bare-endpoint" : {
     "validate" : {
       "findings" : [ {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "edges", "0", "source" ],
-        "detail" : "qa/drg/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1714,11 +1714,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "edges", "0", "source" ],
-        "detail" : "qa/drg/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1734,17 +1734,11 @@
   "planted/c3-shard-urn-malformed" : {
     "validate" : {
       "findings" : [ {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
-      }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
-        "file" : "drg/tactic.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1774,17 +1768,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
-      }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
-        "file" : "drg/tactic.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1800,11 +1788,11 @@
   "planted/c4-shard-urn-prefix-differs-from-kind" : {
     "validate" : {
       "findings" : [ {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -1834,11 +1822,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2005,11 +1993,11 @@
   "planted/c7-shard-relation-extends" : {
     "validate" : {
       "findings" : [ {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "edges", "0", "relation" ],
-        "detail" : "qa/drg/tactic.graph.yaml: unknown relation 'extends'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2039,11 +2027,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/tactic.graph.yaml",
-        "place" : [ "edges", "0", "relation" ],
-        "detail" : "qa/drg/tactic.graph.yaml: unknown relation 'extends'"
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2058,7 +2046,13 @@
   },
   "planted/c8-shard-without-generated-by-is-accepted" : {
     "validate" : {
-      "findings" : [ ]
+      "findings" : [ {
+        "code" : "file_not_held",
+        "severity" : "warning",
+        "file" : "drg/tactic.graph.yaml",
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+      } ]
     },
     "registration" : {
       "refused" : {
@@ -2086,6 +2080,12 @@
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
+      }, {
+        "code" : "file_not_held",
+        "severity" : "warning",
+        "file" : "drg/tactic.graph.yaml",
+        "place" : [ ],
+        "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2129,11 +2129,11 @@
   "planted/charter-cli-timeout-not-a-number" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
-        "place" : [ "governance", "performance", "cli_timeout_seconds" ],
-        "detail" : "qa/charter.yaml: 'cli_timeout_seconds' must be a number"
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2163,11 +2163,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
-        "place" : [ "governance", "performance", "cli_timeout_seconds" ],
-        "detail" : "qa/charter.yaml: 'cli_timeout_seconds' must be a number"
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2183,11 +2183,11 @@
   "planted/charter-invalid" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
         "place" : [ ],
-        "detail" : "qa/charter.yaml: missing 'catalog'"
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2217,11 +2217,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
         "place" : [ ],
-        "detail" : "qa/charter.yaml: missing 'catalog'"
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2237,11 +2237,11 @@
   "planted/charter-template-set" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
-        "place" : [ "catalog" ],
-        "detail" : "qa/charter.yaml: unknown key 'template_set'"
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2271,11 +2271,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "charter.yaml",
-        "place" : [ "catalog" ],
-        "detail" : "qa/charter.yaml: unknown key 'template_set'"
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2290,7 +2290,13 @@
   },
   "planted/charter-valid" : {
     "validate" : {
-      "findings" : [ ]
+      "findings" : [ {
+        "code" : "file_not_held",
+        "severity" : "warning",
+        "file" : "charter.yaml",
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
+      } ]
     },
     "registration" : {
       "refused" : {
@@ -2318,6 +2324,12 @@
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
+      }, {
+        "code" : "file_not_held",
+        "severity" : "warning",
+        "file" : "charter.yaml",
+        "place" : [ ],
+        "detail" : "charter.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2871,17 +2883,11 @@
   "planted/r15-glossary-urn-in-a-shard" : {
     "validate" : {
       "findings" : [ {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/glossary.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
-      }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
-        "file" : "drg/glossary.graph.yaml",
-        "place" : [ "nodes", "0", "kind" ],
-        "detail" : "qa/drg/glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+        "place" : [ ],
+        "detail" : "drg/glossary.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
@@ -2911,17 +2917,11 @@
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "code" : "file_not_held",
+        "severity" : "warning",
         "file" : "drg/glossary.graph.yaml",
-        "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/drg/glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
-      }, {
-        "code" : "drg_schema_error",
-        "severity" : "blocking",
-        "file" : "drg/glossary.graph.yaml",
-        "place" : [ "nodes", "0", "kind" ],
-        "detail" : "qa/drg/glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+        "place" : [ ],
+        "detail" : "drg/glossary.graph.yaml: not held (no pack file kind models this file)"
       } ]
     },
     "registration" : {
