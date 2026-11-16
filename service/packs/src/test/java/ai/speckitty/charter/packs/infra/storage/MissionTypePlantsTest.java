@@ -12,16 +12,13 @@ import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
+import ai.speckitty.charter.packs.examples.PlantedPacks;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -247,26 +244,6 @@ class MissionTypePlantsTest {
 
     /** A copy of the planted pack under {@code host}, so a test may change it. */
     private static Path planted(Path host, String plant) {
-        String resource = "/planted/" + plant + "/files";
-        try {
-            Path source = Path.of(Objects.requireNonNull(MissionTypePlantsTest.class.getResource(resource), resource)
-                    .toURI());
-            Path target = host.resolve("qa");
-            try (Stream<Path> files = Files.walk(source)) {
-                for (Path file : files.sorted().toList()) {
-                    Path copy = target.resolve(source.relativize(file).toString());
-                    if (Files.isDirectory(file)) {
-                        Files.createDirectories(copy);
-                    } else {
-                        Files.copy(file, copy);
-                    }
-                }
-            }
-            return target;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (URISyntaxException e) {
-            throw new IllegalStateException(e);
-        }
+        return PlantedPacks.copyOf(plant, host);
     }
 }

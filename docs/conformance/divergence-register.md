@@ -366,7 +366,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-20
 - **Evidence:**
   - Core: `offering/drg/org_pack_loader.py:371`
-  - Charter: `service/packs/src/test/resources/planted/c5-fragment-node-id-unsafe` (core verdict in planted/core-verdicts.json: ok, no findings)
+  - Charter: `service/packs/src/testFixtures/resources/planted/c5-fragment-node-id-unsafe` (core verdict in planted/core-verdicts.json: ok, no findings)
   - Charter: `contracts/packs/schemas/org-fragment.schema.json: the node id has minLength 1 and the pattern ^[A-Za-z0-9_/.-]+$ (import change C5; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-021: charter.yaml inside a pack
@@ -379,7 +379,7 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/packs/pack_validator.py:607-609` (the call) and `:2133-2157` (`_check_org_charter`), at `78c48ce9`: the only charter leg is org-charter.yaml
   - Charter: the service has no `org-charter.yaml` leg either: the file is retired and refused by name (#431, [DIV-303](#div-303-org-charteryaml-and-the-packyaml-key-active_charter))
-  - Charter: `service/packs/src/test/resources/planted/charter-invalid` and `.../charter-cli-timeout-not-a-number` (core verdicts in planted/core-verdicts.json: ok, no findings)
+  - Charter: `service/packs/src/testFixtures/resources/planted/charter-invalid` and `.../charter-cli-timeout-not-a-number` (core verdicts in planted/core-verdicts.json: ok, no findings)
 
 ### DIV-022: org_fragment_missing in validate mode on a bare path
 
@@ -391,7 +391,7 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/drg/org_pack_loader.py:626-628`
   - Core: `offering/packs/pack_validator.py:893-900`
-  - Charter: `service/packs/src/test/resources/planted/org-fragment-missing` (core verdict in planted/core-verdicts.json: ok, no findings)
+  - Charter: `service/packs/src/testFixtures/resources/planted/org-fragment-missing` (core verdict in planted/core-verdicts.json: ok, no findings)
 
 ### DIV-023: A root *.graph.yaml in a pack
 
@@ -403,7 +403,7 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/packs/pack_validator.py:507` (drg_dir = pack_dir / "drg")
   - Core: `offering/packs/pack_validator.py:845` (_DRG_GRAPH_GLOB)
-  - Charter: `service/packs/src/test/resources/planted/c3-root-shard-urn-malformed` (core verdict in planted/core-verdicts.json: ok, no findings)
+  - Charter: `service/packs/src/testFixtures/resources/planted/c3-root-shard-urn-malformed` (core verdict in planted/core-verdicts.json: ok, no findings)
 
 ### DIV-024: pack_level_missing on a bare path with no configured level
 
@@ -414,7 +414,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-20
 - **Evidence:**
   - Core: `offering/packs/pack_validator.py:746-766`
-  - Charter: `service/packs/src/test/resources/planted/control-no-pack-level-on-a-bare-path` (core verdict in planted/core-verdicts.json: one PACK_LEVEL_MISSING advisory)
+  - Charter: `service/packs/src/testFixtures/resources/planted/control-no-pack-level-on-a-bare-path` (core verdict in planted/core-verdicts.json: one PACK_LEVEL_MISSING advisory)
 
 ### DIV-025: UTF-16 with a byte order mark
 
@@ -425,7 +425,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-20
 - **Evidence:**
   - Core: `offering/packs/pack_validator.py:288` and `:301` (`_yaml_parser().load(path)`, no explicit encoding)
-  - Charter: `service/packs/src/test/resources/planted/artifact-utf16-with-a-byte-order-mark` (core verdict in planted/core-verdicts.json: ok, no findings)
+  - Charter: `service/packs/src/testFixtures/resources/planted/artifact-utf16-with-a-byte-order-mark` (core verdict in planted/core-verdicts.json: ok, no findings)
 
 ### DIV-026: The relations and the kinds each may connect
 

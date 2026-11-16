@@ -14,15 +14,11 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
+import ai.speckitty.charter.packs.examples.PlantedPacks;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -56,7 +52,6 @@ import tools.jackson.databind.ObjectMapper;
 @DisplayName("the planted glossary cases fail or load exactly as their expected.json says (ADR-0049)")
 class GlossaryPlantedRefusalsTest {
 
-    private static final String PLANTED = "/planted";
     private static final String CONTROL = "glossary-context-valid";
     /** The fault a load refuses a whole pack with when one of its graph documents breaks its schema. */
     private static final String GRAPH_REFUSAL = "graphRefusal";
@@ -65,16 +60,7 @@ class GlossaryPlantedRefusalsTest {
 
     /** Every planted glossary case, by directory name. */
     static Stream<String> cases() {
-        try (Stream<Path> dirs = Files.list(plantedRoot())) {
-            return dirs
-                    .map(dir -> String.valueOf(dir.getFileName()))
-                    .filter(name -> name.startsWith("glossary-"))
-                    .sorted()
-                    .toList()
-                    .stream();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return PlantedPacks.names().stream().filter(name -> name.startsWith("glossary-"));
     }
 
     /** Every planted glossary refusal case: every case but the control. */
@@ -241,30 +227,11 @@ class GlossaryPlantedRefusalsTest {
     }
 
     private static Path plantedRoot() {
-        try {
-            return Path.of(Objects.requireNonNull(GlossaryPlantedRefusalsTest.class.getResource(PLANTED), PLANTED)
-                    .toURI());
-        } catch (URISyntaxException e) {
-            throw new IllegalStateException(e);
-        }
+        return PlantedPacks.directory();
     }
 
     /** A copy of the planted pack under {@code host}, named {@code qa}, so a test may load it in place. */
     private static Path copy(String plant, Path host) {
-        Path source = plantedRoot().resolve(plant).resolve("files");
-        Path target = host.resolve("qa");
-        try (Stream<Path> files = Files.walk(source)) {
-            for (Path file : files.sorted().toList()) {
-                Path copy = target.resolve(source.relativize(file).toString());
-                if (Files.isDirectory(file)) {
-                    Files.createDirectories(copy);
-                } else {
-                    Files.copy(file, copy);
-                }
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return target;
+        return PlantedPacks.copyOf(plant, host);
     }
 }
