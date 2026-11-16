@@ -43,6 +43,12 @@ public final class Wording {
             "maximum",
             "exclusiveMinimum");
 
+    /**
+     * The named fact of a {@code const} violation that a store rule states in its own words (a file stem, a preset
+     * entry's path): the detail is {@code <file>: <reason>}, the store's wording, on every surface (#554, R2 row 3).
+     */
+    public static final String REASON = "reason";
+
     private Wording() {}
 
     /**
@@ -72,12 +78,20 @@ public final class Wording {
         String file = unreadable.file();
         PackContents.ParseFailure parse = unreadable.parse();
         if (parse != null) {
-            String text = parse.refusal()
-                    .map(refusal -> origin(packName, file) + " " + refusal)
-                    .orElseGet(() -> PACK_YAML.equals(file)
-                            ? origin(packName, file) + " is not valid YAML"
-                            : origin(packName, file) + " is not valid " + language(file) + ": " + parse.firstLine());
-            return List.of(new PackFinding(codeFor(file), file, List.of(), text));
+            if (parse.refusal().isPresent()) {
+                String refusal = parse.refusal().get();
+                return List.of(new PackFinding(
+                        parse.code().orElseGet(() -> codeFor(file)), file, List.of(), PackCodes.detail(file, refusal)));
+            }
+            if (PACK_YAML.equals(file)) {
+                return List.of(new PackFinding(
+                        PackFindingCode.PACK_UNREADABLE,
+                        file,
+                        List.of(),
+                        origin(packName, file) + " is not valid YAML: " + parse.firstLine()));
+            }
+            return List.of(
+                    new PackFinding(parseCodeFor(file), file, List.of(), PackCodes.detail(file, parse.firstLine())));
         }
         return schemaFindings(packName, unreadable.violations());
     }
@@ -176,26 +190,30 @@ public final class Wording {
         return PackFindingCode.ARTIFACT_SCHEMA_ERROR;
     }
 
+    /**
+     * The code of a file that does not parse (#554, R2 row 1): a graph document's and a prompt fragment's own code, as
+     * for its schema faults, and {@code unreadable} for any other file, as the registration answers.
+     */
+    private static ReasonCode parseCodeFor(String file) {
+        ReasonCode code = codeFor(file);
+        return code.equals(PackFindingCode.ARTIFACT_SCHEMA_ERROR) ? PackFindingCode.UNREADABLE : code;
+    }
+
     /** A step enhancement's companion: a fault of its own read (a codec refusal, a structure breach) is its code. */
     private static boolean isPromptFragment(String file) {
         return file.startsWith("missions/") && file.endsWith(".prompt-fragment.md");
     }
 
-    /** The language a file is written in, as a parse failure names it: Markdown for a {@code .md} companion. */
-    private static String language(String file) {
-        return file.endsWith(".md") ? "Markdown" : "YAML";
-    }
-
     /**
-     * Where a finding comes from, as its text names it: {@code pack.yaml of <pack>} for the descriptor, else
-     * {@code <pack>/<file>}.
+     * Where a finding comes from, as its text names it: {@code pack.yaml of <pack>} for the descriptor, else the
+     * pack-relative file, never prefixed with the pack's name (#554, R2, squad finding C-11).
      *
      * @param packName the pack's configured name
      * @param file the pack-relative path
      * @return the origin
      */
     public static String origin(String packName, String file) {
-        return PACK_YAML.equals(file) ? "pack.yaml of " + packName : packName + "/" + file;
+        return PACK_YAML.equals(file) ? "pack.yaml of " + packName : file;
     }
 
     /** Where in a document a pointer points; the vocabulary keys on it. */
@@ -236,7 +254,10 @@ public final class Wording {
             case "minLength" -> minLengthDetail(v, o, descriptor, place, key, fragmentNodeId);
             case "pattern" -> patternDetail(v, o, place, key, fragmentNodeId, value);
             case "enum" -> enumDetail(v, o, descriptor, place, key, value);
-            case "const" -> o + ": '" + key + "' has an unsupported value '" + value + "'";
+            case "const" ->
+                v.args().containsKey(REASON)
+                        ? o + ": " + v.args().get(REASON)
+                        : o + ": '" + key + "' has an unsupported value '" + value + "'";
             case "minItems" -> minItemsDetail(v, o, key);
             case "minimum", "maximum", "exclusiveMinimum" -> rangeDetail(v, o, key, value);
             default -> fallback(o, v);

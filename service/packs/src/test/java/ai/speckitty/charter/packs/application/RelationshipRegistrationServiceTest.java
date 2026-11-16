@@ -409,14 +409,15 @@ class RelationshipRegistrationServiceTest {
 
         assertThat(real.repository.load(PACK).violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo("overrides.graph.yaml");
-            assertThat(violation.kind()).isEqualTo("overrides_source_not_activatable");
+            assertThat(violation.kind().value()).isEqualTo("overrides_source_not_activatable");
             assertThat(violation.reason()).contains("template:writing/minutes.md");
         });
 
         Files.writeString(shard, document.formatted("asset:logo"), StandardCharsets.UTF_8);
         assertThat(real.repository.load(PACK).violations())
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.kind()).isEqualTo("overrides_source_not_activatable"));
+                .satisfies(violation ->
+                        assertThat(violation.kind().value()).isEqualTo("overrides_source_not_activatable"));
 
         Files.writeString(shard, document.formatted("directive:E"), StandardCharsets.UTF_8);
         assertThat(real.repository.load(PACK).violations()).isEmpty();

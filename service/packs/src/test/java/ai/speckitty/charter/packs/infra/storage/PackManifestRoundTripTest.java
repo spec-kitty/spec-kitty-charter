@@ -120,8 +120,7 @@ class PackManifestRoundTripTest {
         assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain(PackFileSet.MANIFEST);
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(PackFileSet.MANIFEST);
-            assertThat(violation.reason())
-                    .isEqualTo("additionalProperties violated at the document: undeclared key 'charter'");
+            assertThat(violation.reason()).isEqualTo("unknown key 'charter'");
         });
     }
 
@@ -253,8 +252,7 @@ class PackManifestRoundTripTest {
                         .get(PackFileSet.MANIFEST))
                 .isEqualTo(new Refused("the file is not valid UTF-8"));
         assertThat(refusedUnreadable.get(PackFileSet.MANIFEST))
-                .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'charter'; "
-                        + "additionalProperties violated at the document: undeclared key 'generated_by'"));
+                .isEqualTo(new Refused("unknown key 'charter'; unknown key 'generated_by'"));
         assertThat(refusedUnwritten.get(PackFileSet.MANIFEST))
                 .as("#110: the procedure does not load, so the pack does not hold it")
                 .isEqualTo(new Refused(
@@ -336,7 +334,9 @@ class PackManifestRoundTripTest {
         assertThat(validateFindings(clean)).isEmpty();
         assertThat(validateFindings(misplaced)).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.detail()).endsWith(": 'path' has an unsupported value 'presets/governing.yaml'");
+            assertThat(finding.detail())
+                    .endsWith(
+                            ": preset entry 'convenience' names presets/governing.yaml, not presets/convenience.yaml");
         });
     }
 

@@ -360,7 +360,7 @@ class GlossaryAndSkillSchemaTest {
         assertThat(validate(SKILL, yaml)).singleElement().satisfies(v -> {
             assertThat(v.keyword()).isEqualTo("not");
             assertThat(v.pointer()).isEmpty();
-            assertThat(detail(v)).isEqualTo("demo/x.yaml: '/' breaks schema keyword 'not'");
+            assertThat(detail(v)).isEqualTo("x.yaml: '/' breaks schema keyword 'not'");
         });
     }
 
@@ -382,7 +382,7 @@ class GlossaryAndSkillSchemaTest {
             assertThat(v.keyword()).isEqualTo("maxLength");
             assertThat(v.pointer()).containsExactly("id");
             assertThat(v.value()).contains(id);
-            assertThat(detail(v)).isEqualTo("demo/x.yaml: '/id' breaks schema keyword 'maxLength'");
+            assertThat(detail(v)).isEqualTo("x.yaml: '/id' breaks schema keyword 'maxLength'");
         });
         assertThat(validate(SKILL, VALID_WRAPPER_SKILL.replace("id: demo-wrapper", "id: " + "a".repeat(64))))
                 .as("64 characters is the limit, not past it")

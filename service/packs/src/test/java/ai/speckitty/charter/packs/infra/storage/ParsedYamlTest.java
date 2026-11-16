@@ -81,7 +81,7 @@ class ParsedYamlTest {
     void aShardNestedTooDeeplyIsADrgSchemaErrorWithTheFixedFirstLine(String value) {
         assertThat(shard(value)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-            assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + TOO_DEEP);
+            assertThat(f.detail()).isEqualTo("tactic.graph.yaml: " + TOO_DEEP);
         });
     }
 
@@ -90,7 +90,7 @@ class ParsedYamlTest {
     void aFragmentNestedTooDeeplyIsADrgSchemaErrorWithTheFixedFirstLine(String value) {
         assertThat(fragment(value)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-            assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + TOO_DEEP);
+            assertThat(f.detail()).isEqualTo("drg/fragment.yaml: " + TOO_DEEP);
         });
     }
 
@@ -99,7 +99,7 @@ class ParsedYamlTest {
     void aPackDescriptorNestedTooDeeplyIsPackUnreadableWithTheFixedFirstLine(String value) {
         assertThat(descriptor(value)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
-            assertThat(f.detail()).isEqualTo("pack.yaml of qa is not valid YAML");
+            assertThat(f.detail()).startsWith("pack.yaml of qa is not valid YAML: ");
         });
     }
 
@@ -146,7 +146,7 @@ class ParsedYamlTest {
                 .singleElement()
                 .satisfies(f -> {
                     assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
-                    assertThat(f.detail()).isEqualTo("pack.yaml of qa is not valid YAML");
+                    assertThat(f.detail()).startsWith("pack.yaml of qa is not valid YAML: ");
                 });
     }
 
@@ -163,13 +163,13 @@ class ParsedYamlTest {
                 HANG_CAP, () -> GraphDocumentReader.read(HEADER + "nodes: []\n" + bomb, Shape.SHARD, SHARD));
         assertThat(findings(shard)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-            assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + TOO_LARGE);
+            assertThat(f.detail()).isEqualTo("tactic.graph.yaml: " + TOO_LARGE);
         });
         FileRead<RawGraph> fragment = assertTimeoutPreemptively(
                 HANG_CAP, () -> GraphDocumentReader.read("nodes: []\n" + bomb, Shape.FRAGMENT, FRAGMENT));
         assertThat(findings(fragment)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-            assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + TOO_LARGE);
+            assertThat(f.detail()).isEqualTo("drg/fragment.yaml: " + TOO_LARGE);
         });
     }
 
@@ -190,7 +190,7 @@ class ParsedYamlTest {
                 .singleElement()
                 .satisfies(f -> {
                     assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-                    assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + NOT_PLAIN);
+                    assertThat(f.detail()).isEqualTo("drg/fragment.yaml: " + NOT_PLAIN);
                 });
     }
 
@@ -200,8 +200,7 @@ class ParsedYamlTest {
                 HEADER + "nodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: !!binary aGVsbG8=}\n";
         assertThat(findings(GraphDocumentReader.read(edges, Shape.SHARD, SHARD)))
                 .singleElement()
-                .satisfies(
-                        f -> assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + NOT_PLAIN));
+                .satisfies(f -> assertThat(f.detail()).isEqualTo("tactic.graph.yaml: " + NOT_PLAIN));
     }
 
     @Test
@@ -212,7 +211,7 @@ class ParsedYamlTest {
                 .singleElement()
                 .satisfies(f -> {
                     assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
-                    assertThat(f.detail()).isEqualTo("pack.yaml of qa is not valid YAML");
+                    assertThat(f.detail()).startsWith("pack.yaml of qa is not valid YAML: ");
                 });
         assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())
                 .isEqualTo(NOT_PLAIN);

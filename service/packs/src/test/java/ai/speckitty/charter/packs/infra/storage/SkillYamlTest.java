@@ -169,7 +169,7 @@ class SkillYamlTest {
                 .singleElement()
                 .satisfies(skill -> assertThat(skill.body()).contains("Goal: land it.\r\nNo final newline"));
         assertThat(loaded.violations())
-                .extracting(v -> v.file() + " | " + v.kind() + " | " + v.reason())
+                .extracting(v -> v.file() + " | " + v.kind().value() + " | " + v.reason())
                 .containsExactly("skills/issue-triage.skill.yaml | companion | issue-triage.skill.md: missing");
     }
 

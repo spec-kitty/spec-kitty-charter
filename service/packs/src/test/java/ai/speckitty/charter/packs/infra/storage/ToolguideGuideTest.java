@@ -370,8 +370,8 @@ class ToolguideGuideTest {
         assertThat(loaded.toolguides()).isEmpty();
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
-                        ID,
-                        FilesystemPackStore.DOMAIN,
+                        TOOLGUIDE_FILE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "the guide has the H1 'Another title', which differs from the toolguide title '" + TITLE
                                 + "'"));
     }
@@ -389,8 +389,8 @@ class ToolguideGuideTest {
         assertThat(loaded.toolguides()).isEmpty();
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
-                        ID,
-                        FilesystemPackStore.DOMAIN,
+                        TOOLGUIDE_FILE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "the guide has no H1; a stored guide carries its toolguide's title '" + TITLE + "' as its H1"));
 
         Files.writeString(pack.resolve(GUIDE_FILE), "# " + TITLE + "\n\n## Overview\n\nO.\n");

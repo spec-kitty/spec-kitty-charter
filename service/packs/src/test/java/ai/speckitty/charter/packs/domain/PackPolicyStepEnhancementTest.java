@@ -234,7 +234,7 @@ class PackPolicyStepEnhancementTest {
         assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
         assertThat(finding.file()).isEqualTo(fileOf(fault));
         assertThat(finding.place()).isEmpty();
-        assertThat(finding.detail()).startsWith("enhancer/" + fileOf(fault) + ": ");
+        assertThat(finding.detail()).startsWith(fileOf(fault) + ": ");
     }
 
     @ParameterizedTest
@@ -244,7 +244,7 @@ class PackPolicyStepEnhancementTest {
 
         assertThat(violations).hasSize(1);
         assertThat(violations.getFirst().file()).isEqualTo(fileOf(fault));
-        assertThat(violations.getFirst().kind()).isEqualTo("prompt_fragment_invalid");
+        assertThat(violations.getFirst().kind().value()).isEqualTo("prompt_fragment_invalid");
         assertThat(violations.getFirst().reason()).isNotBlank();
         assertThat(violations.getFirst().reason()).doesNotContain("enhancer/");
     }

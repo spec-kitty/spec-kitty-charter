@@ -5,12 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.rules.Wording;
@@ -318,12 +316,10 @@ class RetiredFilesTest {
             assertThat(contents.unreadableFiles().stream()
                             .flatMap(bad -> Wording.unreadable("qa", bad).stream())
                             .map(PackFinding::detail))
-                    .anySatisfy(d -> assertThat(d)
-                            .contains("qa/pack.md is retired: the pack document is README.md at the pack root"))
-                    .anySatisfy(d -> assertThat(d)
-                            .contains("qa/PROVENANCE.md is retired: folded into README.md as its provenance section"))
-                    .anySatisfy(d -> assertThat(d)
-                            .contains("qa/Readme.md is retired: differs only in letter case from 'README.md'"));
+                    .anySatisfy(d -> assertThat(d).contains("pack.md: the pack document is README.md at the pack root"))
+                    .anySatisfy(d ->
+                            assertThat(d).contains("PROVENANCE.md: folded into README.md as its provenance section"))
+                    .anySatisfy(d -> assertThat(d).contains("Readme.md: differs only in letter case from 'README.md'"));
         }
 
         @Test
@@ -342,18 +338,15 @@ class RetiredFilesTest {
             List<PackFinding> findings = contents.unreadableFiles().stream()
                     .flatMap(bad -> Wording.unreadable("qa", bad).stream())
                     .toList();
-            // A retired graph document is a graph document's fault, as any shard's is; every other file an artifact's.
-            assertThat(findings)
-                    .filteredOn(f -> !f.file().endsWith(".graph.yaml"))
-                    .extracting(PackFinding::code)
-                    .containsOnly(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            // A retired file is retired, whatever its kind, a graph document's included (#554, R2 row 11).
+            assertThat(findings).extracting(PackFinding::code).containsOnly(StorageCodes.RETIRED);
             assertThat(findings)
                     .filteredOn(f -> f.file().equals("mission_step_contract.graph.yaml"))
                     .singleElement()
                     .satisfies(f -> {
-                        assertThat(f.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
+                        assertThat(f.code()).isEqualTo(StorageCodes.RETIRED);
                         assertThat(f.detail())
-                                .isEqualTo("qa/mission_step_contract.graph.yaml is retired: folded into the"
+                                .isEqualTo("mission_step_contract.graph.yaml: folded into the"
                                         + " mission-type steps' substeps (slice F)");
                     });
             assertThat(findings)
@@ -361,21 +354,20 @@ class RetiredFilesTest {
                     .singleElement()
                     .extracting(PackFinding::detail)
                     .asString()
-                    .isEqualTo("qa/mission_step_contracts/specify.step-contract.yaml is retired: folded into the"
+                    .isEqualTo("mission_step_contracts/specify.step-contract.yaml: folded into the"
                             + " mission-type steps' substeps (slice F)");
             assertThat(findings)
                     .filteredOn(f -> f.file().equals("missions/plan/mission-runtime.yaml"))
                     .singleElement()
                     .extracting(PackFinding::detail)
                     .asString()
-                    .isEqualTo("qa/missions/plan/mission-runtime.yaml is retired: folded into the mission-type file"
-                            + " (ADR-0044)");
+                    .isEqualTo("missions/plan/mission-runtime.yaml: folded into the mission-type file" + " (ADR-0044)");
             assertThat(findings)
                     .filteredOn(f -> f.file().equals("mission-steps/qa/review/prompt.md"))
                     .singleElement()
                     .extracting(PackFinding::detail)
                     .asString()
-                    .contains("is retired: folded into the mission-type steps and their companions");
+                    .contains(": folded into the mission-type steps and their companions");
         }
     }
 

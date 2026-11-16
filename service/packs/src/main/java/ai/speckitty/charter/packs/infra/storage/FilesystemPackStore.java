@@ -12,10 +12,12 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Paths;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
@@ -263,13 +265,6 @@ final class FilesystemPackStore {
     /** The code of a violation of a companion the store refuses; the load seat reads it back to remap it. */
     static final ReasonCode COMPANION_KIND = StorageCodes.COMPANION;
 
-    // Staging (#554 WP04): the catch-all kinds of the read, kept for one commit so that the retyping alone leaves every
-    // surface's answer as it was; R2 replaces each with its specific code in the next commit.
-    static final ReasonCode SCHEMA = ReasonCode.of("schema");
-    static final ReasonCode DOMAIN = ReasonCode.of("domain");
-    static final ReasonCode REFERENCE = ReasonCode.of("reference");
-    static final ReasonCode TEMPLATE = ReasonCode.of(ArtifactKind.TEMPLATE.token());
-
     private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
     private static final PayloadRead FILES = Files::readAllBytes;
@@ -413,7 +408,8 @@ final class FilesystemPackStore {
                 try {
                     assetFiles.add(new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes)));
                 } catch (ConstraintBreachException breach) {
-                    violations.add(new PackElementViolation(file, DOMAIN, String.valueOf(breach.getMessage())));
+                    violations.add(new PackElementViolation(
+                            file, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
                 }
             });
         }
@@ -491,7 +487,8 @@ final class FilesystemPackStore {
                     Optional<String> mismatch =
                             PresetFiles.stemMismatch(file, good.value().id());
                     if (mismatch.isPresent()) {
-                        violations.add(new PackElementViolation(file, SCHEMA, mismatch.get()));
+                        violations.add(
+                                new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, mismatch.get()));
                     } else {
                         out.add(new Stored<>(file, good.value()));
                     }
@@ -542,7 +539,7 @@ final class FilesystemPackStore {
             String claimant = readFrom.get(id);
             if (claimant != null) {
                 violations.add(new PackElementViolation(
-                        file, TEMPLATE, "template " + id + " is already read from " + claimant));
+                        file, PackCodes.DUPLICATE_ARTIFACT_ID, "template " + id + " is already read from " + claimant));
             } else {
                 readPayload(directory, file, violations).ifPresent(bytes -> {
                     readFrom.put(id, file);
@@ -759,21 +756,16 @@ final class FilesystemPackStore {
     private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (!Files.isRegularFile(packYaml)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " has no pack.yaml");
+            throw descriptorRefusal("pack " + id.value() + " has no pack.yaml");
         }
         return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {
             case FileRead.Read<PackDescriptorDso> good -> good.value();
-            // The refusal names why, in the store's wording: the parse failure, or each schema violation (an
-            // undeclared key such as the retired active_charter named), so the author sees what to fix (FR-010).
+            // The refusal names why, in validate mode's words: the parse failure, or each schema fault (an undeclared
+            // key such as the retired active_charter named), so the author sees what to fix (FR-010, #554 R2).
             case FileRead.Unreadable<PackDescriptorDso> bad ->
-                throw new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE,
-                        "pack.yaml of " + id.value() + " cannot be read: "
-                                + violationsOf(bad).stream()
-                                        .map(PackElementViolation::reason)
-                                        .collect(Collectors.joining("; ")));
+                throw descriptorRefusal(descriptorFault(id.value(), bad));
             case FileRead.Absent<PackDescriptorDso> absent ->
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " has no pack.yaml");
+                throw descriptorRefusal("pack " + id.value() + " has no pack.yaml");
         };
     }
 
@@ -790,13 +782,15 @@ final class FilesystemPackStore {
                     // The stem rule validate mode applies too (FileStems): a misnamed file is refused, not loaded.
                     Optional<String> misnamed = FileStems.mismatch(kind, file, kind.idOf(good.value()));
                     if (misnamed.isPresent()) {
-                        violations.add(new PackElementViolation(file, SCHEMA, misnamed.get()));
+                        violations.add(
+                                new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, misnamed.get()));
                         continue;
                     }
                     Optional<String> unnamed =
                             missingNamedFile(directory, file, kind.namedFiles(good.value()), companionRules.table());
                     if (unnamed.isPresent()) {
-                        violations.add(new PackElementViolation(file, REFERENCE, unnamed.get()));
+                        violations.add(
+                                new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, unnamed.get()));
                         continue;
                     }
                     withCompanions(companionRules, directory, file, kind, good.value(), violations, claimed)
@@ -915,7 +909,8 @@ final class FilesystemPackStore {
                 }
             }
             if (refusal != null) {
-                violations.add(new PackElementViolation(file, COMPANION_KIND, companion.path() + ": " + refusal));
+                String reason = companion.path() + ": " + refusal;
+                violations.add(new PackElementViolation(file, COMPANION_KIND, reason));
                 return Optional.empty();
             }
         }
@@ -1396,22 +1391,63 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The violations of an unreadable file, one per schema violation or one for its parse failure: the store's one
-     * wording, which the whole-pack seam reuses for the manifest it owns.
+     * The violations of an unreadable file, one for its parse failure ({@code unreadable}, the parser's first line) or
+     * one per schema fault, in validate mode's detail vocabulary and under the code of the file's kind
+     * ({@link Wording#schemaFindings}): one fault, one code and one wording on every surface (#554, R2 rows 1 to 4).
+     * The whole-pack seam reuses it for the manifest it owns.
      *
      * @param bad the unreadable file
-     * @return the violations, in the reader's order
+     * @return the violations, in validate mode's order, each reason without the file it is at
      */
     static List<PackElementViolation> violationsOf(FileRead.Unreadable<?> bad) {
         if (bad.parse() != null) {
             return List.of(new PackElementViolation(
                     bad.file(), StorageCodes.UNREADABLE, bad.parse().firstLine()));
         }
-        List<PackElementViolation> out = new ArrayList<>();
-        for (SchemaViolation v : bad.violations()) {
-            out.add(new PackElementViolation(bad.file(), SCHEMA, schemaReason(v)));
+        // No descriptor reaches here, so the pack's name never shows in a detail.
+        return Wording.schemaFindings("", bad.violations()).stream()
+                .map(finding -> new PackElementViolation(finding.file(), finding.code(), reasonOf(finding)))
+                .toList();
+    }
+
+    /** A finding's detail without the file it opens with, as a violation's reason: the file is the violation's own. */
+    private static String reasonOf(PackFinding finding) {
+        String prefix = finding.file() + ": ";
+        return finding.detail().startsWith(prefix) ? finding.detail().substring(prefix.length()) : finding.detail();
+    }
+
+    /** The refusal of a pack whose {@code pack.yaml} is missing or is no readable descriptor, in validate mode's words. */
+    private static CharterRefusal descriptorRefusal(String detail) {
+        return new CharterRefusal(RefusalCode.PACK_UNREADABLE, detail);
+    }
+
+    /**
+     * Why a pack has no readable descriptor, in validate mode's words, so that a registration reports it at
+     * {@code pack.yaml} (#554, R2 rows 22 to 24, open case 5); empty when {@code pack.yaml} reads.
+     *
+     * @param id the pack
+     * @return the fault; empty when the descriptor reads
+     * @throws CharterRefusal when the pack directory is missing
+     */
+    Optional<String> descriptorFault(PackIdentifier id) {
+        Path directory = existingDirectory(id);
+        try {
+            descriptorOf(directory, id);
+            return Optional.empty();
+        } catch (CharterRefusal refusal) {
+            return Optional.of(String.valueOf(refusal.getMessage()));
         }
-        return out;
+    }
+
+    /** Why a {@code pack.yaml} that is there is no readable descriptor, as validate mode words it. */
+    private static String descriptorFault(String packName, FileRead.Unreadable<?> bad) {
+        if (bad.parse() != null) {
+            return Wording.origin(packName, PackFileSet.PACK_YAML) + " is not valid YAML: "
+                    + bad.parse().firstLine();
+        }
+        return Wording.schemaFindings(packName, bad.violations()).stream()
+                .map(PackFinding::detail)
+                .collect(Collectors.joining("; "));
     }
 
     /**

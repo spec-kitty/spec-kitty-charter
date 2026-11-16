@@ -136,7 +136,7 @@ class ProcedureYamlTest {
                 .containsExactly("sanitized-shape");
         assertThat(loaded.violations()).isNotEmpty().allSatisfy(violation -> {
             assertThat(violation.file()).isEqualTo("old-shape.procedure.yaml");
-            assertThat(violation.kind()).isEqualTo("schema");
+            assertThat(violation.kind().value()).isEqualTo("artifact_schema_error");
         });
         assertThat(loaded.violations())
                 .extracting(PackElementViolation::reason)

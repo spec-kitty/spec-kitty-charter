@@ -22,6 +22,7 @@ import ai.speckitty.charter.packs.domain.Guard;
 import ai.speckitty.charter.packs.domain.GuardImplementation;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,7 +76,7 @@ class GuardAndLifecycleLoadTest {
     private static PackElementViolation lifecycleLoses(String guard) {
         return new PackElementViolation(
                 LIFECYCLE,
-                FilesystemPackStore.REFERENCE,
+                StorageCodes.ARTIFACT_SCHEMA_ERROR,
                 "lifecycle 'work-package' transition in_progress -> for_review names guard '" + guard
                         + "', which the pack does not hold");
     }
@@ -200,12 +201,12 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         new PackElementViolation(
                                 ASSET_GUARD,
-                                FilesystemPackStore.REFERENCE,
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
                                 "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack does"
                                         + " not hold"),
                         new PackElementViolation(
                                 LIFECYCLE,
-                                FilesystemPackStore.REFERENCE,
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
                                 "lifecycle 'work-package' transition in_progress -> for_review names guard"
                                         + " 'traceability-ready', which the pack does not hold"));
     }
@@ -224,7 +225,7 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         new PackElementViolation(
                                 ASSET_GUARD,
-                                FilesystemPackStore.REFERENCE,
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
                                 "guard 'traceability-ready' is implemented_by asset:notes, which declares no executable"
                                         + " block"),
                         lifecycleLoses("traceability-ready"));
@@ -244,7 +245,7 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         new PackElementViolation(
                                 ASSET_GUARD,
-                                FilesystemPackStore.REFERENCE,
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
                                 "guard 'traceability-ready' is implemented_by qa::asset:qa-traceability-lint, a"
                                         + " pack-qualified reference; it is refused until the pack dependency closure"
                                         + " resolves it"),
@@ -264,7 +265,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         LIFECYCLE,
-                        FilesystemPackStore.REFERENCE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "lifecycle 'work-package' transition in_progress -> for_review names guard qa::guard:other,"
                                 + " a pack-qualified reference; it is refused until the pack dependency closure"
                                 + " resolves it"));
@@ -281,7 +282,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(LIFECYCLE);
-            assertThat(violation.kind()).isEqualTo("reference");
+            assertThat(violation.kind().value()).isEqualTo("artifact_schema_error");
             assertThat(violation.reason())
                     .startsWith("lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
                             + " 'traceability-ready' does not fit its config_schema:")
@@ -304,7 +305,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         LIFECYCLE,
-                        FilesystemPackStore.REFERENCE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
                                 + " 'traceability-ready' does not fit its config_schema: required at /"));
     }
@@ -325,7 +326,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         LIFECYCLE,
-                        FilesystemPackStore.REFERENCE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready' declares no"
                                 + " config_schema, so its config cannot be checked"));
     }
@@ -343,7 +344,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations()).hasSize(2);
         assertThat(loaded.violations().get(0)).satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(ASSET_GUARD);
-            assertThat(violation.kind()).isEqualTo("reference");
+            assertThat(violation.kind().value()).isEqualTo("artifact_schema_error");
             assertThat(violation.reason())
                     .startsWith("guard 'traceability-ready': its config_schema is not a valid JSON Schema:")
                     .contains("/properties/carrier/type");
@@ -381,11 +382,11 @@ class GuardAndLifecycleLoadTest {
 
         Path missing = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "missing"));
         edit(missing, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n"));
-        assertDroppedWithItsGuard(load(missing), "reference", "is not a payload file the pack holds");
+        assertDroppedWithItsGuard(load(missing), "artifact_schema_error", "is not a payload file the pack holds");
 
         Path sidecar = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "sidecar"));
         edit(sidecar, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: notes.txt.asset.yaml\n"));
-        assertDroppedWithItsGuard(load(sidecar), "reference", "is not a payload file the pack holds");
+        assertDroppedWithItsGuard(load(sidecar), "artifact_schema_error", "is not a payload file the pack holds");
     }
 
     @Test
@@ -394,7 +395,7 @@ class GuardAndLifecycleLoadTest {
         Path pack = pack();
         edit(pack, ASSET, text -> text.replace("  - --guard\n", "  - --guard\n  - carrier_lint.py\n"));
 
-        assertDroppedWithItsGuard(load(pack), "domain", "exactly one argv element");
+        assertDroppedWithItsGuard(load(pack), "artifact_schema_error", "exactly one argv element");
     }
 
     @Test
@@ -408,7 +409,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(loaded.violations()).hasSize(3);
         assertThat(loaded.violations().get(0)).satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(ASSET);
-            assertThat(violation.kind()).isEqualTo("schema");
+            assertThat(violation.kind().value()).isEqualTo("artifact_schema_error");
             assertThat(violation.reason()).contains("runtime");
         });
         assertThat(loaded.violations().subList(1, 3))
@@ -507,7 +508,7 @@ class GuardAndLifecycleLoadTest {
     private static PackElementViolation guardLosesItsAsset() {
         return new PackElementViolation(
                 ASSET_GUARD,
-                FilesystemPackStore.REFERENCE,
+                StorageCodes.ARTIFACT_SCHEMA_ERROR,
                 "guard 'traceability-ready' is implemented_by asset:carrier-lint, which the pack does not hold");
     }
 
@@ -522,7 +523,7 @@ class GuardAndLifecycleLoadTest {
                 .isEmpty();
         assertThat(loaded.violations()).hasSize(3);
         assertThat(loaded.violations().get(0)).satisfies(violation -> {
-            assertThat(violation.kind()).isEqualTo(kind);
+            assertThat(violation.kind().value()).isEqualTo(kind);
             assertThat(violation.reason()).contains(rule);
         });
         assertThat(loaded.violations().subList(1, 3))

@@ -140,7 +140,7 @@ public final class PackPolicy {
             findings.addAll(unreadable(name, file));
         }
         findings.addAll(artifactRules(contents.artifacts()));
-        findings.addAll(assetRules(contents.assets()));
+        findings.addAll(assetRules(contents.assets(), refusedFiles(contents)));
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
         findings.addAll(promptSlotFindings(contents));
         findings.addAll(endpointFindings(name, contents));
@@ -449,7 +449,7 @@ public final class PackPolicy {
                             yield versioned
                                     ? new PromptSlotFault(PackCodes.PROMPT_SLOT_NOT_EMPTY, where + slot)
                                     : new PromptSlotFault(
-                                            PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                            PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING,
                                             where + slot + UNVERSIONED_WARNING);
                         }
                     });
@@ -565,19 +565,20 @@ public final class PackPolicy {
 
     /**
      * The asset rules, in core's order: a path that escapes the assets root is reported and its MIME type is not
-     * judged; an empty path or MIME type is the schema's business and is skipped.
+     * judged; an empty path or MIME type is the schema's business and is skipped. A sidecar is one fault (#554, R2 row
+     * 13): an escape the read already refused at the sidecar is not reported a second time.
      */
-    private static List<PackFinding> assetRules(List<PackContents.AssetFacts> assets) {
+    private static List<PackFinding> assetRules(List<PackContents.AssetFacts> assets, Set<String> refused) {
         List<PackFinding> findings = new ArrayList<>();
         for (PackContents.AssetFacts asset : assets) {
             if (asset.path().isEmpty()) {
                 continue;
             }
             if (escapes(asset)) {
-                findings.add(assetFinding(
-                        PackFindingCode.ASSET_PATH_ESCAPE,
-                        asset,
-                        asset.file() + ": " + Paths.assetPathEscape(asset.path())));
+                if (!refused.contains(asset.file())) {
+                    findings.add(assetFinding(
+                            PackCodes.ASSET, asset, asset.file() + ": " + Paths.assetPathEscape(asset.path())));
+                }
             } else if (!asset.mime().isEmpty()) {
                 mimeProblem(asset)
                         .ifPresent(detail ->
@@ -589,6 +590,13 @@ public final class PackPolicy {
 
     private static PackFinding assetFinding(ReasonCode code, PackContents.AssetFacts asset, String detail) {
         return new PackFinding(code, asset.file(), List.of(), detail);
+    }
+
+    /** The files the read refused, each already one finding of its own. */
+    private static Set<String> refusedFiles(PackContents contents) {
+        return contents.unreadableFiles().stream()
+                .map(unreadable -> unreadable.file())
+                .collect(Collectors.toSet());
     }
 
     /** A path that leaves the assets root as written ({@link PackRelativePaths#leavesRoot}), or once the adapter resolves it. */

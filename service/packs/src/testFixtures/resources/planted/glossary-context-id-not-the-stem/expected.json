@@ -19,7 +19,7 @@
     "violations": [
       {
         "file": "glossaries/a.glossary.yaml",
-        "kind": "schema",
+        "kind": "artifact_schema_error",
         "says": "glossary id 'b' is not its file stem 'a'"
       }
     ]

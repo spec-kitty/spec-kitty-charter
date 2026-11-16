@@ -4,7 +4,7 @@
   ],
   "findings": [
     {
-      "code": "artifact_schema_error",
+      "code": "unreadable",
       "severity": "violation",
       "file": "tactics/a.tactic.yaml",
       "place": []

@@ -149,7 +149,7 @@ class PresetRoundTripTest {
         assertThat(store.load(clean).pack().violations()).isEmpty();
         assertThat(store.load(refused).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo("presets/p.yaml");
-            assertThat(violation.reason()).startsWith("type violated at the document");
+            assertThat(violation.reason()).startsWith("expected a mapping");
         });
     }
 
@@ -193,33 +193,32 @@ class PresetRoundTripTest {
     /** Each break of the shape: its name, the file stem, what is added to a valid preset, and the exact reason. */
     static Stream<Arguments> brokenPresets() {
         return Stream.of(
-                Arguments.of(
-                        "unknown key name",
-                        "p",
-                        "name: p\n",
-                        "additionalProperties violated at the document: undeclared key 'name'"),
+                Arguments.of("unknown key name", "p", "name: p\n", "unknown key 'name'"),
                 Arguments.of(
                         "unknown key required_directives",
                         "p",
                         "required_directives:\n  - D\n",
-                        "additionalProperties violated at the document: undeclared key 'required_directives'"),
+                        "unknown key 'required_directives'"),
                 Arguments.of(
                         "unknown key mission_type_activations",
                         "p",
                         "mission_type_activations:\n  - software-dev\n",
-                        "additionalProperties violated at the document: undeclared key 'mission_type_activations'"),
+                        "unknown key 'mission_type_activations'"),
                 Arguments.of(
                         "the removed kind gate activated_kinds",
                         "p",
                         "activated_kinds:\n  - directives\n",
-                        "additionalProperties violated at the document: undeclared key 'activated_kinds'"),
+                        "unknown key 'activated_kinds'"),
                 Arguments.of(
                         "must_have false",
                         "p",
                         "activated_directives:\n  - id: D\n    must_have: false\n",
-                        "const violated at /activated_directives/0/must_have"),
+                        "'must_have' has an unsupported value 'false'"),
                 Arguments.of(
-                        "empty list", "p", "activated_directives: []\n", "minItems violated at /activated_directives"),
+                        "empty list",
+                        "p",
+                        "activated_directives: []\n",
+                        "'activated_directives' needs at least 1 item(s)"),
                 Arguments.of("id is not stem", "q", "", "preset id 'p' is not its file stem 'q'"),
                 Arguments.of(
                         "duplicate id",

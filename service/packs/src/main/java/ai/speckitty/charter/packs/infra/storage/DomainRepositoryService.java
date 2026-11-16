@@ -71,6 +71,7 @@ import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -921,7 +922,7 @@ public final class DomainRepositoryService
                 templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 templateViolations.add(new PackElementViolation(
-                        place, FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
+                        place, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }
         Set<String> namable = MissionTemplates.namable(templates.values());
@@ -940,7 +941,7 @@ public final class DomainRepositoryService
                 builder.preset(PresetFiles.toPreset(stored.dso()));
             } catch (ConstraintBreachException breach) {
                 builder.violation(new PackElementViolation(
-                        stored.file(), FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
+                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }
         // #260: the document's parts are the read model's; one the domain refuses is a violation, never a failed load.
@@ -949,7 +950,7 @@ public final class DomainRepositoryService
                 builder.document(PackDocumentMarkdown.toDomain(stored.dso()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(new PackElementViolation(
-                        stored.file(), FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
+                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         });
         return builder;
@@ -1255,21 +1256,33 @@ public final class DomainRepositoryService
                 Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
                 if (unresolved.isPresent()) {
                     builder.violation(new PackElementViolation(
-                            stored.file(), FilesystemPackStore.REFERENCE, MissionTemplates.reason(unresolved.get())));
+                            stored.file(),
+                            StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                            MissionTemplates.reason(unresolved.get())));
                     continue;
                 }
                 Optional<String> unclosed = closure.firstUnresolved(entity);
                 if (unclosed.isPresent()) {
-                    builder.violation(
-                            new PackElementViolation(stored.file(), FilesystemPackStore.REFERENCE, unclosed.get()));
+                    builder.violation(new PackElementViolation(
+                            stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
                     continue;
                 }
                 Urn urn = entity.urn();
+                String first = places.get(urn);
+                if (first != null) {
+                    // #554, R2 row 10: the first file in the read's order owns the id; a repeat is its own fault.
+                    builder.violation(new PackElementViolation(
+                            stored.file(),
+                            PackCodes.DUPLICATE_ARTIFACT_ID,
+                            kind.kind().token() + " id '" + kind.idOf(stored.dso()) + "' is already declared in "
+                                    + first));
+                    continue;
+                }
                 builder.artifact(entity);
                 places.put(urn, stored.file());
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(new PackElementViolation(
-                        kind.idOf(stored.dso()), FilesystemPackStore.DOMAIN, String.valueOf(breach.getMessage())));
+                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }
     }

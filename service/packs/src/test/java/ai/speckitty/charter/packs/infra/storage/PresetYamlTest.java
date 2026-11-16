@@ -78,8 +78,7 @@ class PresetYamlTest {
         assertThat(refused.pack().presets()).isEmpty();
         assertThat(refused.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo("presets/p.yaml");
-            assertThat(violation.reason())
-                    .isEqualTo("additionalProperties violated at the document: undeclared key 'activated_kinds'");
+            assertThat(violation.reason()).isEqualTo("unknown key 'activated_kinds'");
         });
     }
 

@@ -12,10 +12,10 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import java.io.IOException;
 import java.io.InputStream;
@@ -266,7 +266,7 @@ class PackDocumentRoundTripTest {
         assertThat(violation.file()).isEqualTo(PackDocumentMarkdown.FILE);
         assertThat(validateFindings(clean)).isEmpty();
         assertThat(validateFindings(refused)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isIn(StorageCodes.UNREADABLE, StorageCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.detail()).endsWith(validateReason.isEmpty() ? violation.reason() : validateReason);
         });
     }

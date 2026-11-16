@@ -53,11 +53,11 @@
   "planted/artifact-not-utf8" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "unreadable",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ ],
-        "detail" : "qa/tactics/a.tactic.yaml is not valid YAML: the file is not valid UTF-8"
+        "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
       } ]
     },
     "registration" : {
@@ -65,7 +65,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -82,16 +82,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "unreadable",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ ],
-        "detail" : "qa/tactics/a.tactic.yaml is not valid YAML: the file is not valid UTF-8"
+        "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
       } ]
     },
     "registration" : {
@@ -115,11 +115,11 @@
   "planted/artifact-not-yaml" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "unreadable",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ ],
-        "detail" : "qa/tactics/a.tactic.yaml is not valid YAML: while parsing a flow node"
+        "detail" : "tactics/a.tactic.yaml: while parsing a flow node"
       } ]
     },
     "registration" : {
@@ -127,7 +127,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -144,16 +144,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "unreadable",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ ],
-        "detail" : "qa/tactics/a.tactic.yaml is not valid YAML: while parsing a flow node"
+        "detail" : "tactics/a.tactic.yaml: while parsing a flow node"
       } ]
     },
     "registration" : {
@@ -177,11 +177,11 @@
   "planted/artifact-utf16-with-a-byte-order-mark" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "unreadable",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ ],
-        "detail" : "qa/tactics/a.tactic.yaml is not valid YAML: the file is not valid UTF-8"
+        "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
       } ]
     },
     "registration" : {
@@ -189,7 +189,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -206,16 +206,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "unreadable",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ ],
-        "detail" : "qa/tactics/a.tactic.yaml is not valid YAML: the file is not valid UTF-8"
+        "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
       } ]
     },
     "registration" : {
@@ -240,10 +240,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/run.py.asset.yaml",
         "place" : [ "id" ],
-        "detail" : "qa/assets/run.py.asset.yaml: 'id' does not match its pattern"
+        "detail" : "assets/run.py.asset.yaml: 'id' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -252,29 +252,29 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/run.py.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/run.py.asset.yaml",
-          "code" : "schema",
-          "detail" : "assets/run.py.asset.yaml: pattern violated at /id"
+          "code" : "artifact_schema_error",
+          "detail" : "assets/run.py.asset.yaml: 'id' does not match its pattern"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file assets/run.py.asset.yaml of qa cannot be read: pattern violated at /id"
+        "detail" : "the file assets/run.py.asset.yaml of qa cannot be read: 'id' does not match its pattern"
       }
     }
   },
   "planted/asset-mime-does-not-match-the-extension" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/doc.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
       }, {
         "code" : "asset_mime_invalid",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset mime 'image/png' does not match the '.txt' extension (text/plain)"
@@ -285,7 +285,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -302,19 +302,19 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/doc.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
       }, {
         "code" : "asset_mime_invalid",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset mime 'image/png' does not match the '.txt' extension (text/plain)"
@@ -341,14 +341,14 @@
   "planted/asset-mime-malformed" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/doc.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
       }, {
         "code" : "asset_mime_invalid",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
@@ -359,7 +359,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -376,19 +376,19 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/doc.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
       }, {
         "code" : "asset_mime_invalid",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
@@ -415,14 +415,8 @@
   "planted/asset-path-escape-absolute" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path '/etc/hosts' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path '/etc/hosts' escapes the pack's assets/ root"
@@ -433,7 +427,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -450,19 +444,13 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path '/etc/hosts' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path '/etc/hosts' escapes the pack's assets/ root"
@@ -489,14 +477,8 @@
   "planted/asset-path-escape-dot-dot" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path '../../outside.png' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path '../../outside.png' escapes the pack's assets/ root"
@@ -507,7 +489,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -524,19 +506,13 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path '../../outside.png' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path '../../outside.png' escapes the pack's assets/ root"
@@ -563,17 +539,11 @@
   "planted/asset-path-escape-through-a-symlink" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/out/etc/hostname does not exist"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "assets/a.asset.yaml: asset path 'out/etc/hostname' escapes the pack's assets/ root"
+        "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
       } ]
     },
     "registration" : {
@@ -581,7 +551,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -598,22 +568,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/out/etc/hostname does not exist"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "assets/a.asset.yaml: asset path 'out/etc/hostname' escapes the pack's assets/ root"
+        "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
       } ]
     },
     "registration" : {
@@ -637,14 +601,8 @@
   "planted/asset-path-escape-windows-drive" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
@@ -655,7 +613,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -672,19 +630,13 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
@@ -711,11 +663,11 @@
   "planted/asset-path-inside-through-a-symlink-is-contained" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/in/x.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
       } ]
     },
     "registration" : {
@@ -723,7 +675,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -740,16 +692,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/in/x.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
       } ]
     },
     "registration" : {
@@ -773,17 +725,11 @@
   "planted/asset-path-symlink-loop" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/loop/x.txt does not exist"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "assets/a.asset.yaml: asset path 'loop/x.txt' escapes the pack's assets/ root"
+        "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
       } ]
     },
     "registration" : {
@@ -791,7 +737,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -808,22 +754,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/loop/x.txt does not exist"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "assets/a.asset.yaml: asset path 'loop/x.txt' escapes the pack's assets/ root"
+        "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
       } ]
     },
     "registration" : {
@@ -847,20 +787,20 @@
   "planted/asset-repeated-id-only-the-first-owner-is-checked" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/ok.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/ok.txt does not exist"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/b.asset.yaml asset path '../../escape.txt' escapes the pack's assets/ root"
+        "detail" : "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
       }, {
         "code" : "duplicate_artifact_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
         "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
@@ -871,7 +811,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -888,25 +828,25 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/ok.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/ok.txt does not exist"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/b.asset.yaml asset path '../../escape.txt' escapes the pack's assets/ root"
+        "detail" : "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
       }, {
         "code" : "duplicate_artifact_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
         "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
@@ -937,26 +877,20 @@
   "planted/asset-repeated-id-the-first-owner-escapes" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path '../../escape.txt' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/b.asset.yaml payload assets/ok.txt does not exist"
+        "detail" : "assets/b.asset.yaml: payload assets/ok.txt does not exist"
       }, {
         "code" : "duplicate_artifact_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
         "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
@@ -967,7 +901,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -984,31 +918,25 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml asset path '../../escape.txt' escapes the pack's assets/ root"
-      }, {
-        "code" : "asset_path_escape",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
         "detail" : "assets/a.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
       }, {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/b.asset.yaml payload assets/ok.txt does not exist"
+        "detail" : "assets/b.asset.yaml: payload assets/ok.txt does not exist"
       }, {
         "code" : "duplicate_artifact_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "assets/b.asset.yaml",
         "place" : [ ],
         "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
@@ -1040,10 +968,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "routing-priority" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+        "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
       } ]
     },
     "registration" : {
@@ -1051,7 +979,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1068,16 +996,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "routing-priority" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+        "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
       } ]
     },
     "registration" : {
@@ -1086,15 +1014,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
         "violations" : [ {
           "pointer" : "agent_profiles/p.agent.yaml",
-          "code" : "schema",
-          "detail" : "agent_profiles/p.agent.yaml: type violated at /routing-priority"
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: type violated at /routing-priority"
+        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: 'routing-priority' must be an integer"
       }
     }
   },
@@ -1102,10 +1030,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "role" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: 'role' does not match its pattern"
+        "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -1113,7 +1041,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1130,16 +1058,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "role" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: 'role' does not match its pattern"
+        "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -1148,15 +1076,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
         "violations" : [ {
           "pointer" : "agent_profiles/p.agent.yaml",
-          "code" : "schema",
-          "detail" : "agent_profiles/p.agent.yaml: pattern violated at /role"
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: pattern violated at /role"
+        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: 'role' does not match its pattern"
       }
     }
   },
@@ -1169,7 +1097,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1186,7 +1114,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1203,10 +1131,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ "schema_version" ],
-        "detail" : "qa/tactics/a.tactic.yaml: 'schema_version' must be a string"
+        "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
       } ]
     },
     "registration" : {
@@ -1214,7 +1142,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1231,16 +1159,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactics/a.tactic.yaml",
         "place" : [ "schema_version" ],
-        "detail" : "qa/tactics/a.tactic.yaml: 'schema_version' must be a string"
+        "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
       } ]
     },
     "registration" : {
@@ -1249,15 +1177,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml.",
         "violations" : [ {
           "pointer" : "tactics/a.tactic.yaml",
-          "code" : "schema",
-          "detail" : "tactics/a.tactic.yaml: type violated at /schema_version"
+          "code" : "artifact_schema_error",
+          "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file tactics/a.tactic.yaml of qa cannot be read: type violated at /schema_version"
+        "detail" : "the file tactics/a.tactic.yaml of qa cannot be read: 'schema_version' must be a string"
       }
     }
   },
@@ -1265,10 +1193,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "routing-priority" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
+        "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
       } ]
     },
     "registration" : {
@@ -1276,7 +1204,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1293,16 +1221,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "routing-priority" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
+        "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
       } ]
     },
     "registration" : {
@@ -1311,15 +1239,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
         "violations" : [ {
           "pointer" : "agent_profiles/p.agent.yaml",
-          "code" : "schema",
-          "detail" : "agent_profiles/p.agent.yaml: maximum violated at /routing-priority"
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: maximum violated at /routing-priority"
+        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: 'routing-priority' 101 is out of range"
       }
     }
   },
@@ -1327,10 +1255,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "directives/d.directive.yaml",
         "place" : [ ],
-        "detail" : "qa/directives/d.directive.yaml: missing 'explicit_allowances'"
+        "detail" : "directives/d.directive.yaml: missing 'explicit_allowances'"
       } ]
     },
     "registration" : {
@@ -1338,7 +1266,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1355,16 +1283,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "directives/d.directive.yaml",
         "place" : [ ],
-        "detail" : "qa/directives/d.directive.yaml: missing 'explicit_allowances'"
+        "detail" : "directives/d.directive.yaml: missing 'explicit_allowances'"
       } ]
     },
     "registration" : {
@@ -1373,15 +1301,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at directives/d.directive.yaml.",
         "violations" : [ {
           "pointer" : "directives/d.directive.yaml",
-          "code" : "schema",
-          "detail" : "directives/d.directive.yaml: required violated at the document"
+          "code" : "artifact_schema_error",
+          "detail" : "directives/d.directive.yaml: missing 'explicit_allowances'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file directives/d.directive.yaml of qa cannot be read: required violated at the document"
+        "detail" : "the file directives/d.directive.yaml of qa cannot be read: missing 'explicit_allowances'"
       }
     }
   },
@@ -1389,10 +1317,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "edges", "0" ],
-        "detail" : "qa/tactic.graph.yaml edge: unknown key 'provenance'"
+        "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
       } ]
     },
     "registration" : {
@@ -1400,7 +1328,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1417,13 +1345,13 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "edges", "0" ],
-        "detail" : "qa/tactic.graph.yaml edge: unknown key 'provenance'"
+        "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
       }, {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1436,7 +1364,7 @@
         "violations" : [ {
           "pointer" : "tactic.graph.yaml",
           "code" : "drg_schema_error",
-          "detail" : "tactic.graph.yaml: additionalProperties violated at /edges/0: undeclared key 'provenance'"
+          "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
         } ]
       }
     },
@@ -1451,10 +1379,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "specialization" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: unknown key 'bogus'"
+        "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
       } ]
     },
     "registration" : {
@@ -1462,7 +1390,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1479,16 +1407,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "agent_profiles/p.agent.yaml",
         "place" : [ "specialization" ],
-        "detail" : "qa/agent_profiles/p.agent.yaml: unknown key 'bogus'"
+        "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
       } ]
     },
     "registration" : {
@@ -1497,15 +1425,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
         "violations" : [ {
           "pointer" : "agent_profiles/p.agent.yaml",
-          "code" : "schema",
-          "detail" : "agent_profiles/p.agent.yaml: additionalProperties violated at /specialization: undeclared key 'bogus'"
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: additionalProperties violated at /specialization: undeclared key 'bogus'"
+        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: unknown key 'bogus'"
       }
     }
   },
@@ -1524,7 +1452,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1541,7 +1469,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1567,10 +1495,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "edges", "0", "source" ],
-        "detail" : "qa/drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
+        "detail" : "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
       } ]
     },
     "registration" : {
@@ -1580,7 +1508,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: pattern violated at /edges/0/source"
+          "detail" : "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
         } ]
       }
     },
@@ -1595,10 +1523,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "edges", "0", "source" ],
-        "detail" : "qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
+        "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
       } ]
     },
     "registration" : {
@@ -1608,7 +1536,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: pattern violated at /edges/0/source"
+          "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
         } ]
       }
     },
@@ -1623,16 +1551,16 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+        "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
       }, {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
       } ]
     },
     "registration" : {
@@ -1640,7 +1568,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1657,19 +1585,19 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+        "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
       }, {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
       }, {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1682,11 +1610,11 @@
         "violations" : [ {
           "pointer" : "tactic.graph.yaml",
           "code" : "drg_schema_error",
-          "detail" : "tactic.graph.yaml: pattern violated at /nodes/0/urn"
+          "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
         }, {
           "pointer" : "tactic.graph.yaml",
           "code" : "drg_schema_error",
-          "detail" : "tactic.graph.yaml: pattern violated at /nodes/0/urn"
+          "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
         } ]
       }
     },
@@ -1712,7 +1640,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1729,7 +1657,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1766,7 +1694,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1783,7 +1711,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1809,10 +1737,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
       } ]
     },
     "registration" : {
@@ -1820,7 +1748,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -1837,13 +1765,13 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactic.graph.yaml",
         "place" : [ "nodes", "0", "urn" ],
-        "detail" : "qa/tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
       }, {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -1856,7 +1784,7 @@
         "violations" : [ {
           "pointer" : "tactic.graph.yaml",
           "code" : "drg_schema_error",
-          "detail" : "tactic.graph.yaml: pattern violated at /nodes/0/urn"
+          "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
         } ]
       }
     },
@@ -1882,10 +1810,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "nodes", "0", "kind" ],
-        "detail" : "qa/drg/fragment.yaml: node x has unknown kind 'mission_steps'"
+        "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
       } ]
     },
     "registration" : {
@@ -1895,7 +1823,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: enum violated at /nodes/0/kind"
+          "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
         } ]
       }
     },
@@ -1910,10 +1838,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "nodes", "0", "kind" ],
-        "detail" : "qa/drg/fragment.yaml: node x has unknown kind 'mission_type'"
+        "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_type'"
       } ]
     },
     "registration" : {
@@ -1923,7 +1851,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: enum violated at /nodes/0/kind"
+          "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_type'"
         } ]
       }
     },
@@ -1938,10 +1866,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "nodes", "0", "id" ],
-        "detail" : "qa/drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
+        "detail" : "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
       } ]
     },
     "registration" : {
@@ -1951,7 +1879,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: pattern violated at /nodes/0/id"
+          "detail" : "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
         } ]
       }
     },
@@ -1966,10 +1894,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ ],
-        "detail" : "qa/drg/fragment.yaml: unknown key 'pack_name'"
+        "detail" : "drg/fragment.yaml: unknown key 'pack_name'"
       } ]
     },
     "registration" : {
@@ -1979,7 +1907,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: additionalProperties violated at the document: undeclared key 'pack_name'"
+          "detail" : "drg/fragment.yaml: unknown key 'pack_name'"
         } ]
       }
     },
@@ -1994,10 +1922,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "edges", "0", "relation" ],
-        "detail" : "qa/drg/fragment.yaml: unknown relation 'extends'"
+        "detail" : "drg/fragment.yaml: unknown relation 'extends'"
       } ]
     },
     "registration" : {
@@ -2007,7 +1935,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: enum violated at /edges/0/relation"
+          "detail" : "drg/fragment.yaml: unknown relation 'extends'"
         } ]
       }
     },
@@ -2033,7 +1961,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2050,7 +1978,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2087,7 +2015,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2104,7 +2032,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2130,7 +2058,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "pack_unreadable",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "pack.yaml of qa has no pack_version"
@@ -2139,18 +2067,18 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa cannot be read: required violated at the document",
+        "detail" : "The pack cannot be registered: pack.yaml of qa has no pack_version",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
-          "detail" : "pack.yaml of qa cannot be read: required violated at the document"
+          "detail" : "pack.yaml of qa has no pack_version"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "pack.yaml of qa cannot be read: required violated at the document"
+        "detail" : "pack.yaml of qa has no pack_version"
       }
     }
   },
@@ -2169,7 +2097,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2186,7 +2114,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2223,7 +2151,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2240,7 +2168,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2277,7 +2205,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2294,7 +2222,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2331,7 +2259,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2348,7 +2276,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2373,11 +2301,11 @@
   "planted/control-a-clean-org-pack" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "asset",
+        "severity" : "violation",
         "file" : "assets/a.asset.yaml",
         "place" : [ ],
-        "detail" : "qa/assets/a.asset.yaml payload assets/doc.txt does not exist"
+        "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
       } ]
     },
     "registration" : {
@@ -2430,7 +2358,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "pack_unreadable",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "pack.yaml of qa: unknown key 'accompanies_doctrine_pack'"
@@ -2439,18 +2367,18 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'accompanies_doctrine_pack'",
+        "detail" : "The pack cannot be registered: pack.yaml of qa: unknown key 'accompanies_doctrine_pack'",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
-          "detail" : "pack.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'accompanies_doctrine_pack'"
+          "detail" : "pack.yaml of qa: unknown key 'accompanies_doctrine_pack'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "pack.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'accompanies_doctrine_pack'"
+        "detail" : "pack.yaml of qa: unknown key 'accompanies_doctrine_pack'"
       }
     }
   },
@@ -2458,7 +2386,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "pack_unreadable",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "pack.yaml of qa: unknown key 'mystery'"
@@ -2467,18 +2395,18 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'mystery'",
+        "detail" : "The pack cannot be registered: pack.yaml of qa: unknown key 'mystery'",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
-          "detail" : "pack.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'mystery'"
+          "detail" : "pack.yaml of qa: unknown key 'mystery'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "pack.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'mystery'"
+        "detail" : "pack.yaml of qa: unknown key 'mystery'"
       }
     }
   },
@@ -2486,7 +2414,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "duplicate_artifact_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactics/b.tactic.yaml",
         "place" : [ ],
         "detail" : "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
@@ -2497,7 +2425,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2514,13 +2442,13 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
       }, {
         "code" : "duplicate_artifact_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "tactics/b.tactic.yaml",
         "place" : [ ],
         "detail" : "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
@@ -2529,18 +2457,18 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: Constraint breached: A pack must not hold two tactics with the same identifier.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactics/b.tactic.yaml.",
         "violations" : [ {
-          "pointer" : "pack",
-          "code" : "validation_failed",
-          "detail" : "Constraint breached: A pack must not hold two tactics with the same identifier."
+          "pointer" : "tactics/b.tactic.yaml",
+          "code" : "duplicate_artifact_id",
+          "detail" : "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
         } ]
       }
     },
     "composeRead" : {
-      "threw" : {
-        "type" : "ai.speckitty.charter.kernel.validation.ConstraintBreachException",
-        "message" : "Constraint breached: A pack must not hold two tactics with the same identifier."
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "the file tactics/b.tactic.yaml of qa cannot be read: tactic id 'same' is already declared in tactics/a.tactic.yaml"
       }
     }
   },
@@ -2548,7 +2476,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "duplicate_step_id",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "missions/rx/rx.mission-type.yaml",
         "place" : [ "steps", "0", "substeps", "2", "id" ],
         "detail" : "missions/rx/rx.mission-type.yaml: substep id 'run' is declared more than once in the step 'a'"
@@ -2576,10 +2504,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "glossaries/core.glossary.yaml",
         "place" : [ "id" ],
-        "detail" : "qa/glossaries/core.glossary.yaml: 'id' does not match its pattern"
+        "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -2588,15 +2516,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
         "violations" : [ {
           "pointer" : "glossaries/core.glossary.yaml",
-          "code" : "schema",
-          "detail" : "glossaries/core.glossary.yaml: pattern violated at /id"
+          "code" : "artifact_schema_error",
+          "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: pattern violated at /id"
+        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: 'id' does not match its pattern"
       }
     }
   },
@@ -2604,10 +2532,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "glossaries/a.glossary.yaml",
         "place" : [ "id" ],
-        "detail" : "qa/glossaries/a.glossary.yaml: 'id' has an unsupported value 'b'"
+        "detail" : "glossaries/a.glossary.yaml: glossary id 'b' is not its file stem 'a'"
       } ]
     },
     "registration" : {
@@ -2616,7 +2544,7 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/a.glossary.yaml.",
         "violations" : [ {
           "pointer" : "glossaries/a.glossary.yaml",
-          "code" : "schema",
+          "code" : "artifact_schema_error",
           "detail" : "glossaries/a.glossary.yaml: glossary id 'b' is not its file stem 'a'"
         } ]
       }
@@ -2642,11 +2570,11 @@
   "planted/glossary-pack-old-shape" : {
     "validate" : {
       "findings" : [ {
-        "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "code" : "retired",
+        "severity" : "violation",
         "file" : "glossary_packs/x.glossary-pack.yaml",
         "place" : [ ],
-        "detail" : "qa/glossary_packs/x.glossary-pack.yaml is retired: the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)"
+        "detail" : "glossary_packs/x.glossary-pack.yaml: the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)"
       } ]
     },
     "registration" : {
@@ -2671,10 +2599,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "glossaries/core.glossary.yaml",
         "place" : [ "terms", "0", "see_also", "0" ],
-        "detail" : "qa/glossaries/core.glossary.yaml: '0' does not match its pattern"
+        "detail" : "glossaries/core.glossary.yaml: '0' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -2683,15 +2611,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
         "violations" : [ {
           "pointer" : "glossaries/core.glossary.yaml",
-          "code" : "schema",
-          "detail" : "glossaries/core.glossary.yaml: pattern violated at /terms/0/see_also/0"
+          "code" : "artifact_schema_error",
+          "detail" : "glossaries/core.glossary.yaml: '0' does not match its pattern"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: pattern violated at /terms/0/see_also/0"
+        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: '0' does not match its pattern"
       }
     }
   },
@@ -2699,10 +2627,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "edges", "0", "relation" ],
-        "detail" : "qa/drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
+        "detail" : "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
       } ]
     },
     "registration" : {
@@ -2712,7 +2640,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: const violated at /edges/0/relation"
+          "detail" : "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
         } ]
       }
     },
@@ -2727,10 +2655,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "edges", "0", "source" ],
-        "detail" : "qa/drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
+        "detail" : "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
       } ]
     },
     "registration" : {
@@ -2740,7 +2668,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: pattern violated at /edges/0/source"
+          "detail" : "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
         } ]
       }
     },
@@ -2755,10 +2683,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "glossaries/core.glossary.yaml",
         "place" : [ "terms", "0", "id" ],
-        "detail" : "qa/glossaries/core.glossary.yaml: 'id' does not match its pattern"
+        "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -2767,15 +2695,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
         "violations" : [ {
           "pointer" : "glossaries/core.glossary.yaml",
-          "code" : "schema",
-          "detail" : "glossaries/core.glossary.yaml: pattern violated at /terms/0/id"
+          "code" : "artifact_schema_error",
+          "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: pattern violated at /terms/0/id"
+        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: 'id' does not match its pattern"
       }
     }
   },
@@ -2783,10 +2711,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "glossaries/core.glossary.yaml",
         "place" : [ "terms", "0", "id" ],
-        "detail" : "qa/glossaries/core.glossary.yaml: 'id' does not match its pattern"
+        "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
       } ]
     },
     "registration" : {
@@ -2795,15 +2723,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
         "violations" : [ {
           "pointer" : "glossaries/core.glossary.yaml",
-          "code" : "schema",
-          "detail" : "glossaries/core.glossary.yaml: pattern violated at /terms/0/id"
+          "code" : "artifact_schema_error",
+          "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: pattern violated at /terms/0/id"
+        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: 'id' does not match its pattern"
       }
     }
   },
@@ -2811,10 +2739,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "glossaries/core.glossary.yaml",
         "place" : [ "terms", "2", "id" ],
-        "detail" : "qa/glossaries/core.glossary.yaml: '/terms/2/id' breaks schema keyword 'uniqueItems'"
+        "detail" : "glossaries/core.glossary.yaml: '/terms/2/id' breaks schema keyword 'uniqueItems'"
       } ]
     },
     "registration" : {
@@ -2823,15 +2751,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
         "violations" : [ {
           "pointer" : "glossaries/core.glossary.yaml",
-          "code" : "schema",
-          "detail" : "glossaries/core.glossary.yaml: uniqueItems violated at /terms/2/id"
+          "code" : "artifact_schema_error",
+          "detail" : "glossaries/core.glossary.yaml: '/terms/2/id' breaks schema keyword 'uniqueItems'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: uniqueItems violated at /terms/2/id"
+        "detail" : "the file glossaries/core.glossary.yaml of qa cannot be read: '/terms/2/id' breaks schema keyword 'uniqueItems'"
       }
     }
   },
@@ -2839,7 +2767,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2856,27 +2784,27 @@
     "validate" : {
       "findings" : [ {
         "code" : "pack_unreadable",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
-        "detail" : "pack.yaml of qa is not valid YAML"
+        "detail" : "pack.yaml of qa is not valid YAML: sequence entries are not allowed here"
       } ]
     },
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa cannot be read: sequence entries are not allowed here",
+        "detail" : "The pack cannot be registered: pack.yaml of qa is not valid YAML: sequence entries are not allowed here",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
-          "detail" : "pack.yaml of qa cannot be read: sequence entries are not allowed here"
+          "detail" : "pack.yaml of qa is not valid YAML: sequence entries are not allowed here"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "pack.yaml of qa cannot be read: sequence entries are not allowed here"
+        "detail" : "pack.yaml of qa is not valid YAML: sequence entries are not allowed here"
       }
     }
   },
@@ -2884,10 +2812,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "drg_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "drg/fragment.yaml",
         "place" : [ "edges", "0", "source" ],
-        "detail" : "qa/drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
+        "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
       } ]
     },
     "registration" : {
@@ -2897,7 +2825,7 @@
         "violations" : [ {
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
-          "detail" : "drg/fragment.yaml: pattern violated at /edges/0/source"
+          "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
         } ]
       }
     },
@@ -2923,7 +2851,7 @@
         "code" : "validation_failed",
         "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
         "violations" : [ {
-          "pointer" : "pack",
+          "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         } ]
@@ -2940,7 +2868,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "org_fragment_missing",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ ],
         "detail" : "org pack qa has no drg/fragment.yaml"
@@ -2966,10 +2894,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "relationship_endpoint_not_allowed",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "procedure.graph.yaml",
         "place" : [ "edges", "0" ],
-        "detail" : "qa/procedure.graph.yaml: a requires edge may not connect procedure to action"
+        "detail" : "procedure.graph.yaml: a requires edge may not connect procedure to action"
       } ]
     },
     "registration" : {
@@ -2994,10 +2922,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "relationship_endpoint_not_allowed",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "overrides.graph.yaml",
         "place" : [ "edges", "0" ],
-        "detail" : "qa/overrides.graph.yaml: an overrides edge may not connect directive to tactic"
+        "detail" : "overrides.graph.yaml: an overrides edge may not connect directive to tactic"
       } ]
     },
     "registration" : {
@@ -3022,10 +2950,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "mission_step_unlinked",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "missions/rx/rx.mission-type.yaml",
         "place" : [ ],
-        "detail" : "qa/missions/rx/rx.mission-type.yaml: the step b of mission_type:rx has no requires edge from its type: author mission_type:rx requires action:rx/b"
+        "detail" : "missions/rx/rx.mission-type.yaml: the step b of mission_type:rx has no requires edge from its type: author mission_type:rx requires action:rx/b"
       } ]
     },
     "registration" : {
@@ -3050,10 +2978,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "missions/rx/rx.mission-type.yaml",
         "place" : [ ],
-        "detail" : "qa/missions/rx/rx.mission-type.yaml: unknown key 'action_sequence'"
+        "detail" : "missions/rx/rx.mission-type.yaml: unknown key 'action_sequence'"
       } ]
     },
     "registration" : {
@@ -3062,15 +2990,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
         "violations" : [ {
           "pointer" : "missions/rx/rx.mission-type.yaml",
-          "code" : "schema",
-          "detail" : "missions/rx/rx.mission-type.yaml: additionalProperties violated at the document: undeclared key 'action_sequence'"
+          "code" : "artifact_schema_error",
+          "detail" : "missions/rx/rx.mission-type.yaml: unknown key 'action_sequence'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file missions/rx/rx.mission-type.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'action_sequence'"
+        "detail" : "the file missions/rx/rx.mission-type.yaml of qa cannot be read: unknown key 'action_sequence'"
       }
     }
   },
@@ -3078,10 +3006,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "artifact_schema_error",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "missions/rx/rx.mission-type.yaml",
         "place" : [ ],
-        "detail" : "qa/missions/rx/rx.mission-type.yaml: unknown key 'template_set'"
+        "detail" : "missions/rx/rx.mission-type.yaml: unknown key 'template_set'"
       } ]
     },
     "registration" : {
@@ -3090,15 +3018,15 @@
         "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
         "violations" : [ {
           "pointer" : "missions/rx/rx.mission-type.yaml",
-          "code" : "schema",
-          "detail" : "missions/rx/rx.mission-type.yaml: additionalProperties violated at the document: undeclared key 'template_set'"
+          "code" : "artifact_schema_error",
+          "detail" : "missions/rx/rx.mission-type.yaml: unknown key 'template_set'"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file missions/rx/rx.mission-type.yaml of qa cannot be read: additionalProperties violated at the document: undeclared key 'template_set'"
+        "detail" : "the file missions/rx/rx.mission-type.yaml of qa cannot be read: unknown key 'template_set'"
       }
     }
   },
@@ -3106,10 +3034,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "substep_delegation_unresolved",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "missions/rx/rx.mission-type.yaml",
         "place" : [ "steps", "0", "substeps", "0", "delegates_to", "candidates", "0" ],
-        "detail" : "qa/missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, which the pack does not hold as a tactic"
+        "detail" : "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, which the pack does not hold as a tactic"
       } ]
     },
     "registration" : {
@@ -3134,10 +3062,10 @@
     "validate" : {
       "findings" : [ {
         "code" : "substep_delegation_unscoped",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "missions/rx/rx.mission-type.yaml",
         "place" : [ "steps", "0", "substeps", "0", "delegates_to", "candidates", "0" ],
-        "detail" : "qa/missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds action:rx/a scope tactic:tdd"
+        "detail" : "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds action:rx/a scope tactic:tdd"
       } ]
     },
     "registration" : {
@@ -3162,7 +3090,7 @@
     "validate" : {
       "findings" : [ {
         "code" : "requires_core_invalid",
-        "severity" : "blocking",
+        "severity" : "violation",
         "file" : "pack.yaml",
         "place" : [ "requires_core" ],
         "detail" : "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"

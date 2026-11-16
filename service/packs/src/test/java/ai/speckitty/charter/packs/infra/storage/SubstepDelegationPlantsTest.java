@@ -52,15 +52,15 @@ class SubstepDelegationPlantsTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-        "r35-substep-delegation-unresolved, SUBSTEP_DELEGATION_UNRESOLVED, which the pack does not hold as a tactic",
-        "r36-substep-delegation-unscoped, SUBSTEP_DELEGATION_UNSCOPED, no graph document holds action:rx/a scope tactic:tdd"
+        "r35-substep-delegation-unresolved, substep_delegation_unresolved, which the pack does not hold as a tactic",
+        "r36-substep-delegation-unscoped, substep_delegation_unscoped, no graph document holds action:rx/a scope tactic:tdd"
     })
     @DisplayName("validate mode: one blocking finding at the candidate's place in the mission type file")
-    void validateModeRefusesTheCandidate(String plant, PackFindingCode code, String reason, @TempDir Path host) {
+    void validateModeRefusesTheCandidate(String plant, String code, String reason, @TempDir Path host) {
         List<PackFinding> findings = validate(planted(host, plant));
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(code);
+            assertThat(finding.code().value()).isEqualTo(code);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
             assertThat(finding.file()).isEqualTo(TYPE);
             assertThat(finding.place()).isEqualTo(PLACE);
@@ -82,7 +82,7 @@ class SubstepDelegationPlantsTest {
 
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
-            assertThat(violation.kind()).isEqualTo(code);
+            assertThat(violation.kind().value()).isEqualTo(code);
             assertThat(violation.reason()).contains("tactic tdd");
         });
         assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
@@ -149,7 +149,7 @@ class SubstepDelegationPlantsTest {
                         .pack()
                         .violations())
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.kind()).isEqualTo(SubstepDelegationRule.UNSCOPED));
+                .satisfies(violation -> assertThat(violation.kind().value()).isEqualTo(SubstepDelegationRule.UNSCOPED));
     }
 
     @Test
@@ -171,7 +171,7 @@ class SubstepDelegationPlantsTest {
                         .violations())
                 .singleElement()
                 .satisfies(violation -> {
-                    assertThat(violation.kind()).isEqualTo("duplicate_step_id");
+                    assertThat(violation.kind().value()).isEqualTo("duplicate_step_id");
                     assertThat(violation.file()).isEqualTo(TYPE);
                     assertThat(violation.reason())
                             .contains("substep id 'run' is declared more than once in the step 'a'");
@@ -205,9 +205,7 @@ class SubstepDelegationPlantsTest {
         });
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
-            assertThat(violation.reason())
-                    .contains("additionalProperties violated at")
-                    .contains("undeclared key 'gate'");
+            assertThat(violation.reason()).contains("unknown key 'gate'");
         });
     }
 
@@ -228,7 +226,7 @@ class SubstepDelegationPlantsTest {
         });
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
-            assertThat(violation.reason()).contains("enum violated at /steps/0/substeps/0/delegates_to/kind");
+            assertThat(violation.reason()).contains("'kind' has an unsupported value 'agent_profile'");
         });
         assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {

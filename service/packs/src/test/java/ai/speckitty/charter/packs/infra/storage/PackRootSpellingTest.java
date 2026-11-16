@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.rules.Wording;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +37,7 @@ class PackRootSpellingTest {
     private static final String FILE = "missions/research/research.mission-type.yaml";
     private static final String TEMPLATE = "missions/research/templates/spec-template.md";
     private static final String MISSING_DETAIL =
-            PACK + "/" + FILE + " names templates/spec-template.md (named by step 'scoping'): missing";
+            FILE + ": names templates/spec-template.md (named by step 'scoping'): missing";
 
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();
 
@@ -93,7 +94,7 @@ class PackRootSpellingTest {
         assertThat(violations)
                 .containsExactly(new PackElementViolation(
                         FILE,
-                        FilesystemPackStore.REFERENCE,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "templates/spec-template.md (named by step 'scoping'): missing"));
     }
 

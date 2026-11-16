@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -186,7 +187,7 @@ class PackPolicyTest {
                 descriptor("qa", Optional.of(PackLevel.ORG)));
         assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
-            assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml: edge endpoint 'QA_404' is not a URN");
+            assertThat(r.getMessage()).isEqualTo("a.graph.yaml: edge endpoint 'QA_404' is not a URN");
         });
     }
 
@@ -205,9 +206,8 @@ class PackPolicyTest {
         assertThat(PackPolicy.judge(c).findings()).isEmpty();
         assertThat(PackPolicy.registeredGraph("qa", registered).findings())
                 .extracting(PackFinding::detail)
-                .containsExactly(
-                        "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with"
-                                + " is authored in a pack's graph shards");
+                .containsExactly("registered.graph.yaml: a registered relationship is never a tension; in_tension_with"
+                        + " is authored in a pack's graph shards");
     }
 
     @Test
@@ -219,7 +219,7 @@ class PackPolicyTest {
                         "pack.yaml", new PackContents.ParseFailure("pack.yaml", "while scanning"), List.of()));
         assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(r.getMessage()).isEqualTo("pack.yaml of qa is not valid YAML");
+            assertThat(r.getMessage()).isEqualTo("pack.yaml of qa is not valid YAML: while scanning");
         });
         assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(c))
                 .isInstanceOfSatisfying(
@@ -237,7 +237,7 @@ class PackPolicyTest {
                 descriptor("qa", Optional.of(PackLevel.ORG)));
         assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
-            assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml is not valid YAML: while parsing a block mapping");
+            assertThat(r.getMessage()).isEqualTo("a.graph.yaml: while parsing a block mapping");
         });
     }
 
@@ -337,34 +337,33 @@ class PackPolicyTest {
     void aKeywordWithoutARowIsNotHandledAndGetsTheFixedFallback(String keyword) {
         assertThat(PackPolicy.handles(keyword)).isFalse();
         assertThat(textOf(violation("a.graph.yaml", List.of("nodes", "0"), keyword, null, null, Map.of())))
-                .isEqualTo("qa/a.graph.yaml: '/nodes/0' breaks schema keyword '" + keyword + "'");
+                .isEqualTo("a.graph.yaml: '/nodes/0' breaks schema keyword '" + keyword + "'");
     }
 
     @Test
     void aRetiredFileReadsAsRetiredAndAParseFailureKeepsItsWording() {
-        PackContents.ParseFailure retired =
-                PackContents.ParseFailure.retired("missions/plan/mission.yaml", "folded into the mission-type file");
-        PackContents.ParseFailure markdown =
-                PackContents.ParseFailure.retired("mission-steps/plan/specify/prompt.md", "folded into the steps");
-        PackContents.ParseFailure orgCharter =
-                PackContents.ParseFailure.retired("org-charter.yaml", "org enforcement is a preset (#431)");
+        PackContents.ParseFailure retired = PackContents.ParseFailure.refused(
+                "missions/plan/mission.yaml", "folded into the mission-type file", StorageCodes.RETIRED);
+        PackContents.ParseFailure markdown = PackContents.ParseFailure.refused(
+                "mission-steps/plan/specify/prompt.md", "folded into the steps", StorageCodes.RETIRED);
+        PackContents.ParseFailure orgCharter = PackContents.ParseFailure.refused(
+                "org-charter.yaml", "org enforcement is a preset (#431)", StorageCodes.RETIRED);
         PackContents.ParseFailure broken = new PackContents.ParseFailure("tactics/x.tactic.yaml", "mapping expected");
 
-        assertThat(retired.refusal()).contains("is retired: folded into the mission-type file");
+        assertThat(retired.refusal()).contains("folded into the mission-type file");
         assertThat(broken.refusal()).isEmpty();
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(retired.file(), retired, List.of())))
                 .extracting(PackFinding::detail)
-                .containsExactly("qa/missions/plan/mission.yaml is retired: folded into the mission-type file");
+                .containsExactly("missions/plan/mission.yaml: folded into the mission-type file");
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(markdown.file(), markdown, List.of())))
                 .extracting(PackFinding::detail)
-                .containsExactly("qa/mission-steps/plan/specify/prompt.md is retired: folded into the steps");
+                .containsExactly("mission-steps/plan/specify/prompt.md: folded into the steps");
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(orgCharter.file(), orgCharter, List.of())))
                 .extracting(PackFinding::code, PackFinding::detail)
                 .containsExactly(org.assertj.core.api.Assertions.tuple(
-                        PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                        "qa/org-charter.yaml is retired: org enforcement is a preset (#431)"));
+                        StorageCodes.RETIRED, "org-charter.yaml: org enforcement is a preset (#431)"));
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(broken.file(), broken, List.of())))
                 .extracting(PackFinding::detail)
-                .containsExactly("qa/tactics/x.tactic.yaml is not valid YAML: mapping expected");
+                .containsExactly("tactics/x.tactic.yaml: mapping expected");
     }
 }

@@ -154,7 +154,7 @@ class GraphDocumentReaderTest {
     void aFragmentMayLeaveOutItsListsAndAShardNeedsThem() {
         assertThat(read("{}\n", Shape.FRAGMENT, FRAGMENT).nodes()).isEmpty();
         assertThat(details(unreadable(HEADER, Shape.SHARD, SHARD)))
-                .containsExactly("qa/tactic.graph.yaml: missing 'nodes'", "qa/tactic.graph.yaml: missing 'edges'");
+                .containsExactly("tactic.graph.yaml: missing 'nodes'", "tactic.graph.yaml: missing 'edges'");
     }
 
     @Test
@@ -253,7 +253,7 @@ class GraphDocumentReaderTest {
             assertThat(Wording.unreadable("qa", shard))
                     .extracting(PackFinding::detail)
                     .as(number)
-                    .containsExactly("qa/tactic.graph.yaml: 'label' must be a string");
+                    .containsExactly("tactic.graph.yaml: 'label' must be a string");
         }
     }
 
@@ -306,8 +306,7 @@ class GraphDocumentReaderTest {
         assertThat(bad.parse()).isNotNull();
         assertThat(bad.parse().firstLine()).isEqualTo("a mapping key is not a string");
         assertThat(bad.violations()).isEmpty();
-        assertThat(details(bad))
-                .containsExactly("qa/tactic.graph.yaml is not valid YAML: a mapping key is not a string");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: a mapping key is not a string");
     }
 
     @ParameterizedTest
@@ -336,7 +335,7 @@ class GraphDocumentReaderTest {
         assertThat(violation.keyword()).isEqualTo("additionalProperties");
         assertThat(violation.pointer()).isEmpty();
         assertThat(violation.property()).contains("surprise");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: unknown key 'surprise'");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: unknown key 'surprise'");
     }
 
     @Test
@@ -348,7 +347,7 @@ class GraphDocumentReaderTest {
         assertThat(violation.keyword()).isEqualTo("required");
         assertThat(violation.pointer()).containsExactly("nodes", "0");
         assertThat(violation.property()).contains("kind");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: missing 'kind'");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: missing 'kind'");
     }
 
     @Test
@@ -377,7 +376,7 @@ class GraphDocumentReaderTest {
         assertThat(violation.pointer()).containsExactly("edges", "0", "source");
         assertThat(violation.value()).contains("QA_404");
         assertThat(violation.args().get("0")).contains("(directive|tactic|");
-        assertThat(details(bad)).containsExactly("qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN");
+        assertThat(details(bad)).containsExactly("drg/fragment.yaml: edge endpoint 'QA_404' is not a URN");
     }
 
     @Test
@@ -390,7 +389,7 @@ class GraphDocumentReaderTest {
         SchemaViolation violation = only(bad);
         assertThat(violation.keyword()).isEqualTo("enum");
         assertThat(violation.pointer()).containsExactly("edges", "0", "relation");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: unknown relation 'inspires'");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: unknown relation 'inspires'");
     }
 
     @Test
@@ -398,7 +397,7 @@ class GraphDocumentReaderTest {
         FileRead.Unreadable<RawGraph> bad = unreadable(HEADER + "nodes:\n- a\nedges: []\n", Shape.SHARD, SHARD);
 
         assertThat(only(bad).pointer()).containsExactly("nodes", "0");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml node: expected a mapping");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml node: expected a mapping");
     }
 
     @Test
@@ -406,9 +405,9 @@ class GraphDocumentReaderTest {
         FileRead.Unreadable<RawGraph> bad = unreadable("- a\n", Shape.SHARD, SHARD);
 
         assertThat(only(bad).pointer()).isEmpty();
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: expected a mapping");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: expected a mapping");
         assertThat(details(unreadable("", Shape.FRAGMENT, FRAGMENT)))
-                .containsExactly("qa/drg/fragment.yaml: expected a mapping");
+                .containsExactly("drg/fragment.yaml: expected a mapping");
     }
 
     // ---- the named facts the validator does not emit (WP05's vocabulary argument contract) ------------
@@ -425,7 +424,7 @@ class GraphDocumentReaderTest {
             assertThat(v.pointer()).containsExactly("nodes", "0", "id");
             assertThat(v.args()).containsEntry("kind", "directives");
         });
-        assertThat(details(bad)).containsExactly("qa/drg/fragment.yaml: a node of kind 'directives' has an empty id");
+        assertThat(details(bad)).containsExactly("drg/fragment.yaml: a node of kind 'directives' has an empty id");
     }
 
     @Test
@@ -434,7 +433,7 @@ class GraphDocumentReaderTest {
                 unreadable("nodes:\n- {id: 'a b', kind: tactics}\n", Shape.FRAGMENT, FRAGMENT);
 
         assertThat(only(bad).args()).containsEntry("kind", "tactics");
-        assertThat(details(bad)).containsExactly("qa/drg/fragment.yaml: node id 'a b' is not <kind>:<id>-safe");
+        assertThat(details(bad)).containsExactly("drg/fragment.yaml: node id 'a b' is not <kind>:<id>-safe");
     }
 
     @Test
@@ -445,7 +444,7 @@ class GraphDocumentReaderTest {
         assertThat(violation.keyword()).isEqualTo("enum");
         assertThat(violation.pointer()).containsExactly("nodes", "0", "kind");
         assertThat(violation.args()).containsEntry("id", "x").doesNotContainKey("urn");
-        assertThat(details(bad)).containsExactly("qa/drg/fragment.yaml: node x has unknown kind 'widgets'");
+        assertThat(details(bad)).containsExactly("drg/fragment.yaml: node x has unknown kind 'widgets'");
     }
 
     @Test
@@ -455,7 +454,7 @@ class GraphDocumentReaderTest {
 
         SchemaViolation violation = only(bad);
         assertThat(violation.args()).containsEntry("urn", "tactic:t").doesNotContainKey("id");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: node tactic:t has unknown kind 'widget'");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: node tactic:t has unknown kind 'widget'");
     }
 
     @Test
@@ -467,7 +466,7 @@ class GraphDocumentReaderTest {
         assertThat(violation.keyword()).isEqualTo("pattern");
         assertThat(violation.pointer()).containsExactly("nodes", "0", "urn");
         assertThat(violation.args()).containsEntry("0", "^directive:");
-        assertThat(details(bad)).containsExactly("qa/tactic.graph.yaml: node tactic:t declares kind 'directive'");
+        assertThat(details(bad)).containsExactly("tactic.graph.yaml: node tactic:t declares kind 'directive'");
     }
 
     @Test
@@ -479,7 +478,7 @@ class GraphDocumentReaderTest {
 
         assertThat(details(bad))
                 .containsExactly(
-                        "qa/drg/fragment.yaml: node b has unknown kind 'widgets'",
-                        "qa/drg/fragment.yaml: a node of kind 'tactics' has an empty id");
+                        "drg/fragment.yaml: node b has unknown kind 'widgets'",
+                        "drg/fragment.yaml: a node of kind 'tactics' has an empty id");
     }
 }

@@ -715,11 +715,29 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             return load(directory, false, graphFaults);
         } catch (CharterRefusal refusal) {
             List<RefusalViolation> violations = new ArrayList<>(graphViolations(graphFaults));
-            violations.add(violationOf("pack", refusal.code().token(), String.valueOf(refusal.getMessage())));
+            // The descriptor's fault is at pack.yaml (#554, R2 rows 22 to 24); any other refusal of the load is the
+            // pack's as a whole: a root that cannot be read (F4), or an aggregate invariant the guard keeps (F6).
+            String pointer = descriptorFault(directory).isPresent() ? PackFileSet.PACK_YAML : "pack";
+            violations.add(violationOf(pointer, refusal.code().token(), String.valueOf(refusal.getMessage())));
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
                     "The pack cannot be registered: " + refusal.getMessage(),
                     violations);
+        }
+    }
+
+    /** Whether the staged pack's descriptor is missing or unreadable, read as {@link #load} reads it. */
+    private Optional<String> descriptorFault(Path directory) {
+        Path packDir = directory.toAbsolutePath().normalize();
+        Path parent = packDir.getParent();
+        if (parent == null || packDir.getFileName() == null) {
+            return Optional.empty();
+        }
+        try {
+            return new FilesystemPackStore(parent, strategy, companionRules)
+                    .descriptorFault(new PackIdentifier(String.valueOf(packDir.getFileName())));
+        } catch (CharterRefusal missing) {
+            return Optional.empty();
         }
     }
 
@@ -754,12 +772,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return stamped
                 ? Optional.empty()
                 : Optional.of(violationOf(
-                        RelationshipShard.SHARD_PATH,
-                        StorageCodes.RESERVED_SHARD.value(),
-                        RelationshipShard.SHARD_PATH
-                                + " is reserved for the registered relationships; a file of this name"
-                                + " without generated_by: charter-registration is refused. Register the edges in a shard of"
-                                + " your own."));
+                        RelationshipShard.SHARD_PATH, StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED));
     }
 
     /**
@@ -823,7 +836,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             case FileRead.Read<PackManifestDso> good -> {
                 List<String> misplaced = misplacedPresetEntries(good.value());
                 misplaced.forEach(reason -> builder.violation(
-                        new PackElementViolation(PackFileSet.MANIFEST, FilesystemPackStore.SCHEMA, reason)));
+                        new PackElementViolation(PackFileSet.MANIFEST, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason)));
                 return misplaced.isEmpty() ? Optional.of(good.value()) : Optional.empty();
             }
             case FileRead.Unreadable<PackManifestDso> bad ->

@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,7 +81,7 @@ class WordingTest {
                         PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of(),
-                        "qa/tactic.graph.yaml is not valid YAML: while parsing a block mapping"));
+                        "tactic.graph.yaml: while parsing a block mapping"));
     }
 
     @Test
@@ -90,47 +91,45 @@ class WordingTest {
                         new FileRead.Unreadable<>(
                                 FRAGMENT, new ParseFailure(FRAGMENT, "while scanning a quoted"), List.of())))
                 .containsExactly(new PackFinding(
-                        PackCodes.DRG_SCHEMA_ERROR,
-                        FRAGMENT,
-                        List.of(),
-                        "qa/drg/fragment.yaml is not valid YAML: while scanning a quoted"));
+                        PackCodes.DRG_SCHEMA_ERROR, FRAGMENT, List.of(), "drg/fragment.yaml: while scanning a quoted"));
     }
 
     @Test
-    void aRetiredOrgCharterIsAnArtifactSchemaErrorLikeEveryRetiredFile() {
+    void aRetiredOrgCharterIsRetiredLikeEveryRetiredFile() {
         assertThat(Wording.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(
                                 "org-charter.yaml",
-                                ParseFailure.retired("org-charter.yaml", "org enforcement is a preset (#431)"),
+                                ParseFailure.refused(
+                                        "org-charter.yaml", "org enforcement is a preset (#431)", StorageCodes.RETIRED),
                                 List.of())))
                 .containsExactly(new PackFinding(
-                        PackFindingCode.ARTIFACT_SCHEMA_ERROR,
+                        StorageCodes.RETIRED,
                         "org-charter.yaml",
                         List.of(),
-                        "qa/org-charter.yaml is retired: org enforcement is a preset (#431)"));
+                        "org-charter.yaml: org enforcement is a preset (#431)"));
     }
 
     @Test
-    void anArtifactParseFailureIsAnArtifactSchemaError() {
+    void anArtifactParseFailureIsUnreadable() {
         String artifact = "tactics/x.tactic.yaml";
         assertThat(Wording.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(artifact, new ParseFailure(artifact, "found a tab"), List.of())))
                 .containsExactly(new PackFinding(
-                        PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                        artifact,
-                        List.of(),
-                        "qa/tactics/x.tactic.yaml is not valid YAML: found a tab"));
+                        StorageCodes.UNREADABLE, artifact, List.of(), "tactics/x.tactic.yaml: found a tab"));
     }
 
     @Test
-    void aDescriptorParseFailureHasNoParserLine() {
+    void aDescriptorParseFailureNamesTheParsersLine() {
         List<PackFinding> findings = Wording.unreadable(
                 "qa", new FileRead.Unreadable<>(PACK_YAML, new ParseFailure(PACK_YAML, "while scanning"), List.of()));
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackFindingCode.PACK_UNREADABLE, PACK_YAML, List.of(), "pack.yaml of qa is not valid YAML"));
+                        PackFindingCode.PACK_UNREADABLE,
+                        PACK_YAML,
+                        List.of(),
+                        "pack.yaml of qa is not valid YAML: while scanning"));
     }
 
     @Test
@@ -143,63 +142,61 @@ class WordingTest {
                         List.of(violation(SHARD, List.of(), "additionalProperties", "surprise", null, Map.of()))));
         assertThat(findings)
                 .containsExactly(new PackFinding(
-                        PackCodes.DRG_SCHEMA_ERROR, SHARD, List.of(), "qa/tactic.graph.yaml: unknown key 'surprise'"));
+                        PackCodes.DRG_SCHEMA_ERROR, SHARD, List.of(), "tactic.graph.yaml: unknown key 'surprise'"));
     }
 
     // ---- type ----------------------------------------------------------------------------------
 
     @Test
     void typeObjectAtTheRootExpectsAMapping() {
-        assertDetail(typeAt(SHARD, "array", "object"), "qa/tactic.graph.yaml: expected a mapping");
+        assertDetail(typeAt(SHARD, "array", "object"), "tactic.graph.yaml: expected a mapping");
     }
 
     @Test
     void typeObjectAtANodeOrEdgeItemExpectsAMapping() {
-        assertDetail(typeAt(SHARD, "string", "object", "nodes", "3"), "qa/tactic.graph.yaml node: expected a mapping");
-        assertDetail(typeAt(SHARD, "string", "object", "edges", "0"), "qa/tactic.graph.yaml edge: expected a mapping");
+        assertDetail(typeAt(SHARD, "string", "object", "nodes", "3"), "tactic.graph.yaml node: expected a mapping");
+        assertDetail(typeAt(SHARD, "string", "object", "edges", "0"), "tactic.graph.yaml edge: expected a mapping");
     }
 
     @Test
     void typeArrayExpectsAList() {
-        assertDetail(typeAt(SHARD, "object", "array", "nodes"), "qa/tactic.graph.yaml nodes: expected a list");
+        assertDetail(typeAt(SHARD, "object", "array", "nodes"), "tactic.graph.yaml nodes: expected a list");
     }
 
     @Test
     void typeStringMustBeAString() {
         assertDetail(
                 typeAt(SHARD, "integer", "string", "nodes", "0", "label"),
-                "qa/tactic.graph.yaml: 'label' must be a string");
+                "tactic.graph.yaml: 'label' must be a string");
     }
 
     @Test
     void typeNumberIntegerAndBooleanHaveTheirOwnTexts() {
         assertDetail(
                 typeAt(SHARD, "string", "number", "edges", "0", "impacts"),
-                "qa/tactic.graph.yaml: 'impacts' must be a number");
+                "tactic.graph.yaml: 'impacts' must be a number");
         assertDetail(
-                typeAt(SHARD, "string", "integer", "edges", "0", "n"), "qa/tactic.graph.yaml: 'n' must be an integer");
-        assertDetail(
-                typeAt(SHARD, "string", "boolean", "edges", "0", "b"), "qa/tactic.graph.yaml: 'b' must be a boolean");
+                typeAt(SHARD, "string", "integer", "edges", "0", "n"), "tactic.graph.yaml: 'n' must be an integer");
+        assertDetail(typeAt(SHARD, "string", "boolean", "edges", "0", "b"), "tactic.graph.yaml: 'b' must be a boolean");
     }
 
     @Test
     void aTypeViolationWithoutTheExpectedTypeUsesTheFallback() {
         assertDetail(
                 at(SHARD, "type", "nodes", "0", "label"),
-                "qa/tactic.graph.yaml: '/nodes/0/label' breaks schema keyword 'type'");
+                "tactic.graph.yaml: '/nodes/0/label' breaks schema keyword 'type'");
         assertDetail(
                 violation(SHARD, List.of(), "type", null, null, Map.of("0", "array")),
-                "qa/tactic.graph.yaml: '/' breaks schema keyword 'type'");
+                "tactic.graph.yaml: '/' breaks schema keyword 'type'");
     }
 
     @Test
     void anAdditionalPropertiesOrRequiredViolationWithoutAPropertyUsesTheFallback() {
         assertDetail(
                 at(SHARD, "additionalProperties", "nodes", "0"),
-                "qa/tactic.graph.yaml: '/nodes/0' breaks schema keyword 'additionalProperties'");
+                "tactic.graph.yaml: '/nodes/0' breaks schema keyword 'additionalProperties'");
         assertDetail(
-                at(SHARD, "required", "nodes", "0"),
-                "qa/tactic.graph.yaml: '/nodes/0' breaks schema keyword 'required'");
+                at(SHARD, "required", "nodes", "0"), "tactic.graph.yaml: '/nodes/0' breaks schema keyword 'required'");
     }
 
     @Test
@@ -214,20 +211,20 @@ class WordingTest {
     void anUnknownKeyIsNamedAtTheRootAndAtANodeOrEdge() {
         assertDetail(
                 violation(SHARD, List.of(), "additionalProperties", "surprise", null, Map.of()),
-                "qa/tactic.graph.yaml: unknown key 'surprise'");
+                "tactic.graph.yaml: unknown key 'surprise'");
         assertDetail(
                 violation(SHARD, List.of("nodes", "0"), "additionalProperties", "extra", null, Map.of()),
-                "qa/tactic.graph.yaml node: unknown key 'extra'");
+                "tactic.graph.yaml node: unknown key 'extra'");
         assertDetail(
                 violation(SHARD, List.of("edges", "2"), "additionalProperties", "extra", null, Map.of()),
-                "qa/tactic.graph.yaml edge: unknown key 'extra'");
+                "tactic.graph.yaml edge: unknown key 'extra'");
     }
 
     @Test
     void aMissingKeyIsNamed() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "1"), "required", "kind", null, Map.of()),
-                "qa/tactic.graph.yaml: missing 'kind'");
+                "tactic.graph.yaml: missing 'kind'");
     }
 
     @Test
@@ -249,7 +246,7 @@ class WordingTest {
                         null,
                         "",
                         Map.of("0", "1", "kind", "directives")),
-                "qa/drg/fragment.yaml: a node of kind 'directives' has an empty id");
+                "drg/fragment.yaml: a node of kind 'directives' has an empty id");
     }
 
     @Test
@@ -278,7 +275,7 @@ class WordingTest {
                 "",
                 Map.of("0", "^[A-Za-z0-9_/.-]+$", "kind", "directives"));
         assertThat(details(minLength, pattern))
-                .containsExactly("qa/drg/fragment.yaml: a node of kind 'directives' has an empty id");
+                .containsExactly("drg/fragment.yaml: a node of kind 'directives' has an empty id");
     }
 
     @Test
@@ -291,18 +288,18 @@ class WordingTest {
                         null,
                         "a b",
                         Map.of("0", "^[A-Za-z0-9_/.-]+$", "kind", "tactics")),
-                "qa/drg/fragment.yaml: node id 'a b' is not <kind>:<id>-safe");
+                "drg/fragment.yaml: node id 'a b' is not <kind>:<id>-safe");
     }
 
     @Test
     void aFragmentNodeIdViolationWithoutTheKindUsesTheFallback() {
         assertDetail(
                 violation(FRAGMENT, List.of("nodes", "0", "id"), "minLength", null, "", Map.of("0", "1")),
-                "qa/drg/fragment.yaml: '/nodes/0/id' breaks schema keyword 'minLength'");
+                "drg/fragment.yaml: '/nodes/0/id' breaks schema keyword 'minLength'");
         assertDetail(
                 violation(
                         FRAGMENT, List.of("nodes", "0", "id"), "pattern", null, "", Map.of("0", "^[A-Za-z0-9_/.-]+$")),
-                "qa/drg/fragment.yaml: '/nodes/0/id' breaks schema keyword 'pattern'");
+                "drg/fragment.yaml: '/nodes/0/id' breaks schema keyword 'pattern'");
         assertDetail(
                 violation(
                         FRAGMENT,
@@ -311,7 +308,7 @@ class WordingTest {
                         null,
                         "a b",
                         Map.of("0", "^[A-Za-z0-9_/.-]+$")),
-                "qa/drg/fragment.yaml: '/nodes/0/id' breaks schema keyword 'pattern'");
+                "drg/fragment.yaml: '/nodes/0/id' breaks schema keyword 'pattern'");
     }
 
     @Test
@@ -324,31 +321,31 @@ class WordingTest {
                         null,
                         "nonsense",
                         Map.of("0", "^(directive|tactic|styleguide):[A-Za-z0-9_/.-]+$")),
-                "qa/tactic.graph.yaml: node urn 'nonsense' is not <kind>:<id>");
+                "tactic.graph.yaml: node urn 'nonsense' is not <kind>:<id>");
     }
 
     @Test
     void aShardNodeWhoseUrnPrefixContradictsItsKindNamesTheUrnAndTheKind() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "0", "urn"), "pattern", null, "directive:a", Map.of("0", "^tactic:")),
-                "qa/tactic.graph.yaml: node directive:a declares kind 'tactic'");
+                "tactic.graph.yaml: node directive:a declares kind 'tactic'");
     }
 
     @Test
     void anEdgeEndpointThatIsNotAUrnIsRefusedUnderR6() {
         assertDetail(
                 violation(SHARD, List.of("edges", "0", "target"), "pattern", null, "QA_404", Map.of()),
-                "qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN");
+                "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN");
         assertDetail(
                 violation(FRAGMENT, List.of("edges", "4", "source"), "pattern", null, "QA_404", Map.of()),
-                "qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN");
+                "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN");
     }
 
     @Test
     void anyOtherPatternSaysTheKeyDoesNotMatch() {
         assertDetail(
                 violation(SHARD, List.of("schema_version"), "pattern", null, "x", Map.of()),
-                "qa/tactic.graph.yaml: 'schema_version' does not match its pattern");
+                "tactic.graph.yaml: 'schema_version' does not match its pattern");
     }
 
     // ---- enum and const ------------------------------------------------------------------------
@@ -357,28 +354,28 @@ class WordingTest {
     void anUnknownRelationIsNamed() {
         assertDetail(
                 violation(SHARD, List.of("edges", "0", "relation"), "enum", null, "befriends", Map.of()),
-                "qa/tactic.graph.yaml: unknown relation 'befriends'");
+                "tactic.graph.yaml: unknown relation 'befriends'");
     }
 
     @Test
     void anUnknownNodeKindNamesTheNode() {
         assertDetail(
                 violation(FRAGMENT, List.of("nodes", "0", "kind"), "enum", null, "tacticz", Map.of("id", "t1")),
-                "qa/drg/fragment.yaml: node t1 has unknown kind 'tacticz'");
+                "drg/fragment.yaml: node t1 has unknown kind 'tacticz'");
     }
 
     @Test
     void anUnknownNodeKindWithoutTheNodeIdentityUsesTheFallback() {
         assertDetail(
                 violation(FRAGMENT, List.of("nodes", "0", "kind"), "enum", null, "tacticz", Map.of("0", "[tactics]")),
-                "qa/drg/fragment.yaml: '/nodes/0/kind' breaks schema keyword 'enum'");
+                "drg/fragment.yaml: '/nodes/0/kind' breaks schema keyword 'enum'");
     }
 
     @Test
     void anUnknownShardNodeKindNamesTheNodeByItsUrn() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "1", "kind"), "enum", null, "tacticz", Map.of("urn", "tactic:a")),
-                "qa/tactic.graph.yaml: node tactic:a has unknown kind 'tacticz'");
+                "tactic.graph.yaml: node tactic:a has unknown kind 'tacticz'");
     }
 
     @Test
@@ -392,10 +389,10 @@ class WordingTest {
     void anyOtherEnumOrConstIsAnUnsupportedValue() {
         assertDetail(
                 violation(SHARD, List.of("schema_version"), "enum", null, "9", Map.of()),
-                "qa/tactic.graph.yaml: 'schema_version' has an unsupported value '9'");
+                "tactic.graph.yaml: 'schema_version' has an unsupported value '9'");
         assertDetail(
                 violation(SHARD, List.of("schema_version"), "const", null, "9", Map.of()),
-                "qa/tactic.graph.yaml: 'schema_version' has an unsupported value '9'");
+                "tactic.graph.yaml: 'schema_version' has an unsupported value '9'");
     }
 
     // ---- ranges and sizes ----------------------------------------------------------------------
@@ -404,14 +401,14 @@ class WordingTest {
     void minItemsNamesTheLeastCount() {
         assertDetail(
                 violation(SHARD, List.of("nodes"), "minItems", null, null, Map.of("0", "1", "1", "0")),
-                "qa/tactic.graph.yaml: 'nodes' needs at least 1 item(s)");
+                "tactic.graph.yaml: 'nodes' needs at least 1 item(s)");
     }
 
     @Test
     void minItemsWithoutTheMinimumUsesTheFallback() {
         assertDetail(
                 violation(SHARD, List.of("nodes"), "minItems", null, null, Map.of()),
-                "qa/tactic.graph.yaml: '/nodes' breaks schema keyword 'minItems'");
+                "tactic.graph.yaml: '/nodes' breaks schema keyword 'minItems'");
     }
 
     @Test
@@ -419,7 +416,7 @@ class WordingTest {
         for (String keyword : List.of("minimum", "maximum", "exclusiveMinimum")) {
             assertDetail(
                     violation(SHARD, List.of("layer_index"), keyword, null, "-3", Map.of()),
-                    "qa/tactic.graph.yaml: 'layer_index' -3 is out of range");
+                    "tactic.graph.yaml: 'layer_index' -3 is out of range");
         }
     }
 
@@ -432,7 +429,7 @@ class WordingTest {
                 violation(SHARD, pointer, "anyOf", null, "7", Map.of()),
                 violation(SHARD, pointer, "type", null, "7", Map.of("0", "integer", "1", "string")),
                 violation(SHARD, pointer, "type", null, "7", Map.of("0", "integer", "1", "null")));
-        assertThat(collapsed).containsExactly("qa/tactic.graph.yaml: 'label' must be a string");
+        assertThat(collapsed).containsExactly("tactic.graph.yaml: 'label' must be a string");
     }
 
     @Test
@@ -440,11 +437,11 @@ class WordingTest {
         assertThat(details(
                         typeAt(SHARD, "integer", "string", "nodes", "0", "label"),
                         typeAt(SHARD, "integer", "null", "nodes", "0", "label")))
-                .containsExactly("qa/tactic.graph.yaml: 'label' must be a string");
+                .containsExactly("tactic.graph.yaml: 'label' must be a string");
         assertThat(details(
                         typeAt(SHARD, "integer", "null", "nodes", "0", "label"),
                         typeAt(SHARD, "integer", "string", "nodes", "0", "label")))
-                .containsExactly("qa/tactic.graph.yaml: 'label' must be a string");
+                .containsExactly("tactic.graph.yaml: 'label' must be a string");
     }
 
     @Test
@@ -458,7 +455,7 @@ class WordingTest {
     @Test
     void aLoneNullExpectingTypeViolationIsKeptAndGetsTheFallback() {
         assertThat(details(typeAt(SHARD, "integer", "null", "nodes", "0", "label")))
-                .containsExactly("qa/tactic.graph.yaml: '/nodes/0/label' breaks schema keyword 'type'");
+                .containsExactly("tactic.graph.yaml: '/nodes/0/label' breaks schema keyword 'type'");
     }
 
     @Test
@@ -467,8 +464,8 @@ class WordingTest {
                         typeAt(SHARD, "integer", "string", "nodes", "0", "label"),
                         typeAt(SHARD, "integer", "null", "nodes", "1", "label")))
                 .containsExactly(
-                        "qa/tactic.graph.yaml: 'label' must be a string",
-                        "qa/tactic.graph.yaml: '/nodes/1/label' breaks schema keyword 'type'");
+                        "tactic.graph.yaml: 'label' must be a string",
+                        "tactic.graph.yaml: '/nodes/1/label' breaks schema keyword 'type'");
     }
 
     @Test
@@ -479,7 +476,7 @@ class WordingTest {
                         typeAt(SHARD, "boolean", "string", "nodes", "0", "x"),
                         typeAt(SHARD, "boolean", "integer", "nodes", "0", "x")))
                 .containsExactly(
-                        "qa/tactic.graph.yaml: 'x' must be a string", "qa/tactic.graph.yaml: 'x' must be an integer");
+                        "tactic.graph.yaml: 'x' must be a string", "tactic.graph.yaml: 'x' must be an integer");
     }
 
     @Test
@@ -488,15 +485,15 @@ class WordingTest {
         // the first took the lone null branch at the second with it.
         assertThat(details(typeAt(SHARD, "integer", "null", "a", "b"), typeAt(SHARD, "integer", "string", "a/b")))
                 .containsExactly(
-                        "qa/tactic.graph.yaml: '/a/b' breaks schema keyword 'type'",
-                        "qa/tactic.graph.yaml: 'a/b' must be a string");
+                        "tactic.graph.yaml: '/a/b' breaks schema keyword 'type'",
+                        "tactic.graph.yaml: 'a/b' must be a string");
     }
 
     @Test
     void anAnyOfWithoutNestedTypeViolationsUsesTheFallback() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "0", "x"), "anyOf", null, null, Map.of()),
-                "qa/tactic.graph.yaml: '/nodes/0/x' breaks schema keyword 'anyOf'");
+                "tactic.graph.yaml: '/nodes/0/x' breaks schema keyword 'anyOf'");
     }
 
     // ---- fallback ------------------------------------------------------------------------------
@@ -505,9 +502,9 @@ class WordingTest {
     void anyOtherKeywordUsesTheFixedLocaleFreeFallback() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "0", "tags"), "uniqueItems", null, null, Map.of()),
-                "qa/tactic.graph.yaml: '/nodes/0/tags' breaks schema keyword 'uniqueItems'");
+                "tactic.graph.yaml: '/nodes/0/tags' breaks schema keyword 'uniqueItems'");
         assertDetail(
-                at(SHARD, "dependentRequired"), "qa/tactic.graph.yaml: '/' breaks schema keyword 'dependentRequired'");
+                at(SHARD, "dependentRequired"), "tactic.graph.yaml: '/' breaks schema keyword 'dependentRequired'");
     }
 
     @Test
@@ -524,7 +521,7 @@ class WordingTest {
             java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
             assertDetail(
                     violation(SHARD, List.of("nodes", "0", "tags"), "uniqueItems", null, null, Map.of()),
-                    "qa/tactic.graph.yaml: '/nodes/0/tags' breaks schema keyword 'uniqueItems'");
+                    "tactic.graph.yaml: '/nodes/0/tags' breaks schema keyword 'uniqueItems'");
         } finally {
             java.util.Locale.setDefault(previous);
         }
@@ -540,12 +537,12 @@ class WordingTest {
                 violation(SHARD, List.of(), "additionalProperties", "surprise", null, Map.of()));
         assertThat(ordered)
                 .containsExactly(
-                        "qa/tactic.graph.yaml: unknown key 'surprise'",
-                        "qa/tactic.graph.yaml: missing 'nodes'",
-                        "qa/tactic.graph.yaml: '/' breaks schema keyword 'uniqueItems'");
+                        "tactic.graph.yaml: unknown key 'surprise'",
+                        "tactic.graph.yaml: missing 'nodes'",
+                        "tactic.graph.yaml: '/' breaks schema keyword 'uniqueItems'");
         assertThat(details(
                         violation(SHARD, List.of(), "required", "nodes", null, Map.of()),
                         typeAt(SHARD, "array", "object")))
-                .containsExactly("qa/tactic.graph.yaml: expected a mapping", "qa/tactic.graph.yaml: missing 'nodes'");
+                .containsExactly("tactic.graph.yaml: expected a mapping", "tactic.graph.yaml: missing 'nodes'");
     }
 }

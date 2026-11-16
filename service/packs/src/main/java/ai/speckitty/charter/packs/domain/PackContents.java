@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -215,26 +216,30 @@ public record PackContents(
 
     /**
      * A parser failure, reduced to the parser's first line so that no host path appears; or a file the store's own
-     * rules refuse though it parses: a file the file-kinds table retires (#194, ADR-0044 decision 6), or a mission type
-     * whose companions or named templates the load refuses. Validate mode refuses what the load refuses.
+     * rules refuse though it parses: a file the file-kinds table retires (#194, ADR-0044 decision 6), an asset sidecar
+     * with no payload, a reserved shard, or a mission type whose companions or named templates the load refuses.
+     * Validate mode refuses what the load refuses, under the code the storage edge gives the refusal (#554, R2).
      *
      * @param file the pack-relative path
      * @param firstLine the first line of the parser's message, or of the refusal
      * @param refusal what the store's rule says of the file when it is refused rather than unparseable; empty for a
      *     parse failure
+     * @param code the code of the refusal, which the reader that refused the file names; empty for a parse failure
      */
-    public record ParseFailure(String file, String firstLine, Optional<String> refusal) {
+    public record ParseFailure(String file, String firstLine, Optional<String> refusal, Optional<ReasonCode> code) {
         /**
          * Checks the fields.
          *
          * @param file the pack-relative path
          * @param firstLine the first line of the message
          * @param refusal the store rule's refusal, possibly empty
+         * @param code the refusal's code, possibly empty
          */
         public ParseFailure {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(firstLine, "firstLine");
             Objects.requireNonNull(refusal, "refusal");
+            Objects.requireNonNull(code, "code");
         }
 
         /**
@@ -244,29 +249,19 @@ public record PackContents(
          * @param firstLine the first line of the parser's message
          */
         public ParseFailure(String file, String firstLine) {
-            this(file, firstLine, Optional.empty());
+            this(file, firstLine, Optional.empty(), Optional.empty());
         }
 
         /**
-         * The failure of a file the file-kinds table retires: it is refused by name, unread.
+         * The failure of a file that parses but that a store rule refuses, as the load does, under the rule's code.
          *
          * @param file the pack-relative path
-         * @param reason the retired rule's reason
-         * @return the failure, refused as {@code is retired: <reason>}
-         */
-        public static ParseFailure retired(String file, String reason) {
-            return refused(file, "is retired: " + reason);
-        }
-
-        /**
-         * The failure of a file that parses but that a store rule refuses, as the load does.
-         *
-         * @param file the pack-relative path
-         * @param refusal what the rule says, read after the file's origin ({@code is retired: ...})
+         * @param refusal what the rule says, read after the file ({@code <file>: <refusal>})
+         * @param code the code the load refuses the file with
          * @return the failure
          */
-        public static ParseFailure refused(String file, String refusal) {
-            return new ParseFailure(file, refusal, Optional.of(refusal));
+        public static ParseFailure refused(String file, String refusal, ReasonCode code) {
+            return new ParseFailure(file, refusal, Optional.of(refusal), Optional.of(code));
         }
     }
 

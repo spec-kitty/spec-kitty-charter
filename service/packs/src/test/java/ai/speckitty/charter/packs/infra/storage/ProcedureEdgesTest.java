@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Procedure;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -72,7 +73,7 @@ class ProcedureEdgesTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         "ship-it.procedure.yaml",
-                        FilesystemPackStore.SCHEMA,
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "procedure id 'land-it' is not its file stem 'ship-it'"));
 
         PackContents validated = new FileSystemPackInspector()

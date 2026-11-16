@@ -6,7 +6,7 @@
   "configuredLevel": "org",
   "findings": [
     {
-      "code": "artifact_schema_error",
+      "code": "retired",
       "severity": "violation",
       "file": "glossary_packs/x.glossary-pack.yaml",
       "place": []

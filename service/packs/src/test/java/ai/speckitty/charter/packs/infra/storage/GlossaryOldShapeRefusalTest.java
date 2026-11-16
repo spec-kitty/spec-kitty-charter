@@ -11,11 +11,11 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -122,9 +122,9 @@ class GlossaryOldShapeRefusalTest {
             assertThat(contents.unreadableFiles().stream().flatMap(bad -> Wording.unreadable(name(), bad).stream()))
                     .singleElement()
                     .satisfies(finding -> {
-                        assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+                        assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);
                         assertThat(finding.file()).isEqualTo(FILE);
-                        assertThat(finding.detail()).isEqualTo(name() + "/" + FILE + " is retired: " + REASON);
+                        assertThat(finding.detail()).isEqualTo(FILE + ": " + REASON);
                     });
         }
 
@@ -134,7 +134,8 @@ class GlossaryOldShapeRefusalTest {
             WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(pack);
 
             assertThat(loaded.pack().violations())
-                    .extracting(violation -> violation.file() + " " + violation.kind() + " " + violation.reason())
+                    .extracting(violation ->
+                            violation.file() + " " + violation.kind().value() + " " + violation.reason())
                     .containsExactly(FILE + " retired " + REASON);
             assertThat(loaded.pack().artifacts(ArtifactKind.GLOSSARY))
                     .extracting(artifact -> artifact.localId())

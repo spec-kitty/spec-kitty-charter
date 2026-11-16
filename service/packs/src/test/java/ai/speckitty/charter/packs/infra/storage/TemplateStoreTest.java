@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
@@ -130,7 +131,7 @@ class TemplateStoreTest {
 
         PackElementViolation duplicate = new PackElementViolation(
                 "templates/plan/x.md",
-                FilesystemPackStore.TEMPLATE,
+                PackCodes.DUPLICATE_ARTIFACT_ID,
                 "template plan/x.md is already read from missions/plan/templates/x.md");
         assertThat(read.violations()).containsExactly(duplicate);
         assertThat(read.templates())

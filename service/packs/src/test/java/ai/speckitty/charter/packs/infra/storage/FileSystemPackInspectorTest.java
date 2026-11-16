@@ -110,7 +110,7 @@ class FileSystemPackInspectorTest {
                 INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
 
         assertThat(source.file()).isEqualTo("registered.graph.yaml");
-        assertThat(source.parse().firstLine()).contains("reserved for registered relationships");
+        assertThat(source.parse().firstLine()).contains("is reserved for the registered relationships");
 
         write(dir, "registered.graph.yaml", RelationshipShard.write(java.util.List.of()));
 
@@ -374,7 +374,7 @@ class FileSystemPackInspectorTest {
             assertThat(file.file()).isEqualTo("org-charter.yaml");
             assertThat(file.parse().refusal())
                     .hasValueSatisfying(refusal -> assertThat(refusal)
-                            .isEqualTo("is retired: org enforcement is an activation preset with must-have items"
+                            .isEqualTo("org enforcement is an activation preset with must-have items"
                                     + " plus policy.yaml levels (#431)"));
         });
     }
@@ -419,8 +419,7 @@ class FileSystemPackInspectorTest {
         assertThat(PackPolicy.judge(full(dir)).findings())
                 .extracting(PackFinding::detail)
                 .anySatisfy(detail -> assertThat(detail)
-                        .isEqualTo("qa/toolguides/no-overview.guide.md is not valid Markdown: the guide has no ##"
-                                + " Overview"));
+                        .isEqualTo("toolguides/no-overview.guide.md: the guide has no ##" + " Overview"));
         assertThat(full(dir).files())
                 .as("a Markdown file a rule models is read, not listed; Markdown nothing models is listed as excluded"
                         + " (#451)")
@@ -776,7 +775,7 @@ class FileSystemPackInspectorTest {
         assertThat(verdict.findings())
                 .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
                 .containsExactly(
-                        tuple(PackCodes.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "qa/drg/fragment.yaml " + reason));
+                        tuple(PackCodes.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "drg/fragment.yaml: " + reason));
         assertThat(load.documents())
                 .as("the load reads no part of the fragment")
                 .isEmpty();
@@ -1087,7 +1086,7 @@ class FileSystemPackInspectorTest {
                     assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
                     assertThat(finding.file()).isEqualTo("presets/other.yaml");
                     assertThat(finding.detail())
-                            .endsWith("presets/other.yaml: 'id' has an unsupported value 'minimal'");
+                            .endsWith("presets/other.yaml: preset id 'minimal' is not its file stem 'other'");
                 });
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo("presets/other.yaml");
@@ -1425,7 +1424,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
             assertThat(finding.file()).isEqualTo(fragment("spdd-specify"));
-            assertThat(finding.detail()).contains("not valid Markdown");
+            assertThat(finding.detail()).contains("a carriage return is not admitted");
         });
     }
 }

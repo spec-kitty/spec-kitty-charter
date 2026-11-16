@@ -18,6 +18,6 @@
   "load": {
     "level": "org",
     "loads": false,
-    "graphRefusal": "drg/fragment.yaml: const violated at /edges/0/relation"
+    "graphRefusal": "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
   }
 }

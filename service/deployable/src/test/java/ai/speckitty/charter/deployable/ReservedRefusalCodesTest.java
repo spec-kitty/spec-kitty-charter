@@ -282,7 +282,10 @@ class ReservedRefusalCodesTest {
     void theOffWireMethodsTheRulesNameExist() {
         // The rules name the two projections by string: a renamed method would make its rule match nothing.
         assertThat(MAIN.get(PACK_FINDING).getMethod("toRefusal").getName()).isEqualTo("toRefusal");
-        assertThat(MAIN.get(PACK_FINDING_CODE).getMethod("refusal").getName()).isEqualTo("refusal");
+        assertThat(MAIN.get(PACK_FINDING_CODE)
+                        .getMethod("refusal", ReasonCode.class)
+                        .getName())
+                .isEqualTo("refusal");
     }
 
     /** Names every refusal code the way a raising class would, for the rule to find. */

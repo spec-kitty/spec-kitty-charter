@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
@@ -22,8 +23,10 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Paths;
+import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -87,9 +90,6 @@ import org.jspecify.annotations.Nullable;
  * content of a file never throws.
  */
 public final class FileSystemPackInspector implements PackInspector {
-
-    private static final String RESERVED_SHARD = RelationshipShard.SHARD_PATH
-            + " is reserved for registered relationships and cannot be a source graph shard; rename the shard";
 
     private static final String MARKDOWN = ".md";
 
@@ -362,8 +362,8 @@ public final class FileSystemPackInspector implements PackInspector {
             listPayloads(listing, prefix);
             refuseSidecarsWithoutPayload(listing);
             listing.retired()
-                    .forEach((file, reason) -> unreadable.add(
-                            new FileRead.Unreadable<>(file, ParseFailure.retired(file, reason), List.of())));
+                    .forEach((file, reason) -> unreadable.add(new FileRead.Unreadable<>(
+                            file, ParseFailure.refused(file, reason, StorageCodes.RETIRED), List.of())));
             listNotHeld(prefix);
         }
 
@@ -472,14 +472,16 @@ public final class FileSystemPackInspector implements PackInspector {
                 FilesystemPackStore.readPayload(
                                 directory,
                                 file,
-                                reason -> unreadable.add(
-                                        new FileRead.Unreadable<>(file, ParseFailure.refused(file, reason), List.of())))
+                                reason -> unreadable.add(new FileRead.Unreadable<>(
+                                        file, ParseFailure.refused(file, reason, StorageCodes.UNREADABLE), List.of())))
                         .ifPresent(bytes -> held.add(file.substring(PackFileSet.ASSETS.length())));
             }
             sidecars.sort(Comparator.comparing(SidecarPayloads.Sidecar::file));
             for (SidecarPayloads.Refused refused : SidecarPayloads.refused(sidecars, held)) {
                 unreadable.add(new FileRead.Unreadable<>(
-                        refused.file(), ParseFailure.refused(refused.file(), refused.reason()), List.of()));
+                        refused.file(),
+                        ParseFailure.refused(refused.file(), refused.reason(), PackCodes.ASSET),
+                        List.of()));
             }
         }
 
@@ -537,8 +539,8 @@ public final class FileSystemPackInspector implements PackInspector {
                 case FileRead.Read<Object> good -> {
                     factsOf(file, kind, good.value());
                     Optional<String> refused = MissionTypeChecks.refusal(directory, file, kind, good.value(), table);
-                    refused.ifPresent(refusal -> unreadable.add(
-                            new FileRead.Unreadable<>(file, ParseFailure.refused(file, refusal), List.of())));
+                    refused.ifPresent(refusal -> unreadable.add(new FileRead.Unreadable<>(
+                            file, ParseFailure.refused(file, refusal, StorageCodes.ARTIFACT_SCHEMA_ERROR), List.of())));
                     // The load holds no mission type its checks refuse, so neither do the step-link facts.
                     if (refused.isEmpty()) {
                         missionTypeFactsOf(file, kind, good.value());
@@ -743,7 +745,14 @@ public final class FileSystemPackInspector implements PackInspector {
                     file,
                     null,
                     List.of(new SchemaViolation(
-                            file, List.of("id"), "const", Optional.empty(), Optional.of(id), Map.of())));
+                            file,
+                            List.of("id"),
+                            "const",
+                            Optional.empty(),
+                            Optional.of(id),
+                            Map.of(
+                                    Wording.REASON,
+                                    PresetFiles.stemMismatch(file, id).orElseThrow()))));
         }
         List<SchemaViolation> broken = artifactRules(file, kind, document);
         if (!broken.isEmpty()) {
@@ -781,7 +790,14 @@ public final class FileSystemPackInspector implements PackInspector {
             return Optional.empty();
         }
         return Optional.of(new SchemaViolation(
-                file, List.of(binding.get().idKey()), "const", Optional.empty(), Optional.of(id), Map.of()));
+                file,
+                List.of(binding.get().idKey()),
+                "const",
+                Optional.empty(),
+                Optional.of(id),
+                Map.of(
+                        Wording.REASON,
+                        FileStems.mismatch(binding.get(), file, id).orElseThrow())));
     }
 
     /**
@@ -816,7 +832,9 @@ public final class FileSystemPackInspector implements PackInspector {
                             "const",
                             Optional.empty(),
                             Optional.of(path),
-                            Map.of()));
+                            Map.of(
+                                    Wording.REASON,
+                                    PresetFiles.entryPathMismatch(id, path).orElseThrow())));
                 }
             }
         }
@@ -987,7 +1005,10 @@ public final class FileSystemPackInspector implements PackInspector {
     /** A root shard; the name the registration store writes to is reserved, so a source shard under it is refused. */
     private static FileRead<RawGraph> shard(String text, String file) {
         if (file.equals(RelationshipShard.SHARD_PATH) && !RelationshipShard.isWrittenByRegistration(text)) {
-            return new FileRead.Unreadable<>(file, new ParseFailure(file, RESERVED_SHARD), List.of());
+            return new FileRead.Unreadable<>(
+                    file,
+                    ParseFailure.refused(file, RelationshipShard.RESERVED, StorageCodes.RESERVED_SHARD),
+                    List.of());
         }
         return GraphDocumentReader.read(text, GraphDocumentReader.Shape.SHARD, file);
     }
@@ -1005,7 +1026,9 @@ public final class FileSystemPackInspector implements PackInspector {
                 Optional<String> escape = Paths.bodyPathEscape(node.ref(), node.bodyPath());
                 if (escape.isPresent()) {
                     return new FileRead.Unreadable<>(
-                            PackFileSet.FRAGMENT, ParseFailure.refused(PackFileSet.FRAGMENT, escape.get()), List.of());
+                            PackFileSet.FRAGMENT,
+                            ParseFailure.refused(PackFileSet.FRAGMENT, escape.get(), PackCodes.DRG_SCHEMA_ERROR),
+                            List.of());
                 }
             }
         }

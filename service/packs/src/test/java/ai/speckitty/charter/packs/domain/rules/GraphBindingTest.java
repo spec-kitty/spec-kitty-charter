@@ -77,7 +77,7 @@ class GraphBindingTest {
                         PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of("edges", "1"),
-                        "qa/tactic.graph.yaml: unknown relation 'befriends'"));
+                        "tactic.graph.yaml: unknown relation 'befriends'"));
     }
 
     @Test
@@ -104,7 +104,7 @@ class GraphBindingTest {
                         PackCodes.DRG_SCHEMA_ERROR,
                         REGISTERED,
                         List.of("edges", "0"),
-                        "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
+                        "registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
                                 + " authored in a pack's graph shards"));
     }
 
@@ -122,7 +122,7 @@ class GraphBindingTest {
             assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
             assertThat(finding.file()).isEqualTo(REGISTERED);
             assertThat(finding.place()).containsExactly("edges", "0");
-            assertThat(finding.detail()).startsWith("main/registered.graph.yaml: ");
+            assertThat(finding.detail()).startsWith("registered.graph.yaml: ");
         });
     }
 

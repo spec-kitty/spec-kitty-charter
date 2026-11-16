@@ -274,7 +274,7 @@ Feature: The offering lists the configured packs in force
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    And the field "detail" of the response body is "the file agent_profiles/reviewer.agent.yaml of team cannot be read: pattern violated at /role"
+    And the field "detail" of the response body is "the file agent_profiles/reviewer.agent.yaml of team cannot be read: 'role' does not match its pattern"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A configured pack holding an asset whose path leaves assets/ refuses the offering

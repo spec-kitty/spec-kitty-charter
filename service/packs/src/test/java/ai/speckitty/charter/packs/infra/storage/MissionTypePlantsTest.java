@@ -80,7 +80,7 @@ class MissionTypePlantsTest {
 
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
-            assertThat(violation.kind()).isEqualTo(MissionStepLinkRule.CODE);
+            assertThat(violation.kind().value()).isEqualTo(MissionStepLinkRule.CODE);
             assertThat(violation.reason()).contains("action:rx/b");
         });
     }
@@ -118,7 +118,7 @@ class MissionTypePlantsTest {
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(PackCodes.MISSION_STEP_UNLINKED, GRAPH),
                         org.assertj.core.groups.Tuple.tuple(PackCodes.MISSION_STEP_UNLINKED, TYPE));
-        assertThat(validate(pack).getFirst().detail()).isEqualTo("qa/" + GRAPH + ": " + stray);
+        assertThat(validate(pack).getFirst().detail()).isEqualTo("" + GRAPH + ": " + stray);
         assertThat(new WholePackStore(new YamlSerializationStrategy())
                         .load(pack)
                         .pack()
@@ -199,7 +199,7 @@ class MissionTypePlantsTest {
             assertThat(violation.file()).isEqualTo(TYPE);
             assertThat(violation.reason())
                     .as("an unknown field, by its name")
-                    .contains("additionalProperties violated at the document: undeclared key '" + field(plant) + "'");
+                    .contains("unknown key '" + field(plant) + "'");
         });
         assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -208,7 +208,7 @@ class MissionTypePlantsTest {
                         assertThat(violation.pointer()).isEqualTo(TYPE);
                         assertThat(violation.detail())
                                 .as("an unknown field, by its name")
-                                .contains("undeclared key '" + field(plant) + "'");
+                                .contains("unknown key '" + field(plant) + "'");
                     });
                 });
     }
