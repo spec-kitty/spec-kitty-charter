@@ -2,7 +2,7 @@
 title: Generate your own client
 description: Fetch the published charter contract, verify its SHA-256, and generate a Java or Python client with the pinned generator and the options that tolerate additive 0.x changes.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-16T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -67,7 +67,8 @@ echo "$digest  openapi.yaml" | sha256sum -c -
 
 `$CHARTER_URL` is the service's address, for example `http://127.0.0.1:8080`, and `$CHARTER_TOKEN` its token.
 
-**From a release** (from contract 0.1.0 on). Each release `contract-charter-v<version>` carries the contract as
+**From a release** (from the first release candidate on, such as `0.2.0-rc.1`; operator ruling R1). Each release
+`contract-charter-v<version>`, candidate or final, carries the contract as
 `charter-openapi.yaml` with `charter-openapi.yaml.sha256`, at
 `https://github.com/spec-kitty/spec-kitty-charter/releases/download/contract-charter-v<version>/`. Download both, check
 with `sha256sum -c charter-openapi.yaml.sha256`, and use `charter-openapi.yaml` in place of `openapi.yaml` below.

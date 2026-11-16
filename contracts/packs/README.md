@@ -161,19 +161,28 @@ checks a release as [Pin the packs contract](../../docs/guides/pin-the-packs-con
 
 ### Releasing the packs contract
 
+The first releases are release candidates (operator ruling R1, 2026-11-16): `0.1.0-rc.1`, tagged
+`contract-packs-v0.1.0-rc.1`. A candidate's pre-release has the service line's grammar (letters, digits and dots, so
+`rc.1` and never `rc-1`; no build metadata). Release one with the steps below, writing `0.1.0-rc.1` for `0.1.0`.
+
 1. In a pull request, turn the top heading of `CHANGELOG.md` into the release (`## 0.1.0`), adding `### Breaking` for
    a new minor while the major is 0.
 2. After the merge, tag `main` at the merge commit, `git tag contract-packs-v0.1.0 <merge commit>`, and push the tag.
    Only the operator pushes this tag: the tag ruleset of #196 is extended to `contract-packs-v*` (operator ruling,
    2026-11-14). Push the first tag only once that setting is applied.
-3. Open the next version: a new top heading `## 0.2.0-SNAPSHOT` (or the next patch).
+3. Open the next version: a new top heading `## 0.2.0-SNAPSHOT` (or the next patch). After a release candidate the
+   next version is the same `X.Y.Z`: reopen `## 0.1.0-SNAPSHOT` above `## 0.1.0-rc.1`, then release the next candidate
+   (`0.1.0-rc.2`) or the final `0.1.0` from it; any other version above a candidate is refused until its final release
+   is recorded. A candidate is never the previous release for the Breaking rule: the first section of a new line, a
+   candidate or not, lists what breaks.
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/packs-contract-release.yml` rebuilds the assets at
 the tag with `scripts/release/packs-contract-release-assets.sh` and attaches `packs-contract.tar.gz`,
 `packs-contract.tar.gz.sha256` and `packs-contract.sha256` to a GitHub Release of the tag; the archive also holds
-`packs-contract/RELEASE.json` (the version, the tag and the commit). It refuses, and publishes
-nothing, unless the tag and the top heading name one released version
+`packs-contract/RELEASE.json` (the version, the tag and the commit). A candidate's tag makes a GitHub pre-release; no
+packs release is marked latest. It refuses, and publishes
+nothing, unless the tag and the top heading name one release or release candidate
 (`./gradlew :contracts:checkPacksReleaseTag -PreleaseTag=<tag>`), the classifier passes the conformance cases, and the
 tagged commit is on `main`; it also refuses a tag that moved while the assets were built. `service.yml` rehearses the whole path on every change
-(`scripts/release/rehearse-packs-contract-release.sh`). To rehearse a real release, run the assets script with the tag
+(`scripts/release/rehearse-packs-contract-release.sh`), a release candidate and its refusals included. To rehearse a real release, run the assets script with the tag
 on the release pull request's branch, or the workflow by hand (workflow_dispatch): neither creates a Release.

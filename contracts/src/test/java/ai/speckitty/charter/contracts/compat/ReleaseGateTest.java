@@ -28,7 +28,7 @@ class ReleaseGateTest {
         void theUnreleasedFirstVersionHasNoBaseline() {
             Decision decision = decide("1.0.0-SNAPSHOT", SNAPSHOT_ONLY, Set.of());
             assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
-            assertThat(decision.message()).contains("records no released version");
+            assertThat(decision.message()).contains("records no final release");
         }
 
         @Test
@@ -48,7 +48,7 @@ class ReleaseGateTest {
         @Test
         void anInfoVersionThatIsNoVersionIsRefused() {
             assertThat(decide("1.0", SNAPSHOT_ONLY, Set.of()).message())
-                    .contains("info.version '1.0' is not X.Y.Z or X.Y.Z-SNAPSHOT");
+                    .contains("info.version '1.0' is not X.Y.Z, X.Y.Z-<pre> or X.Y.Z-SNAPSHOT");
         }
 
         @Test
@@ -178,7 +178,7 @@ class ReleaseGateTest {
             Decision decision =
                     decide("2.0.0-SNAPSHOT", changelog(TWO, "## 1.1.0\n"), Set.of("contract-charter-v1.1.0"));
             assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
-            assertThat(decision.message()).contains("no released 2.x version");
+            assertThat(decision.message()).contains("no final 2.x release");
         }
 
         @Test
@@ -207,7 +207,7 @@ class ReleaseGateTest {
             assertThat(refused).isInstanceOf(Decision.Refused.class);
             Decision passes = decide(
                     "2.0.0", changelog("## 2.0.0\n\n### Breaking\n", "## 1.1.0\n"), Set.of("contract-charter-v1.1.0"));
-            assertThat(passes.message()).contains("pending release 2.0.0").contains("no released 2.x version");
+            assertThat(passes.message()).contains("pending release 2.0.0").contains("no final 2.x release");
         }
     }
 
@@ -411,7 +411,7 @@ class ReleaseGateTest {
         void theFirstZeroSnapshotHasNoBaseline() {
             Decision decision = decide("0.1.0-SNAPSHOT", changelog("## 0.1.0-SNAPSHOT\n\n### Added\n"), Set.of());
             assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
-            assertThat(decision.message()).contains("records no released version");
+            assertThat(decision.message()).contains("records no final release");
         }
 
         @Test
@@ -445,7 +445,7 @@ class ReleaseGateTest {
                     Set.of(TAGS_01));
             assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
             assertThat(decision.message())
-                    .contains("no released 0.2.x version")
+                    .contains("no final 0.2.x release")
                     .contains("a new minor version of 0.x is not compared with an older one");
         }
 
@@ -467,7 +467,7 @@ class ReleaseGateTest {
                     .isInstanceOf(Decision.Refused.class);
             Decision passes = decide("0.2.0", changelog("## 0.2.0\n\n### Breaking\n", "## 0.1.0\n"), Set.of(TAGS_01));
             assertThat(passes).isInstanceOf(Decision.NoBaseline.class);
-            assertThat(passes.message()).contains("pending release 0.2.0").contains("no released 0.2.x version");
+            assertThat(passes.message()).contains("pending release 0.2.0").contains("no final 0.2.x release");
         }
 
         @Test
@@ -496,7 +496,7 @@ class ReleaseGateTest {
             String log = changelog("## 1.0.0-SNAPSHOT\n\n### Breaking\n", "## 0.3.0\n");
             Decision passes = decide("1.0.0-SNAPSHOT", log, tags);
             assertThat(passes).isInstanceOf(Decision.NoBaseline.class);
-            assertThat(passes.message()).contains("no released 1.x version");
+            assertThat(passes.message()).contains("no final 1.x release");
             assertThat(ReleaseGate.previousBreakingBaseline("1.0.0-SNAPSHOT", log, tags))
                     .contains("contract-charter-v0.3.0");
         }
@@ -567,7 +567,7 @@ class ReleaseGateTest {
             Optional<Decision.Refused> refused =
                     ReleaseGate.releaseRefusal("contract-charter-v0.1.0-SNAPSHOT", "0.1.0-SNAPSHOT", snapshot);
             assertThat(refused).isPresent();
-            assertThat(refused.get().message()).contains("not a released version");
+            assertThat(refused.get().message()).contains("is not a release (X.Y.Z) or a release candidate");
         }
 
         @Test
@@ -612,7 +612,8 @@ class ReleaseGateTest {
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", snapshot))
                     .hasValueSatisfying(r -> assertThat(r.message()).contains("is 0.1.0-SNAPSHOT"));
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0-SNAPSHOT", snapshot))
-                    .hasValueSatisfying(r -> assertThat(r.message()).contains("not a released version"));
+                    .hasValueSatisfying(
+                            r -> assertThat(r.message()).contains("is not a release (X.Y.Z) or a release candidate"));
         }
 
         @Test
@@ -630,7 +631,7 @@ class ReleaseGateTest {
                 assertThat(ReleaseGate.packsReleaseRefusal(tag, RELEASED))
                         .as(tag)
                         .hasValueSatisfying(r -> assertThat(r.message())
-                                .contains("is not a released version")
+                                .contains("is not a release (X.Y.Z) or a release candidate")
                                 .doesNotContain("-SNAPSHOT is never published"));
             }
         }
@@ -673,6 +674,218 @@ class ReleaseGateTest {
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", "# Changelog\n"))
                     .hasValueSatisfying(r -> assertThat(r.message())
                             .isEqualTo("contracts/packs/CHANGELOG.md has no version heading (## X.Y.Z)."));
+        }
+    }
+
+    /** Operator ruling R1 (2026-11-16): the first contract releases are release candidates, X.Y.Z-<pre>. */
+    @Nested
+    class ReleaseCandidates {
+
+        private static final String V010 = "contract-charter-v0.1.0";
+        private static final String RC1 = "contract-charter-v0.2.0-rc.1";
+        /** The first candidate of a new 0.x line, over the final 0.1.0: its section lists what breaks. */
+        private static final String FIRST_RC = "## 0.2.0-rc.1\n\n### Breaking\n\n- x\n\n## 0.1.0\n";
+
+        @Test
+        void aCandidateTagThatNamesTheTopHeadingAndInfoVersionPasses() {
+            assertThat(ReleaseGate.releaseRefusal(RC1, "0.2.0-rc.1", FIRST_RC)).isEmpty();
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.1.0-rc.1", "0.1.0-rc.1", "## 0.1.0-rc.1\n"))
+                    .isEmpty();
+        }
+
+        @Test
+        void aCandidateTagForAnotherCandidateIsRefused() {
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.2.0-rc.2", "0.2.0-rc.1", FIRST_RC))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("contract-charter-v0.2.0-rc.2 names 0.2.0-rc.2")
+                            .contains("info.version is 0.2.0-rc.1"));
+        }
+
+        @Test
+        void aMalformedPreReleaseIsRefusedSayingWhy() {
+            String[][] cases = {
+                {"0.2.0-rc-1", "not letters, digits and dots"},
+                {"0.2.0-rc_1", "not letters, digits and dots"},
+                {"0.2.0-rc+1", "not letters, digits and dots"},
+                {"0.2.0+build.1", "build metadata"},
+                {"0.2.0-rc.1+build.1", "not letters, digits and dots"},
+                {"0.2.0-rc..1", "empty pre-release identifier"},
+                {"0.2.0-rc.", "empty pre-release identifier"},
+                {"0.2.0-", "not letters, digits and dots"},
+                {"0.2.0-rc.01", "leading zero"},
+                {"0.2.0-snapshot", "-SNAPSHOT, upper case and alone"},
+                {"0.2.0-SNAPSHOT.1", "-SNAPSHOT, upper case and alone"},
+            };
+            for (String[] c : cases) {
+                String heading = "## " + c[0] + "\n\n### Breaking\n\n- x\n\n## 0.1.0\n";
+                assertThat(ReleaseGate.releaseRefusal("contract-charter-v" + c[0], c[0], heading))
+                        .as(c[0])
+                        .hasValueSatisfying(r -> assertThat(r.message())
+                                .contains("is not a release (X.Y.Z) or a release candidate")
+                                .contains(c[1]));
+                assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v" + c[0], heading))
+                        .as(c[0])
+                        .hasValueSatisfying(r -> assertThat(r.message()).contains(c[1]));
+            }
+        }
+
+        @Test
+        void aMalformedPreReleaseHeadingIsRefusedWhereverItStands() {
+            assertThat(ReleaseGate.decideWithoutGit(
+                            "0.2.0-SNAPSHOT", changelog("## 0.2.0-SNAPSHOT\n", "## 0.2.0-rc-1\n", "## 0.1.0\n")))
+                    .isInstanceOf(Decision.Refused.class)
+                    .extracting(Decision::message)
+                    .asString()
+                    .contains("The heading '0.2.0-rc-1'")
+                    .contains("not letters, digits and dots");
+        }
+
+        @Test
+        void aPendingCandidateIsComparedWithThePreviousFinalReleaseOfItsLine() {
+            assertThat(decide("0.1.1-rc.1", changelog("## 0.1.1-rc.1\n", "## 0.1.0\n"), Set.of(V010)))
+                    .isEqualTo(new Decision.Compare(V010, "pending release 0.1.1-rc.1: compared against 0.1.0"));
+        }
+
+        @Test
+        void theFirstCandidateOfANewLineHasNoBaseline() {
+            Decision decision = decide("0.2.0-rc.1", FIRST_RC, Set.of(V010));
+            assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
+            assertThat(decision.message())
+                    .contains("pending release 0.2.0-rc.1")
+                    .contains("records no final 0.2.x release");
+        }
+
+        @Test
+        void theTaggedCandidateIsComparedWithThePreviousFinalReleaseNotWithItself() {
+            Decision decision = ReleaseGate.decide(
+                    "0.1.1-rc.1",
+                    changelog("## 0.1.1-rc.1\n", "## 0.1.0\n"),
+                    Set.of(V010, "contract-charter-v0.1.1-rc.1"),
+                    Set.of("contract-charter-v0.1.1-rc.1"));
+            assertThat(decision).isEqualTo(new Decision.Compare(V010, "compared against 0.1.0"));
+        }
+
+        @Test
+        void aCommitAfterTheCandidateTagUnderTheCandidateHeadingIsRefused() {
+            Decision decision = decide("0.2.0-rc.1", FIRST_RC, Set.of(V010, RC1));
+            assertThat(decision).isInstanceOf(Decision.Refused.class);
+            assertThat(decision.message())
+                    .contains("HEAD is not that release")
+                    .contains("after a release candidate it is 0.2.0-SNAPSHOT");
+        }
+
+        @Test
+        void afterACandidateTheSameSnapshotIsComparedWithThePreviousFinalRelease() {
+            String log = changelog("## 0.1.1-SNAPSHOT\n", "## 0.1.1-rc.1\n", "## 0.1.0\n");
+            assertThat(decide("0.1.1-SNAPSHOT", log, Set.of(V010, "contract-charter-v0.1.1-rc.1")))
+                    .isEqualTo(new Decision.Compare(V010, "compared against 0.1.0"));
+        }
+
+        @Test
+        void afterTheFirstCandidateOfANewLineTheSnapshotHasNoBaselineAndNeedsNoSecondBreaking() {
+            String log = changelog("## 0.2.0-SNAPSHOT\n\n### Added\n\n- y\n", FIRST_RC);
+            Decision decision = decide("0.2.0-SNAPSHOT", log, Set.of(V010, RC1));
+            assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
+            assertThat(decision.message()).contains("records no final 0.2.x release");
+            assertThat(ReleaseGate.previousBreakingBaseline("0.2.0-SNAPSHOT", log, Set.of(V010, RC1)))
+                    .contains(V010);
+        }
+
+        @Test
+        void aCandidateNeverCountsAsThePreviousReleaseForTheBreakingRule() {
+            // 0.2.0-rc.1 holds no Breaking, so the next candidate of the line is still a bump over 0.1.0.
+            String log = changelog("## 0.2.0-rc.2\n", "## 0.2.0-rc.1\n", "## 0.1.0\n");
+            assertThat(ReleaseGate.decideWithoutGit("0.2.0-rc.2", log).message())
+                    .contains("raises the minor version of 0.x from 0.1.0 to 0.2.0-rc.2");
+            assertThat(ReleaseGate.decideWithoutGit("0.2.0-rc.1", FIRST_RC.replace("### Breaking\n\n", "")))
+                    .isInstanceOf(Decision.Refused.class);
+        }
+
+        @Test
+        void theNextCandidateMayFollowACandidate() {
+            String log = changelog("## 0.2.0-rc.2\n", FIRST_RC);
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.2.0-rc.2", "0.2.0-rc.2", log))
+                    .isEmpty();
+            assertThat(decide("0.2.0-rc.2", log, Set.of(V010, RC1))).isInstanceOf(Decision.NoBaseline.class);
+        }
+
+        @Test
+        void theFinalReleaseMayFollowItsCandidatesAndIsTheNextBaseline() {
+            String log = changelog("## 0.2.0\n", "## 0.2.0-rc.2\n", FIRST_RC);
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.2.0", "0.2.0", log))
+                    .isEmpty();
+            Set<String> tags = Set.of(V010, RC1, "contract-charter-v0.2.0-rc.2", "contract-charter-v0.2.0");
+            assertThat(decide("0.2.1-SNAPSHOT", changelog("## 0.2.1-SNAPSHOT\n", log), tags))
+                    .isEqualTo(new Decision.Compare("contract-charter-v0.2.0", "compared against 0.2.0"));
+        }
+
+        @Test
+        void anotherVersionAfterACandidateIsRefusedUntilItsFinalIsRecorded() {
+            for (String next : new String[] {"0.2.1-SNAPSHOT", "0.3.0-SNAPSHOT", "0.2.1-rc.1", "1.0.0"}) {
+                String log = changelog("## " + next + "\n\n### Breaking\n\n- z\n", FIRST_RC);
+                assertThat(ReleaseGate.decideWithoutGit(next, log).message())
+                        .as(next)
+                        .contains("follows the release candidate 0.2.0-rc.1")
+                        .contains("0.2.0-SNAPSHOT, a later candidate of 0.2.0 or the final 0.2.0");
+            }
+        }
+
+        @Test
+        void aCandidateRanksBelowItsSnapshotAndItsFinalRelease() {
+            assertThat(ReleaseGate.decideWithoutGit("0.2.0-rc.1", changelog("## 0.2.0-rc.1\n", "## 0.2.0\n"))
+                            .message())
+                    .contains("is not above the released 0.2.0");
+            assertThat(ReleaseGate.decideWithoutGit("0.2.0-rc.1", changelog("## 0.2.0-rc.1\n", "## 0.2.0-rc.2\n"))
+                            .message())
+                    .contains("is not above the released 0.2.0-rc.2");
+            assertThat(ReleaseGate.decideWithoutGit("0.2.0-rc.1", changelog("## 0.2.0-rc.1\n", "## 0.2.0-SNAPSHOT\n"))
+                            .message())
+                    .contains("not in descending order");
+        }
+
+        @Test
+        void candidatesAreOrderedBySemVerPrecedence() {
+            String log = changelog(
+                    "## 1.0.0-rc.10\n",
+                    "## 1.0.0-rc.9\n",
+                    "## 1.0.0-rc.1.1\n",
+                    "## 1.0.0-rc.1\n",
+                    "## 1.0.0-beta\n",
+                    "## 1.0.0-alpha.beta\n",
+                    "## 1.0.0-alpha.1\n",
+                    "## 1.0.0-alpha\n");
+            assertThat(ReleaseGate.decideWithoutGit("1.0.0-rc.10", log)).isInstanceOf(Decision.Skipped.class);
+            assertThat(ReleaseGate.decideWithoutGit(
+                                    "1.0.0-alpha.1", changelog("## 1.0.0-alpha.1\n", "## 1.0.0-alpha.beta\n"))
+                            .message())
+                    .contains("is not above the released 1.0.0-alpha.beta");
+        }
+
+        @Test
+        void aCandidateTagIsNeverABaseline() {
+            assertThat(ReleaseGate.baselineRefusal(RC1, "0.2.0-rc.1")).isPresent();
+        }
+
+        @Test
+        void aMergedCandidateTagTheChangelogDoesNotRecordIsRefused() {
+            assertThat(decide("0.1.1-SNAPSHOT", changelog("## 0.1.1-SNAPSHOT\n", "## 0.1.0\n"), Set.of(V010, RC1))
+                            .message())
+                    .contains("[" + RC1 + "] are merged into HEAD");
+        }
+
+        @Test
+        void thePacksContractTakesTheSameCandidates() {
+            String log = "## 0.1.0-rc.1\n";
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0-rc.1", log))
+                    .isEmpty();
+            assertThat(ReleaseGate.packsChangelogRefusal("## 0.1.0-SNAPSHOT\n\n" + log))
+                    .isEmpty();
+            assertThat(ReleaseGate.packsChangelogRefusal("## 0.1.1-SNAPSHOT\n\n" + log))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("follows the release candidate 0.1.0-rc.1, whose final release is not recorded")
+                            .contains("contracts/packs/CHANGELOG.md"));
+            assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0-rc.2", log))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains("at that commit is 0.1.0-rc.1"));
         }
     }
 

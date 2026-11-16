@@ -10,10 +10,17 @@
 #      leaves a changelog fragment unassembled, rehearses it with this script and expects the publishing gate to
 #      refuse its tag (ADR-0047);
 #   3. as the release pull request does, assembles the fragments (:contracts:assembleContractChangelog) under the
-#      -SNAPSHOT heading, then turns it into the release, and rehearses that commit with this script.
-# On the release pull request, where info.version is already the release, it rehearses that release as it stands
-# (#571): it tags it locally and expects the four assets, with a checksum that matches the bundle. Steps 2 and 3 run
-# this branch, so every change rehearses the release pull request too.
+#      -SNAPSHOT heading, then turns it into the release, and rehearses that commit with this script;
+#   4. expects the publishing gate to refuse a malformed release candidate tag (<version>-rc-1: a pre-release is
+#      letters, digits and dots), from the unreleased commit;
+#   5. as a release candidate's pull request does (operator ruling R1), assembles the fragments and turns the -SNAPSHOT
+#      into <version>-rc.1, expects the gate to refuse the tag of another candidate (<version>-rc.2), and rehearses
+#      that commit with this script;
+#   6. tags that candidate, reopens <version>-SNAPSHOT above it (heading and info.version together) and expects the
+#      breaking-change check (:contracts:checkContractCompatibility) to pass: a candidate is never its baseline.
+# On the release pull request, where info.version is already the release or a release candidate, it rehearses that
+# release as it stands (#571): it tags it locally and expects the four assets, with a checksum that matches the bundle.
+# Steps 2, 3 and 5 run this branch, so every change rehearses the release pull request too.
 # The clone has no remote, so its tags can never be pushed. service.yml runs it after verifyAll.
 set -euo pipefail
 
@@ -66,6 +73,7 @@ if [[ -n "${REHEARSAL_OF_A_RELEASE:-}" ]]; then
 fi
 version="${snapshot%-SNAPSHOT}"
 tag="contract-charter-v$version"
+start="$(git rev-parse HEAD)"
 
 echo "== 1. The unreleased $snapshot is refused"
 git tag "$tag"
@@ -118,4 +126,43 @@ git add --all contracts/charter
 commit "rehearsal: release $version"
 # The release pull request's state: this script rehearses it as it stands.
 (cd "$clone" && REHEARSAL_OF_A_RELEASE=1 "$self")
-echo "Rehearsed $tag: refused while unreleased or unassembled, assembled once released. Nothing was published."
+
+gate_refuses() { # gate_refuses <tag> <expected words>: the publishing gate alone refuses the tag at HEAD
+  if ./gradlew --quiet :contracts:checkReleaseTag -PreleaseTag="$1" > "$work/gate.log" 2>&1; then
+    echo "error: :contracts:checkReleaseTag let $1 through" >&2
+    exit 1
+  fi
+  if ! grep -q "$2" "$work/gate.log"; then
+    echo "error: :contracts:checkReleaseTag refused $1, but not for '$2':" >&2
+    cat "$work/gate.log" >&2
+    exit 1
+  fi
+  echo "refused, as expected: $1 ($2)"
+}
+
+rc="$version-rc.1"
+echo "== 4. A malformed release candidate is refused"
+git checkout --quiet --detach "$start"
+gate_refuses "contract-charter-v$version-rc-1" "not letters, digits and dots"
+
+echo "== 5. A synthetic release candidate $rc is assembled"
+./gradlew --quiet :contracts:assembleContractChangelog
+sed -i "0,/^  version: $snapshot\$/s//  version: $rc/" "$openapi"
+sed -i "0,/^## $snapshot\$/s//## $rc/" "$changelog"
+git add --all contracts/charter
+commit "rehearsal: release candidate $rc"
+gate_refuses "contract-charter-v$version-rc.2" "names $version-rc.2, but the contract at that tag says its info.version is $rc"
+(cd "$clone" && REHEARSAL_OF_A_RELEASE=1 "$self")
+
+echo "== 6. After the candidate, $snapshot is open again and compared with no candidate"
+git tag "contract-charter-v$rc"
+sed -i "0,/^  version: $rc\$/s//  version: $snapshot/" "$openapi"
+sed -i "0,/^## $rc\$/s//## $snapshot\n\nWork toward the next candidate or the final $version.\n\n## $rc/" "$changelog"
+commit "rehearsal: $snapshot after $rc"
+./gradlew --quiet :contracts:checkContractCompatibility > "$work/after-rc.log" 2>&1 || {
+  cat "$work/after-rc.log" >&2
+  echo "error: the breaking-change check refused $snapshot after $rc" >&2
+  exit 1
+}
+echo "Rehearsed $tag and $rc: refused while unreleased, unassembled or malformed, assembled once released, and"
+echo "$snapshot reopens after the candidate. Nothing was published."

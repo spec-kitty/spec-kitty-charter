@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-16T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -536,6 +536,12 @@ Releasing a contract version is a short procedure with its own rules, kept in on
 [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline). Follow it from a topic branch, and run
 `./gradlew :contracts:check` before you open the pull request.
 
+The first contract releases are release candidates (operator ruling R1, 2026-11-16;
+[ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): `0.2.0-rc.1`, tagged `contract-charter-v0.2.0-rc.1`, with the
+service line's pre-release grammar (letters, digits and dots). A candidate is published as a GitHub pre-release and is
+never the compatibility baseline: the `-SNAPSHOT` after it, and the next candidate, are compared against the previous
+final release.
+
 `contracts/_shared/` started as a copy of core's shared vocabulary. This repository's copy is
 canonical ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)): change
 it here when there is reason to, and list the change in `contracts/_shared/VENDORED.md`.
@@ -560,10 +566,11 @@ Core's service pin fetches and verifies these assets by name.
 
    The service stays at 0.x until contract 1.0.0. A pre-release uses only letters, digits and dots
    (`0.2.0-rc.1`), because core's tag rule refuses `0.2.0-rc-1` and any `+build` metadata.
-2. **For a final release, release the bundled contract first.** It is `info.version` of
+2. **For a final release, release the bundled contract first, as a final release.** It is `info.version` of
    `contracts/charter/openapi.yaml`, released as `contract-charter-v<info.version>`
-   ([Release a contract version](#release-a-contract-version)). A pre-release may bundle an unreleased
-   contract; its release notes say so.
+   ([Release a contract version](#release-a-contract-version)). A contract release candidate (`0.2.0-rc.1`) is not
+   enough: the gate refuses a final service release that bundles one. A pre-release may bundle a contract release
+   candidate or an unreleased contract; its release notes say which.
 3. **In a pull request, set `version` in `gradle.properties` to the release** (`0.2.0`, no `-SNAPSHOT`). Check
    the gate locally:
 
@@ -600,7 +607,7 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - the tag's form is wrong;
   - the commit is not on `main`;
   - the tag is not the build version;
-  - a final release's contract is unreleased;
+  - a final release's contract is unreleased, or only a release candidate;
   - any target fails;
   - the tag moved while the assets were built;
   - a release of the tag already exists.

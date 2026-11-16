@@ -29,12 +29,12 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * and exits 1.
  *
  * <p>{@code CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag> [<changes-dir>]} checks a tag pushed to
- * publish a release ({@link ReleaseGate#releaseRefusal}): it prints {@code RELEASE <version>} and exits 0, or prints
+ * publish a release or a release candidate ({@code X.Y.Z-<pre>}, operator ruling R1; {@link ReleaseGate#releaseRefusal}): it prints {@code RELEASE <version>} and exits 0, or prints
  * the refusal and exits 1. Given the changelog fragments directory, it also refuses while a fragment is left
  * unassembled ({@link ChangelogFragments}, ADR-0047). The Gradle task {@code checkReleaseTag} runs it.
  *
  * <p>{@code CheckReleaseGate --packs-release <CHANGELOG.md> <tag>} checks a tag pushed to publish a packs contract
- * release ({@link ReleaseGate#packsReleaseRefusal}, #559): it prints {@code RELEASE <version>} and exits 0, or prints
+ * release or release candidate ({@link ReleaseGate#packsReleaseRefusal}, #559): it prints {@code RELEASE <version>} and exits 0, or prints
  * the refusal and exits 1. The Gradle task {@code checkPacksReleaseTag} runs it.
  *
  * <p>{@code CheckReleaseGate --packs-changelog <CHANGELOG.md>} checks the packs contract's CHANGELOG on every build
@@ -198,7 +198,8 @@ public final class CheckReleaseGate {
             return 1;
         }
         out.println("RELEASE " + version);
-        out.println("The tag " + tag + ", info.version and the top CHANGELOG heading name release " + version + ".");
+        out.println("The tag " + tag + ", info.version and the top CHANGELOG heading name " + kind(version) + " "
+                + version + ".");
         return 0;
     }
 
@@ -234,9 +235,14 @@ public final class CheckReleaseGate {
         }
         String version = tag.substring(ReleaseGate.PACKS_TAG_PREFIX.length());
         out.println("RELEASE " + version);
-        out.println("The tag " + tag + " and the top heading of " + ReleaseGate.PACKS_CHANGELOG + " name release "
-                + version + ".");
+        out.println("The tag " + tag + " and the top heading of " + ReleaseGate.PACKS_CHANGELOG + " name "
+                + kind(version) + " " + version + ".");
         return 0;
+    }
+
+    /** What a version the gate let through is: a release candidate has a pre-release suffix, a release none. */
+    private static String kind(String version) {
+        return version.contains("-") ? "release candidate" : "release";
     }
 
     private static Set<String> tags(Path file) throws IOException {

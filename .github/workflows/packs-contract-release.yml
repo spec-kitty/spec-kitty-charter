@@ -6,8 +6,9 @@ name: packs-contract-release
 # packs-contract.tar.gz (the tracked files of contracts/packs/: file-kinds.yaml, the schemas, the classifier
 # conformance cases, the CHANGELOG and the README, plus RELEASE.json naming the version, tag and commit),
 # packs-contract.sha256 (one checksum per file of the archive) and
-# packs-contract.tar.gz.sha256. Nothing is published unless the tag and the top heading of
-# contracts/packs/CHANGELOG.md name one released version, the classifier passes the conformance cases, and the tagged
+# packs-contract.tar.gz.sha256. A tag with a pre-release suffix (contract-packs-v0.1.0-rc.1) makes a GitHub
+# pre-release. Nothing is published unless the tag and the top heading of
+# contracts/packs/CHANGELOG.md name one release or release candidate (X.Y.Z-<pre>, operator ruling R1), the classifier passes the conformance cases, and the tagged
 # commit is on main; the publish job refuses a tag that moved while the assets were built. The workflow file runs
 # from the tagged commit, so these checks guard against mistakes, not against someone who can push tags: a tag
 # ruleset on contract-packs-v* is to limit who can publish (#196; push no tag before it exists).
@@ -134,7 +135,8 @@ jobs:
           fi
 
       # --verify-tag refuses a tag that does not exist on the remote; an existing Release of the tag fails the step,
-      # so a release is never replaced. --latest=false keeps the charter contract's release the repository's latest.
+      # so a release is never replaced. --latest=false keeps the charter contract's release the repository's latest. A
+      # version with a pre-release suffix (the gate has checked its form) is a release candidate: a GitHub pre-release.
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -147,6 +149,8 @@ jobs:
           notes="${notes} https://github.com/${REPO}/blob/${TAG}/contracts/packs/CHANGELOG.md"
           notes="${notes}"$'\n\n'"Check the archive with: sha256sum --check packs-contract.tar.gz.sha256"
           notes="${notes}"$'\n'"and each file after extracting it with: sha256sum --check packs-contract.sha256"
-          gh release create "$TAG" --repo "$REPO" --verify-tag --latest=false \
+          flags=(--latest=false)
+          case "$version" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$TAG" --repo "$REPO" --verify-tag "${flags[@]}" \
             --title "Packs contract ${version}" --notes "$notes" \
             dist/packs-contract.tar.gz dist/packs-contract.tar.gz.sha256 dist/packs-contract.sha256
