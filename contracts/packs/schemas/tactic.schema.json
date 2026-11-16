@@ -41,7 +41,7 @@
   "description": "A reusable behavior pattern with ordered steps.\n\nTactics describe HOW to achieve a goal through concrete,\nordered steps with optional cross-artifact references.",
   "properties": {
     "id": {
-      "pattern": "^[a-z][a-z0-9-]*$",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
       "maxLength": 64,
       "title": "Id",
       "type": "string"

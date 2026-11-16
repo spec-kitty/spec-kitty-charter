@@ -16,6 +16,8 @@
     the service's: a step enhancement whose slot part is longer passes the pack schema and is refused by the step
     enhancement's rule.
     `prompt-fragment-refusals.feature` gains a slot part with a doubled hyphen, refused as a `schema` violation.
+  - **A paradigm, styleguide or tactic id** is a letter-first kebab slug of at most 64 characters, in the domain and in
+    the pack schemas.
   - The pack schemas follow (packs contract `0.1.0-SNAPSHOT`, `### Changed`).
   - Core's seam: regenerate the DTOs; a client that sent or stored an id, a role or a slot with a doubled, leading or
     trailing hyphen must rename it. No refusal code is added.

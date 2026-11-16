@@ -115,7 +115,7 @@ class ArtifactReadServiceTest {
                     .tactic(tactic("alpha", "Alpha"))
                     .directive(directive("GUARD"))
                     .styleguide(styleguide("java-style"))
-                    .tactic(tactic("Zeta", "Zeta"))
+                    .tactic(tactic("a-zeta", "Zeta"))
                     .build(),
             EMPTY,
             Pack.builder().id(EMPTY).descriptor(descriptor(EMPTY)).build(),
@@ -188,7 +188,7 @@ class ArtifactReadServiceTest {
         assertThat(page.items())
                 .extracting(ArtifactReadService.Summary::position)
                 .containsExactly(
-                        position(ArtifactKind.TACTIC, "Zeta"),
+                        position(ArtifactKind.TACTIC, "a-zeta"),
                         position(ArtifactKind.TACTIC, "alpha"),
                         position(ArtifactKind.DIRECTIVE, "GUARD"),
                         position(ArtifactKind.STYLEGUIDE, "java-style"),
@@ -299,12 +299,15 @@ class ArtifactReadServiceTest {
         ArtifactReadService.Page tactics = service.list(PACK, Optional.of(ArtifactKind.TACTIC), Optional.empty(), 50)
                 .value();
         ArtifactReadService.Page afterZeta = service.list(
-                        PACK, Optional.of(ArtifactKind.TACTIC), Optional.of(position(ArtifactKind.TACTIC, "Zeta")), 50)
+                        PACK,
+                        Optional.of(ArtifactKind.TACTIC),
+                        Optional.of(position(ArtifactKind.TACTIC, "a-zeta")),
+                        50)
                 .value();
 
         assertThat(tactics.items())
                 .extracting(ArtifactReadService.Summary::position)
-                .containsExactly(position(ArtifactKind.TACTIC, "Zeta"), position(ArtifactKind.TACTIC, "alpha"));
+                .containsExactly(position(ArtifactKind.TACTIC, "a-zeta"), position(ArtifactKind.TACTIC, "alpha"));
         assertThat(afterZeta.items())
                 .extracting(ArtifactReadService.Summary::position)
                 .containsExactly(position(ArtifactKind.TACTIC, "alpha"));
@@ -365,7 +368,7 @@ class ArtifactReadServiceTest {
         AtomicBoolean removed = new AtomicBoolean();
         onFind = () -> removed.set(true);
         ArtifactReadService racing = serviceDigesting(() -> removed.get() ? D2 : D1);
-        String id = kind.equals("tactic") ? "Zeta" : "GUARD";
+        String id = kind.equals("tactic") ? "a-zeta" : "GUARD";
 
         assertThatThrownBy(() -> racing.item(PACK, kind, id)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
             assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT);
@@ -386,7 +389,7 @@ class ArtifactReadServiceTest {
             return D1;
         });
 
-        ConsistentRead.Verified<ArtifactReadService.Item> verified = spied.item(PACK, "tactic", "Zeta");
+        ConsistentRead.Verified<ArtifactReadService.Item> verified = spied.item(PACK, "tactic", "a-zeta");
 
         assertThat(verified.fingerprint()).isEqualTo(D1);
         assertThat(order.indexOf("find after digest 1"))

@@ -198,6 +198,7 @@ class IdentifierBoundsTest {
         return Stream.of(
                 Arguments.of("ParadigmIdentifier", (Consumer<String>) ParadigmIdentifier::new, "a-b", "a--b"),
                 Arguments.of("StyleguideIdentifier", (Consumer<String>) StyleguideIdentifier::new, "a-b", "a--b"),
+                Arguments.of("TacticIdentifier", (Consumer<String>) TacticIdentifier::new, "a-b", "a--b"),
                 Arguments.of("GuardIdentifier", (Consumer<String>) GuardIdentifier::new, "1-b", "1--b"),
                 Arguments.of("ProcedureIdentifier", (Consumer<String>) ProcedureIdentifier::new, "1-b", "1--b"),
                 Arguments.of("ToolguideIdentifier", (Consumer<String>) ToolguideIdentifier::new, "a-b", "a--b"),
