@@ -4,8 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.squad.surface-profile`
 - **Input key:** `surface_check_profile`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-15T18:22:03.595220+00:00`
+- **Resolved:** `2026-11-16T05:09:45.378007+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ Which checks does each surface run? (a) one PACK with a surface profile: each su
 
 ## Final answer
 
-_(none)_
+(a) One PACK with a surface profile: registration and the compose read report the faults they report today; validate mode gains the load-only checks; wire unchanged apart from Q1 (operator, 2026-11-16).
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-15T18:22:03.595220+00:00` - opened
+- `2026-11-16T05:09:45.378007+00:00` - resolved (final_answer="(a) One PACK with a surface profile: registration and the compose read report the faults they report today; validate mode gains the load-only checks; wire unchanged apart from Q1 (operator, 2026-11-16).")
