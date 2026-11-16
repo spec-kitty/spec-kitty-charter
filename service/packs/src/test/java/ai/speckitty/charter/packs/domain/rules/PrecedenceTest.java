@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
