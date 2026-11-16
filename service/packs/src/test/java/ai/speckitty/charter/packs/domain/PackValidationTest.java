@@ -61,7 +61,8 @@ class PackValidationTest {
                 unreadable,
                 StepEnhancementFacts.none(),
                 List.of(),
-                types);
+                types,
+                List.of());
     }
 
     /** A mission type whose one step {@code s} declares the substeps with these ids; no step id, so no step link. */
@@ -165,6 +166,10 @@ class PackValidationTest {
                 List.of(),
                 new FileRead.Absent<>("drg/fragment.yaml"),
                 List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
                 List.of(),
                 List.of(),
                 List.of());

@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -132,7 +133,7 @@ class ExcludedFilesAgreementTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.notHeld()).noneMatch(ExcludedFile::isUnmodelled);
+        assertThat(loaded.notHeld()).noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED);
         assertThat(loaded.notHeld()).extracting(ExcludedFile::file).containsExactlyInAnyOrderElementsOf(EXCLUDED);
         assertThat(loaded.pack().artifacts(ArtifactKind.SKILL, Skill.class))
                 .singleElement()
@@ -203,7 +204,7 @@ class ExcludedFilesAgreementTest {
                 .isEqualTo(PackFileKind.Unclassified.INSTANCE);
         assertThat(store.load(pack).notHeld())
                 .as("one path-sorted list, each file with its reason")
-                .extracting(ExcludedFile::file, ExcludedFile::isUnmodelled)
+                .extracting(ExcludedFile::file, file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
                 .containsExactly(
                         tuple(NOTE, false), tuple(README, false), tuple(DECLARATION, false), tuple(UNMODELLED, true));
         WholePackWriteStore.Contents contents = store.loadStaged(staged);

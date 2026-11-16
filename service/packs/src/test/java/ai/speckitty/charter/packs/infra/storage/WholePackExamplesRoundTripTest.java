@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
@@ -178,7 +179,7 @@ class WholePackExamplesRoundTripTest {
                 .map(PackElementViolation::file)
                 .collect(Collectors.toSet());
         return loaded.notHeld().stream()
-                .filter(ExcludedFile::isUnmodelled)
+                .filter(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
                 .map(ExcludedFile::file)
                 .filter(file -> file.startsWith(PackFileSet.ASSETS) || file.startsWith(PackFileSet.TEMPLATES))
                 .filter(file -> !refused.contains(file))

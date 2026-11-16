@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packvalidation.roundtrip;
 
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import java.nio.file.Path;
@@ -37,7 +37,7 @@ final class WholePackDrift {
         WholePackStore.LoadedPack loaded = store.load(pack);
         loaded.pack().violations().forEach(v -> problems.add(name + ": violation " + v));
         loaded.notHeld().stream()
-                .filter(ExcludedFile::isUnmodelled)
+                .filter(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
                 .forEach(file -> problems.add(name + ": " + file.notHeld().detail()));
         loaded.warnings().forEach(w -> problems.add(name + ": warning " + w));
         new WholePackRoundTripRule(WholePackExpectation.none())

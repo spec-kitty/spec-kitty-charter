@@ -573,9 +573,8 @@
     "core": null,
     "plant": "c15-charter-takes-only-c1-and-c2",
     "proven_by": [
-      "packs:PackSchemasTest#theBundleLoadsAndEveryKindIsKnown",
-      "plant:charter-valid",
-      "plant:charter-invalid"
+      "packs:ProjectCharterYamlSchemaTest#theExampleCharterYamlValidates",
+      "packs:ProjectCharterYamlSchemaTest#absentIsAccepted"
     ]
   },
   {
@@ -607,7 +606,7 @@
       "version": "4.0.0rc8"
     },
     "plant": "c16-shard-edge-provenance",
-    "register_id": "DIV-019"
+    "register_id": "DIV-023"
   },
   {
     "core": {
@@ -650,8 +649,7 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "c2-charter-nested-unknown-key",
-    "register_id": "DIV-013"
+    "plant": "c2-charter-nested-unknown-key"
   },
   {
     "core": {
@@ -762,7 +760,8 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "c3-shard-edge-bare-endpoint"
+    "plant": "c3-shard-edge-bare-endpoint",
+    "register_id": "DIV-027"
   },
   {
     "core": {
@@ -799,7 +798,8 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "c3-shard-urn-malformed"
+    "plant": "c3-shard-urn-malformed",
+    "register_id": "DIV-027"
   },
   {
     "core": {
@@ -836,7 +836,8 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "c4-shard-urn-prefix-differs-from-kind"
+    "plant": "c4-shard-urn-prefix-differs-from-kind",
+    "register_id": "DIV-023"
   },
   {
     "core": {
@@ -1014,7 +1015,8 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "c7-shard-relation-extends"
+    "plant": "c7-shard-relation-extends",
+    "register_id": "DIV-027"
   },
   {
     "core": {
@@ -1052,7 +1054,7 @@
       "version": "4.0.0rc8"
     },
     "plant": "c8-shard-without-generated-by-is-accepted",
-    "register_id": "DIV-009"
+    "register_id": "DIV-027"
   },
   {
     "core": {
@@ -1095,8 +1097,7 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "charter-cli-timeout-not-a-number",
-    "register_id": "DIV-021"
+    "plant": "charter-cli-timeout-not-a-number"
   },
   {
     "core": {
@@ -1117,8 +1118,7 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "charter-invalid",
-    "register_id": "DIV-021"
+    "plant": "charter-invalid"
   },
   {
     "core": {
@@ -1441,7 +1441,7 @@
       "version": "4.0.0rc8"
     },
     "plant": "r15-glossary-urn-in-a-shard",
-    "register_id": "DIV-012"
+    "register_id": "DIV-027"
   },
   {
     "core": {

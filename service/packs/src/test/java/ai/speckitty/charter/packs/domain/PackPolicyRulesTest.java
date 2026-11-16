@@ -64,7 +64,8 @@ class PackPolicyRulesTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
-                types);
+                types,
+                List.of());
     }
 
     private static PackContents withDescriptor(Optional<String> requiresCore) {
@@ -209,6 +210,10 @@ class PackPolicyRulesTest {
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
+                List.of(),
+                List.of(),
                 List.of());
 
         assertThat(PackPolicy.judge(contents).findings())
@@ -226,6 +231,10 @@ class PackPolicyRulesTest {
                 List.of(),
                 fragment,
                 List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
                 List.of(),
                 List.of(),
                 List.of());

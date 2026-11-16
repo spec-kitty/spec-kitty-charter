@@ -22,8 +22,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Validate mode judges nothing in a file the store does not hold (#554, open case 6; spec US3 scenarios 2 and 4). Each
- * of the twelve golden subjects of open case 6 plants a {@code charter.yaml} or a shard below the pack root, some of
- * them invalid. Validate mode answers one {@code file_not_held} warning at that file, in the registration's words, and
+ * of the golden subjects of open case 6 plants a {@code charter.yaml} or a shard below the pack root, some of them
+ * invalid. Of the twelve, the C4 and C16 plants moved their shard to the pack root in WP11's review, so that those
+ * rules keep a plant, and are judged there. Validate mode answers one {@code file_not_held} warning at that file, in the registration's words, and
  * no finding of its contents: on the bare plant that is the whole verdict, and with a descriptor beside it the warning
  * stands beside the descriptor's own findings.
  */
@@ -37,11 +38,9 @@ class NotHeldValidateTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-        "c16-shard-edge-provenance, drg/tactic.graph.yaml",
         "c2-charter-nested-unknown-key, charter.yaml",
         "c3-shard-edge-bare-endpoint, drg/tactic.graph.yaml",
         "c3-shard-urn-malformed, drg/tactic.graph.yaml",
-        "c4-shard-urn-prefix-differs-from-kind, drg/tactic.graph.yaml",
         "c7-shard-relation-extends, drg/tactic.graph.yaml",
         "c8-shard-without-generated-by-is-accepted, drg/tactic.graph.yaml",
         "charter-cli-timeout-not-a-number, charter.yaml",
