@@ -113,7 +113,17 @@ class CompositionGoldenTest {
 
     /** Every refusal case of {@code PackCompositionResolverTest}, named as its test is. */
     private static List<Case> resolverRefusals() {
-        List<Case> cases = new ArrayList<>(List.of(
+        List<Case> cases = new ArrayList<>(cyclesPresetsAndMentions());
+        cases.addAll(dependencyRefusals());
+        cases.addAll(siblingContests());
+        cases.addAll(referencesAndRootedComposes());
+        cases.addAll(levelViolations());
+        return cases;
+    }
+
+    /** The parent cycles, the preset contests and a mention that matches only by case. */
+    private static List<Case> cyclesPresetsAndMentions() {
+        return List.of(
                 new Case("parent-names-itself", extending("01LOOP", "loop", PackLevel.ORG, "01LOOP")),
                 new Case(
                         "parents-name-each-other",
@@ -140,7 +150,12 @@ class CompositionGoldenTest {
                                 "mention-of-a-held-id-only-by-case",
                                 defining("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001"),
                                 defining("01MENT", "mentioner", PackLevel.ORG))
-                        .mentions("01MENT", "directive:directive_001"),
+                        .mentions("01MENT", "directive:directive_001"));
+    }
+
+    /** The dependency, range, name and parent refusals. */
+    private static List<Case> dependencyRefusals() {
+        return List.of(
                 new Case(
                         "cycle-with-a-pack-downstream-of-it",
                         pack("01AAA", "a", "1.0.0", PackLevel.ORG, depends("01BBB", ">=1.0")),
@@ -171,7 +186,12 @@ class CompositionGoldenTest {
                                         Optional.of("01MISSING"),
                                         "orphan",
                                         Optional.of(PackLevel.ORG),
-                                        Optional.empty()))),
+                                        Optional.empty()))));
+    }
+
+    /** The sibling contests and their settlements. */
+    private static List<Case> siblingContests() {
+        return List.of(
                 new Case(
                         "siblings-changing-one-artifact",
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
@@ -209,7 +229,12 @@ class CompositionGoldenTest {
                         "overrides-naming-a-member-that-is-not-a-contestant",
                         settling("01DSTR", "distribution", DIRECTIVE, "01DSTR"),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)));
+    }
+
+    /** The reference refusals, and the refusals of a rooted compose. */
+    private static List<Case> referencesAndRootedComposes() {
+        return List.of(
                 new Case(
                                 "qualified-reference-to-an-artifact-the-pack-does-not-hold",
                                 pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN),
@@ -265,9 +290,7 @@ class CompositionGoldenTest {
                                 pack("01FIRST", "first", "1.0.0", PackLevel.ORG, depends("01SECOND", ">=1.0")),
                                 pack("01SECOND", "second", "1.0.0", PackLevel.ORG, depends("01FIRST", ">=1.0")),
                                 GAMMA)
-                        .rootedAt("01FIRST")));
-        cases.addAll(levelViolations());
-        return cases;
+                        .rootedAt("01FIRST"));
     }
 
     /** The refused rows of the level matrix: a dependency or a parent further from built-in than the pack's own level. */
