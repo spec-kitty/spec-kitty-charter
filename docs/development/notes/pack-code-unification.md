@@ -140,18 +140,20 @@ WP04, WP05 and WP08 see it.
      `charter-cli-timeout-not-a-number`, `charter-invalid`, `charter-template-set`, `charter-valid` and
      `r15-glossary-urn-in-a-shard`, each `+pack.yaml`) is accepted with one `file_not_held` warning,
      `<file>: not held (no pack file kind models this file)`. These are the golden's only Q1 rows.
-   - **Validate mode (WP05 and WP08, open).** Validate mode stops judging the contents of a file the store does not
-     hold, and answers the same `file_not_held` warning, so its verdict on these 12 plants becomes valid with one
-     warning beside the descriptor findings, as spec US3 scenario 2 asks. The `drg_schema_error` and
-     `artifact_schema_error` findings at those files go (row 33, V). The packs contract follows in the same change:
-     the `**/charter.yaml` rule and the depth of `**/*.graph.yaml` (`core/graph/a.graph.yaml` is a `mapped` case
-     today) must say what the store holds, with their classifier cases and a packs `### Breaking` line, and the
-     open-packs draft (`TBD-unmodelled-not-held`) carries the same reclassification. WP02 changed neither the
-     inspector nor `file-kinds.yaml`, so the validate rows of the golden are unchanged.
+   - **Validate mode (settled by WP11).** Validate mode judges nothing in a file the store does not hold, and answers
+     the same `file_not_held` warning, so its verdict on each of these 12 plants is that one warning beside the
+     descriptor's own findings (valid on the bare plant), as spec US3 scenarios 2 and 4 ask. The `drg_schema_error` and `artifact_schema_error`
+     findings at those files are gone (row 33, V). The packs contract followed in the same change: the
+     `**/charter.yaml` rule is removed and the graph-shard rule narrowed to `*/*.graph.yaml`, with their classifier
+     cases (`core/graph/a.graph.yaml` and `project/charter.yaml` are `unmodelled`) and a packs `### Breaking` line;
+     the open-packs draft (`TBD-unmodelled-not-held`) carries the same reclassification. A not-held file carries an
+     explicit kind (`EXCLUDED` or `UNMODELLED`), a retired file is no longer also listed as not held, and
+     `HeldSetAgreementTest` pins validate mode's not-held files to the store's until WP05's one census.
 7. **Asset faults are not all validate-only** (rows 12 to 15). A missing payload and a path escape are read faults
    on all three surfaces: registration answers `asset` for them (11 golden subjects) and the compose read refuses
    them. Only the asset mime and a repeated asset id are validate-only. The data model's R1 surface table counts
    "asset rules" as validate-only; WP08 builds its surface profiles from the narrower reading here.
 8. **The clean control is not clean** (row 12). `planted/control-a-clean-org-pack` has a sidecar whose payload
    `assets/doc.txt` is missing, so all three surfaces refuse it, though its `expected.json` says it loads with no
-   findings. This predates #554. WP05's plant work adds the payload so the control is clean again.
+   findings. This predates #554. **Routed to WP05** (WP01 review): its plant work adds the payload so the control is
+   clean again, a golden row recorded as a fixed fixture defect, not a behaviour change (NFR-002).
