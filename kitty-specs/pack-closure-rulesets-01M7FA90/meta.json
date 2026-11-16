@@ -19,5 +19,5 @@
   "topology_settled": false,
   "topology_source": "default",
   "contracts": "none",
-  "contracts_rationale": "No new interface. The only contract change is behavioural (Q1: an unmodelled file becomes a file_not_held diagnostic instead of the 'unmodelled' violation), recorded as a ### Breaking change fragment under contracts/charter/changes/ with rewritten scenarios; no schema shape changes."
+  "contracts_rationale": "No new interface. The contract changes are behavioural: Q1 (an unmodelled file becomes a file_not_held diagnostic) and R2 (one code and wording per fault across surfaces), each recorded as a ### Breaking change fragment under contracts/charter/changes/ with rewritten scenarios; no schema shape changes."
 }

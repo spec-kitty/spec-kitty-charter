@@ -18,25 +18,46 @@ Kernel `ReasonCode` constants. Each has a wire token and a severity (ruling 4). 
 | Fragments and slots | `prompt_fragment_invalid`, `prompt_slot_malformed`, `prompt_slot_not_empty` | VIOLATION |
 | | `prompt_slot_not_empty` (unversioned descriptor) | WARNING |
 | Load-only | `reserved_shard`, `manifest_membership` | VIOLATION |
-| Not held | `file_not_held` (excluded **or unmodelled**, Q1) | WARNING |
+| Not held | `file_not_held` (excluded **or unmodelled**, Q1; an unmodelled file's reason is `no pack file kind models this file`) | WARNING |
 | Closure (CLOSURE) | the 8 `RefusalCode`s of the resolver's cycle, dependency, parent, level and conflict kinds | VIOLATION |
 
 Gone: `unmodelled` (Q1) and the `invalid` fallback.
 
-## PackRules (new port)
+## PackRulesets and the surface profile (packs.domain.rules)
 
 ```java
-public interface PackRules {
-    Rationale pack(PackContents contents);   // PACK
-    Rationale closure(ClosureFacts facts);   // CLOSURE
-}
+public enum Surface { VALIDATE, REGISTER, COMPOSE_READ }
+public static ModularRuleset<PackContents> pack(Surface surface);   // PACK
+public static ModularRuleset<List<PackUnderResolution>> closure();  // CLOSURE
 ```
 
-`pack-validation`'s `PackRulesets` implements it, and `deployable`'s `CharterWiring` wires it.
+There is no judging port (R3). Each surface in `:packs` calls `PackRulesets` directly.
 
-## ClosureFacts (new)
+**R1.** `REGISTER` and `COMPOSE_READ` compose exactly the rules behind the faults those surfaces report today.
+`VALIDATE` composes every rule.
 
-The descriptors of a set of packs, each with its root level. `CLOSURE` reads these and no graph.
+| Rule group | VALIDATE | REGISTER | COMPOSE_READ |
+| --- | --- | --- | --- |
+| Read faults (schema, parse, retired, domain, reference, companion) | yes | yes | yes |
+| Graph, endpoint, mission type, step enhancement, prompt slot, glossary | yes | yes | yes |
+| Level, org fragment, descriptor, asset rules | yes | no | no |
+| Manifest membership, reserved shard, not held | yes | yes | no |
+
+WP01's golden snapshot checks this table, and both subset tests pin it.
+
+## Composition facts (F5)
+
+A Spring-free builder in `packs.infra.storage` builds `PackUnderResolution` from `PackContents`. That covers the
+descriptor, the level, the defined and changed artifacts, and the held terms. A parity test checks it against
+`DomainRepositoryService`'s facts over the example packs. `CLOSURE` reads these, never the closure walk (#556).
+
+## R2 code table (filled in WP01)
+
+One row per fault: today's validate code and wording, today's registration code, pointer and wording, and the one code
+and wording kept. The rule is that the specific code wins over a catch-all. The catch-alls are `domain`, `reference`,
+`invalid`, the aggregate `validation_failed`, the refusal at pointer `pack`, and `schema` reported once per violation.
+Where registration already answers a specific code, validate mode takes it. Each changed row names its `### Breaking`
+fragment.
 
 ## PackContents (extended, P1)
 
@@ -53,13 +74,13 @@ It gains these facts, so that registration can judge the inspector's read:
 | Mapper | Input | Output | Order |
 | --- | --- | --- | --- |
 | `PackVerdicts.of` | `Rationale` | `PackVerdict` | `PRECEDENCE` (group, path, place) |
-| `PackRefusals.of` | `Rationale` | `List<RefusalViolation>`, plus the warnings as `Diagnostic` | graph faults by path, then the read and rule faults, the orphans by path, the reserved shard, then manifest membership |
+| `PackRefusals.of` | `Rationale` | `List<RefusalViolation>`, plus the diagnostics: the load's warnings in today's order, then one path-sorted list of files not held | graph faults by path, then the read and rule faults, the orphans by path, the reserved shard, then manifest membership |
 
-The reserved shard comes out as `drg_schema_error` in a verdict and as `reserved_shard` in a refusal (P7). Both
-mappers read `failures()` only.
+Under R2 the mappers differ only in shape and order. Both read `failures()` only, and both switch on the code
+constant, never on `value()`.
 
 ## Invariants
 
-- No rule reads a file. Rules read only `PackContents` and `ClosureFacts`.
+- No rule reads a file. Rules read only `PackContents` and `PackUnderResolution` (`PACK_RULES_READ_NO_FILE`).
 - Manifest membership is judged only when no other `VIOLATION` was found.
 - A fault the store's reader meets that `PACK` did not report refuses the registration (fails closed).

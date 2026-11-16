@@ -23,39 +23,48 @@ Converters glue the two, and each runs checks the other misses.
 This Mission makes every pack check a rule of the kernel's rule vocabulary, over the `packs` domain objects:
 
 - **Per kind.** One ruleset per pack file kind. They compose into one `PACK` ruleset.
-- **Across packs.** One `CLOSURE` ruleset over the descriptors of a set of packs with levels.
-- **One pipeline.** Validate mode and the registration load run the same rules.
+- **Across packs.** One `CLOSURE` ruleset over the composition facts of a set of packs with levels.
+- **One pipeline.** Validate mode, the registration load and the compose read run the same rules, each through its
+  surface profile. The rules live in the `packs` domain (R3).
 
-The two answers keep their wire codes and their order, with one exception, which the operator ruled: an unmodelled
-file.
+Each surface keeps the set of faults it reports today (R1). Validate mode gains the checks only the load runs.
+One fault answers one code and one wording on every surface (R2), so where the two surfaces disagree today, one
+of them changes, under `### Breaking`. The unmodelled-file ruling (Q1) changes the wire too.
 
 Rulings that bind this Mission:
 
 | Ruling | Effect |
 | --- | --- |
-| Operator ruling 1, 2026-11-15 (#549) | The `packs` domain stays canonical: no parallel model. `FileSystemPackInspector` stays. The registration load keeps its reader and runs `PACK` through a port that `packs.domain` declares. |
+| Operator ruling 1, 2026-11-15 (#549) | The `packs` domain stays canonical: no parallel model. `FileSystemPackInspector` stays. The registration load keeps its reader. Its "through a port that `packs.domain` declares" is withdrawn by R3. |
 | Operator ruling 3, 2026-11-15 (#549) | Kept compatible for #556: an external check that cannot decide fails closed later. This Mission adds no external check. |
 | Operator ruling 4, 2026-11-15 (#549) | A code owns its severity. |
 | `DM-01M7FARH7YMGS2X0BRV1HKH47B` (operator, Q1) | An unmodelled file is a `file_not_held` warning. Pack authors may add docs and reference files that do not affect the service: warn, then ignore. The file is not held and not round-tripped. |
 | ADR-0075 amendment, 2026-11-13 | `pack-validation` depends on `:packs` and names only `packs.domain`. Nothing moves out of `packs`. |
+| `DM-01M7FFDY3YP3VA3EA5VGRZF28V` (operator, P1) | Registration judges the inspector's `PackContents` of the staged tree. The store's reader only builds the aggregate, and a reader fault that `PACK` missed fails closed. |
+| `DM-01M7G73STB9TJ62R73EB3NMYJR` (operator, R1 a) | One `PACK`, with a surface profile. Registration and the compose read report the faults they report today. Validate mode gains the load-only checks. |
+| `DM-01M7G73VX4WDJ7B03FDS8NSAYD` (operator, R2 b) | Codes and wording are unified: one fault answers one code and one wording on every surface. Per fault, the specific code wins over a catch-all. A surface that changes gets a `### Breaking` fragment. |
+| `DM-01M7G73XXVE0W5AGMZTWDNPTEJ` (operator, R3, and R3-b (i)) | The rules, `PACK`, `CLOSURE`, `PackCodes` and the mappers live in `packs.domain`. There is no judging port. `pack-validation` is the Spring-free check library that pack-check runs. ADR-0075 is amended ([design](research/design-r3.md)). The mutation-margin criterion is met by the nightly measurement of #578's code. |
+| `DM-01M7G740QJPSFSE7HNQY1FK998` (operator, R4 b) | One pull request, with ordered work packages that are each green. |
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - One verdict, whichever way a pack is judged (Priority: P1)
 
-A pack author runs validate mode on a pack, then registers the same pack. Both name the same faults, each with its own
-code. Today validate mode misses the unmodelled, manifest-membership and reserved-shard checks. Registration misses the
-level, org-fragment, duplicate-id and asset checks.
+A pack author runs validate mode on a pack, then registers the same pack. Every fault the registration refuses,
+validate mode names too, with the same code and wording. Today validate mode misses the manifest-membership and
+reserved-shard checks, and it names some faults with other codes. Registration keeps the set of faults it reports
+today (R1). It does not gain validate mode's level, org-fragment or asset rules.
 
 **Why this priority**: it is the point of the slice. One rule exists once, and parity by hand goes.
 
-**Independent Test**: For each planted invalid pack, validate mode's findings and the registration's violations name
-the same set of faults.
+**Independent Test**: For each planted, example and scenario pack, the registration's faults are a subset of validate
+mode's, with equal code and wording. The registration's faults also equal today's registration faults (both subset
+tests).
 
 **Acceptance Scenarios**:
 
-1. **Given** a pack with a duplicate id and a manifest that lists a missing file, **When** it is validated and then
-   registered, **Then** both answers name both faults.
+1. **Given** a pack whose manifest lists a missing file, **When** it is validated and then registered, **Then** both
+   answers name `manifest_membership` at the manifest, with one wording.
 2. **Given** a valid example pack, **When** it is validated and registered, **Then** both answers are clean, apart
    from the warnings each answered before.
 
@@ -63,14 +72,15 @@ the same set of faults.
 
 ### User Story 2 - The wire does not move (Priority: P1)
 
-A client reads the registration refusal and validate mode's verdict. Codes, pointers and their order stay as they are
-today. The one exception is the unmodelled-file ruling (User Story 3).
+A client reads the registration refusal and validate mode's verdict. The order of findings stays as it is today on
+each surface. The codes and wording change only where the operator ruled: the unmodelled-file ruling (User Story 3),
+and the per-fault unification of R2, listed in WP01's golden snapshot and in the `### Breaking` fragments.
 
 **Why this priority**: the contract is a "must never go wrong" (charter), and open-packs' expected-code fixtures pin
 the codes.
 
-**Independent Test**: The existing contract scenarios, refusal-code tests and wire-token parity tests pass unchanged,
-apart from the scenarios User Story 3 rewrites.
+**Independent Test**: The golden snapshot of every surface, taken before any change, is reproduced byte for byte,
+apart from an enumerated diff list. Each entry on that list cites Q1 or an R2 table row.
 
 **Acceptance Scenarios**:
 
@@ -148,38 +158,39 @@ shape.
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Per-kind rulesets | As a maintainer, I want one ruleset for each pack file kind: the descriptor, graph, step, artifact, asset, fragment, prompt slot and glossary. Each expresses today's checks for its kind, so that a rule exists once. | High | Open | [build] | no |
-| FR-002 | `PACK` ruleset | As a maintainer, I want the per-kind rulesets composed into one `PACK` ruleset over the pack's contents. It also holds the checks that only the load runs today: manifest membership (judged only when nothing else failed), the reserved shard and orphan fragments. It is the one judgement of a pack. | High | Open | [build] | no |
-| FR-003 | `CLOSURE` ruleset | As an operator, I want a `CLOSURE` ruleset over the descriptors of a set of packs with levels. It covers the dependency cycle, the unknown and out-of-range dependency, the parent, the level, and the name, sibling and preset conflicts. It reports every fault, needs no graph, and keeps today's codes. | High | Open | [build] | no: a valid set on the same fixture reports nothing |
+| FR-001 | Per-kind rulesets | As a maintainer, I want one ruleset for each pack file kind: the descriptor, graph, mission type, step, artifact, asset, fragment, prompt slot and glossary. Each expresses today's checks for its kind, in the `packs` domain (R3), so that a rule exists once. | High | Open | [build] | no |
+| FR-002 | `PACK` ruleset and surface profiles | As a maintainer, I want the per-kind rulesets composed into one `PACK` ruleset over the pack's contents, with a surface profile (validate, register and compose read) that chooses the rules each surface runs (R1). It also holds the checks only the load runs today: manifest membership (judged only when nothing else failed), the reserved shard and orphan fragments. | High | Open | [build] | no |
+| FR-003 | `CLOSURE` ruleset | As an operator, I want a `CLOSURE` ruleset over the composition facts of a set of packs with levels. It covers the duplicate id, the dependency cycle, the unknown and out-of-range dependency, the parent, the level, and the name, sibling and preset conflicts. It reports every fault and keeps today's codes. The offering keeps its first refusal in today's order, with its pack list. | High | Open | [build] | no: a valid set on the same fixture reports nothing |
 | FR-004 | Plain functions stay plain | As a maintainer, I want classification, ordering and precedence, and the manifest set difference kept as plain functions that rules call, so that a rule adds no code where a function suffices. | Medium | Open | [ratchet] | yes: covered by FR-001 and FR-002's tests, not by its own |
 | FR-005 | Validate mode runs `PACK` | As a pack author, I want validate mode's verdict to come from `PACK`, so that it finds what registration finds. | High | Open | [build] | no: the load-only fault is found in validate mode, where it was missed before |
-| FR-006 | Registration runs `PACK` through a port | As a maintainer, I want the registration load to keep its reader and run `PACK` through a port that the `packs` domain declares and the service's composition root wires, so that the packs domain stays canonical (ruling 1). | High | Open | [build] | no: registration refuses a validate-only fault it accepted before |
-| FR-007 | Converters deleted | As a maintainer, I want the converters between `PackFinding`, `PackElementViolation` and `RefusalViolation` deleted, with no replacement shim, so that one pipeline remains. | High | Open | [build] | no: a search for the converter methods returns nothing |
-| FR-008 | Two mappers, each keeping its order | As a client, I want one mapping from a ruleset's findings to the API problem, and one to the validate-mode verdict. Each orders its findings as its surface does today. | High | Open | [build] | no |
-| FR-009 | Typed codes | As a maintainer, I want the string sub-codes (`schema`, `retired`, `manifest_membership`, `asset`, `reserved_shard`, `domain`, `reference`, `unreadable`, `companion`, `invalid` and the like) to become typed codes. Each owns its severity, and its wire token is unchanged. | High | Open | [build] | no |
+| FR-006 | Registration runs `PACK` on the inspector's contents | As a maintainer, I want registration to judge the inspector's contents of the staged tree with `PACK` before the store's reader builds the aggregate (P1). A fault the reader meets that `PACK` missed refuses the registration in today's aggregate shape, so that registration fails closed. | High | Open | [build] | no: the fail-closed guard test refuses a reader-only fault |
+| FR-007 | Converters deleted | As a maintainer, I want the converters between `PackFinding`, `PackElementViolation` and `RefusalViolation` deleted, with no replacement shim and no per-surface code table, so that one pipeline remains (R2). | High | Open | [build] | no: a search for the converter methods returns nothing |
+| FR-008 | Two mappers, each keeping its order | As a client, I want one mapping from a ruleset's findings to the API problem and its diagnostics, and one to the validate-mode verdict. They differ only in shape and order, and each orders its findings as its surface does today. | High | Open | [build] | no |
+| FR-009 | Typed, unified codes | As a maintainer, I want every code to be a typed code that owns its severity and its wording: the string sub-codes and validate mode's `PackFindingCode`. One fault answers one code on every surface (R2). Per fault, the specific code wins over a catch-all (`domain`, `reference`, `invalid`, the aggregate `validation_failed`, the refusal at pointer `pack`, `schema` given once per violation). Where registration already answers a specific code, validate mode takes it. | High | Open | [build] | no |
 | FR-010 | An unmodelled file is not held | As a pack author, I want a file that no pack file kind models to be reported as a `file_not_held` warning and not held. The registration accepts it, and neither the stored pack nor the round trip carries it (Q1). The `unmodelled` violation code goes. | High | Open | [build] | no: `notes.txt` was refused before and is accepted with a warning after |
 | FR-011 | Endpoint check rehomed | As a maintainer, I want the graph rule to call slice F's endpoint bridge, so that #515's check lives in `PACK` with its code `relationship_endpoint_not_allowed` unchanged. | Medium | Open | [build] | no |
-| FR-012 | Tests per rule and per mapper | As a maintainer, I want the tests of `PackPolicy`, the inspector's verdicts, the resolver's refusals and the converters collapsed to one test class per rule and one per mapper. The planted invalid packs are reused as rule fixtures. | Medium | Open | [build] | no |
-| FR-013 | Records follow | As a maintainer, I want these records to say what the service does: the contract change fragment for FR-010, under `### Breaking`; the rewritten scenarios; the ADR-0075, ADR-0062 and ADR-0065 annotations; and #554's issue text amended to keep `FileSystemPackInspector`. | Medium | Open | [build] | no |
+| FR-012 | Tests per rule, per composition and per mapper | As a maintainer, I want the tests of `PackPolicy`, the inspector's verdicts, the resolver's refusals and the converters to become one test class per rule and one per mapper, plus `PACK` composition tests (one per gate, suppression or precedence interaction). The order and wording functions keep their whole tests. The tests live in the module of their subject. | Medium | Open | [build] | no |
+| FR-013 | Records follow | As a maintainer, I want the records to say what the service does: the `### Breaking` fragments for Q1, for registration's R2 changes and for validate mode's R2 changes; the rewritten scenarios; the ADR-0075 amendment (R3); the ADR-0062 and ADR-0065 annotations; and #554's issue text amended. | Medium | Open | [build] | no |
 | FR-014 | Open-packs draft | As the orchestrator, I want a draft issue for `spec-kitty-open-packs` in the Mission research (`open-packs#TBD-unmodelled-not-held`). Its expected-code fixtures that expect `unmodelled` change, and its Python port of the rule follows. | Medium | Open | [build] | no |
+| FR-015 | Composition facts from pack contents | As the orchestrator of #478, I want a Spring-free function that builds each pack's composition facts from its inspected contents. A test checks it against the facts the service builds over the example packs, so that `CLOSURE` judges real facts outside the service. | Medium | Open | [build] | no |
 
 ### Non-Functional Requirements
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Gates green | `./gradlew verifyAll` passes on Java 25, with strict dependency verification and no new dependency. That includes the whole-pack round trip, the contract checks, the style checks and the architecture gate, with `PACK_VALIDATION_IS_FRAMEWORK_FREE` and the onion rules unchanged. The docs checks pass. | Quality | High | Open |
-| NFR-002 | Wire parity | 100% of the existing contract scenarios and refusal-code tests pass unchanged, except those that assert `unmodelled`, which FR-010 rewrites. The count of rewritten scenarios is recorded in the pull request. | Quality | High | Open |
-| NFR-003 | Mutation margin widened | The `pack-validation` mutation floor has a margin above 0 (ADR-0062), measured after the move. No floor is lowered. The `packs` floor is measured again and set honestly. | Quality | High | Open |
+| NFR-001 | Gates green | `./gradlew verifyAll` passes on Java 25, with strict dependency verification and no new dependency. It includes the whole-pack round trip, the contract checks, the style checks, the native build and the architecture gate. `PACK_VALIDATION_IS_FRAMEWORK_FREE`, `THE_PACKS_LOAD_REACHES_NO_FRAMEWORK` and the onion rules are unchanged. The single-owner rules point to the new owners, with their bite tests kept. The docs checks pass. | Quality | High | Open |
+| NFR-002 | Wire parity | The golden snapshot of every surface (codes, pointers, details, order and diagnostics), taken before any change, is reproduced byte for byte. The only exceptions are an enumerated diff list, each entry citing Q1 or an R2 table row. Both subset tests hold over every planted, example and scenario pack. | Quality | High | Open |
+| NFR-003 | Mutation margins honest | The nightly run measures `pack-validation` (with #578's round-trip verdict) and `packs` again, and ADR-0062's documented margins are re-set from it (R3-b (i)). No floor is lowered. Each work package reports a narrowed PIT run, before and after. | Quality | High | Open |
 | NFR-004 | No second derivation | Rules read only the pack contents and census the load produced. They never parse a file again. Review checks it, and a test proves that a rule run reads no file. | Maintainability | High | Open |
-| NFR-005 | Fewer tests | The test count over the collapsed classes falls from today's 474, with no rule left uncovered. Every rule has at least one failing and one passing case. | Maintainability | Medium | Open |
+| NFR-005 | Every code covered | A test enumerates every `PackCodes` constant and every `CLOSURE` code, and finds at least one failing and one passing fixture for each. The composition interactions of FR-012 are each covered. The test count is reported, not targeted. | Maintainability | Medium | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
 | C-001 | Canonical model | The rules run over the `packs` domain objects. There is no parallel model, no legacy reader and no old-string mapper kept (charter; ruling 1). | Technical | High | Open |
-| C-002 | Implement after slice F | Implementation starts once slice F's PR #567 merges and this branch rebases onto `main`. Specify and plan run now. | Process | High | Open |
-| C-003 | Module direction | `pack-validation` depends on `:packs` and names only `packs.domain`. `:packs` never depends on `pack-validation`. Only the composition root wires the port. | Technical | High | Open |
+| C-002 | Base | Implementation starts on `main` after slice F (#567), #555 (#578) and slice G. This branch rebases onto `main` before implementing, and again whenever `main` moves. | Process | High | Open |
+| C-003 | Module direction | `pack-validation` depends on `:packs` and names only `packs.domain`. `:packs` main never depends on `pack-validation`, and #578's test edge serves only the round-trip oracle. The service does not run `pack-validation` main code (R3). | Technical | High | Open |
 | C-004 | Out of scope | Out of scope: #556's external checks (the qualified references, the fallback profile, impact and mutability) and its `ERROR`-severity fail-closed codes; #552's identifier grammar; #555's round-trip move; #478's jar; #535, #518 and #358. | Business | High | Open |
 | C-005 | Contract versioning | The 0.x line may break on a minor, with a `### Breaking` CHANGELOG entry (ADR-0022). | Technical | High | Open |
 | C-006 | Process | Commits are signed, with no Co-Authored-By trailer and no model names. Integrate `main` by rebase only. Gradle runs in the foreground with `--max-workers=1`, one run at a time. | Process | High | Open |
@@ -188,18 +199,19 @@ shape.
 
 - **Pack contents**: what the inspector reads from one pack: its files, census and domain objects (`packs.domain`).
 - **`PACK`**: the ruleset over one pack's contents.
-- **`CLOSURE`**: the ruleset over the descriptors of a set of packs with levels.
+- **`CLOSURE`**: the ruleset over the composition facts of a set of packs with levels.
 - **Finding**: a kernel `Reason`, whose code owns its severity.
-- **Judging port**: what `packs.domain` declares so that the registration load runs `PACK`, wired by the service.
+- **Surface profile**: the choice of rules a surface runs (validate, register, compose read) (R1).
+- **Composition facts**: the `PackUnderResolution` of each pack. A Spring-free function builds them from pack contents, so that `CLOSURE` runs outside the service.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Validate mode and registration name the same faults for 100% of the planted invalid packs. — [build] ·
+- **SC-001**: Over every planted, example and scenario pack, the registration's faults are a subset of validate mode's, with equal codes and wording, and equal to today's registration faults. — [build] ·
   no-op passable: no
-- **SC-002**: Every wire code and its order are unchanged across the existing scenarios, apart from the `unmodelled`
-  rewrite. — [ratchet] · no-op passable: yes, so it is paired with SC-001, which a do-nothing change fails
+- **SC-002**: The golden snapshot holds, apart from the enumerated diff list. — [ratchet] · no-op passable: yes, so it is
+  paired with SC-001, which a do-nothing change fails
 - **SC-003**: A pack that differs from a valid one only by a file nothing models is accepted with one warning, and is
   stored identical to the valid one. — [build] · no-op passable: no
 - **SC-004**: The three converter families and the string sub-codes are gone from main code. — [build] · no-op

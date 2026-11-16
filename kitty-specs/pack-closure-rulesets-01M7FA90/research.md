@@ -146,3 +146,11 @@ No issue is filed. Nothing found is a correctness, data or security risk beyond 
   `PackContents` and returns `Rationale`.
 - **Q3 (plan).** Whether the compose read (`DomainRepositoryService:790`) runs `PACK`, or stays a read that trusts
   the registration.
+
+## Plan-point rulings (2026-11-15 and 2026-11-16)
+
+The plan-point squad ([squad-plan.md](research/squad-plan.md)) and the R3 design squad
+([design-r3.md](research/design-r3.md), with its [challenge](research/design-r3-challenge.md)) led to these operator
+rulings: P1, R1 (a), R2 (b), R3 (the rules stay in the packs domain), R3-b (i) and R4 (b). They supersede this note's
+D2, the `PackRules` port, and D3's per-surface ordering of one code table. Q2 and Q3 are answered by R3 and R1. The
+decision records are under `decisions/`, and `plan.md` lists them.
