@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.examples;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.examples.ExampleCoverage.FileRule;
 import ai.speckitty.charter.packs.examples.ExampleCoverage.PayloadRule;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
@@ -133,7 +134,7 @@ class ExamplePackCoverageTest {
                     Files.createDirectories(sample.getParent());
                     Files.writeString(sample, "{}\n");
                     WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(copy);
-                    if (!loaded.unmodelled().contains(relative)) {
+                    if (!loaded.notHeld().contains(WholePackWriteStore.ExcludedFile.unmodelled(relative))) {
                         return false;
                     }
                 }

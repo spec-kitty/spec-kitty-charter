@@ -447,7 +447,7 @@ class GuardAndLifecycleLoadTest {
                 .orElseThrow();
         Guard dangling = danglingGuardOf(guard);
         WholePackStore.LoadedPack broken = new WholePackStore.LoadedPack(
-                loaded.pack().with(dangling), loaded.layout(), loaded.graphs(), loaded.unmodelled(), loaded.manifest());
+                loaded.pack().with(dangling), loaded.layout(), loaded.graphs(), loaded.notHeld(), loaded.manifest());
         Path out = host.resolve("out");
         Path target = out.resolve(PACK);
 
@@ -463,11 +463,7 @@ class GuardAndLifecycleLoadTest {
                 .orElseThrow();
         Asset strayEntry = strayEntryOf(asset);
         WholePackStore.LoadedPack strayed = new WholePackStore.LoadedPack(
-                loaded.pack().with(strayEntry),
-                loaded.layout(),
-                loaded.graphs(),
-                loaded.unmodelled(),
-                loaded.manifest());
+                loaded.pack().with(strayEntry), loaded.layout(), loaded.graphs(), loaded.notHeld(), loaded.manifest());
         assertThatThrownBy(() -> store.write(strayed, target))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("executable entry 'other.py', which is not a payload file the pack holds");

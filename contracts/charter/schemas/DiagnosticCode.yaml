@@ -12,8 +12,9 @@ description: >-
   markers; descriptor schema_version "1.0" makes the same finding a refusal (ADR-0066). The warning is listed in the
   diagnostics of the result of a succeeded registration, and in the diagnostics of the effective-prompt read
   (getEffectiveStepPrompt), once per declared slot of the prompt in force that holds such text. file_not_held: a file of the registered tree that is not pack content (a file-kinds
-  exclusion names it, or it is Markdown that no rule models), so the service does not hold it; the diagnostic's detail
-  names the file and the rule's reason, and the stored pack is the registered tree less these files (#451).
+  exclusion names it, or no pack file kind models it, Markdown or not), so the service does not hold it; the
+  diagnostic's detail names the file and the rule's reason, or "no pack file kind models this file", and the stored pack
+  is the registered tree less these files (#451; #554, operator ruling Q1).
 type: string
 enum:
   - pack_level_missing

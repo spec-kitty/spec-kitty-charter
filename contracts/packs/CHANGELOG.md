@@ -19,6 +19,13 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 The work toward the next candidate (`0.1.0-rc.2`) or the final `0.1.0`, after the release candidate
 `0.1.0-rc.1`.
 
+### Changed
+
+- A file no rule takes (#554, operator ruling Q1): the "Matching" header of `file-kinds.yaml`, `README.md` and the
+  classifier cases' `unmodelled` outcome say it is warned as `file_not_held` and not held, as an excluded file is; they
+  said it is refused as `unmodelled`. The outcome stays `unmodelled`, a classification and not a verdict, and no case
+  changes.
+
 ## 0.1.0-rc.1
 
 The first packs contract version, a release candidate (operator ruling R1, 2026-11-16; #559).

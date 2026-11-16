@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -33,7 +34,9 @@ import org.junit.jupiter.api.io.TempDir;
  * Markdown files that are held with their artifact, a skill's body and a toolguide's guide, and three files that are not
  * pack content: an author's note the {@code ignored} fallback takes, an orientation README an exclusion names, and an
  * excluded YAML file. Classification, validate mode, the load, the digest, the gate census and the staged load must all
- * hold the first two and exclude the other three: the fallback never captures a file a companion claim takes.
+ * hold the first two and exclude the other three: the fallback never captures a file a companion claim takes. A file
+ * no rule takes ({@code notes.txt}) is no exclusion, but the load and the staged load do not hold it either: it is
+ * listed beside the excluded files with its own reason, warned about and stripped (operator ruling Q1, #554).
  */
 @DisplayName("Classification, validate mode, load, digest, census and staged load agree on excluded files (#451)")
 class ExcludedFilesAgreementTest {
@@ -46,6 +49,9 @@ class ExcludedFilesAgreementTest {
     private static final String DECLARATION = "missions/x/templates/plan-field-declaration.yaml";
 
     private static final List<String> EXCLUDED = List.of(NOTE, README, DECLARATION);
+
+    /** A file no rule takes: not excluded, but not held either (operator ruling Q1, #554). */
+    private static final String UNMODELLED = "notes.txt";
 
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
@@ -126,10 +132,8 @@ class ExcludedFilesAgreementTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.unmodelled()).isEmpty();
-        assertThat(loaded.excluded())
-                .extracting(WholePackWriteStore.ExcludedFile::file)
-                .containsExactlyInAnyOrderElementsOf(EXCLUDED);
+        assertThat(loaded.notHeld()).noneMatch(ExcludedFile::isUnmodelled);
+        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).containsExactlyInAnyOrderElementsOf(EXCLUDED);
         assertThat(loaded.pack().artifacts(ArtifactKind.SKILL, Skill.class))
                 .singleElement()
                 .satisfies(skill -> assertThat(skill.body()).isPresent());
@@ -174,7 +178,7 @@ class ExcludedFilesAgreementTest {
                         tuple(PackFindingCode.FILE_NOT_HELD, README));
         assertThat(contents.notHeld())
                 .as("the strip's list is the one the warnings are derived from")
-                .extracting(WholePackWriteStore.ExcludedFile::file)
+                .extracting(ExcludedFile::file)
                 .containsExactlyInAnyOrder(DECLARATION, NOTE, README);
         store.removeNotHeld(staged, contents);
         try (Stream<Path> walk = Files.walk(pack)) {
@@ -186,5 +190,31 @@ class ExcludedFilesAgreementTest {
         assertThat(PackFileSet.digested(pack))
                 .as("after the strip the digest and the tree agree")
                 .contains(SKILL_BODY, GUIDE);
+    }
+
+    @Test
+    @DisplayName("a file nothing models is unclassified, listed not held in path order with its reason, warned about"
+            + " after the excluded files it sorts after, and stripped (Q1)")
+    void aFileNothingModelsIsNotHeldLikeTheExcludedFiles() throws IOException {
+        write(UNMODELLED, "an author's aid\n");
+        StagedPack staged = new StagedPack(pack);
+
+        assertThat(PackFileKind.bundled().classify(name() + "/" + UNMODELLED))
+                .isEqualTo(PackFileKind.Unclassified.INSTANCE);
+        assertThat(store.load(pack).notHeld())
+                .as("one path-sorted list, each file with its reason")
+                .extracting(ExcludedFile::file, ExcludedFile::isUnmodelled)
+                .containsExactly(
+                        tuple(NOTE, false), tuple(README, false), tuple(DECLARATION, false), tuple(UNMODELLED, true));
+        WholePackWriteStore.Contents contents = store.loadStaged(staged);
+        assertThat(contents.warnings())
+                .extracting(PackFinding::file, PackFinding::detail)
+                .endsWith(tuple(UNMODELLED, UNMODELLED + ": not held (no pack file kind models this file)"));
+        assertThat(contents.warnings()).extracting(PackFinding::code).containsOnly(PackFindingCode.FILE_NOT_HELD);
+
+        store.removeNotHeld(staged, contents);
+
+        assertThat(pack.resolve(UNMODELLED)).doesNotExist();
+        assertThat(pack.resolve(SKILL_BODY)).exists();
     }
 }

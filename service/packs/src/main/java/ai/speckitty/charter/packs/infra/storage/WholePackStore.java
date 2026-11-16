@@ -57,7 +57,7 @@ import org.springframework.stereotype.Service;
  * {@link DomainRepositoryService#load(PackIdentifier)}), records where each artifact sat in a {@link PackLayout}, and
  * reads the DRG documents (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}, the files the source
  * fingerprint covers) with every field. It lists every other file of the pack as
- * {@linkplain LoadedPack#unmodelled() unmodelled}: nothing models those yet. It is partial-tolerant like
+ * {@linkplain LoadedPack#notHeld() not held}, each with its reason. It is partial-tolerant like
  * {@link DomainRepositoryService#load(PackIdentifier)}: an unreadable artifact file is a violation on the aggregate. An
  * unreadable DRG document refuses the pack as {@code drg_schema_error} (ADR-0036 decision 3). The pack's identity is
  * the {@code pack_id} its descriptor declares, whatever the directory is called. The load reads the directory as it
@@ -69,7 +69,7 @@ import org.springframework.stereotype.Service;
  * target, then renames the staging directory into place, as {@link PackCommitStore} does; a failure removes the staging
  * directory and leaves no target. The manifest, when the pack has one, is written last, its derived fields recomputed
  * from the staged bytes (ADR-0042). Templates and asset files are written byte for byte; everything else is UTF-8 text.
- * It writes what the aggregate and the DRG documents hold and nothing else: the unmodelled files are not copied, and
+ * It writes what the aggregate and the DRG documents hold and nothing else: the files not held are not copied, and
  * the caller has their list. It refuses a target that already exists (replacing a live pack is the commit store's job)
  * and a pack with read violations: writing it would drop content without a word. A {@code pack.yaml} with an undeclared
  * key never loads (its schema is closed, ADR-0036 decision 3), so the descriptor written is the whole of the file read.
@@ -83,8 +83,11 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * @param pack the aggregate
      * @param layout each artifact's pack-relative path
      * @param graphs the DRG documents as authored, the root shards by name then the fragment
-     * @param unmodelled the pack-relative paths of every other file of the pack, sorted: what the write will not
-     *     reproduce
+     * @param notHeld every other file of the pack, in one path-sorted list, each with its reason: a file an
+     *     {@code exclusions} rule names or only the {@code ignored} fallback takes, with that rule's reason (#451), and a
+     *     file nothing models, with {@value ExcludedFile#UNMODELLED} (operator ruling Q1, #554). None is pack content:
+     *     the write does not reproduce them, and a registration does not hold them and reports each one as a
+     *     {@code file_not_held} warning
      * @param manifest the {@code pack-manifest.yaml} as read, its derived fields unchecked; empty when the pack has
      *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
      *     violation on the aggregate). This store is its only owner (ADR-0042).
@@ -94,63 +97,34 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * @param warnings the load findings that do not refuse the pack, kept apart from the aggregate's violations
      *     (A4): the {@code prompt_slot_not_empty} warning of a step prompt in a pack whose descriptor declares no
      *     {@code schema_version}
-     * @param excluded every file the table excludes, sorted (an {@code exclusions} rule names it, or only the {@code ignored}
-     *     fallback takes it): not pack content, so neither modelled nor
-     *     {@linkplain #unmodelled unmodelled}, each with the rule's reason (#451). The load lists them and the write
-     *     does not reproduce them; a registration does not hold them and reports each one.
      */
     public record LoadedPack(
             Pack pack,
             PackLayout layout,
             List<GraphDocument> graphs,
-            List<String> unmodelled,
+            List<ExcludedFile> notHeld,
             Optional<PackManifestDso> manifest,
             Optional<String> policy,
-            List<PackFinding> warnings,
-            List<ExcludedFile> excluded) {
+            List<PackFinding> warnings) {
         /**
          * Checks the fields and copies the lists.
          *
          * @param pack the aggregate
          * @param layout the layout
          * @param graphs the DRG documents
-         * @param unmodelled the files nothing models
+         * @param notHeld the files the pack does not hold, path-sorted, with their reasons
          * @param manifest the manifest, if the pack holds a readable one
          * @param policy the named policy file's text, if the pack holds a valid one
          * @param warnings the load warnings
-         * @param excluded the excluded files with their reasons
          */
         public LoadedPack {
             Objects.requireNonNull(pack, "pack");
             Objects.requireNonNull(layout, "layout");
             graphs = List.copyOf(graphs);
-            unmodelled = List.copyOf(unmodelled);
+            notHeld = List.copyOf(notHeld);
             Objects.requireNonNull(manifest, "manifest");
             Objects.requireNonNull(policy, "policy");
             warnings = List.copyOf(warnings);
-            excluded = List.copyOf(excluded);
-        }
-
-        /**
-         * A loaded pack that excludes no file.
-         *
-         * @param pack the aggregate
-         * @param layout the layout
-         * @param graphs the DRG documents
-         * @param unmodelled the files nothing models
-         * @param manifest the manifest, if the pack holds a readable one
-         * @param policy the named policy file's text, if the pack holds a valid one
-         * @param warnings the load warnings
-         */
-        public LoadedPack(
-                Pack pack,
-                PackLayout layout,
-                List<GraphDocument> graphs,
-                List<String> unmodelled,
-                Optional<PackManifestDso> manifest,
-                Optional<String> policy,
-                List<PackFinding> warnings) {
-            this(pack, layout, graphs, unmodelled, manifest, policy, warnings, List.of());
         }
 
         /**
@@ -159,7 +133,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
          * @param pack the aggregate
          * @param layout the layout
          * @param graphs the DRG documents
-         * @param unmodelled the files nothing models
+         * @param notHeld the files the pack does not hold
          * @param manifest the manifest, if the pack holds a readable one
          * @param policy the named policy file's text, if the pack holds a valid one
          */
@@ -167,10 +141,10 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 Pack pack,
                 PackLayout layout,
                 List<GraphDocument> graphs,
-                List<String> unmodelled,
+                List<ExcludedFile> notHeld,
                 Optional<PackManifestDso> manifest,
                 Optional<String> policy) {
-            this(pack, layout, graphs, unmodelled, manifest, policy, List.of());
+            this(pack, layout, graphs, notHeld, manifest, policy, List.of());
         }
 
         /**
@@ -179,16 +153,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
          * @param pack the aggregate
          * @param layout the layout
          * @param graphs the DRG documents
-         * @param unmodelled the files nothing models
+         * @param notHeld the files the pack does not hold
          * @param manifest the manifest, if the pack holds a readable one
          */
         public LoadedPack(
                 Pack pack,
                 PackLayout layout,
                 List<GraphDocument> graphs,
-                List<String> unmodelled,
+                List<ExcludedFile> notHeld,
                 Optional<PackManifestDso> manifest) {
-            this(pack, layout, graphs, unmodelled, manifest, Optional.empty());
+            this(pack, layout, graphs, notHeld, manifest, Optional.empty());
         }
 
         /**
@@ -197,10 +171,10 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
          * @param pack the aggregate
          * @param layout the layout
          * @param graphs the DRG documents
-         * @param unmodelled the files nothing models
+         * @param notHeld the files the pack does not hold
          */
-        public LoadedPack(Pack pack, PackLayout layout, List<GraphDocument> graphs, List<String> unmodelled) {
-            this(pack, layout, graphs, unmodelled, Optional.empty());
+        public LoadedPack(Pack pack, PackLayout layout, List<GraphDocument> graphs, List<ExcludedFile> notHeld) {
+            this(pack, layout, graphs, notHeld, Optional.empty());
         }
     }
 
@@ -240,7 +214,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * Loads every modelled part of the pack in {@code directory}.
      *
      * @param directory the pack directory
-     * @return the aggregate, its layout, the DRG documents and the unmodelled files
+     * @return the aggregate, its layout, the DRG documents and the files not held
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the directory is not a pack directory or has no
      *     readable {@code pack.yaml}; with {@code DRG_SCHEMA_ERROR} when a DRG document cannot be read or breaks its
      *     schema; with {@code VALIDATION_FAILED} when the readable artifacts break an aggregate invariant, such as two
@@ -255,7 +229,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * derivation of a stored pack (#110) lists what the pack holds and judges nothing else.
      *
      * @param directory the pack directory
-     * @return the aggregate, its layout, the DRG documents that could be read and the unmodelled files
+     * @return the aggregate, its layout, the DRG documents that could be read and the files not held
      */
     LoadedPack loadTolerant(Path directory) {
         return load(directory, false, new ArrayList<>()).pack();
@@ -301,22 +275,19 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
         Set<String> modelled = modelledFiles(packDir, read, places, graphs, pack, manifestFile, namedPolicy);
-        List<ExcludedFile> excluded = new ArrayList<>();
-        List<String> unmodelled = unmodelled(packDir, modelled, key, excluded);
         return new Loaded(
                 new LoadedPack(
                         pack,
                         new PackLayout(places),
                         graphs.documents(),
-                        unmodelled,
+                        notHeld(packDir, modelled, key),
                         manifest,
                         policy,
-                        warnings,
-                        excluded),
+                        warnings),
                 List.copyOf(graphFaults));
     }
 
-    /** Every pack-relative file the loaded pack models, so that what is left over is unmodelled. */
+    /** Every pack-relative file the loaded pack models, so that what is left over is not held. */
     private Set<String> modelledFiles(
             Path packDir,
             FilesystemPackStore.PackRead read,
@@ -329,11 +300,11 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         modelled.addAll(companionFiles(packDir, read));
         modelled.add(PackFileSet.PACK_YAML);
         graphs.documents().forEach(graph -> modelled.add(graph.file()));
-        // An unreadable graph document is already a fault at its file; it is not also an unmodelled file.
+        // An unreadable graph document is already a fault at its file; it is not also listed as not held.
         graphs.violations().forEach(fault -> modelled.add(fault.file()));
         pack.assetFiles().forEach(file -> modelled.add(PackFileSet.ASSETS + file.path()));
         pack.presets().forEach(preset -> modelled.add(PresetFiles.pathOf(preset.id())));
-        // An unreadable pack document is likewise a fault at its file (#451), not also an unmodelled file.
+        // An unreadable pack document is likewise a fault at its file (#451), not also listed as not held.
         if (pack.document().isPresent()
                 || pack.violations().stream().anyMatch(fault -> fault.file().equals(PackDocumentMarkdown.FILE))) {
             modelled.add(PackDocumentMarkdown.FILE);
@@ -348,14 +319,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     /**
      * Reads a staged tree for a registration, refusing everything that makes the upload wrong with
      * {@code validation_failed} (IC-04 step 2): what {@link #load} refuses ({@code pack_unreadable}, a graph that breaks
-     * its schema, an aggregate invariant) and what it tolerates, which a registration may not: a read violation, a file
-     * nothing models, and a {@value RelationshipShard#SHARD_PATH} without the registration stamp, which is a reserved
-     * shard. Each fault is a violation of the refusal, so an author sees every one at once, a graph document that breaks
-     * its schema included: each of its faults is a {@code drg_schema_error} violation at its pack-relative file, not a refusal on
-     * the first (operator ruling D-1). The order is deterministic: the graph faults first, in path order (the load's own
-     * first refusal, now listed with the rest), then the pack's read and rule violations, the unmodelled files and
+     * its schema, an aggregate invariant) and what it tolerates, which a registration may not: a read violation, an
+     * orphan prompt fragment, and a {@value RelationshipShard#SHARD_PATH} without the registration stamp, which is a
+     * reserved shard. Each fault is a violation of the refusal, so an author sees every one at once, a graph document
+     * that breaks its schema included: each of its faults is a {@code drg_schema_error} violation at its pack-relative
+     * file, not a refusal on the first (operator ruling D-1). The order is deterministic: the graph faults first, in path
+     * order (the load's own first refusal, now listed with the rest), then the pack's read and rule violations, the
      * orphan fragments in path order, and the reserved shard last. When the aggregate itself cannot be built, the
-     * refusal at {@code pack} follows the graph faults already read.
+     * refusal at {@code pack} follows the graph faults already read. A file nothing models is no fault (operator ruling
+     * Q1, #554): like an excluded file it is not held, and the accepted tree reports it as a {@code file_not_held}
+     * warning. With no fault left, the manifest's membership is judged.
      */
     @Override
     public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
@@ -367,19 +340,17 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 .violations()
                 .forEach(violation ->
                         violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
-        List<String> unmodelled =
-                unreportedFiles(loaded.unmodelled(), loaded.pack().violations());
-        Map<String, PackElementViolation> orphans = orphanFragments(unmodelled);
-        unmodelled.forEach(file -> {
-            PackElementViolation orphan = orphans.get(file);
-            violations.add(
-                    orphan != null
-                            ? violationOf(file, orphan.kind(), orphan.reason())
-                            : violationOf(
-                                    file,
-                                    "unmodelled",
-                                    "no pack file kind models this file; a registration holds only modelled files"));
-        });
+        List<String> unreported = unreportedFiles(
+                loaded.notHeld().stream()
+                        .filter(ExcludedFile::isUnmodelled)
+                        .map(ExcludedFile::file)
+                        .toList(),
+                loaded.pack().violations());
+        Map<String, PackElementViolation> orphans = orphanFragments(unreported);
+        unreported.stream()
+                .map(orphans::get)
+                .filter(Objects::nonNull)
+                .forEach(orphan -> violations.add(violationOf(orphan.file(), orphan.kind(), orphan.reason())));
         reservedShard(directory).ifPresent(violations::add);
         Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
         if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
@@ -408,11 +379,11 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     /**
      * The unmodelled files that no violation of the pack already accounts for: one fault, one violation. A file the
      * store refused with a violation of its own (an asset sidecar whose payload it does not hold, #382; a retired file
-     * refused by name, FR-022, SC-002; a pack document it cannot read, #451) is not listed again as unmodelled. An
-     * enhancement file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the
-     * model, so it is unmodelled, and so are the fragments beside it; but the fault is already reported at the
-     * enhancement, so neither the file nor the fragments of its directory are listed again. A genuinely unmodelled file
-     * elsewhere stays listed, and so does an orphan fragment beside an enhancement that is held.
+     * refused by name, FR-022, SC-002; a pack document it cannot read, #451) is not judged again here. An enhancement
+     * file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the model, so it
+     * is unmodelled, and so are the fragments beside it; but the fault is already reported at the enhancement, so neither
+     * the file nor the fragments of its directory are judged again as orphans. A fragment beside an enhancement that is
+     * held stays listed, so that an orphan among them is refused.
      */
     private static List<String> unreportedFiles(List<String> unmodelled, List<PackElementViolation> reported) {
         Set<String> reportedFiles = new HashSet<>();
@@ -458,7 +429,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     /** The facts of a staged tree; a file the reading of them cannot take is a fault of the upload, a 422, not a 500. */
     private WholePackWriteStore.Contents stagedContentsOf(Path directory, LoadedPack loaded) {
         try {
-            return contentsOf(directory, loaded, loaded.excluded());
+            return contentsOf(directory, loaded, loaded.notHeld());
         } catch (CharterRefusal refusal) {
             if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
                 throw refusal;
@@ -926,15 +897,14 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted. The walk starts at the
-     * directory's real path, as {@code PackFileSet}'s does, so a pack root that is a symbolic link is entered (#284);
-     * links below the root are not followed. Unlike {@code PackFileSet}, a file that is itself a link is not listed
-     * here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks separately, so they are not
-     * counted among the unmodelled regular files. A file that classifies as excluded is not unmodelled: it goes to
-     * {@code excluded} with its rule's reason.
+     * Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted, each with the reason it
+     * is not held. The walk starts at the directory's real path, as {@code PackFileSet}'s does, so a pack root that is a
+     * symbolic link is entered (#284); links below the root are not followed. Unlike {@code PackFileSet}, a file that is
+     * itself a link is not listed here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks
+     * separately. A file that classifies as excluded carries its rule's reason (#451); any other file is one nothing
+     * models (operator ruling Q1, #554).
      */
-    private List<String> unmodelled(
-            Path packDir, Set<String> modelled, PackIdentifier key, List<ExcludedFile> excluded) {
+    private List<ExcludedFile> notHeld(Path packDir, Set<String> modelled, PackIdentifier key) {
         Path root;
         try {
             root = packDir.toRealPath();
@@ -953,17 +923,14 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         } catch (IOException | RuntimeException e) {
             throw PackFileSet.unlistable(key.value(), e);
         }
-        // A file an exclusion names (or the ignored fallback) is not pack content: listed apart, never unmodelled
-        // (#451).
-        List<String> unmodelled = new ArrayList<>();
+        List<ExcludedFile> notHeld = new ArrayList<>();
         for (String file : files) {
-            if (companionRules.table().classify(key.value() + "/" + file) instanceof PackFileKind.Excluded rule) {
-                excluded.add(new ExcludedFile(file, rule.reason()));
-            } else {
-                unmodelled.add(file);
-            }
+            notHeld.add(
+                    companionRules.table().classify(key.value() + "/" + file) instanceof PackFileKind.Excluded rule
+                            ? new ExcludedFile(file, rule.reason())
+                            : ExcludedFile.unmodelled(file));
         }
-        return unmodelled;
+        return notHeld;
     }
 
     /**

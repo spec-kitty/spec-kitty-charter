@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -88,7 +88,7 @@ class PackDocumentRoundTripTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.unmodelled()).doesNotContain(PackDocumentMarkdown.FILE);
+        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain(PackDocumentMarkdown.FILE);
         PackDocument document = loaded.pack().document().orElseThrow();
         assertThat(document.frontmatter())
                 .contains(Map.of("audience", "pack authors", "weight", 1.5, "count", 1, "tags", List.of("baseline")));
@@ -224,10 +224,8 @@ class PackDocumentRoundTripTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().document()).isEmpty();
-        assertThat(loaded.unmodelled()).isEmpty();
-        assertThat(loaded.excluded())
-                .extracting(WholePackWriteStore.ExcludedFile::file)
-                .containsExactly("docs/README.md");
+        assertThat(loaded.notHeld()).noneMatch(ExcludedFile::isUnmodelled);
+        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).containsExactly("docs/README.md");
     }
 
     @Test
@@ -431,7 +429,7 @@ class PackDocumentRoundTripTest {
                 loaded.pack().toBuilder().document(document).build(),
                 loaded.layout(),
                 loaded.graphs(),
-                loaded.unmodelled(),
+                loaded.notHeld(),
                 loaded.manifest());
     }
 

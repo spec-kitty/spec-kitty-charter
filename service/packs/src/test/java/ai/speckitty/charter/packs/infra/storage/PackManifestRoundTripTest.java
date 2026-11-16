@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
+import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -56,7 +57,7 @@ class PackManifestRoundTripTest {
         Path target = host.resolve("written").resolve(FIXTURE);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.unmodelled()).doesNotContain(PackFileSet.MANIFEST);
+        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain(PackFileSet.MANIFEST);
         PackManifestDso source = loaded.manifest().orElseThrow();
         assertThat(PackManifests.stale(source, path -> bytesOf(pack.resolve(path))))
                 .as("the Python-generated manifest verifies under the Java recipes")
@@ -116,7 +117,7 @@ class PackManifestRoundTripTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.manifest()).isEmpty();
-        assertThat(loaded.unmodelled()).doesNotContain(PackFileSet.MANIFEST);
+        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain(PackFileSet.MANIFEST);
         assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(PackFileSet.MANIFEST);
             assertThat(violation.reason())

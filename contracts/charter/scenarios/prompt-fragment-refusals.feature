@@ -12,8 +12,8 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
   enhancing pack that depends on the base and holds only enhancements, their fragments and the enhances edges, each
   written qualified with the base pack's name. Each refusal sits beside its passing twin, which differs in the one
   fault: a registration that refused for another reason could not pass the twin. One fault is one violation: a
-  refused enhancement and the fragments beside it are not listed again as unmodelled, so each refusal asserts its
-  exact count.
+  refused enhancement and the fragments beside it are not judged again as orphans, so each refusal asserts its exact
+  count.
 
   Background:
     Given registration is switched on

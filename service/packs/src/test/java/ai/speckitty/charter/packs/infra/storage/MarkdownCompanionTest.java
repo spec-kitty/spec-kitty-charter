@@ -440,7 +440,7 @@ class MarkdownCompanionTest {
             SkillDso dso = SkillBinding.INSTANCE.toDso(skill);
             return dso.withBody(Optional.of(body));
         });
-        return new WholePackStore.LoadedPack(pack, loaded.layout(), loaded.graphs(), loaded.unmodelled());
+        return new WholePackStore.LoadedPack(pack, loaded.layout(), loaded.graphs(), loaded.notHeld());
     }
 
     /** The pack with its one skill replaced by the skill {@code change} maps it to. */

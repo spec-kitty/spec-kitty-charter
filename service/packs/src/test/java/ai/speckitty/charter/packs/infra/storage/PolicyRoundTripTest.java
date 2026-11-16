@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import java.io.IOException;
@@ -62,7 +63,7 @@ class PolicyRoundTripTest {
         WholePackStore.LoadedPack loaded = store.load(source);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.unmodelled()).doesNotContain("policy.yaml");
+        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain("policy.yaml");
         assertThat(loaded.policy()).contains(POLICY);
 
         Path target = host.resolve("written").resolve("qa");
@@ -75,11 +76,11 @@ class PolicyRoundTripTest {
         WholePackStore.LoadedPack reloaded = store.load(target);
         assertThat(reloaded.pack().descriptor()).isEqualTo(loaded.pack().descriptor());
         assertThat(reloaded.policy()).isEqualTo(loaded.policy());
-        assertThat(reloaded.unmodelled()).isEqualTo(loaded.unmodelled());
+        assertThat(reloaded.notHeld()).isEqualTo(loaded.notHeld());
     }
 
     @Test
-    @DisplayName("control: a pack without the key round-trips unchanged, a stray policy.yaml stays unmodelled")
+    @DisplayName("control: a pack without the key round-trips unchanged, a stray policy.yaml is not held")
     void aPackWithoutTheKeyRoundTripsUnchanged(@TempDir Path host) throws IOException {
         Path source = pack(host, PACK_YAML, Optional.empty());
         WholePackStore.LoadedPack loaded = store.load(source);
@@ -98,7 +99,7 @@ class PolicyRoundTripTest {
         assertThat(stray.policy())
                 .as("a file the descriptor does not name is no policy")
                 .isEmpty();
-        assertThat(stray.unmodelled()).contains("policy.yaml");
+        assertThat(stray.notHeld()).contains(ExcludedFile.unmodelled("policy.yaml"));
     }
 
     @Test
@@ -127,7 +128,7 @@ class PolicyRoundTripTest {
     void aLoadedPackThatDropsItsPolicyIsRefused(@TempDir Path host) throws IOException {
         WholePackStore.LoadedPack loaded = store.load(pack(host, PACK_YAML + NAMES_POLICY, Optional.of(POLICY)));
         WholePackStore.LoadedPack dropped = new WholePackStore.LoadedPack(
-                loaded.pack(), loaded.layout(), loaded.graphs(), loaded.unmodelled(), loaded.manifest());
+                loaded.pack(), loaded.layout(), loaded.graphs(), loaded.notHeld(), loaded.manifest());
         Path target = host.resolve("written").resolve("qa");
 
         assertThatThrownBy(() -> store.write(dropped, target)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {

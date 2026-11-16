@@ -20,8 +20,9 @@ import org.junit.jupiter.api.io.TempDir;
  * {@code packs} main), as the gate does: it loads through the production store, is written to a fresh directory, and
  * {@link WholePackRoundTripRule} judges it with no expectation, so every modelled file must mean the same as its source
  * (ADR-0036) and no written file may be left unpaired. Every census file that is not excluded needs an outcome: one of a
- * kind the round trip does not model is red, naming its kind and path (#547). It also reports the files the store does
- * not model ({@code unmodelled()}) and the load warnings ({@code warnings()}). It has no expected-red baseline, so any of
+ * kind the round trip does not model is red, naming its kind and path (#547). It also reports the files nothing models,
+ * which the store does not hold ({@code notHeld()}, operator ruling Q1), and the load warnings ({@code warnings()}). It
+ * has no expected-red baseline, so any of
  * these is red ({@link WholePackDrift}). Charter's nightly watch runs it as a signal; spec-kitty-open-packs runs it as a
  * required gate from its pinned charter checkout (ADR-0070 decision 4).
  */

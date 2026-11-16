@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -170,13 +171,15 @@ class WholePackExamplesRoundTripTest {
     /**
      * No file under {@code assets/} or {@code templates/} is left unmodelled, other than the files the load refused (a
      * refused sidecar is a violation, checked against the pinned list). An excluded README is not unmodelled: the load
-     * lists it as excluded (#451).
+     * lists it as not held with its rule's reason (#451).
      */
     private static List<String> payloadsLeftUnmodelled(Path pack, WholePackStore.LoadedPack loaded) {
         Set<String> refused = loaded.pack().violations().stream()
                 .map(PackElementViolation::file)
                 .collect(Collectors.toSet());
-        return loaded.unmodelled().stream()
+        return loaded.notHeld().stream()
+                .filter(ExcludedFile::isUnmodelled)
+                .map(ExcludedFile::file)
                 .filter(file -> file.startsWith(PackFileSet.ASSETS) || file.startsWith(PackFileSet.TEMPLATES))
                 .filter(file -> !refused.contains(file))
                 .map(file -> pack + " leaves " + file + " unmodelled")
@@ -450,7 +453,8 @@ class WholePackExamplesRoundTripTest {
                         PackFiles.filesEndingWith(builtIn.resolve("presets"), ".yaml").stream()
                                 .map(file -> file.substring(0, file.length() - ".yaml".length()))
                                 .toList());
-        assertThat(loaded.unmodelled())
+        assertThat(loaded.notHeld())
+                .extracting(ExcludedFile::file)
                 .doesNotContain("presets/default.yaml", "presets/minimal.yaml", PackFileSet.MANIFEST);
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())

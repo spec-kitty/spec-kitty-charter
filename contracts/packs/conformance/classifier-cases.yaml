@@ -14,7 +14,7 @@
 #                   excluded    the file is not pack content (an `exclusions` rule, or the `ignored` fallback): it is
 #                               not held, not served and not refused;
 #                   retired     the file belongs to a layout the service no longer reads: it is refused by name;
-#                   unmodelled  no rule takes it: it is refused as `unmodelled`.
+#                   unmodelled  no rule takes it: it is warned as `file_not_held` and not held (#554, ruling Q1).
 #   rule          the `match` glob of the rule that decides the case, as file-kinds.yaml writes it; absent for
 #                 `unmodelled`. For a root case variant (below) it is the root rule's glob, which may be a `files` rule.
 #   kind          for `mapped`: the file's kind, the schema name of a `files` rule or the `kind` of a `payloads` rule.

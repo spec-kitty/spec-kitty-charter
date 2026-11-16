@@ -33,8 +33,8 @@ put:
     judged again once it is spooled, since the slot is taken then: a slow upload holds none. Every other answer of the flow is the problem of
     a refused status, never a synchronous answer: the 409 answers (a version already held with other content, a built-in
     level or a pack_id or name another configured pack uses, a change or removal the pack's level forbids, an artifact
-    another pack still refers to) and the 422 answers (an archive path or entry the extractor refuses, an unmodelled
-    file, an invalid artifact, a changed pack_level or pack_id, a closure that no longer composes, a relation rule
+    another pack still refers to) and the 422 answers (an archive path or entry the extractor refuses, an invalid
+    artifact, a changed pack_level or pack_id, a closure that no longer composes, a relation rule
     broken), the 412 of a revision that moved after the 202, and a timeout or a full disk (the codes are declared on
     getPackRegistration). The version is a label, not an order: any version replaces, an identical re-send (the same
     version and the same revision) ends succeeded with outcome unchanged, and the same version with another content is

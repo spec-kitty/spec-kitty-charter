@@ -28,7 +28,7 @@ Feature: A retired step-contract file is refused by name at registration
       enforcement: required
       """
 
-  Scenario Outline: The retired <file> is refused as retired, never as unmodelled
+  Scenario Outline: The retired <file> is refused as retired, never merely not held
     Given the archive "step-contract" is a copy of the archive "v1"
     And the archive "step-contract" holds the file "<file>":
       """
