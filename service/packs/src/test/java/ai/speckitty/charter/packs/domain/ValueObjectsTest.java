@@ -48,7 +48,7 @@ class ValueObjectsTest {
                 .hasMessageContaining("A pack identifier must not be blank.");
         assertThatThrownBy(() -> new TacticIdentifier(" "))
                 .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("A tactic identifier must not be blank.");
+                .hasMessageContaining("A tactic identifier must match");
     }
 
     @Test
