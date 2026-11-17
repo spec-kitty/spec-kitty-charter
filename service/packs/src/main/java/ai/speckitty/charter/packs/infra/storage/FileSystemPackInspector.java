@@ -674,6 +674,14 @@ public final class FileSystemPackInspector implements PackReading {
                     .forEach((file, reason) -> unreadable.add(new FileRead.Unreadable<>(
                             file, ParseFailure.refused(file, reason, StorageCodes.RETIRED), List.of())));
             notHeld.addAll(FileSystemPackInspector.notHeld(directory, name, walk, table, unnamedPolicy));
+            // An unnamed file, a policy file or a companion nothing names though a rule maps it, is listed once, as not
+            // held, never also as classified (open case 9, WP05 review); an excluded file is listed with its rule both
+            // ways, as validate mode shows it.
+            Set<String> unnamed = new HashSet<>();
+            notHeld.stream()
+                    .filter(file -> file.kind() == NotHeldFile.Kind.UNNAMED)
+                    .forEach(file -> unnamed.add(file.path()));
+            files.removeIf(classified -> unnamed.contains(classified.file()));
         }
 
         /** Classifies every YAML file of the pack, and reads each mapped one the load path has not read. */
