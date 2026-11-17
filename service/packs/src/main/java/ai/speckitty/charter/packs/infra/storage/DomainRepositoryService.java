@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackDocumentRepository;
@@ -37,7 +38,6 @@ import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.PromptFacts;
-import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -484,17 +484,39 @@ public final class DomainRepositoryService
         return reading(pack, resolved -> compositionFacts(pack, resolved));
     }
 
-    private static PackCompositionFacts compositionFacts(PackIdentifier pack, Resolved resolved) {
-        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
-        if (!graphs.violations().isEmpty()) {
+    private PackCompositionFacts compositionFacts(PackIdentifier pack, Resolved resolved) {
+        // The StoreRead half of the one reader, over one walk (#554, T028; operator decision 2026-11-17): the composing
+        // read runs the same DSO read registration's readTree runs, and none of the reader's prechecks (S4).
+        StoreRead read = StoreRead.of(
+                resolved.directory,
+                pack.value(),
+                PackFileSet.walk(resolved.directory, pack.value()),
+                strategy,
+                KindBindings.all(),
+                Companions.Rules.bundled());
+        if (read.graphsUnreadable()) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
-        FilesystemPackStore.PackRead read = resolved.store.read(resolved.key, graphs);
-        Pack assembled = readable(pack, read, graphs);
-        MutabilityPolicySource policy = policyOf(resolved, pack, assembled.descriptor());
-        return CompositionFactsBuilder.build(pack, assembled, read, graphs.documents(), policy);
+        Assembly.Assembled held = switch (read.assembly()) {
+            case Assembly.Assembled assembled -> assembled;
+            case Assembly.Refused refused -> throw new CharterRefusal(refused.code(), refused.message());
+            case Assembly.None none -> throw new IllegalStateException("the store's read gave no assembly input");
+        };
+        CompositionFactsBuilder.requireReadable(pack, held.violations().subList(0, held.assembled()));
+        Optional<String> named = held.descriptor().paths().mutabilityPolicy();
+        if (named.isPresent() && held.policyText().isEmpty()) {
+            throw CompositionFactsBuilder.unreadablePolicy(
+                    pack, named.get(), held.policyFault().orElse("is missing"));
+        }
+        held.factsRefusal().ifPresent(refusal -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
+        });
+        return held.facts()
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read"));
     }
+
     /**
      * The policy the pack's descriptor names (ADR-0063), read through the same resolution as the compose's facts, so
      * the offering and every closure judge the file. A pack no pack is configured as is refused {@code pack_not_found};
@@ -526,18 +548,6 @@ public final class DomainRepositoryService
         } catch (PolicyYaml.Unreadable invalid) {
             throw CompositionFactsBuilder.unreadablePolicy(pack, named.get(), String.valueOf(invalid.getMessage()));
         }
-    }
-
-    /**
-     * The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. An edge its
-     * relation's endpoint table does not allow names the code {@value RelationshipEndpointRule#CODE} before its reason,
-     * so the detail of the read carries the code a registration and the relationship write answer for the same edge.
-     */
-    private static Pack readable(
-            PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
-        Pack assembled = assemble(pack, read, graphs);
-        CompositionFactsBuilder.requireReadable(pack, assembled.violations());
-        return assembled;
     }
 
     // ---- PackRepository --------------------------------------------------------------------
