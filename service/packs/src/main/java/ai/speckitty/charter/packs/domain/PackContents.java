@@ -161,6 +161,8 @@ public record PackContents(
          * @param assembled how many of {@code violations} the assembly met before the manifest's and the policy file's
          * @param graphFaults the faults of the graph documents that could not be read, in read order
          * @param warnings the load's findings that do not refuse the pack
+         * @param storeOnly the faults of {@code violations} only the store half meets, which no reader or rule states
+         *     (#554, A-M1 rows 16 to 19 and 32): what the registration's verdict states of the store half
          * @param policyText the named policy file's text, when it is valid
          * @param policyFault why the named policy file cannot be read, when it cannot
          * @param facts the composition facts, when every graph document was read and they could be built
@@ -177,6 +179,7 @@ public record PackContents(
                 int assembled,
                 List<PackElementViolation> graphFaults,
                 List<PackFinding> warnings,
+                List<PackElementViolation> storeOnly,
                 Optional<String> policyText,
                 Optional<String> policyFault,
                 Optional<PackCompositionFacts> facts,
@@ -195,6 +198,7 @@ public record PackContents(
              * @param assembled how many faults the assembly met
              * @param graphFaults the graph faults
              * @param warnings the warnings
+             * @param storeOnly the faults only the store half meets
              * @param policyText the policy text
              * @param policyFault the policy fault
              * @param facts the composition facts
@@ -213,6 +217,7 @@ public record PackContents(
                 }
                 graphFaults = List.copyOf(graphFaults);
                 warnings = List.copyOf(warnings);
+                storeOnly = List.copyOf(storeOnly);
                 Objects.requireNonNull(policyText, "policyText");
                 Objects.requireNonNull(policyFault, "policyFault");
                 Objects.requireNonNull(facts, "facts");

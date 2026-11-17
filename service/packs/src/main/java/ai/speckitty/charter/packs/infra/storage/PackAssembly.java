@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Builds the {@link Pack} aggregate from what the store read, and judges nothing (#554, S1, T023): a plain class, not a
@@ -55,6 +56,27 @@ final class PackAssembly {
      * @return the builder, ready to build
      */
     static Pack.Builder assembly(PackIdentifier pack, FilesystemPackStore.PackRead read, Map<Urn, String> places) {
+        return assembly(pack, read, places, violation -> {});
+    }
+
+    /**
+     * The assembly of {@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map)}, handing {@code storeOnly}
+     * each fault only the assembly meets, which no reader or rule states (#554, A-M1 rows 17 and 18): a value-object
+     * breach of a template, a preset, the pack document or an artifact, a mission type's output template the pack does
+     * not hold, a guard or lifecycle reference that does not close. A repeated id is not one: the content rules state
+     * it.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param storeOnly receives each fault only the assembly meets, as it is recorded on the builder
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            Consumer<PackElementViolation> storeOnly) {
         Pack.Builder builder =
                 Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
         read.violations().forEach(builder::violation);
@@ -65,14 +87,16 @@ final class PackAssembly {
             try {
                 templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                templateViolations.add(new PackElementViolation(
-                        place, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                PackElementViolation fault = new PackElementViolation(
+                        place, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage()));
+                templateViolations.add(fault);
+                storeOnly.accept(fault);
             }
         }
         Set<String> namable = MissionTemplates.namable(templates.values());
         GuardClosure closure = GuardClosure.of(pack, read);
         for (KindBinding<?, ?> kind : KindBindings.all()) {
-            collect(pack, kind, read, builder, places, namable, closure);
+            collect(pack, kind, read, builder, places, namable, closure, storeOnly);
         }
         read.assetFiles().forEach(builder::assetFile);
         templates.forEach((place, template) -> {
@@ -84,8 +108,13 @@ final class PackAssembly {
             try {
                 builder.preset(PresetFiles.toPreset(stored.dso()));
             } catch (ConstraintBreachException breach) {
-                builder.violation(new PackElementViolation(
-                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                record(
+                        builder,
+                        storeOnly,
+                        new PackElementViolation(
+                                stored.file(),
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                String.valueOf(breach.getMessage())));
             }
         }
         // #260: the document's parts are the read model's; one the domain refuses is a violation, never a failed load.
@@ -93,11 +122,23 @@ final class PackAssembly {
             try {
                 builder.document(PackDocumentMarkdown.toDomain(stored.dso()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(
-                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                record(
+                        builder,
+                        storeOnly,
+                        new PackElementViolation(
+                                stored.file(),
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                String.valueOf(breach.getMessage())));
             }
         });
         return builder;
+    }
+
+    /** Records a fault only the assembly meets on the builder, and hands it to {@code storeOnly}. */
+    private static void record(
+            Pack.Builder builder, Consumer<PackElementViolation> storeOnly, PackElementViolation fault) {
+        builder.violation(fault);
+        storeOnly.accept(fault);
     }
 
     /**
@@ -137,6 +178,28 @@ final class PackAssembly {
             Set<String> withheld,
             Set<String> repeating) {
         return assembly(pack, shaped(read, withheld, repeating), places);
+    }
+
+    /**
+     * The shaped assembly, handing {@code storeOnly} each fault only the assembly meets
+     * ({@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map, Consumer)}).
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param withheld the step enhancement files the aggregate leaves out
+     * @param repeating the mission type files the aggregate leaves out
+     * @param storeOnly receives each fault only the assembly meets
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            Set<String> withheld,
+            Set<String> repeating,
+            Consumer<PackElementViolation> storeOnly) {
+        return assembly(pack, shaped(read, withheld, repeating), places, storeOnly);
     }
 
     /**
@@ -276,21 +339,39 @@ final class PackAssembly {
             Map<Urn, String> places,
             Set<String> namableTemplates,
             GuardClosure closure) {
+        collect(pack, kind, read, builder, places, namableTemplates, closure, violation -> {});
+    }
+
+    private static <D, E extends CharterArtifact> void collect(
+            PackIdentifier pack,
+            KindBinding<D, E> kind,
+            FilesystemPackStore.PackRead read,
+            Pack.Builder builder,
+            Map<Urn, String> places,
+            Set<String> namableTemplates,
+            GuardClosure closure,
+            Consumer<PackElementViolation> storeOnly) {
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
                 Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
                 if (unresolved.isPresent()) {
-                    builder.violation(new PackElementViolation(
-                            stored.file(),
-                            StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                            MissionTemplates.reason(unresolved.get())));
+                    record(
+                            builder,
+                            storeOnly,
+                            new PackElementViolation(
+                                    stored.file(),
+                                    StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                    MissionTemplates.reason(unresolved.get())));
                     continue;
                 }
                 Optional<String> unclosed = closure.firstUnresolved(entity);
                 if (unclosed.isPresent()) {
-                    builder.violation(new PackElementViolation(
-                            stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
+                    record(
+                            builder,
+                            storeOnly,
+                            new PackElementViolation(
+                                    stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
                     continue;
                 }
                 Urn urn = entity.urn();
@@ -306,8 +387,13 @@ final class PackAssembly {
                 builder.artifact(entity);
                 places.put(urn, stored.file());
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(
-                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                record(
+                        builder,
+                        storeOnly,
+                        new PackElementViolation(
+                                stored.file(),
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                String.valueOf(breach.getMessage())));
             }
         }
     }

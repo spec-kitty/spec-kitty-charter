@@ -231,4 +231,62 @@ class StoreHalfFaultsTest {
                         Reason::detail)
                 .containsExactly(tuple("pack_unreadable", "pack", "pack another-name is not a directory"));
     }
+
+    @Test
+    @DisplayName("MAJOR-1: a blank fragment beside an enhancement that names its slot twice answers both faults")
+    void aBlankFragmentBesideARepeatedSlotIsStated(@TempDir Path host) throws IOException {
+        Path pack = builtIn(host);
+        String enhancement = "missions/software-dev/enhancements/plan-risk-notes.step-enhancement.yaml";
+        write(pack, enhancement, """
+                schema_version: "1.0"
+                id: plan-risk-notes
+                prompt_fragments:
+                  - slot: spdd:reasons-block
+                    path: plan-risk-notes.prompt-fragment.md
+                  - slot: spdd:reasons-block
+                    path: plan-risk-notes.prompt-fragment.md
+                """);
+        write(pack, "missions/software-dev/enhancements/plan-risk-notes.prompt-fragment.md", "\n");
+
+        List<Reason> violations = violations(pack);
+
+        assertThat(violations)
+                .as(
+                        "every fault is at the enhancement, the fragment's read fault among them, as the contract places it")
+                .allSatisfy(fault -> {
+                    assertThat(fault.code().value()).isEqualTo("prompt_fragment_invalid");
+                    assertThat(fault.location().file()).isEqualTo(enhancement);
+                });
+        assertThat(violations)
+                .extracting(Reason::detail)
+                .anySatisfy(detail -> assertThat(detail).contains("more than once"))
+                .anySatisfy(detail -> assertThat(detail)
+                        .startsWith("plan-risk-notes.prompt-fragment.md: ")
+                        .doesNotContain("more than once"));
+    }
+
+    @Test
+    @DisplayName("MAJOR-1: a preset whose id is not its stem and that lists a directive twice answers both faults")
+    void aStemFaultDoesNotHideABreach(@TempDir Path host) throws IOException {
+        Path pack = builtIn(host);
+        write(pack, "presets/dup.yaml", """
+                schema_version: '1.0'
+                id: other
+                description: D.
+                activated_directives:
+                - id: DIRECTIVE_001
+                - id: DIRECTIVE_001
+                  must_have: true
+                """);
+
+        assertThat(violations(pack))
+                .allSatisfy(fault -> {
+                    assertThat(fault.code().value()).isEqualTo("artifact_schema_error");
+                    assertThat(fault.location().file()).isEqualTo("presets/dup.yaml");
+                })
+                .extracting(Reason::detail)
+                .hasSize(2)
+                .anySatisfy(detail -> assertThat(detail).contains("Constraint breached"))
+                .anySatisfy(detail -> assertThat(detail).doesNotContain("Constraint breached"));
+    }
 }
