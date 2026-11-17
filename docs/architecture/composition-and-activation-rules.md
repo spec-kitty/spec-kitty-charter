@@ -242,7 +242,7 @@ at level `ℓ`. No entry, an entry naming a non-contestant only, or entries nami
 refused.
 The compose names exactly one winning sibling; there is no "last loaded wins".
 *Source:* ADR-0048 d9; ADR-0053 d5; spec FR-012 of the layer-merge mission;
-`PackCompositionResolver.refuseContests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. Until #358 any pack of `C` may settle, with no level check (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
+`PackCompositionResolver.contests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. Until #358 any pack of `C` may settle, with no level check (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
 > ⚠ **Unclear:** ADR-0053 d5 says the conflict is settled by "the distribution pack's own `overrides` edge". The
 > built resolver and the layer-merge spec use a descriptor `overrides` entry `{artifact, member}` in `pack.yaml`, from
 > any pack of the compose. The two are not the same mechanism.
@@ -419,7 +419,7 @@ The writes treat a locked artifact as required too.
 neither on the other's `parent_pack` line: refused `pack_sibling_conflict`.
 Two unrelated packs of one level cannot hold one preset id; a child's copy takes the place of its parent's. No
 `overrides` entry settles it, since a preset is not an artifact.
-*Source:* operator ruling of 2026-11-06; `PackCompositionResolver.refusePresetContests`, called from
+*Source:* operator ruling of 2026-11-06; `PackCompositionResolver.presetContests`, called from
 `OfferingReadService`. **Built.**
 
 **C35 Case-only mention.** A preset item or a policy lock in `p ∈ C` naming `u'` with `u' ∉ H(C)` and
@@ -1472,7 +1472,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10; D16; `01M6ZCXAJ9` | Built (PR B) for the reads, the writes' floor refusal and the registration notices (the A1 union); held-only built (PR A0); activatable kinds only built (PR C, D16); `/offering` keeps the winning copies |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built |
-| C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
+| C34 Same-level preset conflict | operator 2026-11-06; `presetContests` | Built |
 | C35 Case-only mention | operator 2026-11-06; `refuseCaseOnlyMatches` | Built |
 | C36 Edge shape | A8, A11, A12 | Built (registration PR A; the merge-time refusal PR B) |
 | C37 Step enhancement target held | ADR-0066 d7, d8; OD-9; slice C FR-002; squad A5 | Built (slice C) |

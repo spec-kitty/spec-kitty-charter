@@ -255,6 +255,25 @@ implementations):
 **PIT and rule constants (for WP07).** PIT leaves out a private method that only a static initializer reaches, and a
 rule constant names its function from the class's initializer, so a private rule function is never mutated and a
 narrowed run reports nothing for it. The rule functions are package-private, so PIT mutates them.
+## Outcomes of WP08
+
+- **Every composition fault is collected (FR-003).** `PackCompositionResolver.faults` judges a set in today's order:
+  every repeated `pack_id`, every repeated name, every pair of disjoint ranges, then pack by pack in the stable order
+  its dependencies (itself, unknown, out of range, level) and its parent (itself, unresolved, level), then every
+  sibling contest (changed artifacts, then defined ones), then every dependency cycle, each reported once. `resolve`
+  throws the first, so each refusal the offering answers is today's: `golden/composition.json` is unchanged, byte for
+  byte, with no row changed. A fault leaves the rest judged: a repeated `pack_id` is read as its first holder, and an
+  edge to the pack itself or to an unknown pack orders nothing.
+- **`CLOSURE` is `CompositionRules.closure()`,** a `ModularRuleset<List<PackUnderResolution>>` in `packs.domain.rules`,
+  its codes `PackCodes.CLOSURE`. `CompositionFault(code, packs, detail)` keeps the pack list a `Reason` cannot carry
+  (A-M4). WP09 adds the one-line delegate `PackRulesets.closure()`. The preset contests are a phase of their own,
+  `CompositionRules.presets(presetIdsOf)`, since a `PackUnderResolution` carries no preset ids; it judges the packs in
+  the order given, the merge order when the set resolves.
+- **Classification (T045).** The offering keeps its interleaved order, answering the first fault of each phase: the
+  resolve, the delegations, the references, the step-enhancement targets, the preset contests, then the case-only
+  matches. `refuseUnresolvedDelegations` (`pack_unreadable`) and the step-enhancement targets stay in that sequence and
+  are not `CLOSURE`. `refuseCaseOnlyMatches` and the three reference checks (`checkReferences`) are #556's closure
+  walk, unchanged; `EdgeIndex` and `CompositeComponentResolver` call only `checkReferences`, and are unchanged.
 
 ## Outcomes of WP05
 

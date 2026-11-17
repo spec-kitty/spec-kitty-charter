@@ -37,7 +37,7 @@ import tools.jackson.databind.JsonNode;
  *
  * <p>The sequence is the resolver's part of {@code OfferingReadService#composed}, in its order: {@link
  * PackCompositionResolver#resolveRooted}, then each member's references ({@link PackCompositionResolver#checkReferences}
- * over {@link PackCompositionResolver#resolveReference}), then {@link PackCompositionResolver#refusePresetContests},
+ * over {@link PackCompositionResolver#resolveReference}), then the first of {@link PackCompositionResolver#presetContests},
  * then {@link PackCompositionResolver#refuseCaseOnlyMatches}. The delegation and step-enhancement checks the offering
  * runs between them are not the resolver's, and no case here writes either. Nor is the offering's
  * {@code refuseTargetOnlyAnUnreadablePackCouldDeclare}: every pack here is readable, so it never refuses.
@@ -449,9 +449,9 @@ class CompositionGoldenTest {
                                         composed, pack.configured().id(), PackQualifiedReference.parse(written)))
                                 .toList());
             }
-            PackCompositionResolver.refusePresetContests(
+            PackCompositionResolver.refuseFirst(PackCompositionResolver.presetContests(
                     composed,
-                    pack -> compose.presets().getOrDefault(pack.descriptor().packId(), List.of()));
+                    pack -> compose.presets().getOrDefault(pack.descriptor().packId(), List.of())));
             PackCompositionResolver.refuseCaseOnlyMatches(
                     composed,
                     pack -> compose.mentions().getOrDefault(pack.descriptor().packId(), List.of()));
