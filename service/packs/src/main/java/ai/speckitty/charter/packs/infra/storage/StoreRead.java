@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -66,10 +65,6 @@ record StoreRead(
 
     private static final java.util.concurrent.atomic.LongAdder RUNS = new java.util.concurrent.atomic.LongAdder();
 
-    private static final Pattern FRAGMENT_FILE =
-            Pattern.compile("^missions/[^/]+/enhancements/[^/]+\\.prompt-fragment\\.md$");
-    private static final String ENHANCEMENT_SUFFIX = ".step-enhancement.yaml";
-
     /**
      * Copies the lists.
      *
@@ -89,7 +84,7 @@ record StoreRead(
      *
      * @param directory the pack directory
      * @param name the name the pack is known by: the refusals and the composition facts name it
-     * @param walk the walk of the tree the one read makes; the store's listing and the untaken files come from it
+     * @param walk the walk of the tree the one read makes; the store's listing comes from it
      * @param strategy the serialization format
      * @param bindings the bindings to read with
      * @param companionRules the companion rules
@@ -149,7 +144,6 @@ record StoreRead(
                 pack.violations().size() - trailing.size(),
                 graphs.violations(),
                 warnings,
-                untaken(packDir, walk.unlinked(), read, places, bindings, companionRules),
                 policy.map(PolicyYaml.Named::text),
                 policyFault.stream().findFirst(),
                 facts,
@@ -346,48 +340,6 @@ record StoreRead(
                     named, StorageCodes.UNREADABLE, "named by mutability_policy, the file " + invalid.getMessage()));
             return Optional.empty();
         }
-    }
-
-    /**
-     * The step enhancement files and prompt fragments the load did not take, in {@link String} order, from the walk's
-     * file list: an enhancement the store refused or withheld, and a fragment no held enhancement names. A registration
-     * looks for orphan fragments among them. Staging inside the single pull request (R4 b): the content rules judge the
-     * orphans from the read's facts (WP07), and WP12 deletes this.
-     */
-    private static List<String> untaken(
-            Path packDir,
-            List<String> files,
-            FilesystemPackStore.PackRead read,
-            Map<Urn, String> places,
-            List<KindBinding<?, ?>> bindings,
-            Companions.Rules companionRules) {
-        Set<String> taken = new HashSet<>(places.values());
-        for (KindBinding<?, ?> kind : bindings) {
-            if (kind.hasCompanions()) {
-                taken.addAll(companionFiles(packDir, kind, read, companionRules));
-            }
-        }
-        String prefix = packDir.getFileName() + "/";
-        return files.stream()
-                .filter(file -> FRAGMENT_FILE.matcher(file).matches() || file.endsWith(ENHANCEMENT_SUFFIX))
-                .filter(file -> !taken.contains(file))
-                .filter(file -> companionRules.table().classify(prefix + file) instanceof PackFileKind.Mapped)
-                .sorted()
-                .toList();
-    }
-
-    private static <D> List<String> companionFiles(
-            Path packDir, KindBinding<D, ?> kind, FilesystemPackStore.PackRead read, Companions.Rules companionRules) {
-        List<String> out = new ArrayList<>();
-        for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
-            for (KindBinding.Companion companion : kind.companions(stored.dso())) {
-                if (Companions.resolve(companionRules, packDir, stored.file(), companion)
-                        instanceof Companions.Inside at) {
-                    out.add(at.packRelative());
-                }
-            }
-        }
-        return out;
     }
 
     /**
