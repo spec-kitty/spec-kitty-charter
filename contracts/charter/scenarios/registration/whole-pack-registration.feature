@@ -591,6 +591,84 @@ Feature: Registering a whole pack replaces the pack the service holds
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
+  # #554 (operator ruling S2; R2 row 38): the one read prechecks the descriptor's version formats, so a registration
+  # refuses a requires_core, a pack_version or a depends_on range that is not PEP 440, at pack.yaml, as validate mode
+  # does. Each refusal is paired with the archive that writes the field well.
+  Scenario Outline: A pack.yaml whose <field> is not PEP 440 is refused <code>, beside the pack that writes it well
+    Given the archive "malformed" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: <version>
+      parent_pack: null
+      name: acme
+      pack_level: org
+      <extra>
+      """
+    And the archive "malformed" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 1
+      intent: The directive that stays
+      enforcement: required
+      """
+    When I PUT "/packs/acme" with the archive "malformed"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "<code>"
+    And the field at "/problem/violations/0/pointer" is "pack.yaml"
+    And the field at "/problem/violations/0/detail" is "pack.yaml of acme: <detail>"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+    Examples:
+      | field         | code                     | version | extra                                                                  | detail                                                          |
+      | requires_core | requires_core_invalid    | 1.0.0   | requires_core: banana                                                  | requires_core 'banana' is not a PEP 440 version specifier       |
+      | pack_version  | pack_version_invalid     | banana  | # no other field                                                       | pack_version 'banana' is not a PEP 440 version                  |
+      | depends_on    | dependency_range_invalid | 1.0.0   | depends_on: [{pack_id: 01M4P01D5TWB5FKZGNNQG3943S, range: banana}]     | depends_on[0] range 'banana' is not a PEP 440 version specifier |
+
+  # #554 (operator ruling S2; R2 row 15): a repeated asset id is a consistency rule of the pack, so a registration
+  # refuses the second sidecar that declares it, as validate mode does, beside the pack whose ids differ.
+  Scenario: Two asset sidecars that declare one id are refused duplicate_artifact_id at the second
+    Given the archive "repeated" is a copy of the archive "v1"
+    And the archive "repeated" holds the file "assets/a.txt.asset.yaml":
+      """
+      id: notes
+      mime: text/plain
+      path: a.txt
+      """
+    And the archive "repeated" holds the file "assets/a.txt":
+      """
+      A.
+      """
+    And the archive "repeated" holds the file "assets/b.txt.asset.yaml":
+      """
+      id: notes
+      mime: text/plain
+      path: b.txt
+      """
+    And the archive "repeated" holds the file "assets/b.txt":
+      """
+      B.
+      """
+    When I PUT "/packs/acme" with the archive "repeated"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations/0/code" is "duplicate_artifact_id"
+    And the field at "/problem/violations/0/pointer" is "assets/b.txt.asset.yaml"
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   # #382 (ADR-0040 decision 6, amended 2026-11-11): a sidecar whose path leaves assets/ is refused as an escape, even
   # though a file is at the target (the pack's own pack.yaml), and the pack is not stored.
   Scenario: An archive with an asset sidecar whose path leaves assets/ is refused naming the escape

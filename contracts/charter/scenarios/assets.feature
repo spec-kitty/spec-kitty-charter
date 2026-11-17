@@ -176,6 +176,50 @@ Feature: A pack's assets are listed, read and their payloads served byte for byt
     And the response header "Content-Security-Policy" is "sandbox; default-src 'none'"
     And the response body is the bytes of the file "assets/notes.txt" of the pack "odd"
 
+  # #554 (operator rulings S2 and S4): the one read judges an asset's mime at registration, as validate mode does, so
+  # a registration of the sidecar above is refused asset_mime_invalid at the sidecar; the stored pack "odd" above keeps
+  # composing, since the composing read never judges the format. The same archive with a well-formed mime registers.
+  Scenario: A registration of a sidecar whose mime is not a well-formed type/subtype is refused asset_mime_invalid
+    Given registration is switched on
+    And the archive "odd" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: odder
+      pack_level: org
+      """
+    And the archive "odd" holds the file "assets/notes.txt.asset.yaml":
+      """
+      id: notes
+      mime: plain
+      path: notes.txt
+      """
+    And the archive "odd" holds the file "assets/notes.txt":
+      """
+      Notes whose sidecar writes no type/subtype.
+      """
+    And the archive "plain" is a copy of the archive "odd"
+    And the archive "plain" holds the file "assets/notes.txt.asset.yaml":
+      """
+      id: notes
+      mime: text/plain
+      path: notes.txt
+      """
+    When I PUT "/packs/odder" with the archive "odd"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "asset_mime_invalid"
+    And the field at "/problem/violations/0/pointer" is "assets/notes.txt.asset.yaml"
+    And the field at "/problem/violations/0/detail" is "assets/notes.txt.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
+    When I PUT "/packs/odder" with the archive "plain"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   Scenario Outline: <operation> of a pack no configured pack answers to is 404 pack_not_found
     When I GET "<path>"
     Then the response status is 404
