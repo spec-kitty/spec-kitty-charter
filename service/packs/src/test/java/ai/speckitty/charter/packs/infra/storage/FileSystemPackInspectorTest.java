@@ -10,6 +10,8 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -25,6 +27,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -111,6 +114,20 @@ class FileSystemPackInspectorTest {
 
         assertThat(source.file()).isEqualTo("registered.graph.yaml");
         assertThat(source.parse().firstLine()).contains("is reserved for the registered relationships");
+
+        // #554, R2 row 28: validate mode answers reserved_shard in the registration's words.
+        assertThat(PackPolicy.judge(full(dir)).findings())
+                .filteredOn(finding -> finding.file().equals("registered.graph.yaml"))
+                .extracting(PackFinding::code, PackFinding::detail)
+                .containsExactly(tuple(StorageCodes.RESERVED_SHARD, RelationshipShard.RESERVED));
+        assertThatThrownBy(() -> new WholePackStore(new YamlSerializationStrategy()).loadStaged(new StagedPack(dir)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .filteredOn(violation -> violation.pointer().equals("registered.graph.yaml"))
+                                .extracting(RefusalViolation::code, RefusalViolation::detail)
+                                .containsExactly(
+                                        tuple(StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED)));
 
         write(dir, "registered.graph.yaml", RelationshipShard.write(java.util.List.of()));
 
@@ -410,16 +427,20 @@ class FileSystemPackInspectorTest {
                 .filteredOn(file -> file.file().equals("toolguides/no-overview.guide.md"))
                 .singleElement()
                 .satisfies(file -> assertThat(file.parse())
-                        .isEqualTo(new PackContents.ParseFailure(
-                                "toolguides/no-overview.guide.md", "the guide has no ## Overview")));
+                        .isEqualTo(PackContents.ParseFailure.refused(
+                                "toolguides/no-overview.guide.md",
+                                "the guide has no ## Overview",
+                                StorageCodes.COMPANION)));
         assertThat(unreadable)
                 .filteredOn(file -> file.file().equals("toolguides/no-h1.guide.md"))
                 .singleElement()
                 .satisfies(file -> assertThat(String.valueOf(file.parse())).contains("has no H1"));
+        // #554, R2 row 19: a companion's own fault is companion in validate mode, as the registration answers it.
         assertThat(PackPolicy.judge(full(dir)).findings())
-                .extracting(PackFinding::detail)
-                .anySatisfy(detail -> assertThat(detail)
-                        .isEqualTo("toolguides/no-overview.guide.md: the guide has no ##" + " Overview"));
+                .filteredOn(finding -> finding.file().equals("toolguides/no-overview.guide.md"))
+                .extracting(PackFinding::code, PackFinding::detail)
+                .containsExactly(
+                        tuple(StorageCodes.COMPANION, "toolguides/no-overview.guide.md: the guide has no ## Overview"));
         assertThat(full(dir).files())
                 .as("a Markdown file a rule models is read, not listed; Markdown nothing models is listed as excluded"
                         + " (#451)")

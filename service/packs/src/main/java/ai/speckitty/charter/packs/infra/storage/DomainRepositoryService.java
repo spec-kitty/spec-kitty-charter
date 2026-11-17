@@ -1274,8 +1274,7 @@ public final class DomainRepositoryService
                     builder.violation(new PackElementViolation(
                             stored.file(),
                             PackCodes.DUPLICATE_ARTIFACT_ID,
-                            kind.kind().token() + " id '" + kind.idOf(stored.dso()) + "' is already declared in "
-                                    + first));
+                            PackCodes.duplicateArtifactId(kind.kind().token(), kind.idOf(stored.dso()), first)));
                     continue;
                 }
                 builder.artifact(entity);

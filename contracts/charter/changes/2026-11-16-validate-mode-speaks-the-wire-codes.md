@@ -20,6 +20,9 @@
     longer answered.
   - A slot that holds text in a pack whose descriptor declares no `schema_version`: the warning
     `prompt_slot_not_empty_unversioned` → the warning `prompt_slot_not_empty`, the registration's diagnostic (row 21).
+  - A Markdown companion that does not parse, is not UTF-8 or breaks its kind's own rule (a guide with no `##
+    Overview`): `artifact_schema_error`, `qa/<file> is not valid Markdown: <why>` → `companion`, `<file>: <why>`, the
+    registration's code (row 19). A step enhancement's prompt fragment keeps `prompt_fragment_invalid`.
   - A `registered.graph.yaml` no registration wrote: `drg_schema_error` → `reserved_shard`, in the registration's words
     (row 28).
   - A `pack.yaml` that is not YAML: `pack.yaml of qa is not valid YAML` → `pack.yaml of qa is not valid YAML: <parser

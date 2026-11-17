@@ -556,8 +556,9 @@ public final class PackPolicy {
                         PackCodes.DUPLICATE_ARTIFACT_ID,
                         artifact.file(),
                         List.of(),
-                        artifact.file() + ": " + artifact.kind() + " id '" + artifact.id() + "' is already declared in "
-                                + first));
+                        PackCodes.detail(
+                                artifact.file(),
+                                PackCodes.duplicateArtifactId(artifact.kind(), artifact.id(), first))));
             }
         }
         return findings;
