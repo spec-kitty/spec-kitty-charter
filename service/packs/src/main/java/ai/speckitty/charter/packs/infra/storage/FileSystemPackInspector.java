@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -163,6 +164,9 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
     /** The companion rules the read's DSO half reads with. */
     private final Companions.Rules companionRules;
 
+    /** The one walk of a pack tree: {@link PackFileSet#walk}, or a test's failing walk. */
+    private final BiFunction<Path, String, PackFileSet.Walk> walker;
+
     /** An inspector over the bundled file-kinds table; it keeps no state. */
     public FileSystemPackInspector() {
         this(PackFileKind.bundled());
@@ -196,10 +200,30 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
+        this(table, strategy, bindings, companionRules, PackFileSet::walk);
+    }
+
+    /**
+     * The reader over a walk of the test's own: the seam a test uses for a directory that exists but cannot be listed,
+     * which a process running as root cannot plant with permissions (#554, T026).
+     *
+     * @param table the file-kinds table
+     * @param strategy the serialization format
+     * @param bindings the bindings to read with
+     * @param companionRules the companion rules
+     * @param walker the walk of a pack directory and its name
+     */
+    FileSystemPackInspector(
+            PackFileKind table,
+            SerializationStrategy strategy,
+            List<KindBinding<?, ?>> bindings,
+            Companions.Rules companionRules,
+            BiFunction<Path, String, PackFileSet.Walk> walker) {
         this.table = Objects.requireNonNull(table, "table");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.bindings = List.copyOf(bindings);
         this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
+        this.walker = Objects.requireNonNull(walker, "walker");
     }
 
     /**
@@ -315,7 +339,7 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
         // One walk of the tree: the census and the DSO half read the files it lists (#554, T028).
-        PackFileSet.Walk walk = PackFileSet.walk(directory, name);
+        PackFileSet.Walk walk = walker.apply(directory, name);
         StoreRead store = storeRead(directory, name, walk);
         FullRead full = new FullRead(
                 directory, name, shards.stream().map(FileRead::file).toList(), table, unnamedPolicy(descriptor), walk);
