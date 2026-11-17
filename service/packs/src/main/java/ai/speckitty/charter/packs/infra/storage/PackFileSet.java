@@ -179,6 +179,94 @@ final class PackFileSet {
     }
 
     /**
+     * {@link #listing(Path, PackFileKind)} over a walk already made of the same pack: the one read lists the tree once
+     * (#554, T028).
+     *
+     * @param packDir the pack directory
+     * @param table the file-kind table
+     * @param walk the pack's walk
+     * @return the files of every bound kind, the asset files and the templates
+     */
+    static Listing listing(Path packDir, PackFileKind table, Walk walk) {
+        Path directory = normalized(packDir);
+        return loaded(directory, table, walk.regular());
+    }
+
+    /**
+     * {@link #digested(Path, PackFileKind)} over a walk already made of the same pack (#554, T028).
+     *
+     * @param packDir the pack directory
+     * @param table the file-kind table
+     * @param walk the pack's walk
+     * @return the pack-relative paths, in digest order
+     */
+    static List<String> digested(Path packDir, PackFileKind table, Walk walk) {
+        Path directory = normalized(packDir);
+        return digested(
+                directory,
+                Set.copyOf(KindBindings.kinds()),
+                nameOf(directory),
+                loaded(directory, table, walk.regular()));
+    }
+
+    /**
+     * One walk of a pack tree (#554, T028): every regular file, a file link followed (the store's listing), and every
+     * regular file that is not itself a link (the census), each pack-relative, {@code /}-separated and in {@link String}
+     * order. Every tree walk of a pack goes through here, so a test counts them ({@link #walks()}).
+     *
+     * @param regular every regular file, a file link followed
+     * @param unlinked every regular file that is not itself a link
+     */
+    record Walk(List<String> regular, List<String> unlinked) {
+        /**
+         * Copies the lists.
+         *
+         * @param regular the regular files
+         * @param unlinked the files that are not links
+         */
+        Walk {
+            regular = List.copyOf(regular);
+            unlinked = List.copyOf(unlinked);
+        }
+    }
+
+    private static final java.util.concurrent.atomic.LongAdder WALKS = new java.util.concurrent.atomic.LongAdder();
+
+    /**
+     * How many walks of a pack tree this JVM has made: the counter that tells a surface walks a pack once.
+     *
+     * @return the count
+     */
+    static long walks() {
+        return WALKS.sum();
+    }
+
+    /**
+     * Walks a pack tree once, from the directory's real path, so a root configured through a link is entered (#174,
+     * #284); links below the root are not followed into, and an entry that vanishes while the tree is walked is skipped.
+     *
+     * @param directory the pack directory
+     * @param packName the pack's name, which a refusal to list it names
+     * @return the walk
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the tree cannot be
+     *     listed
+     */
+    static Walk walk(Path directory, String packName) {
+        WALKS.increment();
+        List<String> regular = new ArrayList<>();
+        List<String> unlinked = new ArrayList<>();
+        try {
+            Path root = directory.toRealPath();
+            Files.walkFileTree(root, new FileCollector(root, regular, unlinked));
+        } catch (IOException | UncheckedIOException e) {
+            throw unlistable(packName, e);
+        }
+        Collections.sort(regular);
+        Collections.sort(unlinked);
+        return new Walk(regular, unlinked);
+    }
+
+    /**
      * The files of one kind in a pack.
      *
      * @param packDir the pack directory
@@ -264,11 +352,14 @@ final class PackFileSet {
 
     private static List<String> digested(Path packDir, Set<ArtifactKind> kinds, String packName, PackFileKind table) {
         Path directory = normalized(packDir);
+        return digested(directory, kinds, packName, loaded(directory, packName, table));
+    }
+
+    private static List<String> digested(Path directory, Set<ArtifactKind> kinds, String packName, Listing loaded) {
         List<String> out = new ArrayList<>();
         if (Files.isRegularFile(directory.resolve(PACK_YAML))) {
             out.add(PACK_YAML);
         }
-        Listing loaded = loaded(directory, packName, table);
         Set<String> listed = new HashSet<>(out);
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             if (!kinds.contains(binding.kind())) {
@@ -379,6 +470,10 @@ final class PackFileSet {
      * presets, the pack document and the retired files apart.
      */
     private static Listing loaded(Path directory, String packName, PackFileKind table) {
+        return loaded(directory, table, regularFiles(directory, packName));
+    }
+
+    private static Listing loaded(Path directory, PackFileKind table, List<String> regularFiles) {
         // The classification globs are relative to the directory that holds the pack directories.
         String prefix = nameOf(directory) + "/";
         Map<ArtifactKind, List<String>> byKind = new EnumMap<>(ArtifactKind.class);
@@ -387,7 +482,7 @@ final class PackFileSet {
         List<String> presets = new ArrayList<>();
         List<String> documents = new ArrayList<>();
         SequencedMap<String, String> retired = new LinkedHashMap<>();
-        for (String file : regularFiles(directory, packName)) {
+        for (String file : regularFiles) {
             PackFileKind.Classification classification = table.classify(prefix + file);
             if (classification instanceof PackFileKind.Retired family) {
                 retired.put(file, family.reason());
@@ -485,34 +580,36 @@ final class PackFileSet {
      * differ on purpose.
      */
     private static List<String> regularFiles(Path directory, String packName) {
-        List<String> found = new ArrayList<>();
-        try {
-            Path root = directory.toRealPath();
-            Files.walkFileTree(root, new FileCollector(root, found));
-        } catch (IOException | UncheckedIOException e) {
-            throw unlistable(packName, e);
-        }
-        Collections.sort(found);
-        return found;
+        return walk(directory, packName).regular();
     }
 
-    /** Collects the regular files; an entry that is gone by the time it is visited is skipped. */
+    /**
+     * Collects the regular files, a file link followed, and those that are not themselves links; an entry that is gone
+     * by the time it is visited is skipped.
+     */
     private static final class FileCollector extends SimpleFileVisitor<Path> {
         private final Path root;
         private final List<String> found;
+        private final List<String> unlinked;
 
-        FileCollector(Path root, List<String> found) {
+        FileCollector(Path root, List<String> found, List<String> unlinked) {
             this.root = root;
             this.found = found;
+            this.unlinked = unlinked;
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            String relative = root.relativize(file)
+                    .toString()
+                    .replace(file.getFileSystem().getSeparator(), "/");
             // isRegularFile follows a file link and is false for an entry that has just vanished.
             if (Files.isRegularFile(file)) {
-                found.add(root.relativize(file)
-                        .toString()
-                        .replace(file.getFileSystem().getSeparator(), "/"));
+                found.add(relative);
+            }
+            // The walk does not follow links, so these are the entry's own attributes.
+            if (attrs.isRegularFile()) {
+                unlinked.add(relative);
             }
             return FileVisitResult.CONTINUE;
         }

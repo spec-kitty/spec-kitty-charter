@@ -680,7 +680,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!(read instanceof FileRead.Read<PackManifestDso> good)) {
             return new Refused("the manifest does not read");
         }
-        List<String> misplaced = WholePackStore.misplacedPresetEntries(good.value());
+        List<String> misplaced = StoreRead.misplacedPresetEntries(good.value());
         if (!misplaced.isEmpty()) {
             return new Refused(String.join("; ", misplaced));
         }

@@ -179,6 +179,17 @@ WP04, WP05 and WP08 see it.
    of its own and is not a prompt fragment (an orphan companion, such as a guide no toolguide names) is held by the
    census, so a registration no longer removes it as `unmodelled`; no golden subject holds one.
 
+## Outcomes of WP05
+
+- **T026, links:** "the reader follows no symlinks under a staged tree, as the store does not" holds for the census's
+  facts, as the store reads them today: the manifest (present and regular), the reserved shard and the files not held
+  are read without following a link. The walk that lists the pack's files follows a file link and enters no directory
+  link, as the store's listing always has, and the golden's symlink plants depend on it.
+- **One read:** the reader walks the tree once, and the census, validate mode's facts and the aggregate's assembly
+  input (`PackContents.Assembly`, with the load's faults: A-M1 rows 1 to 5) all come from that walk. The registration's
+  load builds through `PackAssembly` from it alone. Validate mode's rationale is still today's read faults only, until
+  WP09.
+
 ## Outcomes of WP04
 
 WP04 applied the table on today's pipeline: `PackCodes` and `StorageCodes` build each token once, and both surfaces

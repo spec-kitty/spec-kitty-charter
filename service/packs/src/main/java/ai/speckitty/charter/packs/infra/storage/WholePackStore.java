@@ -11,26 +11,26 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.AssetFile;
-import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
-import ai.speckitty.charter.packs.domain.PackContents.FileRead;
-import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
+import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -190,6 +190,12 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     private final List<KindBinding<?, ?>> bindings;
     private final Companions.Rules companionRules;
 
+    /** The walk of a directory that is not there: the store's read refuses it before it lists anything. */
+    private static final PackFileSet.Walk NO_WALK = new PackFileSet.Walk(List.of(), List.of());
+
+    /** The one reader of a pack tree, over this store's format, bindings and companion rules (#554, S1). */
+    private final FileSystemPackInspector reader;
+
     /**
      * A store over a format.
      *
@@ -212,6 +218,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.bindings = List.copyOf(bindings);
         this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
+        this.reader = new FileSystemPackInspector(companionRules.table(), strategy, this.bindings, companionRules);
     }
 
     /**
@@ -225,7 +232,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      *     files declaring one id
      */
     public LoadedPack load(Path directory) {
-        return load(directory, true, new ArrayList<>()).pack();
+        return loadStrict(directory);
     }
 
     /**
@@ -241,88 +248,47 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * What a load read: the pack, the graph documents that could not be read when the load did not refuse them, the
-     * files a rule maps that the load did not take (a file refused or withheld with a fault of its own, an orphan prompt
-     * fragment), where a registration looks for orphans, and what the composition facts are built from, so that no
-     * second read of the tree builds them (#554, T027, T028): the store's read, the number of the aggregate's
-     * violations its assembly recorded (the manifest's and the policy file's follow them), and the named policy file's
-     * policy or why it cannot be read.
+     * The strict load over the store's read ({@link StoreRead}): the files not held are the census's (#554, S3).
      */
-    private record Loaded(
-            LoadedPack pack,
-            List<PackElementViolation> graphFaults,
-            List<String> untaken,
-            FilesystemPackStore.PackRead read,
-            int assembled,
-            Optional<PolicyYaml.Named> policy,
-            Optional<String> policyFault) {}
-
-    /**
-     * The one load. With {@code refuseGraphFault} it refuses on the first unreadable graph document as {@link #load}
-     * does, right after the graph read; without it, it goes on and answers the faults in {@link Loaded#graphFaults()}
-     * (the registration, which lists every fault at once). The faults are also copied to {@code graphFaults} the moment
-     * they are read, so a caller that meets a later refusal still has them.
-     */
-    private Loaded load(Path directory, boolean refuseGraphFault, List<PackElementViolation> graphFaults) {
+    private LoadedPack loadStrict(Path directory) {
         Path packDir = directory.toAbsolutePath().normalize();
-        Path parent = packDir.getParent();
-        if (parent == null || packDir.getFileName() == null) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
+        String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
+        if (!Files.isDirectory(packDir)) {
+            // As the store's read refuses it, with its words.
+            throw refusalOf(StoreRead.of(packDir, name, NO_WALK, strategy, bindings, companionRules));
         }
-        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
-        FilesystemPackStore.PackRead read = store.read(key, bindings);
-        PackIdentifier id = new PackIdentifier(read.descriptor().packId());
-        Map<Urn, String> places = new HashMap<>();
-        FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
-        List<PackFinding> warnings = new ArrayList<>();
-        Pack.Builder builder = LoadChecks.assembly(id, read, places, graphs, warnings);
-        graphFaults.addAll(graphs.violations());
-        if (refuseGraphFault && !graphFaults.isEmpty()) {
-            PackElementViolation first = graphFaults.getFirst();
-            throw new CharterRefusal(
-                    RefusalCode.DRG_SCHEMA_ERROR, id.value() + "/" + first.file() + ": " + first.reason());
+        PackFileSet.Walk walk = PackFileSet.walk(packDir, name);
+        StoreRead read = StoreRead.of(packDir, name, walk, strategy, bindings, companionRules);
+        read.graphRefusal().ifPresent(refusal -> {
+            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, refusal);
+        });
+        if (!(read.assembly() instanceof Assembly.Assembled held)) {
+            throw refusalOf(read);
         }
-        // The manifest's and the policy file's faults follow the assembly's, and the composing read does not judge
-        // them.
-        List<PackElementViolation> trailing = new ArrayList<>();
-        Path manifestFile = packDir.resolve(PackFileSet.MANIFEST);
-        Optional<PackManifestDso> manifest = manifest(manifestFile, trailing);
-        Optional<String> namedPolicy = read.descriptor().mutabilityPolicy();
-        List<String> policyFault = new ArrayList<>();
-        Optional<PolicyYaml.Named> policy = namedPolicy.flatMap(named -> policy(packDir, named, trailing, policyFault));
-        trailing.forEach(builder::violation);
-        Pack pack;
-        try {
-            pack = builder.build();
-        } catch (ConstraintBreachException breach) {
-            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
+        List<ExcludedFile> notHeld = notHeldOf(FileSystemPackInspector.notHeld(
+                packDir, name, walk, companionRules.table(), FileSystemPackInspector.unnamedPolicy(held.descriptor())));
+        return new LoadedPack(
+                PackAssembly.build(held),
+                read.layout(),
+                read.graphs(),
+                notHeld,
+                read.manifest(),
+                held.policyText(),
+                held.warnings());
+    }
+
+    /** The refusal the store's read answered, as the strict load throws it. */
+    private static CharterRefusal refusalOf(StoreRead read) {
+        if (read.assembly() instanceof Assembly.Refused refused) {
+            return new CharterRefusal(refused.code(), refused.message());
         }
-        // The census owns "held" (#554, S3): the store lists what the one reader's census does not hold.
-        List<ExcludedFile> notHeld = FileSystemPackInspector.notHeld(
-                        packDir,
-                        key.value(),
-                        companionRules.table(),
-                        !namedPolicy.filter(PolicyYaml.FILE::equals).isPresent())
-                .stream()
+        throw new IllegalStateException("the store's read did not refuse the pack");
+    }
+
+    private static List<ExcludedFile> notHeldOf(List<NotHeldFile> files) {
+        return files.stream()
                 .map(file -> new ExcludedFile(file.path(), file.kind(), file.reason()))
                 .toList();
-        List<String> untaken = untakenEnhancementFiles(packDir, key, read, places);
-        return new Loaded(
-                new LoadedPack(
-                        pack,
-                        new PackLayout(places),
-                        graphs.documents(),
-                        notHeld,
-                        manifest,
-                        policy.map(PolicyYaml.Named::text),
-                        warnings),
-                List.copyOf(graphFaults),
-                List.copyOf(untaken),
-                read,
-                pack.violations().size() - trailing.size(),
-                policy,
-                policyFault.stream().findFirst());
     }
 
     /**
@@ -341,34 +307,43 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      */
     @Override
     public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
-        Path directory = staged.directory();
-        Loaded read = loadRefusingAsInvalid(directory);
-        LoadedPack loaded = read.pack();
-        List<RefusalViolation> violations = new ArrayList<>(graphViolations(read.graphFaults()));
-        loaded.pack()
-                .violations()
+        Path directory = staged.directory().toAbsolutePath().normalize();
+        PackIdentifier key =
+                new PackIdentifier(directory.getFileName() == null ? "pack" : String.valueOf(directory.getFileName()));
+        // The one read (#554, S1, T028): the census and the assembly input come from the same walk.
+        TreeRead tree = reader.readTree(new PackRoot(key.value(), Optional.empty(), directory.toString()));
+        Assembly.Assembled held = switch (tree.contents().assembly()) {
+            case Assembly.Assembled assembled -> assembled;
+            case Assembly.Refused refused -> throw refusedAsInvalid(refused);
+            case Assembly.None none -> throw new IllegalStateException("the one read gave no assembly input");
+        };
+        List<RefusalViolation> violations = new ArrayList<>(graphViolations(held.graphFaults()));
+        held.violations()
                 .forEach(violation -> violations.add(
                         violationOf(violation.file(), violation.kind().value(), violation.reason())));
-        List<String> unreported = unreportedFiles(read.untaken(), loaded.pack().violations());
+        List<String> unreported = unreportedFiles(held.untaken(), held.violations());
         Map<String, PackElementViolation> orphans = orphanFragments(unreported);
         unreported.stream()
                 .map(orphans::get)
                 .filter(Objects::nonNull)
                 .forEach(orphan ->
                         violations.add(violationOf(orphan.file(), orphan.kind().value(), orphan.reason())));
-        reservedShard(directory).ifPresent(violations::add);
-        Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
-        if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
-                && !Files.isRegularFile(manifestFile, LinkOption.NOFOLLOW_LINKS)) {
+        TreeCensus census = tree.census();
+        if (census.reservedShard() == TreeCensus.ReservedShard.UNSTAMPED) {
+            violations.add(violationOf(
+                    RelationshipShard.SHARD_PATH, StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED));
+        }
+        if (census.manifest().present() && !census.manifest().regular()) {
             // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
             violations.add(violationOf(
                     PackFileSet.MANIFEST, StorageCodes.UNREADABLE.value(), "the manifest is not a regular file"));
         }
-        if (violations.isEmpty()) {
+        if (violations.isEmpty() && census.manifest().regular()) {
             // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
-            loaded.manifest()
+            census.manifest()
+                    .listed()
                     .ifPresent(listed -> ManifestMembership.mismatch(
-                                    listed, PackManifestDerivation.derived(loaded.pack(), loaded.layout()))
+                                    listed, census.manifest().derived().orElseThrow())
                             .forEach(reason -> violations.add(violationOf(
                                     PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
         }
@@ -379,18 +354,41 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                             + violations.getFirst().pointer() + ".",
                     violations);
         }
-        return stagedContentsOf(directory, read);
+        try {
+            return contentsOf(key, held, notHeldOf(census.notHeld()));
+        } catch (CharterRefusal refusal) {
+            // A file the reading of the facts cannot take is a fault of the upload, a 422, not a 500.
+            if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
+                throw refusal;
+            }
+            String detail = String.valueOf(refusal.getMessage());
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + detail,
+                    List.of(violationOf("pack", StorageCodes.UNREADABLE.value(), detail)));
+        }
+    }
+
+    /**
+     * A load refusal of the pack as a whole, in an upload the author's fault: {@code validation_failed}, the graph faults
+     * read before it first, then the refusal at {@code pack.yaml} when it is the descriptor's (#554, R2 rows 22 to 24),
+     * else at {@code pack}: a root that cannot be read (F4), or an aggregate invariant.
+     */
+    private static CharterRefusal refusedAsInvalid(Assembly.Refused refused) {
+        List<RefusalViolation> violations = new ArrayList<>(graphViolations(refused.graphFaults()));
+        String pointer = refused.atDescriptor() ? PackFileSet.PACK_YAML : "pack";
+        violations.add(violationOf(pointer, refused.code().token(), refused.message()));
+        return CharterRefusal.withViolations(
+                RefusalCode.VALIDATION_FAILED, "The pack cannot be registered: " + refused.message(), violations);
     }
 
     /**
      * The untaken files (a rule maps them, the load did not take them) that no violation of the pack already accounts
-     * for: one fault, one violation. A file the
-     * store refused with a violation of its own (an asset sidecar whose payload it does not hold, #382; a retired file
-     * refused by name, FR-022, SC-002; a pack document it cannot read, #451) is not judged again here. An enhancement
-     * file the store refuses or withholds (a companion, schema or stem fault, a repeated id) is outside the model, so it
-     * is untaken, and so are the fragments beside it; but the fault is already reported at the enhancement, so neither
-     * the file nor the fragments of its directory are judged again as orphans. A fragment beside an enhancement that is
-     * held stays listed, so that an orphan among them is refused.
+     * for: one fault, one violation. A file the store refused with a violation of its own is not judged again here. An
+     * enhancement file the store refuses or withholds is outside the model, so it is untaken, and so are the fragments
+     * beside it; but the fault is already reported at the enhancement, so neither the file nor the fragments of its
+     * directory are judged again as orphans. A fragment beside an enhancement that is held stays listed, so that an
+     * orphan among them is refused.
      */
     private static List<String> unreportedFiles(List<String> untaken, List<PackElementViolation> reported) {
         Set<String> reportedFiles = new HashSet<>();
@@ -431,22 +429,6 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                         new StepEnhancementFacts(List.of(), List.of(), fragments, notHeld, List.of()))
                 .forEach(violation -> orphans.put(violation.file(), violation));
         return orphans;
-    }
-
-    /** The facts of a staged tree; a file the reading of them cannot take is a fault of the upload, a 422, not a 500. */
-    private WholePackWriteStore.Contents stagedContentsOf(Path directory, Loaded loaded) {
-        try {
-            return contentsOf(directory, loaded, loaded.pack().notHeld());
-        } catch (CharterRefusal refusal) {
-            if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
-                throw refusal;
-            }
-            String detail = String.valueOf(refusal.getMessage());
-            throw CharterRefusal.withViolations(
-                    RefusalCode.VALIDATION_FAILED,
-                    "The pack cannot be registered: " + detail,
-                    List.of(violationOf("pack", StorageCodes.UNREADABLE.value(), detail)));
-        }
     }
 
     /**
@@ -510,7 +492,20 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     @Override
     public WholePackWriteStore.Contents loadStored(Path directory) {
-        return contentsOf(directory, load(directory, true, new ArrayList<>()), List.of());
+        Path packDir = directory.toAbsolutePath().normalize();
+        String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
+        if (!Files.isDirectory(packDir)) {
+            throw refusalOf(StoreRead.of(packDir, name, NO_WALK, strategy, bindings, companionRules));
+        }
+        StoreRead read =
+                StoreRead.of(packDir, name, PackFileSet.walk(packDir, name), strategy, bindings, companionRules);
+        read.graphRefusal().ifPresent(refusal -> {
+            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, refusal);
+        });
+        if (!(read.assembly() instanceof Assembly.Assembled held)) {
+            throw refusalOf(read);
+        }
+        return contentsOf(new PackIdentifier(name), held, List.of());
     }
 
     /** What a salvage has read so far. */
@@ -707,43 +702,6 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return name.endsWith(suffix) ? name.substring(0, name.length() - suffix.length()) : name;
     }
 
-    /**
-     * {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}.
-     * The graph faults are collected, not refused on; a refusal of the load that follows them (the pack as a whole) is
-     * listed after them.
-     */
-    private Loaded loadRefusingAsInvalid(Path directory) {
-        List<PackElementViolation> graphFaults = new ArrayList<>();
-        try {
-            return load(directory, false, graphFaults);
-        } catch (CharterRefusal refusal) {
-            List<RefusalViolation> violations = new ArrayList<>(graphViolations(graphFaults));
-            // The descriptor's fault is at pack.yaml (#554, R2 rows 22 to 24); any other refusal of the load is the
-            // pack's as a whole: a root that cannot be read (F4), or an aggregate invariant the guard keeps (F6).
-            String pointer = descriptorFault(directory).isPresent() ? PackFileSet.PACK_YAML : "pack";
-            violations.add(violationOf(pointer, refusal.code().token(), String.valueOf(refusal.getMessage())));
-            throw CharterRefusal.withViolations(
-                    RefusalCode.VALIDATION_FAILED,
-                    "The pack cannot be registered: " + refusal.getMessage(),
-                    violations);
-        }
-    }
-
-    /** Whether the staged pack's descriptor is missing or unreadable, read as {@link #load} reads it. */
-    private Optional<String> descriptorFault(Path directory) {
-        Path packDir = directory.toAbsolutePath().normalize();
-        Path parent = packDir.getParent();
-        if (parent == null || packDir.getFileName() == null) {
-            return Optional.empty();
-        }
-        try {
-            return new FilesystemPackStore(parent, strategy, companionRules)
-                    .descriptorFault(new PackIdentifier(String.valueOf(packDir.getFileName())));
-        } catch (CharterRefusal missing) {
-            return Optional.empty();
-        }
-    }
-
     /** A {@code drg_schema_error} violation per unreadable graph document, at its file, in path order. */
     private static List<RefusalViolation> graphViolations(List<PackElementViolation> faults) {
         return faults.stream()
@@ -760,203 +718,34 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return new RefusalViolation(pointer, code, PackCodes.detail(pointer, detail));
     }
 
-    /** The reserved shard, when the tree holds one that no registration wrote. */
-    private static Optional<RefusalViolation> reservedShard(Path directory) {
-        Path shard = directory.resolve(RelationshipShard.SHARD_PATH);
-        if (!Files.isRegularFile(shard, LinkOption.NOFOLLOW_LINKS)) {
-            return Optional.empty();
-        }
-        boolean stamped;
-        try {
-            stamped = RelationshipShard.isWrittenByRegistration(Files.readString(shard, StandardCharsets.UTF_8));
-        } catch (IOException | RuntimeException unreadable) {
-            stamped = false;
-        }
-        return stamped
-                ? Optional.empty()
-                : Optional.of(violationOf(
-                        RelationshipShard.SHARD_PATH, StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED));
-    }
-
     /**
-     * What the registration judges of a loaded tree: the aggregate, the facts the compose reads, each artifact's digest,
-     * and the files it does not hold, each also a {@code file_not_held} warning after the load's own. The facts are
-     * built from the read the load made ({@link CompositionFactsBuilder}), and judged as the composing read judges a
-     * stored pack ({@link DomainRepositoryService#requireReadable}): the tree is read once (#554, T027, T028).
+     * What the registration judges of a loaded tree: the aggregate, built from the read's assembly input alone
+     * ({@link PackAssembly#build}), the facts the compose reads, each artifact's digest, and the files it does not
+     * hold, each also a {@code file_not_held} warning after the load's own. The facts were built from the same read,
+     * and are judged as the composing read judges a stored pack ({@link CompositionFactsBuilder#requireReadable}).
      */
-    private WholePackWriteStore.Contents contentsOf(Path directory, Loaded read, List<ExcludedFile> notHeld) {
-        Path packDir = directory.toAbsolutePath().normalize();
-        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
-        LoadedPack loaded = read.pack();
-        Pack pack = loaded.pack();
-        DomainRepositoryService.requireReadable(key, pack.violations().subList(0, read.assembled()));
-        MutabilityPolicySource policy = MutabilityPolicySource.empty();
-        Optional<String> named = pack.descriptor().paths().mutabilityPolicy();
-        if (named.isPresent()) {
-            policy = read.policy()
-                    .map(PolicyYaml.Named::source)
-                    .orElseThrow(() -> DomainRepositoryService.unreadablePolicy(
-                            key, named.get(), read.policyFault().orElse("is missing")));
+    private static WholePackWriteStore.Contents contentsOf(
+            PackIdentifier key, Assembly.Assembled held, List<ExcludedFile> notHeld) {
+        CompositionFactsBuilder.requireReadable(key, held.violations().subList(0, held.assembled()));
+        Optional<String> named = held.descriptor().paths().mutabilityPolicy();
+        if (named.isPresent() && held.policyText().isEmpty()) {
+            throw CompositionFactsBuilder.unreadablePolicy(
+                    key, named.get(), held.policyFault().orElse("is missing"));
         }
-        PackCompositionFacts facts = CompositionFactsBuilder.build(key, pack, read.read(), loaded.graphs(), policy);
-        List<PackFinding> warnings = new ArrayList<>(loaded.warnings());
+        held.factsRefusal().ifPresent(refusal -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
+        });
+        PackCompositionFacts facts = held.facts()
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, "a graph document of " + key.value() + " cannot be read"));
+        List<PackFinding> warnings = new ArrayList<>(held.warnings());
         notHeld.forEach(file -> warnings.add(file.notHeld()));
-        return new WholePackWriteStore.Contents(pack, facts, digestsOf(pack), warnings, notHeld);
+        return new WholePackWriteStore.Contents(PackAssembly.build(held), facts, held.digests(), warnings, notHeld);
     }
 
-    /** A digest of each file-backed artifact as {@link #write} would write it, its companions included. */
-    private Map<Urn, String> digestsOf(Pack pack) {
-        Map<Urn, String> digests = new HashMap<>();
-        for (CharterArtifact artifact : pack.artifacts()) {
-            digests.put(artifact.urn(), digestOf(artifact));
-        }
-        return digests;
-    }
-
+    /** A digest of one file-backed artifact as {@link #write} would write it, its companions included. */
     private String digestOf(CharterArtifact artifact) {
-        List<byte[]> parts = new ArrayList<>();
-        if (artifact instanceof Template template) {
-            parts.add(TemplateBinding.INSTANCE.payloadOf(template).bytes());
-        } else {
-            KindBinding<?, ?> kind = bindings.stream()
-                    .filter(binding -> binding.kind() == artifact.kind())
-                    .findFirst()
-                    .orElseThrow(
-                            () -> new IllegalArgumentException("cannot digest a " + artifact.kind() + " artefact"));
-            digestParts(kind, artifact, parts);
-        }
-        return PackRevision.computeOverBytes(parts).token();
-    }
-
-    private <D> void digestParts(KindBinding<D, ?> kind, CharterArtifact artifact, List<byte[]> parts) {
-        D dso = kind.dsoOf(artifact);
-        parts.add(utf8(strategy.write(kind, dso)));
-        for (KindBinding.Companion companion : kind.companions(dso)) {
-            companion.content().ifPresent(content -> parts.add(utf8(Companions.text(content))));
-        }
-    }
-
-    /**
-     * The manifest, when the pack holds a readable one whose preset entries name their own files; otherwise empty, and
-     * an unreadable or misplaced manifest is a violation on the aggregate.
-     */
-    private Optional<PackManifestDso> manifest(Path manifestFile, List<PackElementViolation> violations) {
-        if (!Files.isRegularFile(manifestFile)) {
-            return Optional.empty();
-        }
-        switch (readManifest(manifestFile)) {
-            case FileRead.Read<PackManifestDso> good -> {
-                List<String> misplaced = misplacedPresetEntries(good.value());
-                misplaced.forEach(reason -> violations.add(
-                        new PackElementViolation(PackFileSet.MANIFEST, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason)));
-                return misplaced.isEmpty() ? Optional.of(good.value()) : Optional.empty();
-            }
-            case FileRead.Unreadable<PackManifestDso> bad -> violations.addAll(FilesystemPackStore.violationsOf(bad));
-            case FileRead.Absent<PackManifestDso> absent -> {}
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * The text of the policy file the descriptor names (ADR-0063), read and checked as the compose reads it; a named
-     * file that is missing or invalid is a violation on the aggregate, so the write refuses the pack instead of storing
-     * a descriptor that names a file it does not hold.
-     */
-    private static Optional<PolicyYaml.Named> policy(
-            Path packDir, String named, List<PackElementViolation> violations, List<String> fault) {
-        try {
-            return Optional.of(PolicyYaml.readNamed(packDir, named));
-        } catch (PolicyYaml.Unreadable invalid) {
-            fault.add(String.valueOf(invalid.getMessage()));
-            violations.add(new PackElementViolation(
-                    named, StorageCodes.UNREADABLE, "named by mutability_policy, the file " + invalid.getMessage()));
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Every preset entry of a manifest that does not name its own preset's file, as its reason
-     * ({@link PresetFiles#entryPathMismatch}), in listed order.
-     *
-     * @param manifest a schema-valid manifest
-     * @return the reasons; empty when every entry names {@code presets/<id>.yaml}
-     */
-    static List<String> misplacedPresetEntries(PackManifestDso manifest) {
-        List<String> out = new ArrayList<>();
-        for (PackManifestDso.PresetEntry entry : manifest.presets()) {
-            PresetFiles.entryPathMismatch(entry.id(), entry.path()).ifPresent(out::add);
-        }
-        return out;
-    }
-
-    /** The manifest's text read through the format, or why it cannot be read; the store never parses it. */
-    private FileRead<PackManifestDso> readManifest(Path file) {
-        Optional<byte[]> bytes = FilesystemPackStore.readBytes(file);
-        return bytes.flatMap(FilesystemPackStore::decodeUtf8)
-                .map(text -> strategy.readManifest(text, PackFileSet.MANIFEST))
-                .orElseGet(() -> new FileRead.Unreadable<>(
-                        PackFileSet.MANIFEST,
-                        new ParseFailure(PackFileSet.MANIFEST, FilesystemPackStore.notText(bytes)),
-                        List.of()));
-    }
-
-    /**
-     * The pack-relative paths of the companions every readable artifact names (ADR-0039), as the companion rule resolves
-     * them: they are modelled with their artifact, so none is listed as unmodelled.
-     */
-    private Set<String> companionFiles(Path packDir, FilesystemPackStore.PackRead read) {
-        Set<String> out = new HashSet<>();
-        for (KindBinding<?, ?> kind : bindings) {
-            if (kind.hasCompanions()) {
-                out.addAll(companionFiles(packDir, kind, read));
-            }
-        }
-        return out;
-    }
-
-    private <D> List<String> companionFiles(Path packDir, KindBinding<D, ?> kind, FilesystemPackStore.PackRead read) {
-        List<String> out = new ArrayList<>();
-        for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
-            for (KindBinding.Companion companion : kind.companions(stored.dso())) {
-                if (Companions.resolve(companionRules, packDir, stored.file(), companion)
-                        instanceof Companions.Inside at) {
-                    out.add(at.packRelative());
-                }
-            }
-        }
-        return out;
-    }
-
-    /**
-     * The step enhancement files and prompt fragments of the pack that its load did not take, in {@link String} order:
-     * an enhancement the store refused or withheld, and a fragment no held enhancement names. A registration looks for
-     * orphan fragments among them ({@link #orphanFragments}). Staging inside the single pull request (R4 b): the content
-     * rules judge the orphans from the one read's facts (WP07), and WP12 deletes this.
-     */
-    private List<String> untakenEnhancementFiles(
-            Path packDir, PackIdentifier key, FilesystemPackStore.PackRead read, Map<Urn, String> places) {
-        Set<String> taken = new HashSet<>(places.values());
-        taken.addAll(companionFiles(packDir, read));
-        Path root;
-        try {
-            root = packDir.toRealPath();
-        } catch (IOException e) {
-            throw PackFileSet.unlistable(key.value(), e);
-        }
-        try (Stream<Path> walk = Files.walk(root)) {
-            return walk.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
-                    .map(path -> root.relativize(path)
-                            .toString()
-                            .replace(path.getFileSystem().getSeparator(), "/"))
-                    .filter(file -> FRAGMENT_FILE.matcher(file).matches() || file.endsWith(ENHANCEMENT_SUFFIX))
-                    .filter(file -> !taken.contains(file))
-                    .filter(file ->
-                            companionRules.table().classify(key.value() + "/" + file) instanceof PackFileKind.Mapped)
-                    .sorted()
-                    .toList();
-        } catch (IOException | RuntimeException e) {
-            throw PackFileSet.unlistable(key.value(), e);
-        }
+        return StoreRead.digestOf(artifact, bindings, strategy);
     }
 
     /**

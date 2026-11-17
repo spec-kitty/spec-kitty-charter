@@ -1,6 +1,10 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import java.util.List;
@@ -29,6 +33,9 @@ import org.jspecify.annotations.Nullable;
  * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
  *     full read only. A prompt the codec refuses is a read fault instead and has no parse (A5).
  * @param missionTypes the id and step ids of each mission type the read could parse; filled by a full read only
+ * @param assembly the whole input of the aggregate's assembly, read from the same tree: the held artifacts and the
+ *     faults the load meets, as domain values ({@code PackAssembly} builds the aggregate from it alone); {@link
+ *     Assembly.None} for facts a test writes by hand
  */
 public record PackContents(
         PackRoot root,
@@ -39,7 +46,8 @@ public record PackContents(
         List<AssetFacts> assets,
         StepEnhancementFacts stepEnhancements,
         List<PromptSlotFacts> promptSlots,
-        List<MissionTypeFacts> missionTypes) {
+        List<MissionTypeFacts> missionTypes,
+        Assembly assembly) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -52,6 +60,7 @@ public record PackContents(
      * @param stepEnhancements the step enhancement facts
      * @param promptSlots the slot parse of each step prompt
      * @param missionTypes the mission type facts
+     * @param assembly the assembly input
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
@@ -63,6 +72,181 @@ public record PackContents(
         Objects.requireNonNull(stepEnhancements, "stepEnhancements");
         promptSlots = List.copyOf(promptSlots);
         missionTypes = List.copyOf(missionTypes);
+        Objects.requireNonNull(assembly, "assembly");
+    }
+
+    /**
+     * Facts with no assembly input: what a test writes by hand to judge the rules, which read no aggregate.
+     *
+     * @param root the pack that was read
+     * @param descriptor what {@code pack.yaml} gave
+     * @param shards the root shards
+     * @param fragment what {@code drg/fragment.yaml} gave
+     * @param artifacts the artifact facts
+     * @param assets the asset facts
+     * @param stepEnhancements the step enhancement facts
+     * @param promptSlots the slot parse of each step prompt
+     * @param missionTypes the mission type facts
+     */
+    public PackContents(
+            PackRoot root,
+            FileRead<PackDescriptor> descriptor,
+            List<FileRead<RawGraph>> shards,
+            FileRead<RawGraph> fragment,
+            List<ArtifactFacts> artifacts,
+            List<AssetFacts> assets,
+            StepEnhancementFacts stepEnhancements,
+            List<PromptSlotFacts> promptSlots,
+            List<MissionTypeFacts> missionTypes) {
+        this(
+                root,
+                descriptor,
+                shards,
+                fragment,
+                artifacts,
+                assets,
+                stepEnhancements,
+                promptSlots,
+                missionTypes,
+                new Assembly.None());
+    }
+
+    /**
+     * The whole input of the aggregate's assembly, as the one read found it (#554, S1, S6, T025): what the load holds
+     * and every fault it meets, as domain values, so the aggregate is built from the read that was judged and no
+     * storage type crosses the port.
+     */
+    public sealed interface Assembly {
+
+        /** No assembly input: facts a test writes by hand. */
+        record None() implements Assembly {}
+
+        /**
+         * The load refused the pack as a whole: a root that cannot be read, a descriptor that is missing or
+         * unreadable, or an aggregate invariant the readable artifacts break ({@code Pack.Builder.build()}).
+         *
+         * @param graphFaults the faults of the graph documents read before the refusal, in read order
+         * @param code the refusal's code
+         * @param message the refusal's message
+         * @param atDescriptor whether the fault is the descriptor's, so it is placed at {@code pack.yaml}
+         */
+        record Refused(List<PackElementViolation> graphFaults, RefusalCode code, String message, boolean atDescriptor)
+                implements Assembly {
+            /**
+             * Checks the fields and copies the faults.
+             *
+             * @param graphFaults the graph faults
+             * @param code the code
+             * @param message the message
+             * @param atDescriptor whether the fault is the descriptor's
+             */
+            public Refused {
+                graphFaults = List.copyOf(graphFaults);
+                Objects.requireNonNull(code, "code");
+                Objects.requireNonNull(message, "message");
+            }
+        }
+
+        /**
+         * What the load holds, and every fault it met, in the load's order.
+         *
+         * @param id the pack's identity, the {@code pack_id} its descriptor declares
+         * @param descriptor the descriptor
+         * @param artifacts each held artifact with the file it is stored in, in assembly order
+         * @param assetFiles the held asset files
+         * @param presets the held presets
+         * @param document the pack document, when held
+         * @param violations the faults the assembly met at its files (a broken file, a value-object breach, a
+         *     reference that does not close, a repeated id, a load rule's fault), then the manifest's and the named
+         *     policy file's
+         * @param assembled how many of {@code violations} the assembly met before the manifest's and the policy file's
+         * @param graphFaults the faults of the graph documents that could not be read, in read order
+         * @param warnings the load's findings that do not refuse the pack
+         * @param untaken the step enhancement files and prompt fragments a rule maps that the load did not take
+         * @param digests a digest of each held artifact as a write would write it, its companions included
+         * @param policyText the named policy file's text, when it is valid
+         * @param policyFault why the named policy file cannot be read, when it cannot
+         * @param facts the composition facts, when every graph document was read and they could be built
+         * @param factsRefusal why the composition facts could not be built, when they could not
+         */
+        record Assembled(
+                PackIdentifier id,
+                PackDescriptor descriptor,
+                List<Placed> artifacts,
+                List<AssetFile> assetFiles,
+                List<Preset> presets,
+                Optional<PackDocument> document,
+                List<PackElementViolation> violations,
+                int assembled,
+                List<PackElementViolation> graphFaults,
+                List<PackFinding> warnings,
+                List<String> untaken,
+                Map<Urn, String> digests,
+                Optional<String> policyText,
+                Optional<String> policyFault,
+                Optional<PackCompositionFacts> facts,
+                Optional<String> factsRefusal)
+                implements Assembly {
+            /**
+             * Checks the fields and copies the collections.
+             *
+             * @param id the pack's identity
+             * @param descriptor the descriptor
+             * @param artifacts the held artifacts
+             * @param assetFiles the asset files
+             * @param presets the presets
+             * @param document the document
+             * @param violations the faults
+             * @param assembled how many faults the assembly met
+             * @param graphFaults the graph faults
+             * @param warnings the warnings
+             * @param untaken the untaken enhancement files
+             * @param digests the digests
+             * @param policyText the policy text
+             * @param policyFault the policy fault
+             * @param facts the composition facts
+             * @param factsRefusal why the facts could not be built
+             */
+            public Assembled {
+                Objects.requireNonNull(id, "id");
+                Objects.requireNonNull(descriptor, "descriptor");
+                artifacts = List.copyOf(artifacts);
+                assetFiles = List.copyOf(assetFiles);
+                presets = List.copyOf(presets);
+                Objects.requireNonNull(document, "document");
+                violations = List.copyOf(violations);
+                if (assembled < 0 || assembled > violations.size()) {
+                    throw new IllegalArgumentException("assembled is out of range: " + assembled);
+                }
+                graphFaults = List.copyOf(graphFaults);
+                warnings = List.copyOf(warnings);
+                untaken = List.copyOf(untaken);
+                digests = Map.copyOf(digests);
+                Objects.requireNonNull(policyText, "policyText");
+                Objects.requireNonNull(policyFault, "policyFault");
+                Objects.requireNonNull(facts, "facts");
+                Objects.requireNonNull(factsRefusal, "factsRefusal");
+            }
+        }
+
+        /**
+         * A held artifact and the pack-relative file it is stored in.
+         *
+         * @param file the file
+         * @param artifact the artifact
+         */
+        record Placed(String file, CharterArtifact artifact) {
+            /**
+             * Checks the fields.
+             *
+             * @param file the file
+             * @param artifact the artifact
+             */
+            public Placed {
+                Objects.requireNonNull(file, "file");
+                Objects.requireNonNull(artifact, "artifact");
+            }
+        }
     }
 
     /**
@@ -80,7 +264,8 @@ public record PackContents(
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
-                List.of());
+                List.of(),
+                assembly);
     }
 
     /**

@@ -10,6 +10,7 @@ import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
@@ -97,6 +98,24 @@ final class PackAssembly {
             }
         });
         return builder;
+    }
+
+    /**
+     * The aggregate built from the one read's assembly input alone (#554, S1, S6, T023): the descriptor, each held
+     * artifact, the asset files, the presets, the document and every fault the load met, in the read's order. It judges
+     * nothing: the read found the faults, and the aggregate carries them.
+     *
+     * @param held the assembly input of the one read
+     * @return the aggregate
+     */
+    static Pack build(PackContents.Assembly.Assembled held) {
+        Pack.Builder builder = Pack.builder().id(held.id()).descriptor(held.descriptor());
+        held.violations().forEach(builder::violation);
+        held.artifacts().forEach(placed -> builder.artifact(placed.artifact()));
+        held.assetFiles().forEach(builder::assetFile);
+        held.presets().forEach(builder::preset);
+        held.document().ifPresent(builder::document);
+        return builder.build();
     }
 
     /**
