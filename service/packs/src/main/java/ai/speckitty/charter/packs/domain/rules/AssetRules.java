@@ -2,39 +2,21 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
-import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
-import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
-import ai.speckitty.charter.packs.domain.PackRelativePaths;
 import java.util.List;
 
 /**
- * The content rules of a pack's assets (#554, FR-001, FR-017, T032): an asset's path stays inside {@code assets/}, and
- * an asset id is declared by one sidecar. Each is a kernel rule over the facts of the one read ({@link PackContents});
- * it reads no file and knows no surface.
+ * The content rules of a pack's assets (#554, FR-001, FR-017, T032): an asset id is declared by one sidecar. It is a
+ * kernel rule over the facts of the one read ({@link PackContents}); it reads no file and knows no surface.
  *
- * <p>Not here: a sidecar whose payload is missing is a read fault of the one reader, and the MIME format is its
- * precheck (S2).
+ * <p>Not here (S2: format and schema checks are the edge's, and each check has one implementation): a path that escapes
+ * {@code assets/}, a missing payload and the MIME format are the one reader's, through the store's sidecar rule and its
+ * precheck (R2 rows 12 to 14).
  */
 public final class AssetRules {
-
-    /**
-     * The escape, judged over one sidecar's facts (C-2): a path that leaves {@code assets/} as written
-     * ({@link PackRelativePaths#leavesRoot}), or once the reader resolved it ({@link AssetFacts#containedInAssetsRoot},
-     * through a symbolic link), is one {@link PackCodes#ASSET} at the sidecar (R2 row 13, open case 1: one finding, not
-     * two). An empty path is the schema's to refuse, so it is not judged.
-     *
-     * <p>The facts hold the first sidecar of each id only, so a later sidecar of a repeated id is judged by
-     * {@link #ID_REPEATED} alone. A sidecar the read refused is the read's fault: the composition that runs this rule
-     * skips it (WP07, T035), so its escape is reported once.
-     */
-    static final Rule<AssetFacts> PATH_ESCAPES_IN_SIDECAR = AssetRules::escape;
-
-    /** {@link #PATH_ESCAPES_IN_SIDECAR} over every asset of the pack, in read order. */
-    public static final Rule<PackContents> PATH_ESCAPES = PATH_ESCAPES_IN_SIDECAR.forEach(PackContents::assets);
 
     /**
      * The repeated asset id (S2, R2 row 15): two sidecars that declare one id are one
@@ -45,17 +27,9 @@ public final class AssetRules {
 
     /** Every asset rule, in this class's order. */
     public static final ModularRuleset<PackContents> RULES =
-            ModularRuleset.<PackContents>emptyRules().must(PATH_ESCAPES).must(ID_REPEATED);
+            ModularRuleset.<PackContents>emptyRules().must(ID_REPEATED);
 
     private AssetRules() {}
-
-    static List<Reason> escape(AssetFacts asset) {
-        if (asset.path().isEmpty() || (asset.containedInAssetsRoot() && !PackRelativePaths.leavesRoot(asset.path()))) {
-            return List.of();
-        }
-        return List.of(Findings.at(
-                PackCodes.ASSET, asset.file(), List.of(), asset.file() + ": " + Paths.assetPathEscape(asset.path())));
-    }
 
     /** The artifact facts of the asset sidecars: every sidecar, the later ones of a repeated id included. */
     static List<ArtifactFacts> sidecars(PackContents contents) {
