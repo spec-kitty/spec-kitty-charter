@@ -1485,11 +1485,21 @@ class FileSystemPackInspectorTest {
 
     private static final String SIDECAR = "assets/logo.asset.yaml";
 
-    /** The MIME precheck of one contained asset, as the read faults word it. */
+    @TempDir
+    static Path mimePacks;
+
+    /** The MIME precheck of one planted asset, as the one read's faults word it. */
     private static List<PackFinding> mime(String path, String mime) {
-        return FileSystemPackInspector.mimeProblem(new PackContents.AssetFacts(SIDECAR, "logo", path, mime, true))
-                .map(detail -> List.of(new PackFinding(StorageCodes.ASSET_MIME_INVALID, SIDECAR, List.of(), detail)))
-                .orElse(List.of());
+        try {
+            Path dir = Files.createTempDirectory(mimePacks, "pack");
+            write(dir, SIDECAR, "id: logo\nmime: '%s'\npath: '%s'\n".formatted(mime, path));
+            return full(dir).readFaults().stream()
+                    .filter(fault -> StorageCodes.ASSET_MIME_INVALID.equals(fault.code()))
+                    .map(PackFinding::of)
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @ParameterizedTest
@@ -1568,6 +1578,36 @@ class FileSystemPackInspectorTest {
     }
 
     // ---- the one read: the root, the census and the prechecks (#554, T025, T026, T030) -------------------------
+
+    @Test
+    void aDirectoryThatCannotBeListedIsOneReadFaultAtThePack(@TempDir Path dir) throws IOException {
+        write(dir, "pack.yaml", "name: qa\n");
+        PackFileKind table = PackFileKind.bundled();
+        FileSystemPackInspector unlistable = new FileSystemPackInspector(
+                table,
+                new YamlSerializationStrategy(),
+                KindBindings.all(),
+                new Companions.Rules(table, PackSchemas::bundled),
+                (directory, name) -> {
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " cannot be listed");
+                });
+
+        TreeRead read = unlistable.readTree(root(dir));
+
+        assertThat(read.readFaults()).singleElement().satisfies(fault -> {
+            assertThat(fault.code()).isEqualTo(StorageCodes.PACK_UNREADABLE);
+            assertThat(fault.location().file()).isEqualTo(FileSystemPackInspector.ROOT);
+            assertThat(fault.detail()).isEqualTo("pack qa cannot be listed");
+        });
+        assertThat(read.census()).isEqualTo(TreeCensus.empty());
+        assertThat(unlistable.read(root(dir)).rationale().isFailing())
+                .as("the port answers the fault; it never throws")
+                .isTrue();
+        assertThatThrownBy(() -> unlistable.inspect(root(dir), Scope.LOAD_PATH))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessage("pack qa cannot be listed");
+    }
 
     @Test
     void aRootThatIsNoDirectoryIsOneReadFaultAtThePackAsARegistrationPlacesIt(@TempDir Path dir) throws IOException {
