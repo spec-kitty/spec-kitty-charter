@@ -48,6 +48,28 @@ class OneReadTest {
     }
 
     @Test
+    @DisplayName("the rest of a registration's staged steps read nothing again: the strip and the stamp work from the"
+            + " one read (FR-016)")
+    void theStripAndTheStampReadNothing(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
+        WholePackStore store = new WholePackStore(STRATEGY);
+        ai.speckitty.charter.packs.application.PackRegistrationService.ReadUpload read = StagedReads.read(store, pack);
+        long walks = PackFileSet.walks();
+        long runs = StoreRead.runs();
+        long before = FilesystemPackStore.reads();
+
+        store.removeNotHeld(
+                new ai.speckitty.charter.packs.application.StagedPack(pack),
+                read.read().notHeld());
+        store.stampManifest(new ai.speckitty.charter.packs.application.StagedPack(pack), read.read());
+
+        assertThat(PackFileSet.walks()).isEqualTo(walks);
+        assertThat(StoreRead.runs()).isEqualTo(runs);
+        assertThat(FilesystemPackStore.reads()).isEqualTo(before);
+        assertThat(pack.resolve(PackFileSet.MANIFEST)).exists();
+    }
+
+    @Test
     @DisplayName("a stored pack's load walks and reads it once, its composition facts included")
     void theStoredLoadReadsOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);

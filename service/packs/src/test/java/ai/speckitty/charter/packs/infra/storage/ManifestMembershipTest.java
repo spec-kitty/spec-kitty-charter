@@ -240,8 +240,10 @@ class ManifestMembershipTest {
         Files.writeString(
                 restamped.resolve(STYLEGUIDE), Files.readString(restamped.resolve(STYLEGUIDE)) + "# edited\n");
 
-        store.stampManifest(new StagedPack(generated));
-        store.stampManifest(new StagedPack(restamped));
+        store.stampManifest(
+                new StagedPack(generated), StagedReads.read(store, generated).read());
+        store.stampManifest(
+                new StagedPack(restamped), StagedReads.read(store, restamped).read());
 
         assertFreshAndDerived(generated);
         assertFreshAndDerived(restamped);
