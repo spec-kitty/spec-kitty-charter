@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import java.util.List;
@@ -163,7 +162,6 @@ public record PackContents(
          * @param graphFaults the faults of the graph documents that could not be read, in read order
          * @param warnings the load's findings that do not refuse the pack
          * @param untaken the step enhancement files and prompt fragments a rule maps that the load did not take
-         * @param digests a digest of each held artifact as a write would write it, its companions included
          * @param policyText the named policy file's text, when it is valid
          * @param policyFault why the named policy file cannot be read, when it cannot
          * @param facts the composition facts, when every graph document was read and they could be built
@@ -181,7 +179,6 @@ public record PackContents(
                 List<PackElementViolation> graphFaults,
                 List<PackFinding> warnings,
                 List<String> untaken,
-                Map<Urn, String> digests,
                 Optional<String> policyText,
                 Optional<String> policyFault,
                 Optional<PackCompositionFacts> facts,
@@ -201,7 +198,6 @@ public record PackContents(
              * @param graphFaults the graph faults
              * @param warnings the warnings
              * @param untaken the untaken enhancement files
-             * @param digests the digests
              * @param policyText the policy text
              * @param policyFault the policy fault
              * @param facts the composition facts
@@ -221,7 +217,6 @@ public record PackContents(
                 graphFaults = List.copyOf(graphFaults);
                 warnings = List.copyOf(warnings);
                 untaken = List.copyOf(untaken);
-                digests = Map.copyOf(digests);
                 Objects.requireNonNull(policyText, "policyText");
                 Objects.requireNonNull(policyFault, "policyFault");
                 Objects.requireNonNull(facts, "facts");

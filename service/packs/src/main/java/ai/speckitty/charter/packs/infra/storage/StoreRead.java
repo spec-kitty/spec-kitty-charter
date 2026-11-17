@@ -6,7 +6,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -15,9 +14,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -103,55 +100,30 @@ record StoreRead(
                     List.of(), refusal.code(), String.valueOf(refusal.getMessage()), descriptorFault(store, key));
         }
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
-        Optional<String> graphRefusal = graphs.violations().stream()
-                .findFirst()
-                .map(first -> id.value() + "/" + first.file() + ": " + first.reason());
+        Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
         List<PackFinding> warnings = new ArrayList<>();
         Pack.Builder builder = LoadChecks.assembly(id, read, places, graphs, warnings);
         // The manifest's and the policy file's faults follow the assembly's; the composing read does not judge them.
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir.resolve(PackFileSet.MANIFEST), strategy, trailing);
-        Optional<String> named = read.descriptor().mutabilityPolicy();
         List<String> policyFault = new ArrayList<>();
-        Optional<PolicyYaml.Named> policy = named.flatMap(file -> policy(packDir, file, trailing, policyFault));
+        Optional<PolicyYaml.Named> policy =
+                read.descriptor().mutabilityPolicy().flatMap(file -> policy(packDir, file, trailing, policyFault));
         trailing.forEach(builder::violation);
         Pack pack;
         try {
             pack = builder.build();
         } catch (ConstraintBreachException breach) {
-            return new StoreRead(
-                    new Assembly.Refused(
-                            graphs.violations(),
-                            RefusalCode.VALIDATION_FAILED,
-                            String.valueOf(breach.getMessage()),
-                            false),
-                    new PackLayout(Map.of()),
-                    List.of(),
-                    Optional.empty(),
-                    graphRefusal);
+            return refused(graphs.violations(), String.valueOf(breach.getMessage()), graphRefusal);
         }
         List<Assembly.Placed> artifacts = new ArrayList<>();
-        Map<Urn, String> digests = new HashMap<>();
         for (CharterArtifact artifact : pack.artifacts()) {
             String place = Objects.requireNonNull(places.get(artifact.urn()), "every held artifact has a place");
             artifacts.add(new Assembly.Placed(place, artifact));
-            digests.put(artifact.urn(), digestOf(artifact, bindings, strategy));
         }
-        Optional<PackCompositionFacts> facts = Optional.empty();
-        Optional<String> factsRefusal = Optional.empty();
-        if (graphs.violations().isEmpty()) {
-            try {
-                facts = Optional.of(CompositionFactsBuilder.build(
-                        new PackIdentifier(name),
-                        pack,
-                        read,
-                        graphs.documents(),
-                        policy.map(PolicyYaml.Named::source).orElse(MutabilityPolicySource.empty())));
-            } catch (CharterRefusal refusal) {
-                factsRefusal = Optional.of(String.valueOf(refusal.getMessage()));
-            }
-        }
+        List<String> factsRefusal = new ArrayList<>();
+        Optional<PackCompositionFacts> facts = facts(name, pack, read, graphs, policy, factsRefusal);
         Assembly.Assembled assembled = new Assembly.Assembled(
                 id,
                 pack.descriptor(),
@@ -164,12 +136,56 @@ record StoreRead(
                 graphs.violations(),
                 warnings,
                 untaken(packDir, walk.unlinked(), read, places, bindings, companionRules),
-                digests,
                 policy.map(PolicyYaml.Named::text),
                 policyFault.stream().findFirst(),
                 facts,
-                factsRefusal);
+                factsRefusal.stream().findFirst());
         return new StoreRead(assembled, new PackLayout(places), graphs.documents(), manifest, graphRefusal);
+    }
+
+    /** The strict load's refusal of the first graph document that cannot be read, when one cannot. */
+    private static Optional<String> graphRefusal(PackIdentifier id, FilesystemPackStore.GraphRead graphs) {
+        return graphs.violations().stream()
+                .findFirst()
+                .map(first -> id.value() + "/" + first.file() + ": " + first.reason());
+    }
+
+    /**
+     * The composition facts of the assembled pack, when every graph document was read; a refusal of the builder (an edge
+     * that joins an artifact to itself) goes to {@code refusal}.
+     */
+    private static Optional<PackCompositionFacts> facts(
+            String name,
+            Pack pack,
+            FilesystemPackStore.PackRead read,
+            FilesystemPackStore.GraphRead graphs,
+            Optional<PolicyYaml.Named> policy,
+            List<String> refusal) {
+        if (!graphs.violations().isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(CompositionFactsBuilder.build(
+                    new PackIdentifier(name),
+                    pack,
+                    read,
+                    graphs.documents(),
+                    policy.map(PolicyYaml.Named::source).orElse(MutabilityPolicySource.empty())));
+        } catch (CharterRefusal refused) {
+            refusal.add(String.valueOf(refused.getMessage()));
+            return Optional.empty();
+        }
+    }
+
+    /** The aggregate's own invariant breached at {@code build()}: refused as a whole, after the graph faults. */
+    private static StoreRead refused(
+            List<PackElementViolation> graphFaults, String breach, Optional<String> graphRefusal) {
+        return new StoreRead(
+                new Assembly.Refused(graphFaults, RefusalCode.VALIDATION_FAILED, breach, false),
+                new PackLayout(Map.of()),
+                List.of(),
+                Optional.empty(),
+                graphRefusal);
     }
 
     private static StoreRead refused(
@@ -292,39 +308,5 @@ record StoreRead(
             }
         }
         return out;
-    }
-
-    /**
-     * A digest of one file-backed artifact as the whole-pack write would write it, its companions included.
-     *
-     * @param artifact the artifact
-     * @param bindings the bindings that write it
-     * @param strategy the serialization format
-     * @return the digest token
-     */
-    static String digestOf(CharterArtifact artifact, List<KindBinding<?, ?>> bindings, SerializationStrategy strategy) {
-        List<byte[]> parts = new ArrayList<>();
-        if (artifact instanceof Template template) {
-            parts.add(TemplateBinding.INSTANCE.payloadOf(template).bytes());
-        } else {
-            KindBinding<?, ?> kind = bindings.stream()
-                    .filter(binding -> binding.kind() == artifact.kind())
-                    .findFirst()
-                    .orElseThrow(
-                            () -> new IllegalArgumentException("cannot digest a " + artifact.kind() + " artefact"));
-            digestParts(kind, artifact, strategy, parts);
-        }
-        return PackRevision.computeOverBytes(parts).token();
-    }
-
-    private static <D> void digestParts(
-            KindBinding<D, ?> kind, CharterArtifact artifact, SerializationStrategy strategy, List<byte[]> parts) {
-        D dso = kind.dsoOf(artifact);
-        parts.add(strategy.write(kind, dso).getBytes(StandardCharsets.UTF_8));
-        for (KindBinding.Companion companion : kind.companions(dso)) {
-            companion
-                    .content()
-                    .ifPresent(content -> parts.add(Companions.text(content).getBytes(StandardCharsets.UTF_8)));
-        }
     }
 }

@@ -1730,7 +1730,6 @@ class FileSystemPackInspectorTest {
 
         assertThat(held.violations()).isEmpty();
         assertThat(held.facts()).isPresent();
-        assertThat(held.digests()).hasSameSizeAs(held.artifacts()).isNotEmpty();
         assertThat(held.policyText()).isPresent();
         assertThat(built.artifacts())
                 .containsExactlyElementsOf(held.artifacts().stream()

@@ -329,24 +329,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 .forEach(orphan ->
                         violations.add(violationOf(orphan.file(), orphan.kind().value(), orphan.reason())));
         TreeCensus census = tree.census();
-        if (census.reservedShard() == TreeCensus.ReservedShard.UNSTAMPED) {
-            violations.add(violationOf(
-                    RelationshipShard.SHARD_PATH, StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED));
-        }
-        if (census.manifest().present() && !census.manifest().regular()) {
-            // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
-            violations.add(violationOf(
-                    PackFileSet.MANIFEST, StorageCodes.UNREADABLE.value(), "the manifest is not a regular file"));
-        }
-        if (violations.isEmpty() && census.manifest().regular()) {
-            // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
-            census.manifest()
-                    .listed()
-                    .ifPresent(listed -> ManifestMembership.mismatch(
-                                    listed, census.manifest().derived().orElseThrow())
-                            .forEach(reason -> violations.add(violationOf(
-                                    PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
-        }
+        violations.addAll(storageFaults(census, violations.isEmpty()));
         if (!violations.isEmpty()) {
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
@@ -367,6 +350,33 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                     "The pack cannot be registered: " + detail,
                     List.of(violationOf("pack", StorageCodes.UNREADABLE.value(), detail)));
         }
+    }
+
+    /**
+     * The storage edge's own faults of a staged tree, from the census, in registration's order: a reserved shard no
+     * registration wrote, a manifest that is not a regular file, and, on a tree with no other fault ({@code clean}),
+     * the manifest's membership (#110: judged only then, as an artifact refused elsewhere would read as left out).
+     */
+    private static List<RefusalViolation> storageFaults(TreeCensus census, boolean clean) {
+        List<RefusalViolation> faults = new ArrayList<>();
+        if (census.reservedShard() == TreeCensus.ReservedShard.UNSTAMPED) {
+            faults.add(violationOf(
+                    RelationshipShard.SHARD_PATH, StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED));
+        }
+        if (census.manifest().present() && !census.manifest().regular()) {
+            // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
+            faults.add(violationOf(
+                    PackFileSet.MANIFEST, StorageCodes.UNREADABLE.value(), "the manifest is not a regular file"));
+        }
+        if (clean && faults.isEmpty() && census.manifest().regular()) {
+            census.manifest()
+                    .listed()
+                    .ifPresent(listed -> ManifestMembership.mismatch(
+                                    listed, census.manifest().derived().orElseThrow())
+                            .forEach(reason -> faults.add(violationOf(
+                                    PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
+        }
+        return faults;
     }
 
     /**
@@ -724,7 +734,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * hold, each also a {@code file_not_held} warning after the load's own. The facts were built from the same read,
      * and are judged as the composing read judges a stored pack ({@link CompositionFactsBuilder#requireReadable}).
      */
-    private static WholePackWriteStore.Contents contentsOf(
+    private WholePackWriteStore.Contents contentsOf(
             PackIdentifier key, Assembly.Assembled held, List<ExcludedFile> notHeld) {
         CompositionFactsBuilder.requireReadable(key, held.violations().subList(0, held.assembled()));
         Optional<String> named = held.descriptor().paths().mutabilityPolicy();
@@ -740,12 +750,34 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                         RefusalCode.PACK_UNREADABLE, "a graph document of " + key.value() + " cannot be read"));
         List<PackFinding> warnings = new ArrayList<>(held.warnings());
         notHeld.forEach(file -> warnings.add(file.notHeld()));
-        return new WholePackWriteStore.Contents(PackAssembly.build(held), facts, held.digests(), warnings, notHeld);
+        Pack pack = PackAssembly.build(held);
+        Map<Urn, String> digests = new HashMap<>();
+        pack.artifacts().forEach(artifact -> digests.put(artifact.urn(), digestOf(artifact)));
+        return new WholePackWriteStore.Contents(pack, facts, digests, warnings, notHeld);
     }
 
     /** A digest of one file-backed artifact as {@link #write} would write it, its companions included. */
     private String digestOf(CharterArtifact artifact) {
-        return StoreRead.digestOf(artifact, bindings, strategy);
+        List<byte[]> parts = new ArrayList<>();
+        if (artifact instanceof Template template) {
+            parts.add(TemplateBinding.INSTANCE.payloadOf(template).bytes());
+        } else {
+            KindBinding<?, ?> kind = bindings.stream()
+                    .filter(binding -> binding.kind() == artifact.kind())
+                    .findFirst()
+                    .orElseThrow(
+                            () -> new IllegalArgumentException("cannot digest a " + artifact.kind() + " artefact"));
+            digestParts(kind, artifact, parts);
+        }
+        return PackRevision.computeOverBytes(parts).token();
+    }
+
+    private <D> void digestParts(KindBinding<D, ?> kind, CharterArtifact artifact, List<byte[]> parts) {
+        D dso = kind.dsoOf(artifact);
+        parts.add(utf8(strategy.write(kind, dso)));
+        for (KindBinding.Companion companion : kind.companions(dso)) {
+            companion.content().ifPresent(content -> parts.add(utf8(Companions.text(content))));
+        }
     }
 
     /**
