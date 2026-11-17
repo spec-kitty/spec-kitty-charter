@@ -34,7 +34,7 @@ The tests that read the checkout, grouped by what they prove:
 | --- | --- | --- |
 | Whole-pack round trip | `WholePackRoundTripTest`, `WholePackOpenPacksRoundTripTest`, `WholePackExpectation(Test)`, `WholePackReport` | every modelled file kind, so the expected-red lists can be empty |
 | Artifact round trip | `PackDoctrineCorpusRoundTripTest`, `MarkdownCorpusTest`, `ProcedureAndGuideCorpusTest`, `GlossaryPackAndSkillCorpusTest`, `GlossaryPackAndSkillSchemaTest` | each artifact kind at full shape, every optional field set once and left out once |
-| Mission types and steps | `MissionTypeCorpusTest`, `MissionStepContractCorpusTest`, `PromptSlotLoadChecksTest`, `PromptSlotsCanonicalCorpusTest` | a mission type with lifecycle, guards, steps with prompts holding empty slots, a step enhancement with fragments |
+| Mission types and steps | `MissionTypeCorpusTest`, `MissionStepContractCorpusTest`, `PromptSlotSurfacesTest`, `PromptSlotsCanonicalCorpusTest` | a mission type with lifecycle, guards, steps with prompts holding empty slots, a step enhancement with fragments |
 | Composition | `OpenPacksComposeTest`, `PackGraphEdges` | a built-in, an org and a project pack with `depends_on`, qualified references, shards and an org fragment |
 | Files and digests | `CompanionFilesTest`, `CompanionDigestTest`, `BinaryPayloadRevisionTest`, `PackDigestBaselineTest`, `PackManifestParityTest`, `PackFileKindTest`, `FileSystemPackInspectorTest`, `PackLevelSchemasTest` | companions, binary assets, a manifest with hashes, every pack file kind |
 | Profiles | `ProfileCorpusTest`, `ProfileGovernanceCorpusTest`, `ProfileExamplesEdgeTest` | profiles with `role`/`alt-roles`, lineage, governance edges with `when` and `reason`, a fallback profile |

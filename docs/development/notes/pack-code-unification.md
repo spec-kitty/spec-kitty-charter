@@ -200,7 +200,12 @@ policy readout and the `PackPolicy*Test` and `PackFindingTest` classes. No golde
   the one rule function: `FragmentRules.judge(facts, edgesRead)`, `StepRules.repeatedSubstepIds` and
   `PromptSlotRules.faults`. The endpoint refusals it records come from `RelationshipEndpointRule.refusal`, in the order
   `GraphRules` lists them. `PackElementViolation` stays: it is the store half's and the aggregate's record of a fault,
-  not a converter.
+  not a converter. Four storage-edge mappings record a rule's finding on it, and no other: `StoreRead.heldBack` (a
+  substep id a mission type repeats, `StepRules.repeatedSubstepIds`), the `FragmentRules` lambda in `StoreRead.assembly`
+  (`FragmentRules.judge`'s faults as `prompt_fragment_invalid`), `StoreRead.recordPromptSlotFaults`
+  (`PromptSlotRules.faults`' violations) and `FilesystemPackStore.endpointViolations`
+  (`RelationshipEndpointRule.refusal`), which repeats the order `GraphRules` uses: every source refusal in edge order,
+  then every table refusal.
 - **Store-only faults are typed (WP12 review cycle 2, NIT-B).** `FilesystemPackStore.PackRead.storeOnly` holds the
   faults only the store's read meets (a companion it cannot read, a template read twice, a value-object breach of an
   asset file's name or a preset), recorded where it meets them; `StoreRead` reads them from there, and no message
@@ -275,9 +280,10 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   artifact keys before the step ids.) Each is answered once the first fault is fixed. `StoreHalfFaultsTest` pins both,
   and that a distinct fault the store does meet (the step's prompt path beside a step standing twice) is not hidden by
   the reader's step fault.
-- **Not done here, for WP13 (review cycle 2 NIT-B).** `StoreRead.metOnlyByTheStore` tells the store read's own faults
+- ~~**Not done here, for WP13 (review cycle 2 NIT-B).** `StoreRead.metOnlyByTheStore` tells the store read's own faults
   (a template read twice, a value-object breach) by their message's start; a typed marker would need the store's
-  `PackRead` to carry them apart, through `readKind` and its callers.
+  `PackRead` to carry them apart, through `readKind` and its callers.~~ Done in WP13: `PackRead.storeOnly` carries them
+  apart (see "Outcomes of WP13", "Store-only faults are typed").
 - **Row 32 is one answer.** The policy file `mutability_policy` names is stated by the store half, `unreadable`,
   `<file>: named by mutability_policy, the file is missing` or `the file cannot be read: <why>`, on both surfaces; the
   reader's own parse or schema fault at that file is not stated beside it.
@@ -422,7 +428,7 @@ each rule's tests prove it finds what `PackPolicy` finds over every planted and 
 three cases under S2 (format and schema checks are the edge's; core holds only consistency logic, with no duplicate
 implementations):
 
-- **D1: no glossary content rule.** #106's glossary checks are the one reader's schema and stem checks, the storage
+- **D1: no glossary content rule.** #106's glossary checks are the one reader's schema and stem prechecks, the storage
   format rule of a repeated term id (`GlossaryYaml.rules`), the retired `glossary_pack` shape and `GraphBinding`'s term
   endpoint rule. `PackContents` carries no glossary fact, and moving any of them into the domain would take a fault
   away from the compose read, which runs no `content()`. They stay where they are, and there is no `GlossaryRules`.
@@ -475,7 +481,7 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
   pack reaches it: the withholding and the repeated-id rule leave the aggregate nothing to breach.
 - **The compose read (operator decision, 2026-11-17):** the compose read runs only the `StoreRead` half of the one
   reader, over one walk: the same DSO read and assembly the registration's `readTree` runs, with no second DSO reader.
-  It never sees the reader's S2 format checks, so no S4 filter is needed, and its answers are unchanged. Running the whole
+  It never sees the reader's S2 prechecks, so no S4 filter is needed, and its answers are unchanged. Running the whole
   one read on it was measured first (warmed, 200 calls each): built-in 35.4 ms today against 161 ms (4.6x), org-base
   3.8 ms against 18.3 ms (4.8x), project 1.1 ms against 3.8 ms (3.5x). The cost is two parses of every file: the
   inspector's generic parse and validation, and the store's DSO parse. A single-parse unification, deriving the
