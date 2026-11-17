@@ -257,13 +257,16 @@ tasks.named("pitest") { readsTheUnitTestInputs() }
 // infra.archive on the same rule: 87.5 % (239 of 273) on its first narrowed run takes 80. infra.api is not mutated (it is
 // excluded above and left out of mutatedPackages), so it has no floor.
 mutationFloors {
+    // The storage rules (#554, S3) are pure kernel rulesets over the one read, held to the core rules' floor: they count
+    // with domain+application, not with the storage adapters (squad-shaping Q6, ADR-0062 amendment of 2026-11-17).
     group("domain+application") {
-        packages.addAll("$packsPackage.domain", "$packsPackage.application")
+        packages.addAll("$packsPackage.domain", "$packsPackage.application", "$packsPackage.infra.storage.rules")
         excludes.add("$packsPackage.application.config")
         floor = 85
     }
     group("infra.storage") {
         packages.add("$packsPackage.infra.storage")
+        excludes.add("$packsPackage.infra.storage.rules")
         floor = 85
     }
     group("infra.archive") {

@@ -52,10 +52,11 @@ dependencies {
     testImplementation(catalog.lib("jackson-databind"))
 }
 
-// The nightly mutation floor (#239; ADR-0062, amendment of 2026-11-13): one group for the whole module. Its first run
-// (#553) killed its one mutant; the floor is 85, as for :activations and the edges, not floor5(score - 3), because the
-// module's rulesets land next (#554) and one mutant says little. The margin is 0 until then. Raised by PR once the
-// score clears it by 5.
+// The nightly mutation floor (#239; ADR-0062, amendments of 2026-11-13 and 2026-11-17): one group for the whole module,
+// the validation edge (PackCheck, PackVerdicts, the placement rules and PlacementCodes, #554) and the whole-pack round
+// trip's verdict (#578). Measured on #554's head: 330 of 372 mutants detected (88.7 %), so floor5(score - 3) is 85 and
+// the margin is 13 mutants (it was 0 on #553's one mutant). #554's classes kill every mutant; the survivors and the
+// uncovered mutants are the round trip's. Raised by PR once the score clears the floor by 5.
 mutationFloors {
     group("pack-validation") {
         packages.add("ai.speckitty.charter.packvalidation")

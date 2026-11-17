@@ -10,14 +10,13 @@ import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * The pack refusals of the API edge: one mapping per edge.
  *
  * <ul>
  *   <li>The read services': a pack the storage cannot read (its aggregate or its revision) is, to the caller, a pack
- *       that is not there ({@link #packRefusal}, {@link #asPackNotFound}). The original {@code PACK_UNREADABLE} refusal
+ *       that is not there ({@link #packRefusal}). The original {@code PACK_UNREADABLE} refusal
  *       is kept as the cause so the inbound edge can leave a diagnostic trail although the 404 body names nothing of
  *       it; any other refusal passes through, an identifier no configured pack answers to being already refused
  *       {@code PACK_NOT_FOUND} by the storage.
@@ -91,22 +90,5 @@ final class PackRefusals {
             return refused;
         }
         return new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
-    }
-
-    /**
-     * Runs a pack read, mapping its refusal as {@link #packRefusal} does.
-     *
-     * @param pack the pack read
-     * @param load the read
-     * @param <T> what it returns
-     * @return what the read returns
-     * @throws CharterRefusal the mapped refusal
-     */
-    static <T> T asPackNotFound(PackIdentifier pack, Supplier<T> load) {
-        try {
-            return load.get();
-        } catch (CharterRefusal refused) {
-            throw packRefusal(pack, refused);
-        }
     }
 }
