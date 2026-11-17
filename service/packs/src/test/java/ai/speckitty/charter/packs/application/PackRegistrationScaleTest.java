@@ -8,6 +8,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
@@ -140,6 +141,7 @@ class PackRegistrationScaleTest {
         RegistrationImpact impact =
                 new RegistrationImpact(new StagedPackViewFactory(counting, strategy), ActivationImpact.NONE);
         return new PackRegistrationService(
+                new FileSystemPackInspector(),
                 new WholePackStore(strategy),
                 rig.commits,
                 rig.writeStore,

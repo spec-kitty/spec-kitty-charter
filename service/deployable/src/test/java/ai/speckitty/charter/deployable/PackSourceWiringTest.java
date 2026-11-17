@@ -15,7 +15,6 @@ import ai.speckitty.charter.packs.application.PackSourceRequest;
 import ai.speckitty.charter.packs.application.PackSourceStagers;
 import ai.speckitty.charter.packs.application.PackTreeReader;
 import ai.speckitty.charter.packs.application.StagingArea;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.infra.archive.BoundedTreeStager;
 import ai.speckitty.charter.packs.infra.fetch.HttpsExchange;
 import ai.speckitty.charter.packs.infra.fetch.PackSourceProperties;
@@ -106,7 +105,7 @@ class PackSourceWiringTest {
                 wiring.httpsArchiveFetcher(exchange, archives, properties, mock(StagingArea.class)),
                 wiring.filesystemSourceFetcher(properties, tree, NO_CONFIG_ROOT),
                 wiring.gitSourceFetcher(properties, wiring.gitVersionCheck(properties), tree, NO_REMOTE, NO_RESOLVER));
-        return wiring.packSourceStagers(fetchers, mock(WholePackWriteStore.Loader.class));
+        return wiring.packSourceStagers(fetchers);
     }
 
     @Test

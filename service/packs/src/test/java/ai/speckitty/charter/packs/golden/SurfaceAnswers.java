@@ -3,12 +3,12 @@ package ai.speckitty.charter.packs.golden;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -26,8 +26,9 @@ import java.util.function.Function;
  * the characterization the work packages after WP01 are compared with, over {@link GoldenSubjects}. Two surfaces:
  *
  * <ul>
- *   <li>{@code registration}: the staged load {@link WholePackStore#loadStaged}, as {@code PackRegistrationService} and
- *       {@code PackSourceStagers} call it (with the store production builds, {@code new
+ *   <li>{@code registration}: step 2 of a registration, {@link PackRegistrationService#readUpload}, as
+ *       {@code PackRegistrationService} runs it (#554, WP12): the one read of the staged tree through the reader
+ *       production wires, judged, then assembled by the store production builds ({@code new
  *       WholePackStore(strategy)}); on a refusal its code, detail and violations (pointer, code, detail) in order, on
  *       success the diagnostics (code, detail) the registration answers, in order;
  *   <li>{@code composeRead}: the compose's read of the pack as a stored pack, {@link
@@ -65,19 +66,22 @@ public final class SurfaceAnswers {
         Map<String, Object> answers = new LinkedHashMap<>();
         answers.put(
                 "registration",
-                registration(GoldenSubjects.copy(subject, scratch.resolve("registration")), normaliser));
+                registration(subject, GoldenSubjects.copy(subject, scratch.resolve("registration")), normaliser));
         answers.put(
                 "composeRead",
                 composeRead(subject, GoldenSubjects.copy(subject, scratch.resolve("compose-read")), normaliser));
         return answers;
     }
 
-    private static Object registration(Path pack, Normaliser normaliser) {
+    private static Object registration(Subject subject, Path pack, Normaliser normaliser) {
         try {
-            WholePackWriteStore.Contents contents =
-                    new WholePackStore(new YamlSerializationStrategy()).loadStaged(new StagedPack(pack));
+            PackRegistrationService.ReadUpload read = PackRegistrationService.readUpload(
+                    new FileSystemPackInspector(),
+                    new WholePackStore(new YamlSerializationStrategy()),
+                    subject.name(),
+                    new StagedPack(pack));
             List<Map<String, Object>> diagnostics = new ArrayList<>();
-            contents.warnings().stream().map(PackFinding::toDiagnostic).forEach(diagnostic -> {
+            read.diagnostics().forEach(diagnostic -> {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("code", diagnostic.code().token());
                 row.put("detail", normaliser.apply(diagnostic.detail()));

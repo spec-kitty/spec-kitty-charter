@@ -5,13 +5,11 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.ClassifiedFile;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
@@ -133,7 +131,7 @@ class ExcludedFilesAgreementTest {
 
         assertThat(loaded.pack().violations()).isEmpty();
         assertThat(loaded.notHeld()).noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED);
-        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).containsExactlyInAnyOrderElementsOf(EXCLUDED);
+        assertThat(loaded.notHeld()).extracting(NotHeldFile::path).containsExactlyInAnyOrderElementsOf(EXCLUDED);
         assertThat(loaded.pack().artifacts(ArtifactKind.SKILL, Skill.class))
                 .singleElement()
                 .satisfies(skill -> assertThat(skill.body()).isPresent());
@@ -168,19 +166,23 @@ class ExcludedFilesAgreementTest {
     void stagedLoadAndTheStripAgree() throws IOException {
         StagedPack staged = new StagedPack(pack);
 
-        WholePackWriteStore.Contents contents = store.loadStaged(staged);
+        PackRegistrationService.ReadUpload read = StagedReads.read(store, pack);
 
-        assertThat(contents.warnings())
-                .extracting(PackFinding::code, PackFinding::file)
+        assertThat(read.diagnostics())
+                .extracting(
+                        Diagnostic::code,
+                        diagnostic -> diagnostic
+                                .detail()
+                                .substring(0, diagnostic.detail().indexOf(':')))
                 .containsExactlyInAnyOrder(
-                        tuple(PackFindingCode.FILE_NOT_HELD, DECLARATION),
-                        tuple(PackFindingCode.FILE_NOT_HELD, NOTE),
-                        tuple(PackFindingCode.FILE_NOT_HELD, README));
-        assertThat(contents.notHeld())
+                        tuple(Diagnostic.Code.FILE_NOT_HELD, DECLARATION),
+                        tuple(Diagnostic.Code.FILE_NOT_HELD, NOTE),
+                        tuple(Diagnostic.Code.FILE_NOT_HELD, README));
+        assertThat(read.read().notHeld())
                 .as("the strip's list is the one the warnings are derived from")
-                .extracting(ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .containsExactlyInAnyOrder(DECLARATION, NOTE, README);
-        store.removeNotHeld(staged, contents);
+        store.removeNotHeld(staged, read.read().notHeld());
         try (Stream<Path> walk = Files.walk(pack)) {
             Set<String> left = walk.filter(Files::isRegularFile)
                     .map(path -> pack.relativize(path).toString().replace('\\', '/'))
@@ -203,16 +205,16 @@ class ExcludedFilesAgreementTest {
                 .isEqualTo(PackFileKind.Unclassified.INSTANCE);
         assertThat(store.load(pack).notHeld())
                 .as("one path-sorted list, each file with its reason")
-                .extracting(ExcludedFile::file, file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
+                .extracting(NotHeldFile::path, file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
                 .containsExactly(
                         tuple(NOTE, false), tuple(README, false), tuple(DECLARATION, false), tuple(UNMODELLED, true));
-        WholePackWriteStore.Contents contents = store.loadStaged(staged);
-        assertThat(contents.warnings())
-                .extracting(PackFinding::file, PackFinding::detail)
-                .endsWith(tuple(UNMODELLED, UNMODELLED + ": not held (no pack file kind models this file)"));
-        assertThat(contents.warnings()).extracting(PackFinding::code).containsOnly(PackFindingCode.FILE_NOT_HELD);
+        PackRegistrationService.ReadUpload read = StagedReads.read(store, pack);
+        assertThat(read.diagnostics())
+                .extracting(Diagnostic::detail)
+                .endsWith(UNMODELLED + ": not held (no pack file kind models this file)");
+        assertThat(read.diagnostics()).extracting(Diagnostic::code).containsOnly(Diagnostic.Code.FILE_NOT_HELD);
 
-        store.removeNotHeld(staged, contents);
+        store.removeNotHeld(staged, read.read().notHeld());
 
         assertThat(pack.resolve(UNMODELLED)).doesNotExist();
         assertThat(pack.resolve(SKILL_BODY)).exists();

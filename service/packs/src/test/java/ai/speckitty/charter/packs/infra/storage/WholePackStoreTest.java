@@ -13,14 +13,10 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
@@ -68,7 +64,7 @@ class WholePackStoreTest {
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
     /** pack-a without its broken file, plus a directive whose file name is not its id, a nested tactic and DRG docs. */
-    private static Path richPack(Path host) throws IOException {
+    static Path richPack(Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-a", host);
         Files.delete(pack.resolve(BROKEN_FILE));
         write(pack, DIRECTIVE_FILE, """
@@ -120,7 +116,7 @@ class WholePackStoreTest {
         return pack;
     }
 
-    private static void write(Path pack, String relative, String text) throws IOException {
+    static void write(Path pack, String relative, String text) throws IOException {
         Path file = pack.resolve(relative);
         Files.createDirectories(file.getParent());
         Files.writeString(file, text);
@@ -149,7 +145,7 @@ class WholePackStoreTest {
         return out;
     }
 
-    private static List<String> filesUnder(Path root) throws IOException {
+    static List<String> filesUnder(Path root) throws IOException {
         try (Stream<Path> walk = Files.walk(root)) {
             return walk.filter(Files::isRegularFile)
                     .map(path -> root.relativize(path)
@@ -335,14 +331,14 @@ class WholePackStoreTest {
         store.write(loaded, target);
 
         assertThat(loaded.notHeld())
-                .containsExactly(ExcludedFile.unmodelled("notes.txt"), ExcludedFile.unmodelled("sub/r.yaml"));
+                .containsExactly(NotHeldFile.unmodelled("notes.txt"), NotHeldFile.unmodelled("sub/r.yaml"));
         assertThat(filesUnder(target)).doesNotContain("notes.txt", "sub/r.yaml");
     }
 
-    private static final String FALLBACK_REASON =
+    static final String FALLBACK_REASON =
             PackFileKind.bundled().ignoredRules().getFirst().reason();
 
-    private static String exclusionReason(String match) {
+    static String exclusionReason(String match) {
         return PackFileKind.bundled().exclusionRules().stream()
                 .filter(rule -> rule.match().equals(match))
                 .findFirst()
@@ -365,51 +361,10 @@ class WholePackStoreTest {
 
         assertThat(loaded.notHeld())
                 .containsExactly(
-                        ExcludedFile.excluded("docs/notes.md", FALLBACK_REASON),
-                        ExcludedFile.excluded("missions/x/README.md", exclusionReason("*/missions/*/README.md")),
-                        ExcludedFile.unmodelled("notes.txt"));
+                        NotHeldFile.excluded("docs/notes.md", FALLBACK_REASON),
+                        NotHeldFile.excluded("missions/x/README.md", exclusionReason("*/missions/*/README.md")),
+                        NotHeldFile.unmodelled("notes.txt"));
         assertThat(filesUnder(target)).doesNotContain("docs/notes.md", "missions/x/README.md", "notes.txt");
-    }
-
-    @Test
-    @DisplayName("loadStaged refuses neither an excluded file nor a file nothing models: after the load's own warnings"
-            + " it reports each as a file_not_held warning, in one path-sorted list, with its reason (Q1)")
-    void loadStagedReportsTheFilesNotHeldInOnePathSortedList(@TempDir Path host) throws IOException {
-        Path pack = richPack(host);
-        write(pack, "docs/notes.md", "# Notes\n");
-        write(pack, "missions/x/templates/README.md", "# Templates\n");
-        write(pack, "data.json", "{}\n");
-        write(pack, "notes.txt", "stray");
-
-        WholePackWriteStore.Contents contents = store.loadStaged(new StagedPack(pack));
-
-        assertThat(contents.warnings())
-                .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
-                .containsExactly(
-                        tuple(
-                                PackFindingCode.FILE_NOT_HELD,
-                                "data.json",
-                                "data.json: not held (no pack file kind models this file)"),
-                        tuple(
-                                PackFindingCode.FILE_NOT_HELD,
-                                "docs/notes.md",
-                                "docs/notes.md: not held (" + FALLBACK_REASON + ")"),
-                        tuple(
-                                PackFindingCode.FILE_NOT_HELD,
-                                "missions/x/templates/README.md",
-                                "missions/x/templates/README.md: not held ("
-                                        + exclusionReason("*/missions/*/templates/**/README.md") + ")"),
-                        tuple(
-                                PackFindingCode.FILE_NOT_HELD,
-                                "notes.txt",
-                                "notes.txt: not held (no pack file kind models this file)"));
-        assertThat(contents.warnings())
-                .allSatisfy(warning ->
-                        assertThat(warning.toDiagnostic().code().token()).isEqualTo("file_not_held"));
-        assertThat(contents.notHeld())
-                .as("the strip's list is the one the warnings are derived from")
-                .extracting(ExcludedFile::file)
-                .containsExactly("data.json", "docs/notes.md", "missions/x/templates/README.md", "notes.txt");
     }
 
     @Test
@@ -427,50 +382,13 @@ class WholePackStoreTest {
                                         + "0".repeat(64) + "\npresets:\n"));
         write(pack, "notes.txt", "stray");
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
                                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                                 .containsExactly(
                                         tuple(PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value())));
-    }
-
-    @Test
-    @DisplayName("the staged tree stripped of a file nothing models is the tree of the pack without it (Q1)")
-    void theStripOfAFileNothingModelsLeavesThePackWithoutIt(@TempDir Path host) throws IOException {
-        Path plain = richPack(host.resolve("plain"));
-        Path noted = richPack(host.resolve("noted"));
-        write(noted, "sub/notes.txt", "stray");
-        StagedPack staged = new StagedPack(noted);
-
-        store.removeNotHeld(staged, store.loadStaged(staged));
-
-        assertThat(filesUnder(noted)).isEqualTo(filesUnder(plain));
-        assertThat(noted.resolve("sub")).as("the directory the file left empty").doesNotExist();
-    }
-
-    @Test
-    @DisplayName("removeNotHeld deletes the reported files and the directories they leave empty from the staged tree,"
-            + " and nothing else")
-    void removeNotHeldStripsOnlyTheReportedFilesFromTheStagedTree(@TempDir Path host) throws IOException {
-        Path pack = richPack(host);
-        write(pack, "docs/notes.md", "# Notes\n");
-        write(pack, "missions/x/README.md", "# x\n");
-        write(pack, "missions/x/templates/spec.md", "# Spec\n");
-        StagedPack staged = new StagedPack(pack);
-        List<String> before = filesUnder(pack);
-        WholePackWriteStore.Contents contents = store.loadStaged(staged);
-
-        store.removeNotHeld(staged, contents);
-
-        List<String> expected = new java.util.ArrayList<>(before);
-        expected.removeAll(List.of("docs/notes.md", "missions/x/README.md"));
-        assertThat(filesUnder(pack)).isEqualTo(expected);
-        assertThat(pack.resolve("docs")).as("the directory the file left empty").doesNotExist();
-        assertThat(pack.resolve("missions/x"))
-                .as("a directory that still holds a file")
-                .isDirectory();
     }
 
     @Test
@@ -490,7 +408,7 @@ class WholePackStoreTest {
 
         assertThat(loaded.notHeld())
                 .as("the link's target walked from its real path (#284), the link below the root not entered")
-                .containsExactly(ExcludedFile.unmodelled("notes.txt"), ExcludedFile.unmodelled("sub/r.yaml"))
+                .containsExactly(NotHeldFile.unmodelled("notes.txt"), NotHeldFile.unmodelled("sub/r.yaml"))
                 .isEqualTo(store.load(real).notHeld());
     }
 
@@ -506,7 +424,7 @@ class WholePackStoreTest {
         store.write(loaded, target);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain(SKILL_BODY);
+        assertThat(loaded.notHeld()).extracting(NotHeldFile::path).doesNotContain(SKILL_BODY);
         assertThat(Files.readString(target.resolve(SKILL_BODY))).isEqualTo("Goal: land it.\r\nNo final newline — kept");
         assertThat(meaning(store.load(target))).isEqualTo(meaning(loaded));
     }
@@ -692,7 +610,7 @@ class WholePackStoreTest {
 
         assertThat(loaded.notHeld()).noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED);
         assertThat(loaded.notHeld())
-                .extracting(ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .containsExactly(
                         "assets/README.md",
                         "assets/debrief/.DS_Store",
@@ -799,7 +717,7 @@ class WholePackStoreTest {
         Path broken = richPack(host.resolve("broken"));
         write(broken, PackDocumentMarkdown.FILE, text.translateEscapes());
 
-        assertThat(store.loadStaged(new StagedPack(clean)).pack().document()).isPresent();
+        assertThat(StagedReads.contents(store, clean).pack().document()).isPresent();
         WholePackStore.LoadedPack loaded = store.load(broken);
         assertThat(loaded.pack().violations())
                 .as("the load reports the fault at the file, as it does an unreadable graph document")
@@ -807,9 +725,9 @@ class WholePackStoreTest {
                 .containsExactly(PackDocumentMarkdown.FILE);
         assertThat(loaded.notHeld())
                 .as("and does not also list the file as not held (squad R-1)")
-                .extracting(ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .doesNotContain(PackDocumentMarkdown.FILE);
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(broken)))
+        assertThatThrownBy(() -> StagedReads.contents(store, broken))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
@@ -911,46 +829,13 @@ class WholePackStoreTest {
     // ---- the staged load of a registration (IC-04 step 2) -----------------------------------------------------------
 
     @Test
-    @DisplayName(
-            "loadStaged digests each artifact as it would be written, so a changed artifact is told from a kept one")
-    void loadStagedDigestsEachArtifactAsItWouldBeWritten(@TempDir Path host) throws IOException {
-        Path pack = richPack(host);
-        Urn alpha = new Urn(NodeKind.TACTIC, "alpha-tactic");
-        Urn gamma = new Urn(NodeKind.TACTIC, "gamma-tactic");
-        WholePackWriteStore.Contents before = store.loadStaged(new StagedPack(pack));
-        write(
-                pack,
-                PackFixtures.ALPHA_FILE,
-                Files.readString(pack.resolve(PackFixtures.ALPHA_FILE), UTF_8)
-                        .replace("Alpha tactic", "Alpha, changed"));
-
-        WholePackWriteStore.Contents after = store.loadStaged(new StagedPack(pack));
-
-        assertThat(before.digests()).containsKeys(alpha, gamma);
-        assertThat(after.digests().get(alpha)).isNotEqualTo(before.digests().get(alpha));
-        assertThat(after.digests().get(gamma)).isEqualTo(before.digests().get(gamma));
-    }
-
-    @Test
-    @DisplayName("loadStaged hands the compose what the pack holds and the typed edges it writes")
-    void loadStagedHandsOverTheFactsOfThePack(@TempDir Path host) throws IOException {
-        Path pack = richPack(host);
-
-        WholePackWriteStore.Contents contents = store.loadStaged(new StagedPack(pack));
-
-        assertThat(contents.facts().defined())
-                .contains("tactic:alpha-tactic", "tactic:gamma-tactic", "directive:DIRECTIVE_043");
-        assertThat(contents.pack().descriptor().packId()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
-    }
-
-    @Test
     @DisplayName("loadStaged refuses with validation_failed and one violation per fault, never a pack_unreadable")
     void loadStagedRefusesWithOneViolationPerFault(@TempDir Path host) throws IOException {
         Path pack = richPack(host);
         write(pack, "PROVENANCE.md", "# Provenance\n");
         write(pack, BROKEN_FILE, "id: [unclosed");
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
@@ -978,7 +863,7 @@ class WholePackStoreTest {
                 "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\nother: 2\n");
         write(pack, "PROVENANCE.md", "# Provenance\n");
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
@@ -1000,7 +885,7 @@ class WholePackStoreTest {
                 "broken.graph.yaml",
                 "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\nsurprise: 1\n");
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
@@ -1014,7 +899,7 @@ class WholePackStoreTest {
         Path pack = richPack(host);
         write(pack, "broken.graph.yaml", "schema_version: '1.0'\nsurprise: 1\n");
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
@@ -1181,7 +1066,7 @@ class WholePackStoreTest {
                 .containsEntry(new Urn(NodeKind.STEP_ENHANCEMENT, "spdd-plan"), ENHANCEMENT_FILE);
         assertThat(loaded.notHeld())
                 .as("each fragment is named by exactly one entry, so the enhancement holds both")
-                .extracting(ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .doesNotContain(FRAGMENT_REASONS, FRAGMENT_CANVAS);
         assertThat(PackFixtures.fragments(loaded)).hasSize(2);
         Path target = host.resolve("out").resolve(source.getFileName().toString());
@@ -1231,13 +1116,13 @@ class WholePackStoreTest {
         WholePackStore.LoadedPack loaded = store.load(source);
 
         assertThat(loaded.notHeld())
-                .extracting(ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .doesNotContain(
                         "missions/software-dev/enhancements/stray.prompt-fragment.md",
                         FRAGMENT_REASONS,
                         FRAGMENT_CANVAS,
                         ENHANCEMENT_FILE);
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(source)))
+        assertThatThrownBy(() -> StagedReads.contents(store, source))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())

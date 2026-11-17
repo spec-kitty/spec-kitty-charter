@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Reason;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -122,10 +121,7 @@ class OrgCharterRetirementTest {
             WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
             assertThat(store.load(pack).pack().violations()).isEmpty();
-            assertThat(store.loadStaged(new StagedPack(pack))
-                            .pack()
-                            .descriptor()
-                            .name())
+            assertThat(StagedReads.contents(store, pack).pack().descriptor().name())
                     .isEqualTo("org-base");
         }
 
@@ -165,7 +161,7 @@ class OrgCharterRetirementTest {
         void registrationRefusesIt() {
             WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-            assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+            assertThatThrownBy(() -> StagedReads.contents(store, pack))
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                         assertThat(refusal.violations())

@@ -9,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
@@ -89,7 +88,7 @@ class EdgeEndpointPlantsTest {
         Path pack = planted(host, plant);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
@@ -137,7 +136,7 @@ class EdgeEndpointPlantsTest {
 
         assertThat(validate(pack)).isEmpty();
         assertThat(store.load(pack).pack().violations()).isEmpty();
-        assertThat(store.loadStaged(new StagedPack(pack)).pack().violations()).isEmpty();
+        assertThat(StagedReads.contents(store, pack).pack().violations()).isEmpty();
     }
 
     @ParameterizedTest(name = "the load: {0} {1} {2}")

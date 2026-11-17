@@ -58,7 +58,7 @@ class PresetRoundTripTest {
         assertThat(loaded.pack().presets())
                 .extracting(Preset::id)
                 .containsExactly("commented", "convenience", "governing");
-        assertThat(loaded.notHeld()).noneMatch(file -> file.file().startsWith(PresetFiles.PRESETS));
+        assertThat(loaded.notHeld()).noneMatch(file -> file.path().startsWith(PresetFiles.PRESETS));
         Preset governing = loaded.pack().presets().get(2);
         assertThat(governing.required())
                 .containsEntry(ArtifactKind.DIRECTIVE, List.of("DIRECTIVE_001"))

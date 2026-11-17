@@ -22,7 +22,6 @@ import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.web.RefusalHandler;
@@ -97,8 +96,7 @@ class PackSourceRegistrationTest {
     }
 
     private MockMvc mvcWith(List<PackSourceFetcher> fetchers, ServiceInfoQuery info) {
-        PackSourceIntake intake = new PackSourceIntake(
-                sources, new PackSourceStagers(fetchers, mock(WholePackWriteStore.Loader.class)), info::worktree);
+        PackSourceIntake intake = new PackSourceIntake(sources, new PackSourceStagers(fetchers), info::worktree);
         PackRegistrationController controller = new PackRegistrationController(
                 jobs,
                 mock(PackSummaryQuery.class),

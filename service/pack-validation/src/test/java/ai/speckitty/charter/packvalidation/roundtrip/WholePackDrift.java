@@ -38,7 +38,7 @@ final class WholePackDrift {
         loaded.pack().violations().forEach(v -> problems.add(name + ": violation " + v));
         loaded.notHeld().stream()
                 .filter(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
-                .forEach(file -> problems.add(name + ": " + file.notHeld().detail()));
+                .forEach(file -> problems.add(name + ": " + file.finding().detail()));
         loaded.warnings().forEach(w -> problems.add(name + ": warning " + w));
         new WholePackRoundTripRule(WholePackExpectation.none())
                 .apply(result)

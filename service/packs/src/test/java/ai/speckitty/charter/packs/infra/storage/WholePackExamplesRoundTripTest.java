@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
@@ -180,7 +179,7 @@ class WholePackExamplesRoundTripTest {
                 .collect(Collectors.toSet());
         return loaded.notHeld().stream()
                 .filter(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
-                .map(ExcludedFile::file)
+                .map(NotHeldFile::path)
                 .filter(file -> file.startsWith(PackFileSet.ASSETS) || file.startsWith(PackFileSet.TEMPLATES))
                 .filter(file -> !refused.contains(file))
                 .map(file -> pack + " leaves " + file + " unmodelled")
@@ -455,7 +454,7 @@ class WholePackExamplesRoundTripTest {
                                 .map(file -> file.substring(0, file.length() - ".yaml".length()))
                                 .toList());
         assertThat(loaded.notHeld())
-                .extracting(ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .doesNotContain("presets/default.yaml", "presets/minimal.yaml", PackFileSet.MANIFEST);
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())

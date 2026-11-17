@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -91,7 +90,7 @@ class MissionTypePlantsTest {
         Path pack = planted(host, UNLINKED);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
@@ -203,7 +202,7 @@ class MissionTypePlantsTest {
                     .as("an unknown field, by its name")
                     .contains("unknown key '" + field(plant) + "'");
         });
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
@@ -237,7 +236,7 @@ class MissionTypePlantsTest {
 
         assertThat(validate(pack)).isEmpty();
         assertThat(store.load(pack).pack().violations()).isEmpty();
-        assertThat(store.loadStaged(new StagedPack(pack)).pack().violations()).isEmpty();
+        assertThat(StagedReads.contents(store, pack).pack().violations()).isEmpty();
     }
 
     private static List<Reason> validate(Path pack) {
