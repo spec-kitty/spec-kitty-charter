@@ -250,7 +250,7 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   `control-retired-pack-key-is-a-warning`, `control-unknown-pack-key-is-a-warning`, `pack-yaml-tilde-is-null`) answer
   every fault, the descriptor's after the graph faults, under `N fault(s), the first at <file>.`. 9 are S2 (rows 14, 15
   and 38): the four asset-mime and repeated-asset-id plants, each bare and `+pack.yaml`, and `requires-core-invalid`.
-  Four rows are both. `SurfaceSubsetTest` pins the forward subset over the two goldens and names these rows.
+  Four rows are both. `SurfaceSubsetTest` pins the forward subset over the two golden files and names these rows.
 - **The store half's own faults are read faults, each stated once** (rows 16 to 19 and 32, A-M1). The verdict joins
   the read faults, `registration()`, then the store half's store-only faults (`AssemblyRules.held`), then the manifest
   gate. The store-only faults are an allow-list the store half builds where it meets them

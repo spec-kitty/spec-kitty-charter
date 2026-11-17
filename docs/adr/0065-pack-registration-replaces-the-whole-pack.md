@@ -2,8 +2,8 @@
 title: "ADR-0065: Registering a pack replaces the whole pack"
 description: Registering a whole pack replaces the known pack, removals included; per-artifact writes are helpers; removal is by DELETE; registration is asynchronous and impact-checked.
 doc_status: active
-updated: 2026-11-12T00:00:00Z
-decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490)
+updated: 2026-11-17T00:00:00Z
+decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490); D1 extended 2026-11-15 (an unmodelled file is not held, #554)
 decision_date: '2026-11-07'
 type: ADR
 kind: ADR
@@ -63,6 +63,25 @@ unchanged, and D1 and D12 are annotated where they stand.
   starts and ends in one odd write generation is answered when its digests agree. An empty reserved directory reads as
   no pack, and the listing does not wait on a held lock.
 
+### Amendment 2026-11-15 (#554, operator ruling Q1, and open case 6): an unmodelled file is not held
+
+Made by slice 5 of ADR-0075 ([#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554)) on the operator's
+ruling Q1 of 2026-11-15 (`DM-01M7FARH7YMGS2X0BRV1HKH47B`): pack authors may add docs and reference files that do not
+affect the service, so such a file is warned about, then ignored. The decision text below is unchanged, and D1 is
+annotated where it stands.
+
+- **D1, extended.** A file that no pack file kind models (a `notes.txt`, a `LICENSE`, a reference spreadsheet) is not
+  held either, as an excluded file is not: it is removed from the staged tree before the revision is computed, and
+  reported as a `file_not_held` warning naming the file, `<file>: not held (no pack file kind models this file)`. The
+  former `unmodelled` refusal is gone. A retired file and an orphan prompt fragment are still refused with their own
+  codes, since a rule models each. A file a rule maps but the pack does not name (a `policy.yaml` the descriptor does
+  not name, a companion no artifact names) is not held either, with its own reason.
+- **Open case 6, what the service holds.** A `charter.yaml` and a nested `drg/<kind>.graph.yaml` are among the files
+  nothing models: the packs contract narrows its `**/charter.yaml` and nested `**/*.graph.yaml` rules to the files the
+  service holds, under a packs `### Breaking` line. **Validate mode judges nothing in a file that is not held**, and
+  answers the same `file_not_held` warning as the registration; one census in the storage edge decides what is held
+  for both (ADR-0075, amendment of 2026-11-16).
+
 ## Context
 
 [ADR-0005](/adr/0005-service-registers-and-distributes-packs/) made whole-pack registration the way content enters the
@@ -97,6 +116,9 @@ changes. A registration of a pack that does not exist yet creates it.
 
 *(Amended 2026-11-11, #451: the service holds the pack that was sent less the files it reports as not held, each a
 `file_not_held` diagnostic. See the amendment under Status.)*
+
+*(Extended 2026-11-15, #554: a file nothing models is not held either, and validate mode judges nothing in a file that
+is not held. See the amendment under Status.)*
 
 ### D2. The version rule
 
