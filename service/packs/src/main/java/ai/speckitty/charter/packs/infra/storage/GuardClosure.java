@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * The charter's load-time checks of guards and lifecycles (ADR-0054 decision 4): the one place the pack store enforces
- * them, at assembly ({@code DomainRepositoryService.assembly}) and before a whole-pack write. Each check fails closed:
+ * them, at assembly ({@code PackAssembly.assembly}) and before a whole-pack write. Each check fails closed:
  * what does not resolve is left out of the pack with a {@code reference} violation of its file, and whatever names it
  * is refused in turn.
  *

@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.EndpointRule;
@@ -14,18 +13,14 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.kernel.validation.ReasonCode;
-import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
-import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
-import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
@@ -43,8 +38,6 @@ import ai.speckitty.charter.packs.domain.PackDocumentText;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -56,8 +49,6 @@ import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureRepository;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
-import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
-import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -71,17 +62,14 @@ import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -110,8 +98,8 @@ import org.springframework.stereotype.Service;
  * <p>The persistence shapes ({@link TacticDso}, {@link PackDescriptorDso}) stay inside this package. Each kind is
  * mapped to and from its domain entity by its {@link KindBinding}, and assembled and committed through the
  * {@link KindBindings} registry (ADR-0037); only domain types leave the service. Templates and asset files, the
- * {@code bytes} content form, are assembled beside them by the same helper ({@link #assembly}) and written byte for
- * byte; they have no repository port of their own.
+ * {@code bytes} content form, are assembled beside them by the same Spring-free {@link PackAssembly} and written byte
+ * for byte; they have no repository port of their own.
  */
 @Service
 public final class DomainRepositoryService
@@ -553,7 +541,7 @@ public final class DomainRepositoryService
         defined.addAll(declared);
         List<MissionTypeFacts> types = new ArrayList<>();
         for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
-            types.add(missionTypeFacts(stored.file(), stored.dso()));
+            types.add(PackAssembly.missionTypeFacts(stored.file(), stored.dso()));
         }
         List<SubstepDelegationRule.QualifiedCandidate> delegations =
                 SubstepDelegationRule.qualifiedCandidates(assembled.descriptor().name(), types);
@@ -567,7 +555,7 @@ public final class DomainRepositoryService
                 assembled.presets(),
                 typedEdges(graphs.documents(), assembled),
                 languages,
-                PromptFacts.of(promptSlotFacts(read), stepEnhancementFacts(read, graphs), steps),
+                PromptFacts.of(promptSlotFacts(read), PackAssembly.stepEnhancementFacts(read, graphs), steps),
                 terms,
                 delegations);
     }
@@ -581,7 +569,7 @@ public final class DomainRepositoryService
 
     /**
      * The slot parse of each step prompt of the stored mission types, at the prompt's pack-relative file, over the
-     * canonical text the load rule parses ({@link #recordPromptSlotFaults}): the input of the prompt facts (research R9).
+     * canonical text the load rule parses ({@code LoadChecks.recordPromptSlotFaults}): the input of the prompt facts (research R9).
      */
     private static List<PackContents.PromptSlotFacts> promptSlotFacts(FilesystemPackStore.PackRead read) {
         List<PackContents.PromptSlotFacts> prompts = new ArrayList<>();
@@ -591,7 +579,8 @@ public final class DomainRepositoryService
             for (MissionTypeDso.Step step : steps) {
                 if (step.promptPath().isPresent() && step.prompt().isPresent()) {
                     prompts.add(new PackContents.PromptSlotFacts(
-                            companionFile(stored.file(), step.promptPath().get()),
+                            PackAssembly.companionFile(
+                                    stored.file(), step.promptPath().get()),
                             PromptSlots.parse(MarkdownCodec.write(step.prompt().get()))));
                 }
             }
@@ -895,395 +884,8 @@ public final class DomainRepositoryService
     private static Pack assemble(
             PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
         // No read serves the warnings in phase 1: the list is filled and dropped.
-        return assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>()).build();
-    }
-
-    /**
-     * The one assembly of a read into the aggregate, shared by {@link #load(PackIdentifier)} and
-     * {@link WholePackStore#load}: the descriptor, the read violations, every bound kind (through {@link #collect}),
-     * the asset files, the templates and the presets. Each added artifact's file is put in {@code places} under its
-     * URN; a preset is no artifact and has none, its place being {@code presets/<id>.yaml} by the stem rule. The
-     * templates are built first, so that a mission type whose output template names none of them is refused (#277).
-     *
-     * @param pack the pack the artifacts belong to
-     * @param read what the store read
-     * @param places receives each added artifact's pack-relative file
-     * @return the builder, ready to build
-     */
-    static Pack.Builder assembly(PackIdentifier pack, FilesystemPackStore.PackRead read, Map<Urn, String> places) {
-        Pack.Builder builder =
-                Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
-        read.violations().forEach(builder::violation);
-        Map<String, Template> templates = new LinkedHashMap<>();
-        List<PackElementViolation> templateViolations = new ArrayList<>();
-        for (FilesystemPackStore.TemplateFile file : read.templates()) {
-            String place = file.place();
-            try {
-                templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
-            } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                templateViolations.add(new PackElementViolation(
-                        place, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
-            }
-        }
-        Set<String> namable = MissionTemplates.namable(templates.values());
-        GuardClosure closure = GuardClosure.of(pack, read);
-        for (KindBinding<?, ?> kind : KindBindings.all()) {
-            collect(pack, kind, read, builder, places, namable, closure);
-        }
-        read.assetFiles().forEach(builder::assetFile);
-        templates.forEach((place, template) -> {
-            builder.artifact(template);
-            places.put(template.urn(), place);
-        });
-        templateViolations.forEach(builder::violation);
-        for (FilesystemPackStore.Stored<PresetDso> stored : read.presets()) {
-            try {
-                builder.preset(PresetFiles.toPreset(stored.dso()));
-            } catch (ConstraintBreachException breach) {
-                builder.violation(new PackElementViolation(
-                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
-            }
-        }
-        // #260: the document's parts are the read model's; one the domain refuses is a violation, never a failed load.
-        read.document().ifPresent(stored -> {
-            try {
-                builder.document(PackDocumentMarkdown.toDomain(stored.dso()));
-            } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(
-                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
-            }
-        });
-        return builder;
-    }
-
-    /**
-     * The assembly of {@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map)} given the pack's graph
-     * documents too: the one seat of the step enhancement and fragment faults (FR-004 to FR-006), reached by the
-     * whole-pack load, and through it the registration, and by every composing read ({@code assemble}, so {@code readable}).
-     * Nothing is thrown for such a fault. Before the existing assembly it
-     *
-     * <ol>
-     *   <li>judges the facts of the read's step enhancements, their companions and the graph edges (no orphan set: the
-     *       read lists no unnamed file; the edge rules are not judged over a graph read that has a violation, which is
-     *       refused on its own);
-     *   <li>hands the existing assembly a judged copy of the read: each {@code companion} violation of a
-     *       step enhancement file kept under the kind {@code prompt_fragment_invalid}, the store hard-coding the
-     *       generic kind, and each file whose id repeats (the second in path order) left out of the held enhancements,
-     *       so that {@code Pack.guardKind}'s same-id rule never breaches at {@code build()} (operator ruling A2), and
-     *       each mission type whose step repeats a substep id left out of the held types: it is recorded under the kind
-     *       {@code duplicate_step_id} at its file, after the violations of the existing assembly, the code and file
-     *       validate mode reports (FR-004), never as the domain's generic refusal;
-     * </ol>
-     *
-     * and last appends each rule fault as a violation at its file, after the violations of the store, of every bound
-     * kind, the templates, the presets and the pack document, and after the slot faults of the step prompts (FR-007,
-     * IC-03): the order of {@code readable}'s first violation. A slot fault the descriptor's version only warns of is
-     * put on {@code warnings}, not on the violations.
-     *
-     * @param pack the pack the artifacts belong to
-     * @param read what the store read
-     * @param places receives each added artifact's pack-relative file
-     * @param graphs what the store read of the pack's graph documents
-     * @param warnings receives the load findings that do not refuse the pack (A4, A8), filled as {@code places} is
-     * @return the builder, ready to build
-     */
-    static Pack.Builder assembly(
-            PackIdentifier pack,
-            FilesystemPackStore.PackRead read,
-            Map<Urn, String> places,
-            FilesystemPackStore.GraphRead graphs,
-            List<PackFinding> warnings) {
-        List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
-                stepEnhancementFacts(read, graphs), graphs.violations().isEmpty());
-        List<PackElementViolation> repeats = new ArrayList<>();
-        Set<String> repeating = new LinkedHashSet<>();
-        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
-            List<PackElementViolation> found =
-                    PackPolicy.substepIdViolations(missionTypeFacts(stored.file(), stored.dso()));
-            if (!found.isEmpty()) {
-                repeating.add(stored.file());
-                repeats.addAll(found);
-            }
-        }
-        Pack.Builder builder = assembly(pack, judged(read, faults, repeating), places);
-        repeats.forEach(builder::violation);
-        recordPromptSlotFaults(read, builder, warnings);
-        faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
-        missionStepViolations(read, places, graphs).forEach(builder::violation);
-        substepDelegationViolations(read, places, graphs).forEach(builder::violation);
-        return builder;
-    }
-
-    /**
-     * Each fault of {@link MissionStepLinkRule} over the mission types the assembly holds (one the domain refuses is
-     * refused on its own and not judged) and the edges of the readable graph documents, at its file. When a graph
-     * document could not be read the rule is not judged: the read reports that document, and a step would otherwise
-     * lack an edge the pack may well hold.
-     */
-    private static List<PackElementViolation> missionStepViolations(
-            FilesystemPackStore.PackRead read, Map<Urn, String> places, FilesystemPackStore.GraphRead graphs) {
-        if (!graphs.violations().isEmpty()) {
-            return List.of();
-        }
-        return MissionStepLinkRule.judge(read.descriptor().name(), heldTypes(read, places), edgesOf(graphs)).stream()
-                .map(fault -> new PackElementViolation(fault.file(), PackCodes.MISSION_STEP_UNLINKED, fault.reason()))
-                .toList();
-    }
-
-    /**
-     * Each fault of {@link SubstepDelegationRule} over the mission types the assembly holds, the artifacts it holds and
-     * the edges of the readable graph documents, at the mission type file (FR-005). When a graph document could not be
-     * read the rule is not judged: the read reports that document, and a candidate would otherwise lack an edge the pack
-     * may well hold.
-     */
-    private static List<PackElementViolation> substepDelegationViolations(
-            FilesystemPackStore.PackRead read, Map<Urn, String> places, FilesystemPackStore.GraphRead graphs) {
-        if (!graphs.violations().isEmpty()) {
-            return List.of();
-        }
-        Set<String> held = new HashSet<>();
-        places.keySet().forEach(urn -> held.add(urn.toString()));
-        return SubstepDelegationRule.judge(read.descriptor().name(), heldTypes(read, places), held, edgesOf(graphs))
-                .stream()
-                .map(fault -> new PackElementViolation(
-                        fault.file(),
-                        SubstepDelegationRule.UNRESOLVED.equals(fault.code())
-                                ? PackCodes.SUBSTEP_DELEGATION_UNRESOLVED
-                                : PackCodes.SUBSTEP_DELEGATION_UNSCOPED,
-                        fault.reason()))
-                .toList();
-    }
-
-    /**
-     * The facts of the mission types the assembly holds: a type the domain refuses is refused on its own and is no fact.
-     */
-    private static List<MissionTypeFacts> heldTypes(FilesystemPackStore.PackRead read, Map<Urn, String> places) {
-        List<MissionTypeFacts> types = new ArrayList<>();
-        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
-            MissionTypeDso type = stored.dso();
-            if (stored.file().equals(places.get(new Urn(NodeKind.MISSION_TYPE, type.id())))) {
-                types.add(missionTypeFacts(stored.file(), type));
-            }
-        }
-        return types;
-    }
-
-    /**
-     * A stored mission type as the plain facts the pack rules judge: its steps, then its on-demand steps, and the
-     * substeps of each.
-     *
-     * @param file the type's pack-relative file
-     * @param type the stored type
-     * @return the facts
-     */
-    static MissionTypeFacts missionTypeFacts(String file, MissionTypeDso type) {
-        List<String> steps = new ArrayList<>();
-        List<MissionTypeFacts.SubstepFacts> substeps = new ArrayList<>();
-        Map<String, List<MissionTypeDso.Step>> lists = new LinkedHashMap<>();
-        lists.put("steps", type.steps());
-        lists.put("on_demand_steps", type.onDemandSteps());
-        lists.forEach((list, written) -> {
-            for (int i = 0; i < written.size(); i++) {
-                MissionTypeDso.Step step = written.get(i);
-                steps.add(step.id());
-                for (int j = 0; j < step.substeps().size(); j++) {
-                    MissionTypeDso.Substep substep = step.substeps().get(j);
-                    substeps.add(new MissionTypeFacts.SubstepFacts(
-                            list,
-                            i,
-                            step.id(),
-                            j,
-                            substep.id(),
-                            substep.delegatesTo()
-                                    .map(delegation -> new MissionTypeFacts.Delegation(
-                                            delegation.kind(), delegation.candidates()))));
-                }
-            }
-        });
-        return new MissionTypeFacts(file, type.id(), steps, substeps);
-    }
-
-    /** The edges of the readable graph documents, as written, in document order. */
-    private static List<MissionStepLinkRule.Edge> edgesOf(FilesystemPackStore.GraphRead graphs) {
-        List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
-        for (GraphDocument document : graphs.documents()) {
-            for (GraphDocument.Edge edge : document.edges()) {
-                edges.add(new MissionStepLinkRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
-            }
-        }
-        return edges;
-    }
-
-    /**
-     * Judges the slots of every step prompt of the stored mission types (FR-007) and records each fault at the prompt's
-     * pack-relative file: a blocking fault as a violation, a warning on {@code warnings}, never on the violations
-     * (A4). The text parsed is the canonical text of the prompt document the store read into the mission type
-     * ({@code MissionTypeDso.Step#prompt}), frontmatter included (A5, A11): the same text validate mode parses. A step
-     * with no prompt has nothing to judge.
-     */
-    private static void recordPromptSlotFaults(
-            FilesystemPackStore.PackRead read, Pack.Builder builder, List<PackFinding> warnings) {
-        Optional<String> version = read.descriptor().toDescriptor().schemaVersion();
-        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
-            List<MissionTypeDso.Step> steps = new ArrayList<>(stored.dso().steps());
-            steps.addAll(stored.dso().onDemandSteps());
-            for (MissionTypeDso.Step step : steps) {
-                if (step.promptPath().isEmpty() || step.prompt().isEmpty()) {
-                    continue;
-                }
-                String file = companionFile(stored.file(), step.promptPath().get());
-                PromptSlots.Parse parse =
-                        PromptSlots.parse(MarkdownCodec.write(step.prompt().get()));
-                for (PackPolicy.PromptSlotFault fault : PackPolicy.promptSlotFaults(parse, version)) {
-                    if (fault.code().severity() == Severity.VIOLATION) {
-                        builder.violation(PackPolicy.violationOf(file, fault));
-                    } else {
-                        warnings.add(PackPolicy.findingOf(file, fault));
-                    }
-                }
-            }
-        }
-    }
-
-    /** The pack-relative file of a companion path, which is relative to the file of the artifact that names it. */
-    private static String companionFile(String artifactFile, String companionPath) {
-        Path file = Path.of(artifactFile).resolveSibling(companionPath).normalize();
-        return file.toString().replace(file.getFileSystem().getSeparator(), "/");
-    }
-
-    private static String enhancementSuffix() {
-        return "." + StepEnhancementBinding.INSTANCE.fileToken() + ".yaml";
-    }
-
-    /** The facts of the held step enhancements, their companions' canonical texts and the pack's edges. */
-    private static StepEnhancementFacts stepEnhancementFacts(
-            FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
-        List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
-        List<StepEnhancementFacts.Companion> companions = new ArrayList<>();
-        for (FilesystemPackStore.Stored<StepEnhancementDso> stored : read.elements(StepEnhancementBinding.INSTANCE)) {
-            List<StepEnhancementFacts.Entry> entries = stored.dso().promptFragments().stream()
-                    .map(entry -> new StepEnhancementFacts.Entry(entry.slot(), entry.path()))
-                    .toList();
-            StepEnhancementFacts.Enhancement enhancement = new StepEnhancementFacts.Enhancement(
-                    stored.file(),
-                    FileSystemPackInspector.typeDirectory(stored.file()),
-                    stored.dso().id(),
-                    entries);
-            enhancements.add(enhancement);
-            for (int i = 0; i < entries.size(); i++) {
-                String companion = enhancement.companionPath(entries.get(i));
-                stored.dso()
-                        .promptFragments()
-                        .get(i)
-                        .body()
-                        .ifPresent(body -> companions.add(FileSystemPackInspector.companionFact(companion, body)));
-            }
-        }
-        List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
-        for (GraphDocument document : graphs.documents()) {
-            for (GraphDocument.Edge edge : document.edges()) {
-                FileSystemPackInspector.stepEnhancementEdge(
-                                edge.relation(),
-                                edge.source(),
-                                edge.target(),
-                                read.descriptor().name())
-                        .ifPresent(edges::add);
-            }
-        }
-        // Orphans are judged at validate and registration only: no fragment file list is passed at load.
-        return new StepEnhancementFacts(enhancements, companions, Set.of(), Set.of(), edges);
-    }
-
-    /**
-     * The read the existing assembly gets: the remapped companion violations, the repeated enhancement ids and the
-     * mission types that repeat a substep id left out.
-     */
-    private static FilesystemPackStore.PackRead judged(
-            FilesystemPackStore.PackRead read, List<StepEnhancementFault.Finding> faults, Set<String> repeating) {
-        Set<String> withheld = new LinkedHashSet<>();
-        for (StepEnhancementFault.Finding fault : faults) {
-            if (fault.rule() == StepEnhancementFault.STEM_REPEATED) {
-                withheld.add(fault.path());
-            }
-        }
-        ReasonCode kind = PackCodes.PROMPT_FRAGMENT_INVALID;
-        List<PackElementViolation> violations = read.violations().stream()
-                .map(violation -> FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
-                                && violation.file().endsWith(enhancementSuffix())
-                        ? new PackElementViolation(violation.file(), kind, violation.reason())
-                        : violation)
-                .toList();
-        Map<ArtifactKind, List<FilesystemPackStore.Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
-        elements.putAll(read.elements());
-        elements.computeIfPresent(
-                ArtifactKind.STEP_ENHANCEMENT,
-                (key, held) -> held.stream()
-                        .filter(stored -> !withheld.contains(stored.file()))
-                        .toList());
-        elements.computeIfPresent(
-                ArtifactKind.MISSION_TYPE,
-                (key, held) -> held.stream()
-                        .filter(stored -> !repeating.contains(stored.file()))
-                        .toList());
-        return new FilesystemPackStore.PackRead(
-                read.descriptor(),
-                elements,
-                violations,
-                read.assetFiles(),
-                read.templates(),
-                read.presets(),
-                read.document());
-    }
-
-    /**
-     * Adds each readable element of one kind to the aggregate, failing closed: a domain-invalid element is recorded as
-     * a violation, named by its id, rather than aborting assembly. A mission type whose output template names no
-     * template of the pack (#277) is left out with a {@code reference} violation of its file, as the read's own check of
-     * a named file words it; so is a guard or a lifecycle that does not close over its references (ADR-0054,
-     * {@link GuardClosure}). Each added element's file is put in {@code places} under its URN.
-     */
-    static <D, E extends CharterArtifact> void collect(
-            PackIdentifier pack,
-            KindBinding<D, E> kind,
-            FilesystemPackStore.PackRead read,
-            Pack.Builder builder,
-            Map<Urn, String> places,
-            Set<String> namableTemplates,
-            GuardClosure closure) {
-        for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
-            try {
-                E entity = kind.toEntity(pack, stored.dso());
-                Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
-                if (unresolved.isPresent()) {
-                    builder.violation(new PackElementViolation(
-                            stored.file(),
-                            StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                            MissionTemplates.reason(unresolved.get())));
-                    continue;
-                }
-                Optional<String> unclosed = closure.firstUnresolved(entity);
-                if (unclosed.isPresent()) {
-                    builder.violation(new PackElementViolation(
-                            stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
-                    continue;
-                }
-                Urn urn = entity.urn();
-                String first = places.get(urn);
-                if (first != null) {
-                    // #554, R2 row 10: the first file in the read's order owns the id; a repeat is its own fault.
-                    builder.violation(new PackElementViolation(
-                            stored.file(),
-                            PackCodes.DUPLICATE_ARTIFACT_ID,
-                            PackCodes.duplicateArtifactId(kind.kind().token(), kind.idOf(stored.dso()), first)));
-                    continue;
-                }
-                builder.artifact(entity);
-                places.put(urn, stored.file());
-            } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(
-                        stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
-            }
-        }
+        return LoadChecks.assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>())
+                .build();
     }
 
     // ---- the pack document (#451) --------------------------------------------------------------------------------

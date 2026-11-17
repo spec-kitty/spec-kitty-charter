@@ -306,8 +306,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             List<MissionTypeFacts> types = new ArrayList<>();
             for (MissionTypeDso type :
                     new FilesystemPackStore(parent, strategy).readAll(key, MissionTypeBinding.INSTANCE)) {
-                types.add(DomainRepositoryService.missionTypeFacts(
-                        MissionTypeBinding.INSTANCE.fileName(type.id()), type));
+                types.add(PackAssembly.missionTypeFacts(MissionTypeBinding.INSTANCE.fileName(type.id()), type));
             }
             return types;
         });

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * A mission type's output templates resolved against the pack's templates (#277, ADR-0044 decision 7 as amended): the
- * one place the pack store enforces it, at assembly ({@code DomainRepositoryService.assembly}) and before a whole-pack
+ * one place the pack store enforces it, at assembly ({@code PackAssembly.assembly}) and before a whole-pack
  * write. The missions domain resolves a {@code template_path} against template ids
  * ({@link MissionType#unresolvedTemplates}); this is the pack's side, which knows the templates and words the refusal. A path resolves only to a mission type's own template, one filed under
  * {@code missions/<type>/templates/}: a template of the same id under the pack's top-level {@code templates/} is written

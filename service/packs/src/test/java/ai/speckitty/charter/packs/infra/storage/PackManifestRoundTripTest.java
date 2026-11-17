@@ -170,7 +170,8 @@ class PackManifestRoundTripTest {
         assertThat(restamped.constituents())
                 .extracting(PackManifestDso.Constituent::id)
                 .contains("ripgrep");
-        assertThat(ManifestMembership.mismatch(restamped, ManifestMembership.derived(loaded.pack(), loaded.layout())))
+        assertThat(ManifestMembership.mismatch(
+                        restamped, PackManifestDerivation.derived(loaded.pack(), loaded.layout())))
                 .isEmpty();
         assertThat(PackManifests.stale(restamped, path -> bytesOf(pack.resolve(path))))
                 .isEmpty();

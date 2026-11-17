@@ -401,8 +401,7 @@ class MissionTypeBindingTest {
                 .findFirst()
                 .orElseThrow();
 
-        Pack resolved =
-                DomainRepositoryService.assembly(PACK_ID, read, new HashMap<>()).build();
+        Pack resolved = PackAssembly.assembly(PACK_ID, read, new HashMap<>()).build();
         assertThat(resolved.violations()).isEmpty();
         assertThat(missionType(resolved).templateReferences())
                 .extracting(
@@ -413,7 +412,7 @@ class MissionTypeBindingTest {
                 List.of(new FilesystemPackStore.TemplateFile(
                         own.path(), own.content(), "templates/research/spec-template.md")),
                 List.<FilesystemPackStore.TemplateFile>of())) {
-            Pack refused = DomainRepositoryService.assembly(
+            Pack refused = PackAssembly.assembly(
                             PACK_ID,
                             new FilesystemPackStore.PackRead(
                                     read.descriptor(),
@@ -463,8 +462,7 @@ class MissionTypeBindingTest {
                 .as("the type itself still reads")
                 .hasSize(1);
 
-        Pack assembled =
-                DomainRepositoryService.assembly(PACK_ID, read, new HashMap<>()).build();
+        Pack assembled = PackAssembly.assembly(PACK_ID, read, new HashMap<>()).build();
         assertThat(assembled.artifacts(ArtifactKind.MISSION_TYPE)).isEmpty();
         assertThat(assembled.violations())
                 .containsExactly(

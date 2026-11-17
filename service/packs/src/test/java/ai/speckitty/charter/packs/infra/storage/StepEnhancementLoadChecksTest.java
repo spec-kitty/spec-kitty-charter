@@ -385,7 +385,7 @@ class StepEnhancementLoadChecksTest {
         Enhancer pack = blankCompanion();
         FilesystemPackStore files = new FilesystemPackStore(host, strategy);
 
-        Pack assembled = DomainRepositoryService.assembly(
+        Pack assembled = PackAssembly.assembly(
                         new PackIdentifier("enhancer"), files.read(new PackIdentifier("enhancer")), new HashMap<>())
                 .build();
 

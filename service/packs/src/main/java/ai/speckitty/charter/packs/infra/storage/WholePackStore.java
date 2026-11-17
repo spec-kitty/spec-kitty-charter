@@ -228,14 +228,15 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * Loads a pack as {@link #load} does, but tolerates an unreadable graph document as a read does: the manifest's
-     * derivation of a stored pack (#110) lists what the pack holds and judges nothing else.
+     * The derived manifest of the pack in {@code directory}, read with this store's bindings and companion rules
+     * ({@link PackManifestDerivation#derivedAt}): what the manifest stamp writes and the registration's membership check
+     * compares with.
      *
      * @param directory the pack directory
-     * @return the aggregate, its layout, the DRG documents that could be read and the files not held
+     * @return the manifest with the derived lists
      */
-    LoadedPack loadTolerant(Path directory) {
-        return load(directory, false, new ArrayList<>()).pack();
+    PackManifestDso derivedManifest(Path directory) {
+        return PackManifestDerivation.derivedAt(directory, strategy, bindings, companionRules);
     }
 
     /**
@@ -264,7 +265,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         Map<Urn, String> places = new HashMap<>();
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
         List<PackFinding> warnings = new ArrayList<>();
-        Pack.Builder builder = DomainRepositoryService.assembly(id, read, places, graphs, warnings);
+        Pack.Builder builder = LoadChecks.assembly(id, read, places, graphs, warnings);
         graphFaults.addAll(graphs.violations());
         if (refuseGraphFault && !graphFaults.isEmpty()) {
             PackElementViolation first = graphFaults.getFirst();
@@ -365,7 +366,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             // #110: judged on a pack with no other fault, as an artifact refused elsewhere would read as left out.
             loaded.manifest()
                     .ifPresent(listed -> ManifestMembership.mismatch(
-                                    listed, ManifestMembership.derived(loaded.pack(), loaded.layout()))
+                                    listed, PackManifestDerivation.derived(loaded.pack(), loaded.layout()))
                             .forEach(reason -> violations.add(violationOf(
                                     PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
         }
@@ -484,7 +485,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     @Override
     public void stampManifest(StagedPack staged) {
         try {
-            ManifestMembership.stamp(staged.directory(), this, strategy);
+            ManifestMembership.stamp(staged.directory(), this::derivedManifest, strategy);
         } catch (IOException e) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "The staged " + PackFileSet.MANIFEST + " could not be written", e);
@@ -1054,7 +1055,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                     written);
         }
         // #110: the manifest is always written, its membership derived from the pack written, never carried as read.
-        putManifest(staging, pack, ManifestMembership.derived(pack, loaded.layout()), written);
+        putManifest(staging, pack, PackManifestDerivation.derived(pack, loaded.layout()), written);
     }
 
     /**

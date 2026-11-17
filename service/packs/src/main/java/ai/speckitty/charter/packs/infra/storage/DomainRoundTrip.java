@@ -686,7 +686,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         }
         // #110: the lists are derived from the source pack, as a registration derives them; a difference refuses, and
         // the gate writes the derived lists, in path order, as the store's write does.
-        PackManifestDso derived = ManifestMembership.derivedAt(source, new WholePackStore(strategy));
+        PackManifestDso derived = PackManifestDerivation.derivedAt(source, strategy);
         List<String> membership = ManifestMembership.mismatch(good.value(), derived);
         if (!membership.isEmpty()) {
             return new Refused(String.join("; ", membership));

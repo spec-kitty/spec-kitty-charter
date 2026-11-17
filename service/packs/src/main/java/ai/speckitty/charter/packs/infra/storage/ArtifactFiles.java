@@ -39,7 +39,7 @@ final class ArtifactFiles {
         FilesystemPackStore.PackRead read = new FilesystemPackStore(parent, strategy, rules)
                 .read(new PackIdentifier(String.valueOf(packDir.getFileName())), KindBindings.all());
         Map<Urn, String> places = new HashMap<>();
-        DomainRepositoryService.assembly(new PackIdentifier(read.descriptor().packId()), read, places);
+        PackAssembly.assembly(new PackIdentifier(read.descriptor().packId()), read, places);
         List<String> files = new ArrayList<>();
         for (Urn artifact : artifacts) {
             String file = places.get(artifact);
