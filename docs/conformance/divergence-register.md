@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-17T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -32,7 +32,7 @@ reused.
 Entries are grouped by block, one block per mission, so that two missions never share an id:
 
 - **Context read (DIV-101..110, ADR-0018)** is below.
-- **Pack schemas (DIV-001..027, ADR-0017)** is below, after the context-read block. DIV-001 and
+- **Pack schemas (DIV-001..028, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..245, ADR-0020)** is below. DIV-201 and DIV-202 were proposed until the effective reads were
@@ -122,7 +122,7 @@ need no entry here. For an activated case the harness asserts both sides (ADR-00
 The seam does not switch its context read to the service until R9's effective-context operation
 exists (cutover stage 3).
 
-## Pack schemas (DIV-001..027, ADR-0017)
+## Pack schemas (DIV-001..028, ADR-0017)
 
 The pack-schema mission (#114) decided these in [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
 and its amendment of 2026-10-19. Core's behavior is cited at the pinned core commit `9554e7b2`.
@@ -453,6 +453,18 @@ ruling, its status and the evidence.
   - Charter: `contracts/packs/file-kinds.yaml` (the graph-shard rule `*/*.graph.yaml`)
   - Core: `src/charter/activation/_drg_helpers.py:load_validated_graph` reads the pack-root `*.graph.yaml` and `drg/fragment.yaml` (named by core's `drg_root_graph_missing` message)
   - Charter: planted plants `c3-shard-edge-bare-endpoint`, `c3-shard-urn-malformed`, `c7-shard-relation-extends` and `c8-shard-without-generated-by-is-accepted` (core verdicts in planted/core-verdicts.json: a schema refusal at `drg/<kind>.graph.yaml`) and `r15-glossary-urn-in-a-shard` (core verdict: `drg_root_graph_missing` at `<pack>`)
+
+### DIV-028: A pack with no pack.yaml, in validate mode
+
+- **Core:** Validates a pack with no `pack.yaml` as if the descriptor were optional: it skips the descriptor's checks and reports nothing for its absence (`offering/packs/pack_validator.py`, `_validate_pack_descriptor` returns no issue when `pack.yaml` is not a file). None of the 33 core verdicts recorded for the 34 planted packs without a descriptor names `pack.yaml`, and 11 of them are accepted.
+- **Service:** Refuses it: validate mode answers `pack_unreadable` at `pack.yaml`, `pack <name> has no pack.yaml`, beside the pack's other findings, as the registration answers it (R2 row 24). Validate mode judges the one read's storage verdict, and the store refuses a pack it cannot describe.
+- **Rationale:** One fault answers one code on every surface (operator ruling R2): a pack the registration refuses for its missing descriptor is not valid in validate mode. A pack's descriptor names it, its version and its level, so a pack without one has no identity to store or compose.
+- **Ruling:** #554 operator rulings R2 (b) and S6 (2026-11-16); R2 row 24, landed by WP09
+- **Status:** open, since 2026-11-17
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:_validate_pack_descriptor` (`if not path.is_file(): return []`)
+  - Charter: `planted/core-verdicts.json`: no recorded verdict of a plant without `pack.yaml` names `pack.yaml`; 11 are ok (for example `artifact-utf16-with-a-byte-order-mark`, `charter-valid`, `c10-agent-scalar-role`)
+  - Charter: `service/pack-validation/src/test/resources/golden/validate.json` (the 34 plants without `pack.yaml` answer `pack_unreadable` at `pack.yaml`) and `PackCheckTest.aPackWithNoDescriptorIsRefusedAtPackYamlAsTheRegistrationRefusesIt`
 
 ## Adding an entry
 
