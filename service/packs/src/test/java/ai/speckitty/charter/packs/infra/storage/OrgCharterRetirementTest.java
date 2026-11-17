@@ -7,14 +7,13 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -66,13 +65,11 @@ class OrgCharterRetirementTest {
             assertThat(contents.readFaults())
                     .extracting(fault -> fault.location().file())
                     .containsExactly(FILE);
-            assertThat(contents.readFaults().stream().map(PackFinding::of))
-                    .singleElement()
-                    .satisfies(finding -> {
-                        assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);
-                        assertThat(finding.file()).isEqualTo(FILE);
-                        assertThat(finding.detail()).isEqualTo(FILE + ": " + REASON);
-                    });
+            assertThat(contents.readFaults()).singleElement().satisfies(finding -> {
+                assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);
+                assertThat(finding.location().file()).isEqualTo(FILE);
+                assertThat(finding.detail()).isEqualTo(FILE + ": " + REASON);
+            });
         }
 
         @Test
@@ -138,15 +135,14 @@ class OrgCharterRetirementTest {
         void validateModeNamesTheKey() {
             PackRoot root = new PackRoot(name(), Optional.of(PackLevel.ORG), pack.toString());
 
-            List<PackFinding> findings = new PackValidation(new FileSystemPackInspector())
-                    .validate(root)
-                    .findings();
+            List<Reason> findings =
+                    new PackCheck(new FileSystemPackInspector()).validate(root).findings();
 
             assertThat(findings)
-                    .filteredOn(finding -> PackFindingCode.PACK_UNREADABLE.equals(finding.code()))
+                    .filteredOn(finding -> StorageCodes.PACK_UNREADABLE.equals(finding.code()))
                     .singleElement()
                     .satisfies(finding -> {
-                        assertThat(finding.file()).isEqualTo("pack.yaml");
+                        assertThat(finding.location().file()).isEqualTo("pack.yaml");
                         assertThat(finding.detail()).isEqualTo("pack.yaml of org-base: unknown key 'active_charter'");
                     });
         }

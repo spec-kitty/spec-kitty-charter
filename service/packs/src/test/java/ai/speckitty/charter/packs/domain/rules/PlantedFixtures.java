@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
@@ -110,6 +111,17 @@ final class PlantedFixtures {
                     tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
         }
 
+        /**
+         * What today's {@link PackPolicy#judge} is given for the read: its facts, with the read faults alone as the
+         * rationale (staging until WP13; validate mode judges the storage edge's verdict, WP09).
+         *
+         * @return the readout
+         */
+        PackReadout policyReadout() {
+            return new PackReadout(
+                    tree.contents(), tree.census().files(), tree.census().notHeld(), new Rationale(tree.readFaults()));
+        }
+
         @Override
         public String toString() {
             return key;
@@ -160,7 +172,7 @@ final class PlantedFixtures {
     static List<Reason> policyFindings(Planted planted, Collection<ReasonCode> codes) {
         List<Reason> readFaults = new ArrayList<>(planted.tree().readFaults());
         List<Reason> own = new ArrayList<>();
-        for (PackFinding finding : PackPolicy.judge(planted.readout()).findings()) {
+        for (PackFinding finding : PackPolicy.judge(planted.policyReadout()).findings()) {
             if (codes.contains(finding.code()) && !readFaults.remove(finding.reason())) {
                 own.add(finding.reason());
             }

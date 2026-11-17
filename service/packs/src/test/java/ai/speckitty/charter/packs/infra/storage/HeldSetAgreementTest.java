@@ -294,8 +294,7 @@ class HeldSetAgreementTest {
     }
 
     private static PackReadout inspect(Path pack, PackLevel level) {
-        return new FileSystemPackInspector()
-                .read(new PackRoot(String.valueOf(pack.getFileName()), Optional.of(level), pack.toString()));
+        return PolicyReadouts.of(new PackRoot(String.valueOf(pack.getFileName()), Optional.of(level), pack.toString()));
     }
 
     /** The store's not-held list, or empty when the store refuses to load the pack at all. */

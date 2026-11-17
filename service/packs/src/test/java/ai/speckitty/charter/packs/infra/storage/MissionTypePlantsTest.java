@@ -6,15 +6,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.PackCodes;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -62,12 +62,12 @@ class MissionTypePlantsTest {
     @Test
     @DisplayName("validate mode: one blocking mission_step_unlinked at the mission type file, naming the step")
     void validateModeRefusesTheUnlinkedStep(@TempDir Path host) {
-        List<PackFinding> findings = validate(planted(host, UNLINKED));
+        List<Reason> findings = validate(planted(host, UNLINKED));
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.MISSION_STEP_UNLINKED);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-            assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail()).contains("the step b of mission_type:rx has no requires edge");
         });
     }
@@ -114,7 +114,7 @@ class MissionTypePlantsTest {
         String stray = "the requires edge from mission_type:rx to action:rx/c names no step of the type";
 
         assertThat(validate(pack))
-                .extracting(PackFinding::code, PackFinding::file)
+                .extracting(Reason::code, finding -> finding.location().file())
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(PackCodes.MISSION_STEP_UNLINKED, GRAPH),
                         org.assertj.core.groups.Tuple.tuple(PackCodes.MISSION_STEP_UNLINKED, TYPE));
@@ -142,8 +142,10 @@ class MissionTypePlantsTest {
         assertThat(broken).isNotEqualTo(CLEAN_TYPE);
         Files.writeString(pack.resolve(TYPE), broken, StandardCharsets.UTF_8);
 
-        assertThat(validate(pack)).extracting(PackFinding::file).containsExactly(TYPE);
-        assertThat(validate(pack)).extracting(PackFinding::code).doesNotContain(PackCodes.MISSION_STEP_UNLINKED);
+        assertThat(validate(pack))
+                .extracting(finding -> finding.location().file())
+                .containsExactly(TYPE);
+        assertThat(validate(pack)).extracting(Reason::code).doesNotContain(PackCodes.MISSION_STEP_UNLINKED);
         // The load names a domain refusal by the type's id and a check refusal by its file (as before WP06); either way
         // it is the type's one fault, and the step links are not judged.
         assertThat(new WholePackStore(new YamlSerializationStrategy())
@@ -177,11 +179,11 @@ class MissionTypePlantsTest {
     @ValueSource(strings = {"r33-authored-action-sequence", "r34-authored-template-set"})
     @DisplayName("validate mode: one blocking artifact_schema_error at the mission type, naming the field")
     void validateModeRefusesTheRetiredField(String plant, @TempDir Path host) {
-        List<PackFinding> findings = validate(planted(host, plant));
+        List<Reason> findings = validate(planted(host, plant));
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail())
                     .as("an unknown field, by its name")
                     .contains("unknown key '" + field(plant) + "'");
@@ -238,8 +240,8 @@ class MissionTypePlantsTest {
         assertThat(store.loadStaged(new StagedPack(pack)).pack().violations()).isEmpty();
     }
 
-    private static List<PackFinding> validate(Path pack) {
-        return new PackValidation(new FileSystemPackInspector())
+    private static List<Reason> validate(Path pack) {
+        return new PackCheck(new FileSystemPackInspector())
                 .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), pack.toString()))
                 .findings();
     }

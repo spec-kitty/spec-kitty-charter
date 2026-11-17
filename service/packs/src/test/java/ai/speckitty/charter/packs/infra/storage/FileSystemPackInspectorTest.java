@@ -29,12 +29,12 @@ import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -125,9 +125,9 @@ class FileSystemPackInspectorTest {
         assertThat(full(dir).readFaults()).noneMatch(fault -> StorageCodes.RESERVED_SHARD.equals(fault.code()));
 
         // #554, R2 row 28: validate mode answers reserved_shard in the registration's words, once.
-        assertThat(PackPolicy.judge(readout(dir)).findings())
-                .filteredOn(finding -> finding.file().equals("registered.graph.yaml"))
-                .extracting(PackFinding::code, PackFinding::detail)
+        assertThat(new PackCheck(INSPECTOR).validate(root(dir)).findings())
+                .filteredOn(finding -> finding.location().file().equals("registered.graph.yaml"))
+                .extracting(Reason::code, Reason::detail)
                 .containsExactly(tuple(StorageCodes.RESERVED_SHARD, RelationshipShard.RESERVED));
         assertThatThrownBy(() -> new WholePackStore(new YamlSerializationStrategy()).loadStaged(new StagedPack(dir)))
                 .isInstanceOfSatisfying(
@@ -216,7 +216,7 @@ class FileSystemPackInspectorTest {
         PackRoot project = new PackRoot("demo", Optional.of(PackLevel.PROJECT), dir.toString());
 
         // The closed descriptor schema (ADR-0036 decision 3) refuses each key at the root, naming it in the detail.
-        assertThat(PackPolicy.judge(INSPECTOR.read(project)).findings())
+        assertThat(PackPolicy.judge(PolicyReadouts.of(INSPECTOR, project)).findings())
                 .extracting(f -> f.detail()
                         .substring(f.detail().indexOf('\'') + 1, f.detail().lastIndexOf('\'')))
                 .as("every unknown key refused once")
@@ -234,7 +234,7 @@ class FileSystemPackInspectorTest {
     }
 
     private static PackReadout readout(Path dir) {
-        return INSPECTOR.read(root(dir));
+        return PolicyReadouts.of(INSPECTOR, root(dir));
     }
 
     /** The files the read refused, each once, in the order of their first fault. */
@@ -820,7 +820,7 @@ class FileSystemPackInspectorTest {
                 """);
         String reason = "node D1 body_path '../outside.directive.yaml' escapes the pack root";
 
-        PackVerdict verdict = PackPolicy.judge(readout(dir));
+        PackPolicy.Judgement verdict = PackPolicy.judge(readout(dir));
         FilesystemPackStore.GraphRead load =
                 new FilesystemPackStore(host, new YamlSerializationStrategy()).readGraphs(new PackIdentifier("qa"));
 
@@ -884,7 +884,7 @@ class FileSystemPackInspectorTest {
         Path builtIn = ExamplePacks.pack(ExamplePacks.BUILT_IN);
         PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), builtIn.toString());
 
-        PackVerdict verdict = PackPolicy.judge(INSPECTOR.read(root));
+        PackPolicy.Judgement verdict = PackPolicy.judge(PolicyReadouts.of(INSPECTOR, root));
 
         // The five software-dev step prompts each declare an empty spdd:reasons-block slot (its text lives in the
         // org-base example's prompt fragments), which raises no slot finding. The one finding is the file_not_held
@@ -964,7 +964,7 @@ class FileSystemPackInspectorTest {
         Files.delete(copy.resolve("assets/carrier_lint.py"));
         PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), copy.toString());
 
-        PackVerdict verdict = PackPolicy.judge(INSPECTOR.read(root));
+        PackPolicy.Judgement verdict = PackPolicy.judge(PolicyReadouts.of(INSPECTOR, root));
 
         assertThat(verdict.findings()).isNotEmpty();
     }

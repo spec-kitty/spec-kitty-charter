@@ -110,7 +110,7 @@ class PackPolicyTest {
 
     @Test
     void judgeAggregatesTheLevelFindings() {
-        PackVerdict verdict = PackPolicy.judge(
+        PackPolicy.Judgement verdict = PackPolicy.judge(
                 Readouts.of(contents("qa", Optional.of(PackLevel.ORG), new FileRead.Absent<>("pack.yaml"))));
         assertThat(verdict.findings())
                 .extracting(PackFinding::code)

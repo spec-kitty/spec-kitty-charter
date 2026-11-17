@@ -6,15 +6,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackCodes;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,7 +48,7 @@ class SubstepDelegationPlantsTest {
     private static final String UNRESOLVED = "r35-substep-delegation-unresolved";
     private static final String UNSCOPED = "r36-substep-delegation-unscoped";
     private static final String SCOPE_EDGE = "- source: action:rx/a\n  target: tactic:tdd\n  relation: scope\n";
-    private static final List<String> PLACE = List.of("steps", "0", "substeps", "0", "delegates_to", "candidates", "0");
+    private static final String PLACE = "/steps/0/substeps/0/delegates_to/candidates/0";
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
@@ -57,13 +57,13 @@ class SubstepDelegationPlantsTest {
     })
     @DisplayName("validate mode: one blocking finding at the candidate's place in the mission type file")
     void validateModeRefusesTheCandidate(String plant, String code, String reason, @TempDir Path host) {
-        List<PackFinding> findings = validate(planted(host, plant));
+        List<Reason> findings = validate(planted(host, plant));
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code().value()).isEqualTo(code);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-            assertThat(finding.file()).isEqualTo(TYPE);
-            assertThat(finding.place()).isEqualTo(PLACE);
+            assertThat(finding.location().file()).isEqualTo(TYPE);
+            assertThat(finding.location().pointer()).isEqualTo(PLACE);
             assertThat(finding.detail())
                     .contains("the substep run of the step a of mission_type:rx delegates to tactic tdd")
                     .contains(reason);
@@ -161,8 +161,8 @@ class SubstepDelegationPlantsTest {
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.DUPLICATE_STEP_ID);
-            assertThat(finding.file()).isEqualTo(TYPE);
-            assertThat(finding.place()).containsExactly("steps", "0", "substeps", "1", "id");
+            assertThat(finding.location().file()).isEqualTo(TYPE);
+            assertThat(finding.location().pointer()).isEqualTo("/steps/0/substeps/1/id");
             assertThat(finding.detail()).contains("substep id 'run' is declared more than once in the step 'a'");
         });
         assertThat(new WholePackStore(new YamlSerializationStrategy())
@@ -185,9 +185,9 @@ class SubstepDelegationPlantsTest {
         rewriteType(pack, "      kind: tactic\n", "      kind: template\n");
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(TYPE);
-            assertThat(finding.place()).containsExactly("steps", "0", "substeps", "0", "delegates_to", "kind");
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(TYPE);
+            assertThat(finding.location().pointer()).isEqualTo("/steps/0/substeps/0/delegates_to/kind");
         });
     }
 
@@ -199,8 +199,8 @@ class SubstepDelegationPlantsTest {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail()).contains("unknown key 'gate'");
         });
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
@@ -220,8 +220,8 @@ class SubstepDelegationPlantsTest {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(TYPE);
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail()).contains("agent_profile");
         });
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
@@ -258,8 +258,8 @@ class SubstepDelegationPlantsTest {
         assertThat(store.loadStaged(new StagedPack(pack)).pack().violations()).isEmpty();
     }
 
-    private static List<PackFinding> validate(Path pack) {
-        return new PackValidation(new FileSystemPackInspector())
+    private static List<Reason> validate(Path pack) {
+        return new PackCheck(new FileSystemPackInspector())
                 .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), pack.toString()))
                 .findings();
     }

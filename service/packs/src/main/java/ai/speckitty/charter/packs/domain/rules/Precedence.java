@@ -6,8 +6,9 @@ import static ai.speckitty.charter.packs.domain.rules.Paths.FRAGMENT;
 import static ai.speckitty.charter.packs.domain.rules.Paths.PACK_YAML;
 import static ai.speckitty.charter.packs.domain.rules.Paths.isFragment;
 
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
-import ai.speckitty.charter.packs.domain.PackFinding;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -36,25 +37,39 @@ public final class Precedence {
     private Precedence() {}
 
     /**
-     * The plan's precedence: file group, then file name, then the place within the file. The findings whose code is
-     * in {@code packWide} look at the pack as a whole; they form their own group, after the graph documents and
-     * before every other file.
+     * The plan's precedence over kernel reasons (#554, N2): file group ({@link #group}), then file name
+     * ({@link #comparePaths}), then the place within the file ({@link #comparePlaces}), read as the segments of the
+     * reason's pointer (RFC 6901, decoded). The reasons whose code is in {@code firstGroup} look at the pack as a whole;
+     * they form their own group, after the graph documents and before every other file. Its caller names that group,
+     * so this class names no edge's codes.
      *
-     * @param packWide the codes of the rules that look at the pack as a whole
+     * @param firstGroup the codes of the rules that look at the pack as a whole
      * @return the order
      */
-    public static Comparator<PackFinding> comparator(Set<ReasonCode> packWide) {
-        Set<ReasonCode> wide = Set.copyOf(packWide);
-        return Comparator.<PackFinding>comparingInt(finding -> group(wide, finding))
-                .thenComparing(PackFinding::file, Precedence::comparePaths)
-                .thenComparing((a, b) -> comparePlaces(a.file(), a.place(), b.place()));
+    public static Comparator<Reason> comparator(Set<ReasonCode> firstGroup) {
+        Set<ReasonCode> wide = Set.copyOf(firstGroup);
+        return Comparator.<Reason>comparingInt(
+                        reason -> group(reason.code(), reason.location().file(), wide))
+                .thenComparing(reason -> reason.location().file(), Precedence::comparePaths)
+                .thenComparing((a, b) -> comparePlaces(
+                        a.location().file(),
+                        segments(a.location().pointer()),
+                        segments(b.location().pointer())));
     }
 
-    private static int group(Set<ReasonCode> packWide, PackFinding finding) {
-        if (packWide.contains(finding.code())) {
+    /**
+     * The group a finding sorts in: a code of {@code firstGroup} is 4; otherwise {@code pack.yaml} is 1, a root
+     * {@code *.graph.yaml} shard 2, {@code drg/fragment.yaml} 3 and any other file 5.
+     *
+     * @param code the finding's code
+     * @param file the pack-relative file it belongs to
+     * @param firstGroup the codes of the rules that look at the pack as a whole
+     * @return the group, lowest first
+     */
+    public static int group(ReasonCode code, String file, Set<ReasonCode> firstGroup) {
+        if (firstGroup.contains(code)) {
             return 4;
         }
-        String file = finding.file();
         if (PACK_YAML.equals(file)) {
             return 1;
         }
@@ -62,6 +77,18 @@ public final class Precedence {
             return 3;
         }
         return file.endsWith(".graph.yaml") && file.indexOf('/') < 0 ? 2 : 5;
+    }
+
+    /** The segments of a JSON pointer (RFC 6901), decoded; none for the whole file. */
+    static List<String> segments(String pointer) {
+        if (pointer.isEmpty()) {
+            return List.of();
+        }
+        List<String> segments = new ArrayList<>();
+        for (String segment : pointer.substring(1).split("/", -1)) {
+            segments.add(segment.replace("~1", "/").replace("~0", "~"));
+        }
+        return segments;
     }
 
     /**
@@ -103,8 +130,16 @@ public final class Precedence {
 
     // ---- ordering within a file ----------------------------------------------------------------
 
-    /** The order of two places within one file: segment by segment, a shorter place first. */
-    static int comparePlaces(String file, List<String> a, List<String> b) {
+    /**
+     * The order of two places within one file: segment by segment, a shorter place first, each segment by the declared
+     * key order of the file's kind.
+     *
+     * @param file the pack-relative file both places are in
+     * @param a one place, as pointer segments
+     * @param b the other
+     * @return negative, zero or positive as {@code a} sorts before, with or after {@code b}
+     */
+    public static int comparePlaces(String file, List<String> a, List<String> b) {
         int shared = Math.min(a.size(), b.size());
         for (int i = 0; i < shared; i++) {
             if (!a.get(i).equals(b.get(i))) {

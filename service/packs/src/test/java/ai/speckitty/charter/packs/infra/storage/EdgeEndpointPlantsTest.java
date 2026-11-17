@@ -7,14 +7,14 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackCodes;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,13 +50,13 @@ class EdgeEndpointPlantsTest {
     void validateModeRefusesIt(String plant, String document, String reason, @TempDir Path host) {
         Path pack = planted(host, plant);
 
-        List<PackFinding> findings = validate(pack);
+        List<Reason> findings = validate(pack);
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-            assertThat(finding.file()).isEqualTo(document);
-            assertThat(finding.place()).containsExactly("edges", "0");
+            assertThat(finding.location().file()).isEqualTo(document);
+            assertThat(finding.location().pointer()).isEqualTo("/edges/0");
             assertThat(finding.detail()).endsWith(": " + reason);
         });
     }
@@ -170,8 +170,8 @@ class EdgeEndpointPlantsTest {
         });
     }
 
-    private static List<PackFinding> validate(Path pack) {
-        return new PackValidation(new FileSystemPackInspector())
+    private static List<Reason> validate(Path pack) {
+        return new PackCheck(new FileSystemPackInspector())
                 .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), pack.toString()))
                 .findings();
     }

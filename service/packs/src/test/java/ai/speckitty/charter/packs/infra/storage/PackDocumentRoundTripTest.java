@@ -457,7 +457,7 @@ class PackDocumentRoundTripTest {
     /** Validate mode's findings on the pack document of a pack directory. */
     private static List<PackFinding> validateFindings(Path pack) {
         PackRoot root = new PackRoot("documented", Optional.of(PackLevel.PROJECT), pack.toString());
-        return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
+        return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
                 .filter(finding -> finding.file().equals(PackDocumentMarkdown.FILE))
                 .toList();
     }

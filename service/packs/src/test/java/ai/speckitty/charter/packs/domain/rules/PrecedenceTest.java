@@ -7,6 +7,10 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Evaluation;
+import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
@@ -32,11 +36,22 @@ import org.junit.jupiter.api.Test;
 
 class PrecedenceTest {
 
-    /** The pack-wide group {@code PackPolicy} orders by: the level rules and the missing org fragment. */
-    private static final Comparator<PackFinding> PRECEDENCE = Precedence.comparator(Set.of(
-            PackFindingCode.PACK_LEVEL_MISSING,
-            PackFindingCode.PACK_LEVEL_MISMATCH,
-            PackFindingCode.ORG_FRAGMENT_MISSING));
+    /** A fixture of the group its caller tests first: validate mode passes the placement codes (#554, N2). */
+    private static final ReasonCode PACK_WIDE = new ReasonCode("pack_wide", Severity.WARNING);
+
+    private static final Comparator<Reason> PRECEDENCE = Precedence.comparator(Set.of(PACK_WIDE));
+
+    /** A failing reason at a file and a place, its place as a JSON pointer (RFC 6901), as the rules state it. */
+    private static Reason reason(ReasonCode code, String file, List<String> place) {
+        Location where = Location.in(file);
+        if (!place.isEmpty()) {
+            StringBuilder pointer = new StringBuilder();
+            place.forEach(segment ->
+                    pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
+            where = where.at(pointer.toString());
+        }
+        return new Reason(code.value(), Evaluation.FAIL, code, where, "d");
+    }
 
     private static SchemaViolation fallback(String file, String... pointer) {
         return new SchemaViolation(file, List.of(pointer), "uniqueItems", Optional.empty(), Optional.empty(), Map.of());
@@ -313,14 +328,44 @@ class PrecedenceTest {
 
     @Test
     void thePrecedenceOrdersTheFindingsOfOneFileByPlaceAndPutsAShorterPlaceFirst() {
-        PackFinding deep =
-                new PackFinding(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "1", "tags"), "d");
-        PackFinding early =
-                new PackFinding(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "0", "tags"), "d");
-        PackFinding shallow = new PackFinding(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes"), "d");
+        Reason deep = reason(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "1", "tags"));
+        Reason early = reason(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "0", "tags"));
+        Reason shallow = reason(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes"));
 
         assertThat(java.util.stream.Stream.of(deep, early, shallow).sorted(PRECEDENCE))
                 .containsExactly(shallow, early, deep);
+    }
+
+    @Test
+    void theFirstGroupSortsAfterTheGraphDocumentsAndBeforeEveryOtherFile() {
+        Reason other = reason(PackCodes.DUPLICATE_ARTIFACT_ID, "a/x.tactic.yaml", List.of());
+        Reason wide = reason(PACK_WIDE, "pack.yaml", List.of());
+        Reason fragment = reason(PackCodes.DRG_SCHEMA_ERROR, "drg/fragment.yaml", List.of());
+        Reason shard = reason(PackCodes.DRG_SCHEMA_ERROR, "z.graph.yaml", List.of());
+        Reason descriptor = reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of("name"));
+
+        assertThat(java.util.stream.Stream.of(other, wide, fragment, shard, descriptor)
+                        .sorted(PRECEDENCE))
+                .containsExactly(descriptor, shard, fragment, wide, other);
+        assertThat(Precedence.group(PACK_WIDE, "pack.yaml", Set.of(PACK_WIDE))).isEqualTo(4);
+        assertThat(Precedence.group(PACK_WIDE, "pack.yaml", Set.of())).isEqualTo(1);
+        assertThat(Precedence.group(PackCodes.DRG_SCHEMA_ERROR, "drg/a.graph.yaml", Set.of()))
+                .as("a shard below the root is no root shard")
+                .isEqualTo(5);
+    }
+
+    @Test
+    void aPointerSegmentIsDecodedBeforeItIsCompared() {
+        Reason slash = reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of("a/b"));
+        Reason tilde = reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of("a~"));
+
+        assertThat(slash.location().pointer()).isEqualTo("/a~1b");
+        assertThat(Precedence.segments(slash.location().pointer())).containsExactly("a/b");
+        assertThat(Precedence.segments(tilde.location().pointer())).containsExactly("a~");
+        assertThat(Precedence.segments("")).isEmpty();
+        assertThat(PRECEDENCE.compare(slash, tilde))
+                .as("'a/b' sorts before 'a~' by code unit; '~1' would not")
+                .isNegative();
     }
 
     @Test
@@ -362,8 +407,8 @@ class PrecedenceTest {
 
     // ---- the order of the places within a file is total (a TimSort contract violation was a 500) --------
 
-    private static PackFinding at(String key) {
-        return new PackFinding(PackFindingCode.PACK_UNREADABLE, "pack.yaml", List.of(key), "d");
+    private static Reason at(String key) {
+        return reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of(key));
     }
 
     /** Indexes of every length, with leading zeros, empty, keys that start with digits, and declared keys. */
@@ -398,16 +443,22 @@ class PrecedenceTest {
 
     @Test
     void theOrderOfPlacesIsAntisymmetricAndTransitiveOverAFixedSample() {
-        List<PackFinding> all = SAMPLE.stream().map(PrecedenceTest::at).toList();
-        for (PackFinding a : all) {
-            for (PackFinding b : all) {
+        List<Reason> all = SAMPLE.stream().map(PrecedenceTest::at).toList();
+        for (Reason a : all) {
+            for (Reason b : all) {
                 assertThat(Integer.signum(PRECEDENCE.compare(a, b)))
-                        .as("antisymmetry of %s and %s", a.place(), b.place())
+                        .as(
+                                "antisymmetry of %s and %s",
+                                a.location().pointer(), b.location().pointer())
                         .isEqualTo(-Integer.signum(PRECEDENCE.compare(b, a)));
-                for (PackFinding c : all) {
+                for (Reason c : all) {
                     if (PRECEDENCE.compare(a, b) <= 0 && PRECEDENCE.compare(b, c) <= 0) {
                         assertThat(PRECEDENCE.compare(a, c))
-                                .as("transitivity of %s, %s, %s", a.place(), b.place(), c.place())
+                                .as(
+                                        "transitivity of %s, %s, %s",
+                                        a.location().pointer(),
+                                        b.location().pointer(),
+                                        c.location().pointer())
                                 .isLessThanOrEqualTo(0);
                     }
                 }
@@ -417,12 +468,13 @@ class PrecedenceTest {
 
     @Test
     void indexesSortByValueBeforeEveryOtherKeyAndLeadingZerosDoNotChangeTheValue() {
-        List<PackFinding> sorted = new ArrayList<>(Stream.of(
+        List<Reason> sorted = new ArrayList<>(Stream.of(
                         "pack_id", "10", "Nx", "9", "07", "1a", "7", "", "12345678901234567890", "9223372036854775808")
                 .map(PrecedenceTest::at)
                 .toList());
         sorted.sort(PRECEDENCE);
-        assertThat(sorted.stream().map(f -> f.place().get(0)))
+        assertThat(sorted.stream()
+                        .map(f -> Precedence.segments(f.location().pointer()).get(0)))
                 .containsExactly(
                         "07", "7", "9", "10", "9223372036854775808", "12345678901234567890", "pack_id", "", "1a", "Nx");
     }
@@ -430,17 +482,17 @@ class PrecedenceTest {
     @Test
     void manyShuffledMixesSortWithoutAnExceptionAndToOneOrder() {
         Random random = new Random(20260620);
-        List<PackFinding> reference =
+        List<Reason> reference =
                 SAMPLE.stream().map(PrecedenceTest::at).sorted(PRECEDENCE).toList();
         for (int round = 0; round < 500; round++) {
-            List<PackFinding> shuffled = new ArrayList<>(reference);
+            List<Reason> shuffled = new ArrayList<>(reference);
             Collections.shuffle(shuffled, random);
             shuffled.sort(PRECEDENCE);
             assertThat(shuffled).isEqualTo(reference);
         }
         // Many keys at once, the shape that made TimSort check its contract: 217 keys of "N" and "Nx" mixed.
         for (int round = 0; round < 200; round++) {
-            List<PackFinding> keys = new ArrayList<>();
+            List<Reason> keys = new ArrayList<>();
             for (int i = 0; i < 32 + random.nextInt(200); i++) {
                 int n = random.nextInt(2000);
                 keys.add(at(random.nextBoolean() ? Integer.toString(n) : n + "x"));

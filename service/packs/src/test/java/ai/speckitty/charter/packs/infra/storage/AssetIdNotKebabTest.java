@@ -6,12 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,13 +39,13 @@ class AssetIdNotKebabTest {
     void validateModeRefusesIt(@TempDir Path host) {
         Path pack = planted(host);
 
-        List<PackFinding> findings = new PackValidation(new FileSystemPackInspector())
+        List<Reason> findings = new PackCheck(new FileSystemPackInspector())
                 .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), pack.toString()))
                 .findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(SIDECAR);
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(SIDECAR);
             assertThat(finding.detail()).contains("id");
         });
     }
@@ -90,7 +90,7 @@ class AssetIdNotKebabTest {
                 StandardCharsets.UTF_8);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-        assertThat(new PackValidation(new FileSystemPackInspector())
+        assertThat(new PackCheck(new FileSystemPackInspector())
                         .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), pack.toString()))
                         .findings())
                 .isEmpty();

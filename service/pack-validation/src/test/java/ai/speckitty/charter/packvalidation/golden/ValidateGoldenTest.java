@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assumptions.abort;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -38,12 +38,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The golden snapshot of validate mode (#554, IC-01, NFR-002, SC-002): for each planted pack and each example pack,
- * what validate mode answers equals {@code golden/validate.json} byte for byte, its order included. It is the
+ * what {@link PackCheck} answers equals {@code golden/validate.json} byte for byte, its order included. It is the
  * validate half of {@code :packs}' {@code golden/surfaces.json}, split out with its subject (Pr5); the registration and
  * the compose read stay there. A difference from the snapshot taken before #554 is allowed only when it cites an entry
  * of NFR-002's diff list.
  *
- * <p>Each finding is recorded as code, severity, file, place and detail. A surface that throws is recorded as it threw.
+ * <p>Each finding is recorded as code, severity, file, place and detail: the code's token, its severity, the reason's
+ * file, the segments of its pointer (RFC 6901, decoded) and its detail. A surface that throws is recorded as it threw.
  * The temporary directory the copies live in becomes {@value #SCRATCH} wherever a text names it.
  *
  * <p>The file is written only by {@code ./gradlew :pack-validation:test --tests '*ValidateGoldenTest'
@@ -138,14 +139,14 @@ class ValidateGoldenTest {
         Function<String, String> normaliser = normaliser(scratch);
         try {
             List<Map<String, Object>> findings = new ArrayList<>();
-            for (PackFinding finding : new PackValidation(new FileSystemPackInspector())
+            for (Reason finding : new PackCheck(new FileSystemPackInspector())
                     .validate(new PackRoot(subject.name(), subject.configuredLevel(), pack.toString()))
                     .findings()) {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("code", finding.code().value());
                 row.put("severity", finding.severity().name().toLowerCase(Locale.ROOT));
-                row.put("file", normaliser.apply(finding.file()));
-                row.put("place", List.copyOf(finding.place()));
+                row.put("file", normaliser.apply(finding.location().file()));
+                row.put("place", place(finding.location().pointer()));
                 row.put("detail", normaliser.apply(finding.detail()));
                 findings.add(row);
             }
@@ -156,6 +157,17 @@ class ValidateGoldenTest {
             threw.put("message", normaliser.apply(String.valueOf(thrown.getMessage())));
             return Map.of("threw", threw);
         }
+    }
+
+    /** The segments of a JSON pointer (RFC 6901), decoded; none for the whole file. */
+    static List<String> place(String pointer) {
+        List<String> place = new ArrayList<>();
+        if (!pointer.isEmpty()) {
+            for (String segment : pointer.substring(1).split("/", -1)) {
+                place.add(segment.replace("~1", "/").replace("~0", "~"));
+            }
+        }
+        return place;
     }
 
     /** Replaces the scratch directory, as written and as its real path, with {@value #SCRATCH}. */

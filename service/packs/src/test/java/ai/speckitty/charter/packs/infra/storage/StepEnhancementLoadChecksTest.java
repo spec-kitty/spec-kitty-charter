@@ -134,7 +134,7 @@ class StepEnhancementLoadChecksTest {
         /** Validate mode: every finding the policy raises for the code. */
         List<PackFinding> validate() {
             PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
+            return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
                     .filter(finding -> PackCodes.PROMPT_FRAGMENT_INVALID.equals(finding.code()))
                     .toList();
         }
@@ -142,7 +142,7 @@ class StepEnhancementLoadChecksTest {
         /** Validate mode, every finding. */
         List<PackFinding> validateAll() {
             PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings();
+            return PackPolicy.judge(PolicyReadouts.of(root)).findings();
         }
 
         /** The registration's staged load: the violations of the refusal, none when the pack registers. */
