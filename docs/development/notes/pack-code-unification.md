@@ -161,9 +161,9 @@ WP04, WP05 and WP08 see it.
 8. **The clean control is not clean** (row 12). `planted/control-a-clean-org-pack` has a sidecar whose payload
    `assets/doc.txt` is missing, so all three surfaces refuse it, though its `expected.json` says it loads with no
    findings. This predates #554. **Routed to WP05** (WP01 review): its plant work adds the payload so the control is
-   clean again, a golden row recorded as a fixed fixture defect, not a behaviour change (NFR-002).
+   clean again, a golden row recorded as a fixed fixture defect, not a behavior change (NFR-002).
 9. **A mapped file the load does not take** (WP02 review L3, WP11). A file a `files` rule maps can still be left
-   untaken by the store's load with no fault of its own: a `policy.yaml` the descriptor does not name, and an orphan
+   not taken by the store's load with no fault of its own: a `policy.yaml` the descriptor does not name, and an orphan
    prompt fragment (which the registration then refuses as `prompt_fragment_invalid`). Today the store lists such a
    file as not held with kind `UNMODELLED` and the reason `no pack file kind models this file`, which is false for it,
    while validate mode judges it against its rule. A mapped file the load refused with a fault of its own is no longer
@@ -180,6 +180,53 @@ WP04, WP05 and WP08 see it.
    both surfaces warn `file_not_held` for it, validate mode does not read it, and a registration removes it before
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
+
+## Outcomes of WP09
+
+WP09 switched validate mode. `PackValidation` moved out of `packs.domain` to `pack-validation` as `PackCheck`, the
+validation edge (S2, S6): it reads a pack once through `PackReading`, appends the placement rules' rationale to the
+readout's with `Rationale.and`, and maps the findings with `PackVerdicts`. The registration and the compose read are
+not switched (WP12, S7).
+
+- **The golden delta is row 24 alone.** Validate mode's half of the snapshot moved to `pack-validation`'s
+  `golden/validate.json`, byte for byte (the registration and the compose read stay in `golden/surfaces.json`, and the
+  subjects are the packs test fixtures' `GoldenSubjects`). Regenerated over `PackCheck`, 34 of the 108 rows change,
+  and each only by one finding: every plant without a `pack.yaml` gains `pack_unreadable` at `pack.yaml`, `pack qa has
+  no pack.yaml`, first among its findings. No other row changes, and no finding moves: the retyped comparator keeps
+  the order, and the content findings, the read faults and the files not held that the readout carries are exactly
+  the ones `PackPolicy` judged. The refusal is DIV-028: core reports nothing for a missing descriptor (none of the 33
+  core verdicts recorded for those plants names `pack.yaml`; 11 are accepted). A configured plant keeps its
+  `pack_level_missing` warning beside the refusal (row 35 unchanged).
+- **Rows 29 and 30 come by construction,** with no golden subject: a manifest that leaves out a held file answers
+  `manifest_membership`, and a manifest that is not a regular file `unreadable`, in the registration's words
+  (`PackCheckTest`). Row 26 came with WP07; row 31 was one answer already.
+- **Row 32 does not come by construction.** The named policy file is read by the store half only
+  (`StoreRead.policy`), and its fault stays in `Assembly.Assembled.violations()`, which the verdict does not carry
+  (WP07, "the store half's own faults"). Validate mode answers nothing for a `policy.yaml` that `mutability_policy`
+  names and the pack does not hold, where the registration answers `unreadable`, `policy.yaml: named by
+  mutability_policy, the file is missing`; for one that does not parse it answers the read fault `unreadable`,
+  `policy.yaml: <parser line>`, where the registration says `policy.yaml: named by mutability_policy, the file cannot
+  be read: <parser line>`. No golden subject reaches either. Making the store half's faults read faults, once, is
+  WP12's; until then row 32 is open.
+- **Placement** is `packvalidation.placement`: `LevelRules` and `OrgFragmentRules` over `Placement(PackReadout,
+  configured level)`, composed by `PackCheck.placement()` (the level rules first, as `PackPolicy` listed them), with
+  their three tokens built in `PlacementCodes`. The mismatch's token is written there, not read from
+  `RefusalCode.PACK_LEVEL_MISMATCH`: HexagonalArchitectureTest's rule B lets only the policy and the inbound edge name
+  that refusal code, and no rule changes (S6). `PlacementCodesTest` pins that it is the refusal's token.
+- **N2:** `Precedence.comparator(Set<ReasonCode>)` orders kernel `Reason`s, reading a reason's place as the decoded
+  segments of its pointer; `group`, `comparePaths` and `comparePlaces` are public plain functions. `PackVerdict.findings`
+  is a `List<Reason>`, and `PackVerdicts` passes `PlacementCodes.ALL` as the group it tests first.
+- **`PackPolicy` until WP13.** `PackPolicy.judge` has no main caller. It returns its own staging record,
+  `PackPolicy.Judgement`, sorted by a local comparator over `Precedence`'s plain functions, and is given the read
+  faults alone (the tests' `PolicyReadouts` and `PlantedFixtures.policyReadout`), so WP07's staging subtraction
+  `notJudgedHere` is deleted.
+- **One port of the read (N6, N7).** `PackInspector` and its `Scope` are deleted, with `inspect(root, scope)` and
+  `PackContents.loadPath()`; `PackLoad` is folded into `PackCheck`, and the `PackValidation` bean goes (C-003). Of the
+  nine `LOAD_PATH` sites, eight read the whole tree and one, whose only subject was the scope, is deleted.
+- **PIT.** The narrowed run on `packvalidation` kills 330 of 372 mutants (89 %), against 308 of 350 (88 %) before;
+  every new class (`PackCheck`, `PackVerdicts`, `Placement`, `LevelRules`, `OrgFragmentRules`) kills all its 23
+  mutants, and the survivors are the round trip's, unchanged. The comparator lives in `packs.domain.rules`: its
+  narrowed run kills 76 of 78 `Precedence` mutants, the two survivors WP03's.
 
 ## Outcomes of WP07
 
@@ -240,7 +287,7 @@ each rule's tests prove it finds what `PackPolicy` finds over every planted and 
 three cases under S2 (format and schema checks are the edge's; core holds only consistency logic, with no duplicate
 implementations):
 
-- **D1: no glossary content rule.** #106's glossary checks are the one reader's schema and stem prechecks, the storage
+- **D1: no glossary content rule.** #106's glossary checks are the one reader's schema and stem checks, the storage
   format rule of a repeated term id (`GlossaryYaml.rules`), the retired `glossary_pack` shape and `GraphBinding`'s term
   endpoint rule. `PackContents` carries no glossary fact, and moving any of them into the domain would take a fault
   away from the compose read, which runs no `content()`. They stay where they are, and there is no `GlossaryRules`.
@@ -293,7 +340,7 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
   pack reaches it: the withholding and the repeated-id rule leave the aggregate nothing to breach.
 - **The compose read (operator decision, 2026-11-17):** the compose read runs only the `StoreRead` half of the one
   reader, over one walk: the same DSO read and assembly the registration's `readTree` runs, with no second DSO reader.
-  It never sees the reader's S2 prechecks, so no S4 filter is needed, and its answers are unchanged. Running the whole
+  It never sees the reader's S2 format checks, so no S4 filter is needed, and its answers are unchanged. Running the whole
   one read on it was measured first (warmed, 200 calls each): built-in 35.4 ms today against 161 ms (4.6x), org-base
   3.8 ms against 18.3 ms (4.8x), project 1.1 ms against 3.8 ms (3.5x). The cost is two parses of every file: the
   inspector's generic parse and validation, and the store's DSO parse. A single-parse unification, deriving the

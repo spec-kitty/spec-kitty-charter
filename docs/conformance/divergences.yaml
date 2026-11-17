@@ -501,6 +501,30 @@
     - "core: src/charter/activation/_drg_helpers.py:load_validated_graph reads the pack-root *.graph.yaml and drg/fragment.yaml (named by core's drg_root_graph_missing message)"
     - "charter: planted plants c3-shard-edge-bare-endpoint, c3-shard-urn-malformed, c7-shard-relation-extends and c8-shard-without-generated-by-is-accepted (core verdicts in planted/core-verdicts.json: a schema refusal at drg/<kind>.graph.yaml) and r15-glossary-urn-in-a-shard (core verdict: drg_root_graph_missing at <pack>)"
 
+- id: DIV-028
+  surface: A pack with no pack.yaml, in validate mode
+  core: >-
+    Validates a pack with no pack.yaml as if the descriptor were optional: it skips the descriptor's
+    checks and reports nothing for its absence (offering/packs/pack_validator.py,
+    _validate_pack_descriptor returns no issue when pack.yaml is not a file). None of the 33 core
+    verdicts recorded for the 34 planted packs without a descriptor names pack.yaml, and 11 of them
+    are accepted.
+  service: >-
+    Refuses it: validate mode answers pack_unreadable at pack.yaml, "pack <name> has no pack.yaml",
+    beside the pack's other findings, as the registration answers it (R2 row 24). Validate mode
+    judges the one read's storage verdict, and the store refuses a pack it cannot describe.
+  rationale: >-
+    One fault answers one code on every surface (operator ruling R2): a pack the registration
+    refuses for its missing descriptor is not valid in validate mode. A pack's descriptor names it,
+    its version and its level, so a pack without one has no identity to store or compose.
+  ruling: "#554 operator rulings R2 (b) and S6 (2026-11-16); R2 row 24, landed by WP09"
+  status: open
+  since: 2026-11-17
+  evidence:
+    - "core: offering/packs/pack_validator.py:_validate_pack_descriptor (if not path.is_file(): return [])"
+    - "charter: planted/core-verdicts.json: no recorded verdict of a plant without pack.yaml names pack.yaml; 11 are ok (for example artifact-utf16-with-a-byte-order-mark, charter-valid, c10-agent-scalar-role)"
+    - "charter: service/pack-validation/src/test/resources/golden/validate.json (the 34 plants without pack.yaml answer pack_unreadable at pack.yaml) and PackCheckTest.aPackWithNoDescriptorIsRefusedAtPackYamlAsTheRegistrationRefusesIt"
+
 # Context read (DIV-101..110), decided in ADR-0018 and moved into this single register by operator
 # ruling R10 (2026-10-19). Derived from the context-read table of divergence-register.md; the evidence
 # names the conformance corpus case that pins each entry.
