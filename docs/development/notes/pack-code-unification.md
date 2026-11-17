@@ -169,6 +169,15 @@ WP04, WP05 and WP08 see it.
    while validate mode judges it against its rule. A mapped file the load refused with a fault of its own is no longer
    also listed as not held (WP11). **Routed to WP05**: its census decides whether such a file is held, refused or not
    held, and with which reason; no planted or example pack holds one, so `HeldSetAgreementTest` does not meet it.
+   **Settled by WP05:** the census decides once. A `policy.yaml` the descriptor's `mutability_policy` does not name is
+   not held, with its own kind (`NotHeldFile.Kind.UNNAMED`) and reason (`the descriptor's mutability_policy does not
+   name it`): both surfaces warn `file_not_held` for it, and validate mode no longer judges its contents. When the
+   descriptor cannot be read, which file it names is unknown, and the file stays held and judged. An orphan prompt
+   fragment is held by the census (a rule maps it), so it is no longer listed as not held, and it keeps its refusal,
+   `prompt_fragment_invalid`, on both surfaces. A plant for each case is in `HeldSetAgreementTest`. No golden row
+   changes. One more case the census settles the same way: a mapped file the load does not take that has no fault
+   of its own and is not a prompt fragment (an orphan companion, such as a guide no toolguide names) is held by the
+   census, so a registration no longer removes it as `unmodelled`; no golden subject holds one.
 
 ## Outcomes of WP04
 

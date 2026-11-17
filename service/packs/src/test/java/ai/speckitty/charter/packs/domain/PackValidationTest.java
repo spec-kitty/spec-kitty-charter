@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.domain.PackContents.ClassifiedFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -18,7 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-/** Validate mode (FR-010) over a fake inspector: the scope it asks for and the verdict it returns. */
+/** Validate mode (FR-010) over a fake reading: the root it reads and the verdict it returns. */
 class PackValidationTest {
 
     private static final FileRead<RawGraph> EMPTY_FRAGMENT = new FileRead.Read<>(
@@ -32,38 +31,38 @@ class PackValidationTest {
             Optional.of(PackLevel.ORG),
             Optional.empty());
 
-    /** An inspector that records the root and scope it was asked for and answers with fixed facts. */
-    private static final class FakeInspector implements PackInspector {
-        private final PackContents answer;
-        private final List<Scope> scopes = new ArrayList<>();
+    /** A reading that records the root it was asked for and answers with a fixed readout. */
+    private static final class FakeReading implements PackReading {
+        private final PackReadout answer;
         private final List<PackRoot> roots = new ArrayList<>();
 
-        FakeInspector(PackContents answer) {
+        FakeReading(PackReadout answer) {
             this.answer = answer;
         }
 
         @Override
-        public PackContents inspect(PackRoot root, Scope scope) {
+        public PackReadout read(PackRoot root) {
             roots.add(root);
-            scopes.add(scope);
             return answer;
         }
     }
 
-    private static PackContents facts(
+    private static PackReadout facts(
             PackRoot root, List<MissionTypeFacts> types, List<FileRead.Unreadable<?>> unreadable) {
-        return new PackContents(
+        PackContents contents = new PackContents(
                 root,
                 new FileRead.Read<>("pack.yaml", DESCRIPTOR),
                 List.of(),
                 EMPTY_FRAGMENT,
-                List.of(new ClassifiedFile("pack.yaml", Optional.of("pack-descriptor"), Optional.empty())),
                 List.of(),
                 List.of(),
-                unreadable,
                 StepEnhancementFacts.none(),
                 List.of(),
-                types,
+                types);
+        return Readouts.of(
+                contents,
+                List.of(new ClassifiedFile("pack.yaml", Optional.of("pack-descriptor"), Optional.empty())),
+                unreadable,
                 List.of());
     }
 
@@ -84,11 +83,10 @@ class PackValidationTest {
     void aValidationReadsTheWholePackAndReturnsTheVerdictOfWhatWasRead() {
         PackRoot root = root(Optional.of(PackLevel.ORG));
         List<MissionTypeFacts> types = List.of(type("rx.mission-type.yaml", "a", "b", "a"));
-        FakeInspector inspector = new FakeInspector(facts(root, types, List.of()));
+        FakeReading inspector = new FakeReading(facts(root, types, List.of()));
 
         PackVerdict verdict = new PackValidation(inspector).validate(root);
 
-        assertThat(inspector.scopes).containsExactly(PackInspector.Scope.FULL);
         assertThat(inspector.roots).containsExactly(root);
         assertThat(verdict.files()).extracting(ClassifiedFile::file).containsExactly("pack.yaml");
         assertThat(verdict.findings())
@@ -102,7 +100,7 @@ class PackValidationTest {
     @Test
     void theVerdictIsExactlyWhatThePolicyJudgesOfTheSameFacts() {
         PackRoot root = root(Optional.of(PackLevel.ORG));
-        PackContents contents = facts(
+        PackReadout contents = facts(
                 root,
                 List.of(type("rx.mission-type.yaml", "x", "x")),
                 List.of(new FileRead.Unreadable<Object>(
@@ -110,8 +108,7 @@ class PackValidationTest {
                         new ParseFailure("tactics/a.tactic.yaml", "while parsing"),
                         List.of())));
 
-        assertThat(new PackValidation(new FakeInspector(contents)).validate(root))
-                .isEqualTo(PackPolicy.judge(contents));
+        assertThat(new PackValidation(new FakeReading(contents)).validate(root)).isEqualTo(PackPolicy.judge(contents));
     }
 
     @Test
@@ -119,7 +116,7 @@ class PackValidationTest {
         PackRoot root = root(Optional.of(PackLevel.ORG));
         SchemaViolation missing = new SchemaViolation(
                 "tactics/b.tactic.yaml", List.of(), "required", Optional.of("id"), Optional.empty(), Map.of());
-        PackContents contents = facts(
+        PackReadout contents = facts(
                 root,
                 List.of(),
                 List.of(
@@ -135,7 +132,7 @@ class PackValidationTest {
                                 List.of())));
 
         List<PackFinding> findings =
-                new PackValidation(new FakeInspector(contents)).validate(root).findings();
+                new PackValidation(new FakeReading(contents)).validate(root).findings();
 
         assertThat(findings)
                 .extracting(PackFinding::code, PackFinding::file, PackFinding::severity)
@@ -157,29 +154,24 @@ class PackValidationTest {
     @Test
     void aBarePathIsJudgedWithoutAConfiguredLevel() {
         PackRoot bare = root(Optional.empty());
-        PackContents contents = new PackContents(
+        PackReadout contents = Readouts.of(new PackContents(
                 bare,
                 new FileRead.Absent<>("pack.yaml"),
                 List.of(),
                 new FileRead.Absent<>("drg/fragment.yaml"),
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
-                List.of(),
-                List.of());
+                List.of()));
 
-        assertThat(new PackValidation(new FakeInspector(contents))
-                        .validate(bare)
-                        .findings())
+        assertThat(new PackValidation(new FakeReading(contents)).validate(bare).findings())
                 .as("no level to compare with, so neither pack_level_missing nor org_fragment_missing")
                 .isEmpty();
     }
 
     @Test
-    void anInspectorIsRequired() {
+    void aReadingIsRequired() {
         assertThatThrownBy(() -> new PackValidation(null)).isInstanceOf(NullPointerException.class);
     }
 }

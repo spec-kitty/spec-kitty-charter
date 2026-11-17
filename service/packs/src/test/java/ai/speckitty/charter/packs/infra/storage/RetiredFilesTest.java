@@ -5,14 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.domain.PackContents;
-import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -308,14 +306,12 @@ class RetiredFilesTest {
             }
             PackRoot root = new PackRoot("qa", Optional.of(PackLevel.BUILT_IN), pack.toString());
 
-            PackContents contents = new FileSystemPackInspector().inspect(root, Scope.FULL);
+            TreeRead contents = new FileSystemPackInspector().readTree(root);
 
-            assertThat(contents.unreadableFiles())
-                    .extracting(FileRead.Unreadable::file)
+            assertThat(contents.readFaults())
+                    .extracting(fault -> fault.location().file())
                     .containsExactlyInAnyOrder("pack.md", "Readme.md", "PROVENANCE.md");
-            assertThat(contents.unreadableFiles().stream()
-                            .flatMap(bad -> Wording.unreadable("qa", bad).stream())
-                            .map(PackFinding::detail))
+            assertThat(contents.readFaults().stream().map(Reason::detail))
                     .anySatisfy(d -> assertThat(d).contains("pack.md: the pack document is README.md at the pack root"))
                     .anySatisfy(d ->
                             assertThat(d).contains("PROVENANCE.md: folded into README.md as its provenance section"))
@@ -330,14 +326,13 @@ class RetiredFilesTest {
             Path pack = RetiredFileFixture.plant(host.resolve("qa"), files.keySet());
             PackRoot root = new PackRoot("qa", Optional.of(PackLevel.BUILT_IN), pack.toString());
 
-            PackContents contents = new FileSystemPackInspector().inspect(root, Scope.FULL);
+            TreeRead contents = new FileSystemPackInspector().readTree(root);
 
-            assertThat(contents.unreadableFiles())
-                    .extracting(FileRead.Unreadable::file)
+            assertThat(contents.readFaults())
+                    .extracting(fault -> fault.location().file())
                     .containsExactlyInAnyOrderElementsOf(files.keySet());
-            List<PackFinding> findings = contents.unreadableFiles().stream()
-                    .flatMap(bad -> Wording.unreadable("qa", bad).stream())
-                    .toList();
+            List<PackFinding> findings =
+                    contents.readFaults().stream().map(PackFinding::of).toList();
             // A retired file is retired, whatever its kind, a graph document's included (#554, R2 row 11).
             assertThat(findings).extracting(PackFinding::code).containsOnly(StorageCodes.RETIRED);
             assertThat(findings)

@@ -44,10 +44,7 @@ class PackPolicyTest {
                 EMPTY_FRAGMENT,
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
     }
@@ -113,8 +110,8 @@ class PackPolicyTest {
 
     @Test
     void judgeAggregatesTheLevelFindings() {
-        PackVerdict verdict =
-                PackPolicy.judge(contents("qa", Optional.of(PackLevel.ORG), new FileRead.Absent<>("pack.yaml")));
+        PackVerdict verdict = PackPolicy.judge(
+                Readouts.of(contents("qa", Optional.of(PackLevel.ORG), new FileRead.Absent<>("pack.yaml"))));
         assertThat(verdict.findings())
                 .extracting(PackFinding::code)
                 .containsExactly(PackFindingCode.PACK_LEVEL_MISSING);
@@ -150,10 +147,7 @@ class PackPolicyTest {
                 fragment,
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
     }
@@ -203,7 +197,7 @@ class PackPolicyTest {
                 EMPTY_FRAGMENT,
                 descriptor("qa", Optional.of(PackLevel.ORG)));
 
-        assertThat(PackPolicy.judge(c).findings()).isEmpty();
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings()).isEmpty();
         assertThat(PackPolicy.registeredGraph("qa", registered).findings())
                 .extracting(PackFinding::detail)
                 .containsExactly("registered.graph.yaml: a registered relationship is never a tension; in_tension_with"

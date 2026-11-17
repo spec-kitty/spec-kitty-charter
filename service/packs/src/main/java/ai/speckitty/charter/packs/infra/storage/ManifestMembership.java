@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -81,10 +82,22 @@ final class ManifestMembership {
      * @return the reasons; empty when the lists hold the same entries
      */
     static List<String> mismatch(PackManifestDso listed, PackManifestDso derived) {
-        List<String> listedConstituents = constituents(listed);
-        Set<String> derivedConstituents = new LinkedHashSet<>(constituents(derived));
-        List<String> listedPresets = presets(listed);
-        Set<String> derivedPresets = new LinkedHashSet<>(presets(derived));
+        return mismatch(entries(listed), entries(derived));
+    }
+
+    /**
+     * {@link #mismatch(PackManifestDso, PackManifestDso)} over the census's facts (#554, T024): the lists a manifest
+     * declares and the lists derived from what the pack holds, each entry in the manifest's own words.
+     *
+     * @param listed the manifest's lists as read
+     * @param derived the derived lists of the same pack
+     * @return the reasons; empty when the lists hold the same entries
+     */
+    static List<String> mismatch(TreeCensus.Entries listed, TreeCensus.Entries derived) {
+        List<String> listedConstituents = listed.constituents();
+        Set<String> derivedConstituents = new LinkedHashSet<>(derived.constituents());
+        List<String> listedPresets = listed.presets();
+        Set<String> derivedPresets = new LinkedHashSet<>(derived.presets());
         List<String> out = new ArrayList<>();
         distinct(listedConstituents)
                 .filter(entry -> !derivedConstituents.contains(entry))
@@ -101,6 +114,17 @@ final class ManifestMembership {
                 .filter(entry -> !listedPresets.contains(entry))
                 .forEach(entry -> out.add("leaves out preset " + entry + ", which the pack holds"));
         return List.copyOf(out);
+    }
+
+    /**
+     * A manifest's lists in the manifest's own words, as the census holds them: each constituent as
+     * {@code <kind>:<id> at <path>}, each preset entry as {@code <id> at <path>}, in the manifest's order.
+     *
+     * @param manifest a manifest
+     * @return its entries
+     */
+    static TreeCensus.Entries entries(PackManifestDso manifest) {
+        return new TreeCensus.Entries(constituents(manifest), presets(manifest));
     }
 
     private static Stream<String> distinct(List<String> entries) {

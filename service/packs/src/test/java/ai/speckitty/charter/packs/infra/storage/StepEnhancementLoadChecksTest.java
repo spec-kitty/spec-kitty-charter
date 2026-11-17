@@ -17,7 +17,6 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import java.io.IOException;
@@ -135,7 +134,7 @@ class StepEnhancementLoadChecksTest {
         /** Validate mode: every finding the policy raises for the code. */
         List<PackFinding> validate() {
             PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(new FileSystemPackInspector().inspect(root, Scope.FULL)).findings().stream()
+            return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
                     .filter(finding -> PackCodes.PROMPT_FRAGMENT_INVALID.equals(finding.code()))
                     .toList();
         }
@@ -143,8 +142,7 @@ class StepEnhancementLoadChecksTest {
         /** Validate mode, every finding. */
         List<PackFinding> validateAll() {
             PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(new FileSystemPackInspector().inspect(root, Scope.FULL))
-                    .findings();
+            return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings();
         }
 
         /** The registration's staged load: the violations of the refusal, none when the pack registers. */

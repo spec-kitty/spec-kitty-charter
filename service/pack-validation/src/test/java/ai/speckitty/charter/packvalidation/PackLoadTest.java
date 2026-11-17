@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackInspector;
+import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -34,8 +35,11 @@ class PackLoadTest {
         PackContents contents = new PackLoad(new FileSystemPackInspector()).contents(root(name));
 
         assertThat(contents.root()).isEqualTo(root(name));
-        assertThat(contents.files()).isNotEmpty();
-        assertThat(contents.unreadableFiles()).isEmpty();
+        assertThat(contents.artifacts()).isNotEmpty();
+        // The classification and the read faults are the readout's (#554, S6).
+        PackReadout readout = new FileSystemPackInspector().read(root(name));
+        assertThat(readout.files()).isNotEmpty();
+        assertThat(readout.rationale().failures()).isEmpty();
     }
 
     @Test

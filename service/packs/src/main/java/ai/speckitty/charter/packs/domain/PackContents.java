@@ -10,40 +10,36 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What an adapter read from one pack root: facts only, with no verdict. {@link PackPolicy} decides every code and
- * every text from these.
+ * What the one reader read from one pack root: storage-agnostic facts only, with no verdict and no read fault (#554, S1,
+ * FR-016). A file the read refused yields no fact here; the read faults, the classification of the files, the files the
+ * store does not hold, the manifest and the reserved shard are the storage edge's ({@code TreeRead}, {@code TreeCensus}),
+ * and the domain port {@link PackReading} carries what of them the edges need in its {@link PackReadout}.
+ *
+ * <p>{@code root} stays until validate mode's placement takes the pack root itself (WP09): the level rules read the
+ * configured name and level from it.
  *
  * @param root the pack that was read
  * @param descriptor what {@code pack.yaml} gave
  * @param shards the root {@code *.graph.yaml} files, in name order
  * @param fragment what {@code drg/fragment.yaml} gave
- * @param files every file of the pack with its classification; filled by a full read only
  * @param artifacts the kind and id each artifact declares; filled by a full read only
  * @param assets the path and MIME type each asset declares; filled by a full read only
- * @param unreadableFiles every other classified file that could not be parsed or broke its schema: an artifact or a
- *     pack-level file outside the load path; filled by a full read only
  * @param stepEnhancements the step enhancements, their companions and the pack's graph edges as plain facts; filled by
  *     a full read only, empty in the load-path scope
  * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
- *     full read only. A prompt the codec refuses is listed in {@code unreadableFiles} instead and has no parse (A5).
+ *     full read only. A prompt the codec refuses is a read fault instead and has no parse (A5).
  * @param missionTypes the id and step ids of each mission type the read could parse; filled by a full read only
- * @param notHeld every file of the pack the store does not hold, path-sorted, each with its kind and reason: an
- *     excluded file and a file no pack file kind models, never a retired one (#554, open case 6). Nothing in such a
- *     file is read or judged. Filled by a full read only
  */
 public record PackContents(
         PackRoot root,
         FileRead<PackDescriptor> descriptor,
         List<FileRead<RawGraph>> shards,
         FileRead<RawGraph> fragment,
-        List<ClassifiedFile> files,
         List<ArtifactFacts> artifacts,
         List<AssetFacts> assets,
-        List<FileRead.Unreadable<?>> unreadableFiles,
         StepEnhancementFacts stepEnhancements,
         List<PromptSlotFacts> promptSlots,
-        List<MissionTypeFacts> missionTypes,
-        List<NotHeldFile> notHeld) {
+        List<MissionTypeFacts> missionTypes) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -51,28 +47,40 @@ public record PackContents(
      * @param descriptor what {@code pack.yaml} gave
      * @param shards the root shards
      * @param fragment what {@code drg/fragment.yaml} gave
-     * @param files the classified files
      * @param artifacts the artifact facts
      * @param assets the asset facts
-     * @param unreadableFiles the other files that could not be read
      * @param stepEnhancements the step enhancement facts
      * @param promptSlots the slot parse of each step prompt
      * @param missionTypes the mission type facts
-     * @param notHeld the files the store does not hold
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(descriptor, "descriptor");
         Objects.requireNonNull(fragment, "fragment");
         shards = List.copyOf(shards);
-        files = List.copyOf(files);
         artifacts = List.copyOf(artifacts);
         assets = List.copyOf(assets);
-        unreadableFiles = List.copyOf(unreadableFiles);
         Objects.requireNonNull(stepEnhancements, "stepEnhancements");
         promptSlots = List.copyOf(promptSlots);
         missionTypes = List.copyOf(missionTypes);
-        notHeld = List.copyOf(notHeld);
+    }
+
+    /**
+     * The facts of the load path alone: the descriptor, the root shards and the fragment, with no full-read fact.
+     *
+     * @return the load path's facts
+     */
+    public PackContents loadPath() {
+        return new PackContents(
+                root,
+                descriptor,
+                shards,
+                fragment,
+                List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
+                List.of(),
+                List.of());
     }
 
     /**
@@ -372,31 +380,6 @@ public record PackContents(
             Objects.requireNonNull(relation, "relation");
             Objects.requireNonNull(when, "when");
             Objects.requireNonNull(reason, "reason");
-        }
-    }
-
-    /**
-     * A pack file with what it is: a kind, or the reason it is not validated.
-     *
-     * @param file the pack-relative path
-     * @param kind the file kind; empty for an excluded file
-     * @param exclusionClass why the file is excluded; empty for a classified file
-     */
-    public record ClassifiedFile(String file, Optional<String> kind, Optional<String> exclusionClass) {
-        /**
-         * Checks that exactly one of kind and exclusion class is set.
-         *
-         * @param file the pack-relative path
-         * @param kind the file kind, possibly empty
-         * @param exclusionClass the exclusion class, possibly empty
-         */
-        public ClassifiedFile {
-            Objects.requireNonNull(file, "file");
-            Objects.requireNonNull(kind, "kind");
-            Objects.requireNonNull(exclusionClass, "exclusionClass");
-            if (kind.isPresent() == exclusionClass.isPresent()) {
-                throw new IllegalArgumentException("exactly one of kind and exclusionClass must be set: " + file);
-            }
         }
     }
 

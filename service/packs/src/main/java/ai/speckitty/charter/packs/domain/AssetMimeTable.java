@@ -20,7 +20,7 @@ import java.util.TreeSet;
  *
  * <p>Generated from Python 3.13.16: ~/.venv-sk/bin/python -I scripts/packs/mime_table.py
  */
-final class AssetMimeTable {
+public final class AssetMimeTable {
 
     private static final Map<String, String> TYPES = pairs(
             ".3g2", "audio/3gpp2",
@@ -197,7 +197,7 @@ final class AssetMimeTable {
      * @param extension the lower-cased extension the type was looked up by, with its dot
      * @param type the expected MIME type
      */
-    record Expectation(String extension, String type) {}
+    public record Expectation(String extension, String type) {}
 
     /**
      * The type the table gives a path, as {@code mimetypes.guess_type(path)[0]} does without platform files.
@@ -205,7 +205,7 @@ final class AssetMimeTable {
      * @param path the declared asset path
      * @return the expectation, or empty when the extension is not in the table
      */
-    static Optional<Expectation> expected(String path) {
+    public static Optional<Expectation> expected(String path) {
         String[] split = splitExt(path);
         String base = split[0];
         String ext = split[1];

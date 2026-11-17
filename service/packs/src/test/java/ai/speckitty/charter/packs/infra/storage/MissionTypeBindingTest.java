@@ -10,22 +10,19 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.StepDocument;
 import ai.speckitty.charter.missions.domain.StepSection;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackContents;
-import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -220,11 +217,11 @@ class MissionTypeBindingTest {
         Files.createDirectories(target.getParent());
         Files.move(pack.resolve(FILE), target);
 
-        PackContents validated = new FileSystemPackInspector()
-                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+        TreeRead validated =
+                new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()));
 
-        assertThat(validated.unreadableFiles())
-                .extracting(FileRead::file)
+        assertThat(validated.readFaults())
+                .extracting(fault -> fault.location().file())
                 .containsExactly("missions/other/research.mission-type.yaml");
     }
 
@@ -354,15 +351,11 @@ class MissionTypeBindingTest {
         assertThat(load(pack).violations())
                 .as("the type is refused once, by the file check; the resolution never sees it")
                 .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason));
-        PackContents validated = new FileSystemPackInspector()
-                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
-        assertThat(validated.unreadableFiles())
-                .extracting(
-                        FileRead::file,
-                        bad -> bad.parse() == null
-                                ? null
-                                : bad.parse().refusal().orElse(null))
-                .containsExactly(tuple(FILE, "names " + reason));
+        TreeRead validated =
+                new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()));
+        assertThat(validated.readFaults())
+                .extracting(fault -> fault.location().file(), Reason::detail)
+                .containsExactly(tuple(FILE, FILE + ": names " + reason));
 
         String before = Files.readString(pack.resolve(FILE));
         assertThatThrownBy(
@@ -535,14 +528,12 @@ class MissionTypeBindingTest {
             Files.writeString(graph, Files.readString(graph).replace(edge, ""));
         }
 
-        PackContents validated = new FileSystemPackInspector()
-                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+        TreeRead validated =
+                new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()));
 
-        assertThat(validated.unreadableFiles())
+        assertThat(validated.readFaults())
                 .singleElement()
-                .satisfies(bad -> assertThat(Wording.unreadable(PACK, bad))
-                        .extracting(PackFinding::detail)
-                        .containsExactly(FILE + ": " + refusal));
+                .satisfies(bad -> assertThat(bad.detail()).isEqualTo(FILE + ": " + refusal));
         // The store refuses by file; the domain (a step id standing twice) by the type's id. The two paths
         // detect the one defect through their own checks, so their wording differs by design — parity is that
         // the load raises exactly one violation, on the same file, with a stated reason (not that it is empty).
@@ -561,14 +552,13 @@ class MissionTypeBindingTest {
         Path pack = PackFixtures.copyOf(PACK, host);
         Files.delete(pack.resolve(PROMPT));
 
-        PackContents validated = new FileSystemPackInspector()
-                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+        TreeRead validated =
+                new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()));
 
-        assertThat(validated.unreadableFiles())
+        assertThat(validated.readFaults())
                 .singleElement()
-                .satisfies(bad -> assertThat(Wording.unreadable(PACK, bad))
-                        .extracting(PackFinding::detail)
-                        .containsExactly(FILE + ": step 'scoping' names steps/scoping.prompt.md: missing"));
+                .satisfies(bad -> assertThat(bad.detail())
+                        .isEqualTo(FILE + ": step 'scoping' names steps/scoping.prompt.md: missing"));
         assertThat(load(pack).violations())
                 .extracting(PackElementViolation::file)
                 .containsOnly(FILE);

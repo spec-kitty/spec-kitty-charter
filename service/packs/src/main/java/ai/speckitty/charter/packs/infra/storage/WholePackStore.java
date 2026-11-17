@@ -298,12 +298,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
-        Set<String> modelled = modelledFiles(packDir, read, places, graphs, pack, manifestFile, namedPolicy);
-        List<ExcludedFile> notHeld = new ArrayList<>();
-        List<String> untaken = new ArrayList<>();
-        Set<String> faulted = new HashSet<>();
-        pack.violations().forEach(violation -> faulted.add(violation.file()));
-        sortOut(packDir, modelled, faulted, key, notHeld, untaken);
+        // The census owns "held" (#554, S3): the store lists what the one reader's census does not hold.
+        List<ExcludedFile> notHeld = FileSystemPackInspector.notHeld(
+                        packDir,
+                        key.value(),
+                        companionRules.table(),
+                        !namedPolicy.filter(PolicyYaml.FILE::equals).isPresent())
+                .stream()
+                .map(file -> new ExcludedFile(file.path(), file.kind(), file.reason()))
+                .toList();
+        List<String> untaken = untakenEnhancementFiles(packDir, key, read, places);
         return new Loaded(
                 new LoadedPack(
                         pack,
@@ -319,35 +323,6 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 pack.violations().size() - trailing.size(),
                 policy,
                 policyFault.stream().findFirst());
-    }
-
-    /** Every pack-relative file the loaded pack models, so that what is left over is not held. */
-    private Set<String> modelledFiles(
-            Path packDir,
-            FilesystemPackStore.PackRead read,
-            Map<Urn, String> places,
-            FilesystemPackStore.GraphRead graphs,
-            Pack pack,
-            Path manifestFile,
-            Optional<String> namedPolicy) {
-        Set<String> modelled = new HashSet<>(places.values());
-        modelled.addAll(companionFiles(packDir, read));
-        modelled.add(PackFileSet.PACK_YAML);
-        graphs.documents().forEach(graph -> modelled.add(graph.file()));
-        // An unreadable graph document is already a fault at its file; it is not also listed as not held.
-        graphs.violations().forEach(fault -> modelled.add(fault.file()));
-        pack.assetFiles().forEach(file -> modelled.add(PackFileSet.ASSETS + file.path()));
-        pack.presets().forEach(preset -> modelled.add(PresetFiles.pathOf(preset.id())));
-        // An unreadable pack document is likewise a fault at its file (#451), not also listed as not held.
-        if (pack.document().isPresent()
-                || pack.violations().stream().anyMatch(fault -> fault.file().equals(PackDocumentMarkdown.FILE))) {
-            modelled.add(PackDocumentMarkdown.FILE);
-        }
-        if (Files.isRegularFile(manifestFile)) {
-            modelled.add(PackFileSet.MANIFEST);
-        }
-        namedPolicy.ifPresent(modelled::add);
-        return modelled;
     }
 
     /**
@@ -953,56 +928,34 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * Sorts out every regular file of the pack that is not in {@code modelled}, pack-relative and in path order. The walk
-     * starts at the directory's real path, as {@code PackFileSet}'s does, so a pack root that is a symbolic link is
-     * entered (#284); links below the root are not followed. Unlike {@code PackFileSet}, a file that is itself a link is
-     * not listed here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks separately.
-     *
-     * <p>A file the table excludes is not held, with its rule's reason (#451), and so is a file no rule takes (operator
-     * ruling Q1, #554): both go to {@code notHeld}, each with its kind. A file a rule maps that the load did not take
-     * goes to {@code untaken}, where a registration looks for orphan prompt fragments. When the pack has a violation at
-     * that file, the file is refused with its own fault and is not also listed as not held, so that validate mode, which
-     * judges it, and the store list the same files (#554, open case 6); otherwise it is listed not held with the
-     * unmodelled reason, as before (a fragment no entry names, a {@code policy.yaml} the descriptor does not name). A
-     * retired file goes to neither: the load refuses it by name (WP02 review L2).
+     * The step enhancement files and prompt fragments of the pack that its load did not take, in {@link String} order:
+     * an enhancement the store refused or withheld, and a fragment no held enhancement names. A registration looks for
+     * orphan fragments among them ({@link #orphanFragments}). Staging inside the single pull request (R4 b): the content
+     * rules judge the orphans from the one read's facts (WP07), and WP12 deletes this.
      */
-    private void sortOut(
-            Path packDir,
-            Set<String> modelled,
-            Set<String> faulted,
-            PackIdentifier key,
-            List<ExcludedFile> notHeld,
-            List<String> untaken) {
+    private List<String> untakenEnhancementFiles(
+            Path packDir, PackIdentifier key, FilesystemPackStore.PackRead read, Map<Urn, String> places) {
+        Set<String> taken = new HashSet<>(places.values());
+        taken.addAll(companionFiles(packDir, read));
         Path root;
         try {
             root = packDir.toRealPath();
         } catch (IOException e) {
             throw PackFileSet.unlistable(key.value(), e);
         }
-        List<String> files;
         try (Stream<Path> walk = Files.walk(root)) {
-            files = walk.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+            return walk.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     .map(path -> root.relativize(path)
                             .toString()
                             .replace(path.getFileSystem().getSeparator(), "/"))
-                    .filter(file -> !modelled.contains(file))
+                    .filter(file -> FRAGMENT_FILE.matcher(file).matches() || file.endsWith(ENHANCEMENT_SUFFIX))
+                    .filter(file -> !taken.contains(file))
+                    .filter(file ->
+                            companionRules.table().classify(key.value() + "/" + file) instanceof PackFileKind.Mapped)
                     .sorted()
                     .toList();
         } catch (IOException | RuntimeException e) {
             throw PackFileSet.unlistable(key.value(), e);
-        }
-        for (String file : files) {
-            switch (companionRules.table().classify(key.value() + "/" + file)) {
-                case PackFileKind.Excluded rule -> notHeld.add(ExcludedFile.excluded(file, rule.reason()));
-                case PackFileKind.Unclassified unclassified -> notHeld.add(ExcludedFile.unmodelled(file));
-                case PackFileKind.Mapped mapped -> {
-                    untaken.add(file);
-                    if (!faulted.contains(file)) {
-                        notHeld.add(ExcludedFile.unmodelled(file));
-                    }
-                }
-                case PackFileKind.Retired retired -> {}
-            }
         }
     }
 

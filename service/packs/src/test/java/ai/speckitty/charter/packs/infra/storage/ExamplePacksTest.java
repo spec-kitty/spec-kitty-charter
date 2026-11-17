@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
@@ -36,7 +35,7 @@ class ExamplePacksTest {
 
     private static PackVerdict judge(String name, Path dir) {
         PackLevel level = ExamplePacks.level(name);
-        return PackPolicy.judge(INSPECTOR.inspect(new PackRoot(name, Optional.of(level), dir.toString()), Scope.FULL));
+        return PackPolicy.judge(INSPECTOR.read(new PackRoot(name, Optional.of(level), dir.toString())));
     }
 
     @ParameterizedTest

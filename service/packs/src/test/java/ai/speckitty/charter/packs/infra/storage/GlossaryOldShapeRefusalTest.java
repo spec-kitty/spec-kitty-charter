@@ -9,13 +9,11 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.domain.PackContents;
-import ai.speckitty.charter.packs.domain.PackContents.FileRead;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -113,13 +111,13 @@ class GlossaryOldShapeRefusalTest {
         @Test
         @DisplayName("validate mode: an artifact_schema_error saying the file is retired and why")
         void validateModeRefusesIt() {
-            PackContents contents = new FileSystemPackInspector()
-                    .inspect(new PackRoot(name(), Optional.of(PackLevel.BUILT_IN), pack.toString()), Scope.FULL);
+            TreeRead contents = new FileSystemPackInspector()
+                    .readTree(new PackRoot(name(), Optional.of(PackLevel.BUILT_IN), pack.toString()));
 
-            assertThat(contents.unreadableFiles())
-                    .extracting(FileRead.Unreadable::file)
+            assertThat(contents.readFaults())
+                    .extracting(fault -> fault.location().file())
                     .containsExactly(FILE);
-            assertThat(contents.unreadableFiles().stream().flatMap(bad -> Wording.unreadable(name(), bad).stream()))
+            assertThat(contents.readFaults().stream().map(PackFinding::of))
                     .singleElement()
                     .satisfies(finding -> {
                         assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);

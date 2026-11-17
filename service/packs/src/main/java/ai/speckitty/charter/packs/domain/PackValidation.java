@@ -6,21 +6,22 @@ import java.util.Objects;
  * Validate mode, the use case of FR-010: reads a pack root in full and returns every finding with the classification
  * of every file, where a load stops at the first blocking finding of the load path.
  *
- * <p>It is a pure domain service over the {@link PackInspector} port and owns no rule: the inspector reads the facts
- * and {@link PackPolicy#judge} decides. It is the seam the pack doctor (#115) composes, with a {@link PackRoot} whose
- * configured level is empty to judge a bare path as core's {@code validate_pack(path)} does.
+ * <p>It is a pure domain service over the {@link PackReading} port and owns no rule: the reader reads the pack once and
+ * {@link PackPolicy#judge} decides. It is the seam the pack doctor (#115) composes, with a {@link PackRoot} whose
+ * configured level is empty to judge a bare path as core's {@code validate_pack(path)} does. The validation edge's
+ * {@code PackCheck} replaces it (#554, WP09).
  */
 public final class PackValidation {
 
-    private final PackInspector inspector;
+    private final PackReading reading;
 
     /**
-     * A validation that reads packs through {@code inspector}.
+     * A validation that reads packs through {@code reading}.
      *
-     * @param inspector the port that reads one pack root as facts
+     * @param reading the port that reads one pack root once
      */
-    public PackValidation(PackInspector inspector) {
-        this.inspector = Objects.requireNonNull(inspector, "inspector");
+    public PackValidation(PackReading reading) {
+        this.reading = Objects.requireNonNull(reading, "reading");
     }
 
     /**
@@ -31,6 +32,6 @@ public final class PackValidation {
      *     valid
      */
     public PackVerdict validate(PackRoot root) {
-        return PackPolicy.judge(inspector.inspect(root, PackInspector.Scope.FULL));
+        return PackPolicy.judge(reading.read(root));
     }
 }

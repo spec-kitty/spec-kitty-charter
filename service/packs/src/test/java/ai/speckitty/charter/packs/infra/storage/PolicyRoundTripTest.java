@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -99,7 +100,10 @@ class PolicyRoundTripTest {
         assertThat(stray.policy())
                 .as("a file the descriptor does not name is no policy")
                 .isEmpty();
-        assertThat(stray.notHeld()).contains(ExcludedFile.unmodelled("policy.yaml"));
+        // #554, open case 9: the census decides once; a policy file no mutability_policy names is not held, with its
+        // own kind and reason, and validate mode judges nothing in it either.
+        assertThat(stray.notHeld())
+                .contains(new ExcludedFile("policy.yaml", NotHeldFile.Kind.UNNAMED, NotHeldFile.UNNAMED_POLICY_REASON));
     }
 
     @Test

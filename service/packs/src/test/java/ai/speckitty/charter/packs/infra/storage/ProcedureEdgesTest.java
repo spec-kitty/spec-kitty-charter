@@ -7,14 +7,12 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackContents;
-import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -76,8 +74,10 @@ class ProcedureEdgesTest {
                         StorageCodes.ARTIFACT_SCHEMA_ERROR,
                         "procedure id 'land-it' is not its file stem 'ship-it'"));
 
-        PackContents validated = new FileSystemPackInspector()
-                .inspect(new PackRoot("misnamed-pack", Optional.of(PackLevel.ORG), pack.toString()), Scope.FULL);
-        assertThat(validated.unreadableFiles()).extracting(FileRead::file).containsExactly("ship-it.procedure.yaml");
+        TreeRead validated = new FileSystemPackInspector()
+                .readTree(new PackRoot("misnamed-pack", Optional.of(PackLevel.ORG), pack.toString()));
+        assertThat(validated.readFaults())
+                .extracting(fault -> fault.location().file())
+                .containsExactly("ship-it.procedure.yaml");
     }
 }

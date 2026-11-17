@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.packs.domain.PackContents.ClassifiedFile;
 import java.util.List;
 
 /**

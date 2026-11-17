@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.Readouts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,16 +67,14 @@ class PrecedenceTest {
                 fragment,
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
     }
 
     private static List<String> places(FileRead<RawGraph> shard) {
-        return PackPolicy.judge(contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment()))
+        return PackPolicy.judge(
+                        Readouts.of(contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment())))
                 .findings()
                 .stream()
                 .map(f -> "/" + String.join("/", f.place()))
@@ -97,7 +96,7 @@ class PrecedenceTest {
                         broken("b.graph.yaml", fallback("b.graph.yaml")),
                         broken("a.graph.yaml", fallback("a.graph.yaml"))),
                 broken("drg/fragment.yaml", fallback("drg/fragment.yaml")));
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(PackFinding::file, PackFinding::code)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR),
@@ -112,7 +111,7 @@ class PrecedenceTest {
         FileRead<PackDescriptor> bad =
                 new FileRead.Unreadable<>("pack.yaml", new PackContents.ParseFailure("pack.yaml", "oops"), List.of());
         PackContents c = contents(bad, List.of(broken("a.graph.yaml", fallback("a.graph.yaml"))), emptyFragment());
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(PackFinding::file)
                 .containsExactly("pack.yaml", "a.graph.yaml");
     }
@@ -157,7 +156,7 @@ class PrecedenceTest {
                         "drg/fragment.yaml",
                         fallback("drg/fragment.yaml", "edges"),
                         fallback("drg/fragment.yaml", "nodes")));
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(f -> f.place().get(0))
                 .containsExactly("nodes", "edges");
     }
@@ -196,7 +195,7 @@ class PrecedenceTest {
                         fallback("drg/fragment.yaml", "nodes", "0", "title"),
                         fallback("drg/fragment.yaml", "nodes", "0", "kind"),
                         fallback("drg/fragment.yaml", "nodes", "0", "id")));
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(f -> f.place().get(2))
                 .containsExactly("id", "kind", "title", "body_path");
     }
@@ -223,7 +222,7 @@ class PrecedenceTest {
                         fallback("pack.yaml", "pack_version"),
                         fallback("pack.yaml", "pack_id")));
         PackContents c = contents(bad, List.of(), emptyFragment());
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(f -> f.place().get(0))
                 .containsExactly("pack_id", "pack_version", "name");
     }
@@ -236,7 +235,7 @@ class PrecedenceTest {
                 fallback("a.graph.yaml", "nodes", "10", "label"),
                 unknownKey("a.graph.yaml", "surprise"));
         PackContents c = contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment());
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(PackFinding::detail)
                 .containsExactly(
                         "a.graph.yaml: unknown key 'surprise'",
@@ -246,7 +245,7 @@ class PrecedenceTest {
 
     /** Throws the refusal of the first blocking finding, in the order {@link PackPolicy#judge} reports them. */
     private static void refuseOnFirstBlocking(PackContents contents) {
-        for (PackFinding finding : PackPolicy.judge(contents).findings()) {
+        for (PackFinding finding : PackPolicy.judge(Readouts.of(contents)).findings()) {
             if (finding.severity() == Severity.VIOLATION) {
                 throw finding.toRefusal();
             }
@@ -257,7 +256,7 @@ class PrecedenceTest {
     void aTwoFaultPackRefusesWithTheShardsFindingNotTheLevelMismatch() {
         FileRead<RawGraph> shard = broken("a.graph.yaml", unknownKey("a.graph.yaml", "surprise"));
         PackContents c = contents(descriptor(Optional.of(PackLevel.BUILT_IN)), List.of(shard), emptyFragment());
-        List<PackFinding> findings = PackPolicy.judge(c).findings();
+        List<PackFinding> findings = PackPolicy.judge(Readouts.of(c)).findings();
         assertThat(findings)
                 .extracting(PackFinding::code)
                 .containsExactly(PackCodes.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
@@ -280,7 +279,7 @@ class PrecedenceTest {
                 descriptor(Optional.of(PackLevel.ORG)),
                 List.of(new FileRead.Read<>("a.graph.yaml", raw)),
                 emptyFragment());
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(PackFinding::place)
                 .containsExactly(List.of("nodes", "1"), List.of("edges", "0"));
     }
@@ -332,7 +331,7 @@ class PrecedenceTest {
                 List.of(broken("b.graph.yaml", fallback("b.graph.yaml")), rooted),
                 broken("drg/fragment.yaml", fallback("drg/fragment.yaml")));
 
-        assertThat(PackPolicy.judge(c).findings())
+        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
                 .extracting(PackFinding::file)
                 .containsExactly("b.graph.yaml", "drg/fragment.yaml", "/x.graph.yaml");
     }
