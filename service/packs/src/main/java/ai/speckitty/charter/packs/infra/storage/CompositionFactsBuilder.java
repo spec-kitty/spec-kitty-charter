@@ -213,7 +213,7 @@ final class CompositionFactsBuilder {
 
     /**
      * The slot parse of each step prompt of the stored mission types, at the prompt's pack-relative file, over the
-     * canonical text the load rule parses ({@code LoadChecks.recordPromptSlotFaults}): the input of the prompt facts (research R9).
+     * canonical text the load rule parses ({@code StoreRead.recordPromptSlotFaults}): the input of the prompt facts (research R9).
      */
     private static List<PackContents.PromptSlotFacts> promptSlotFacts(FilesystemPackStore.PackRead read) {
         List<PackContents.PromptSlotFacts> prompts = new ArrayList<>();

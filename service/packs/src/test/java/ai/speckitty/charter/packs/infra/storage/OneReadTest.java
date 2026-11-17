@@ -121,7 +121,7 @@ class OneReadTest {
         PackIdentifier key = new PackIdentifier(String.valueOf(pack.getFileName()));
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
         FilesystemPackStore.PackRead read = store.read(key, graphs);
-        Pack assembled = LoadChecks.assembly(key, read, new HashMap<>(), graphs, new ArrayList<>())
+        Pack assembled = StoreRead.assembly(key, read, new HashMap<>(), graphs, new ArrayList<>())
                 .build();
         long before = FilesystemPackStore.reads();
 

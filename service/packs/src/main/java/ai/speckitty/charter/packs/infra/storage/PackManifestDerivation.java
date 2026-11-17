@@ -67,7 +67,7 @@ final class PackManifestDerivation {
     /**
      * The derived manifest of the pack stored in a directory: the artifacts and presets its whole-pack load holds, read
      * by the one reader's {@link StoreRead} half (the census derives through the same read, WP05 review MINOR-5) and
-     * built by {@link PackAssembly} with the load's own withholding ({@link LoadChecks}), so
+     * built by {@link PackAssembly} with the store half's own withholding ({@link StoreRead#assembly}), so
      * the lists name exactly the artifacts that load holds. A file the load does not hold (a read violation, a step
      * enhancement withheld for a repeated stem) is not listed. An unreadable graph document is tolerated, as a read
      * tolerates it: the strict load and this one hold the same artifacts, so the registration check and the stamp never
