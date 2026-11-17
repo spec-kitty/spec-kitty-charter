@@ -58,7 +58,7 @@ class ManifestMembershipTest {
     void theProjectPacksDerivedListsAreItsFiles() {
         Path pack = ExamplePacks.pack(PROJECT);
         WholePackStore.LoadedPack loaded = store.load(pack);
-        PackManifestDso derived = ManifestMembership.derived(loaded.pack(), loaded.layout());
+        PackManifestDso derived = PackManifestDerivation.derived(loaded.pack(), loaded.layout());
 
         assertThat(derived.constituents())
                 .extracting(c -> c.kind() + ":" + c.id() + "@" + c.path())
@@ -81,7 +81,7 @@ class ManifestMembershipTest {
 
             assertThat(loaded.manifest()).as(name + " holds a manifest").isPresent();
             assertThat(ManifestMembership.mismatch(
-                            loaded.manifest().get(), ManifestMembership.derived(loaded.pack(), loaded.layout())))
+                            loaded.manifest().get(), PackManifestDerivation.derived(loaded.pack(), loaded.layout())))
                     .as(name)
                     .isEmpty();
             assertThat(PackManifests.stale(loaded.manifest().get(), path -> bytesOf(pack.resolve(path))))
@@ -221,7 +221,7 @@ class ManifestMembershipTest {
             Assumptions.abort("symbolic links are not supported here: " + e);
         }
 
-        assertThatThrownBy(() -> ManifestMembership.stamp(pack, store, strategy))
+        assertThatThrownBy(() -> ManifestMembership.stamp(pack, store::derivedManifest, strategy))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refusal.getMessage()).contains("pack-manifest.yaml is not a regular file");
@@ -334,7 +334,8 @@ class ManifestMembershipTest {
     private void assertFreshAndDerived(Path pack) {
         WholePackStore.LoadedPack loaded = store.load(pack);
         PackManifestDso manifest = loaded.manifest().orElseThrow(() -> new AssertionError(pack + " has no manifest"));
-        assertThat(ManifestMembership.mismatch(manifest, ManifestMembership.derived(loaded.pack(), loaded.layout())))
+        assertThat(ManifestMembership.mismatch(
+                        manifest, PackManifestDerivation.derived(loaded.pack(), loaded.layout())))
                 .as(pack + ": membership")
                 .isEmpty();
         assertThat(PackManifests.stale(manifest, path -> bytesOf(pack.resolve(path))))

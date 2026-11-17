@@ -1,23 +1,20 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.Preset;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,7 +28,8 @@ import java.util.stream.Stream;
  *   <li>one preset entry per preset, at {@code presets/<id>.yaml}, in path order.
  * </ul>
  *
- * <p>Path order is the order of the paths' UTF-16 code units. Every write derives the lists and then stamps the derived
+ * <p>The lists are derived by {@link PackManifestDerivation}, in the order of the paths' UTF-16 code units. Every
+ * write derives the lists and then stamps the derived
  * fields ({@link PackManifests#recompute}): the whole-pack write, the staged tree of a whole-pack registration, and
  * the commit of a per-artifact {@code PUT} or {@code DELETE}. A pack that held no manifest gets one. A whole-pack
  * registration and the round-trip gate refuse an uploaded manifest whose lists differ from the derived ones
@@ -39,72 +37,29 @@ import java.util.stream.Stream;
  */
 final class ManifestMembership {
 
-    /** The {@code schema_version} every derived manifest carries. */
-    static final String SCHEMA_VERSION = "1.0";
-
     private ManifestMembership() {}
-
-    /**
-     * The derived manifest of a pack: its lists, with every derived field empty until {@link PackManifests#recompute}
-     * stamps it.
-     *
-     * @param pack the pack the write holds
-     * @param layout where each artifact is stored
-     * @return the manifest with the derived lists, in path order
-     */
-    static PackManifestDso derived(Pack pack, PackLayout layout) {
-        List<PackManifestDso.Constituent> constituents = new ArrayList<>();
-        for (CharterArtifact artifact : pack.artifacts()) {
-            constituents.add(new PackManifestDso.Constituent(
-                    artifact.kind().token(), artifact.localId(), layout.pathOf(artifact), ""));
-        }
-        constituents.sort(Comparator.comparing(PackManifestDso.Constituent::path));
-        List<PackManifestDso.PresetEntry> presets = new ArrayList<>();
-        for (Preset preset : pack.presets()) {
-            presets.add(new PackManifestDso.PresetEntry(preset.id(), PresetFiles.pathOf(preset.id()), ""));
-        }
-        presets.sort(Comparator.comparing(PackManifestDso.PresetEntry::path));
-        return new PackManifestDso(SCHEMA_VERSION, "", constituents, presets);
-    }
-
-    /**
-     * The derived manifest of the pack stored in a directory, as {@code store} loads it: the one assembly the store's
-     * whole-pack load, its registration check and its write share, with its own bindings and companion rules, so the
-     * lists name exactly the artifacts that load holds. A file the load does not hold (a read violation, a step
-     * enhancement withheld for a repeated stem) is not listed. The strict load ({@link WholePackStore#load}) and this
-     * tolerant one must hold the same artifacts, so the registration check and the stamp never derive different lists.
-     *
-     * @param directory the pack's directory
-     * @param store the whole-pack store that reads it
-     * @return the manifest with the derived lists, in path order
-     * @throws CharterRefusal as {@link WholePackStore#load} does, except that an unreadable graph document is tolerated,
-     *     as a read tolerates it
-     */
-    static PackManifestDso derivedAt(Path directory, WholePackStore store) {
-        WholePackStore.LoadedPack loaded = store.loadTolerant(directory);
-        return derived(loaded.pack(), loaded.layout());
-    }
 
     /**
      * Derives the manifest of the pack stored in a directory, stamps its derived fields from the files there, and
      * writes it to {@code pack-manifest.yaml}, replacing the manifest the directory held or creating it. The lists
-     * come from the tolerant load of {@link #derivedAt}, which must hold the same artifacts as the strict load the
-     * registration check runs, so the two derivations never split.
+     * come from {@code derivation}, the store's {@link PackManifestDerivation#derivedAt}, which holds the same
+     * artifacts as the strict load the registration check runs, so the two derivations never split.
      *
      * @param directory the pack's directory, a staged copy the caller owns
-     * @param store the whole-pack store that reads it ({@link #derivedAt})
+     * @param derivation the derived manifest of a directory, as the store that reads it derives it
      * @param strategy the serialization format the manifest is written in
      * @throws IOException when the manifest cannot be written
      * @throws CharterRefusal when the pack cannot be read, a derived path holds no file, or the manifest path holds
      *     something that is not a regular file (a directory, a link: the write would follow it)
      */
-    static void stamp(Path directory, WholePackStore store, SerializationStrategy strategy) throws IOException {
+    static void stamp(Path directory, Function<Path, PackManifestDso> derivation, SerializationStrategy strategy)
+            throws IOException {
         Path manifestFile = directory.resolve(PackFileSet.MANIFEST);
         if (Files.exists(manifestFile, LinkOption.NOFOLLOW_LINKS)
                 && !Files.isRegularFile(manifestFile, LinkOption.NOFOLLOW_LINKS)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, PackFileSet.MANIFEST + " is not a regular file");
         }
-        PackManifestDso derived = derivedAt(directory, store);
+        PackManifestDso derived = derivation.apply(directory);
         PackManifests.Recomputed recomputed = PackManifests.recompute(derived, path -> bytesAt(directory, path));
         if (!recomputed.missing().isEmpty()) {
             throw new CharterRefusal(

@@ -127,7 +127,7 @@ class TemplateStoreTest {
 
         FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
         Map<Urn, String> places = new java.util.HashMap<>();
-        Pack pack = DomainRepositoryService.assembly(SOURCE, read, places).build();
+        Pack pack = PackAssembly.assembly(SOURCE, read, places).build();
 
         PackElementViolation duplicate = new PackElementViolation(
                 "templates/plan/x.md",

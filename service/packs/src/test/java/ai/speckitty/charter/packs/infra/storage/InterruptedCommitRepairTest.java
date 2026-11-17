@@ -465,7 +465,8 @@ class InterruptedCommitRepairTest {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
         WholePackStore.LoadedPack loaded = store.load(pack);
         PackManifestDso manifest = loaded.manifest().orElseThrow(() -> new AssertionError(pack + " has no manifest"));
-        assertThat(ManifestMembership.mismatch(manifest, ManifestMembership.derived(loaded.pack(), loaded.layout())))
+        assertThat(ManifestMembership.mismatch(
+                        manifest, PackManifestDerivation.derived(loaded.pack(), loaded.layout())))
                 .isEmpty();
         assertThat(manifest.constituents())
                 .extracting(PackManifestDso.Constituent::id)
