@@ -265,6 +265,22 @@ class StorageRulesetsTest {
         }
 
         @Test
+        @DisplayName(
+                "the pack's refusal is a pack_unreadable or the aggregate's code at pack.yaml or pack, nothing else")
+        void thePacksRefusalIsKnownByItsCodeAndPlace() {
+            assertThat(AssemblyRules.statesRefusal(fault(StorageCodes.PACK_UNREADABLE, "pack.yaml")))
+                    .isTrue();
+            assertThat(AssemblyRules.statesRefusal(fault(StorageCodes.ASSEMBLY_REFUSED, "pack")))
+                    .isTrue();
+            assertThat(AssemblyRules.statesRefusal(fault(StorageCodes.PACK_UNREADABLE, "tactics/a.tactic.yaml")))
+                    .isFalse();
+            assertThat(AssemblyRules.statesRefusal(fault(StorageCodes.UNREADABLE, "pack")))
+                    .isFalse();
+            assertThat(AssemblyRules.statesRefusal(fault(StorageCodes.REQUIRES_CORE_INVALID, "pack.yaml")))
+                    .isFalse();
+        }
+
+        @Test
         @DisplayName("holding() is the not-held, reserved-shard and manifest rules, in that order")
         void holdingIsTheStorageRules() {
             TreeRead read = read(
@@ -342,6 +358,19 @@ class StorageRulesetsTest {
         }
     }
 
+    private static final Reason SHARD = ReservedShardRules.UNSTAMPED
+            .apply(read(contents(), census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.UNSTAMPED)))
+            .getFirst();
+
+    private static final Reason NOT_REGULAR = ManifestRules.REGULAR
+            .apply(read(
+                    contents(),
+                    census(
+                            List.of(),
+                            new TreeCensus.Manifest(true, false, Optional.empty(), Optional.empty()),
+                            TreeCensus.ReservedShard.ABSENT)))
+            .getFirst();
+
     @Nested
     @DisplayName("registration's wire order")
     class Order {
@@ -360,19 +389,8 @@ class StorageRulesetsTest {
                     "a.graph.yaml: second");
             Reason read = fault(StorageCodes.UNREADABLE, "z.tactic.yaml");
             Reason rule = fault(PackCodes.DUPLICATE_ARTIFACT_ID, "a.tactic.yaml");
-            Reason shard = ReservedShardRules.UNSTAMPED
-                    .apply(read(
-                            contents(),
-                            census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.UNSTAMPED)))
-                    .getFirst();
-            Reason notRegular = ManifestRules.REGULAR
-                    .apply(read(
-                            contents(),
-                            census(
-                                    List.of(),
-                                    new TreeCensus.Manifest(true, false, Optional.empty(), Optional.empty()),
-                                    TreeCensus.ReservedShard.ABSENT)))
-                    .getFirst();
+            Reason shard = SHARD;
+            Reason notRegular = NOT_REGULAR;
             Reason membership = fault(StorageCodes.MANIFEST_MEMBERSHIP, "pack-manifest.yaml");
             Reason manifestSchema = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "pack-manifest.yaml");
             Reason slot = fault(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING, "p.prompt.md");

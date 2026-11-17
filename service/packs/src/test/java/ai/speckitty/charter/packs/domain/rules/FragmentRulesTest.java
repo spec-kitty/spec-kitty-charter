@@ -610,11 +610,35 @@ class FragmentRulesTest {
         }
 
         @Test
-        @DisplayName("the fragments beside an enhancement the read refused are no orphans")
+        @DisplayName("the fragments beside an enhancement the read refused are no orphans; a sibling directory's are")
         void theCompanionsOfARefusedEnhancementAreNoOrphans() {
             PackFixture pack = new PackFixture().unparsed(PLAN, "broken").orphan(PLAN, "broken.prompt-fragment.md");
+            String sibling = "missions/" + PLAN + "/enhancementX/z.prompt-fragment.md";
+            pack.fragmentFiles.add(sibling);
 
-            assertThat(FragmentRules.RULES.apply(contents(pack))).isEmpty();
+            assertThat(FragmentRules.RULES.apply(contents(pack)))
+                    .extracting(reason -> reason.location().file())
+                    .containsExactly(sibling);
+        }
+
+        @Test
+        @DisplayName("an edge's target is named as written, with the pack that qualifies it")
+        void aQualifiedTargetIsNamedAsWritten() {
+            PackFixture pack = new PackFixture()
+                    .enhancement(PLAN, "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment(PLAN, "brief.prompt-fragment.md", "Be brief.\n")
+                    .enhances("brief", "base", "action:" + PLAN + "/plan")
+                    .edge(new Edge(
+                            RelationType.OVERRIDES,
+                            StepEnhancementFacts.URN_PREFIX + "brief",
+                            "action:" + PLAN + "/plan",
+                            Optional.of("base")));
+
+            assertThat(FragmentRules.ENHANCEMENT.apply(contents(pack)))
+                    .singleElement()
+                    .satisfies(finding -> assertThat(finding.detail())
+                            .contains("the enhancement overrides base::action:" + PLAN
+                                    + "/plan; an enhancement only adds"));
         }
 
         @Test
