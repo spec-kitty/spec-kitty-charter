@@ -11,8 +11,8 @@
 #      whose checksums check and whose archive holds the contract;
 #   3. expects the publishing gate to refuse a malformed release candidate tag (<version>-rc-1: a pre-release is
 #      letters, digits and dots), from the unreleased commit;
-#   4. commits a synthetic release candidate <version>-rc.1 (operator ruling R1) from the unreleased commit, and expects
-#      its three assets as in step 2;
+#   4. commits the next unused release candidate <version>-rc.N (rc.1 when none is recorded; operator ruling R1) from
+#      the unreleased commit, and expects its three assets as in step 2;
 #   5. reopens <version>-SNAPSHOT above the candidate and expects the packs CHANGELOG check (:contracts:checkPacksChangelog)
 #      to pass, and a later version above the candidate, before its final release, to be refused.
 # On the release pull request, where the top heading is already the release or a release candidate, it skips the
@@ -114,7 +114,14 @@ echo "== 3. A malformed release candidate is refused"
 git checkout --quiet --detach "$start"
 refused_by :contracts:checkPacksReleaseTag "not letters, digits and dots" -PreleaseTag="contract-packs-v$version-rc-1"
 
-rc="$version-rc.1"
+# The next unused release candidate number of <version>: 1 after none, else one above the highest the CHANGELOG lists,
+# so the rehearsal still works once a real candidate (<version>-rc.1) is recorded below the reopened -SNAPSHOT.
+next_rc() { # next_rc <changelog>
+  local n
+  n="$(sed -n "s/^## ${version//./\\.}-rc\.\([0-9][0-9]*\)\$/\1/p" "$1" | sort -n | tail -n 1)"
+  echo $(( ${n:-0} + 1 ))
+}
+rc="$version-rc.$(next_rc "$changelog")"
 echo "== 4. A synthetic release candidate $rc is committed"
 sed -i "0,/^## $snapshot\$/s//## $rc/" "$changelog"
 commit "rehearsal: release candidate $rc"

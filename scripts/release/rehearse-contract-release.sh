@@ -14,8 +14,8 @@
 #   4. expects the publishing gate to refuse a malformed release candidate tag (<version>-rc-1: a pre-release is
 #      letters, digits and dots), from the unreleased commit;
 #   5. as a release candidate's pull request does (operator ruling R1), assembles the fragments and turns the -SNAPSHOT
-#      into <version>-rc.1, expects the gate to refuse the tag of another candidate (<version>-rc.2), and rehearses
-#      that commit with this script;
+#      into the next unused candidate <version>-rc.N (rc.1 when none is recorded), expects the gate to refuse the tag
+#      of another candidate (<version>-rc.N+1), and rehearses that commit with this script;
 #   6. tags that candidate, reopens <version>-SNAPSHOT above it (heading and info.version together) and expects the
 #      breaking-change check (:contracts:checkContractCompatibility) to pass: a candidate is never its baseline.
 # On the release pull request, where info.version is already the release or a release candidate, it rehearses that
@@ -140,7 +140,16 @@ gate_refuses() { # gate_refuses <tag> <expected words>: the publishing gate alon
   echo "refused, as expected: $1 ($2)"
 }
 
-rc="$version-rc.1"
+# The next unused release candidate number of <version>: 1 after none, else one above the highest the CHANGELOG lists,
+# so the rehearsal still works once a real candidate (<version>-rc.1) is recorded below the reopened -SNAPSHOT.
+next_rc() { # next_rc <changelog>
+  local n
+  n="$(sed -n "s/^## ${version//./\\.}-rc\.\([0-9][0-9]*\)\$/\1/p" "$1" | sort -n | tail -n 1)"
+  echo $(( ${n:-0} + 1 ))
+}
+rc_n="$(next_rc "$changelog")"
+rc="$version-rc.$rc_n"
+other="$version-rc.$(( rc_n + 1 ))"
 echo "== 4. A malformed release candidate is refused"
 git checkout --quiet --detach "$start"
 gate_refuses "contract-charter-v$version-rc-1" "not letters, digits and dots"
@@ -151,7 +160,7 @@ sed -i "0,/^  version: $snapshot\$/s//  version: $rc/" "$openapi"
 sed -i "0,/^## $snapshot\$/s//## $rc/" "$changelog"
 git add --all contracts/charter
 commit "rehearsal: release candidate $rc"
-gate_refuses "contract-charter-v$version-rc.2" "names $version-rc.2, but the contract at that tag says its info.version is $rc"
+gate_refuses "contract-charter-v$other" "names $other, but the contract at that tag says its info.version is $rc"
 (cd "$clone" && REHEARSAL_OF_A_RELEASE=1 "$self")
 
 echo "== 6. After the candidate, $snapshot is open again and compared with no candidate"
