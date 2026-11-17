@@ -181,6 +181,64 @@ WP04, WP05 and WP08 see it.
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
 
+## Outcomes of WP12
+
+WP12 switched the registration onto the one read. `PackRegistrationService` reads the staged tree once through the
+domain port `PackReading`, under the pack id it is registered as, and refuses through `PackRefusals` when the readout's
+rationale fails (S1, S6); the store's `Loader` then assembles the aggregate from that read alone, strips its not-held
+files and stamps the manifest from it, and judges nothing. `ExcludedFile` is gone for `NotHeldFile`, and `LoadChecks`
+is gone: its withholding and faults are the store half's own assembly (`StoreRead.assembly`), which the composing read
+answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4 filter.
+
+- **The golden delta is 43 registration rows; the compose read's rows do not move.** 38 are S8 (rows 22 to 24): the 34
+  plants without a `pack.yaml` and the four whose `pack.yaml` cannot be read (`c9-pack-version-missing-at-the-org-level`,
+  `control-retired-pack-key-is-a-warning`, `control-unknown-pack-key-is-a-warning`, `pack-yaml-tilde-is-null`) answer
+  every fault, the descriptor's after the graph faults, under `N fault(s), the first at <file>.`. 9 are S2 (rows 14, 15
+  and 38): the four asset-mime and repeated-asset-id plants, each bare and `+pack.yaml`, and `requires-core-invalid`.
+  Four rows are both. `SurfaceSubsetTest` pins the forward subset over the two goldens and names these rows.
+- **The store half's own faults are read faults, each stated once** (rows 16 to 19 and 32, A-M1). The verdict joins
+  the read faults, `registration()`, then each fault of the store's assembly that neither already states at its file
+  (`AssemblyRules.held`), then the manifest gate. Over the 108 golden subjects no store fault was left unstated; the
+  plants of `StoreHalfFaultsTest` reach each one: a template read twice (`duplicate_artifact_id`, row 16), a value-object
+  breach (`artifact_schema_error`, row 17), a guard reference that does not close, at the lifecycle that names it, and a
+  template a mission type names and the pack lacks, in the reader's words (`names templates/x.md (named by the type):
+  missing`, row 18), and an edge that joins an artifact to itself through the pack's own name (`unreadable` at `pack`,
+  as the registration answered it; `GraphBinding` judges the bare self-loop only). Validate mode gains each of them.
+- **Row 32 is one answer.** The policy file `mutability_policy` names is stated by the store half, `unreadable`,
+  `<file>: named by mutability_policy, the file is missing` or `the file cannot be read: <why>`, on both surfaces; the
+  reader's own parse or schema fault at that file is not stated beside it.
+- **Row 19's answer.** A prompt fragment the store cannot read (blank, with frontmatter, a codec fault) is one
+  `prompt_fragment_invalid` at the step enhancement that names it, in the store's words, as
+  `prompt-fragment-refusals.feature` pins (the R2 rule: the registration's wire stays); the reader's faults at the
+  fragment are not stated beside it, so validate mode changes. Any other companion is answered at the companion's own
+  file, as validate mode placed it: in the reader's code and words where the reader reads it (`companion` for a file that
+  does not parse, `artifact_schema_error` for a structure-schema breach, row 2's vocabulary), and `companion`,
+  `missing` or `is not valid UTF-8`, where only the store meets it (a guide or a skill body that is missing or not
+  UTF-8); the registration answered each at the artifact (`<artifact>: <companion>: <why>`), so it changes. No golden
+  subject reaches row 19; the `### Breaking` fragment `2026-11-17-registration-answers-every-fault.md` records both.
+- **Row 25 (WP07 review MINOR-1).** The store's refusal of a root is not stated beside the reader's `pack_unreadable`
+  at `pack`, whatever name the pack is read under.
+- **Row 26 (WP07 review MINOR-4).** The aggregate's `build()` breach keeps `StorageCodes.ASSEMBLY_REFUSED`
+  (`validation_failed`) at `pack`. No read reaches it: every invariant of `Pack` (a repeated id per kind, a repeated
+  preset or asset file, an asset naming a file it does not hold or another asset's) is withheld by the store half and
+  stated with its own code first (`duplicate_artifact_id`, `asset`), so the breach is the fail-safe of a state the read
+  never builds, and no specific code is invented for it.
+- **Order (WP07 review MINOR-3).** The read faults at `pack-manifest.yaml` and at the named policy file follow the rule
+  faults and the store's, and come before the orphan fragments, as the registration listed them.
+- **WP04 review MINOR-3 and MINOR-4.** A registration answers one violation per descriptor finding (two unknown keys are
+  two violations), and the refusal path reads `pack.yaml` once: the store half places the descriptor's refusal with no
+  second read.
+- **NIT (WP07).** A `registered.graph.yaml` without the stamp that does not parse is a read fault of the root shard as
+  well as the reserved shard: validate mode answers `drg_schema_error` at it beside `reserved_shard`, as the
+  registration does.
+- **Not done: `WholePackCensus` on the `TreeCensus` (WP05 review MINOR-3).** The whole-pack gate still walks and
+  classifies on its own. Pointing it at the census needs the census to carry the link entries, the `other:`, `retired:`
+  and `excluded:` buckets and the companions' owner kinds for every file, which the one read does not build for a pack
+  whose descriptor it cannot read; it is left for the orchestrator to place.
+- **One read per registration.** The registration reads and parses the staged tree once (`OneReadRegistrationTest`,
+  `OneReadTest`): the strip and the stamp work from the read. The revision still lists the final tree to digest its
+  bytes, after the strip and the stamp changed it.
+
 ## Outcomes of WP09
 
 WP09 switched validate mode. `PackValidation` moved out of `packs.domain` to `pack-validation` as `PackCheck`, the
