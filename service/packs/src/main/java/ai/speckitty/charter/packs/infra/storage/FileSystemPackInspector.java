@@ -24,7 +24,6 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRelativePaths;
@@ -69,12 +68,10 @@ import org.jspecify.annotations.Nullable;
  * held with their kind and reason, the manifest and the reserved shard) and the read faults, each a kernel reason with
  * the code its owner builds and the reader's wording. It decides nothing beyond the read: the storage edge's
  * compositions judge it ({@link StorageRulesets#verdict}), and the readout carries their verdict. It implements the domain port {@link PackReading}, so
- * registration and validate mode reach the read without naming a storage type (S6), and the domain port
- * {@link PackInspector} until its last consumer moves (WP09).
+ * registration and validate mode reach the read without naming a storage type (S6): the one domain port of the read.
  *
  * <p>A root that is not a directory, or that cannot be listed or read, is one read fault, {@code pack_unreadable} at
- * {@value #ROOT}, as a registration answers it (F4); the read never throws on it, and {@link #inspect} throws it as
- * before. The census reads the manifest, the reserved shard and the files not held without following a link.
+ * {@value #ROOT}, as a registration answers it (F4); the read never throws on it. The census reads the manifest, the reserved shard and the files not held without following a link.
  *
  * <p>The descriptor's format (its {@code requires_core}, {@code pack_version} and {@code depends_on} ranges, through
  * {@link DescriptorChecks}) and each contained asset's MIME type (through {@link AssetMimeTable}) are prechecks of the
@@ -82,7 +79,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The read takes {@code pack.yaml}, the root {@code *.graph.yaml} shards (sorted by file name) and
  * {@code drg/fragment.yaml}, the places core's runtime reads, each as {@link FileRead.Absent},
- * {@link FileRead.Unreadable} or {@link FileRead.Read}; {@link Scope#LOAD_PATH} gives back only those.
+ * {@link FileRead.Unreadable} or {@link FileRead.Read}.
  *
  * <p>It then reads every other {@code *.yaml} file of the pack, in path order:
  * each is classified by {@link PackFileKind} (mapped to a schema, or excluded for a reviewed reason; a file no rule
@@ -115,7 +112,7 @@ import org.jspecify.annotations.Nullable;
  * bytes are not UTF-8 is a parse failure too, and the code of its finding follows its kind like every other. The
  * content of a file never throws.
  */
-public final class FileSystemPackInspector implements PackInspector, PackReading {
+public final class FileSystemPackInspector implements PackReading {
 
     /** Where a fault of the root itself is placed: the pack as a whole, as a registration places it (F4). */
     static final String ROOT = "pack";
@@ -224,26 +221,6 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
         this.bindings = List.copyOf(bindings);
         this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
         this.walker = Objects.requireNonNull(walker, "walker");
-    }
-
-    /**
-     * Reads a pack directory, through the one read ({@link #readTree}).
-     *
-     * @param root the pack to read; its {@code locator} is the directory
-     * @param scope how much of it to give back
-     * @return the facts of {@code pack.yaml}, the shards and the fragment, and for {@link Scope#FULL} every other fact
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the directory does not exist, cannot be listed or a
-     *     file cannot be read; the content of a file never throws
-     */
-    @Override
-    public PackContents inspect(PackRoot root, Scope scope) {
-        TreeRead tree = readTree(root);
-        for (Reason fault : tree.readFaults()) {
-            if (ROOT.equals(fault.location().file()) && StorageCodes.PACK_UNREADABLE.equals(fault.code())) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, fault.detail());
-            }
-        }
-        return scope == Scope.LOAD_PATH ? tree.contents().loadPath() : tree.contents();
     }
 
     /**

@@ -25,7 +25,6 @@ import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -94,7 +93,7 @@ class FileSystemPackInspectorTest {
         write(dir, "tactics/x.tactic.yaml", "id: x\n");
         write(dir, "drg/fragment.yaml", "nodes: []\nedges: []\n");
 
-        PackContents contents = INSPECTOR.inspect(root(dir), Scope.LOAD_PATH);
+        PackContents contents = full(dir).contents();
 
         assertThat(contents.root()).isEqualTo(root(dir));
         assertThat(read(contents.descriptor()).file()).isEqualTo("pack.yaml");
@@ -120,7 +119,7 @@ class FileSystemPackInspectorTest {
                 "schema_version: '1.0'\ngenerated_at: STATIC\nnodes:\n- {urn: 'directive:A', kind: directive}\nedges: []\n");
 
         // #554, C-4: the shard is read as any root shard; the census states that no registration wrote it.
-        read(INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+        read(full(dir).contents().shards().get(0));
         assertThat(full(dir).census().reservedShard()).isEqualTo(TreeCensus.ReservedShard.UNSTAMPED);
         assertThat(full(dir).readFaults()).noneMatch(fault -> StorageCodes.RESERVED_SHARD.equals(fault.code()));
 
@@ -140,13 +139,13 @@ class FileSystemPackInspectorTest {
 
         write(dir, "registered.graph.yaml", RelationshipShard.write(java.util.List.of()));
 
-        read(INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+        read(full(dir).contents().shards().get(0));
         assertThat(full(dir).census().reservedShard()).isEqualTo(TreeCensus.ReservedShard.STAMPED);
     }
 
     @Test
     void aFileThatIsNotThereIsAbsent(@TempDir Path dir) {
-        PackContents contents = INSPECTOR.inspect(root(dir), Scope.LOAD_PATH);
+        PackContents contents = full(dir).contents();
 
         assertThat(contents.descriptor()).isEqualTo(new FileRead.Absent<PackDescriptor>("pack.yaml"));
         assertThat(contents.shards()).isEmpty();
@@ -160,7 +159,7 @@ class FileSystemPackInspectorTest {
         write(dir, "b.graph.yaml", "surprise: true\n");
         write(dir, "drg/fragment.yaml", "- a\n");
 
-        PackContents contents = INSPECTOR.inspect(root(dir), Scope.LOAD_PATH);
+        PackContents contents = full(dir).contents();
 
         assertThat(unreadable(contents.descriptor()).parse()).isNotNull();
         assertThat(unreadable(contents.shards().get(0)).file()).isEqualTo("a.graph.yaml");
@@ -172,11 +171,11 @@ class FileSystemPackInspectorTest {
 
     @Test
     void aRootThatIsNoDirectoryIsRefusedAsUnreadable(@TempDir Path dir) {
-        assertThatThrownBy(() -> INSPECTOR.inspect(root(dir.resolve("missing")), Scope.LOAD_PATH))
-                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
-                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-                    assertThat(r.getMessage()).isEqualTo("pack qa is not a directory");
-                });
+        assertThat(full(dir.resolve("missing")).readFaults()).singleElement().satisfies(fault -> {
+            assertThat(fault.code()).isEqualTo(StorageCodes.PACK_UNREADABLE);
+            assertThat(fault.location().file()).isEqualTo(FileSystemPackInspector.ROOT);
+            assertThat(fault.detail()).isEqualTo("pack qa is not a directory");
+        });
     }
 
     @Test
@@ -186,16 +185,14 @@ class FileSystemPackInspectorTest {
         Files.createDirectories(dir.resolve("drg"));
         Files.write(dir.resolve("drg/fragment.yaml"), new byte[] {'a', ':', ' ', (byte) 0xC3});
 
-        for (Scope scope : Scope.values()) {
-            PackContents contents = INSPECTOR.inspect(root(dir), scope);
+        PackContents contents = full(dir).contents();
 
-            assertThat(unreadable(contents.descriptor()).parse())
-                    .isEqualTo(new PackContents.ParseFailure("pack.yaml", "the file is not valid UTF-8"));
-            assertThat(unreadable(contents.shards().get(0)).parse())
-                    .isEqualTo(new PackContents.ParseFailure("tactic.graph.yaml", "the file is not valid UTF-8"));
-            assertThat(unreadable(contents.fragment()).parse())
-                    .isEqualTo(new PackContents.ParseFailure("drg/fragment.yaml", "the file is not valid UTF-8"));
-        }
+        assertThat(unreadable(contents.descriptor()).parse())
+                .isEqualTo(new PackContents.ParseFailure("pack.yaml", "the file is not valid UTF-8"));
+        assertThat(unreadable(contents.shards().get(0)).parse())
+                .isEqualTo(new PackContents.ParseFailure("tactic.graph.yaml", "the file is not valid UTF-8"));
+        assertThat(unreadable(contents.fragment()).parse())
+                .isEqualTo(new PackContents.ParseFailure("drg/fragment.yaml", "the file is not valid UTF-8"));
     }
 
     /**
@@ -280,31 +277,6 @@ class FileSystemPackInspectorTest {
                 .isEqualTo(direct.contents().artifacts())
                 .isNotEmpty();
         assertThat(linked.readFaults()).isEqualTo(direct.readFaults());
-    }
-
-    @Test
-    void theFullScopeReadsThePackFilesOfTheLoadPathAsTheLoadPathDoes(@TempDir Path dir) throws IOException {
-        write(
-                dir,
-                "pack.yaml",
-                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
-        write(dir, "a.graph.yaml", "schema_version: '1.0'\ngenerated_at: S\nnodes: []\nedges: []\n");
-        write(dir, "b.graph.yaml", "nodes: [\n");
-        write(dir, "drg/fragment.yaml", "nodes: []\nedges: []\n");
-        write(dir, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
-
-        PackContents load = INSPECTOR.inspect(root(dir), Scope.LOAD_PATH);
-        TreeRead full = full(dir);
-
-        assertThat(full.contents().root()).isEqualTo(load.root());
-        assertThat(full.contents().descriptor()).isEqualTo(load.descriptor());
-        assertThat(full.contents().shards()).isEqualTo(load.shards());
-        assertThat(full.contents().fragment()).isEqualTo(load.fragment());
-        assertThat(full.readFaults())
-                .extracting(fault -> fault.location().file())
-                .as("the shard is a load-path file, reported once, as the descriptor is")
-                .containsOnly("pack.yaml", "b.graph.yaml")
-                .containsOnlyOnce("b.graph.yaml");
     }
 
     @Test
@@ -1056,7 +1028,7 @@ class FileSystemPackInspectorTest {
         Path pack = Files.createDirectories(dir.resolve("pack/assets"));
         Files.createSymbolicLink(pack.resolve("m.asset.yaml"), outside.resolve("m.asset.yaml"));
 
-        assertThat(INSPECTOR.inspect(root(dir.resolve("pack")), Scope.FULL).assets())
+        assertThat(full(dir.resolve("pack")).contents().assets())
                 .extracting(PackContents.AssetFacts::id)
                 .containsExactly("m");
     }
@@ -1098,9 +1070,7 @@ class FileSystemPackInspectorTest {
         Files.createDirectories(dir.resolve("odd.graph.yaml"));
         write(dir, "real.graph.yaml", "nodes: []\n");
 
-        assertThat(INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards())
-                .extracting(FileRead::file)
-                .containsExactly("real.graph.yaml");
+        assertThat(full(dir).contents().shards()).extracting(FileRead::file).containsExactly("real.graph.yaml");
     }
 
     @Test
@@ -1108,9 +1078,11 @@ class FileSystemPackInspectorTest {
         Path file = dir.resolve("a-file");
         Files.writeString(file, "x");
 
-        assertThatThrownBy(() -> INSPECTOR.inspect(root(file), Scope.LOAD_PATH))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.getMessage()).isEqualTo("pack qa is not a directory"));
+        assertThat(full(file).readFaults()).singleElement().satisfies(fault -> {
+            assertThat(fault.code()).isEqualTo(StorageCodes.PACK_UNREADABLE);
+            assertThat(fault.location().file()).isEqualTo(FileSystemPackInspector.ROOT);
+            assertThat(fault.detail()).isEqualTo("pack qa is not a directory");
+        });
     }
 
     /**
@@ -1603,10 +1575,6 @@ class FileSystemPackInspectorTest {
         assertThat(unlistable.read(root(dir)).rationale().isFailing())
                 .as("the port answers the fault; it never throws")
                 .isTrue();
-        assertThatThrownBy(() -> unlistable.inspect(root(dir), Scope.LOAD_PATH))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("pack qa cannot be listed");
     }
 
     @Test

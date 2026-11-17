@@ -18,8 +18,8 @@ import org.jspecify.annotations.Nullable;
  * store does not hold, the manifest and the reserved shard are the storage edge's ({@code TreeRead}, {@code TreeCensus}),
  * and the domain port {@link PackReading} carries what of them the edges need in its {@link PackReadout}.
  *
- * <p>{@code root} stays until validate mode's placement takes the pack root itself (WP09): the level rules read the
- * configured name and level from it.
+ * <p>{@code root} names the pack: the content rules word their findings with its configured name, and validate mode's
+ * placement rules read the name from it (WP09).
  *
  * @param root the pack that was read
  * @param descriptor what {@code pack.yaml} gave
@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * @param artifacts the kind and id each artifact declares; filled by a full read only
  * @param assets the path and MIME type each asset declares; filled by a full read only
  * @param stepEnhancements the step enhancements, their companions and the pack's graph edges as plain facts; filled by
- *     a full read only, empty in the load-path scope
+ *     a full read only
  * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
  *     full read only. A prompt the codec refuses is a read fault instead and has no parse (A5).
  * @param missionTypes the id and step ids of each mission type the read could parse; filled by a full read only
@@ -242,25 +242,6 @@ public record PackContents(
                 Objects.requireNonNull(artifact, "artifact");
             }
         }
-    }
-
-    /**
-     * The facts of the load path alone: the descriptor, the root shards and the fragment, with no full-read fact.
-     *
-     * @return the load path's facts
-     */
-    public PackContents loadPath() {
-        return new PackContents(
-                root,
-                descriptor,
-                shards,
-                fragment,
-                List.of(),
-                List.of(),
-                StepEnhancementFacts.none(),
-                List.of(),
-                List.of(),
-                assembly);
     }
 
     /**

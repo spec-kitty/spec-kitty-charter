@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * One pack root, as the {@link PackInspector} port is asked to read it.
+ * One pack root, as the {@link PackReading} port is asked to read it.
  *
  * @param name the name the pack is configured under, or its directory name for a bare path
  * @param configuredLevel the level the pack is configured at; empty for a bare-path validation

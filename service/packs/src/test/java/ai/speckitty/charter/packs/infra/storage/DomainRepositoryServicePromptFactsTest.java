@@ -10,7 +10,6 @@ import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackContents;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
@@ -70,12 +69,11 @@ class DomainRepositoryServicePromptFactsTest {
 
     private static PackContents contentsOf(String name) {
         return new FileSystemPackInspector()
-                .inspect(
-                        new PackRoot(
-                                name,
-                                Optional.of(ExamplePacks.level(name)),
-                                ExamplePacks.pack(name).toString()),
-                        Scope.FULL);
+                .readTree(new PackRoot(
+                        name,
+                        Optional.of(ExamplePacks.level(name)),
+                        ExamplePacks.pack(name).toString()))
+                .contents();
     }
 
     private static Urn enhancement(String id) {
