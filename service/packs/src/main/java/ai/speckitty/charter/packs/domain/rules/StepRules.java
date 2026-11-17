@@ -34,7 +34,7 @@ public final class StepRules {
 
     private StepRules() {}
 
-    private static List<Reason> repeatedSubstepIds(MissionTypeFacts type) {
+    static List<Reason> repeatedSubstepIds(MissionTypeFacts type) {
         List<Reason> findings = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         Set<String> reported = new HashSet<>();

@@ -49,7 +49,7 @@ public final class AssetRules {
 
     private AssetRules() {}
 
-    private static List<Reason> escape(AssetFacts asset) {
+    static List<Reason> escape(AssetFacts asset) {
         if (asset.path().isEmpty() || (asset.containedInAssetsRoot() && !PackRelativePaths.leavesRoot(asset.path()))) {
             return List.of();
         }
@@ -58,7 +58,7 @@ public final class AssetRules {
     }
 
     /** The artifact facts of the asset sidecars: every sidecar, the later ones of a repeated id included. */
-    private static List<ArtifactFacts> sidecars(PackContents contents) {
+    static List<ArtifactFacts> sidecars(PackContents contents) {
         return contents.artifacts().stream()
                 .filter(artifact -> ArtifactKind.ASSET.token().equals(artifact.kind()))
                 .toList();
