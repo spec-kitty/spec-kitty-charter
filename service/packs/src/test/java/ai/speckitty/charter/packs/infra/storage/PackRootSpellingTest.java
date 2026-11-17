@@ -4,13 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,9 +55,8 @@ class PackRootSpellingTest {
         return pack;
     }
 
-    private static PackContents validate(String locator) {
-        return new FileSystemPackInspector()
-                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), locator), PackInspector.Scope.FULL);
+    private static TreeRead validate(String locator) {
+        return new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), locator));
     }
 
     private List<PackElementViolation> loadViolations(String locator) {
@@ -70,19 +66,21 @@ class PackRootSpellingTest {
                 .violations();
     }
 
-    private static void assertSameRead(PackContents spelled, PackContents plain) {
-        assertThat(spelled.unreadableFiles()).isEmpty();
-        assertThat(spelled.files()).isNotEmpty().isEqualTo(plain.files());
-        assertThat(spelled.artifacts()).isNotEmpty().isEqualTo(plain.artifacts());
-        assertThat(spelled.missionTypes()).isEqualTo(plain.missionTypes());
+    private static void assertSameRead(TreeRead spelled, TreeRead plain) {
+        assertThat(spelled.readFaults()).isEmpty();
+        assertThat(spelled.census().files())
+                .isNotEmpty()
+                .isEqualTo(plain.census().files());
+        assertThat(spelled.contents().artifacts())
+                .isNotEmpty()
+                .isEqualTo(plain.contents().artifacts());
+        assertThat(spelled.contents().missionTypes()).isEqualTo(plain.contents().missionTypes());
     }
 
-    private static void assertOnlyTheTemplateIsMissing(PackContents validated) {
-        assertThat(validated.unreadableFiles()).singleElement().satisfies(bad -> {
-            assertThat(bad.file()).isEqualTo(FILE);
-            assertThat(Wording.unreadable(PACK, bad))
-                    .extracting(PackFinding::detail)
-                    .singleElement()
+    private static void assertOnlyTheTemplateIsMissing(TreeRead validated) {
+        assertThat(validated.readFaults()).singleElement().satisfies(bad -> {
+            assertThat(bad.location().file()).isEqualTo(FILE);
+            assertThat(bad.detail())
                     .asString()
                     .endsWith(": missing")
                     .doesNotContain("leaves the pack")
@@ -113,7 +111,7 @@ class PackRootSpellingTest {
         Files.createDirectories(host.resolve("x"));
         // Built as a string so that Path does not normalize the spelling away.
         String locator = host.toString() + "/" + spelling;
-        PackContents plain = validate(pack.toString());
+        TreeRead plain = validate(pack.toString());
 
         assertSameRead(validate(locator), plain);
         assertThat(loadViolations(locator)).as("the load at the same spelling").isEmpty();
@@ -135,8 +133,8 @@ class PackRootSpellingTest {
                 Files.createDirectories(host.resolve("packs")).resolve(PACK), target);
         String locator = link.toString();
 
-        PackContents linked = validate(locator);
-        assertThat(linked.root().locator())
+        TreeRead linked = validate(locator);
+        assertThat(linked.contents().root().locator())
                 .as("the configured spelling is reported")
                 .isEqualTo(locator);
         assertSameRead(linked, validate(plainCopy.toString()));

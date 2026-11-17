@@ -1,8 +1,12 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.validation.Evaluation;
+import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,6 +32,43 @@ public record PackFinding(ReasonCode code, String file, List<String> place, Stri
         Objects.requireNonNull(file, "file");
         Objects.requireNonNull(detail, "detail");
         place = List.copyOf(place);
+    }
+
+    /**
+     * The finding as a kernel reason, with its place as a JSON pointer into its file (RFC 6901): how the one reader
+     * reports a read fault (#554, FR-016). Staging inside the single pull request (R4 b): it goes with this record
+     * (WP13).
+     *
+     * @return the failing reason
+     */
+    public Reason reason() {
+        Location at = Location.in(file);
+        if (!place.isEmpty()) {
+            StringBuilder pointer = new StringBuilder();
+            place.forEach(segment ->
+                    pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
+            at = at.at(pointer.toString());
+        }
+        return new Reason(code.value(), Evaluation.FAIL, code, at, detail);
+    }
+
+    /**
+     * The finding a kernel reason states: the inverse of {@link #reason()}, so validate mode reads the one reader's
+     * read faults in its own shape until it judges the readout's rationale itself (#554, WP09). Staging inside the
+     * single pull request (R4 b): it goes with this record (WP13).
+     *
+     * @param reason a reason with a file as its location
+     * @return the finding
+     */
+    public static PackFinding of(Reason reason) {
+        List<String> place = new ArrayList<>();
+        String pointer = reason.location().pointer();
+        if (!pointer.isEmpty()) {
+            for (String segment : pointer.substring(1).split("/", -1)) {
+                place.add(segment.replace("~1", "/").replace("~0", "~"));
+            }
+        }
+        return new PackFinding(reason.code(), reason.location().file(), place, reason.detail());
     }
 
     /**

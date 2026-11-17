@@ -1222,18 +1222,29 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("a fragment no entry names is not held: it is listed as a file nothing models (IC-02 reclassifies it)")
-    void aFragmentNoEntryNamesStaysUnmodelled(@TempDir Path host) throws IOException {
+    @DisplayName("a fragment no entry names is not listed as not held: the census holds what a rule maps, and the"
+            + " registration refuses the orphan by its own code (#554, open case 9)")
+    void aFragmentNoEntryNamesIsNotListedAsNotHeld(@TempDir Path host) throws IOException {
         Path source = enhancingPack(host.resolve("source"));
         write(source, "missions/software-dev/enhancements/stray.prompt-fragment.md", "Nobody names this.\n");
 
         WholePackStore.LoadedPack loaded = store.load(source);
 
         assertThat(loaded.notHeld())
-                .contains(ExcludedFile.unmodelled("missions/software-dev/enhancements/stray.prompt-fragment.md"));
-        assertThat(loaded.notHeld())
                 .extracting(ExcludedFile::file)
-                .doesNotContain(FRAGMENT_REASONS, FRAGMENT_CANVAS, ENHANCEMENT_FILE);
+                .doesNotContain(
+                        "missions/software-dev/enhancements/stray.prompt-fragment.md",
+                        FRAGMENT_REASONS,
+                        FRAGMENT_CANVAS,
+                        ENHANCEMENT_FILE);
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(source)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                                .containsExactly(tuple(
+                                        "missions/software-dev/enhancements/stray.prompt-fragment.md",
+                                        PackCodes.PROMPT_FRAGMENT_INVALID.value())));
     }
 
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {

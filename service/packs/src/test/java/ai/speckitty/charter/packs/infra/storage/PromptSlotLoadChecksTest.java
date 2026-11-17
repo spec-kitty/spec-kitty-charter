@@ -17,7 +17,6 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackPolicy.PromptSlotFault;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -212,7 +211,7 @@ class PromptSlotLoadChecksTest {
         /** Validate mode: every finding about a slot. */
         List<PackFinding> validate() {
             PackRoot root = new PackRoot("slots", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(new FileSystemPackInspector().inspect(root, Scope.FULL)).findings().stream()
+            return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
                     .filter(finding -> finding.code().value().startsWith("prompt_slot"))
                     .toList();
         }

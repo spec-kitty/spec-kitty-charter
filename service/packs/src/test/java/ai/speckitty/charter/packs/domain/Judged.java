@@ -15,7 +15,7 @@ final class Judged {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal when a finding blocks
      */
     static void refuseOnFirstBlocking(PackContents contents) {
-        for (PackFinding finding : PackPolicy.judge(contents).findings()) {
+        for (PackFinding finding : PackPolicy.judge(Readouts.of(contents)).findings()) {
             if (finding.severity() == Severity.VIOLATION) {
                 throw finding.toRefusal();
             }
@@ -29,7 +29,7 @@ final class Judged {
      * @return one diagnostic per finding, in report order
      */
     static List<Diagnostic> diagnostics(PackContents contents) {
-        return PackPolicy.judge(contents).findings().stream()
+        return PackPolicy.judge(Readouts.of(contents)).findings().stream()
                 .map(PackFinding::toDiagnostic)
                 .toList();
     }

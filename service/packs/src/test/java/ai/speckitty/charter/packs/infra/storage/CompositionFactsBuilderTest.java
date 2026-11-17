@@ -91,4 +91,20 @@ class CompositionFactsBuilderTest {
         return new DomainRepositoryService(
                 () -> List.of(new PackLocation(name, ExamplePacks.level(name), pack)), STRATEGY);
     }
+
+    @Test
+    @DisplayName(
+            "a pack with a file the load refuses is refused pack_unreadable, naming the file, as the composing read"
+                    + " refuses it")
+    void aRefusedFileIsRefused(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        Files.writeString(pack.resolve("tactics/broken.tactic.yaml"), "id: [\n", StandardCharsets.UTF_8);
+        ConfiguredPack configured = new ConfiguredPack(new PackIdentifier("built-in"), PackLevel.BUILT_IN);
+
+        assertThatThrownBy(() -> CompositionFactsBuilder.underResolution(configured, pack, STRATEGY))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessageStartingWith("the file tactics/broken.tactic.yaml of built-in cannot be read");
+    }
 }

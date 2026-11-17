@@ -395,6 +395,7 @@ final class FilesystemPackStore {
     }
 
     private PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
+        READS.increment();
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
         PackFileSet.Listing listing = PackFileSet.listing(directory, companionRules.table());
@@ -1227,6 +1228,18 @@ final class FilesystemPackStore {
     /** Files parsed by lookups by id, for the test that holds a bulk read to a bounded number of parses. */
     private static final java.util.concurrent.atomic.LongAdder LOOKUP_PARSES =
             new java.util.concurrent.atomic.LongAdder();
+
+    private static final java.util.concurrent.atomic.LongAdder READS = new java.util.concurrent.atomic.LongAdder();
+
+    /**
+     * How many whole reads of a pack ({@link #read(PackIdentifier)} and its overloads) this JVM has made: the counter
+     * that tells a surface reads a pack once (#554, T028, {@code OneReadTest}).
+     *
+     * @return the count
+     */
+    static long reads() {
+        return READS.sum();
+    }
 
     /**
      * How many files lookups by id have parsed in this JVM. A lookup parses files until one declares the id, so a bulk

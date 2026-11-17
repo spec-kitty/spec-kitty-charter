@@ -8,13 +8,13 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
+import ai.speckitty.charter.packs.domain.ClassifiedFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
-import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Skill;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -115,16 +115,15 @@ class ExcludedFilesAgreementTest {
     @Test
     @DisplayName("validate mode lists the three excluded files and never the companions, and reads none of them")
     void validateModeAgrees() {
-        PackContents contents = new FileSystemPackInspector()
-                .inspect(new PackRoot(name(), Optional.of(PackLevel.ORG), pack.toString()), Scope.FULL);
+        TreeRead contents = new FileSystemPackInspector()
+                .readTree(new PackRoot(name(), Optional.of(PackLevel.ORG), pack.toString()));
 
-        assertThat(contents.files().stream()
+        assertThat(contents.census().files().stream()
                         .filter(file -> file.exclusionClass().isPresent())
-                        .map(PackContents.ClassifiedFile::file))
+                        .map(ClassifiedFile::file))
                 .containsExactlyInAnyOrderElementsOf(EXCLUDED);
-        assertThat(contents.files().stream().map(PackContents.ClassifiedFile::file))
-                .doesNotContain(SKILL_BODY);
-        assertThat(contents.unreadableFiles()).isEmpty();
+        assertThat(contents.census().files().stream().map(ClassifiedFile::file)).doesNotContain(SKILL_BODY);
+        assertThat(contents.readFaults()).isEmpty();
     }
 
     @Test

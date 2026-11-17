@@ -7,27 +7,38 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.Rationale;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.domain.AssetMimeTable;
+import ai.speckitty.charter.packs.domain.ClassifiedFile;
+import ai.speckitty.charter.packs.domain.MediaTypes;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
-import ai.speckitty.charter.packs.domain.PackContents.ClassifiedFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackInspector;
+import ai.speckitty.charter.packs.domain.PackReading;
+import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRelativePaths;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -53,36 +64,50 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Reads a pack directory as facts, in one of two scopes. It decides nothing: {@code PackPolicy} judges what it finds.
+ * The one reader of a pack tree (#554, S1, FR-016): one walk of a pack directory gives one {@link TreeRead}, the pack's
+ * storage-agnostic {@link PackContents}, the {@link TreeCensus} that owns "held" (every file classified, the files not
+ * held with their kind and reason, the manifest and the reserved shard) and the read faults, each a kernel reason with
+ * the code its owner builds and the reader's wording. It decides nothing beyond the read: {@code PackPolicy} judges
+ * what it finds, and the storage rules judge the census (WP07). It implements the domain port {@link PackReading}, so
+ * registration and validate mode reach the read without naming a storage type (S6), and the domain port
+ * {@link PackInspector} until its last consumer moves (WP09).
  *
- * <p>{@link Scope#LOAD_PATH} reads {@code pack.yaml}, the root {@code *.graph.yaml} shards (sorted by file name) and
+ * <p>A root that is not a directory, or that cannot be listed or read, is one read fault, {@code pack_unreadable} at
+ * {@value #ROOT}, as a registration answers it (F4); the read never throws on it, and {@link #inspect} throws it as
+ * before. The census reads the manifest, the reserved shard and the files not held without following a link.
+ *
+ * <p>The descriptor's format (its {@code requires_core}, {@code pack_version} and {@code depends_on} ranges, through
+ * {@link DescriptorChecks}) and each contained asset's MIME type (through {@link AssetMimeTable}) are prechecks of the
+ * read (S2): read faults with the {@link StorageCodes} tokens and the R2 wording (rows 14 and 38).
+ *
+ * <p>The read takes {@code pack.yaml}, the root {@code *.graph.yaml} shards (sorted by file name) and
  * {@code drg/fragment.yaml}, the places core's runtime reads, each as {@link FileRead.Absent},
- * {@link FileRead.Unreadable} or {@link FileRead.Read}.
+ * {@link FileRead.Unreadable} or {@link FileRead.Read}; {@link Scope#LOAD_PATH} gives back only those.
  *
- * <p>{@link Scope#FULL} reads those the same way and then every other {@code *.yaml} file of the pack, in path order:
+ * <p>It then reads every other {@code *.yaml} file of the pack, in path order:
  * each is classified by {@link PackFileKind} (mapped to a schema, or excluded for a reviewed reason; a file no rule
  * covers is left out of the classification and listed as not held, #554), and each mapped file that has a schema is
- * parsed and validated through
- * {@link PackSchemas}; a schema-less payload (a {@code payloads} rule's kind, such as an asset payload that happens to
- * be YAML) is listed with its kind and not read. The step ids, artifact ids and asset declarations of the files that passed their schema are the
- * facts the validate-only rules judge; a file that did not is {@link PackContents#unreadableFiles()}.
+ * parsed and validated through {@link PackSchemas}; a schema-less payload (a {@code payloads} rule's kind, such as an
+ * asset payload that happens to be YAML) is listed with its kind and not read. The step ids, artifact ids and asset
+ * declarations of the files that passed their schema are the facts the rules judge; a file that did not is a read
+ * fault.
  *
- * <p>{@link Scope#FULL} lists every payload and template the store's listing holds, whatever its extension, with its
+ * <p>It lists every payload and template the store's listing holds, whatever its extension, with its
  * kind, and reads none (#251). It applies the store's payload rule to the schema-valid asset sidecars
  * ({@link SidecarPayloads}, ADR-0040 decision 6): a sidecar whose payload the pack does not hold, or that names a
- * payload an earlier sidecar named, is {@link PackContents#unreadableFiles()} with the load's refusal, so validate mode
+ * payload an earlier sidecar named, is a read fault with the load's refusal, so validate mode
  * and the load refuse the same sidecars in the same words.
  *
- * <p>{@link Scope#FULL} also reads every {@code *.md} file that a {@code files} rule maps to a bound kind's Markdown
+ * <p>It also reads every {@code *.md} file that a {@code files} rule maps to a bound kind's Markdown
  * companion structure (a toolguide's guide, #194), as the store's load does: parsed with {@link MarkdownCodec},
  * validated against the structure schema, then held to the rules the schema cannot express
- * ({@link KindBinding#checkCompanion}). A guide that breaks one is {@link PackContents#unreadableFiles()}, so validate
+ * ({@link KindBinding#checkCompanion}). A guide that breaks one is a read fault, so validate
  * mode and the load refuse the same guide. It reads the pack document ({@code README.md}, #260) the same way, through
  * the store's own read ({@link PackDocumentMarkdown#read}). Other Markdown files are not read, nor listed in the
  * classification.
  *
- * <p>{@link Scope#FULL} reports every retired file (ADR-0044 decision 6), YAML and Markdown alike, as
- * {@link PackContents#unreadableFiles()} naming its rule's reason, from the store's own listing
+ * <p>It reports every retired file (ADR-0044 decision 6), YAML and Markdown alike, as
+ * a read fault naming its rule's reason, from the store's own listing
  * ({@link PackFileSet.Listing#retired()}), so validate mode and the load refuse the same files by name.
  *
  * <p>Every call reads the files again, every file through {@link ParsedYaml} and never through {@link Yaml} directly,
@@ -90,7 +115,10 @@ import org.jspecify.annotations.Nullable;
  * bytes are not UTF-8 is a parse failure too, and the code of its finding follows its kind like every other. The
  * content of a file never throws.
  */
-public final class FileSystemPackInspector implements PackInspector {
+public final class FileSystemPackInspector implements PackInspector, PackReading {
+
+    /** Where a fault of the root itself is placed: the pack as a whole, as a registration places it (F4). */
+    static final String ROOT = "pack";
 
     private static final String MARKDOWN = ".md";
 
@@ -127,6 +155,9 @@ public final class FileSystemPackInspector implements PackInspector {
 
     private final PackFileKind table;
 
+    /** The store's format, which reads the manifest's lists and derives the held ones (T024). */
+    private final SerializationStrategy strategy = new YamlSerializationStrategy();
+
     /** An inspector over the bundled file-kinds table; it keeps no state. */
     public FileSystemPackInspector() {
         this(PackFileKind.bundled());
@@ -143,23 +174,83 @@ public final class FileSystemPackInspector implements PackInspector {
     }
 
     /**
-     * Reads a pack directory.
+     * Reads a pack directory, through the one read ({@link #readTree}).
      *
      * @param root the pack to read; its {@code locator} is the directory
-     * @param scope how much of it to read
-     * @return the facts of {@code pack.yaml}, the shards and the fragment, and for {@link Scope#FULL} the
-     *     classification of every YAML file with the facts of the validate-only rules
+     * @param scope how much of it to give back
+     * @return the facts of {@code pack.yaml}, the shards and the fragment, and for {@link Scope#FULL} every other fact
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the directory does not exist, cannot be listed or a
      *     file cannot be read; the content of a file never throws
      */
     @Override
     public PackContents inspect(PackRoot root, Scope scope) {
+        TreeRead tree = readTree(root);
+        for (Reason fault : tree.readFaults()) {
+            if (ROOT.equals(fault.location().file()) && StorageCodes.PACK_UNREADABLE.equals(fault.code())) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, fault.detail());
+            }
+        }
+        return scope == Scope.LOAD_PATH ? tree.contents().loadPath() : tree.contents();
+    }
+
+    /**
+     * Reads one pack root once (S6): its contents, the files it classifies, the files the store does not hold and the
+     * read's faults as the rationale. The storage rules' verdict joins the faults in WP07.
+     *
+     * @param root the pack to read; its {@code locator} is the directory
+     * @return the readout
+     */
+    @Override
+    public PackReadout read(PackRoot root) {
+        TreeRead tree = readTree(root);
+        return new PackReadout(
+                tree.contents(), tree.census().files(), tree.census().notHeld(), new Rationale(tree.readFaults()));
+    }
+
+    /**
+     * The one read of a pack tree (S1): every file, once. Package-private: a public method of a port's implementation
+     * may not return a storage type ({@code STORAGE_RETURNS_DOMAIN}), and its callers, the store's load and the composing
+     * read, share this package.
+     *
+     * @param root the pack to read; its {@code locator} is the directory
+     * @return the contents, the census and the read faults; a root that cannot be read is one read fault
+     */
+    TreeRead readTree(PackRoot root) {
         // #319: normalize, not toRealPath: a linked root keeps its configured name (#284).
         Path directory = Path.of(root.locator()).toAbsolutePath().normalize();
         String name = root.name();
         if (!Files.isDirectory(directory)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not a directory");
+            return unreadableRoot(root, "pack " + name + " is not a directory");
         }
+        try {
+            return readDirectory(root, directory, name);
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
+                throw refusal;
+            }
+            return unreadableRoot(root, String.valueOf(refusal.getMessage()));
+        }
+    }
+
+    /** The read of a root that cannot be read: no fact, an empty census, and the one fault at {@value #ROOT}. */
+    private static TreeRead unreadableRoot(PackRoot root, String detail) {
+        PackContents nothing = new PackContents(
+                root,
+                new FileRead.Absent<>(PackFileSet.PACK_YAML),
+                List.of(),
+                new FileRead.Absent<>(PackFileSet.FRAGMENT),
+                List.of(),
+                List.of(),
+                StepEnhancementFacts.none(),
+                List.of(),
+                List.of());
+        return new TreeRead(
+                nothing,
+                TreeCensus.empty(),
+                List.of(new PackFinding(StorageCodes.PACK_UNREADABLE, ROOT, List.of(), detail).reason()));
+    }
+
+    private TreeRead readDirectory(PackRoot root, Path directory, String name) {
         FileRead<PackDescriptor> descriptor = new FileRead.Absent<>(PackFileSet.PACK_YAML);
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (Files.isRegularFile(packYaml)) {
@@ -175,37 +266,173 @@ public final class FileSystemPackInspector implements PackInspector {
         if (Files.isRegularFile(fragmentYaml)) {
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
-        if (scope == Scope.LOAD_PATH) {
-            return new PackContents(
-                    root,
-                    descriptor,
-                    shards,
-                    fragment,
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    StepEnhancementFacts.none(),
-                    List.of(),
-                    List.of(),
-                    List.of());
-        }
         FullRead full = new FullRead(
-                directory, name, shards.stream().map(FileRead::file).toList(), table);
+                directory, name, shards.stream().map(FileRead::file).toList(), table, unnamedPolicy(descriptor));
         full.readAll();
-        return new PackContents(
+        PackContents contents = new PackContents(
                 root,
                 descriptor,
                 shards,
                 fragment,
-                full.files,
                 full.artifacts,
                 full.assets,
-                full.unreadable,
                 full.stepEnhancementFacts(edgesOf(shards, fragment, ownName(descriptor, name))),
                 full.promptSlots,
-                full.missionTypes,
-                full.notHeld);
+                full.missionTypes);
+        TreeCensus census = new TreeCensus(
+                full.files, full.notHeld, manifest(directory, full.manifestRead), reservedShard(directory));
+        return new TreeRead(contents, census, readFaults(name, descriptor, shards, fragment, full));
+    }
+
+    /**
+     * Whether {@code policy.yaml} is a file the descriptor does not name (#554, open case 9): the load reads the policy
+     * file only as the one {@code mutability_policy} names (ADR-0063), so an unnamed one is not held. When the
+     * descriptor cannot be read, which file it names is unknown, and the file is held and judged.
+     */
+    private static boolean unnamedPolicy(FileRead<PackDescriptor> descriptor) {
+        return descriptor instanceof FileRead.Read<PackDescriptor> read
+                && !read.value()
+                        .paths()
+                        .mutabilityPolicy()
+                        .filter(PolicyYaml.FILE::equals)
+                        .isPresent();
+    }
+
+    /**
+     * The read faults, in the reader's order: the descriptor's (its read, or its format prechecks, S2), each root
+     * shard's, the fragment's, every other file's, then each contained asset's MIME precheck (S2). Each is worded once,
+     * here ({@link Wording}), with the code its owner builds.
+     */
+    private static List<Reason> readFaults(
+            String name,
+            FileRead<PackDescriptor> descriptor,
+            List<FileRead<RawGraph>> shards,
+            FileRead<RawGraph> fragment,
+            FullRead full) {
+        List<PackFinding> faults = new ArrayList<>();
+        switch (descriptor) {
+            case FileRead.Unreadable<PackDescriptor> bad -> faults.addAll(Wording.unreadable(name, bad));
+            case FileRead.Read<PackDescriptor> good -> faults.addAll(DescriptorChecks.findings(name, good.value()));
+            case FileRead.Absent<PackDescriptor> absent -> {}
+        }
+        List<FileRead<RawGraph>> documents = new ArrayList<>(shards);
+        documents.add(fragment);
+        for (FileRead<RawGraph> document : documents) {
+            if (document instanceof FileRead.Unreadable<RawGraph> bad) {
+                faults.addAll(Wording.unreadable(name, bad));
+            }
+        }
+        full.unreadable.forEach(bad -> faults.addAll(Wording.unreadable(name, bad)));
+        for (AssetFacts asset : full.assets) {
+            mimeProblem(asset)
+                    .ifPresent(detail -> faults.add(
+                            new PackFinding(StorageCodes.ASSET_MIME_INVALID, asset.file(), List.of(), detail)));
+        }
+        return faults.stream().map(PackFinding::reason).toList();
+    }
+
+    /**
+     * The MIME precheck of one asset (S2, R2 row 14): a type that is not {@code type/subtype}, or that differs from the
+     * one its extension implies. An empty path or type is the schema's business, and a path that escapes the assets
+     * root is the escape rule's, so neither is prechecked.
+     */
+    static Optional<String> mimeProblem(AssetFacts asset) {
+        String mime = asset.mime();
+        if (asset.path().isEmpty()
+                || mime.isEmpty()
+                || !asset.containedInAssetsRoot()
+                || PackRelativePaths.leavesRoot(asset.path())) {
+            return Optional.empty();
+        }
+        if (!MediaTypes.wellFormed(mime)) {
+            return Optional.of(asset.file() + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value");
+        }
+        return AssetMimeTable.expected(asset.path())
+                .filter(expected -> !expected.type().equals(mime))
+                .map(expected -> asset.file() + ": asset mime '" + mime + "' does not match the '"
+                        + expected.extension() + "' extension (" + expected.type() + ")");
+    }
+
+    /**
+     * The manifest's facts, read without following a link: whether anything stands at its path and whether it is a
+     * regular file; the lists it declares, read by the store's own manifest reader when the read found it valid; and
+     * the lists derived from what the pack holds ({@link PackManifestDerivation}, T024), so the membership rule compares
+     * two facts. A pack the store cannot load has no derived lists.
+     */
+    private TreeCensus.Manifest manifest(Path directory, boolean readable) {
+        Path file = directory.resolve(PackFileSet.MANIFEST);
+        boolean present = Files.exists(file, LinkOption.NOFOLLOW_LINKS);
+        if (!present) {
+            return TreeCensus.Manifest.ABSENT;
+        }
+        boolean regular = Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS);
+        Optional<TreeCensus.Entries> listed = Optional.empty();
+        if (readable
+                && FilesystemPackStore.readText(file)
+                                .map(text -> strategy.readManifest(text, PackFileSet.MANIFEST))
+                                .orElse(null)
+                        instanceof FileRead.Read<PackManifestDso> good) {
+            listed = Optional.of(ManifestMembership.entries(good.value()));
+        }
+        Optional<TreeCensus.Entries> derived = Optional.empty();
+        if (listed.isPresent()) {
+            try {
+                derived =
+                        Optional.of(ManifestMembership.entries(PackManifestDerivation.derivedAt(directory, strategy)));
+            } catch (CharterRefusal unloadable) {
+                // The store cannot load the pack: its own fault is reported where it is read, and nothing is derived.
+            }
+        }
+        return new TreeCensus.Manifest(present, regular, listed, derived);
+    }
+
+    /** What stands at the reserved shard's path, read without following a link (C-4). */
+    private static TreeCensus.ReservedShard reservedShard(Path directory) {
+        Path shard = directory.resolve(RelationshipShard.SHARD_PATH);
+        if (!Files.isRegularFile(shard, LinkOption.NOFOLLOW_LINKS)) {
+            return TreeCensus.ReservedShard.ABSENT;
+        }
+        return FilesystemPackStore.readText(shard)
+                        .filter(RelationshipShard::isWrittenByRegistration)
+                        .isPresent()
+                ? TreeCensus.ReservedShard.STAMPED
+                : TreeCensus.ReservedShard.UNSTAMPED;
+    }
+
+    /**
+     * The files of a pack directory the store does not hold, as the census lists them: each regular file that is not
+     * itself a link, in {@link String} order, that the table excludes or no rule models, unless a held artifact claims
+     * it as a companion (a skill body); and a {@code policy.yaml} the descriptor does not name (open case 9). A retired
+     * file is refused by name, never listed (WP02 review L2). The store's load lists what it does not hold through here,
+     * so "held" has one owner (#554, S3).
+     *
+     * @param directory the pack directory
+     * @param packName the pack's name, which a refusal to list it names
+     * @param table the file-kinds table
+     * @param unnamedPolicy whether {@code policy.yaml} is a file the descriptor does not name
+     * @return the files not held, each with its kind and reason
+     */
+    static List<NotHeldFile> notHeld(Path directory, String packName, PackFileKind table, boolean unnamedPolicy) {
+        Path last = directory.toAbsolutePath().normalize().getFileName();
+        String prefix = (last == null ? "pack" : last.toString()) + "/";
+        Set<String> held = Set.copyOf(PackFileSet.digested(directory, table));
+        List<NotHeldFile> out = new ArrayList<>();
+        for (String file : unlinkedFiles(directory, packName)) {
+            if (unnamedPolicy && PolicyYaml.FILE.equals(file)) {
+                out.add(NotHeldFile.unnamedPolicy(file));
+                continue;
+            }
+            if (held.contains(file)) {
+                continue;
+            }
+            switch (table.classify(prefix + file)) {
+                case PackFileKind.Excluded excluded -> out.add(NotHeldFile.excluded(file, excluded.reason()));
+                case PackFileKind.Unclassified unclassified -> out.add(NotHeldFile.unmodelled(file));
+                case PackFileKind.Mapped mapped -> {}
+                case PackFileKind.Retired retired -> {}
+            }
+        }
+        return out;
     }
 
     /** The step enhancement edges of the pack's graph documents that were read: the root shards, then the fragment. */
@@ -343,11 +570,16 @@ public final class FileSystemPackInspector implements PackInspector {
         private final Set<String> assetIds = new HashSet<>();
         private final List<SidecarPayloads.Sidecar> sidecars = new ArrayList<>();
         private final PackFileKind table;
+        private final boolean unnamedPolicy;
 
-        FullRead(Path directory, String name, List<String> shards, PackFileKind table) {
+        /** Whether the read found the manifest valid, so the census reads its lists. */
+        boolean manifestRead;
+
+        FullRead(Path directory, String name, List<String> shards, PackFileKind table, boolean unnamedPolicy) {
             this.directory = directory;
             this.name = name;
             this.table = table;
+            this.unnamedPolicy = unnamedPolicy;
             loadPath.add(PackFileSet.PACK_YAML);
             loadPath.add(PackFileSet.FRAGMENT);
             loadPath.addAll(shards);
@@ -365,28 +597,7 @@ public final class FileSystemPackInspector implements PackInspector {
             listing.retired()
                     .forEach((file, reason) -> unreadable.add(new FileRead.Unreadable<>(
                             file, ParseFailure.refused(file, reason, StorageCodes.RETIRED), List.of())));
-            listNotHeld(prefix);
-        }
-
-        /**
-         * Lists every file the store does not hold, as the store's load lists it ({@code WholePackStore}): each regular
-         * file of the pack that is not itself a link, in {@link String} order, that the table excludes or no rule
-         * models, unless a held artifact claims it as a companion (a skill body). A retired file is refused by name,
-         * never listed (#554, WP02 review L2). None is read, so no rule judges it (#554, open case 6).
-         */
-        private void listNotHeld(String prefix) {
-            Set<String> held = Set.copyOf(PackFileSet.digested(directory, table));
-            for (String file : unlinkedFiles(directory, name)) {
-                if (held.contains(file)) {
-                    continue;
-                }
-                switch (table.classify(prefix + file)) {
-                    case PackFileKind.Excluded excluded -> notHeld.add(NotHeldFile.excluded(file, excluded.reason()));
-                    case PackFileKind.Unclassified unclassified -> notHeld.add(NotHeldFile.unmodelled(file));
-                    case PackFileKind.Mapped mapped -> {}
-                    case PackFileKind.Retired retired -> {}
-                }
-            }
+            notHeld.addAll(FileSystemPackInspector.notHeld(directory, name, table, unnamedPolicy));
         }
 
         /** Classifies every YAML file of the pack, and reads each mapped one the load path has not read. */
@@ -398,7 +609,11 @@ public final class FileSystemPackInspector implements PackInspector {
                         files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
                     case PackFileKind.Mapped mapped -> {
                         files.add(new ClassifiedFile(file, Optional.of(mapped.kind()), Optional.empty()));
-                        if (readsAsYaml(mapped, file) && !loadPath.contains(file)) {
+                        // A policy file the descriptor does not name is not held, so nothing in it is judged (open case
+                        // 9).
+                        if (readsAsYaml(mapped, file)
+                                && !loadPath.contains(file)
+                                && !(unnamedPolicy && PolicyYaml.FILE.equals(file))) {
                             readMapped(path, file, mapped.kind());
                         }
                     }
@@ -538,6 +753,9 @@ public final class FileSystemPackInspector implements PackInspector {
                     }
                 }
                 case FileRead.Read<Object> good -> {
+                    if (PackFileSet.MANIFEST.equals(file)) {
+                        manifestRead = true;
+                    }
                     factsOf(file, kind, good.value());
                     Optional<String> refused = MissionTypeChecks.refusal(directory, file, kind, good.value(), table);
                     refused.ifPresent(refusal -> unreadable.add(new FileRead.Unreadable<>(

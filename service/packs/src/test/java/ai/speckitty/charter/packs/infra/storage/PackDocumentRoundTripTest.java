@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -458,9 +457,7 @@ class PackDocumentRoundTripTest {
     /** Validate mode's findings on the pack document of a pack directory. */
     private static List<PackFinding> validateFindings(Path pack) {
         PackRoot root = new PackRoot("documented", Optional.of(PackLevel.PROJECT), pack.toString());
-        return PackPolicy.judge(new FileSystemPackInspector().inspect(root, PackInspector.Scope.FULL))
-                .findings()
-                .stream()
+        return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
                 .filter(finding -> finding.file().equals(PackDocumentMarkdown.FILE))
                 .toList();
     }

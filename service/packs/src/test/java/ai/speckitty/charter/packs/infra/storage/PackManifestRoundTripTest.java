@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Toolguide;
@@ -344,9 +343,7 @@ class PackManifestRoundTripTest {
     /** Validate mode's findings on the manifest of a pack directory. */
     private static List<PackFinding> validateFindings(Path pack) {
         PackRoot root = new PackRoot(FIXTURE, Optional.of(PackLevel.PROJECT), pack.toString());
-        return PackPolicy.judge(new FileSystemPackInspector().inspect(root, PackInspector.Scope.FULL))
-                .findings()
-                .stream()
+        return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
                 .filter(finding -> finding.file().equals(PackFileSet.MANIFEST))
                 .toList();
     }

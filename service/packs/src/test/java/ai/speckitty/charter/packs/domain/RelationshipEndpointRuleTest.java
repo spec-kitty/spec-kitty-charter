@@ -59,8 +59,8 @@ class RelationshipEndpointRuleTest {
     @DisplayName("validate mode refuses one edge of each relation family with one finding, beside a twin that passes")
     void eachRelationFamilyRefusesKindsItsRowsDoNotHold(
             String source, String relation, String target, String twinSource, String twinTarget) {
-        List<PackFinding> findings =
-                PackPolicy.judge(validated(source, relation, target)).findings();
+        List<PackFinding> findings = PackPolicy.judge(Readouts.of(validated(source, relation, target)))
+                .findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
@@ -69,7 +69,8 @@ class RelationshipEndpointRuleTest {
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).startsWith(FILE + ": ").contains(relation);
         });
-        assertThat(PackPolicy.judge(validated(twinSource, relation, twinTarget)).findings())
+        assertThat(PackPolicy.judge(Readouts.of(validated(twinSource, relation, twinTarget)))
+                        .findings())
                 .isEmpty();
     }
 
@@ -117,7 +118,8 @@ class RelationshipEndpointRuleTest {
     @Test
     @DisplayName("validate mode reports a bare self-loop once, as the graph fault it is")
     void validateModeReportsABareSelfLoopOnce() {
-        List<PackFinding> findings = PackPolicy.judge(validated("action:m/s", "instantiates", "action:m/s"))
+        List<PackFinding> findings = PackPolicy.judge(
+                        Readouts.of(validated("action:m/s", "instantiates", "action:m/s")))
                 .findings();
 
         assertThat(findings)
@@ -128,7 +130,7 @@ class RelationshipEndpointRuleTest {
     @Test
     @DisplayName("validate mode refuses an edge from an enhancement the pack does not hold")
     void validateModeRefusesAnUnheldEnhancementEdge() {
-        assertThat(PackPolicy.judge(validated("step_enhancement:ghost", "enhances", "directive:D"))
+        assertThat(PackPolicy.judge(Readouts.of(validated("step_enhancement:ghost", "enhances", "directive:D")))
                         .findings())
                 .singleElement()
                 .satisfies(
@@ -185,7 +187,7 @@ class RelationshipEndpointRuleTest {
     @DisplayName("validate mode reports the edge as one blocking finding at its place, and the twin passes")
     void validateModeReportsTheEdgeAtItsPlace() {
         List<PackFinding> findings = PackPolicy.judge(
-                        validated("procedure:p", "requires", "action:software-dev/implement"))
+                        Readouts.of(validated("procedure:p", "requires", "action:software-dev/implement")))
                 .findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
@@ -195,7 +197,7 @@ class RelationshipEndpointRuleTest {
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).isEqualTo(FILE + ": a requires edge may not connect procedure to action");
         });
-        assertThat(PackPolicy.judge(validated("procedure:p", "requires", "directive:D"))
+        assertThat(PackPolicy.judge(Readouts.of(validated("procedure:p", "requires", "directive:D")))
                         .findings())
                 .isEmpty();
     }
@@ -228,10 +230,7 @@ class RelationshipEndpointRuleTest {
                         new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of())),
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
     }
@@ -319,7 +318,8 @@ class RelationshipEndpointRuleTest {
 
     @Test
     void validateModeReportsAnInactivatableOverriderAsOneBlockingFindingAndTheTwinPasses() {
-        List<PackFinding> findings = PackPolicy.judge(validated("template:t.md", "overrides", OVERRIDES_TARGET))
+        List<PackFinding> findings = PackPolicy.judge(
+                        Readouts.of(validated("template:t.md", "overrides", OVERRIDES_TARGET)))
                 .findings();
 
         assertThat(findings).singleElement().satisfies(finding -> {
@@ -329,7 +329,7 @@ class RelationshipEndpointRuleTest {
             assertThat(finding.place()).containsExactly("edges", "0");
             assertThat(finding.detail()).startsWith(FILE + ": ").contains("template:t.md");
         });
-        assertThat(PackPolicy.judge(validated("directive:E", "overrides", OVERRIDES_TARGET))
+        assertThat(PackPolicy.judge(Readouts.of(validated("directive:E", "overrides", OVERRIDES_TARGET)))
                         .findings())
                 .isEmpty();
     }

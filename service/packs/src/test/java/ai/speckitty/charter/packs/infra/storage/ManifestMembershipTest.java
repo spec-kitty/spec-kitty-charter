@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -393,5 +394,42 @@ class ManifestMembershipTest {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Test
+    @DisplayName(
+            "over the census's entries: unheld entries, then repeats, then left-out entries, each in its list's order")
+    void theCensusEntriesAreComparedAsTheManifestIs() {
+        TreeCensus.Entries listed = new TreeCensus.Entries(
+                List.of("tactic:a at a.tactic.yaml", "tactic:a at a.tactic.yaml", "tactic:x at x.tactic.yaml"),
+                List.of("p at presets/p.yaml", "p at presets/p.yaml"));
+        TreeCensus.Entries derived = new TreeCensus.Entries(
+                List.of("tactic:a at a.tactic.yaml", "tactic:b at b.tactic.yaml"),
+                List.of("p at presets/p.yaml", "q at presets/q.yaml"));
+
+        assertThat(ManifestMembership.mismatch(listed, derived))
+                .containsExactly(
+                        "lists constituent tactic:x at x.tactic.yaml, which the pack does not hold",
+                        "lists constituent tactic:a at a.tactic.yaml twice",
+                        "lists preset p at presets/p.yaml twice",
+                        "leaves out constituent tactic:b at b.tactic.yaml, which the pack holds",
+                        "leaves out preset q at presets/q.yaml, which the pack holds");
+        assertThat(ManifestMembership.mismatch(derived, derived)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("the derived lists are in path order (PackManifestDerivation, T024)")
+    void theDerivedListsAreInPathOrder(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+
+        PackManifestDso derived = PackManifestDerivation.derivedAt(pack, new YamlSerializationStrategy());
+
+        assertThat(derived.constituents()).hasSizeGreaterThan(1);
+        assertThat(derived.constituents())
+                .extracting(PackManifestDso.Constituent::path)
+                .isSorted();
+        assertThat(derived.presets())
+                .extracting(PackManifestDso.PresetEntry::path)
+                .isSorted();
     }
 }

@@ -9,7 +9,6 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import ai.speckitty.charter.packs.domain.rules.Paths;
@@ -110,46 +109,58 @@ public final class PackPolicy {
     }
 
     /**
-     * Runs every rule: the level rules, the descriptor rules, the schema and parse findings of unreadable files (the
-     * load path's and, for a full read, every other classified file's), the graph rules of the graph documents that
-     * were read, and the step, artifact and asset rules of a full read; and warns {@code file_not_held} once for each
-     * file the store does not hold, whose contents no rule reads (#554, open case 6).
+     * Runs every rule over one read of a pack: the level rules, the read's own faults (the descriptor's, the graph
+     * documents', every other file's, and the format prechecks, S2), the graph rules of the graph documents that were
+     * read, and the step, artifact and asset rules; and warns {@code file_not_held} once for each file the store does
+     * not hold, whose contents no rule reads (#554, open case 6). Each read fault keeps the place among the findings it
+     * had when this class worded it, so the precedence sort keeps today's order (NFR-002).
      *
-     * @param contents what the adapter read
+     * <p>Staging inside the single pull request (R4 b): validate mode's own judgement until the validation edge judges
+     * the readout's rationale (WP09); the read faults are the readout's rationale until then.
+     *
+     * @param read what the one reader read
      * @return the verdict, with the findings in precedence order
      */
-    public static PackVerdict judge(PackContents contents) {
+    public static PackVerdict judge(PackReadout read) {
+        PackContents contents = read.contents();
         String name = contents.root().name();
+        Map<String, List<PackFinding>> faults = new LinkedHashMap<>();
+        List<PackFinding> mimes = new ArrayList<>();
+        for (var reason : read.rationale().failures()) {
+            PackFinding fault = PackFinding.of(reason);
+            if (PackFindingCode.ASSET_MIME_INVALID.equals(fault.code())) {
+                mimes.add(fault);
+            } else {
+                faults.computeIfAbsent(fault.file(), file -> new ArrayList<>()).add(fault);
+            }
+        }
+        Set<String> refused = new LinkedHashSet<>(faults.keySet());
         List<PackFinding> findings =
                 new ArrayList<>(level(name, contents.root().configuredLevel(), contents.descriptor()));
-        switch (contents.descriptor()) {
-            case FileRead.Unreadable<PackDescriptor> bad -> findings.addAll(unreadable(name, bad));
-            case FileRead.Read<PackDescriptor> read -> findings.addAll(DescriptorChecks.findings(name, read.value()));
-            case FileRead.Absent<PackDescriptor> absent -> {}
-        }
+        findings.addAll(Objects.requireNonNullElse(faults.remove(PACK_YAML), List.of()));
         findings.addAll(orgFragmentRules(name, contents));
         for (FileRead<RawGraph> document : documents(contents)) {
             switch (document) {
-                case FileRead.Unreadable<RawGraph> bad -> findings.addAll(unreadable(name, bad));
-                case FileRead.Read<RawGraph> read ->
-                    findings.addAll(GraphBinding.graph(name, read.value()).findings());
+                case FileRead.Unreadable<RawGraph> bad ->
+                    findings.addAll(Objects.requireNonNullElse(faults.remove(bad.file()), List.of()));
+                case FileRead.Read<RawGraph> good ->
+                    findings.addAll(GraphBinding.graph(name, good.value()).findings());
                 case FileRead.Absent<RawGraph> absent -> {}
             }
         }
-        for (FileRead.Unreadable<?> file : contents.unreadableFiles()) {
-            findings.addAll(unreadable(name, file));
-        }
+        faults.values().forEach(findings::addAll);
         findings.addAll(artifactRules(contents.artifacts()));
-        findings.addAll(assetRules(contents.assets(), refusedFiles(contents)));
+        findings.addAll(assetRules(contents.assets(), refused));
+        findings.addAll(mimes);
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
         findings.addAll(promptSlotFindings(contents));
         findings.addAll(endpointFindings(name, contents));
         findings.addAll(missionStepFindings(name, contents));
         findings.addAll(substepIdRules(contents.missionTypes()));
         findings.addAll(substepDelegationFindings(name, contents));
-        findings.addAll(notHeldFindings(contents.notHeld()));
+        findings.addAll(notHeldFindings(read.notHeld()));
         findings.sort(PRECEDENCE);
-        return new PackVerdict(contents.files(), findings);
+        return new PackVerdict(read.files(), findings);
     }
 
     /**
@@ -565,55 +576,28 @@ public final class PackPolicy {
     }
 
     /**
-     * The asset rules, in core's order: a path that escapes the assets root is reported and its MIME type is not
-     * judged; an empty path or MIME type is the schema's business and is skipped. A sidecar is one fault (#554, R2 row
-     * 13): an escape the read already refused at the sidecar is not reported a second time.
+     * The asset escape rule: a path that escapes the assets root is reported; an empty path is the schema's business and
+     * is skipped. A sidecar is one fault (#554, R2 row 13): an escape the read already refused at the sidecar is not
+     * reported a second time. The MIME format is the one reader's precheck (S2), judged only where the path stays
+     * inside.
      */
     private static List<PackFinding> assetRules(List<PackContents.AssetFacts> assets, Set<String> refused) {
         List<PackFinding> findings = new ArrayList<>();
         for (PackContents.AssetFacts asset : assets) {
-            if (asset.path().isEmpty()) {
-                continue;
-            }
-            if (escapes(asset)) {
-                if (!refused.contains(asset.file())) {
-                    findings.add(assetFinding(
-                            PackCodes.ASSET, asset, asset.file() + ": " + Paths.assetPathEscape(asset.path())));
-                }
-            } else if (!asset.mime().isEmpty()) {
-                mimeProblem(asset)
-                        .ifPresent(detail ->
-                                findings.add(assetFinding(PackFindingCode.ASSET_MIME_INVALID, asset, detail)));
+            if (!asset.path().isEmpty() && escapes(asset) && !refused.contains(asset.file())) {
+                findings.add(new PackFinding(
+                        PackCodes.ASSET,
+                        asset.file(),
+                        List.of(),
+                        asset.file() + ": " + Paths.assetPathEscape(asset.path())));
             }
         }
         return findings;
     }
 
-    private static PackFinding assetFinding(ReasonCode code, PackContents.AssetFacts asset, String detail) {
-        return new PackFinding(code, asset.file(), List.of(), detail);
-    }
-
-    /** The files the read refused, each already one finding of its own. */
-    private static Set<String> refusedFiles(PackContents contents) {
-        return contents.unreadableFiles().stream()
-                .map(unreadable -> unreadable.file())
-                .collect(Collectors.toSet());
-    }
-
     /** A path that leaves the assets root as written ({@link PackRelativePaths#leavesRoot}), or once the adapter resolves it. */
     private static boolean escapes(PackContents.AssetFacts asset) {
         return !asset.containedInAssetsRoot() || PackRelativePaths.leavesRoot(asset.path());
-    }
-
-    private static Optional<String> mimeProblem(PackContents.AssetFacts asset) {
-        String mime = asset.mime();
-        if (!MediaTypes.wellFormed(mime)) {
-            return Optional.of(asset.file() + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value");
-        }
-        return AssetMimeTable.expected(asset.path())
-                .filter(expected -> !expected.type().equals(mime))
-                .map(expected -> asset.file() + ": asset mime '" + mime + "' does not match the '"
-                        + expected.extension() + "' extension (" + expected.type() + ")");
     }
 
     /** Whether every graph document of the load was read: an unreadable one is refused on its own. */

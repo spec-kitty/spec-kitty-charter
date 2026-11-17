@@ -22,12 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** The single-pack rules a schema cannot express (FR-009): the exact texts, places, severities and precedence. */
@@ -59,14 +56,11 @@ class PackPolicyRulesTest {
                 descriptor,
                 List.of(),
                 EMPTY_FRAGMENT,
-                List.of(),
                 artifacts,
                 assets,
-                List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
-                types,
-                List.of());
+                types);
     }
 
     private static PackContents withDescriptor(Optional<String> requiresCore) {
@@ -79,7 +73,7 @@ class PackPolicyRulesTest {
     }
 
     private static List<PackFinding> judge(PackContents contents) {
-        return PackPolicy.judge(contents).findings().stream()
+        return PackPolicy.judge(Readouts.of(contents)).findings().stream()
                 .filter(f -> !PackFindingCode.PACK_LEVEL_MISSING.equals(f.code()))
                 .toList();
     }
@@ -210,14 +204,11 @@ class PackPolicyRulesTest {
                 EMPTY_FRAGMENT,
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
 
-        assertThat(PackPolicy.judge(contents).findings())
+        assertThat(PackPolicy.judge(Readouts.of(contents)).findings())
                 .extracting(PackFinding::code)
                 .containsExactly(PackFindingCode.REQUIRES_CORE_INVALID, PackFindingCode.PACK_LEVEL_MISMATCH);
     }
@@ -233,10 +224,7 @@ class PackPolicyRulesTest {
                 fragment,
                 List.of(),
                 List.of(),
-                List.of(),
-                List.of(),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
     }
@@ -251,7 +239,7 @@ class PackPolicyRulesTest {
     private static final FileRead<RawGraph> NO_FRAGMENT = new FileRead.Absent<>("drg/fragment.yaml");
 
     private static List<PackFinding> fragmentFindings(PackContents contents) {
-        return PackPolicy.judge(contents).findings().stream()
+        return PackPolicy.judge(Readouts.of(contents)).findings().stream()
                 .filter(f -> PackFindingCode.ORG_FRAGMENT_MISSING.equals(f.code()))
                 .toList();
     }
@@ -337,7 +325,7 @@ class PackPolicyRulesTest {
                                 Optional.of("banana"))),
                 NO_FRAGMENT);
 
-        assertThat(PackPolicy.judge(contents).findings())
+        assertThat(PackPolicy.judge(Readouts.of(contents)).findings())
                 .extracting(PackFinding::code)
                 .containsExactly(
                         PackFindingCode.REQUIRES_CORE_INVALID,
@@ -601,18 +589,18 @@ class PackPolicyRulesTest {
                 List.of(),
                 EMPTY_FRAGMENT,
                 List.of(),
-                List.of(),
                 List.of(
                         asset("../logo.png", "image/png", true),
                         new AssetFacts("assets/b.asset.yaml", "b", "../b.png", "", true)),
-                List.of(new FileRead.Unreadable<>(
-                        MANIFEST, PackContents.ParseFailure.refused(MANIFEST, reason, PackCodes.ASSET), List.of())),
                 StepEnhancementFacts.none(),
-                List.of(),
                 List.of(),
                 List.of());
 
-        assertThat(judge(read))
+        List<FileRead.Unreadable<?>> refused = List.of(new FileRead.Unreadable<>(
+                MANIFEST, PackContents.ParseFailure.refused(MANIFEST, reason, PackCodes.ASSET), List.of()));
+
+        assertThat(PackPolicy.judge(Readouts.of(read, List.of(), refused, List.of()))
+                        .findings())
                 .filteredOn(finding -> finding.code().equals(PackCodes.ASSET))
                 .containsExactlyInAnyOrder(
                         new PackFinding(PackCodes.ASSET, MANIFEST, List.of(), MANIFEST + ": " + reason),
@@ -708,83 +696,6 @@ class PackPolicyRulesTest {
                 .isEmpty();
     }
 
-    // ---- asset_mime_invalid ----------------------------------------------------------------------
-
-    @ParameterizedTest
-    @ValueSource(strings = {"png", "/png", "image/", "/"})
-    void aMimeWithoutTwoSidesIsNotWellFormed(String mime) {
-        List<PackFinding> findings = judge(withAssets(asset("logo.zzz", mime, true)));
-        assertThat(findings)
-                .containsExactly(new PackFinding(
-                        PackFindingCode.ASSET_MIME_INVALID,
-                        MANIFEST,
-                        List.of(),
-                        MANIFEST + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value"));
-        assertThat(findings.get(0).severity()).isEqualTo(Severity.VIOLATION);
-    }
-
-    @Test
-    void aMimeThatDisagreesWithTheExtensionTableIsInvalidWithThePinnedText() {
-        assertThat(judge(withAssets(asset("img/logo.png", "text/plain", true))))
-                .containsExactly(new PackFinding(
-                        PackFindingCode.ASSET_MIME_INVALID,
-                        MANIFEST,
-                        List.of(),
-                        MANIFEST + ": asset mime 'text/plain' does not match the '.png' extension (image/png)"));
-    }
-
-    static Stream<Arguments> agreeingOrUnjudgedPaths() {
-        return Stream.of(
-                Arguments.of("logo.png", "image/png"),
-                Arguments.of("LOGO.PNG", "image/png"),
-                Arguments.of("logo.JSON", "application/json"),
-                Arguments.of("logo.zzz", "application/x-anything"),
-                Arguments.of("logo", "application/x-anything"),
-                Arguments.of(".png", "application/x-anything"),
-                Arguments.of("a.b/logo", "application/x-anything"),
-                Arguments.of("a/b/c.d/", "application/x-anything"),
-                Arguments.of("x.tgz", "application/x-tar"),
-                Arguments.of("x.TGZ", "application/x-tar"),
-                Arguments.of("x.tar.gz", "application/x-tar"),
-                Arguments.of("x.json.gz", "application/json"),
-                Arguments.of("x.svgz", "image/svg+xml"),
-                Arguments.of("x.json.Z", "application/json"),
-                Arguments.of("x.md", "text/markdown"),
-                Arguments.of("logo.zzz", "a/b/c"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("agreeingOrUnjudgedPaths")
-    void anAgreeingOrUnknownExtensionPasses(String path, String mime) {
-        assertThat(judge(withAssets(asset(path, mime, true)))).isEmpty();
-    }
-
-    static Stream<Arguments> disagreeingPaths() {
-        return Stream.of(
-                Arguments.of("x.tgz", "application/gzip", ".tar", "application/x-tar"),
-                Arguments.of("x.json.gz", "text/plain", ".json", "application/json"),
-                Arguments.of("x.JPG", "image/png", ".jpg", "image/jpeg"),
-                Arguments.of("dir.d/x.css", "text/plain", ".css", "text/css"),
-                Arguments.of("x.json.Z", "text/plain", ".json", "application/json"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("disagreeingPaths")
-    void aDisagreementNamesTheEffectiveExtensionAndTheExpectedType(
-            String path, String mime, String extension, String expected) {
-        assertThat(judge(withAssets(asset(path, mime, true))))
-                .extracting(PackFinding::detail)
-                .containsExactly(MANIFEST + ": asset mime '" + mime + "' does not match the '" + extension
-                        + "' extension (" + expected + ")");
-    }
-
-    @Test
-    void theMimeTypeIsComparedExactly() {
-        assertThat(judge(withAssets(asset("logo.png", "IMAGE/PNG", true))))
-                .extracting(PackFinding::code)
-                .containsExactly(PackFindingCode.ASSET_MIME_INVALID);
-    }
-
     // ---- validate-only ---------------------------------------------------------------------------
 
     @Test
@@ -795,7 +706,7 @@ class PackPolicyRulesTest {
                 List.of(new ArtifactFacts("t/a.yaml", "tactic", "x"), new ArtifactFacts("t/b.yaml", "tactic", "x")),
                 List.of(asset("../logo.png", "text/plain", false)));
 
-        assertThat(PackPolicy.judge(contents).findings())
+        assertThat(PackPolicy.judge(Readouts.of(contents)).findings())
                 .extracting(PackFinding::code)
                 .contains(PackCodes.DUPLICATE_STEP_ID, PackCodes.DUPLICATE_ARTIFACT_ID, PackCodes.ASSET);
     }
