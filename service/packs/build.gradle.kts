@@ -259,6 +259,8 @@ tasks.named("pitest") { readsTheUnitTestInputs() }
 mutationFloors {
     // The storage rules (#554, S3) are pure kernel rulesets over the one read, held to the core rules' floor: they count
     // with domain+application, not with the storage adapters (squad-shaping Q6, ADR-0062 amendment of 2026-11-17).
+    // Measured on #554's head: domain+application 3846 of 4240 (90.7 %, margin 242), infra.storage without the rules
+    // 3134 of 3439 (91.1 %, margin 210); floor5(score - 3) keeps both at 85.
     group("domain+application") {
         packages.addAll("$packsPackage.domain", "$packsPackage.application", "$packsPackage.infra.storage.rules")
         excludes.add("$packsPackage.application.config")
