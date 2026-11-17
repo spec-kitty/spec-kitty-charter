@@ -1,12 +1,14 @@
 import net.ltgt.gradle.errorprone.errorprone
 
-// The pack-validation module (ADR-0075 decision 3, as amended 2026-11-13): every pack check as a kernel ruleset, run
-// over the pack's contents that the packs slice's own Spring-free load builds. The service and the pack-check CLI both
-// run it.
+// The pack-validation module (ADR-0075 decision 3, as amended 2026-11-13 and by #554's S2, S3 and S6): the validation
+// edge. Validate mode is PackCheck: it reads a pack once through the packs domain's PackReading port, whose readout
+// carries the storage edge's verdict, adds its own placement rules (the configured level and the org fragment, with
+// their codes in PlacementCodes) and maps the findings (PackVerdicts). It also holds the whole-pack round trip (#578).
+// The service runs none of its main code; the pack-check CLI will (#478).
 //
-// It depends on :packs and reads a pack through its public load (PackInspector, FileSystemPackInspector, PackContents,
-// PackPolicy): the packs domain model stays in :packs (operator ruling of 2026-11-13, #553). :packs brings Spring onto
-// the classpath, but nothing this module reaches uses it: HexagonalArchitectureTest's PACK_VALIDATION_IS_FRAMEWORK_FREE
+// It depends on :packs and names only the packs domain and the kernel: the packs domain model stays in :packs (operator
+// ruling of 2026-11-13, #553), and a composition root supplies the file-system reader. :packs brings Spring onto the
+// classpath, but nothing this module reaches uses it: HexagonalArchitectureTest's PACK_VALIDATION_IS_FRAMEWORK_FREE
 // pins that transitively. Leaving Spring off pack-check's runtime classpath is #478's, with the jar.
 //
 // Not charter.domain-conventions: that refuses every external dependency. The module pins its own instead, below.

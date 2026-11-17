@@ -5,17 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
-import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.config.StorageConfiguration;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -189,17 +187,11 @@ class CharterWiringTest {
     }
 
     @Test
-    void validateModeIsWiredOverTheFileBasedInspector(@TempDir Path dir) throws IOException {
-        Files.writeString(
-                dir.resolve("pack.yaml"),
-                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
-        Files.createDirectories(dir.resolve("drg"));
-        Files.writeString(dir.resolve("drg/fragment.yaml"), "nodes: []\nedges: []\n");
-
-        runner.run(context -> assertThat(context.getBean(PackValidation.class)
-                        .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), dir.toString()))
-                        .findings())
-                .extracting(f -> f.code().value())
-                .containsExactly("pack_unreadable"));
+    void validateModeIsNoBeanOfTheService() {
+        // C-003 (#554): validate mode is pack-validation's PackCheck, which deployable keeps on its test classpath
+        // only;
+        // the service runs no pack-validation main code, so no bean carries it.
+        runner.run(
+                context -> assertThat(context.getBeansOfType(PackCheck.class)).isEmpty());
     }
 }

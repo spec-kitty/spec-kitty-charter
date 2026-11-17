@@ -1,15 +1,18 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Evaluation;
+import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,8 +29,9 @@ import org.junit.jupiter.params.provider.CsvSource;
  * of the golden subjects of open case 6 plants a {@code charter.yaml} or a shard below the pack root, some of them
  * invalid. Of the twelve, the C4 and C16 plants moved their shard to the pack root in WP11's review, so that those
  * rules keep a plant, and are judged there. Validate mode answers one {@code file_not_held} warning at that file, in
- * the registration's words, and no finding of its contents: on the bare plant that is the whole verdict, and with a
- * descriptor beside it the warning stands beside the descriptor's own findings.
+ * the registration's words, and no finding of its contents: on the bare plant that is the whole verdict beside the
+ * refusal of its missing descriptor (R2 row 24, WP09), and with a descriptor beside it the warning stands beside the
+ * descriptor's own findings.
  */
 @DisplayName("validate mode warns file_not_held for a charter.yaml or a nested shard and judges nothing in it (#554)")
 class NotHeldValidateTest {
@@ -55,18 +59,24 @@ class NotHeldValidateTest {
             throws IOException {
         Path bare = PlantedPacks.copyOf(plant, host.resolve("bare"));
         assertThat(bare.resolve(PACK_YAML)).as("the plant holds no descriptor").doesNotExist();
-        PackFinding warning = new PackFinding(
-                PackFindingCode.FILE_NOT_HELD,
-                file,
-                List.of(),
+        Reason warning = new Reason(
+                StorageCodes.FILE_NOT_HELD.value(),
+                Evaluation.FAIL,
+                StorageCodes.FILE_NOT_HELD,
+                Location.in(file),
                 file + ": not held (no pack file kind models this file)");
 
         PackVerdict alone = validate(bare, Optional.empty());
 
         assertThat(alone.findings())
-                .as("the bare plant: valid, with the one warning")
-                .containsExactly(warning)
-                .noneMatch(finding -> finding.severity() == Severity.VIOLATION);
+                .as("the bare plant: the one warning, beside the missing descriptor's refusal (R2 row 24)")
+                .filteredOn(finding -> !finding.location().file().equals(PACK_YAML))
+                .containsExactly(warning);
+        assertThat(alone.findings())
+                .filteredOn(finding -> finding.location().file().equals(PACK_YAML))
+                .extracting(Reason::code, Reason::detail)
+                .containsExactly(
+                        tuple(StorageCodes.PACK_UNREADABLE, "pack " + bare.getFileName() + " has no pack.yaml"));
 
         Path described = PlantedPacks.copyOf(plant, host.resolve("described"));
         Files.writeString(described.resolve(PACK_YAML), DESCRIPTOR, StandardCharsets.UTF_8);
@@ -74,22 +84,26 @@ class NotHeldValidateTest {
         Files.writeString(control.resolve(PACK_YAML), DESCRIPTOR, StandardCharsets.UTF_8);
         Files.delete(control.resolve(file));
 
-        List<PackFinding> withDescriptor =
+        List<Reason> withDescriptor =
                 validate(described, Optional.of(PackLevel.ORG)).findings();
 
         assertThat(withDescriptor)
                 .as("the descriptor's findings, and the warning")
-                .filteredOn(finding -> !finding.file().equals(PACK_YAML))
+                .filteredOn(finding -> !finding.location().file().equals(PACK_YAML))
                 .containsExactly(warning);
         assertThat(withDescriptor)
                 .as("nothing at the file but the warning, and the rest as for the pack without the file")
-                .filteredOn(finding -> finding.file().equals(PACK_YAML))
+                .filteredOn(finding -> finding.location().file().equals(PACK_YAML))
                 .containsExactlyElementsOf(
                         validate(control, Optional.of(PackLevel.ORG)).findings());
+        assertThat(withDescriptor)
+                .as("valid: a file the store does not hold refuses nothing")
+                .noneMatch(finding -> finding.severity() == Severity.VIOLATION
+                        && !finding.location().file().equals(PACK_YAML));
     }
 
     private static PackVerdict validate(Path pack, Optional<PackLevel> level) {
-        return new PackValidation(new FileSystemPackInspector())
+        return new PackCheck(new FileSystemPackInspector())
                 .validate(new PackRoot(String.valueOf(pack.getFileName()), level, pack.toString()));
     }
 }

@@ -4,9 +4,7 @@ import ai.speckitty.charter.kernel.config.StartupRefusal;
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
-import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
@@ -80,12 +78,6 @@ public class CharterWiring {
                 return storage.whyReadOnly(realDirectory);
             }
         });
-    }
-
-    /** Validate mode (FR-010) over the file-based inspector: the seam the pack doctor (#115) composes. */
-    @Bean
-    PackValidation packValidation() {
-        return new PackValidation(new FileSystemPackInspector());
     }
 
     /** The pack files and the project configuration files, as one fingerprint; injected by its own type. */

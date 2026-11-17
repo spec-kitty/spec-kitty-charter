@@ -22,6 +22,12 @@
   },
   "planted/artifact-not-utf8" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "unreadable",
       "severity" : "violation",
       "file" : "tactics/a.tactic.yaml",
@@ -46,6 +52,12 @@
   },
   "planted/artifact-not-yaml" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "unreadable",
       "severity" : "violation",
       "file" : "tactics/a.tactic.yaml",
@@ -70,6 +82,12 @@
   },
   "planted/artifact-utf16-with-a-byte-order-mark" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "unreadable",
       "severity" : "violation",
       "file" : "tactics/a.tactic.yaml",
@@ -103,6 +121,12 @@
   },
   "planted/asset-mime-does-not-match-the-extension" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -139,6 +163,12 @@
   },
   "planted/asset-mime-malformed" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -175,6 +205,12 @@
   },
   "planted/asset-path-escape-absolute" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -199,6 +235,12 @@
   },
   "planted/asset-path-escape-dot-dot" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -223,6 +265,12 @@
   },
   "planted/asset-path-escape-through-a-symlink" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -247,6 +295,12 @@
   },
   "planted/asset-path-escape-windows-drive" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -271,6 +325,12 @@
   },
   "planted/asset-path-inside-through-a-symlink-is-contained" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -295,6 +355,12 @@
   },
   "planted/asset-path-symlink-loop" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -319,6 +385,12 @@
   },
   "planted/asset-repeated-id-only-the-first-owner-is-checked" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -367,6 +439,12 @@
   },
   "planted/asset-repeated-id-the-first-owner-escapes" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "asset",
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
@@ -415,6 +493,12 @@
   },
   "planted/c10-agent-quoted-integer" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "artifact_schema_error",
       "severity" : "violation",
       "file" : "agent_profiles/p.agent.yaml",
@@ -439,6 +523,12 @@
   },
   "planted/c10-agent-role-uppercase" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "artifact_schema_error",
       "severity" : "violation",
       "file" : "agent_profiles/p.agent.yaml",
@@ -462,7 +552,13 @@
     } ]
   },
   "planted/c10-agent-scalar-role" : {
-    "findings" : [ ]
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    } ]
   },
   "planted/c10-agent-scalar-role+pack.yaml" : {
     "findings" : [ {
@@ -475,6 +571,12 @@
   },
   "planted/c10-tactic-schema-version-unquoted" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "artifact_schema_error",
       "severity" : "violation",
       "file" : "tactics/a.tactic.yaml",
@@ -499,6 +601,12 @@
   },
   "planted/c11-agent-routing-priority-101" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "artifact_schema_error",
       "severity" : "violation",
       "file" : "agent_profiles/p.agent.yaml",
@@ -523,6 +631,12 @@
   },
   "planted/c11-directive-lenient-adherence-without-allowances" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "artifact_schema_error",
       "severity" : "violation",
       "file" : "directives/d.directive.yaml",
@@ -547,6 +661,12 @@
   },
   "planted/c16-shard-edge-provenance" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "drg_schema_error",
       "severity" : "violation",
       "file" : "tactic.graph.yaml",
@@ -571,6 +691,12 @@
   },
   "planted/c2-agent-nested-unknown-key" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "artifact_schema_error",
       "severity" : "violation",
       "file" : "agent_profiles/p.agent.yaml",
@@ -595,6 +721,12 @@
   },
   "planted/c2-charter-nested-unknown-key" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "charter.yaml",
@@ -637,6 +769,12 @@
   },
   "planted/c3-root-shard-urn-malformed" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "drg_schema_error",
       "severity" : "violation",
       "file" : "tactic.graph.yaml",
@@ -673,6 +811,12 @@
   },
   "planted/c3-shard-edge-bare-endpoint" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "drg/tactic.graph.yaml",
@@ -697,6 +841,12 @@
   },
   "planted/c3-shard-urn-malformed" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "drg/tactic.graph.yaml",
@@ -721,6 +871,12 @@
   },
   "planted/c4-shard-urn-prefix-differs-from-kind" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "drg_schema_error",
       "severity" : "violation",
       "file" : "tactic.graph.yaml",
@@ -793,6 +949,12 @@
   },
   "planted/c7-shard-relation-extends" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "drg/tactic.graph.yaml",
@@ -817,6 +979,12 @@
   },
   "planted/c8-shard-without-generated-by-is-accepted" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "drg/tactic.graph.yaml",
@@ -850,6 +1018,12 @@
   },
   "planted/charter-cli-timeout-not-a-number" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "charter.yaml",
@@ -874,6 +1048,12 @@
   },
   "planted/charter-invalid" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "charter.yaml",
@@ -898,6 +1078,12 @@
   },
   "planted/charter-template-set" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "charter.yaml",
@@ -922,6 +1108,12 @@
   },
   "planted/charter-valid" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "charter.yaml",
@@ -979,6 +1171,12 @@
   },
   "planted/duplicate-artifact-id" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "duplicate_artifact_id",
       "severity" : "violation",
       "file" : "tactics/b.tactic.yaml",
@@ -1123,6 +1321,12 @@
   },
   "planted/r15-glossary-urn-in-a-shard" : {
     "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
       "code" : "file_not_held",
       "severity" : "warning",
       "file" : "drg/glossary.graph.yaml",

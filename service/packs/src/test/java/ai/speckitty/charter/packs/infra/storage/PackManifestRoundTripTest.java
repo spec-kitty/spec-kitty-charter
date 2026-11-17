@@ -343,7 +343,7 @@ class PackManifestRoundTripTest {
     /** Validate mode's findings on the manifest of a pack directory. */
     private static List<PackFinding> validateFindings(Path pack) {
         PackRoot root = new PackRoot(FIXTURE, Optional.of(PackLevel.PROJECT), pack.toString());
-        return PackPolicy.judge(new FileSystemPackInspector().read(root)).findings().stream()
+        return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
                 .filter(finding -> finding.file().equals(PackFileSet.MANIFEST))
                 .toList();
     }

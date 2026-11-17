@@ -7,14 +7,14 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -92,7 +92,7 @@ class GlossaryPlantedRefusalsTest {
         JsonNode expected = expected(plant);
         Path pack = copy(plant, host);
 
-        List<PackFinding> findings = new PackValidation(new FileSystemPackInspector())
+        List<Reason> findings = new PackCheck(new FileSystemPackInspector())
                 .validate(new PackRoot("qa", Optional.of(level(expected)), pack.toString()))
                 .findings();
 
@@ -193,13 +193,20 @@ class GlossaryPlantedRefusalsTest {
                 .contains("glossary_context:core vocabulary term:core/lane");
     }
 
-    private static String row(PackFinding finding) {
+    private static String row(Reason finding) {
+        List<String> place = new ArrayList<>();
+        String pointer = finding.location().pointer();
+        if (!pointer.isEmpty()) {
+            for (String segment : pointer.substring(1).split("/", -1)) {
+                place.add(segment.replace("~1", "/").replace("~0", "~"));
+            }
+        }
         return String.join(
                 " ",
                 finding.code().value(),
                 finding.severity().name().toLowerCase(Locale.ROOT),
-                finding.file(),
-                String.join("/", finding.place()));
+                finding.location().file(),
+                String.join("/", place));
     }
 
     private static List<String> expectedRows(JsonNode expected) {

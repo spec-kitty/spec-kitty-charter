@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,9 +32,9 @@ class ExamplePacksTest {
 
     private static final FileSystemPackInspector INSPECTOR = new FileSystemPackInspector();
 
-    private static PackVerdict judge(String name, Path dir) {
+    private static PackPolicy.Judgement judge(String name, Path dir) {
         PackLevel level = ExamplePacks.level(name);
-        return PackPolicy.judge(INSPECTOR.read(new PackRoot(name, Optional.of(level), dir.toString())));
+        return PackPolicy.judge(PolicyReadouts.of(INSPECTOR, new PackRoot(name, Optional.of(level), dir.toString())));
     }
 
     @ParameterizedTest
