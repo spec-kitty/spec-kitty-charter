@@ -170,6 +170,16 @@ public final class FileSystemPackInspector implements PackReading {
     }
 
     /**
+     * The reader over the bundled file-kinds table and companion rules and every binding, in {@code strategy}'s format:
+     * the reader a composition root supplies, over the format its store reads.
+     *
+     * @param strategy the serialization format
+     */
+    public FileSystemPackInspector(SerializationStrategy strategy) {
+        this(PackFileKind.bundled(), strategy, KindBindings.all(), Companions.Rules.bundled());
+    }
+
+    /**
      * An inspector that classifies with {@code table} in place of the bundled one: the seam a test uses to classify
      * with rules of its own, retired ones included (#194).
      *

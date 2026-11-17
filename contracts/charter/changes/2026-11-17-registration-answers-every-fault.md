@@ -16,7 +16,9 @@
     answered nothing for a missing one and the policy file's own parse or schema fault for a broken one (row 32).
   - A prompt fragment that cannot be read (blank, with frontmatter, a codec fault) is one `prompt_fragment_invalid` at
     the step enhancement that names it, as `prompt-fragment-refusals.feature` pins; validate mode answered it at the
-    fragment, a fault per finding (row 19).
+    fragment, a fault per finding (row 19). One exception: when the store refuses the enhancement itself (its id is
+    not its file stem, or it breaks its schema), it reads none of its fragments, and a fragment that cannot be read is
+    answered at the fragment, one fault per finding, beside the enhancement's own fault.
   - Any other companion (a guide, a skill body, a step prompt) is answered at the companion's own file, as validate
     mode answered it: in the reader's code and words when the reader reads it (`companion` for a file that does not
     parse, `artifact_schema_error` for one that breaks its structure schema), and `companion`, `<companion>: missing`

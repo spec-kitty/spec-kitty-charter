@@ -57,6 +57,12 @@ class SurfaceSubsetTest {
 
     private static final JsonNode VALIDATE = validateGolden();
 
+    /**
+     * The registration's answers before WP12 changed them, frozen from {@code surfaces.json} at the lane's base
+     * ({@code 59f14afcc}): the baseline of the reverse subset.
+     */
+    private static final JsonNode BEFORE = classpath("/golden/registration-before-wp12.json");
+
     /** The format prechecks S2 adds to the registration. */
     private static final Set<String> S2_CODES =
             Set.of("asset_mime_invalid", "requires_core_invalid", "pack_version_invalid", "dependency_range_invalid");
@@ -184,6 +190,38 @@ class SurfaceSubsetTest {
         assertThat(descriptor)
                 .as("%s answers the descriptor's refusal, among every fault, exactly on an S8 row", key)
                 .isEqualTo(s8);
+        JsonNode before = BEFORE.get(key);
+        List<Fault> was = faults(before);
+        if (s8) {
+            assertThat(was)
+                    .as("%s: before WP12 the registration answered the descriptor's refusal alone", key)
+                    .hasSize(1)
+                    .allSatisfy(fault -> assertThat(fault.file()).isEqualTo("pack.yaml"));
+            assertThat(faults)
+                    .as("%s: that refusal is one of every fault now (S8)", key)
+                    .containsAll(was);
+        } else if (s2) {
+            assertThat(faults.stream().filter(fault -> !isS2(fault)).toList())
+                    .as("%s: apart from S2's gains, the registration answers what it answered before WP12", key)
+                    .isEqualTo(was);
+        } else {
+            assertThat(SURFACES.get(key).get("registration"))
+                    .as("%s: outside NFR-002's list, the registration answers what it answered before WP12", key)
+                    .isEqualTo(before);
+        }
+    }
+
+    private static List<Fault> faults(JsonNode registration) {
+        List<Fault> faults = new ArrayList<>();
+        JsonNode refused = registration.get("refused");
+        if (refused != null) {
+            refused.get("violations")
+                    .forEach(row -> faults.add(new Fault(
+                            row.get("pointer").asString(),
+                            row.get("code").asString(),
+                            row.get("detail").asString())));
+        }
+        return faults;
     }
 
     @Test
