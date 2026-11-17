@@ -166,8 +166,7 @@ final class PackAssembly {
     }
 
     /** The facts of the held step enhancements, their companions' canonical texts and the pack's edges. */
-    static StepEnhancementFacts stepEnhancementFacts(
-            FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
+    static StepEnhancementFacts stepEnhancementFacts(FilesystemPackStore.PackRead read, List<GraphDocument> graphs) {
         List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
         List<StepEnhancementFacts.Companion> companions = new ArrayList<>();
         for (FilesystemPackStore.Stored<StepEnhancementDso> stored : read.elements(StepEnhancementBinding.INSTANCE)) {
@@ -190,7 +189,7 @@ final class PackAssembly {
             }
         }
         List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
-        for (GraphDocument document : graphs.documents()) {
+        for (GraphDocument document : graphs) {
             for (GraphDocument.Edge edge : document.edges()) {
                 FileSystemPackInspector.stepEnhancementEdge(
                                 edge.relation(),
