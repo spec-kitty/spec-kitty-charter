@@ -17,6 +17,9 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.PackReading;
+import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
@@ -997,6 +1000,23 @@ class PackRegistrationServiceTest {
         return caught.kind();
     }
 
+    /** A {@link PackReading} that records the root of each read it serves. */
+    static final class CountingReading implements PackReading {
+
+        private final PackReading delegate;
+        final java.util.List<PackRoot> roots = new java.util.ArrayList<>();
+
+        CountingReading(PackReading delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public PackReadout read(PackRoot root) {
+            roots.add(root);
+            return delegate.read(root);
+        }
+    }
+
     /** A pack as files: pack-relative path to text, in a stable order. */
     static final class Packs {
         private final Map<String, String> files = new LinkedHashMap<>();
@@ -1067,6 +1087,10 @@ class PackRegistrationServiceTest {
 
     /** The real filesystem adapters, wired as the deployment wires them, over a temporary configuration root. */
     static final class Rig {
+
+        /** The one reader, counting its reads (#554, FR-016). */
+        final CountingReading reading = new CountingReading(new FileSystemPackInspector());
+
         final Path host;
         final Path packs;
         final Path staging;
@@ -1134,7 +1158,7 @@ class PackRegistrationServiceTest {
                         }
                     });
             this.service = new PackRegistrationService(
-                    new FileSystemPackInspector(),
+                    reading,
                     new WholePackStore(strategy),
                     commits,
                     writeStore,

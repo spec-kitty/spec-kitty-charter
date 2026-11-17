@@ -290,11 +290,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      */
     @Override
     public WholePackWriteStore.Contents loadStaged(PackReadout read) {
+        return contentsOf(new PackIdentifier(read.contents().root().name()), heldBy(read));
+    }
+
+    /** The assembly input of a read the registration judged: a read whose rationale passed always holds one. */
+    private static Assembly.Assembled heldBy(PackReadout read) {
         if (!(read.contents().assembly() instanceof Assembly.Assembled held)) {
             throw new IllegalArgumentException(
                     "the read of " + read.contents().root().name() + " holds no assembly input; judge it first");
         }
-        return contentsOf(new PackIdentifier(read.contents().root().name()), held);
+        return held;
     }
 
     /**
@@ -328,13 +333,18 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * Writes the staged tree's manifest with the derived membership and fresh derived fields, creating it when the upload
-     * held none (#110). It touches the staging directory only.
+     * Writes the staged tree's manifest with the membership derived from what the one read holds and fresh derived
+     * fields, creating it when the upload held none (#110). It reads no pack file but the bytes the stamp digests, and
+     * touches the staging directory only.
      */
     @Override
-    public void stampManifest(StagedPack staged) {
+    public void stampManifest(StagedPack staged, PackReadout read) {
+        Assembly.Assembled held = heldBy(read);
+        Map<Urn, String> places = new HashMap<>();
+        held.artifacts().forEach(placed -> places.put(placed.artifact().urn(), placed.file()));
+        PackManifestDso derived = PackManifestDerivation.derived(PackAssembly.build(held), new PackLayout(places));
         try {
-            ManifestMembership.stamp(staged.directory(), this::derivedManifest, strategy);
+            ManifestMembership.stamp(staged.directory(), directory -> derived, strategy);
         } catch (IOException e) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "The staged " + PackFileSet.MANIFEST + " could not be written", e);

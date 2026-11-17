@@ -269,7 +269,7 @@ public final class PackRegistrationService {
         // The files the read lists as not held leave the staged tree before its revision and the commit (FR-005).
         loader.removeNotHeld(staged, read.read().notHeld());
         // #110: the manifest the service will hold is derived from the tree and stamped before the revision.
-        loader.stampManifest(staged);
+        loader.stampManifest(staged, read.read());
         PackRevision revision = store.revisionOf(staged);
         Upload upload = new Upload(packId, staged, read.contents(), read.diagnostics(), revision, preconditions);
         return store.exclusively(packId, () -> decide(upload, beforeCommit));
