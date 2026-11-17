@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
@@ -94,7 +93,7 @@ class GlossaryOldShapeRefusalTest {
             assertThat(loaded.pack().artifacts(ArtifactKind.GLOSSARY))
                     .extracting(artifact -> artifact.localId())
                     .containsExactly("spec-kitty-core");
-            assertThat(store.loadStaged(new StagedPack(pack)).pack().artifacts(ArtifactKind.GLOSSARY))
+            assertThat(StagedReads.contents(store, pack).pack().artifacts(ArtifactKind.GLOSSARY))
                     .hasSize(1);
         }
     }
@@ -145,7 +144,7 @@ class GlossaryOldShapeRefusalTest {
         void registrationRefusesIt() {
             WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-            assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+            assertThatThrownBy(() -> StagedReads.contents(store, pack))
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                         assertThat(refusal.violations())

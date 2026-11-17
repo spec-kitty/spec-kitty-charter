@@ -9,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
@@ -64,7 +63,7 @@ class PolicyRoundTripTest {
         WholePackStore.LoadedPack loaded = store.load(source);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain("policy.yaml");
+        assertThat(loaded.notHeld()).extracting(NotHeldFile::path).doesNotContain("policy.yaml");
         assertThat(loaded.policy()).contains(POLICY);
 
         Path target = host.resolve("written").resolve("qa");
@@ -103,7 +102,7 @@ class PolicyRoundTripTest {
         // #554, open case 9: the census decides once; a policy file no mutability_policy names is not held, with its
         // own kind and reason, and validate mode judges nothing in it either.
         assertThat(stray.notHeld())
-                .contains(new ExcludedFile("policy.yaml", NotHeldFile.Kind.UNNAMED, NotHeldFile.UNNAMED_POLICY_REASON));
+                .contains(new NotHeldFile("policy.yaml", NotHeldFile.Kind.UNNAMED, NotHeldFile.UNNAMED_POLICY_REASON));
     }
 
     @Test

@@ -20,7 +20,6 @@ import ai.speckitty.charter.packs.application.PackSourceStagers;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.web.RefusalHandler;
@@ -113,7 +112,7 @@ class ExpiredReservationTest {
         };
         PackSourceIntake intake = new PackSourceIntake(
                 new PackSourceSwitch(Set.of(PackSourceKind.HTTPS_ARCHIVE)),
-                new PackSourceStagers(List.of(fetcher), mock(WholePackWriteStore.Loader.class)),
+                new PackSourceStagers(List.of(fetcher)),
                 info::worktree);
         PackRegistrationController controller = new PackRegistrationController(
                 jobs,

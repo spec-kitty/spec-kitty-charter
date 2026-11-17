@@ -12,7 +12,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
@@ -148,7 +147,7 @@ class StepEnhancementLoadChecksTest {
         /** The registration's staged load: the violations of the refusal, none when the pack registers. */
         List<RefusalViolation> staged() {
             try {
-                store.loadStaged(new StagedPack(dir));
+                StagedReads.contents(store, dir);
                 return List.of();
             } catch (CharterRefusal refusal) {
                 assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);

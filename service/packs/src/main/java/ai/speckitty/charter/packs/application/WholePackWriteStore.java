@@ -6,7 +6,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
-import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackReadout;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -23,114 +23,27 @@ import java.util.function.Supplier;
 public interface WholePackWriteStore {
 
     /**
-     * A file of a pack that is not pack content, so not held: an exclusion names it, or it is Markdown nothing models
-     * (#451), or nothing models it at all (operator ruling Q1, #554). A retired file is never one: it is refused.
+     * What a pack directory holds, assembled from one read.
      *
-     * <p>It coexists with the domain's {@link NotHeldFile}, which validate mode lists ({@link #asNotHeld}), until WP12
-     * of #554 moves the registration onto the one read and deletes this record in its favour.
-     *
-     * @param file the pack-relative path
-     * @param kind why the file is not held, decided where the file is classified (#554, WP02 review L1)
-     * @param reason the reviewable reason of the rule that excludes it, or {@value NotHeldFile#UNMODELLED_REASON}
-     */
-    record ExcludedFile(String file, NotHeldFile.Kind kind, String reason) {
-
-        /**
-         * Checks the fields: an unmodelled file carries {@value NotHeldFile#UNMODELLED_REASON}.
-         *
-         * @param file the pack-relative path
-         * @param kind why the file is not held
-         * @param reason the rule's reason
-         */
-        public ExcludedFile {
-            Objects.requireNonNull(file, "file");
-            Objects.requireNonNull(kind, "kind");
-            Objects.requireNonNull(reason, "reason");
-            if (kind == NotHeldFile.Kind.UNMODELLED && !reason.equals(NotHeldFile.UNMODELLED_REASON)) {
-                throw new IllegalArgumentException(
-                        "an unmodelled file's reason is '" + NotHeldFile.UNMODELLED_REASON + "': " + file);
-            }
-        }
-
-        /**
-         * A file an {@code exclusions} rule or the {@code ignored} fallback takes.
-         *
-         * @param file the pack-relative path
-         * @param reason the rule's reason
-         * @return the file
-         */
-        public static ExcludedFile excluded(String file, String reason) {
-            return new ExcludedFile(file, NotHeldFile.Kind.EXCLUDED, reason);
-        }
-
-        /**
-         * A file no pack file kind models: warned about, then ignored (operator ruling Q1, #554).
-         *
-         * @param file the pack-relative path
-         * @return the file, with {@value NotHeldFile#UNMODELLED_REASON} as its reason
-         */
-        public static ExcludedFile unmodelled(String file) {
-            return new ExcludedFile(file, NotHeldFile.Kind.UNMODELLED, NotHeldFile.UNMODELLED_REASON);
-        }
-
-        /**
-         * The same file as the domain's not-held file, which validate mode reports too.
-         *
-         * @return the file
-         */
-        public NotHeldFile asNotHeld() {
-            return new NotHeldFile(file, kind, reason);
-        }
-
-        /**
-         * The {@code file_not_held} warning a registration reports for this file (FR-021): the file named and the rule's
-         * reason given, in the words validate mode uses ({@link NotHeldFile#finding}).
-         *
-         * @return the warning
-         */
-        public PackFinding notHeld() {
-            return asNotHeld().finding();
-        }
-    }
-
-    /**
-     * A pack directory read as the registration judges it.
-     *
-     * @param pack the aggregate; its read violations are already refused for a staged tree
+     * @param pack the aggregate; for a staged tree, built from a read the registration judged and found clean
      * @param facts what the compose reads of the pack: the artifacts it holds, the typed edges it writes (graph
      *     documents, derived relations and the registered shard) and its presets
      * @param digests a digest of each file-backed artifact as it would be written, companions included, so that two
      *     trees can be told apart artifact by artifact
-     * @param warnings the load findings that do not refuse the pack, kept apart from its violations: the
-     *     {@code prompt_slot_not_empty} warning of a step prompt in a pack whose descriptor declares no
-     *     {@code schema_version}, and for a staged tree one {@code file_not_held} warning per file of {@code notHeld}
-     *     ({@link ExcludedFile#notHeld}), in path order after the others. A warning never enters
-     *     {@link Pack#violations()}.
-     * @param notHeld the files of a staged tree the registration does not hold, in path order: what
-     *     {@link Loader#removeNotHeld} strips; empty for a stored pack
      */
-    record Contents(
-            Pack pack,
-            PackCompositionFacts facts,
-            Map<Urn, String> digests,
-            List<PackFinding> warnings,
-            List<ExcludedFile> notHeld) {
+    record Contents(Pack pack, PackCompositionFacts facts, Map<Urn, String> digests) {
 
         /**
-         * Checks the fields and copies the collections.
+         * Checks the fields and copies the digests.
          *
          * @param pack the aggregate
          * @param facts the composition facts
          * @param digests the digest of each file-backed artifact
-         * @param warnings the load warnings
-         * @param notHeld the files a registration does not hold
          */
         public Contents {
             Objects.requireNonNull(pack, "pack");
             Objects.requireNonNull(facts, "facts");
             digests = Map.copyOf(digests);
-            warnings = List.copyOf(warnings);
-            notHeld = List.copyOf(notHeld);
         }
     }
 
@@ -169,28 +82,27 @@ public interface WholePackWriteStore {
     interface Loader {
 
         /**
-         * Reads a staged tree, refusing everything that makes the upload wrong with {@code validation_failed} (422):
-         * a read violation, an orphan prompt fragment, an unreadable graph or descriptor, a registered shard without
-         * the registration stamp. A file nothing models is not held, as an excluded file is (operator ruling Q1, #554).
+         * Assembles the aggregate of a staged tree from the one read the registration judged (#554, S1, FR-006): from the
+         * readout's {@link PackReadout#contents() contents} alone, through the store's assembly. It reads nothing and
+         * judges nothing: the registration refused the upload on the readout's rationale before it asks.
          *
-         * @param staged the extracted upload
+         * @param read the one read of the staged tree, whose rationale passed
          * @return what the tree holds
-         * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code VALIDATION_FAILED}, with a violation per
-         *     fault
+         * @throws IllegalArgumentException when the read holds no assembly input, which a passing rationale never leaves
          */
-        Contents loadStaged(StagedPack staged);
+        Contents loadStaged(PackReadout read);
 
         /**
-         * Removes from the staged tree every file {@code contents} reports as not held ({@link Contents#notHeld}, each
-         * also a {@code file_not_held} warning): a file that is not held is not pack content, so the revision of the
-         * tree and the commit that follow must not see it (FR-005, FR-021). Only the staging directory is touched.
+         * Removes from the staged tree every file the one read lists as not held ({@link PackReadout#notHeld()}, each
+         * also a {@code file_not_held} warning): a file that is not held is not pack content, so the revision of the tree
+         * and the commit that follow must not see it (FR-005, FR-021). Only the staging directory is touched.
          *
-         * @param staged the extracted upload {@link #loadStaged} read
-         * @param contents what {@link #loadStaged} answered for it
+         * @param staged the extracted upload
+         * @param notHeld the files of it the store does not hold
          * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when a file cannot be
          *     removed
          */
-        void removeNotHeld(StagedPack staged, Contents contents);
+        void removeNotHeld(StagedPack staged, List<NotHeldFile> notHeld);
 
         /**
          * Writes the staged tree's {@code pack-manifest.yaml} with the membership derived from the tree and every

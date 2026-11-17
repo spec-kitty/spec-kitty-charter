@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.GlossaryContext;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -142,7 +141,7 @@ class GlossaryPlantedRefusalsTest {
         Path pack = copy(plant, host);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .as(plant)
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
@@ -180,7 +179,7 @@ class GlossaryPlantedRefusalsTest {
 
         assertThat(expected.get("load").get("loads").asBoolean()).isTrue();
         assertThat(store.load(pack).pack().violations()).isEmpty();
-        WholePackWriteStore.Contents staged = store.loadStaged(new StagedPack(pack));
+        WholePackWriteStore.Contents staged = StagedReads.contents(store, pack);
         assertThat(staged.pack().artifacts(ArtifactKind.GLOSSARY))
                 .singleElement()
                 .isInstanceOfSatisfying(

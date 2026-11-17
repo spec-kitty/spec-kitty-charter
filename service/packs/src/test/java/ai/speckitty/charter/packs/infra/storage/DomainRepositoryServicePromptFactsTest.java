@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PromptFacts;
@@ -199,8 +198,7 @@ class DomainRepositoryServicePromptFactsTest {
                 Files.readString(fragment, StandardCharsets.UTF_8).replace("list each risk", "list every staged risk"),
                 StandardCharsets.UTF_8);
 
-        PromptFacts staged = new WholePackStore(new YamlSerializationStrategy())
-                .loadStaged(new StagedPack(copy))
+        PromptFacts staged = StagedReads.contents(new WholePackStore(new YamlSerializationStrategy()), copy)
                 .facts()
                 .prompts();
 

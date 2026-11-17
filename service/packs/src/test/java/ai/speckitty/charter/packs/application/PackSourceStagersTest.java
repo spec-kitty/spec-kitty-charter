@@ -2,19 +2,14 @@ package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
-import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
-import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.WholePackStore;
+import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * What stages a source for the job (IC-05): the fetcher of the kind, then the check that the name the pack declares is
- * the target, and a kind nobody built is unavailable. The fetched tree reaches the job unchanged.
+ * What stages a source for the job (IC-05): the fetcher of the kind, and a kind nobody built is unavailable. The fetched
+ * tree reaches the job unchanged, with the target as the name it must declare, which the registration checks once it
+ * has read and judged the tree (#554, F8).
  */
 class PackSourceStagersTest {
 
@@ -33,8 +29,6 @@ class PackSourceStagersTest {
 
     @TempDir
     Path directory;
-
-    private final WholePackWriteStore.Loader loader = mock(WholePackWriteStore.Loader.class);
 
     private PackSourceFetcher fetcher(PackSourceKind kind, Staged staged) {
         return new PackSourceFetcher() {
@@ -50,58 +44,48 @@ class PackSourceStagersTest {
         };
     }
 
-    private void declaresName(StagedPack pack, String name) {
-        WholePackWriteStore.Contents contents = mock(WholePackWriteStore.Contents.class);
-        Pack aggregate = mock(Pack.class);
-        when(loader.loadStaged(pack)).thenReturn(contents);
-        when(contents.pack()).thenReturn(aggregate);
-        when(aggregate.descriptor())
-                .thenReturn(new PackDescriptor(
-                        "01M4P01D5TWB5FKZGNNQG3943P",
-                        "1.0.0",
-                        Optional.empty(),
-                        name,
-                        Optional.of(PackLevel.ORG),
-                        Optional.empty()));
+    /** Step 2 of the registration the job runs over the staged tree: the one read, judged, then assembled. */
+    private static PackRegistrationService.ReadUpload registered(StagedPack staged) {
+        return PackRegistrationService.readUpload(
+                new FileSystemPackInspector(), new WholePackStore(new YamlSerializationStrategy()), "acme", staged);
     }
 
     @Test
-    void theFetchedTreeReachesTheJobUnchangedWhenItsNameIsTheTarget() throws Exception {
+    void theFetchedTreeReachesTheJobWithTheTargetAsTheNameItMustDeclare() throws Exception {
         StagedPack pack = new StagedPack(directory.resolve("pack"));
         Staged fetched = new Staged(pack, Map.of("kind", "https_archive", "url", HTTPS.url()));
-        declaresName(pack, "acme");
-        PackSourceStagers stagers =
-                new PackSourceStagers(List.of(fetcher(PackSourceKind.HTTPS_ARCHIVE, fetched)), loader);
+        PackSourceStagers stagers = new PackSourceStagers(List.of(fetcher(PackSourceKind.HTTPS_ARCHIVE, fetched)));
 
-        Stager stager = stagers.stagerFor(HTTPS, "acme");
+        Staged staged = stagers.stagerFor(HTTPS, "acme").stage(directory);
 
-        assertThat(stager.stage(directory)).isSameAs(fetched);
+        assertThat(staged.pack()).isEqualTo(new StagedPack(pack.directory(), Optional.of("acme")));
+        assertThat(staged.source()).isEqualTo(fetched.source());
     }
 
     @Test
-    void aNameThatIsNotTheTargetIsRefusedAsANameMismatchWhateverTheTreeHolds() {
-        StagedPack pack = new StagedPack(directory.resolve("pack"));
-        declaresName(pack, "acme");
-        PackSourceStagers stagers = new PackSourceStagers(
-                List.of(fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(pack, Map.of()))), loader);
+    void aNameThatIsNotTheTargetIsRefusedAsANameMismatchOnceTheTreeIsJudged() {
+        Path tree = ExamplePacks.copyOf(ExamplePacks.ORG, directory.resolve("fetched"));
 
-        assertThatThrownBy(() -> stagers.stagerFor(HTTPS, "other").stage(directory))
+        assertThat(registered(new StagedPack(tree).declaring("org-base"))
+                        .contents()
+                        .pack()
+                        .descriptor()
+                        .name())
+                .isEqualTo("org-base");
+        assertThatThrownBy(() -> registered(new StagedPack(tree).declaring("other")))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SOURCE_REFUSED);
                     assertThat(refusal.getMessage()).startsWith("name_mismatch: ");
-                    assertThat(refusal.getMessage()).doesNotContain("acme", "other");
+                    assertThat(refusal.getMessage()).doesNotContain("org-base", "other");
                 });
     }
 
     @Test
-    void aTreeThatDoesNotLoadIsRefusedByTheLoadAndNeverReachesTheNameCheck() {
-        StagedPack pack = new StagedPack(directory.resolve("pack"));
-        when(loader.loadStaged(pack))
-                .thenThrow(new CharterRefusal(RefusalCode.VALIDATION_FAILED, "the descriptor is unreadable"));
-        PackSourceStagers stagers = new PackSourceStagers(
-                List.of(fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(pack, Map.of()))), loader);
+    void aTreeThatDoesNotLoadIsRefusedByTheJudgementAndNeverReachesTheNameCheck() throws Exception {
+        Path tree = ExamplePacks.copyOf(ExamplePacks.ORG, directory.resolve("fetched"));
+        java.nio.file.Files.delete(tree.resolve("pack.yaml"));
 
-        assertThatThrownBy(() -> stagers.stagerFor(HTTPS, "acme").stage(directory))
+        assertThatThrownBy(() -> registered(new StagedPack(tree).declaring("other")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
@@ -110,8 +94,7 @@ class PackSourceStagersTest {
     @Test
     void aKindNobodyBuiltHasNoFetcherAndIsUnavailable() {
         PackSourceStagers stagers = new PackSourceStagers(
-                List.of(fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))),
-                loader);
+                List.of(fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))));
         PackSourceRequest git = new PackSourceRequest(
                 PackSourceKind.GIT, "https://git.example.org/a.git", "refs/tags/v1", null, null, null);
 
@@ -122,7 +105,6 @@ class PackSourceStagersTest {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SOURCE_UNAVAILABLE);
                     assertThat(refusal.getMessage()).doesNotContain("git.example.org");
                 });
-        verify(loader, never()).loadStaged(any());
     }
 
     @Test
@@ -144,8 +126,7 @@ class PackSourceStagersTest {
             }
         };
         PackSourceStagers stagers = new PackSourceStagers(
-                List.of(noGit, fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))),
-                loader);
+                List.of(noGit, fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))));
         PackSourceRequest git = new PackSourceRequest(
                 PackSourceKind.GIT, "https://git.example.org/a.git", "refs/tags/v1", null, null, null);
 
@@ -162,7 +143,7 @@ class PackSourceStagersTest {
         PackSourceFetcher first = fetcher(PackSourceKind.FILESYSTEM, new Staged(new StagedPack(directory), Map.of()));
         PackSourceFetcher second = fetcher(PackSourceKind.FILESYSTEM, new Staged(new StagedPack(directory), Map.of()));
 
-        assertThatThrownBy(() -> new PackSourceStagers(List.of(first, second), loader))
+        assertThatThrownBy(() -> new PackSourceStagers(List.of(first, second)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

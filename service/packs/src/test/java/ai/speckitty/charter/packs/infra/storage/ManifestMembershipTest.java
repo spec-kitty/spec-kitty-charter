@@ -159,7 +159,7 @@ class ManifestMembershipTest {
                                                 + "  content_hash: " + "0".repeat(64) + "\npresets:\n")
                         + "- id: ghost\n  path: presets/ghost.yaml\n  content_hash: " + "0".repeat(64) + "\n");
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
@@ -200,7 +200,7 @@ class ManifestMembershipTest {
         deleteManifest(pack);
         Files.createDirectory(pack.resolve(PackFileSet.MANIFEST));
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())

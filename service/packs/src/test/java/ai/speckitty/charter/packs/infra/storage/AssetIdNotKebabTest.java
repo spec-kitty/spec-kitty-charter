@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -69,7 +68,7 @@ class AssetIdNotKebabTest {
         Path pack = planted(host);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
@@ -95,7 +94,7 @@ class AssetIdNotKebabTest {
                         .findings())
                 .isEmpty();
         assertThat(store.load(pack).pack().violations()).isEmpty();
-        assertThat(store.loadStaged(new StagedPack(pack)).pack().assets())
+        assertThat(StagedReads.contents(store, pack).pack().assets())
                 .extracting(asset -> asset.localId())
                 .containsExactly("run");
     }

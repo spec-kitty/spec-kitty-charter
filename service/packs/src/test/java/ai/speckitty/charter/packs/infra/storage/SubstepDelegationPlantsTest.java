@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
@@ -85,7 +84,7 @@ class SubstepDelegationPlantsTest {
             assertThat(violation.kind().value()).isEqualTo(code);
             assertThat(violation.reason()).contains("tactic tdd");
         });
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
@@ -228,7 +227,7 @@ class SubstepDelegationPlantsTest {
             assertThat(violation.file()).isEqualTo(TYPE);
             assertThat(violation.reason()).contains("'kind' has an unsupported value 'agent_profile'");
         });
-        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations())
@@ -255,7 +254,7 @@ class SubstepDelegationPlantsTest {
 
         assertThat(validate(pack)).isEmpty();
         assertThat(store.load(pack).pack().violations()).isEmpty();
-        assertThat(store.loadStaged(new StagedPack(pack)).pack().violations()).isEmpty();
+        assertThat(StagedReads.contents(store, pack).pack().violations()).isEmpty();
     }
 
     private static List<Reason> validate(Path pack) {

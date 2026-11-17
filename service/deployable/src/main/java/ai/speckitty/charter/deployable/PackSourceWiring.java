@@ -8,7 +8,6 @@ import ai.speckitty.charter.packs.application.PackSourceStagers;
 import ai.speckitty.charter.packs.application.PackTreeReader;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.application.StagingArea;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.infra.api.PackSourceIntake;
 import ai.speckitty.charter.packs.infra.api.PackSourceSwitch;
 import ai.speckitty.charter.packs.infra.archive.BoundedTreeStager;
@@ -178,12 +177,11 @@ public class PackSourceWiring {
      * The stagers of the kinds that are built.
      *
      * @param fetchers the fetchers, one per kind
-     * @param loader reads a staged tree, for the name the check of the target compares
      * @return the stagers
      */
     @Bean
-    PackSourceStagers packSourceStagers(List<PackSourceFetcher> fetchers, WholePackWriteStore.Loader loader) {
-        return new PackSourceStagers(fetchers, loader);
+    PackSourceStagers packSourceStagers(List<PackSourceFetcher> fetchers) {
+        return new PackSourceStagers(fetchers);
     }
 
     /**

@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDocument;
@@ -88,7 +87,7 @@ class PackDocumentRoundTripTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).doesNotContain(PackDocumentMarkdown.FILE);
+        assertThat(loaded.notHeld()).extracting(NotHeldFile::path).doesNotContain(PackDocumentMarkdown.FILE);
         PackDocument document = loaded.pack().document().orElseThrow();
         assertThat(document.frontmatter())
                 .contains(Map.of("audience", "pack authors", "weight", 1.5, "count", 1, "tags", List.of("baseline")));
@@ -225,7 +224,7 @@ class PackDocumentRoundTripTest {
 
         assertThat(loaded.pack().document()).isEmpty();
         assertThat(loaded.notHeld()).noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED);
-        assertThat(loaded.notHeld()).extracting(ExcludedFile::file).containsExactly("docs/README.md");
+        assertThat(loaded.notHeld()).extracting(NotHeldFile::path).containsExactly("docs/README.md");
     }
 
     @Test

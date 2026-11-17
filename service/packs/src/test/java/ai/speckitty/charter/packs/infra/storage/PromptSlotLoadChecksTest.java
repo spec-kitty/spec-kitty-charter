@@ -10,8 +10,6 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -229,7 +227,7 @@ class PromptSlotLoadChecksTest {
         /** The registration's staged load: the violations of the refusal, none when the pack registers. */
         List<RefusalViolation> staged() {
             try {
-                store.loadStaged(new StagedPack(dir));
+                StagedReads.contents(store, dir);
                 return List.of();
             } catch (CharterRefusal refusal) {
                 assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
@@ -237,9 +235,9 @@ class PromptSlotLoadChecksTest {
             }
         }
 
-        /** What the registration's staged load holds when it registers. */
-        WholePackWriteStore.Contents stagedContents() {
-            return store.loadStaged(new StagedPack(dir));
+        /** The diagnostics the registration answers when it registers. */
+        List<Diagnostic> stagedDiagnostics() {
+            return StagedReads.read(store, dir).diagnostics();
         }
 
         DomainRepositoryService service() {
@@ -375,10 +373,10 @@ class PromptSlotLoadChecksTest {
 
         Pack twin = plan(new Pack(false), FILLED);
         assertThat(twin.staged()).isEmpty();
-        assertThat(twin.stagedContents().warnings())
+        assertThat(twin.stagedDiagnostics())
                 .singleElement()
-                .satisfies(warning -> assertThat(warning.file()).isEqualTo(FILE));
-        assertThat(plan(new Pack(false), EMPTY).stagedContents().warnings()).isEmpty();
+                .satisfies(warning -> assertThat(warning.detail()).startsWith(FILE + ":"));
+        assertThat(plan(new Pack(false), EMPTY).stagedDiagnostics()).isEmpty();
     }
 
     @Test

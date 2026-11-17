@@ -6,9 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.StagedPack;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackFinding;
@@ -200,9 +199,7 @@ class HeldSetAgreementTest {
                 .filteredOn(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
                 .extracting(NotHeldFile::path)
                 .containsExactly("charter.yaml", "drg/tactic.graph.yaml", "graph/deep/x.graph.yaml", "notes.txt");
-        assertThat(store().load(pack).notHeld())
-                .extracting(ExcludedFile::asNotHeld)
-                .containsExactlyElementsOf(validated);
+        assertThat(store().load(pack).notHeld()).containsExactlyElementsOf(validated);
     }
 
     @Test
@@ -211,7 +208,7 @@ class HeldSetAgreementTest {
         Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
         write(pack, "PROVENANCE.md", "# Provenance\n");
 
-        assertThat(store().load(pack).notHeld()).extracting(ExcludedFile::file).doesNotContain("PROVENANCE.md");
+        assertThat(store().load(pack).notHeld()).extracting(NotHeldFile::path).doesNotContain("PROVENANCE.md");
         assertThat(validated(pack, PackLevel.ORG)).extracting(NotHeldFile::path).doesNotContain("PROVENANCE.md");
         assertThat(PackPolicy.judge(inspect(pack, PackLevel.ORG)).findings())
                 .filteredOn(finding -> finding.file().equals("PROVENANCE.md"))
@@ -233,9 +230,9 @@ class HeldSetAgreementTest {
         assertThat(PackPolicy.judge(inspect(pack, PackLevel.ORG)).findings())
                 .filteredOn(finding -> finding.file().equals("policy.yaml"))
                 .containsExactly(unnamed.finding());
-        assertThat(store().loadStaged(new StagedPack(pack)).warnings())
-                .filteredOn(finding -> finding.file().equals("policy.yaml"))
-                .containsExactly(unnamed.finding());
+        assertThat(StagedReads.read(store(), pack).diagnostics())
+                .filteredOn(diagnostic -> diagnostic.detail().startsWith("policy.yaml:"))
+                .containsExactly(unnamed.finding().toDiagnostic());
     }
 
     @Test
@@ -251,7 +248,7 @@ class HeldSetAgreementTest {
                 .filteredOn(finding -> finding.file().equals(orphan))
                 .extracting(PackFinding::code)
                 .containsExactly(PackCodes.PROMPT_FRAGMENT_INVALID);
-        assertThatThrownBy(() -> store().loadStaged(new StagedPack(pack)))
+        assertThatThrownBy(() -> StagedReads.contents(store(), pack))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
@@ -279,12 +276,12 @@ class HeldSetAgreementTest {
                 .containsExactlyInAnyOrder(
                         NotHeldFile.unnamedCompanion(guide).finding(),
                         NotHeldFile.unnamedCompanion(prompt).finding());
-        WholePackWriteStore.Contents contents = store().loadStaged(new StagedPack(pack));
-        assertThat(contents.warnings())
-                .filteredOn(finding ->
-                        finding.file().equals(guide) || finding.file().equals(prompt))
+        PackRegistrationService.ReadUpload read = StagedReads.read(store(), pack);
+        assertThat(read.diagnostics())
+                .filteredOn(diagnostic -> diagnostic.detail().startsWith(guide + ":")
+                        || diagnostic.detail().startsWith(prompt + ":"))
                 .hasSize(2);
-        store().removeNotHeld(new StagedPack(pack), contents);
+        store().removeNotHeld(new StagedPack(pack), read.read().notHeld());
         assertThat(pack.resolve(guide)).doesNotExist();
         assertThat(pack.resolve(prompt)).doesNotExist();
     }
@@ -300,9 +297,8 @@ class HeldSetAgreementTest {
     /** The store's not-held list, or empty when the store refuses to load the pack at all. */
     private static Optional<List<NotHeldFile>> stored(Path pack) {
         try {
-            return Optional.of(store().load(pack).notHeld().stream()
-                    .map(ExcludedFile::asNotHeld)
-                    .toList());
+            return Optional.of(store().load(pack).notHeld().stream().toList());
+
         } catch (CharterRefusal refused) {
             return Optional.empty();
         }

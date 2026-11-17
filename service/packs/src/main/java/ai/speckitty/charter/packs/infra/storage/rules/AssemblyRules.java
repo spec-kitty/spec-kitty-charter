@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -138,12 +139,49 @@ public final class AssemblyRules {
     static Optional<Reason> companionFault(PackElementViolation violation, Set<String> stated) {
         String reason = violation.reason();
         int colon = reason.indexOf(": ");
-        String companion = colon < 0 ? violation.file() : sibling(violation.file(), reason.substring(0, colon));
+        String companion = companionOf(violation);
         if (stated.contains(violation.file()) || stated.contains(companion)) {
             return Optional.empty();
         }
         String why = colon < 0 ? reason : reason.substring(colon + 2);
         return Optional.of(fault(violation.kind(), companion, why));
+    }
+
+    /**
+     * The prompt fragments whose read fault the store states at the step enhancement that names them
+     * ({@code <declared path>: <why>}): there the contract places it ({@code prompt-fragment-refusals.feature}, R2 row
+     * 19), so the verdict states it there, once, and no fault at the fragment itself beside it.
+     *
+     * @param read the one read
+     * @return the fragments, pack-relative
+     */
+    static Set<String> unreadFragments(TreeRead read) {
+        Set<String> out = new HashSet<>();
+        if (read.contents().assembly() instanceof Assembly.Assembled held) {
+            for (PackElementViolation violation : held.violations()) {
+                if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation)) {
+                    out.add(companionOf(violation));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Whether the store's reason starts with the companion path it names: {@code <path>: <why>}, the path one word. */
+    static boolean namesCompanion(PackElementViolation violation) {
+        int colon = violation.reason().indexOf(": ");
+        return colon > 0 && !violation.reason().substring(0, colon).contains(" ");
+    }
+
+    /**
+     * The companion a companion fault of the store names, as it words it at the artifact
+     * ({@code <declared path>: <why>}), pack-relative; the artifact's own file when the reason names no path.
+     */
+    static String companionOf(PackElementViolation violation) {
+        int colon = violation.reason().indexOf(": ");
+        return colon < 0
+                ? violation.file()
+                : sibling(violation.file(), violation.reason().substring(0, colon));
     }
 
     /**

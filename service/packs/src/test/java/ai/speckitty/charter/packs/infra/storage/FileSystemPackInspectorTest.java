@@ -13,7 +13,6 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.ClassifiedFile;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
@@ -129,7 +128,7 @@ class FileSystemPackInspectorTest {
                 .filteredOn(finding -> finding.location().file().equals("registered.graph.yaml"))
                 .extracting(Reason::code, Reason::detail)
                 .containsExactly(tuple(StorageCodes.RESERVED_SHARD, RelationshipShard.RESERVED));
-        assertThatThrownBy(() -> new WholePackStore(new YamlSerializationStrategy()).loadStaged(new StagedPack(dir)))
+        assertThatThrownBy(() -> StagedReads.contents(new WholePackStore(new YamlSerializationStrategy()), dir))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
@@ -1593,8 +1592,7 @@ class FileSystemPackInspectorTest {
             assertThat(INSPECTOR.read(root(missing)).rationale().isFailing())
                     .as("the port answers the fault; it never throws")
                     .isTrue();
-            assertThatThrownBy(() ->
-                            new WholePackStore(new YamlSerializationStrategy()).loadStaged(new StagedPack(missing)))
+            assertThatThrownBy(() -> StagedReads.contents(new WholePackStore(new YamlSerializationStrategy()), missing))
                     .as("the registration answers the same root as a 422 at pack (F4)")
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);

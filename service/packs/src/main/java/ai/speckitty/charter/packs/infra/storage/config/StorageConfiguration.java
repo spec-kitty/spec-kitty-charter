@@ -1,9 +1,11 @@
 package ai.speckitty.charter.packs.infra.storage.config;
 
 import ai.speckitty.charter.kernel.config.StartupRefusal;
+import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.infra.storage.AgentProfileEnhancements;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
@@ -53,6 +55,17 @@ public class StorageConfiguration {
     @Bean
     SerializationStrategy serializationStrategy() {
         return new YamlSerializationStrategy();
+    }
+
+    /**
+     * The one reader of a pack tree (#554, S1, S6): the domain port a registration reads a staged tree through, so the
+     * application ring names no storage type and no onion rule is widened.
+     *
+     * @return the file-system reader
+     */
+    @Bean
+    PackReading packReading() {
+        return new FileSystemPackInspector();
     }
 
     /**

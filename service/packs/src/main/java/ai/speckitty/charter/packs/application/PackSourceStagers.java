@@ -7,30 +7,26 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
  * What stages a source for the registration job (FR-004, IC-05): the fetcher of the request's kind, which writes the tree
  * into the job's staging directory, and then the one check that is the source's own, that the name the fetched
- * descriptor declares is the target {@code packId} ({@code name_mismatch}). The tree reaches the job unchanged, and the
- * flow behind it (IC-04) judges it as it judges an upload. A kind no fetcher serves, or whose fetcher is not available,
- * is unavailable.
+ * descriptor declares is the target {@code packId} ({@code name_mismatch}). The tree reaches the job unchanged, with
+ * that name required of it ({@link StagedPack#declaring}): the registration checks it once it has read and judged the
+ * tree, so the tree is read and judged once, as an upload is (#554, F8). A kind no fetcher serves, or whose fetcher is
+ * not available, is unavailable.
  */
 public final class PackSourceStagers {
 
     private final Map<PackSourceKind, PackSourceFetcher> fetchers = new EnumMap<>(PackSourceKind.class);
-    private final WholePackWriteStore.Loader loader;
-
     /**
      * Stagers over the fetchers of the kinds that are built.
      *
      * @param fetchers the fetchers, one per kind
-     * @param loader reads a staged tree, for the name it declares
      * @throws IllegalArgumentException when two fetchers serve one kind
      */
-    public PackSourceStagers(Collection<PackSourceFetcher> fetchers, WholePackWriteStore.Loader loader) {
-        this.loader = Objects.requireNonNull(loader, "loader");
+    public PackSourceStagers(Collection<PackSourceFetcher> fetchers) {
         for (PackSourceFetcher fetcher : fetchers) {
             if (this.fetchers.putIfAbsent(fetcher.kind(), fetcher) != null) {
                 throw new IllegalArgumentException(
@@ -64,15 +60,7 @@ public final class PackSourceStagers {
                         "The " + request.kind().wire() + " source is not available in this service."));
         return directory -> {
             Staged staged = fetcher.fetch(request, directory);
-            requireNamed(staged, target);
-            return staged;
+            return new Staged(staged.pack().declaring(target), staged.source());
         };
-    }
-
-    private void requireNamed(Staged staged, String target) {
-        String name = loader.loadStaged(staged.pack()).pack().descriptor().name();
-        if (!name.equals(target)) {
-            throw SourceRefusal.NAME_MISMATCH.refusal();
-        }
     }
 }

@@ -13,7 +13,9 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackReading;
+import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -159,6 +161,7 @@ public final class PackRegistrationService {
         }
     }
 
+    private final PackReading reading;
     private final WholePackWriteStore.Loader loader;
     private final WholePackWriteStore store;
     private final PackRevisions revisions;
@@ -170,7 +173,8 @@ public final class PackRegistrationService {
     /**
      * A service over its ports.
      *
-     * @param loader reads a staged tree
+     * @param reading reads a staged tree once (#554, S6): the one read the registration judges
+     * @param loader assembles a staged tree from the read the registration judged
      * @param store locks, swaps and creates
      * @param revisions the revision of a stored pack
      * @param views the stored packs, read through one session per registration: each session lists the configured
@@ -181,6 +185,7 @@ public final class PackRegistrationService {
      */
     @Autowired
     public PackRegistrationService(
+            PackReading reading,
             WholePackWriteStore.Loader loader,
             WholePackWriteStore store,
             PackRevisions revisions,
@@ -188,6 +193,7 @@ public final class PackRegistrationService {
             WritePolicyGate gate,
             InboundReferences inbound,
             RegistrationImpact impact) {
+        this.reading = Objects.requireNonNull(reading, "reading");
         this.loader = Objects.requireNonNull(loader, "loader");
         this.store = Objects.requireNonNull(store, "store");
         this.revisions = Objects.requireNonNull(revisions, "revisions");
@@ -202,6 +208,7 @@ public final class PackRegistrationService {
             String packId,
             StagedPack staged,
             WholePackWriteStore.Contents contents,
+            List<Diagnostic> diagnostics,
             PackRevision revision,
             Preconditions preconditions) {
 
@@ -257,15 +264,69 @@ public final class PackRegistrationService {
         Objects.requireNonNull(staged, "staged");
         Objects.requireNonNull(preconditions, "preconditions");
         requireValidPackId(packId);
-        // The slow steps run before any lock: the load (step 2) and the revision of the staged tree (step 4).
-        WholePackWriteStore.Contents contents = loader.loadStaged(staged);
-        // The files the load reports as not held leave the staged tree before its revision and the commit (FR-005).
-        loader.removeNotHeld(staged, contents);
+        // The slow steps run before any lock: the one read and its judgement (step 2) and the revision (step 4).
+        ReadUpload read = readUpload(reading, loader, packId, staged);
+        // The files the read lists as not held leave the staged tree before its revision and the commit (FR-005).
+        loader.removeNotHeld(staged, read.read().notHeld());
         // #110: the manifest the service will hold is derived from the tree and stamped before the revision.
         loader.stampManifest(staged);
         PackRevision revision = store.revisionOf(staged);
-        Upload upload = new Upload(packId, staged, contents, revision, preconditions);
+        Upload upload = new Upload(packId, staged, read.contents(), read.diagnostics(), revision, preconditions);
         return store.exclusively(packId, () -> decide(upload, beforeCommit));
+    }
+
+    /**
+     * A staged tree read once and judged (#554, S1, S6, FR-006, step 2 of IC-04): what a registration holds of it.
+     *
+     * @param read the one read of the tree
+     * @param contents what the tree holds, assembled from that read
+     * @param diagnostics the read's warnings, as the registration answers them
+     */
+    public record ReadUpload(PackReadout read, WholePackWriteStore.Contents contents, List<Diagnostic> diagnostics) {
+
+        /**
+         * Checks the fields and copies the diagnostics.
+         *
+         * @param read the one read
+         * @param contents what the tree holds
+         * @param diagnostics the warnings
+         */
+        public ReadUpload {
+            Objects.requireNonNull(read, "read");
+            Objects.requireNonNull(contents, "contents");
+            diagnostics = List.copyOf(diagnostics);
+        }
+    }
+
+    /**
+     * Step 2 of a registration (#554, S1, S6, S8, FR-006): reads the staged tree once through {@code reading}, under
+     * the name the pack is registered as, and refuses it when the readout's rationale fails, with every fault of it in
+     * its order ({@link PackRefusals#of}): the read faults, the storage edge's composition and the manifest gate, which
+     * the port's implementation joined. A clean read is then assembled by {@code loader} from that read alone; nothing
+     * reads the tree again. A fetched source whose descriptor declares another name than its target is refused
+     * {@code name_mismatch} after the judgement (F8).
+     *
+     * @param reading the one reader
+     * @param loader assembles the read
+     * @param packId the name the pack is registered as
+     * @param staged the extracted upload
+     * @return the read, what the tree holds and its diagnostics
+     * @throws CharterRefusal {@code VALIDATION_FAILED} with a violation per fault, or {@code name_mismatch}
+     */
+    public static ReadUpload readUpload(
+            PackReading reading, WholePackWriteStore.Loader loader, String packId, StagedPack staged) {
+        PackReadout read = reading.read(
+                new PackRoot(packId, Optional.empty(), staged.directory().toString()));
+        if (read.rationale().isFailing()) {
+            throw PackRefusals.of(read.rationale());
+        }
+        WholePackWriteStore.Contents contents = loader.loadStaged(read);
+        staged.declaredName()
+                .filter(target -> !target.equals(contents.pack().descriptor().name()))
+                .ifPresent(target -> {
+                    throw SourceRefusal.NAME_MISMATCH.refusal();
+                });
+        return new ReadUpload(read, contents, PackRefusals.diagnostics(read.rationale()));
     }
 
     /** Steps 3 and 5 to 10, under the registry lock and then the pack's own. */
@@ -646,9 +707,7 @@ public final class PackRegistrationService {
                 upload.level(),
                 revision,
                 notices,
-                upload.contents().warnings().stream()
-                        .map(PackFinding::toDiagnostic)
-                        .toList(),
+                upload.diagnostics(),
                 upload.contents().pack().document().isPresent());
     }
 }

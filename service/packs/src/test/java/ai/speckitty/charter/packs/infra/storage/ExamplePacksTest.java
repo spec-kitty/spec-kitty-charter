@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackPolicy;
@@ -46,7 +45,7 @@ class ExamplePacksTest {
                 .as(name)
                 .containsExactlyElementsOf(new WholePackStore(new YamlSerializationStrategy())
                         .load(ExamplePacks.pack(name)).notHeld().stream()
-                                .map(file -> file.asNotHeld().finding())
+                                .map(NotHeldFile::finding)
                                 .toList());
     }
 
@@ -132,12 +131,12 @@ class ExamplePacksTest {
         WholePackStore.LoadedPack builtIn = store.load(ExamplePacks.pack(ExamplePacks.BUILT_IN));
 
         assertThat(org.notHeld()).singleElement().satisfies(file -> {
-            assertThat(file.file()).isEqualTo("docs/authoring-notes.md");
+            assertThat(file.path()).isEqualTo("docs/authoring-notes.md");
             assertThat(file.reason()).startsWith("Author aid: Markdown that no files rule models");
         });
         assertThat(builtIn.notHeld())
                 .noneMatch(file -> file.kind() == NotHeldFile.Kind.UNMODELLED)
-                .extracting(WholePackWriteStore.ExcludedFile::file)
+                .extracting(NotHeldFile::path)
                 .contains("missions/software-dev/templates/README.md");
         Path written = host.resolve("org-base");
         store.write(org, written);

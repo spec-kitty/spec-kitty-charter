@@ -33,11 +33,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "tactics/a.tactic.yaml",
+          "code" : "unreadable",
+          "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
         } ]
       }
     },
@@ -71,11 +75,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "tactics/a.tactic.yaml",
+          "code" : "unreadable",
+          "detail" : "tactics/a.tactic.yaml: while parsing a flow node"
         } ]
       }
     },
@@ -109,11 +117,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "tactics/a.tactic.yaml",
+          "code" : "unreadable",
+          "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
         } ]
       }
     },
@@ -166,11 +178,19 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset_mime_invalid",
+          "detail" : "assets/a.asset.yaml: asset mime 'image/png' does not match the '.txt' extension (text/plain)"
         } ]
       }
     },
@@ -185,11 +205,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset_mime_invalid",
+          "detail" : "assets/a.asset.yaml: asset mime 'image/png' does not match the '.txt' extension (text/plain)"
         } ]
       }
     },
@@ -204,11 +228,19 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset_mime_invalid",
+          "detail" : "assets/a.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
         } ]
       }
     },
@@ -223,11 +255,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset_mime_invalid",
+          "detail" : "assets/a.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
         } ]
       }
     },
@@ -242,11 +278,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: asset path '/etc/hosts' escapes the pack's assets/ root"
         } ]
       }
     },
@@ -280,11 +320,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: asset path '../../outside.png' escapes the pack's assets/ root"
         } ]
       }
     },
@@ -318,11 +362,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
         } ]
       }
     },
@@ -356,11 +404,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
         } ]
       }
     },
@@ -394,11 +446,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
         } ]
       }
     },
@@ -432,11 +488,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
         } ]
       }
     },
@@ -470,11 +530,23 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 4 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: payload assets/ok.txt does not exist"
+        }, {
+          "pointer" : "assets/b.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+        }, {
+          "pointer" : "assets/b.asset.yaml",
+          "code" : "duplicate_artifact_id",
+          "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
         } ]
       }
     },
@@ -489,7 +561,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
@@ -498,6 +570,10 @@
           "pointer" : "assets/b.asset.yaml",
           "code" : "asset",
           "detail" : "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+        }, {
+          "pointer" : "assets/b.asset.yaml",
+          "code" : "duplicate_artifact_id",
+          "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
         } ]
       }
     },
@@ -512,11 +588,23 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 4 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "assets/a.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/a.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+        }, {
+          "pointer" : "assets/b.asset.yaml",
+          "code" : "asset",
+          "detail" : "assets/b.asset.yaml: payload assets/ok.txt does not exist"
+        }, {
+          "pointer" : "assets/b.asset.yaml",
+          "code" : "duplicate_artifact_id",
+          "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
         } ]
       }
     },
@@ -531,7 +619,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
@@ -540,6 +628,10 @@
           "pointer" : "assets/b.asset.yaml",
           "code" : "asset",
           "detail" : "assets/b.asset.yaml: payload assets/ok.txt does not exist"
+        }, {
+          "pointer" : "assets/b.asset.yaml",
+          "code" : "duplicate_artifact_id",
+          "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
         } ]
       }
     },
@@ -554,11 +646,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "agent_profiles/p.agent.yaml",
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
         } ]
       }
     },
@@ -592,11 +688,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "agent_profiles/p.agent.yaml",
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
         } ]
       }
     },
@@ -630,7 +730,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -657,11 +757,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "tactics/a.tactic.yaml",
+          "code" : "artifact_schema_error",
+          "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
         } ]
       }
     },
@@ -695,11 +799,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "agent_profiles/p.agent.yaml",
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
         } ]
       }
     },
@@ -733,11 +841,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "directives/d.directive.yaml",
+          "code" : "artifact_schema_error",
+          "detail" : "directives/d.directive.yaml: missing 'explicit_allowances'"
         } ]
       }
     },
@@ -771,8 +883,12 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
         "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
+        }, {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
@@ -809,11 +925,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "agent_profiles/p.agent.yaml",
+          "code" : "artifact_schema_error",
+          "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
         } ]
       }
     },
@@ -847,7 +967,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -915,8 +1035,16 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at tactic.graph.yaml.",
         "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+        }, {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        }, {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
@@ -957,7 +1085,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -987,7 +1115,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1017,8 +1145,12 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
         "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        }, {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
@@ -1158,7 +1290,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1188,7 +1320,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1218,7 +1350,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa has no pack_version",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1237,7 +1369,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1267,7 +1399,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1297,7 +1429,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1327,7 +1459,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1381,7 +1513,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa: unknown key 'accompanies_doctrine_pack'",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1400,7 +1532,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa: unknown key 'mystery'",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1419,11 +1551,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
+        }, {
+          "pointer" : "tactics/b.tactic.yaml",
+          "code" : "duplicate_artifact_id",
+          "detail" : "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
         } ]
       }
     },
@@ -1663,7 +1799,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack.yaml of qa is not valid YAML: sequence entries are not allowed here",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1701,7 +1837,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: pack qa has no pack.yaml",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -1862,8 +1998,14 @@
   },
   "planted/requires-core-invalid" : {
     "registration" : {
-      "accepted" : {
-        "diagnostics" : [ ]
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
+        "violations" : [ {
+          "pointer" : "pack.yaml",
+          "code" : "requires_core_invalid",
+          "detail" : "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"
+        } ]
       }
     },
     "composeRead" : "readable"

@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
@@ -1133,6 +1134,7 @@ class PackRegistrationServiceTest {
                         }
                     });
             this.service = new PackRegistrationService(
+                    new FileSystemPackInspector(),
                     new WholePackStore(strategy),
                     commits,
                     writeStore,

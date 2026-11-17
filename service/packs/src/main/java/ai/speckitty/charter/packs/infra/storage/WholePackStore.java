@@ -7,38 +7,27 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
-import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
-import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.Preset;
-import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
-import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
-import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,7 +36,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +95,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             Pack pack,
             PackLayout layout,
             List<GraphDocument> graphs,
-            List<ExcludedFile> notHeld,
+            List<NotHeldFile> notHeld,
             Optional<PackManifestDso> manifest,
             Optional<String> policy,
             List<PackFinding> warnings) {
@@ -146,7 +134,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 Pack pack,
                 PackLayout layout,
                 List<GraphDocument> graphs,
-                List<ExcludedFile> notHeld,
+                List<NotHeldFile> notHeld,
                 Optional<PackManifestDso> manifest,
                 Optional<String> policy) {
             this(pack, layout, graphs, notHeld, manifest, policy, List.of());
@@ -165,7 +153,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 Pack pack,
                 PackLayout layout,
                 List<GraphDocument> graphs,
-                List<ExcludedFile> notHeld,
+                List<NotHeldFile> notHeld,
                 Optional<PackManifestDso> manifest) {
             this(pack, layout, graphs, notHeld, manifest, Optional.empty());
         }
@@ -178,14 +166,10 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
          * @param graphs the DRG documents
          * @param notHeld the files the pack does not hold
          */
-        public LoadedPack(Pack pack, PackLayout layout, List<GraphDocument> graphs, List<ExcludedFile> notHeld) {
+        public LoadedPack(Pack pack, PackLayout layout, List<GraphDocument> graphs, List<NotHeldFile> notHeld) {
             this(pack, layout, graphs, notHeld, Optional.empty());
         }
     }
-
-    private static final Pattern FRAGMENT_FILE =
-            Pattern.compile("^missions/[^/]+/enhancements/[^/]+\\.prompt-fragment\\.md$");
-    private static final String ENHANCEMENT_SUFFIX = ".step-enhancement.yaml";
 
     private final SerializationStrategy strategy;
     private final List<KindBinding<?, ?>> bindings;
@@ -194,7 +178,10 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     /** The walk of a directory that is not there: the store's read refuses it before it lists anything. */
     private static final PackFileSet.Walk NO_WALK = new PackFileSet.Walk(List.of(), List.of());
 
-    /** The one reader of a pack tree, over this store's format, bindings and companion rules (#554, S1). */
+    /**
+     * The one reader of a pack tree over this store's format, bindings and companion rules (#554, S1): what a test
+     * that carries a binding of its own reads a staged tree with before it asks {@link #loadStaged}.
+     */
     private final FileSystemPackInspector reader;
 
     /**
@@ -220,6 +207,15 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         this.bindings = List.copyOf(bindings);
         this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
         this.reader = new FileSystemPackInspector(companionRules.table(), strategy, this.bindings, companionRules);
+    }
+
+    /**
+     * The one reader over this store's format, bindings and companion rules.
+     *
+     * @return the reader
+     */
+    FileSystemPackInspector reader() {
+        return reader;
     }
 
     /**
@@ -266,8 +262,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         if (!(read.assembly() instanceof Assembly.Assembled held)) {
             throw refusalOf(read);
         }
-        List<ExcludedFile> notHeld = notHeldOf(FileSystemPackInspector.notHeld(
-                packDir, name, walk, companionRules.table(), FileSystemPackInspector.unnamedPolicy(held.descriptor())));
+        List<NotHeldFile> notHeld = FileSystemPackInspector.notHeld(
+                packDir, name, walk, companionRules.table(), FileSystemPackInspector.unnamedPolicy(held.descriptor()));
         return new LoadedPack(
                 PackAssembly.build(held),
                 read.layout(),
@@ -286,174 +282,32 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         throw new IllegalStateException("the store's read did not refuse the pack");
     }
 
-    private static List<ExcludedFile> notHeldOf(List<NotHeldFile> files) {
-        return files.stream()
-                .map(file -> new ExcludedFile(file.path(), file.kind(), file.reason()))
-                .toList();
-    }
-
     /**
-     * Reads a staged tree for a registration, refusing everything that makes the upload wrong with
-     * {@code validation_failed} (IC-04 step 2): what {@link #load} refuses ({@code pack_unreadable}, a graph that breaks
-     * its schema, an aggregate invariant) and what it tolerates, which a registration may not: a read violation, an
-     * orphan prompt fragment, and a {@value RelationshipShard#SHARD_PATH} without the registration stamp, which is a
-     * reserved shard. Each fault is a violation of the refusal, so an author sees every one at once, a graph document
-     * that breaks its schema included: each of its faults is a {@code drg_schema_error} violation at its pack-relative
-     * file, not a refusal on the first (operator ruling D-1). The order is deterministic: the graph faults first, in path
-     * order (the load's own first refusal, now listed with the rest), then the pack's read and rule violations, the
-     * orphan fragments in path order, and the reserved shard last. When the aggregate itself cannot be built, the
-     * refusal at {@code pack} follows the graph faults already read. A file nothing models is no fault (operator ruling
-     * Q1, #554): like an excluded file it is not held, and the accepted tree reports it as a {@code file_not_held}
-     * warning. With no fault left, the manifest's membership is judged.
+     * Assembles a staged tree from the one read the registration judged (#554, S1, FR-006, T049): the aggregate through
+     * {@link PackAssembly#build} from the readout's assembly input alone, its composition facts and the digest of each
+     * artifact. It reads nothing and judges nothing: the registration refused the upload on the readout's rationale
+     * ({@code StorageRulesets.verdict}) before it asks, and a read whose rationale passed holds the whole assembly input.
      */
     @Override
-    public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
-        Path directory = staged.directory().toAbsolutePath().normalize();
-        PackIdentifier key =
-                new PackIdentifier(directory.getFileName() == null ? "pack" : String.valueOf(directory.getFileName()));
-        // The one read (#554, S1, T028): the census and the assembly input come from the same walk.
-        TreeRead tree = reader.readTree(new PackRoot(key.value(), Optional.empty(), directory.toString()));
-        Assembly.Assembled held = switch (tree.contents().assembly()) {
-            case Assembly.Assembled assembled -> assembled;
-            case Assembly.Refused refused -> throw refusedAsInvalid(refused);
-            case Assembly.None none -> throw new IllegalStateException("the one read gave no assembly input");
-        };
-        List<RefusalViolation> violations = new ArrayList<>(graphViolations(held.graphFaults()));
-        held.violations()
-                .forEach(violation -> violations.add(
-                        violationOf(violation.file(), violation.kind().value(), violation.reason())));
-        List<String> unreported = unreportedFiles(held.untaken(), held.violations());
-        Map<String, PackElementViolation> orphans = orphanFragments(unreported);
-        unreported.stream()
-                .map(orphans::get)
-                .filter(Objects::nonNull)
-                .forEach(orphan ->
-                        violations.add(violationOf(orphan.file(), orphan.kind().value(), orphan.reason())));
-        TreeCensus census = tree.census();
-        violations.addAll(storageFaults(census, violations.isEmpty()));
-        if (!violations.isEmpty()) {
-            throw CharterRefusal.withViolations(
-                    RefusalCode.VALIDATION_FAILED,
-                    "The pack cannot be registered: " + violations.size() + " fault(s), the first at "
-                            + violations.getFirst().pointer() + ".",
-                    violations);
+    public WholePackWriteStore.Contents loadStaged(PackReadout read) {
+        if (!(read.contents().assembly() instanceof Assembly.Assembled held)) {
+            throw new IllegalArgumentException(
+                    "the read of " + read.contents().root().name() + " holds no assembly input; judge it first");
         }
-        try {
-            return contentsOf(key, held, notHeldOf(census.notHeld()));
-        } catch (CharterRefusal refusal) {
-            // A file the reading of the facts cannot take is a fault of the upload, a 422, not a 500.
-            if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
-                throw refusal;
-            }
-            String detail = String.valueOf(refusal.getMessage());
-            throw CharterRefusal.withViolations(
-                    RefusalCode.VALIDATION_FAILED,
-                    "The pack cannot be registered: " + detail,
-                    List.of(violationOf("pack", StorageCodes.UNREADABLE.value(), detail)));
-        }
+        return contentsOf(new PackIdentifier(read.contents().root().name()), held);
     }
 
     /**
-     * The storage edge's own faults of a staged tree, from the census, in registration's order: a reserved shard no
-     * registration wrote, a manifest that is not a regular file, and, on a tree with no other fault ({@code clean}),
-     * the manifest's membership (#110: judged only then, as an artifact refused elsewhere would read as left out).
-     */
-    private static List<RefusalViolation> storageFaults(TreeCensus census, boolean clean) {
-        List<RefusalViolation> faults = new ArrayList<>();
-        if (census.reservedShard() == TreeCensus.ReservedShard.UNSTAMPED) {
-            faults.add(violationOf(
-                    RelationshipShard.SHARD_PATH, StorageCodes.RESERVED_SHARD.value(), RelationshipShard.RESERVED));
-        }
-        if (census.manifest().present() && !census.manifest().regular()) {
-            // #110: the registration writes the manifest here, so a directory or a link in its place is refused.
-            faults.add(violationOf(
-                    PackFileSet.MANIFEST, StorageCodes.UNREADABLE.value(), "the manifest is not a regular file"));
-        }
-        if (clean && faults.isEmpty() && census.manifest().regular()) {
-            census.manifest()
-                    .listed()
-                    .ifPresent(listed -> ManifestRules.mismatch(
-                                    listed, census.manifest().derived().orElseThrow())
-                            .forEach(reason -> faults.add(violationOf(
-                                    PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
-        }
-        return faults;
-    }
-
-    /**
-     * A load refusal of the pack as a whole, in an upload the author's fault: {@code validation_failed}, the graph faults
-     * read before it first, then the refusal at {@code pack.yaml} when it is the descriptor's (#554, R2 rows 22 to 24),
-     * else at {@code pack}: a root that cannot be read (F4), or an aggregate invariant.
-     */
-    private static CharterRefusal refusedAsInvalid(Assembly.Refused refused) {
-        List<RefusalViolation> violations = new ArrayList<>(graphViolations(refused.graphFaults()));
-        String pointer = refused.atDescriptor() ? PackFileSet.PACK_YAML : "pack";
-        violations.add(violationOf(pointer, refused.code().token(), refused.message()));
-        return CharterRefusal.withViolations(
-                RefusalCode.VALIDATION_FAILED, "The pack cannot be registered: " + refused.message(), violations);
-    }
-
-    /**
-     * The untaken files (a rule maps them, the load did not take them) that no violation of the pack already accounts
-     * for: one fault, one violation. A file the store refused with a violation of its own is not judged again here. An
-     * enhancement file the store refuses or withholds is outside the model, so it is untaken, and so are the fragments
-     * beside it; but the fault is already reported at the enhancement, so neither the file nor the fragments of its
-     * directory are judged again as orphans. A fragment beside an enhancement that is held stays listed, so that an
-     * orphan among them is refused.
-     */
-    private static List<String> unreportedFiles(List<String> untaken, List<PackElementViolation> reported) {
-        Set<String> reportedFiles = new HashSet<>();
-        reported.forEach(violation -> reportedFiles.add(violation.file()));
-        Set<String> refusedDirectories = new HashSet<>();
-        for (String file : untaken) {
-            if (file.endsWith(ENHANCEMENT_SUFFIX) && reportedFiles.contains(file)) {
-                refusedDirectories.add(file.substring(0, file.lastIndexOf('/') + 1));
-            }
-        }
-        return untaken.stream()
-                .filter(file -> !reportedFiles.contains(file))
-                .filter(file -> !(FRAGMENT_FILE.matcher(file).matches()
-                        && refusedDirectories.contains(file.substring(0, file.lastIndexOf('/') + 1))))
-                .toList();
-    }
-
-    /**
-     * The untaken prompt fragments that are orphans (D11): named by no held enhancement, so refused here under
-     * {@code prompt_fragment_invalid} at the fragment, and in validate mode. A fragment in a directory holding an
-     * enhancement that is not held (refused by the store, or withheld as a repeated id) is no orphan, and with the
-     * enhancement's own fault already reported it is not listed at all ({@link #unreportedFiles}) (A4). An
-     * enhancement that only has a rule fault is held and excuses nothing (fifth analysis A5). The rule and its text are
-     * the step enhancement rules'.
-     */
-    private static Map<String, PackElementViolation> orphanFragments(List<String> untaken) {
-        Set<String> fragments = new HashSet<>();
-        Set<String> notHeld = new HashSet<>();
-        for (String file : untaken) {
-            if (FRAGMENT_FILE.matcher(file).matches()) {
-                fragments.add(file);
-            } else if (file.endsWith(ENHANCEMENT_SUFFIX)) {
-                notHeld.add(file);
-            }
-        }
-        Map<String, PackElementViolation> orphans = new HashMap<>();
-        PackPolicy.stepEnhancementViolations(
-                        new StepEnhancementFacts(List.of(), List.of(), fragments, notHeld, List.of()))
-                .forEach(violation -> orphans.put(violation.file(), violation));
-        return orphans;
-    }
-
-    /**
-     * Removes the files {@code contents} reports as not held ({@link WholePackWriteStore.Contents#notHeld}) from the
-     * staged tree, and the directories that leave
-     * empty, so the revision and the commit that follow see the tree the service will hold (FR-005, FR-021). It touches
-     * the staging directory only: it never reads a path from the pack, and a path that leaves the directory, or is not a
+     * Removes the files the one read lists as not held ({@link PackReadout#notHeld()}) from the staged tree, and the
+     * directories that leave empty, so the revision and the commit that follow see the tree the service will hold
+     * (FR-005, FR-021). It touches the staging directory only: it never reads a path from the pack, and a path that leaves the directory, or is not a
      * regular file, is left alone.
      */
     @Override
-    public void removeNotHeld(StagedPack staged, WholePackWriteStore.Contents contents) {
+    public void removeNotHeld(StagedPack staged, List<NotHeldFile> notHeld) {
         Path root = staged.directory().toAbsolutePath().normalize();
-        for (ExcludedFile notHeld : contents.notHeld()) {
-            Path file = root.resolve(notHeld.file()).normalize();
+        for (NotHeldFile each : notHeld) {
+            Path file = root.resolve(each.path()).normalize();
             // A symlink or an entry outside the root is skipped: the census buckets such entries first, so none is
             // listed.
             if (!file.startsWith(root) || file.equals(root)) {
@@ -467,7 +321,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             } catch (IOException e) {
                 throw new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE,
-                        "The staged file " + notHeld.file() + " could not be removed before the commit",
+                        "The staged file " + each.path() + " could not be removed before the commit",
                         e);
             }
         }
@@ -516,7 +370,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         if (!(read.assembly() instanceof Assembly.Assembled held)) {
             throw refusalOf(read);
         }
-        return contentsOf(new PackIdentifier(name), held, List.of());
+        return contentsOf(new PackIdentifier(name), held);
     }
 
     /** What a salvage has read so far. */
@@ -713,37 +567,17 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return name.endsWith(suffix) ? name.substring(0, name.length() - suffix.length()) : name;
     }
 
-    /** A {@code drg_schema_error} violation per unreadable graph document, at its file, in path order. */
-    private static List<RefusalViolation> graphViolations(List<PackElementViolation> faults) {
-        return faults.stream()
-                .sorted(Comparator.comparing(PackElementViolation::file))
-                .map(fault -> violationOf(fault.file(), PackCodes.DRG_SCHEMA_ERROR.value(), fault.reason()))
-                .toList();
-    }
-
     /**
-     * A violation of the refusal, in the one wording ({@link PackCodes#detail}): the detail names the file as the
-     * pointer does, so a client that shows only the detail still says where. Every code is a typed code's token.
+     * What a tree holds: the aggregate, built from the read's assembly input alone ({@link PackAssembly#build}), the
+     * facts the compose reads, and each artifact's digest. The facts were built from the same read
+     * ({@link CompositionFactsBuilder#heldFacts}).
      */
-    private static RefusalViolation violationOf(String pointer, String code, String detail) {
-        return new RefusalViolation(pointer, code, PackCodes.detail(pointer, detail));
-    }
-
-    /**
-     * What the registration judges of a loaded tree: the aggregate, built from the read's assembly input alone
-     * ({@link PackAssembly#build}), the facts the compose reads, each artifact's digest, and the files it does not
-     * hold, each also a {@code file_not_held} warning after the load's own. The facts were built from the same read,
-     * and are judged as the composing read judges a stored pack ({@link CompositionFactsBuilder#requireReadable}).
-     */
-    private WholePackWriteStore.Contents contentsOf(
-            PackIdentifier key, Assembly.Assembled held, List<ExcludedFile> notHeld) {
+    private WholePackWriteStore.Contents contentsOf(PackIdentifier key, Assembly.Assembled held) {
         PackCompositionFacts facts = CompositionFactsBuilder.heldFacts(key, held);
-        List<PackFinding> warnings = new ArrayList<>(held.warnings());
-        notHeld.forEach(file -> warnings.add(file.notHeld()));
         Pack pack = PackAssembly.build(held);
         Map<Urn, String> digests = new HashMap<>();
         pack.artifacts().forEach(artifact -> digests.put(artifact.urn(), digestOf(artifact)));
-        return new WholePackWriteStore.Contents(pack, facts, digests, warnings, notHeld);
+        return new WholePackWriteStore.Contents(pack, facts, digests);
     }
 
     /** A digest of one file-backed artifact as {@link #write} would write it, its companions included. */

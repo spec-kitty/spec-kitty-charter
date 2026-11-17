@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
@@ -34,10 +33,16 @@ class OneReadTest {
     @DisplayName("a registration's load reads the staged tree once, its composition facts included")
     void theRegistrationLoadReadsOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
+        long walks = PackFileSet.walks();
+        long runs = StoreRead.runs();
         long before = FilesystemPackStore.reads();
 
-        WholePackWriteStore.Contents contents = new WholePackStore(STRATEGY).loadStaged(new StagedPack(pack));
+        WholePackWriteStore.Contents contents = StagedReads.contents(new WholePackStore(STRATEGY), pack);
 
+        assertThat(PackFileSet.walks() - walks)
+                .as("one walk of the staged tree")
+                .isOne();
+        assertThat(StoreRead.runs() - runs).as("one run of the store half").isOne();
         assertThat(FilesystemPackStore.reads() - before).isOne();
         assertThat(contents.facts().defined()).isNotEmpty();
     }
