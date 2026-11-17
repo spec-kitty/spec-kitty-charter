@@ -181,6 +181,57 @@ WP04, WP05 and WP08 see it.
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
 
+## Outcomes of WP07
+
+WP07 wrote the rest of the content rules, the storage rules and the compositions, made the one reader implement
+`PackReading` with the storage edge's verdict, and wrote `PackRefusals`' registration mapping. Nothing is switched:
+registration still judges through `WholePackStore.loadStaged` (WP12), and validate mode through `PackPolicy.judge`
+(WP09). The golden snapshot does not move.
+
+- **`PackRulesets.content()`** runs `GraphRules` (`GraphBinding`'s faults, and slice F's endpoint bridge, which
+  `RelationshipEndpointRule` feeds), `ArtifactRules`, `AssetRules`, `StepRules`, `PromptSlotRules`, the step
+  enhancement half of `FragmentRules`, `MissionTypeRules`, then `FragmentRules`' orphans, in the order a registration
+  lists them. It names no glossary and no asset-escape rule (WP06 D1, D2). `FragmentRules` is `StepEnhancementRules`
+  moved into `packs.domain.rules`, one `Reason` per fault.
+- **The edges-read gate is one function,** `GraphRules.graphsRead`: no graph document the read marked unreadable. The
+  load's gate (`graphs.violations()` not empty) holds the same documents, since the read marks a fragment whose
+  `body_path` leaves the pack unreadable as the store refuses it.
+- **The reserved shard (row 28) is the census's fact.** The reader reads an unstamped `registered.graph.yaml` as any
+  root shard, as the store does, and `ReservedShardRules` states the fault, once. Validate mode reports it as before;
+  it now judges such a shard's edges too, as registration does (no golden subject).
+- **The store's refusal of the pack as a whole is a storage rule,** `AssemblyRules`: the read's `Assembly.Refused` fact,
+  unless a read fault states it already (a descriptor or a root the reader could not read). A missing `pack.yaml`
+  (row 24) answers `pack_unreadable` at `pack.yaml`; the aggregate's own breach (row 26) answers its own token,
+  `StorageCodes.ASSEMBLY_REFUSED` (`validation_failed`), at `pack`.
+- **Registration's wire order** is `StorageRulesets.inRegistrationOrder`: the graph faults by path, the pack's refusal,
+  the read and rule faults as given (the read faults first, so a binding-level fault leads a rule fault), then the
+  reserved shard, a manifest that is not a regular file and the membership; the warnings as given, then the files not
+  held by path. `PackRefusals` keeps that order and names no storage code.
+- **Golden equivalence.** Over the 108 golden subjects, `PackRefusals` over the readout's verdict answers the
+  registration's recorded answer exactly for 65. The other 43 are listed in `PackRefusalsTest`: the S2 rows (14, 15
+  and 38), where registration gains `duplicate_artifact_id` at an asset sidecar and the reader's format checks, and 38 rows
+  where today's store refuses the pack whole on its descriptor (rows 22 to 24).
+- **Open for the orchestrator (before WP12): the descriptor rows.** Today a pack with no `pack.yaml`, or one the store
+  cannot read, is refused with that one violation and the problem detail `The pack cannot be registered: <fault>`. The
+  verdict is collect-all, as validate mode needs it to be (it judges the same verdict from WP09, and a bare plant keeps
+  its own findings), so on the verdict registration answers the same fault after the graph faults and before the
+  pack's other faults, under `N fault(s), the first at <file>.` 38 registration rows change when WP12 switches;
+  NFR-002's list does not name this yet.
+- **Open for WP12: the store half's own faults.** The faults only the store's assembly meets (a value-object breach,
+  a reference that does not close, a template read twice, the named policy file: rows 16 to 18 and 32) stay in
+  `Assembly.Assembled.violations()` and are not in the verdict. Joining them with the read faults reports some faults
+  twice, because the reader states them in other words: row 19's companion placement, and the mission type checks
+  (`names templates/x.md (named by step 'y'): missing` against `templates/x.md (named by step 'y'): missing`; a step
+  standing twice against the aggregate's constraint breach). WP12 owns row 19's answer and deletes `LoadChecks`, so it
+  makes these faults read faults, once.
+- **Validate mode, staged until WP09.** `PackPolicy.judge` takes from the verdict what it does not judge itself: the
+  read faults and the storage faults, less the content findings and the files not held (it still judges both) and less
+  a missing descriptor's refusal (row 24 stays WP09's). So validate mode gains rows 29, 30 and 26 now, with no golden
+  subject, and reports nothing twice.
+- **PIT.** The narrowed run on `packs.domain.rules`, `packs.infra.storage.rules` and `PackRefusals` kills 423 of 447
+  mutants (94.6 %). Every new class kills all its mutants; what is left is `GraphBinding`, `Precedence` and `Wording`
+  (WP03's), and `PackRefusals`' read-service mapping, whose tests are outside the narrowed test set.
+
 ## Outcomes of WP06
 
 WP06 wrote the first content rules in `packs.domain.rules` (`StepRules`, `ArtifactRules`, `AssetRules`,

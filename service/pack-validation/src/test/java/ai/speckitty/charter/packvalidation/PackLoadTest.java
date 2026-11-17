@@ -36,7 +36,8 @@ class PackLoadTest {
 
         assertThat(contents.root()).isEqualTo(root(name));
         assertThat(contents.artifacts()).isNotEmpty();
-        // The classification and the storage edge's verdict are the readout's (#554, S6); the verdict warns of the files
+        // The classification and the storage edge's verdict are the readout's (#554, S6); the verdict warns of the
+        // files
         // an example pack does not hold, and holds no violation.
         PackReadout readout = new FileSystemPackInspector().read(root(name));
         assertThat(readout.files()).isNotEmpty();
