@@ -160,8 +160,19 @@ class FileSystemPackInspectorTest {
         write(dir, "b.graph.yaml", "surprise: true\n");
         write(dir, "drg/fragment.yaml", "- a\n");
 
-        PackContents contents = full(dir).contents();
+        TreeRead tree = full(dir);
+        PackContents contents = tree.contents();
 
+        // WP09 review: an unparseable root shard is one read fault, never stated twice.
+        assertThat(tree.readFaults())
+                .extracting(fault -> fault.location().file())
+                .filteredOn(file -> file.equals("a.graph.yaml"))
+                .hasSize(1);
+        assertThat(tree.readFaults())
+                .filteredOn(fault -> fault.location().file().equals("b.graph.yaml"))
+                .as("a schema breach is one fault per violation")
+                .isNotEmpty()
+                .allSatisfy(fault -> assertThat(fault.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR));
         assertThat(unreadable(contents.descriptor()).parse()).isNotNull();
         assertThat(unreadable(contents.shards().get(0)).file()).isEqualTo("a.graph.yaml");
         assertThat(unreadable(contents.shards().get(0)).parse()).isNotNull();
@@ -462,6 +473,67 @@ class FileSystemPackInspectorTest {
                 .filteredOn(file -> file.file().endsWith(".md"))
                 .containsExactlyInAnyOrder(
                         excluded("notes/loose.md", "**/*.md"), excluded("toolguides/README.md", "**/*.md"));
+    }
+
+    /** A toolguide that names {@code toolguides/<id>.guide.md}, so the read takes the guide as its companion. */
+    private static void toolguide(Path dir, String id) throws IOException {
+        write(dir, "toolguides/" + id + ".toolguide.yaml", """
+                id: %s
+                schema_version: '1.0'
+                tool: make
+                title: Make
+                guide_path: %s.guide.md
+                summary: S.
+                commands:
+                - make
+                last_updated: '2026-07-28'
+                """.formatted(id, id));
+    }
+
+    @Test
+    void aCompanionTheMarkdownCodecRefusesIsOneCompanionFaultAtTheCompanion(@TempDir Path dir) throws IOException {
+        toolguide(dir, "fenced");
+        write(dir, "toolguides/fenced.guide.md", "# Use make\n\n## Overview\n\n```\nunclosed\n");
+
+        // #554, WP04 review NIT: the codec's refusal is the companion's own fault, under companion, naming the line.
+        assertThat(full(dir).readFaults())
+                .filteredOn(fault -> fault.location().file().equals("toolguides/fenced.guide.md"))
+                .singleElement()
+                .satisfies(fault -> {
+                    assertThat(fault.code()).isEqualTo(StorageCodes.COMPANION);
+                    assertThat(fault.detail()).contains("line 5: unclosed fence opened at line 5");
+                });
+    }
+
+    @Test
+    void aCompanionThatIsNotUtf8IsOneCompanionFaultAndAFragmentThatIsNotUtf8IsPromptFragmentInvalid(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        Files.write(dir.resolve(fragment("spdd-specify")), new byte[] {'#', ' ', (byte) 0xC3, '\n'});
+
+        // #554, WP04 review NIT: bytes that are not UTF-8 carry no code of their own; the read gives the companion's
+        // code (coded()), prompt_fragment_invalid for a prompt fragment, which the read always reads.
+        assertThat(full(dir).readFaults())
+                .filteredOn(fault -> fault.location().file().equals(fragment("spdd-specify")))
+                .extracting(Reason::code, Reason::detail)
+                .containsExactly(tuple(
+                        PackCodes.PROMPT_FRAGMENT_INVALID,
+                        fragment("spdd-specify") + ": " + FilesystemPackStore.NOT_UTF8));
+
+        // Any other companion that is not UTF-8 is not held, so the read does not read it: the store half meets it,
+        // and answers one companion fault at the companion (R2 row 19).
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        toolguide(dir, "latin");
+        Files.write(dir.resolve("toolguides/latin.guide.md"), new byte[] {'#', ' ', (byte) 0xC3, '\n'});
+
+        assertThat(verdict(dir))
+                .filteredOn(finding -> finding.location().file().equals("toolguides/latin.guide.md"))
+                .filteredOn(finding -> finding.code().equals(StorageCodes.COMPANION))
+                .extracting(Reason::detail)
+                .containsExactly("is not valid UTF-8");
     }
 
     private static final String ENHANCEMENT_DIR = "missions/software-dev/enhancements/";
