@@ -18,10 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * One read per surface call (#554, S1, T028, NFR-004): a counting seam on the store's whole read
- * ({@link FilesystemPackStore#reads()}) sees one read of the staged tree per registration load and one per composing
- * read, and the composition facts are built from that read without reading again. The second read the registration
- * made through {@code contentsOf} and a single-pack {@link DomainRepositoryService} is gone.
+ * One read per surface call (#554, S1, T028, NFR-004): counting seams on the tree walk ({@link PackFileSet#walks()})
+ * and on the store's whole read ({@link FilesystemPackStore#reads()}) see one walk and one read of the staged tree per
+ * registration load, the census, the validate facts and the assembly input all from that walk, and the composition
+ * facts built from that read without reading again. The second read the registration made through
+ * {@code contentsOf} and a single-pack {@link DomainRepositoryService} is gone.
  */
 @DisplayName("one read of a pack per surface call (#554, T028)")
 class OneReadTest {
@@ -41,13 +42,15 @@ class OneReadTest {
     }
 
     @Test
-    @DisplayName("a stored pack's load reads it once, its composition facts included")
+    @DisplayName("a stored pack's load walks and reads it once, its composition facts included")
     void theStoredLoadReadsOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        long walks = PackFileSet.walks();
         long before = FilesystemPackStore.reads();
 
         new WholePackStore(STRATEGY).loadStored(pack);
 
+        assertThat(PackFileSet.walks() - walks).isOne();
         assertThat(FilesystemPackStore.reads() - before).isOne();
     }
 
@@ -58,12 +61,29 @@ class OneReadTest {
         DomainRepositoryService service = new DomainRepositoryService(
                 () -> List.of(new PackLocation(ExamplePacks.BUILT_IN, ExamplePacks.level(ExamplePacks.BUILT_IN), pack)),
                 STRATEGY);
+        long walks = PackFileSet.walks();
         long before = FilesystemPackStore.reads();
 
         PackCompositionFacts facts = service.compositionFacts(new PackIdentifier(ExamplePacks.BUILT_IN));
 
+        assertThat(PackFileSet.walks() - walks).isOne();
         assertThat(FilesystemPackStore.reads() - before).isOne();
         assertThat(facts.defined()).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("the one reader walks the tree once: the validate facts, the census and the assembly input share it")
+    void theOneReaderWalksOnce(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        long walks = PackFileSet.walks();
+        long before = FilesystemPackStore.reads();
+
+        new FileSystemPackInspector()
+                .readTree(new ai.speckitty.charter.packs.domain.PackRoot(
+                        "built-in", java.util.Optional.empty(), pack.toString()));
+
+        assertThat(PackFileSet.walks() - walks).isOne();
+        assertThat(FilesystemPackStore.reads() - before).isOne();
     }
 
     @Test

@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.ClassifiedFile;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -1704,5 +1705,111 @@ class FileSystemPackInspectorTest {
                         .place())
                 .as("a segment holding / or ~ is escaped in the pointer and restored from it (RFC 6901)")
                 .containsExactly("x/y", "~z", "0");
+    }
+
+    // ---- the A-M1 checklist: the load's faults are facts of the one read (#554, T025, T028) ---------------------
+
+    private static PackContents.Assembly.Assembled assembled(TreeRead read) {
+        if (read.contents().assembly() instanceof PackContents.Assembly.Assembled held) {
+            return held;
+        }
+        throw new AssertionError(
+                "expected the read's assembly input but was " + read.contents().assembly());
+    }
+
+    private static TreeRead builtIn(Path pack) {
+        return INSPECTOR.readTree(new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), pack.toString()));
+    }
+
+    @Test
+    void theReadCarriesTheWholeAssemblyInputAndTheAggregateIsBuiltFromItAlone(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+
+        PackContents.Assembly.Assembled held = assembled(builtIn(pack));
+        Pack built = PackAssembly.build(held);
+
+        assertThat(held.violations()).isEmpty();
+        assertThat(held.facts()).isPresent();
+        assertThat(held.digests()).hasSameSizeAs(held.artifacts()).isNotEmpty();
+        assertThat(held.policyText()).isPresent();
+        assertThat(built.artifacts())
+                .containsExactlyElementsOf(held.artifacts().stream()
+                        .map(PackContents.Assembly.Placed::artifact)
+                        .toList());
+        assertThat(built.id().value()).isEqualTo("01ARWG13C000000000000000FG");
+        assertThat(held.artifacts())
+                .allSatisfy(placed -> assertThat(pack.resolve(placed.file())).exists());
+    }
+
+    @Test
+    void aValueObjectBreachIsAFaultOfTheReadAtItsFile(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        write(pack, "presets/dup.yaml", """
+                schema_version: '1.0'
+                id: dup
+                description: D.
+                activated_directives:
+                - id: DIRECTIVE_001
+                - id: DIRECTIVE_001
+                  must_have: true
+                """);
+
+        assertThat(assembled(builtIn(pack)).violations()).singleElement().satisfies(fault -> {
+            assertThat(fault.file()).isEqualTo("presets/dup.yaml");
+            assertThat(fault.kind()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(fault.reason()).startsWith("Constraint breached: Preset 'dup'");
+        });
+    }
+
+    @Test
+    void aReferenceThatDoesNotCloseIsAFaultOfTheReadAtItsFile(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        Files.delete(pack.resolve("missions/software-dev/templates/research-template.md"));
+
+        assertThat(assembled(builtIn(pack)).violations())
+                .extracting(PackElementViolation::file, PackElementViolation::kind)
+                .contains(tuple(
+                        "missions/software-dev/software-dev.mission-type.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR));
+    }
+
+    @Test
+    void aMissingDescriptorIsTheReadsRefusalAtTheDescriptor(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        Files.delete(pack.resolve("pack.yaml"));
+
+        assertThat(builtIn(pack).contents().assembly())
+                .isInstanceOfSatisfying(PackContents.Assembly.Refused.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refused.atDescriptor()).isTrue();
+                    assertThat(refused.graphFaults()).isEmpty();
+                });
+    }
+
+    @Test
+    void anUnreadableNamedPolicyFileIsAFaultOfTheReadAfterTheAssemblys(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        write(pack, "policy.yaml", "schema_version: 1\npins: []\n");
+
+        PackContents.Assembly.Assembled held = assembled(builtIn(pack));
+
+        assertThat(held.violations()).singleElement().satisfies(fault -> {
+            assertThat(fault.file()).isEqualTo("policy.yaml");
+            assertThat(fault.kind()).isEqualTo(StorageCodes.UNREADABLE);
+            assertThat(fault.reason()).startsWith("named by mutability_policy, the file ");
+        });
+        assertThat(held.assembled()).as("it follows the assembly's own faults").isZero();
+        assertThat(held.policyText()).isEmpty();
+        assertThat(held.policyFault()).isPresent();
+    }
+
+    @Test
+    void anUnreadableGraphIsAFaultOfTheReadAndTheFactsAreNotBuilt(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        write(pack, "broken.graph.yaml", "nodes: [\n");
+
+        PackContents.Assembly.Assembled held = assembled(builtIn(pack));
+
+        assertThat(held.graphFaults()).extracting(PackElementViolation::file).containsExactly("broken.graph.yaml");
+        assertThat(held.facts()).isEmpty();
     }
 }

@@ -19,7 +19,6 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
-import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -28,7 +27,6 @@ import ai.speckitty.charter.packs.domain.PackDocumentRepository;
 import ai.speckitty.charter.packs.domain.PackDocumentText;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
-import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -526,7 +524,7 @@ public final class DomainRepositoryService
         try {
             return PolicyYaml.readNamed(resolved.directory, named.get()).source();
         } catch (PolicyYaml.Unreadable invalid) {
-            throw unreadablePolicy(pack, named.get(), String.valueOf(invalid.getMessage()));
+            throw CompositionFactsBuilder.unreadablePolicy(pack, named.get(), String.valueOf(invalid.getMessage()));
         }
     }
 
@@ -538,42 +536,8 @@ public final class DomainRepositoryService
     private static Pack readable(
             PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
         Pack assembled = assemble(pack, read, graphs);
-        requireReadable(pack, assembled.violations());
+        CompositionFactsBuilder.requireReadable(pack, assembled.violations());
         return assembled;
-    }
-
-    /**
-     * The composing read's mapping of the load's faults (#554, S4): the first, when there is one, refuses the pack
-     * {@code pack_unreadable}, naming its file; an edge its relation's endpoint table does not allow names the code
-     * {@value RelationshipEndpointRule#CODE} before its reason.
-     *
-     * @param pack the pack, as the refusal names it
-     * @param violations the assembly's violations, in the load's order
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when there is a violation
-     */
-    static void requireReadable(PackIdentifier pack, List<PackElementViolation> violations) {
-        if (!violations.isEmpty()) {
-            PackElementViolation first = violations.getFirst();
-            String reason = PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED.equals(first.kind())
-                    ? first.kind().value() + ": " + first.reason()
-                    : first.reason();
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE,
-                    "the file " + first.file() + " of " + pack.value() + " cannot be read: " + reason);
-        }
-    }
-
-    /**
-     * The refusal of a pack whose descriptor names a policy file that cannot be read (ADR-0063).
-     *
-     * @param pack the pack, as the refusal names it
-     * @param named the file the descriptor names
-     * @param why why the file cannot be read
-     * @return the refusal
-     */
-    static CharterRefusal unreadablePolicy(PackIdentifier pack, String named, String why) {
-        return new CharterRefusal(
-                RefusalCode.PACK_UNREADABLE, pack.value() + " names mutability_policy " + named + ", which " + why);
     }
 
     // ---- PackRepository --------------------------------------------------------------------

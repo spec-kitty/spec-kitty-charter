@@ -394,11 +394,37 @@ final class FilesystemPackStore {
         return read(id, kinds, readGraphs(id));
     }
 
-    private PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
+    /**
+     * {@link #read(PackIdentifier, List)} over graph documents the caller has already read, so one read parses them once.
+     *
+     * @param id the pack
+     * @param kinds the bindings to read, in order
+     * @param graphs the pack's graph documents, as {@link #readGraphs} read them for this read
+     * @return as {@link #read(PackIdentifier, List)} answers
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
+        return read(id, kinds, graphs, null);
+    }
+
+    /**
+     * {@link #read(PackIdentifier, List, GraphRead)} over a walk of the pack already made, so the one read walks the
+     * tree once (#554, T028).
+     *
+     * @param id the pack
+     * @param kinds the bindings to read, in order
+     * @param graphs the pack's graph documents
+     * @param walk the pack's walk; {@code null} walks it here
+     * @return as {@link #read(PackIdentifier, List)} answers
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs, PackFileSet.@Nullable Walk walk) {
         READS.increment();
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
-        PackFileSet.Listing listing = PackFileSet.listing(directory, companionRules.table());
+        PackFileSet.Listing listing = walk == null
+                ? PackFileSet.listing(directory, companionRules.table())
+                : PackFileSet.listing(directory, companionRules.table(), walk);
         Map<ArtifactKind, List<Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
         List<PackElementViolation> violations = new ArrayList<>(retiredViolations(listing));
         List<AssetFile> assetFiles = new ArrayList<>();

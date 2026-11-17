@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
+import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
@@ -40,7 +41,6 @@ import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
@@ -60,7 +60,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -155,8 +154,14 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
 
     private final PackFileKind table;
 
-    /** The store's format, which reads the manifest's lists and derives the held ones (T024). */
-    private final SerializationStrategy strategy = new YamlSerializationStrategy();
+    /** The store's format: the read's DSO half and the manifest's lists are read in it. */
+    private final SerializationStrategy strategy;
+
+    /** The bindings the read's DSO half reads with. */
+    private final List<KindBinding<?, ?>> bindings;
+
+    /** The companion rules the read's DSO half reads with. */
+    private final Companions.Rules companionRules;
 
     /** An inspector over the bundled file-kinds table; it keeps no state. */
     public FileSystemPackInspector() {
@@ -170,7 +175,31 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
      * @param table the file-kinds table
      */
     FileSystemPackInspector(PackFileKind table) {
+        this(
+                table,
+                new YamlSerializationStrategy(),
+                KindBindings.all(),
+                new Companions.Rules(table, PackSchemas::bundled));
+    }
+
+    /**
+     * The reader a store composes, over its own format, bindings and companion rules, so the one read is the store's
+     * read (#554, S1).
+     *
+     * @param table the file-kinds table
+     * @param strategy the serialization format
+     * @param bindings the bindings to read with
+     * @param companionRules the companion rules
+     */
+    FileSystemPackInspector(
+            PackFileKind table,
+            SerializationStrategy strategy,
+            List<KindBinding<?, ?>> bindings,
+            Companions.Rules companionRules) {
         this.table = Objects.requireNonNull(table, "table");
+        this.strategy = Objects.requireNonNull(strategy, "strategy");
+        this.bindings = List.copyOf(bindings);
+        this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
     }
 
     /**
@@ -220,7 +249,10 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
         Path directory = Path.of(root.locator()).toAbsolutePath().normalize();
         String name = root.name();
         if (!Files.isDirectory(directory)) {
-            return unreadableRoot(root, "pack " + name + " is not a directory");
+            return unreadableRoot(
+                    root,
+                    "pack " + name + " is not a directory",
+                    storeRead(directory, name, new PackFileSet.Walk(List.of(), List.of())));
         }
         try {
             return readDirectory(root, directory, name);
@@ -228,12 +260,26 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
             if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
                 throw refusal;
             }
-            return unreadableRoot(root, String.valueOf(refusal.getMessage()));
+            String detail = String.valueOf(refusal.getMessage());
+            return unreadableRoot(
+                    root,
+                    detail,
+                    new StoreRead(
+                            new Assembly.Refused(List.of(), RefusalCode.PACK_UNREADABLE, detail, false),
+                            new PackLayout(Map.of()),
+                            List.of(),
+                            Optional.empty(),
+                            Optional.empty()));
         }
     }
 
+    /** The read's DSO half ({@link StoreRead}) over this reader's format, bindings and companion rules. */
+    private StoreRead storeRead(Path directory, String name, PackFileSet.Walk walk) {
+        return StoreRead.of(directory, name, walk, strategy, bindings, companionRules);
+    }
+
     /** The read of a root that cannot be read: no fact, an empty census, and the one fault at {@value #ROOT}. */
-    private static TreeRead unreadableRoot(PackRoot root, String detail) {
+    private static TreeRead unreadableRoot(PackRoot root, String detail, StoreRead store) {
         PackContents nothing = new PackContents(
                 root,
                 new FileRead.Absent<>(PackFileSet.PACK_YAML),
@@ -243,7 +289,8 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
-                List.of());
+                List.of(),
+                store.assembly());
         return new TreeRead(
                 nothing,
                 TreeCensus.empty(),
@@ -266,8 +313,11 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
         if (Files.isRegularFile(fragmentYaml)) {
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
+        // One walk of the tree: the census and the DSO half read the files it lists (#554, T028).
+        PackFileSet.Walk walk = PackFileSet.walk(directory, name);
+        StoreRead store = storeRead(directory, name, walk);
         FullRead full = new FullRead(
-                directory, name, shards.stream().map(FileRead::file).toList(), table, unnamedPolicy(descriptor));
+                directory, name, shards.stream().map(FileRead::file).toList(), table, unnamedPolicy(descriptor), walk);
         full.readAll();
         PackContents contents = new PackContents(
                 root,
@@ -278,9 +328,10 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
                 full.assets,
                 full.stepEnhancementFacts(edgesOf(shards, fragment, ownName(descriptor, name))),
                 full.promptSlots,
-                full.missionTypes);
+                full.missionTypes,
+                store.assembly());
         TreeCensus census = new TreeCensus(
-                full.files, full.notHeld, manifest(directory, full.manifestRead), reservedShard(directory));
+                full.files, full.notHeld, manifest(directory, full.manifestRead, store), reservedShard(directory));
         return new TreeRead(contents, census, readFaults(name, descriptor, shards, fragment, full));
     }
 
@@ -290,12 +341,21 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
      * descriptor cannot be read, which file it names is unknown, and the file is held and judged.
      */
     private static boolean unnamedPolicy(FileRead<PackDescriptor> descriptor) {
-        return descriptor instanceof FileRead.Read<PackDescriptor> read
-                && !read.value()
-                        .paths()
-                        .mutabilityPolicy()
-                        .filter(PolicyYaml.FILE::equals)
-                        .isPresent();
+        return descriptor instanceof FileRead.Read<PackDescriptor> read && unnamedPolicy(read.value());
+    }
+
+    /**
+     * Whether {@code policy.yaml} is a file this descriptor does not name (#554, open case 9).
+     *
+     * @param descriptor the pack's descriptor
+     * @return true when its {@code mutability_policy} names no {@code policy.yaml}
+     */
+    static boolean unnamedPolicy(PackDescriptor descriptor) {
+        return !descriptor
+                .paths()
+                .mutabilityPolicy()
+                .filter(PolicyYaml.FILE::equals)
+                .isPresent();
     }
 
     /**
@@ -359,7 +419,7 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
      * the lists derived from what the pack holds ({@link PackManifestDerivation}, T024), so the membership rule compares
      * two facts. A pack the store cannot load has no derived lists.
      */
-    private TreeCensus.Manifest manifest(Path directory, boolean readable) {
+    private TreeCensus.Manifest manifest(Path directory, boolean readable, StoreRead store) {
         Path file = directory.resolve(PackFileSet.MANIFEST);
         boolean present = Files.exists(file, LinkOption.NOFOLLOW_LINKS);
         if (!present) {
@@ -375,13 +435,10 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
             listed = Optional.of(ManifestMembership.entries(good.value()));
         }
         Optional<TreeCensus.Entries> derived = Optional.empty();
-        if (listed.isPresent()) {
-            try {
-                derived =
-                        Optional.of(ManifestMembership.entries(PackManifestDerivation.derivedAt(directory, strategy)));
-            } catch (CharterRefusal unloadable) {
-                // The store cannot load the pack: its own fault is reported where it is read, and nothing is derived.
-            }
+        if (listed.isPresent() && store.assembly() instanceof Assembly.Assembled held) {
+            // From the same read's assembly (T024): nothing is read again.
+            derived = Optional.of(ManifestMembership.entries(
+                    PackManifestDerivation.derived(PackAssembly.build(held), store.layout())));
         }
         return new TreeCensus.Manifest(present, regular, listed, derived);
     }
@@ -408,16 +465,18 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
      *
      * @param directory the pack directory
      * @param packName the pack's name, which a refusal to list it names
+     * @param walk the pack's walk: its files that are not themselves links are listed, and its listing is digested
      * @param table the file-kinds table
      * @param unnamedPolicy whether {@code policy.yaml} is a file the descriptor does not name
      * @return the files not held, each with its kind and reason
      */
-    static List<NotHeldFile> notHeld(Path directory, String packName, PackFileKind table, boolean unnamedPolicy) {
+    static List<NotHeldFile> notHeld(
+            Path directory, String packName, PackFileSet.Walk walk, PackFileKind table, boolean unnamedPolicy) {
         Path last = directory.toAbsolutePath().normalize().getFileName();
         String prefix = (last == null ? "pack" : last.toString()) + "/";
-        Set<String> held = Set.copyOf(PackFileSet.digested(directory, table));
+        Set<String> held = Set.copyOf(PackFileSet.digested(directory, table, walk));
         List<NotHeldFile> out = new ArrayList<>();
-        for (String file : unlinkedFiles(directory, packName)) {
+        for (String file : walk.unlinked()) {
             if (unnamedPolicy && PolicyYaml.FILE.equals(file)) {
                 out.add(NotHeldFile.unnamedPolicy(file));
                 continue;
@@ -571,15 +630,23 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
         private final List<SidecarPayloads.Sidecar> sidecars = new ArrayList<>();
         private final PackFileKind table;
         private final boolean unnamedPolicy;
+        private final PackFileSet.Walk walk;
 
         /** Whether the read found the manifest valid, so the census reads its lists. */
         boolean manifestRead;
 
-        FullRead(Path directory, String name, List<String> shards, PackFileKind table, boolean unnamedPolicy) {
+        FullRead(
+                Path directory,
+                String name,
+                List<String> shards,
+                PackFileKind table,
+                boolean unnamedPolicy,
+                PackFileSet.Walk walk) {
             this.directory = directory;
             this.name = name;
             this.table = table;
             this.unnamedPolicy = unnamedPolicy;
+            this.walk = walk;
             loadPath.add(PackFileSet.PACK_YAML);
             loadPath.add(PackFileSet.FRAGMENT);
             loadPath.addAll(shards);
@@ -591,18 +658,18 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
             String prefix = (last == null ? "pack" : last.toString()) + "/";
             readYamlFiles(prefix);
             readMarkdownFiles(prefix);
-            PackFileSet.Listing listing = PackFileSet.listing(directory, table);
+            PackFileSet.Listing listing = PackFileSet.listing(directory, table, walk);
             listPayloads(listing, prefix);
             refuseSidecarsWithoutPayload(listing);
             listing.retired()
                     .forEach((file, reason) -> unreadable.add(new FileRead.Unreadable<>(
                             file, ParseFailure.refused(file, reason, StorageCodes.RETIRED), List.of())));
-            notHeld.addAll(FileSystemPackInspector.notHeld(directory, name, table, unnamedPolicy));
+            notHeld.addAll(FileSystemPackInspector.notHeld(directory, name, walk, table, unnamedPolicy));
         }
 
         /** Classifies every YAML file of the pack, and reads each mapped one the load path has not read. */
         private void readYamlFiles(String prefix) {
-            for (Path path : yamlFiles(directory, name)) {
+            for (Path path : packFiles(directory, walk, ".yaml")) {
                 String file = slashed(directory.relativize(path));
                 switch (table.classify(prefix + file)) {
                     case PackFileKind.Excluded excluded ->
@@ -627,7 +694,7 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
         /** Lists the excluded Markdown files, and reads the companions and documents. */
         private void readMarkdownFiles(String prefix) {
             @Nullable Set<String> held = null;
-            for (Path path : packFiles(directory, name, MARKDOWN)) {
+            for (Path path : packFiles(directory, walk, MARKDOWN)) {
                 String file = slashed(directory.relativize(path));
                 PackFileKind.Classification classification = table.classify(prefix + file);
                 if (classification instanceof PackFileKind.Excluded excluded) {
@@ -635,7 +702,7 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
                     // YAML is: never read, never a finding. A file a bound kind claims as its companion (a skill
                     // body) is held with its owner, so it is not listed; the digest knows which files are held.
                     if (held == null) {
-                        held = new HashSet<>(PackFileSet.digested(directory, table));
+                        held = new HashSet<>(PackFileSet.digested(directory, table, walk));
                     }
                     if (!held.contains(file)) {
                         files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
@@ -1080,63 +1147,19 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
     }
 
     /**
-     * Every {@code *.yaml} regular file under the pack directory, in the order of Python's {@code PurePath}: segment by
-     * segment, a directory before a sibling that extends its name. A symlinked directory is not entered.
-     *
-     * <p>{@code PackFileSet}'s walk, which the store and the fingerprint share, orders by {@link String} instead and
-     * skips vanished entries; this validate-mode walk mirrors core's pathlib order (#115).
+     * Every regular file of the pack's walk whose name ends in {@code suffix}, in any letter case (the ignored fallback
+     * takes NOTES.MD as it takes notes.md, #451), named under {@code directory}, in the order of Python's
+     * {@code PurePath}: segment by segment, a directory before a sibling that extends its name. {@code PackFileSet}'s
+     * listing, which the store and the fingerprint share, orders by {@link String} instead; this validate-mode order
+     * mirrors core's pathlib (#115). The walk starts at the directory's real path, so a pack root that is a symbolic
+     * link is entered (#284); a directory link below the root is not entered, and a file link is followed.
      */
-    private static List<Path> yamlFiles(Path directory, String packName) {
-        return packFiles(directory, packName, ".yaml");
-    }
-
-    /**
-     * Every regular file under the pack directory whose name ends in {@code suffix}, in {@link #yamlFiles}' order. The
-     * walk starts at the directory's real path, so a pack root that is a symbolic link is entered (#284), and each file
-     * is named under {@code directory} again; a directory link below the root is not entered.
-     */
-    private static List<Path> packFiles(Path directory, String packName, String suffix) {
-        Path root;
-        try {
-            root = directory.toRealPath();
-        } catch (IOException e) {
-            throw PackFileSet.unlistable(packName, e);
-        }
-        try (Stream<Path> walk = Files.walk(root)) {
-            // The suffix matches in any letter case: the ignored fallback takes NOTES.MD as it takes notes.md
-            // (#451).
-            return walk.filter(p ->
-                            p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(suffix)
-                                    && Files.isRegularFile(p))
-                    .map(p -> directory.resolve(root.relativize(p)))
-                    .sorted(Comparator.comparing(
-                            (Path p) -> slashed(directory.relativize(p)), FileSystemPackInspector::comparePaths))
-                    .toList();
-        } catch (IOException | UncheckedIOException e) {
-            throw PackFileSet.unlistable(packName, e);
-        }
-    }
-
-    /**
-     * Every regular file under the pack directory that is not itself a symbolic link, pack-relative and {@code /}-
-     * separated, in {@link String} order: the files the store's load lists as held or not held. The walk starts at the
-     * directory's real path, as {@link #packFiles}' does (#284).
-     */
-    private static List<String> unlinkedFiles(Path directory, String packName) {
-        Path root;
-        try {
-            root = directory.toRealPath();
-        } catch (IOException e) {
-            throw PackFileSet.unlistable(packName, e);
-        }
-        try (Stream<Path> walk = Files.walk(root)) {
-            return walk.filter(p -> Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS))
-                    .map(p -> slashed(root.relativize(p)))
-                    .sorted()
-                    .toList();
-        } catch (IOException | UncheckedIOException e) {
-            throw PackFileSet.unlistable(packName, e);
-        }
+    private static List<Path> packFiles(Path directory, PackFileSet.Walk walk, String suffix) {
+        return walk.regular().stream()
+                .filter(file -> file.toLowerCase(Locale.ROOT).endsWith(suffix))
+                .sorted(FileSystemPackInspector::comparePaths)
+                .map(directory::resolve)
+                .toList();
     }
 
     private static String slashed(Path relative) {
