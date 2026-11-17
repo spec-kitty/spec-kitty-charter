@@ -55,7 +55,7 @@ class OneReadTest {
     }
 
     @Test
-    @DisplayName("the composing read reads the pack once")
+    @DisplayName("the composing read walks and reads the pack once, through the one reader's StoreRead half")
     void theComposingReadReadsOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
         DomainRepositoryService service = new DomainRepositoryService(
@@ -63,11 +63,15 @@ class OneReadTest {
                 STRATEGY);
         long walks = PackFileSet.walks();
         long before = FilesystemPackStore.reads();
+        long runs = StoreRead.runs();
 
         PackCompositionFacts facts = service.compositionFacts(new PackIdentifier(ExamplePacks.BUILT_IN));
 
         assertThat(PackFileSet.walks() - walks).isOne();
         assertThat(FilesystemPackStore.reads() - before).isOne();
+        assertThat(StoreRead.runs() - runs)
+                .as("the composing read runs the one reader's StoreRead half (operator decision 2026-11-17)")
+                .isOne();
         assertThat(facts.defined()).isNotEmpty();
     }
 

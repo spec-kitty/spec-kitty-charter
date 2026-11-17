@@ -189,6 +189,16 @@ WP04, WP05 and WP08 see it.
   input (`PackContents.Assembly`, with the load's faults: A-M1 rows 1 to 5) all come from that walk. The registration's
   load builds through `PackAssembly` from it alone. Validate mode's rationale is still today's read faults only, until
   WP09.
+- **A-M1 row 3, the aggregate's `build()` breach:** the read records it as a fact (`PackContents.Assembly.Refused`,
+  `validation_failed`, placed at `pack` after the graph faults), and a unit test builds that fact directly. No planted
+  pack reaches it: the withholding and the repeated-id rule leave the aggregate nothing to breach.
+- **The compose read (operator decision, 2026-11-17):** the compose read runs only the `StoreRead` half of the one
+  reader, over one walk: the same DSO read and assembly the registration's `readTree` runs, with no second DSO reader.
+  It never sees the reader's S2 prechecks, so no S4 filter is needed, and its answers are unchanged. Running the whole
+  one read on it was measured first (warmed, 200 calls each): built-in 35.4 ms today against 161 ms (4.6x), org-base
+  3.8 ms against 18.3 ms (4.8x), project 1.1 ms against 3.8 ms (3.5x). The cost is two parses of every file: the
+  inspector's generic parse and validation, and the store's DSO parse. A single-parse unification, deriving the
+  inspector's facts from the DSOs, is later work.
 
 ## Outcomes of WP04
 

@@ -1811,4 +1811,26 @@ class FileSystemPackInspectorTest {
         assertThat(held.graphFaults()).extracting(PackElementViolation::file).containsExactly("broken.graph.yaml");
         assertThat(held.facts()).isEmpty();
     }
+
+    @Test
+    void anAggregateBreachIsTheReadsRefusalAsAWholeAfterTheGraphFaults() {
+        // A-M1 row 3: no planted pack reaches the aggregate's build() breach, so the fact is built directly.
+        PackElementViolation graphFault =
+                new PackElementViolation("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR, "not valid YAML");
+
+        StoreRead read = StoreRead.breached(
+                List.of(graphFault), "A pack must not hold two tactics with the same identifier.", Optional.of("x"));
+
+        assertThat(read.assembly()).isInstanceOfSatisfying(PackContents.Assembly.Refused.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+            assertThat(refused.message()).isEqualTo("A pack must not hold two tactics with the same identifier.");
+            assertThat(refused.atDescriptor())
+                    .as("placed at pack, not pack.yaml")
+                    .isFalse();
+            assertThat(refused.graphFaults()).containsExactly(graphFault);
+        });
+        assertThat(read.graphsUnreadable()).isTrue();
+        assertThat(read.graphRefusal()).contains("x");
+        assertThat(read.graphs()).isEmpty();
+    }
 }
