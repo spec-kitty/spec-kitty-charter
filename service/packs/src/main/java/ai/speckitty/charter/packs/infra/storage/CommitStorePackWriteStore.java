@@ -331,7 +331,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             if (!RelationshipShard.SHARD_PATH.equals(document.file())) {
                 declaredNodes(document).forEach(declared::add);
                 document.edges()
-                        .forEach(edge -> DomainRepositoryService.typedEdge(edge).ifPresent(edges::add));
+                        .forEach(edge -> CompositionFactsBuilder.typedEdge(edge).ifPresent(edges::add));
             }
         }
         return new Authored(declared, edges);
@@ -388,7 +388,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
                 continue;
             }
             List<GraphDocument.Edge> kept = document.edges().stream()
-                    .filter(edge -> DomainRepositoryService.typedEdge(edge)
+                    .filter(edge -> CompositionFactsBuilder.typedEdge(edge)
                             .filter(typed -> dropped.stream().anyMatch(link -> sameEdge(link, typed)))
                             .isEmpty())
                     .toList();

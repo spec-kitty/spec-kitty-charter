@@ -73,7 +73,7 @@ final class LoadChecks {
             FilesystemPackStore.GraphRead graphs,
             List<PackFinding> warnings) {
         List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
-                PackAssembly.stepEnhancementFacts(read, graphs),
+                PackAssembly.stepEnhancementFacts(read, graphs.documents()),
                 graphs.violations().isEmpty());
         List<PackElementViolation> repeats = new ArrayList<>();
         Set<String> repeating = new LinkedHashSet<>();
