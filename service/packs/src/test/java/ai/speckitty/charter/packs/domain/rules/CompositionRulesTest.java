@@ -256,6 +256,65 @@ class CompositionRulesTest {
         }
 
         @Test
+        @DisplayName("a pack on a cycle the first walk passed by is named too, and the first cycle is unchanged")
+        void overlappingCyclesNameEveryPackOnThem() {
+            // A depends on B and C; B and C each depend on A. The walk from A follows B only, so C is named by the
+            // shortest cycle through it; D only depends on A, lies on no cycle and is named by none.
+            PackUnderResolution a = new PackUnderResolution(
+                    configured("01AAA", PackLevel.ORG),
+                    descriptor(
+                            "01AAA",
+                            "a",
+                            "1.0.0",
+                            PackLevel.ORG,
+                            List.of(new PackDependency("01BBB", ">=1.0"), new PackDependency("01CCC", ">=1.0"))));
+            PackUnderResolution b = pack("01BBB", "b", "1.0.0", PackLevel.ORG, depends("01AAA", ">=1.0"));
+            PackUnderResolution c = pack("01CCC", "c", "1.0.0", PackLevel.ORG, depends("01AAA", ">=1.0"));
+            PackUnderResolution d = pack("01DDD", "d", "1.0.0", PackLevel.ORG, depends("01AAA", ">=1.0"));
+
+            List<CompositionFault> faults = CompositionRules.faults(List.of(d, c, b, a));
+
+            assertThat(faults).allSatisfy(fault -> assertThat(fault.code()).isEqualTo(CYCLE));
+            assertThat(faults)
+                    .extracting(CompositionFault::detail)
+                    .containsExactly(
+                            "pack `a` (01AAA) is on a dependency cycle: `a` -> `b` -> `a`",
+                            "pack `c` (01CCC) is on a dependency cycle: `c` -> `a` -> `c`");
+            assertThat(faults.get(1).packs()).containsExactly(refusalPack("01CCC", "c"), refusalPack("01AAA", "a"));
+        }
+
+        @Test
+        @DisplayName("the shortest cycle through a passed-by pack is named, over its longer ones")
+        void theShortestCycleThroughAPassedByPackIsNamed() {
+            // The walk from A goes A -> B -> C -> A. E is on A -> E -> A and on E -> B -> C -> A -> E: the first is
+            // named.
+            PackUnderResolution a = new PackUnderResolution(
+                    configured("01AAA", PackLevel.ORG),
+                    descriptor(
+                            "01AAA",
+                            "a",
+                            "1.0.0",
+                            PackLevel.ORG,
+                            List.of(new PackDependency("01BBB", ">=1.0"), new PackDependency("01EEE", ">=1.0"))));
+            PackUnderResolution b = pack("01BBB", "b", "1.0.0", PackLevel.ORG, depends("01CCC", ">=1.0"));
+            PackUnderResolution c = pack("01CCC", "c", "1.0.0", PackLevel.ORG, depends("01AAA", ">=1.0"));
+            PackUnderResolution e = new PackUnderResolution(
+                    configured("01EEE", PackLevel.ORG),
+                    descriptor(
+                            "01EEE",
+                            "e",
+                            "1.0.0",
+                            PackLevel.ORG,
+                            List.of(new PackDependency("01BBB", ">=1.0"), new PackDependency("01AAA", ">=1.0"))));
+
+            assertThat(CompositionRules.faults(List.of(a, b, c, e)))
+                    .extracting(CompositionFault::detail)
+                    .containsExactly(
+                            "pack `a` (01AAA) is on a dependency cycle: `a` -> `b` -> `c` -> `a`",
+                            "pack `e` (01EEE) is on a dependency cycle: `e` -> `a` -> `e`");
+        }
+
+        @Test
         @DisplayName("a cycle is found past a dependency the order already placed")
         void aCycleIsFoundPastAPlacedDependency() {
             PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.ORG);
@@ -576,6 +635,21 @@ class CompositionRulesTest {
         }
 
         @Test
+        @DisplayName("a twin that contests what its first holder defines adds no sibling contest")
+        void aTwinAddsNoSiblingContest() {
+            PackUnderResolution gamma = defining("01GAMMA", "gamma", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution twin = new PackUnderResolution(
+                    configured("twin", PackLevel.ORG),
+                    descriptor("01GAMMA", "gamma-twin", "1.0.0", PackLevel.ORG, List.of()),
+                    List.of(),
+                    List.of(DIRECTIVE));
+
+            assertThat(CompositionRules.faults(List.of(twin, gamma)))
+                    .extracting(CompositionFault::code)
+                    .containsExactly(DUPLICATE);
+        }
+
+        @Test
         @DisplayName("a dependency on a duplicated pack_id is judged against its first holder")
         void aDependencyOnADuplicatedIdIsJudgedAgainstItsFirstHolder() {
             PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
@@ -792,6 +866,37 @@ class CompositionRulesTest {
             }
 
             @Test
+            @DisplayName("a child and its parent may hold one preset id: the child's copy takes the parent's place")
+            void aChildAndItsParent() {
+                PackUnderResolution parent = holdingPresets(pack("01PARENT", "parent", "1.0.0", PackLevel.ORG), "team");
+                PackUnderResolution child =
+                        holdingPresets(extending("01CHILD", "child", PackLevel.ORG, "01PARENT"), "team");
+
+                assertThat(check(child, parent)).isEmpty();
+                assertThat(check(parent, child)).isEmpty();
+            }
+
+            @Test
+            @DisplayName("the packs are judged in merge order, whatever order they are given in")
+            void thePacksAreJudgedInMergeOrder() {
+                // 01AAA depends on 01ZZZ, so 01ZZZ merges first although it sorts last.
+                PackUnderResolution first =
+                        holdingPresets(pack("01AAA", "a", "1.0.0", PackLevel.ORG, depends("01ZZZ", ">=1.0")), "team");
+                PackUnderResolution last = holdingPresets(pack("01ZZZ", "z", "1.0.0", PackLevel.ORG), "team");
+
+                List<CompositionFault> given = check(first, last);
+
+                assertThat(given).singleElement().satisfies(fault -> {
+                    assertThat(fault.packs()).containsExactly(refusalPack("01AAA", "a"), refusalPack("01ZZZ", "z"));
+                    assertThat(fault.detail()).startsWith("packs `z` (01ZZZ) and `a` (01AAA) at org");
+                });
+                assertThat(check(last, first)).isEqualTo(given);
+                assertThat(CompositionRules.presets(holding(presetIds)).apply(List.of(first, last)))
+                        .extracting(Reason::detail)
+                        .containsExactly(given.getFirst().detail());
+            }
+
+            @Test
             @DisplayName("packs of different levels may hold one preset id: the layer merge applies")
             void packsOfDifferentLevels() {
                 PackUnderResolution org = holdingPresets(pack("01ORG", "org", "1.0.0", PackLevel.ORG), "team");
@@ -808,10 +913,11 @@ class CompositionRulesTest {
                 PackUnderResolution b = holdingPresets(extending("01BBB", "b", PackLevel.ORG, "01AAA"), "team");
                 PackUnderResolution c = holdingPresets(pack("01CCC", "c", "1.0.0", PackLevel.ORG), "team", "team");
 
+                // Merge order: c, placed; then a and b, on a parent cycle, in the stable order.
                 assertThat(check(a, b, c))
                         .extracting(fault -> fault.packs().getFirst().packId() + "/"
                                 + fault.packs().get(1).packId())
-                        .containsExactly("01CCC/01AAA", "01CCC/01BBB");
+                        .containsExactly("01AAA/01CCC", "01BBB/01CCC");
             }
         }
     }

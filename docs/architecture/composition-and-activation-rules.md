@@ -195,7 +195,7 @@ Each level stays contiguous, and the order never depends on how the packs were l
 **C6 No dependency cycle.** The graph of `succ` on `C` (`depends_on` and `parent_pack` edges) is acyclic, else
 `pack_dependency_cycle`; a pack that depends on itself or names itself as its `parent_pack` is a cycle.
 A dependency or lineage cycle refuses the compose.
-*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `cycleOf`. **Built.**
+*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `cyclesOf`. **Built.**
 
 **C7 Known dependency.** `∀p ∈ C, (q, ρ) ∈ deps(p): q ∈ P`, else `pack_dependency_unknown`.
 *Source:* ADR-0048 d4. **Built.**
@@ -213,7 +213,7 @@ A pack may build on, or derive from, only packs at its own level or one nearer b
 *Source:* ADR-0048 d7 (amended 2026-11-03); ADR-0053 d8. **Built.**
 
 **C11 Pack identity.** `pid` and `name` are each unique within `C`, else `pack_duplicate_id` or `pack_name_conflict`.
-*Source:* ADR-0053 d6, d7 (amended); `PackCompositionResolver.indexById`, `indexByName`. **Built.**
+*Source:* ADR-0053 d6, d7 (amended); `PackCompositionResolver.duplicateIds`, `nameConflicts`. **Built.**
 
 **C12 Qualified reference.** A reference `n::u` written in `p` resolves to the `q ∈ Cdep({p})` with `name(q) = n`, else
 `pack_reference_pack_missing`; and `holds(q, u)`, else `pack_reference_artifact_missing`.

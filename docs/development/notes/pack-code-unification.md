@@ -260,15 +260,18 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
 - **Every composition fault is collected (FR-003).** `PackCompositionResolver.faults` judges a set in today's order:
   every repeated `pack_id`, every repeated name, every pair of disjoint ranges, then pack by pack in the stable order
   its dependencies (itself, unknown, out of range, level) and its parent (itself, unresolved, level), then every
-  sibling contest (changed artifacts, then defined ones), then every dependency cycle, each reported once. `resolve`
-  throws the first, so each refusal the offering answers is today's: `golden/composition.json` is unchanged, byte for
-  byte, with no row changed. A fault leaves the rest judged: a repeated `pack_id` is read as its first holder, and an
-  edge to the pack itself or to an unknown pack orders nothing.
+  sibling contest (changed artifacts, then defined ones), then the dependency cycles: the cycle the resolver has
+  always refused with first, then the shortest cycle through each pack on a cycle that no earlier one names, and none
+  for a pack only downstream of a cycle (review cycle 1, M1). `resolve` throws the first, so each refusal the offering
+  answers is today's: `golden/composition.json` is unchanged, byte for byte, with no row changed. A fault leaves the
+  rest judged: a repeated `pack_id` is read as its first holder, in the order and in the sibling contests alike, and
+  an edge to the pack itself or to an unknown pack orders nothing.
 - **`CLOSURE` is `CompositionRules.closure()`,** a `ModularRuleset<List<PackUnderResolution>>` in `packs.domain.rules`,
   its codes `PackCodes.CLOSURE`. `CompositionFault(code, packs, detail)` keeps the pack list a `Reason` cannot carry
   (A-M4). WP09 adds the one-line delegate `PackRulesets.closure()`. The preset contests are a phase of their own,
-  `CompositionRules.presets(presetIdsOf)`, since a `PackUnderResolution` carries no preset ids; it judges the packs in
-  the order given, the merge order when the set resolves.
+  `CompositionRules.presets(presetIdsOf)`, since a `PackUnderResolution` carries no preset ids. It orders the packs
+  itself, by `PackCompositionResolver.mergeOrder` (the resolved order, then the unplaced packs in the stable order), so
+  its answer does not depend on the input order; the offering's `presetContests` keeps the order it is given.
 - **Classification (T045).** The offering keeps its interleaved order, answering the first fault of each phase: the
   resolve, the delegations, the references, the step-enhancement targets, the preset contests, then the case-only
   matches. `refuseUnresolvedDelegations` (`pack_unreadable`) and the step-enhancement targets stay in that sequence and
