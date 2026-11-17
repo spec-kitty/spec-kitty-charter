@@ -2,19 +2,14 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.Preset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The one derivation of a pack manifest's lists (#110, ADR-0042, #554 T024): one constituent per artifact the pack holds
@@ -71,7 +66,8 @@ final class PackManifestDerivation {
 
     /**
      * The derived manifest of the pack stored in a directory: the artifacts and presets its whole-pack load holds, read
-     * by the store's reader and built by {@link PackAssembly} with the load's own withholding ({@link LoadChecks}), so
+     * by the one reader's {@link StoreRead} half (the census derives through the same read, WP05 review MINOR-5) and
+     * built by {@link PackAssembly} with the load's own withholding ({@link LoadChecks}), so
      * the lists name exactly the artifacts that load holds. A file the load does not hold (a read violation, a step
      * enhancement withheld for a repeated stem) is not listed. An unreadable graph document is tolerated, as a read
      * tolerates it: the strict load and this one hold the same artifacts, so the registration check and the stamp never
@@ -91,23 +87,16 @@ final class PackManifestDerivation {
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
         Path packDir = directory.toAbsolutePath().normalize();
-        Path parent = packDir.getParent();
-        if (parent == null || packDir.getFileName() == null) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
-        }
-        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
-        FilesystemPackStore.PackRead read = store.read(key, bindings);
-        PackIdentifier id = new PackIdentifier(read.descriptor().packId());
-        Map<Urn, String> places = new HashMap<>();
-        List<PackFinding> warnings = new ArrayList<>();
-        Pack.Builder builder = LoadChecks.assembly(id, read, places, store.readGraphs(key), warnings);
-        Pack pack;
-        try {
-            pack = builder.build();
-        } catch (ConstraintBreachException breach) {
-            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
-        }
-        return derived(pack, new PackLayout(places));
+        String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
+        // The store's read refuses a directory that is not there before it lists anything.
+        PackFileSet.Walk walk = Files.isDirectory(packDir)
+                ? PackFileSet.walk(packDir, name)
+                : new PackFileSet.Walk(List.of(), List.of());
+        StoreRead read = StoreRead.of(packDir, name, walk, strategy, bindings, companionRules);
+        return switch (read.assembly()) {
+            case Assembly.Assembled held -> derived(PackAssembly.build(held), read.layout());
+            case Assembly.Refused refused -> throw new CharterRefusal(refused.code(), refused.message());
+            case Assembly.None none -> throw new IllegalStateException("the store's read gave no assembly input");
+        };
     }
 }

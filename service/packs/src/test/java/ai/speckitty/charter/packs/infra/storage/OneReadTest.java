@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -73,6 +74,23 @@ class OneReadTest {
                 .as("the composing read runs the one reader's StoreRead half (operator decision 2026-11-17)")
                 .isOne();
         assertThat(facts.defined()).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("the pack under resolution walks and reads the pack once, through the one reader's StoreRead half")
+    void thePackUnderResolutionReadsOnce(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        ConfiguredPack configured = new ConfiguredPack(
+                new PackIdentifier(ExamplePacks.BUILT_IN), ExamplePacks.level(ExamplePacks.BUILT_IN));
+        long walks = PackFileSet.walks();
+        long before = FilesystemPackStore.reads();
+        long runs = StoreRead.runs();
+
+        CompositionFactsBuilder.underResolution(configured, pack, STRATEGY);
+
+        assertThat(PackFileSet.walks() - walks).isOne();
+        assertThat(FilesystemPackStore.reads() - before).isOne();
+        assertThat(StoreRead.runs() - runs).isOne();
     }
 
     @Test

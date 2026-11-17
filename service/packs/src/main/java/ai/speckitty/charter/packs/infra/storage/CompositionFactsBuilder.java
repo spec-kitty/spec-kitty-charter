@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.PromptFacts;
@@ -34,7 +35,6 @@ import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -69,34 +69,70 @@ final class CompositionFactsBuilder {
     static PackUnderResolution underResolution(
             ConfiguredPack configured, Path directory, SerializationStrategy strategy) {
         Path packDir = directory.toAbsolutePath().normalize();
-        Path parent = packDir.getParent();
-        if (parent == null || packDir.getFileName() == null) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
-        }
-        FilesystemPackStore store = new FilesystemPackStore(parent, strategy);
-        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
         PackIdentifier pack = configured.id();
-        FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
-        if (!graphs.violations().isEmpty()) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
-        }
-        FilesystemPackStore.PackRead read = store.read(key, graphs);
-        Pack assembled = LoadChecks.assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>())
-                .build();
-        requireReadable(pack, assembled.violations());
-        MutabilityPolicySource policy = MutabilityPolicySource.empty();
-        Optional<String> named = assembled.descriptor().paths().mutabilityPolicy();
-        if (named.isPresent()) {
-            try {
-                policy = PolicyYaml.readNamed(packDir, named.get()).source();
-            } catch (PolicyYaml.Unreadable invalid) {
-                throw unreadablePolicy(pack, named.get(), String.valueOf(invalid.getMessage()));
-            }
-        }
-        PackCompositionFacts facts = build(pack, assembled, read, graphs.documents(), policy);
+        StoreRead read = StoreRead.of(
+                packDir,
+                pack.value(),
+                PackFileSet.walk(packDir, pack.value()),
+                strategy,
+                KindBindings.all(),
+                Companions.Rules.bundled());
+        PackCompositionFacts facts = composeFacts(pack, read);
         return new PackUnderResolution(
-                configured, assembled.descriptor(), facts.changed(), facts.defined(), Set.copyOf(facts.terms()));
+                configured,
+                ((Assembly.Assembled) read.assembly()).descriptor(),
+                facts.changed(),
+                facts.defined(),
+                Set.copyOf(facts.terms()));
+    }
+
+    /**
+     * The composing read's mapping of one read (#554, S4, WP05 review M2): what the compose answers for a pack, from the
+     * {@link StoreRead} half of the one reader. A graph document that cannot be read refuses the pack first, then the
+     * load's own refusal of the pack, then {@link #heldFacts}. The composing read and {@link #underResolution} share
+     * it, so a stored pack and a pack read without the service are answered alike.
+     *
+     * @param pack the pack, as the refusals name it
+     * @param read the read
+     * @return the facts
+     * @throws CharterRefusal with {@code PACK_UNREADABLE}, or the load's own refusal code, when the pack cannot be read
+     */
+    static PackCompositionFacts composeFacts(PackIdentifier pack, StoreRead read) {
+        if (read.graphsUnreadable()) {
+            throw graphUnreadable(pack);
+        }
+        return switch (read.assembly()) {
+            case Assembly.Assembled held -> heldFacts(pack, held);
+            case Assembly.Refused refused -> throw new CharterRefusal(refused.code(), refused.message());
+            case Assembly.None none -> throw new IllegalStateException("the store's read gave no assembly input");
+        };
+    }
+
+    /**
+     * The facts of a pack the load held, judged as the composing read judges a stored pack: the assembly's first fault
+     * ({@link #requireReadable}), then a named policy file that cannot be read ({@link #unreadablePolicy}), then a
+     * refusal of the builder (an edge that joins an artifact to itself).
+     *
+     * @param pack the pack, as the refusals name it
+     * @param held what the load held
+     * @return the facts
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be read
+     */
+    static PackCompositionFacts heldFacts(PackIdentifier pack, Assembly.Assembled held) {
+        requireReadable(pack, held.violations().subList(0, held.assembled()));
+        Optional<String> named = held.descriptor().paths().mutabilityPolicy();
+        if (named.isPresent() && held.policyText().isEmpty()) {
+            throw unreadablePolicy(pack, named.get(), held.policyFault().orElse("is missing"));
+        }
+        held.factsRefusal().ifPresent(refusal -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
+        });
+        return held.facts().orElseThrow(() -> graphUnreadable(pack));
+    }
+
+    private static CharterRefusal graphUnreadable(PackIdentifier pack) {
+        return new CharterRefusal(
+                RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
     }
 
     /**

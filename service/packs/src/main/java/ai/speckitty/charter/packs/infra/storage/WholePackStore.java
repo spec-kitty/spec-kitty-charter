@@ -736,18 +736,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      */
     private WholePackWriteStore.Contents contentsOf(
             PackIdentifier key, Assembly.Assembled held, List<ExcludedFile> notHeld) {
-        CompositionFactsBuilder.requireReadable(key, held.violations().subList(0, held.assembled()));
-        Optional<String> named = held.descriptor().paths().mutabilityPolicy();
-        if (named.isPresent() && held.policyText().isEmpty()) {
-            throw CompositionFactsBuilder.unreadablePolicy(
-                    key, named.get(), held.policyFault().orElse("is missing"));
-        }
-        held.factsRefusal().ifPresent(refusal -> {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
-        });
-        PackCompositionFacts facts = held.facts()
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE, "a graph document of " + key.value() + " cannot be read"));
+        PackCompositionFacts facts = CompositionFactsBuilder.heldFacts(key, held);
         List<PackFinding> warnings = new ArrayList<>(held.warnings());
         notHeld.forEach(file -> warnings.add(file.notHeld()));
         Pack pack = PackAssembly.build(held);

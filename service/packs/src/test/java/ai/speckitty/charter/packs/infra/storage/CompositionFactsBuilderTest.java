@@ -8,25 +8,29 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The one composition-facts builder (#554, T027, FR-015): the pack under resolution {@code CLOSURE} judges, read from a
- * pack directory without the service, is the one the composing read answers for the same pack, and it carries the
- * facts the example packs declare.
+ * pack directory without the service through the one reader's {@code StoreRead} half, carries the facts recorded for
+ * each example pack in {@code facts/example-packs.json}: the facts the golden composition answers were built from.
  */
 @DisplayName("CompositionFactsBuilder builds a pack's composition facts without the service (#554, T027)")
 class CompositionFactsBuilderTest {
@@ -39,19 +43,35 @@ class CompositionFactsBuilderTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("examplePacks")
-    @DisplayName("each example pack: the facts read without the service are those the composing read answers")
-    void theSpringFreeFactsAreTheComposingReadsFacts(String name, @TempDir Path host) {
+    @DisplayName("each example pack: the facts are those recorded for it in facts/example-packs.json")
+    void theFactsAreTheRecordedFacts(String name, @TempDir Path host) throws IOException {
         Path pack = ExamplePacks.copyOf(name, host);
         ConfiguredPack configured = new ConfiguredPack(new PackIdentifier(name), ExamplePacks.level(name));
 
         PackUnderResolution read = CompositionFactsBuilder.underResolution(configured, pack, STRATEGY);
 
-        PackCompositionFacts served = service(name, pack).compositionFacts(configured.id());
+        JsonNode recorded = recorded().required(name);
         assertThat(read.configured()).isEqualTo(configured);
         assertThat(read.descriptor().name()).isEqualTo(name);
-        assertThat(read.changedArtifacts()).isEqualTo(served.changed());
-        assertThat(read.definedArtifacts()).isEqualTo(served.defined()).isNotEmpty();
-        assertThat(read.heldTerms()).isEqualTo(Set.copyOf(served.terms()));
+        assertThat(read.descriptor().packId())
+                .isEqualTo(recorded.required("packId").asString());
+        assertThat(read.changedArtifacts()).isEqualTo(strings(recorded.required("changed")));
+        assertThat(read.definedArtifacts()).isEqualTo(strings(recorded.required("defined")));
+        assertThat(read.heldTerms()).isEqualTo(Set.copyOf(strings(recorded.required("heldTerms"))));
+    }
+
+    private static JsonNode recorded() throws IOException {
+        try (InputStream in = Objects.requireNonNull(
+                CompositionFactsBuilderTest.class.getResourceAsStream("/facts/example-packs.json"),
+                "/facts/example-packs.json")) {
+            return JsonMapper.builder().build().readTree(in);
+        }
+    }
+
+    private static List<String> strings(JsonNode array) {
+        List<String> values = new ArrayList<>();
+        array.forEach(value -> values.add(value.asString()));
+        return values;
     }
 
     @Test
@@ -85,11 +105,6 @@ class CompositionFactsBuilderTest {
         Path pack = ExamplePacks.copyOf(name, host.resolve(name));
         return CompositionFactsBuilder.underResolution(
                 new ConfiguredPack(new PackIdentifier(name), ExamplePacks.level(name)), pack, STRATEGY);
-    }
-
-    private static DomainRepositoryService service(String name, Path pack) {
-        return new DomainRepositoryService(
-                () -> List.of(new PackLocation(name, ExamplePacks.level(name), pack)), STRATEGY);
     }
 
     @Test
