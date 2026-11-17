@@ -23,8 +23,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -125,10 +127,7 @@ class HeldSetAgreementTest {
                     .as("%s: the census's not-held files against the registration's diagnostics", subject)
                     .containsExactlyInAnyOrderElementsOf(notHeld(accepted.get("diagnostics")));
         }
-        assertThat(validated(pack, subject.level()))
-                .as("%s: a not-held file is never one a rule maps or retires", subject)
-                .allSatisfy(file -> assertThat(PackFileKind.bundled().classify(pack.getFileName() + "/" + file.path()))
-                        .isNotInstanceOfAny(PackFileKind.Mapped.class, PackFileKind.Retired.class));
+        assertNeverClassified(pack, subject.level(), subject.toString());
         stored(pack)
                 .ifPresent(list -> assertThat(list)
                         .as("%s: the store's load lists what the census lists", subject)
@@ -284,6 +283,45 @@ class HeldSetAgreementTest {
         store().removeNotHeld(new StagedPack(pack), read.read().notHeld());
         assertThat(pack.resolve(guide)).doesNotExist();
         assertThat(pack.resolve(prompt)).doesNotExist();
+    }
+
+    /**
+     * An unnamed not-held file, a policy file or a companion nothing names though a rule maps it (open case 9), is never
+     * one the read classifies: it is listed once, as not held. Any other not-held file is one no rule maps or retires.
+     */
+    private static void assertNeverClassified(Path pack, PackLevel level, String subject) {
+        PackReadout read = inspect(pack, level);
+        Set<String> classified = new HashSet<>();
+        read.files().forEach(file -> classified.add(file.file()));
+        assertThat(read.notHeld())
+                .filteredOn(file -> file.kind() == NotHeldFile.Kind.UNNAMED)
+                .as("%s: an unnamed file is never one the read classifies", subject)
+                .allSatisfy(file -> assertThat(classified).doesNotContain(file.path()));
+        assertThat(read.notHeld())
+                .filteredOn(file -> file.kind() != NotHeldFile.Kind.UNNAMED)
+                .as("%s: a not-held file other than an unnamed one is never one a rule maps or retires", subject)
+                .allSatisfy(file -> assertThat(PackFileKind.bundled().classify(pack.getFileName() + "/" + file.path()))
+                        .isNotInstanceOfAny(PackFileKind.Mapped.class, PackFileKind.Retired.class));
+    }
+
+    @Test
+    @DisplayName(
+            "open case 9: each unnamed file, a policy file, a guide and a step prompt nothing names, is listed once,"
+                    + " as not held, and never as classified")
+    void anUnnamedFileIsNeverClassified(@TempDir Path host) throws IOException {
+        Path org = ExamplePacks.copyOf(ExamplePacks.ORG, host.resolve("org"));
+        write(org, "policy.yaml", "schema_version: 1\npins: []\n");
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host.resolve("built-in"));
+        write(builtIn, "toolguides/orphan.guide.md", "# Orphan\n");
+        write(builtIn, "missions/software-dev/steps/orphan.prompt.md", "# Orphan\n");
+
+        assertThat(inspect(org, PackLevel.ORG).notHeld()).contains(NotHeldFile.unnamedPolicy("policy.yaml"));
+        assertThat(inspect(builtIn, PackLevel.BUILT_IN).notHeld())
+                .contains(
+                        NotHeldFile.unnamedCompanion("toolguides/orphan.guide.md"),
+                        NotHeldFile.unnamedCompanion("missions/software-dev/steps/orphan.prompt.md"));
+        assertNeverClassified(org, PackLevel.ORG, "org with an unnamed policy file");
+        assertNeverClassified(builtIn, PackLevel.BUILT_IN, "built-in with an orphan guide and step prompt");
     }
 
     private static List<NotHeldFile> validated(Path pack, PackLevel level) {
