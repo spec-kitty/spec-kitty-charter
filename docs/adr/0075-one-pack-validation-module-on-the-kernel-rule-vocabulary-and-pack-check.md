@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-15T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13) and of decision 8 (2026-11-15, #555)
+updated: 2026-11-17T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -122,6 +122,65 @@ that the round trip splits in two. Decision 8, and its consequence in the 2026-1
   - Main code still depends one way only, `pack-validation` on `packs`.
 - **#547 holds.** Every census file that is not excluded needs an outcome, and every `file-kinds.yaml` schema is modelled
   or listed with a reason. The planted `org-fragment` and `glossary` breaks still fail both checks, now through the rule.
+
+### Amendment 2026-11-16 (operator, #554): the rules in the packs domain, one reader, and the validation edge
+
+Slice 5 ([#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554)) placed the pack rules. The operator ruled
+R3 on 2026-11-16 (the rules stay in the packs domain, with no judging port), then, after a shaping squad, S1 to S3 and
+S6, which supersede part of R3. This amendment records R3 as S1 to S3 and S6 left it. It replaces decision 3's "every
+pack check in pack-validation", decision 4's pipeline and the 2026-11-13 amendment's ports, and decision 7's wording.
+
+- **The consistency rules live in the packs domain** (`packs.domain.rules`). Each pack file kind's checks are a kernel
+  ruleset over the canonical domain objects (`PackContents`), and `CLOSURE` judges the composition facts of a set of
+  packs (`PackUnderResolution`). The core's rules are plain rulesets with no judging port. S6 adds one reading port,
+  `PackReading`, whose readout carries the storage edge's verdict.
+- **`PackReading` replaces `PackInspector` (S6).** The domain port `PackReading` (`PackReadout read(PackRoot)`)
+  replaces the `PackInspector` port and its `Scope`, which the 2026-11-13 amendment names. Its readout carries the
+  pack's `PackContents`, its classified files, its files not held (`NotHeldFile`) and one kernel `Rationale`. No
+  `TreeReader` port is built.
+- **One reader, in the storage edge (S1, S3, S6).** `FileSystemPackInspector` in `packs.infra.storage` is the one
+  reader: it walks a pack tree once and builds one `TreeRead` (the `PackContents`, a `TreeCensus` of the files held and
+  not held, and the read faults). The storage rules and their tokens (`StorageCodes`) live in
+  `packs.infra.storage.rules`, which nothing outside `packs.infra.storage` and `deployable` names. The registration's
+  second read and its fail-closed guard are gone: `PackAssembly` builds the aggregate from the same read, judging
+  nothing. The compose read runs only the store half of that reader (`StoreRead`, S7).
+- **The compositions.** Each surface runs a named composition, with no surface profile and no mode flag:
+  - `PackRulesets.content()`, a `ModularRuleset<PackContents>`, and `PackRulesets.closure()`;
+  - `StorageRulesets.registration() = holding().must(content().on(TreeRead::contents))`;
+  - `StorageRulesets.verdict(read)`: the read faults, then `registration()`, joined with `Rationale.and`, then the
+    manifest membership, a plain function run only when those pass. `PackReading` returns that `Rationale`;
+  - `PackCheck.validate` = `read.rationale().and(placement().check(new Placement(read, configuredLevel)))`.
+
+  So the registration's findings are a subset of validate mode's by construction.
+- **`pack-validation` is the validation edge.** It reaches the core and storage rules through `PackReading`'s readout,
+  for validate mode and for `pack-check`, and adds the round trip, the placement rules and, from #478, the pack-set
+  check and the CLI. `PackCheck` and `PackVerdicts` moved there from `packs.domain`. It names only `packs.domain` and
+  the kernel, and `deployable` keeps it on the test classpath only: the service runs no `pack-validation` main code.
+- **S2's placement of the validate-only checks.** The repeated asset id is a consistency rule in `content()`, so the
+  registration gains it. The descriptor version format and the asset mime format are prechecks of the one reader, so
+  the registration gains them too. The configured level and the org fragment are a deployment-config check, the
+  validation edge's placement extension (`packvalidation.placement`, its tokens in `PlacementCodes`), validate mode
+  only.
+- **Decision 4: the converters go, and R2 unifies the codes.** The converters between `PackFinding`,
+  `PackElementViolation` and `RefusalViolation` are deleted, with `PackPolicy`, `PackFinding` and `PackFindingCode`.
+  Every surface states kernel `Reason`s, each token built once (`PackCodes`, `StorageCodes`, `PlacementCodes`). One
+  fault answers one code and one wording on every surface, and the specific code wins over a catch-all (R2). Two
+  mappers sit at their edges: `PackRefusals` (`packs.application`) and `PackVerdicts` (`pack-validation`).
+  `FileSystemPackInspector` is not deleted: it is the one reader.
+- **Decision 7's wording becomes:** `CLOSURE` needs every pack's contents, never the closure walk. A Spring-free
+  function builds each pack's composition facts from its contents.
+- **ArchUnit.** No rule is widened. The onion rules, `PACK_VALIDATION_IS_FRAMEWORK_FREE`,
+  `THE_PACKS_LOAD_REACHES_NO_FRAMEWORK` and `STORAGE_RETURNS_DOMAIN` stand. `STORAGE_RULES_ARE_FRAMEWORK_FREE`,
+  `PACK_RULES_READ_NO_FILE` and `PACK_CODES_HAVE_ONE_OWNER` are added, each with a bite fixture, and the single-owner
+  rules A to C point at `LevelRules` and `PlacementCodes`.
+- **The mutation floors stay with their subjects.** The core rules and the storage rules count in `:packs`'
+  domain+application group; `PackCheck`, `PackVerdicts` and the placement rules in `pack-validation`'s
+  (ADR-0062).
+
+**A note on the title and the description.** They still say "one pack-validation module" that holds every pack check
+and that the service shares. After this amendment the checks live in the packs domain and the storage edge, and
+`pack-validation` is the validation edge that `pack-check` packages. The operator has not ruled on a new title, so the
+title and description stand, and this amendment governs where they differ.
 
 ## Context
 
