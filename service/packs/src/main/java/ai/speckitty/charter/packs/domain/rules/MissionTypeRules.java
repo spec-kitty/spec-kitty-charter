@@ -24,8 +24,9 @@ import java.util.stream.Collectors;
  * ({@link MissionStepLinkRule}, {@link SubstepDelegationRule}); it reads no file and knows no surface, and states each
  * fault as one {@link Reason}.
  *
- * <p>Both read the edges of the pack's graph documents, so neither is judged when a graph document could not be read: a
- * step or a candidate would otherwise lack an edge the pack may well hold. A mission type that repeats a substep id is
+ * <p>Both read the edges of the pack's graph documents, so neither is judged when a graph document could not be read
+ * ({@link GraphRules#graphsRead}, the one edges-read gate): a step or a candidate would otherwise lack an edge the pack
+ * may well hold. A mission type that repeats a substep id is
  * not held ({@link StepRules#SUBSTEP_ID_REPEATED} reports it), so neither judges it.
  */
 public final class MissionTypeRules {
@@ -36,7 +37,7 @@ public final class MissionTypeRules {
      * the stray edge's graph document, per type in file order.
      */
     public static final Rule<PackContents> STEP_UNLINKED =
-            ((Rule<PackContents>) MissionTypeRules::unlinkedSteps).when(MissionTypeRules::graphsRead);
+            ((Rule<PackContents>) MissionTypeRules::unlinkedSteps).when(GraphRules::graphsRead);
 
     /**
      * A substep's delegation candidate that is no artifact of its kind in the pack
@@ -45,7 +46,7 @@ public final class MissionTypeRules {
      * mission type's file and the candidate's place.
      */
     public static final Rule<PackContents> SUBSTEP_DELEGATION =
-            ((Rule<PackContents>) MissionTypeRules::delegations).when(MissionTypeRules::graphsRead);
+            ((Rule<PackContents>) MissionTypeRules::delegations).when(GraphRules::graphsRead);
 
     /** Every mission type rule, in this class's order. */
     public static final ModularRuleset<PackContents> RULES =
@@ -95,26 +96,11 @@ public final class MissionTypeRules {
     /** The edges of every graph document that was read, as written, in merge order: the shards, then the fragment. */
     static List<MissionStepLinkRule.Edge> edgesOf(PackContents contents) {
         List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
-        for (FileRead<RawGraph> document : documents(contents)) {
-            if (document instanceof FileRead.Read<RawGraph> read) {
-                for (RawEdge edge : read.value().edges()) {
-                    edges.add(new MissionStepLinkRule.Edge(
-                            read.value().file(), edge.source(), edge.target(), edge.relation()));
-                }
+        for (RawGraph read : GraphRules.read(contents)) {
+            for (RawEdge edge : read.edges()) {
+                edges.add(new MissionStepLinkRule.Edge(read.file(), edge.source(), edge.target(), edge.relation()));
             }
         }
         return edges;
-    }
-
-    /** Whether every graph document of the pack was read: one that could not be read is refused on its own. */
-    static boolean graphsRead(PackContents contents) {
-        return documents(contents).stream().noneMatch(FileRead.Unreadable.class::isInstance);
-    }
-
-    /** The graph documents of the pack, in merge order: the shards, then the fragment. */
-    static List<FileRead<RawGraph>> documents(PackContents contents) {
-        List<FileRead<RawGraph>> documents = new ArrayList<>(contents.shards());
-        documents.add(contents.fragment());
-        return documents;
     }
 }

@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * What {@link StepEnhancementRules} judges: the facts of one pack's step enhancements, their companions and the pack's
+ * What {@link ai.speckitty.charter.packs.domain.rules.FragmentRules} judges: the facts of one pack's step enhancements, their companions and the pack's
  * graph edges, as plain values. The caller (validate mode, load) fills them; no store, inspector or refusal type
  * appears here, so the rules stay pure.
  *
@@ -39,7 +39,7 @@ public record StepEnhancementFacts(
         List<Edge> edges) {
 
     /** The URN prefix of a step enhancement node. */
-    static final String URN_PREFIX = NodeKind.STEP_ENHANCEMENT.token() + ":";
+    public static final String URN_PREFIX = NodeKind.STEP_ENHANCEMENT.token() + ":";
 
     /**
      * Copies the collections.

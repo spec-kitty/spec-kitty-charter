@@ -1,17 +1,25 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.Rule;
+import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Companion;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Edge;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Enhancement;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Entry;
+import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault.Finding;
-import ai.speckitty.charter.packs.domain.rules.Precedence;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,21 +29,26 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Judges one pack's step enhancements, their companions and its graph edges (FR-004, FR-005, FR-006). Pure: it reads
- * {@link StepEnhancementFacts} and answers {@link Finding}s, each naming the file it belongs to. It names no wire code
- * and touches no store; the caller maps each fault.
+ * The content rules of a pack's step enhancements and prompt fragments (#554, FR-001, T037; FR-004 to FR-006 of
+ * ADR-0066): kernel rules over the facts of the one read ({@link PackContents}), each fault one {@link Reason} of
+ * {@link PackCodes#PROMPT_FRAGMENT_INVALID} at the file the fault belongs to. They read no file and know no surface.
+ *
+ * <p>{@link #judge} is the pure function the rules state: it reads {@link StepEnhancementFacts} and answers
+ * {@link Finding}s, each naming the file it belongs to, and names no wire code.
  *
  * <p>Fragment content (FR-004): {@link StepEnhancementFault#FRAGMENT_BLANK} and {@link
  * StepEnhancementFault#FRAGMENT_FRONTMATTER} are the pure statement of the rule. On both real paths the companion read
  * refuses those fragments first, through the closed {@code prompt-fragment} structure schema, so a pack meets them as
  * the companion read's fault; these two members stay unit-tested on facts. A companion the caller marked unreadable is
- * judged by no content rule.
+ * judged by no content rule, so a codec fault wins over a marker.
  *
  * <p>Structure (FR-005, D11): a slot id occurs at most once per enhancement; each entry's companion exists beside the
  * file; each companion is named once across the pack's enhancements of that directory; no fragment is an orphan. The
  * slot id's grammar is not judged here: a bad id is a schema violation the store refuses first, never a rule fault and
  * never {@code prompt_fragment_invalid}, so {@link StepEnhancementFault} has no grammar member. Path order is
- * {@link Precedence#comparePaths} whatever order the caller passes.
+ * {@link Precedence#comparePaths} whatever order the caller passes. An orphan is judged from the fragment facts of the
+ * read, once: the census does not list an orphan as not held as well, and the fragments of a directory whose
+ * enhancement the read refused are no orphans, since that enhancement's own fault is reported.
  *
  * <p>Identity and target (FR-006, D8, D9, D12, R-OVR, C-003): exactly one {@code enhances} edge, to an {@code
  * action:<type>/<step>}, bare or qualified; no {@code overrides} edge from the enhancement at all (an enhancement only
@@ -44,9 +57,10 @@ import java.util.regex.Pattern;
  * id share them: the edge rules are judged once per id, at its first file in path order, a repeated file gets only
  * {@link StepEnhancementFault#STEM_REPEATED} for its identity, and when the {@code enhances} count is not one the
  * target and directory rules are skipped (the {@code overrides} rule is judged on its own). Whether the target step
- * exists is not judged here: target resolution across packs is a later mission's.
+ * exists is not judged here: target resolution across packs is a later mission's. The rules that read the edges are
+ * not judged when a graph document could not be read ({@link GraphRules#graphsRead}).
  */
-public final class StepEnhancementRules {
+public final class FragmentRules {
 
     /** The id of a step action: {@code <type>/<step>}, each segment without whitespace or a further slash. */
     private static final Pattern STEP_ID = Pattern.compile("^[^/\\s]+/[^/\\s]+$");
@@ -55,7 +69,56 @@ public final class StepEnhancementRules {
             .thenComparing(Finding::rule)
             .thenComparing(Finding::reason);
 
-    private StepEnhancementRules() {}
+    /** The faults that read the pack's graph documents: not judged when a graph document could not be read. */
+    private static final Set<StepEnhancementFault> EDGE_RULES = EnumSet.of(
+            StepEnhancementFault.EDGE_COUNT,
+            StepEnhancementFault.EDGE_TARGET_NOT_STEP,
+            StepEnhancementFault.OVERRIDES_EDGE,
+            StepEnhancementFault.DIRECTORY_MISMATCH);
+
+    /**
+     * Every fault of the pack's step enhancements and their companions but an orphan fragment, in {@link #judge}'s
+     * order (path, then rule): one {@link PackCodes#PROMPT_FRAGMENT_INVALID} per fault, at its file. A fault of the
+     * enhancement's binding (its schema, its companion's codec) is a read fault, named before these.
+     */
+    public static final Rule<PackContents> ENHANCEMENT = FragmentRules::enhancementFaults;
+
+    /**
+     * A prompt fragment no entry of an enhancement names (D11): one {@link PackCodes#PROMPT_FRAGMENT_INVALID} per
+     * orphan, at the fragment, in path order.
+     */
+    public static final Rule<PackContents> ORPHAN = FragmentRules::orphanFaults;
+
+    /** Every fragment rule, in this class's order: the orphans last, as a registration lists them. */
+    public static final ModularRuleset<PackContents> RULES =
+            ModularRuleset.<PackContents>emptyRules().must(ENHANCEMENT).must(ORPHAN);
+
+    private FragmentRules() {}
+
+    static List<Reason> enhancementFaults(PackContents contents) {
+        return reasons(contents, false);
+    }
+
+    static List<Reason> orphanFaults(PackContents contents) {
+        return reasons(contents, true);
+    }
+
+    /** The faults of the read's facts, the edge rules only when every graph document was read, as reasons. */
+    static List<Reason> reasons(PackContents contents, boolean orphans) {
+        boolean edgesRead = GraphRules.graphsRead(contents);
+        List<Reason> findings = new ArrayList<>();
+        for (Finding fault : judge(contents.stepEnhancements())) {
+            if ((fault.rule() == StepEnhancementFault.COMPANION_ORPHAN) == orphans
+                    && (edgesRead || !EDGE_RULES.contains(fault.rule()))) {
+                findings.add(Findings.at(
+                        PackCodes.PROMPT_FRAGMENT_INVALID,
+                        fault.path(),
+                        List.of(),
+                        Wording.origin(contents.root().name(), fault.path()) + ": " + fault.reason()));
+            }
+        }
+        return findings;
+    }
 
     /**
      * Judges the facts of one pack.

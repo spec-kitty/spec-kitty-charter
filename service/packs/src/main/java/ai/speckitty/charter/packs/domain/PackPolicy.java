@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import ai.speckitty.charter.packs.domain.rules.Paths;
@@ -192,7 +193,7 @@ public final class PackPolicy {
      */
     public static List<StepEnhancementFault.Finding> stepEnhancementFaults(
             StepEnhancementFacts facts, boolean edgesRead) {
-        return StepEnhancementRules.judge(facts).stream()
+        return FragmentRules.judge(facts).stream()
                 .filter(fault -> edgesRead || !EDGE_RULES.contains(fault.rule()))
                 .toList();
     }
