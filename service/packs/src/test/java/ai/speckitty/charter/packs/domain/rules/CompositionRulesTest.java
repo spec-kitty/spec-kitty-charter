@@ -102,6 +102,19 @@ class CompositionRulesTest {
         }
 
         @Test
+        @DisplayName("the core exposes CLOSURE beside content(): PackRulesets.closure() is this ruleset")
+        void thePackRulesetsExposeClosure() {
+            PackUnderResolution dependent =
+                    pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, depends("01GONE", ">=1.0"));
+            PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
+
+            assertThat(PackRulesets.closure().apply(List.of(dependent)))
+                    .isEqualTo(CompositionRules.closure().apply(List.of(dependent)))
+                    .isNotEmpty();
+            assertThat(PackRulesets.closure().apply(List.of(base))).isEmpty();
+        }
+
+        @Test
         @DisplayName("an unresolved reference is no CLOSURE fault: the reference checks are the closure walk's (#556)")
         void anUnresolvedReferenceIsNoClosureFault() {
             // The only fault of this set is a reference the reader writes to an artifact the writing pack does not

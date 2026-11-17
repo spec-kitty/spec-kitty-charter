@@ -76,19 +76,7 @@ final class ManifestMembership {
      * @return the reasons; empty when the lists hold the same entries
      */
     static List<String> mismatch(PackManifestDso listed, PackManifestDso derived) {
-        return mismatch(entries(listed), entries(derived));
-    }
-
-    /**
-     * {@link #mismatch(PackManifestDso, PackManifestDso)} over the census's facts (#554, T024): the lists a manifest
-     * declares and the lists derived from what the pack holds, each entry in the manifest's own words.
-     *
-     * @param listed the manifest's lists as read
-     * @param derived the derived lists of the same pack
-     * @return the reasons; empty when the lists hold the same entries
-     */
-    static List<String> mismatch(TreeCensus.Entries listed, TreeCensus.Entries derived) {
-        return ManifestRules.mismatch(listed, derived);
+        return ManifestRules.mismatch(entries(listed), entries(derived));
     }
 
     /**

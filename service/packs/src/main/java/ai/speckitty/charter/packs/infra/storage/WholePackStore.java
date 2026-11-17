@@ -28,6 +28,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
@@ -371,7 +372,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         if (clean && faults.isEmpty() && census.manifest().regular()) {
             census.manifest()
                     .listed()
-                    .ifPresent(listed -> ManifestMembership.mismatch(
+                    .ifPresent(listed -> ManifestRules.mismatch(
                                     listed, census.manifest().derived().orElseThrow())
                             .forEach(reason -> faults.add(violationOf(
                                     PackFileSet.MANIFEST, StorageCodes.MANIFEST_MEMBERSHIP.value(), reason))));
