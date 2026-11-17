@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Planted;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -118,25 +119,28 @@ class ArtifactRulesTest {
 
         assertThat(findings)
                 .containsExactlyInAnyOrderElementsOf(
-                        PlantedFixtures.policyFindings(planted.readout(), Set.of(PackCodes.DUPLICATE_ARTIFACT_ID)));
+                        PlantedFixtures.policyFindings(planted, Set.of(PackCodes.DUPLICATE_ARTIFACT_ID)));
     }
 
     static List<Planted> expecting() {
-        return PlantedFixtures.expecting(Set.of(PackCodes.DUPLICATE_ARTIFACT_ID.value())).stream()
-                .filter(planted ->
-                        planted.contents().artifacts().stream().noneMatch(artifact -> "asset".equals(artifact.kind())))
-                .toList();
+        return PlantedFixtures.expecting(Set.of(PackCodes.DUPLICATE_ARTIFACT_ID.value()));
     }
 
     @ParameterizedTest
     @MethodSource("expecting")
-    @DisplayName("a plant's expected.json is the oracle of the rule's findings")
+    @DisplayName("a plant's expected.json is the oracle of the rule's findings at the files of the kinds it judges")
     void thePlantsExpectedFindingsAreTheOracle(Planted planted) {
+        // A repeated asset id is the asset rule's (S2): its expected finding is filtered out by its file's kind.
+        Set<String> judgedElsewhere = planted.contents().artifacts().stream()
+                .filter(artifact -> "asset".equals(artifact.kind()))
+                .map(ArtifactFacts::file)
+                .collect(Collectors.toSet());
         assertThat(ArtifactRules.RULES.apply(planted.contents()))
                 .extracting(Expected::of)
                 .containsExactlyElementsOf(planted.expected().orElseThrow().stream()
                         .filter(expected ->
                                 PackCodes.DUPLICATE_ARTIFACT_ID.value().equals(expected.code()))
+                        .filter(expected -> !judgedElsewhere.contains(expected.file()))
                         .toList());
     }
 }

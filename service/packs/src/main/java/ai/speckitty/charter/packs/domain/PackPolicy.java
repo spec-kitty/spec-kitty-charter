@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -12,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.domain.rules.Precedence;
 import ai.speckitty.charter.packs.domain.rules.Wording;
@@ -117,7 +119,10 @@ public final class PackPolicy {
      * had when this class worded it, so the precedence sort keeps today's order (NFR-002).
      *
      * <p>Staging inside the single pull request (R4 b): validate mode's own judgement until the validation edge judges
-     * the readout's rationale (WP09); the read faults are the readout's rationale until then.
+     * the readout's rationale (WP09). The readout's rationale is the storage edge's verdict (WP07); this class still
+     * judges the content rules and the files not held itself, so it takes from the verdict what it does not judge:
+     * the read faults and the storage edge's own faults, less the store's refusal of a pack that has no
+     * {@code pack.yaml}, which validate mode gains with the validation edge (R2 row 24, WP09).
      *
      * @param read what the one reader read
      * @return the verdict, with the findings in precedence order
@@ -127,7 +132,7 @@ public final class PackPolicy {
         String name = contents.root().name();
         Map<String, List<PackFinding>> faults = new LinkedHashMap<>();
         List<PackFinding> mimes = new ArrayList<>();
-        for (var reason : read.rationale().failures()) {
+        for (var reason : notJudgedHere(read)) {
             PackFinding fault = PackFinding.of(reason);
             if (PackFindingCode.ASSET_MIME_INVALID.equals(fault.code())) {
                 mimes.add(fault);
@@ -162,6 +167,21 @@ public final class PackPolicy {
         findings.addAll(notHeldFindings(read.notHeld()));
         findings.sort(PRECEDENCE);
         return new PackVerdict(read.files(), findings);
+    }
+
+    /**
+     * The reasons of the readout's verdict this class does not judge itself (staging until WP09): the verdict less the
+     * content rules' findings and the files not held, which this class judges, and less a missing descriptor's refusal.
+     */
+    private static List<Reason> notJudgedHere(PackReadout read) {
+        List<Reason> given = new ArrayList<>(read.rationale().failures());
+        PackRulesets.content().apply(read.contents()).forEach(given::remove);
+        read.notHeld().forEach(file -> given.remove(file.finding().reason()));
+        if (read.contents().descriptor() instanceof FileRead.Absent<PackDescriptor>) {
+            given.removeIf(reason -> PACK_YAML.equals(reason.location().file())
+                    && PackFindingCode.PACK_UNREADABLE.equals(reason.code()));
+        }
+        return given;
     }
 
     /**

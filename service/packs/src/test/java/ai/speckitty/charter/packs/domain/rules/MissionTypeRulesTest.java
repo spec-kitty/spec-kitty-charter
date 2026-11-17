@@ -258,7 +258,7 @@ class MissionTypeRulesTest {
     void theRulesFindWhatValidateModeFinds(Planted planted) {
         assertThat(MissionTypeRules.RULES.apply(planted.contents()))
                 .containsExactlyInAnyOrderElementsOf(PlantedFixtures.policyFindings(
-                        planted.readout(),
+                        planted,
                         Set.of(
                                 PackCodes.MISSION_STEP_UNLINKED,
                                 PackCodes.SUBSTEP_DELEGATION_UNRESOLVED,

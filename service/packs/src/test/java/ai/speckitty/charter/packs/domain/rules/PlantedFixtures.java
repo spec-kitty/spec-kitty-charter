@@ -18,7 +18,9 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
-import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.TreeReads;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -27,16 +29,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The content rules' fixtures (#554, T034). The planted and example packs, each read once per JVM by the one reader
- * ({@link FileSystemPackInspector#read}) into the {@link PackReadout} the rules and today's {@link PackPolicy} both
- * judge, with the findings a plant's {@code expected.json} names; and the facts a test writes by hand.
+ * into the {@link TreeRead} the rules judge and the {@link PackReadout} today's {@link PackPolicy} judges, with the findings a plant's {@code expected.json} names; and the facts a test writes by hand.
  *
  * <p>The subjects are the golden snapshot's ({@code SurfaceAnswers}): every plant that holds files, with its symbolic
  * links, judged at its configured level; a plant with no {@code pack.yaml} again as {@code <plant>+pack.yaml}, with the
@@ -82,19 +85,29 @@ final class PlantedFixtures {
      * One pack, as the one reader read it.
      *
      * @param key {@code planted/<plant>}, {@code planted/<plant>+pack.yaml} or {@code example-packs/<name>}
-     * @param readout what the one reader gave
+     * @param tree the one read
      * @param expected the findings the plant's {@code expected.json} names; empty for a plant judged with a descriptor
      *     of the test's own, and for an example pack
      */
-    record Planted(String key, PackReadout readout, Optional<List<Expected>> expected) {
+    record Planted(String key, TreeRead tree, Optional<List<Expected>> expected) {
 
         /**
          * The facts of the read.
          *
-         * @return the readout's contents
+         * @return the read's contents
          */
         PackContents contents() {
-            return readout.contents();
+            return tree.contents();
+        }
+
+        /**
+         * What the domain port gives for the read: its facts and the storage edge's verdict.
+         *
+         * @return the readout
+         */
+        PackReadout readout() {
+            return new PackReadout(
+                    tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
         }
 
         @Override
@@ -137,17 +150,17 @@ final class PlantedFixtures {
     }
 
     /**
-     * What today's validate mode ({@link PackPolicy#judge}) finds of the codes over a readout, less the read faults of
+     * What today's validate mode ({@link PackPolicy#judge}) finds of the codes over a read, less the read faults of
      * those codes that it reports as they came: the findings of the policy's own rules for that group, as reasons.
      *
-     * @param readout the readout
+     * @param planted the read pack
      * @param codes the group's codes
      * @return the policy's findings of the group, in its precedence order
      */
-    static List<Reason> policyFindings(PackReadout readout, Collection<ReasonCode> codes) {
-        List<Reason> readFaults = new ArrayList<>(readout.rationale().failures());
+    static List<Reason> policyFindings(Planted planted, Collection<ReasonCode> codes) {
+        List<Reason> readFaults = new ArrayList<>(planted.tree().readFaults());
         List<Reason> own = new ArrayList<>();
-        for (PackFinding finding : PackPolicy.judge(readout).findings()) {
+        for (PackFinding finding : PackPolicy.judge(planted.readout()).findings()) {
             if (codes.contains(finding.code()) && !readFaults.remove(finding.reason())) {
                 own.add(finding.reason());
             }
@@ -211,8 +224,9 @@ final class PlantedFixtures {
     private static List<Planted> readAll() {
         try {
             Path scratch = Files.createTempDirectory("content-rules");
+            // Every plant is copied here once per JVM; the copies go with the JVM (WP06 review).
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> delete(scratch)));
             boolean links = linksWork(scratch);
-            FileSystemPackInspector reader = new FileSystemPackInspector();
             List<Planted> subjects = new ArrayList<>();
             int n = 0;
             for (String plant : PlantedPacks.names()) {
@@ -235,7 +249,7 @@ final class PlantedFixtures {
                 Path pack = plantAt(plant, scratch.resolve(Integer.toString(n++)), symlinks);
                 subjects.add(new Planted(
                         "planted/" + plant,
-                        reader.read(new PackRoot(PLANT_NAME, level, pack.toString())),
+                        TreeReads.of(new PackRoot(PLANT_NAME, level, pack.toString())),
                         Optional.of(findings(expected))));
                 if (!Files.exists(files.resolve(PACK_YAML))) {
                     Path described = plantAt(plant, scratch.resolve(Integer.toString(n++)), symlinks);
@@ -247,7 +261,7 @@ final class PlantedFixtures {
                             StandardCharsets.UTF_8);
                     subjects.add(new Planted(
                             "planted/" + plant + "+pack.yaml",
-                            reader.read(new PackRoot(PLANT_NAME, level, described.toString())),
+                            TreeReads.of(new PackRoot(PLANT_NAME, level, described.toString())),
                             Optional.empty()));
                 }
             }
@@ -259,12 +273,27 @@ final class PlantedFixtures {
                 }
                 subjects.add(new Planted(
                         "example-packs/" + name,
-                        reader.read(new PackRoot(name, Optional.of(ExamplePacks.level(name)), named.toString())),
+                        TreeReads.of(new PackRoot(name, Optional.of(ExamplePacks.level(name)), named.toString())),
                         Optional.empty()));
             }
             return List.copyOf(subjects);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    /** Deletes a directory and what it holds, the deepest first, links as links; what cannot be deleted stays. */
+    private static void delete(Path directory) {
+        try (Stream<Path> tree = Files.walk(directory)) {
+            tree.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                    // The JVM is ending: a file it cannot delete stays in the temporary directory.
+                }
+            });
+        } catch (IOException ignored) {
+            // As above.
         }
     }
 

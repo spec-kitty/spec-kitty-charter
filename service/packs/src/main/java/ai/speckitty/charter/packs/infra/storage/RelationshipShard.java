@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
+import ai.speckitty.charter.packs.infra.storage.rules.ReservedShardRules;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,15 +44,13 @@ import java.util.Optional;
 public final class RelationshipShard {
 
     /** The pack-relative path registered relationships persist to: a root shard the fingerprint already covers. */
-    public static final String SHARD_PATH = "registered.graph.yaml";
+    public static final String SHARD_PATH = ReservedShardRules.SHARD;
 
     /**
      * Why a {@value #SHARD_PATH} no registration wrote is refused ({@code reserved_shard}), the one wording of validate
      * mode and the registration (#554, R2 row 28).
      */
-    static final String RESERVED = SHARD_PATH
-            + " is reserved for the registered relationships; a file of this name without generated_by: "
-            + "charter-registration is refused. Register the edges in a shard of your own.";
+    static final String RESERVED = ReservedShardRules.RESERVED;
 
     /** The {@code generated_by} the registration store stamps on the shard it writes; a source shard does not carry it. */
     static final String WRITTEN_BY = "charter-registration";

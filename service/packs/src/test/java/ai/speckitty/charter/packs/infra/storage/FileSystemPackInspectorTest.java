@@ -109,7 +109,7 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
-    void aSourceShardNamedLikeTheRegistrationShardIsRefusedButTheStoresOwnIsRead(@TempDir Path dir) throws IOException {
+    void aSourceShardNamedLikeTheRegistrationShardIsReadAndTheCensusRefusesIt(@TempDir Path dir) throws IOException {
         write(
                 dir,
                 "pack.yaml",
@@ -119,13 +119,12 @@ class FileSystemPackInspectorTest {
                 "registered.graph.yaml",
                 "schema_version: '1.0'\ngenerated_at: STATIC\nnodes:\n- {urn: 'directive:A', kind: directive}\nedges: []\n");
 
-        FileRead.Unreadable<?> source = unreadable(
-                INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+        // #554, C-4: the shard is read as any root shard; the census states that no registration wrote it.
+        read(INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+        assertThat(full(dir).census().reservedShard()).isEqualTo(TreeCensus.ReservedShard.UNSTAMPED);
+        assertThat(full(dir).readFaults()).noneMatch(fault -> StorageCodes.RESERVED_SHARD.equals(fault.code()));
 
-        assertThat(source.file()).isEqualTo("registered.graph.yaml");
-        assertThat(source.parse().firstLine()).contains("is reserved for the registered relationships");
-
-        // #554, R2 row 28: validate mode answers reserved_shard in the registration's words.
+        // #554, R2 row 28: validate mode answers reserved_shard in the registration's words, once.
         assertThat(PackPolicy.judge(readout(dir)).findings())
                 .filteredOn(finding -> finding.file().equals("registered.graph.yaml"))
                 .extracting(PackFinding::code, PackFinding::detail)
@@ -142,6 +141,7 @@ class FileSystemPackInspectorTest {
         write(dir, "registered.graph.yaml", RelationshipShard.write(java.util.List.of()));
 
         read(INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+        assertThat(full(dir).census().reservedShard()).isEqualTo(TreeCensus.ReservedShard.STAMPED);
     }
 
     @Test

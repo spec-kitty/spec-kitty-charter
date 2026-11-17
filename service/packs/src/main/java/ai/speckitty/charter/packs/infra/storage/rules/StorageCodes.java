@@ -23,6 +23,12 @@ public final class StorageCodes {
     /** The pack's descriptor is missing, is not YAML or breaks its schema; or the pack root cannot be read. */
     public static final ReasonCode PACK_UNREADABLE = violation(RefusalCode.PACK_UNREADABLE.token());
 
+    /**
+     * The store cannot assemble the pack as a whole: an aggregate invariant its readable artifacts break (R2 row 26),
+     * placed at the pack after the graph faults. No planted pack reaches it: the read withholds what would breach.
+     */
+    public static final ReasonCode ASSEMBLY_REFUSED = violation(RefusalCode.VALIDATION_FAILED.token());
+
     /** A file's bytes cannot be read, are not UTF-8, or do not parse; or the manifest is not a regular file. */
     public static final ReasonCode UNREADABLE = violation("unreadable");
 
@@ -60,6 +66,7 @@ public final class StorageCodes {
     /** Every code this class builds, in this class's order. */
     public static final List<ReasonCode> ORDERED = List.of(
             PACK_UNREADABLE,
+            ASSEMBLY_REFUSED,
             UNREADABLE,
             ARTIFACT_SCHEMA_ERROR,
             RETIRED,

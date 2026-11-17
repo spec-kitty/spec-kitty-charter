@@ -52,7 +52,7 @@ import tools.jackson.databind.json.JsonMapper;
  * temporary directory the copies live in, which becomes {@value #SCRATCH} wherever a text names it: nothing else of a
  * detail is touched.
  */
-final class SurfaceAnswers {
+public final class SurfaceAnswers {
 
     /** What the temporary directory the copies live in becomes in a recorded text. */
     static final String SCRATCH = "<scratch>";
@@ -87,7 +87,7 @@ final class SurfaceAnswers {
      * @param links the symbolic links the plant's {@code expected.json} asks for: link (pack-relative), then target
      * @param copy writes a fresh copy of the pack at the path given
      */
-    record Subject(
+    public record Subject(
             String key,
             String name,
             Optional<PackLevel> configuredLevel,
@@ -100,7 +100,7 @@ final class SurfaceAnswers {
          *
          * @return true when it does
          */
-        boolean plantsLinks() {
+        public boolean plantsLinks() {
             return !links.isEmpty();
         }
 
@@ -118,7 +118,7 @@ final class SurfaceAnswers {
      *
      * @return the subjects, in the golden file's order
      */
-    static List<Subject> subjects() {
+    public static List<Subject> subjects() {
         List<Subject> subjects = new ArrayList<>();
         for (String plant : PlantedPacks.names()) {
             Path files = PlantedPacks.plant(plant).resolve("files");
@@ -203,7 +203,15 @@ final class SurfaceAnswers {
         return answers;
     }
 
-    private static Path copy(Subject subject, Path host) throws IOException {
+    /**
+     * A fresh copy of the subject under {@code host}, named as the subject is judged, with its symbolic links.
+     *
+     * @param subject the pack
+     * @param host an empty directory the copy is made in
+     * @return the copy's directory
+     * @throws IOException when the copy or a link cannot be made
+     */
+    public static Path copy(Subject subject, Path host) throws IOException {
         Files.createDirectories(host);
         Path pack = subject.copy().apply(host);
         Path named = pack.resolveSibling(subject.name());
