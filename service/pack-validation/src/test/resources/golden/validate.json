@@ -1,0 +1,1220 @@
+{
+  "example-packs/built-in" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "missions/software-dev/templates/README.md",
+      "place" : [ ],
+      "detail" : "missions/software-dev/templates/README.md: not held (Orientation notes beside the mission templates they describe. Not pack content and not templates.)"
+    } ]
+  },
+  "example-packs/org-base" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "docs/authoring-notes.md",
+      "place" : [ ],
+      "detail" : "docs/authoring-notes.md: not held (Author aid: Markdown that no files rule models (#451). Not pack content: not held, not served, not refused.)"
+    } ]
+  },
+  "example-packs/project" : {
+    "findings" : [ ]
+  },
+  "planted/artifact-not-utf8" : {
+    "findings" : [ {
+      "code" : "unreadable",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
+    } ]
+  },
+  "planted/artifact-not-utf8+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "unreadable",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
+    } ]
+  },
+  "planted/artifact-not-yaml" : {
+    "findings" : [ {
+      "code" : "unreadable",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/a.tactic.yaml: while parsing a flow node"
+    } ]
+  },
+  "planted/artifact-not-yaml+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "unreadable",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/a.tactic.yaml: while parsing a flow node"
+    } ]
+  },
+  "planted/artifact-utf16-with-a-byte-order-mark" : {
+    "findings" : [ {
+      "code" : "unreadable",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
+    } ]
+  },
+  "planted/artifact-utf16-with-a-byte-order-mark+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "unreadable",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/a.tactic.yaml: the file is not valid UTF-8"
+    } ]
+  },
+  "planted/asset-id-not-kebab" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "assets/run.py.asset.yaml",
+      "place" : [ "id" ],
+      "detail" : "assets/run.py.asset.yaml: 'id' does not match its pattern"
+    } ]
+  },
+  "planted/asset-mime-does-not-match-the-extension" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+    }, {
+      "code" : "asset_mime_invalid",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset mime 'image/png' does not match the '.txt' extension (text/plain)"
+    } ]
+  },
+  "planted/asset-mime-does-not-match-the-extension+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+    }, {
+      "code" : "asset_mime_invalid",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset mime 'image/png' does not match the '.txt' extension (text/plain)"
+    } ]
+  },
+  "planted/asset-mime-malformed" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+    }, {
+      "code" : "asset_mime_invalid",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
+    } ]
+  },
+  "planted/asset-mime-malformed+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+    }, {
+      "code" : "asset_mime_invalid",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset mime 'plain' is not a well-formed 'type/subtype' value"
+    } ]
+  },
+  "planted/asset-path-escape-absolute" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path '/etc/hosts' escapes the pack's assets/ root"
+    } ]
+  },
+  "planted/asset-path-escape-absolute+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path '/etc/hosts' escapes the pack's assets/ root"
+    } ]
+  },
+  "planted/asset-path-escape-dot-dot" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path '../../outside.png' escapes the pack's assets/ root"
+    } ]
+  },
+  "planted/asset-path-escape-dot-dot+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path '../../outside.png' escapes the pack's assets/ root"
+    } ]
+  },
+  "planted/asset-path-escape-through-a-symlink" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+    } ]
+  },
+  "planted/asset-path-escape-through-a-symlink+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+    } ]
+  },
+  "planted/asset-path-escape-windows-drive" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
+    } ]
+  },
+  "planted/asset-path-escape-windows-drive+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
+    } ]
+  },
+  "planted/asset-path-inside-through-a-symlink-is-contained" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+    } ]
+  },
+  "planted/asset-path-inside-through-a-symlink-is-contained+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+    } ]
+  },
+  "planted/asset-path-symlink-loop" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+    } ]
+  },
+  "planted/asset-path-symlink-loop+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+    } ]
+  },
+  "planted/asset-repeated-id-only-the-first-owner-is-checked" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/ok.txt does not exist"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+    }, {
+      "code" : "duplicate_artifact_id",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
+    } ]
+  },
+  "planted/asset-repeated-id-only-the-first-owner-is-checked+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: payload assets/ok.txt does not exist"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+    }, {
+      "code" : "duplicate_artifact_id",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
+    } ]
+  },
+  "planted/asset-repeated-id-the-first-owner-escapes" : {
+    "findings" : [ {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: payload assets/ok.txt does not exist"
+    }, {
+      "code" : "duplicate_artifact_id",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
+    } ]
+  },
+  "planted/asset-repeated-id-the-first-owner-escapes+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/a.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/a.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+    }, {
+      "code" : "asset",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: payload assets/ok.txt does not exist"
+    }, {
+      "code" : "duplicate_artifact_id",
+      "severity" : "violation",
+      "file" : "assets/b.asset.yaml",
+      "place" : [ ],
+      "detail" : "assets/b.asset.yaml: asset id 'same' is already declared in assets/a.asset.yaml"
+    } ]
+  },
+  "planted/c10-agent-quoted-integer" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "routing-priority" ],
+      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+    } ]
+  },
+  "planted/c10-agent-quoted-integer+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "routing-priority" ],
+      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+    } ]
+  },
+  "planted/c10-agent-role-uppercase" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "role" ],
+      "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
+    } ]
+  },
+  "planted/c10-agent-role-uppercase+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "role" ],
+      "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
+    } ]
+  },
+  "planted/c10-agent-scalar-role" : {
+    "findings" : [ ]
+  },
+  "planted/c10-agent-scalar-role+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
+  "planted/c10-tactic-schema-version-unquoted" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ "schema_version" ],
+      "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
+    } ]
+  },
+  "planted/c10-tactic-schema-version-unquoted+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "tactics/a.tactic.yaml",
+      "place" : [ "schema_version" ],
+      "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
+    } ]
+  },
+  "planted/c11-agent-routing-priority-101" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "routing-priority" ],
+      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
+    } ]
+  },
+  "planted/c11-agent-routing-priority-101+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "routing-priority" ],
+      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
+    } ]
+  },
+  "planted/c11-directive-lenient-adherence-without-allowances" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "directives/d.directive.yaml",
+      "place" : [ ],
+      "detail" : "directives/d.directive.yaml: missing 'explicit_allowances'"
+    } ]
+  },
+  "planted/c11-directive-lenient-adherence-without-allowances+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "directives/d.directive.yaml",
+      "place" : [ ],
+      "detail" : "directives/d.directive.yaml: missing 'explicit_allowances'"
+    } ]
+  },
+  "planted/c16-shard-edge-provenance" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "edges", "0" ],
+      "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
+    } ]
+  },
+  "planted/c16-shard-edge-provenance+pack.yaml" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "edges", "0" ],
+      "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
+    }, {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
+  "planted/c2-agent-nested-unknown-key" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "specialization" ],
+      "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
+    } ]
+  },
+  "planted/c2-agent-nested-unknown-key+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "agent_profiles/p.agent.yaml",
+      "place" : [ "specialization" ],
+      "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
+    } ]
+  },
+  "planted/c2-charter-nested-unknown-key" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c2-charter-nested-unknown-key+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c3-fragment-bare-local-id-declared" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "edges", "0", "source" ],
+      "detail" : "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
+    } ]
+  },
+  "planted/c3-fragment-edge-bare-endpoint" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "edges", "0", "source" ],
+      "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
+    } ]
+  },
+  "planted/c3-root-shard-urn-malformed" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+    } ]
+  },
+  "planted/c3-root-shard-urn-malformed+pack.yaml" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+    }, {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
+  "planted/c3-shard-edge-bare-endpoint" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c3-shard-edge-bare-endpoint+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c3-shard-urn-malformed" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c3-shard-urn-malformed+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c4-shard-urn-prefix-differs-from-kind" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
+    } ]
+  },
+  "planted/c4-shard-urn-prefix-differs-from-kind+pack.yaml" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
+    }, {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
+  "planted/c5-fragment-kind-actions-is-accepted" : {
+    "findings" : [ ]
+  },
+  "planted/c5-fragment-kind-mission-steps" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "nodes", "0", "kind" ],
+      "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
+    } ]
+  },
+  "planted/c5-fragment-kind-mission-type" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "nodes", "0", "kind" ],
+      "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_type'"
+    } ]
+  },
+  "planted/c5-fragment-node-id-unsafe" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "nodes", "0", "id" ],
+      "detail" : "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
+    } ]
+  },
+  "planted/c6-fragment-header-pack-name" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ ],
+      "detail" : "drg/fragment.yaml: unknown key 'pack_name'"
+    } ]
+  },
+  "planted/c7-fragment-relation-extends" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "edges", "0", "relation" ],
+      "detail" : "drg/fragment.yaml: unknown relation 'extends'"
+    } ]
+  },
+  "planted/c7-shard-relation-extends" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c7-shard-relation-extends+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c8-shard-without-generated-by-is-accepted" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c8-shard-without-generated-by-is-accepted+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/tactic.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/c9-pack-version-missing-at-the-org-level" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack.yaml of qa has no pack_version"
+    } ]
+  },
+  "planted/charter-cli-timeout-not-a-number" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-cli-timeout-not-a-number+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-invalid" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-invalid+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-template-set" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-template-set+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-valid" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/charter-valid+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "charter.yaml",
+      "place" : [ ],
+      "detail" : "charter.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/control-a-clean-org-pack" : {
+    "findings" : [ ]
+  },
+  "planted/control-no-generated-by-and-no-pack-level" : {
+    "findings" : [ {
+      "code" : "pack_level_missing",
+      "severity" : "warning",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack.yaml of qa has no pack_level; the configured level org is used"
+    } ]
+  },
+  "planted/control-no-pack-level-on-a-bare-path" : {
+    "findings" : [ ]
+  },
+  "planted/control-retired-pack-key-is-a-warning" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack.yaml of qa: unknown key 'accompanies_doctrine_pack'"
+    } ]
+  },
+  "planted/control-unknown-pack-key-is-a-warning" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack.yaml of qa: unknown key 'mystery'"
+    } ]
+  },
+  "planted/duplicate-artifact-id" : {
+    "findings" : [ {
+      "code" : "duplicate_artifact_id",
+      "severity" : "violation",
+      "file" : "tactics/b.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
+    } ]
+  },
+  "planted/duplicate-artifact-id+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "duplicate_artifact_id",
+      "severity" : "violation",
+      "file" : "tactics/b.tactic.yaml",
+      "place" : [ ],
+      "detail" : "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
+    } ]
+  },
+  "planted/duplicate-step-id" : {
+    "findings" : [ {
+      "code" : "duplicate_step_id",
+      "severity" : "violation",
+      "file" : "missions/rx/rx.mission-type.yaml",
+      "place" : [ "steps", "0", "substeps", "2", "id" ],
+      "detail" : "missions/rx/rx.mission-type.yaml: substep id 'run' is declared more than once in the step 'a'"
+    } ]
+  },
+  "planted/glossary-context-id-not-kebab" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "glossaries/core.glossary.yaml",
+      "place" : [ "id" ],
+      "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
+    } ]
+  },
+  "planted/glossary-context-id-not-the-stem" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "glossaries/a.glossary.yaml",
+      "place" : [ "id" ],
+      "detail" : "glossaries/a.glossary.yaml: glossary id 'b' is not its file stem 'a'"
+    } ]
+  },
+  "planted/glossary-context-valid" : {
+    "findings" : [ ]
+  },
+  "planted/glossary-pack-old-shape" : {
+    "findings" : [ {
+      "code" : "retired",
+      "severity" : "violation",
+      "file" : "glossary_packs/x.glossary-pack.yaml",
+      "place" : [ ],
+      "detail" : "glossary_packs/x.glossary-pack.yaml: the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)"
+    } ]
+  },
+  "planted/glossary-see-also-not-a-urn" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "glossaries/core.glossary.yaml",
+      "place" : [ "terms", "0", "see_also", "0" ],
+      "detail" : "glossaries/core.glossary.yaml: '0' does not match its pattern"
+    } ]
+  },
+  "planted/glossary-term-as-a-non-vocabulary-target" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "edges", "0", "relation" ],
+      "detail" : "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
+    } ]
+  },
+  "planted/glossary-term-as-an-edge-source" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "edges", "0", "source" ],
+      "detail" : "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
+    } ]
+  },
+  "planted/glossary-term-id-digit-first" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "glossaries/core.glossary.yaml",
+      "place" : [ "terms", "0", "id" ],
+      "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
+    } ]
+  },
+  "planted/glossary-term-id-double-hyphen" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "glossaries/core.glossary.yaml",
+      "place" : [ "terms", "0", "id" ],
+      "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
+    } ]
+  },
+  "planted/glossary-term-id-duplicate" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "glossaries/core.glossary.yaml",
+      "place" : [ "terms", "2", "id" ],
+      "detail" : "glossaries/core.glossary.yaml: '/terms/2/id' breaks schema keyword 'uniqueItems'"
+    } ]
+  },
+  "planted/org-fragment-missing" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
+  "planted/pack-yaml-tilde-is-null" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack.yaml of qa is not valid YAML: sequence entries are not allowed here"
+    } ]
+  },
+  "planted/r15-glossary-urn-as-an-edge-endpoint" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "drg/fragment.yaml",
+      "place" : [ "edges", "0", "source" ],
+      "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
+    } ]
+  },
+  "planted/r15-glossary-urn-in-a-shard" : {
+    "findings" : [ {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/glossary.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/glossary.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/r15-glossary-urn-in-a-shard+pack.yaml" : {
+    "findings" : [ {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    }, {
+      "code" : "file_not_held",
+      "severity" : "warning",
+      "file" : "drg/glossary.graph.yaml",
+      "place" : [ ],
+      "detail" : "drg/glossary.graph.yaml: not held (no pack file kind models this file)"
+    } ]
+  },
+  "planted/r30-edge-procedure-requires-action" : {
+    "findings" : [ {
+      "code" : "relationship_endpoint_not_allowed",
+      "severity" : "violation",
+      "file" : "procedure.graph.yaml",
+      "place" : [ "edges", "0" ],
+      "detail" : "procedure.graph.yaml: a requires edge may not connect procedure to action"
+    } ]
+  },
+  "planted/r31-edge-overrides-across-kinds" : {
+    "findings" : [ {
+      "code" : "relationship_endpoint_not_allowed",
+      "severity" : "violation",
+      "file" : "overrides.graph.yaml",
+      "place" : [ "edges", "0" ],
+      "detail" : "overrides.graph.yaml: an overrides edge may not connect directive to tactic"
+    } ]
+  },
+  "planted/r32-mission-step-unlinked" : {
+    "findings" : [ {
+      "code" : "mission_step_unlinked",
+      "severity" : "violation",
+      "file" : "missions/rx/rx.mission-type.yaml",
+      "place" : [ ],
+      "detail" : "missions/rx/rx.mission-type.yaml: the step b of mission_type:rx has no requires edge from its type: author mission_type:rx requires action:rx/b"
+    } ]
+  },
+  "planted/r33-authored-action-sequence" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "missions/rx/rx.mission-type.yaml",
+      "place" : [ ],
+      "detail" : "missions/rx/rx.mission-type.yaml: unknown key 'action_sequence'"
+    } ]
+  },
+  "planted/r34-authored-template-set" : {
+    "findings" : [ {
+      "code" : "artifact_schema_error",
+      "severity" : "violation",
+      "file" : "missions/rx/rx.mission-type.yaml",
+      "place" : [ ],
+      "detail" : "missions/rx/rx.mission-type.yaml: unknown key 'template_set'"
+    } ]
+  },
+  "planted/r35-substep-delegation-unresolved" : {
+    "findings" : [ {
+      "code" : "substep_delegation_unresolved",
+      "severity" : "violation",
+      "file" : "missions/rx/rx.mission-type.yaml",
+      "place" : [ "steps", "0", "substeps", "0", "delegates_to", "candidates", "0" ],
+      "detail" : "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, which the pack does not hold as a tactic"
+    } ]
+  },
+  "planted/r36-substep-delegation-unscoped" : {
+    "findings" : [ {
+      "code" : "substep_delegation_unscoped",
+      "severity" : "violation",
+      "file" : "missions/rx/rx.mission-type.yaml",
+      "place" : [ "steps", "0", "substeps", "0", "delegates_to", "candidates", "0" ],
+      "detail" : "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds action:rx/a scope tactic:tdd"
+    } ]
+  },
+  "planted/requires-core-invalid" : {
+    "findings" : [ {
+      "code" : "requires_core_invalid",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ "requires_core" ],
+      "detail" : "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"
+    } ]
+  }
+}

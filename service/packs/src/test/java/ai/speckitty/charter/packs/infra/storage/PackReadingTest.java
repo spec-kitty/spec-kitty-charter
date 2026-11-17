@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.golden.SurfaceAnswers;
-import ai.speckitty.charter.packs.golden.SurfaceAnswers.Subject;
+import ai.speckitty.charter.packs.examples.GoldenSubjects;
+import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
@@ -32,7 +32,7 @@ class PackReadingTest {
     private static final FileSystemPackInspector READER = new FileSystemPackInspector();
 
     static List<Subject> subjects() {
-        return SurfaceAnswers.subjects();
+        return GoldenSubjects.subjects();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -40,7 +40,7 @@ class PackReadingTest {
     @DisplayName("over every golden pack, the readout is the verdict, the census's files and its files not held")
     void theReadoutIsTheVerdictOfTheOneRead(Subject subject, @TempDir Path host) throws IOException {
         assumeLinks(subject, host);
-        Path pack = SurfaceAnswers.copy(subject, Files.createDirectories(host.resolve("pack")));
+        Path pack = GoldenSubjects.copy(subject, Files.createDirectories(host.resolve("pack")));
         PackRoot root = new PackRoot(subject.name(), Optional.empty(), pack.toString());
         PackReading reading = READER;
 
