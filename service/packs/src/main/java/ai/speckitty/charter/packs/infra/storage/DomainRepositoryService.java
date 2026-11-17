@@ -585,7 +585,7 @@ public final class DomainRepositoryService
     private static Pack assemble(
             PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
         // No read serves the warnings in phase 1: the list is filled and dropped.
-        return LoadChecks.assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>())
+        return StoreRead.assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>())
                 .build();
     }
 

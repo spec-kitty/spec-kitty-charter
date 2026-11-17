@@ -2,24 +2,35 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.StepEnhancementFault;
+import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +41,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The one read's DSO half (#554, S1, T025, T028): what the store's own reader reads of a pack tree, assembled once
- * through {@link PackAssembly} with the load's rules ({@link LoadChecks}), and mapped into the domain values the
+ * through {@link PackAssembly} with the faults the store half meets on the way ({@link #assembly}), and mapped into the
+ * domain values the
  * aggregate needs ({@link Assembly}). The one reader runs it inside its walk, so the aggregate is built from the read
  * that was judged; the whole-pack load and write run it too, keeping the storage half ({@link #layout}, {@link #graphs},
  * {@link #manifest}) they write back. A plain class, not a bean ({@code THE_PACKS_LOAD_REACHES_NO_FRAMEWORK}).
@@ -110,7 +122,7 @@ record StoreRead(
         Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
         List<PackFinding> warnings = new ArrayList<>();
-        Pack.Builder builder = LoadChecks.assembly(id, read, places, graphs, warnings);
+        Pack.Builder builder = assembly(id, read, places, graphs, warnings);
         // The manifest's and the policy file's faults follow the assembly's; the composing read does not judge them.
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir.resolve(PackFileSet.MANIFEST), strategy, trailing);
@@ -383,5 +395,169 @@ record StoreRead(
             }
         }
         return out;
+    }
+
+    /**
+     * The store half's assembly of {@link PackAssembly#assembly(PackIdentifier, FilesystemPackStore.PackRead, Map)} given
+     * the pack's graph documents too, with the faults the store half meets on the way (#554, S7, WP12): what the
+     * composing read answers from, the first of them as {@code pack_unreadable}, and what the per-artifact reads hold.
+     * A registration and validate mode judge the one read's rationale instead, in which the content rules state these
+     * faults ({@code StorageRulesets.verdict}); the store half's statement of the same fault is not repeated there.
+     * Nothing is thrown for such a fault. Before the existing assembly it
+     *
+     * <ol>
+     *   <li>judges the facts of the read's step enhancements, their companions and the graph edges (no orphan set: the
+     *       read lists no unnamed file; the edge rules are not judged over a graph read that has a violation, which is
+     *       refused on its own);
+     *   <li>hands {@link PackAssembly} the files it leaves out, which then shapes the read (each {@code companion}
+     *       violation of a step enhancement file kept under the kind {@code prompt_fragment_invalid}): each file whose
+     *       id repeats (the second in path order), so that {@code Pack.guardKind}'s same-id rule never breaches at
+     *       {@code build()} (operator ruling A2), and each mission type whose step repeats a substep id: it is recorded
+     *       under the kind
+     *       {@code duplicate_step_id} at its file, after the violations of the existing assembly, the code and file
+     *       validate mode reports (FR-004), never as the domain's generic refusal;
+     * </ol>
+     *
+     * and last appends each rule fault as a violation at its file, after the violations of the store, of every bound
+     * kind, the templates, the presets and the pack document, and after the slot faults of the step prompts (FR-007,
+     * IC-03): the order of {@code readable}'s first violation. A slot fault the descriptor's version only warns of is
+     * put on {@code warnings}, not on the violations.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param graphs what the store read of the pack's graph documents
+     * @param warnings receives the load findings that do not refuse the pack (A4, A8), filled as {@code places} is
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            FilesystemPackStore.GraphRead graphs,
+            List<PackFinding> warnings) {
+        List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
+                PackAssembly.stepEnhancementFacts(read, graphs.documents()),
+                graphs.violations().isEmpty());
+        List<PackElementViolation> repeats = new ArrayList<>();
+        Set<String> repeating = new LinkedHashSet<>();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            List<PackElementViolation> found =
+                    PackPolicy.substepIdViolations(PackAssembly.missionTypeFacts(stored.file(), stored.dso()));
+            if (!found.isEmpty()) {
+                repeating.add(stored.file());
+                repeats.addAll(found);
+            }
+        }
+        Set<String> withheld = new LinkedHashSet<>();
+        for (StepEnhancementFault.Finding fault : faults) {
+            if (fault.rule() == StepEnhancementFault.STEM_REPEATED) {
+                withheld.add(fault.path());
+            }
+        }
+        Pack.Builder builder = PackAssembly.assembly(pack, read, places, withheld, repeating);
+        repeats.forEach(builder::violation);
+        recordPromptSlotFaults(read, builder, warnings);
+        faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
+        missionStepViolations(read, places, graphs).forEach(builder::violation);
+        substepDelegationViolations(read, places, graphs).forEach(builder::violation);
+        return builder;
+    }
+
+    /**
+     * Each fault of {@link MissionStepLinkRule} over the mission types the assembly holds (one the domain refuses is
+     * refused on its own and not judged) and the edges of the readable graph documents, at its file. When a graph
+     * document could not be read the rule is not judged: the read reports that document, and a step would otherwise
+     * lack an edge the pack may well hold.
+     */
+    private static List<PackElementViolation> missionStepViolations(
+            FilesystemPackStore.PackRead read, Map<Urn, String> places, FilesystemPackStore.GraphRead graphs) {
+        if (!graphs.violations().isEmpty()) {
+            return List.of();
+        }
+        return MissionStepLinkRule.judge(read.descriptor().name(), heldTypes(read, places), edgesOf(graphs)).stream()
+                .map(fault -> new PackElementViolation(fault.file(), PackCodes.MISSION_STEP_UNLINKED, fault.reason()))
+                .toList();
+    }
+
+    /**
+     * Each fault of {@link SubstepDelegationRule} over the mission types the assembly holds, the artifacts it holds and
+     * the edges of the readable graph documents, at the mission type file (FR-005). When a graph document could not be
+     * read the rule is not judged: the read reports that document, and a candidate would otherwise lack an edge the pack
+     * may well hold.
+     */
+    private static List<PackElementViolation> substepDelegationViolations(
+            FilesystemPackStore.PackRead read, Map<Urn, String> places, FilesystemPackStore.GraphRead graphs) {
+        if (!graphs.violations().isEmpty()) {
+            return List.of();
+        }
+        Set<String> held = new HashSet<>();
+        places.keySet().forEach(urn -> held.add(urn.toString()));
+        return SubstepDelegationRule.judge(read.descriptor().name(), heldTypes(read, places), held, edgesOf(graphs))
+                .stream()
+                .map(fault -> new PackElementViolation(
+                        fault.file(),
+                        SubstepDelegationRule.UNRESOLVED.equals(fault.code())
+                                ? PackCodes.SUBSTEP_DELEGATION_UNRESOLVED
+                                : PackCodes.SUBSTEP_DELEGATION_UNSCOPED,
+                        fault.reason()))
+                .toList();
+    }
+
+    /**
+     * The facts of the mission types the assembly holds: a type the domain refuses is refused on its own and is no fact.
+     */
+    private static List<MissionTypeFacts> heldTypes(FilesystemPackStore.PackRead read, Map<Urn, String> places) {
+        List<MissionTypeFacts> types = new ArrayList<>();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            MissionTypeDso type = stored.dso();
+            if (stored.file().equals(places.get(new Urn(NodeKind.MISSION_TYPE, type.id())))) {
+                types.add(PackAssembly.missionTypeFacts(stored.file(), type));
+            }
+        }
+        return types;
+    }
+
+    /** The edges of the readable graph documents, as written, in document order. */
+    private static List<MissionStepLinkRule.Edge> edgesOf(FilesystemPackStore.GraphRead graphs) {
+        List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                edges.add(new MissionStepLinkRule.Edge(document.file(), edge.source(), edge.target(), edge.relation()));
+            }
+        }
+        return edges;
+    }
+
+    /**
+     * Judges the slots of every step prompt of the stored mission types (FR-007) and records each fault at the prompt's
+     * pack-relative file: a blocking fault as a violation, a warning on {@code warnings}, never on the violations
+     * (A4). The text parsed is the canonical text of the prompt document the store read into the mission type
+     * ({@code MissionTypeDso.Step#prompt}), frontmatter included (A5, A11): the same text validate mode parses. A step
+     * with no prompt has nothing to judge.
+     */
+    private static void recordPromptSlotFaults(
+            FilesystemPackStore.PackRead read, Pack.Builder builder, List<PackFinding> warnings) {
+        Optional<String> version = read.descriptor().toDescriptor().schemaVersion();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            List<MissionTypeDso.Step> steps = new ArrayList<>(stored.dso().steps());
+            steps.addAll(stored.dso().onDemandSteps());
+            for (MissionTypeDso.Step step : steps) {
+                if (step.promptPath().isEmpty() || step.prompt().isEmpty()) {
+                    continue;
+                }
+                String file = PackAssembly.companionFile(
+                        stored.file(), step.promptPath().get());
+                PromptSlots.Parse parse =
+                        PromptSlots.parse(MarkdownCodec.write(step.prompt().get()));
+                for (PackPolicy.PromptSlotFault fault : PackPolicy.promptSlotFaults(parse, version)) {
+                    if (fault.code().severity() == Severity.VIOLATION) {
+                        builder.violation(PackPolicy.violationOf(file, fault));
+                    } else {
+                        warnings.add(PackPolicy.findingOf(file, fault));
+                    }
+                }
+            }
+        }
     }
 }
