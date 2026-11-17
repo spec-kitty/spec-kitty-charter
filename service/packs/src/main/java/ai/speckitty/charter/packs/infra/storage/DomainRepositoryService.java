@@ -21,7 +21,6 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
-import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackDocumentRepository;
@@ -494,27 +493,7 @@ public final class DomainRepositoryService
                 strategy,
                 KindBindings.all(),
                 Companions.Rules.bundled());
-        if (read.graphsUnreadable()) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
-        }
-        Assembly.Assembled held = switch (read.assembly()) {
-            case Assembly.Assembled assembled -> assembled;
-            case Assembly.Refused refused -> throw new CharterRefusal(refused.code(), refused.message());
-            case Assembly.None none -> throw new IllegalStateException("the store's read gave no assembly input");
-        };
-        CompositionFactsBuilder.requireReadable(pack, held.violations().subList(0, held.assembled()));
-        Optional<String> named = held.descriptor().paths().mutabilityPolicy();
-        if (named.isPresent() && held.policyText().isEmpty()) {
-            throw CompositionFactsBuilder.unreadablePolicy(
-                    pack, named.get(), held.policyFault().orElse("is missing"));
-        }
-        held.factsRefusal().ifPresent(refusal -> {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
-        });
-        return held.facts()
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read"));
+        return CompositionFactsBuilder.composeFacts(pack, read);
     }
 
     /**
