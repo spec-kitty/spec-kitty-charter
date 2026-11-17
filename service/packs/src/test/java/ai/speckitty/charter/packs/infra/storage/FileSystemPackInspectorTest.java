@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
@@ -1657,7 +1658,7 @@ class FileSystemPackInspectorTest {
                 .as("the reader derives the held lists through PackManifestDerivation (T024)")
                 .contains(ManifestMembership.entries(
                         PackManifestDerivation.derivedAt(dir, new YamlSerializationStrategy())));
-        assertThat(ManifestMembership.mismatch(
+        assertThat(ManifestRules.mismatch(
                         manifest.listed().orElseThrow(), manifest.derived().orElseThrow()))
                 .as("the example pack's manifest lists what it holds")
                 .isEmpty();
@@ -1668,7 +1669,7 @@ class FileSystemPackInspectorTest {
         }
         Files.delete(tactic);
         TreeCensus.Manifest short1 = INSPECTOR.readTree(root).census().manifest();
-        assertThat(ManifestMembership.mismatch(
+        assertThat(ManifestRules.mismatch(
                         short1.listed().orElseThrow(), short1.derived().orElseThrow()))
                 .as("a listed file the pack no longer holds is a mismatch of the two facts")
                 .singleElement()

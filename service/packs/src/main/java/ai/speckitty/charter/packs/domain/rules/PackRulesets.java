@@ -1,10 +1,12 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
+import java.util.List;
 
 /**
- * The named compositions of the content rules (#554, FR-002, S1 to S3): each surface runs a composition by its name,
+ * The named compositions of the content rules and of {@code CLOSURE} (#554, FR-002, FR-003, S1 to S3): each surface runs a composition by its name,
  * with no surface profile and no mode flag. The storage edge lifts {@link #content()} onto its one read
  * ({@code StorageRulesets.registration()}), and validate mode takes the same verdict through the domain port
  * {@code PackReading}, so what registration finds, validate mode finds too, by construction.
@@ -37,5 +39,15 @@ public final class PackRulesets {
      */
     public static ModularRuleset<PackContents> content() {
         return CONTENT;
+    }
+
+    /**
+     * {@code CLOSURE}, the pack set's consistency ({@link CompositionRules#closure()}): every composition fault of a set
+     * of packs with levels, collect-all. Validate mode does not run it; the pack-set check is pack-check's (#478).
+     *
+     * @return the composition
+     */
+    public static ModularRuleset<List<PackUnderResolution>> closure() {
+        return CompositionRules.closure();
     }
 }

@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
+import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -407,14 +408,14 @@ class ManifestMembershipTest {
                 List.of("tactic:a at a.tactic.yaml", "tactic:b at b.tactic.yaml"),
                 List.of("p at presets/p.yaml", "q at presets/q.yaml"));
 
-        assertThat(ManifestMembership.mismatch(listed, derived))
+        assertThat(ManifestRules.mismatch(listed, derived))
                 .containsExactly(
                         "lists constituent tactic:x at x.tactic.yaml, which the pack does not hold",
                         "lists constituent tactic:a at a.tactic.yaml twice",
                         "lists preset p at presets/p.yaml twice",
                         "leaves out constituent tactic:b at b.tactic.yaml, which the pack holds",
                         "leaves out preset q at presets/q.yaml, which the pack holds");
-        assertThat(ManifestMembership.mismatch(derived, derived)).isEmpty();
+        assertThat(ManifestRules.mismatch(derived, derived)).isEmpty();
     }
 
     @Test
