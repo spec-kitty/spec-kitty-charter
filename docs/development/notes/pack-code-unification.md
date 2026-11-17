@@ -181,6 +181,70 @@ WP04, WP05 and WP08 see it.
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
 
+## Outcomes of WP10
+
+WP10 closed the slice: the every-code coverage, the mutation floors, the ADR amendments, the drafts, and the items
+carried from WP04, WP09 and WP13. No golden row moves: `surfaces.json`, `validate.json` and `composition.json` are
+byte-equal.
+
+- **Every code is exercised (T055, NFR-005).** `PackCodesCoverageTest` enumerates every `PackCodes` content code,
+  every `StorageCodes` code and every `CLOSURE` code, and fails naming a code with no failing or no passing fixture;
+  a test pins the enumeration to every code the two classes build. The fixtures are the planted and example packs,
+  then ten small packs written for the codes no plant reaches (the prompt slot codes, `prompt_fragment_invalid`,
+  `overrides_source_not_activatable`, `companion`, `pack_version_invalid`, `dependency_range_invalid`,
+  `reserved_shard`, `manifest_membership`), each checked to state its code; a new plant would have added golden rows.
+  `validation_failed` (row 26) has one hand-written fact, since no read reaches it. `PlacementCodesCoverageTest` does
+  the same for `PlacementCodes`, beside its subject in `:pack-validation`.
+- **The storage rules count with the core rules (squad-shaping Q6, the default).** `packs.infra.storage.rules` moved
+  from `:packs`' `infra.storage` floor group to `domain+application`: it is pure, so it is held to the same floor.
+- **PIT (T056, R3-b (i)).** Measured, not narrowed: `:pack-validation:pitest` kills 330 of 372 mutants (88.7 %), so the
+  floor stays 85 and its margin widens from 0 to 13 mutants; `PackCheck`, `PackVerdicts` and the placement rules kill
+  every mutant, and the survivors are the round trip's (#578). `:packs`' `domain+application` shard, with the storage
+  rules, kills 3846 of 4240 (90.7 %), margin 242. The `infra.storage`
+  shard, without them, kills 3134 of 3439 (91.1 %), margin 210. Both floors stay 85. The narrowed run of this mission's `:packs` classes
+  (`packs.domain.rules`, `packs.infra.storage.rules`, `PackRefusals`, `StoreRead`, `Wording`, `CensusEntries`,
+  `WholePackCensus`, `CompositionFactsBuilder`) kills 716 of 732 (97.8 %), against 698 of 733 (95.2 %) before WP10:
+  `AssemblyRulesTest` gained the companion mappings' cases, `CompositionFactsTest` pins WP05's moved code (a type's own
+  step link is no reference, the nodes of a kind with no file are defined, the typed edges' order, the graph refused
+  before the descriptor), and `FileSystemPackInspectorTest` the manifest's and the named policy's trailing order.
+  `Wording` and `GraphBinding`, WP03's, now kill every mutant. ADR-0062 has the amendment of 2026-11-17.
+- **The 16 mutants left, named.**
+  - *Equivalent.* `Precedence.withoutLeadingZeros` (a boundary: stripping every zero leaves an empty string, which
+    still sorts before every non-zero index and equals every other zero); `Precedence.keyOrder`'s fragment-edge
+    conditional (`FRAGMENT_EDGE_KEYS` is `SHARD_EDGE_KEYS`).
+  - *Equivalent on every input the store produces.* The `colon == 0` boundaries of `AssemblyRules.why`, `declaredOf`,
+    `namesCompanion` and `companionOf` (the store never words a companion fault with an empty path), and
+    `CensusEntries.entry`'s `slash == 0` boundary (a pack-relative path never starts with `/`).
+  - *No difference a read can show.* `CompositionFactsBuilder.ownStepLinkTargets`' three filters: every step a held
+    type declares must be linked by that type, and a link that names no step of its type refuses the pack
+    (`mission_step_unlinked`), so a target the filters would keep or drop is dropped by an own link anyway, or the
+    pack never composes. `StorageRulesets.verdict` adding the named policy to the trailing files, and
+    `StoreRead.namedPolicyFaults`' filter: the test of the manifest's and the policy's trailing order and of each
+    stated once holds with either mutant, and no read was found that tells them apart. Not proven equivalent; left
+    named.
+  - *Uncovered.* `StoreRead.of`'s aggregate breach and `CompositionFactsBuilder.heldFacts`' missing facts are
+    fail-safes no read reaches (row 26); `WholePackCensus.contentFormOf` is exercised only by `:pack-validation`'s
+    round trip (`RoundTripControls`), outside `:packs`' PIT scope.
+  - #556's code (the reference checks of the closure walk) was not touched.
+- **The carried items.** WP04's companion cases (a Markdown refusal is one `companion` fault at the companion; a
+  fragment that is not UTF-8 is `prompt_fragment_invalid` through `coded()`, and any other companion that is not
+  UTF-8 is never held, so only the store half meets it and answers `companion`, `is not valid UTF-8`, beside its
+  `file_not_held` warning); WP09's root shard that does not parse (one read fault; a schema breach stays one fault per
+  violation), `CharterWiringTest`'s comment, "prechecks" restored and in the word list, and DIV-028's core line
+  (`pack_validator.py:787-788` at `9554e7b2`); WP13's m1 to m5 and N1 to N3, and the stale test names in the fixture
+  metadata.
+- **WP13's m4.** `WholePackCensusAgreementTest`: over every golden subject, every path a walk meets has a gate kind
+  in `WholePackCensus.of`, and `companionsOf` of an artifact the store holds is the store read's companion claims for
+  it. The scenario packs are built inside Cucumber steps in `:deployable`, out of the module's reach.
+- **WP13's N1.** WP13's T051 check is the word-bounded `git grep -w`; run again here,
+  `git grep -wn -e PackPolicy -e PackFinding -e PackFindingCode -e PackInspector -- service` finds nothing.
+- **Dead code.** `PackRefusals.asPackNotFound` had no caller left; it is deleted.
+- **Not done here.** The native build cannot run without GraalVM in this session; CI runs it.
+- **Edits outside WP10's owned files**, each a carried item or a survivor's triage: the R2 note, the word list,
+  DIV-028 (`divergences.yaml`, the register page), two planted fixtures' metadata and `docs/plans/charter-example-packs.md`,
+  `CharterWiringTest`, `HexagonalArchitectureTest` and two bite fixtures, the four storage rules (N3),
+  `PackRefusals` (dead code), and the `:packs` and `:pack-validation` tests named above.
+
 ## Outcomes of WP13
 
 WP13 deleted the glue and pinned the shape. `PackPolicy` (with `judge`, `Judgement` and its paired emitters),

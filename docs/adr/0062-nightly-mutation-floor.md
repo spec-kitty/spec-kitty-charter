@@ -2,7 +2,7 @@
 title: "ADR-0062: Nightly mutation floor"
 description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
 doc_status: active
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-17T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -102,9 +102,9 @@ characters in mutator descriptions, so it is not well-formed XML.
    | profiles-edge | `profiles-edge` | `profiles.application`, `profiles.infra`, without the four `*.config` packages | 85 | 18 |
    | missions-edge | `missions-edge` | `missions.application`, `missions.infra`, without the four `*.config` packages | 85 | not yet measured |
    | artifacts-edge | `artifacts-edge` | `artifacts.application`, `artifacts.infra`, without the four `*.config` packages | 85 | not yet measured |
-   | pack-validation | `pack-validation` | `ai.speckitty.charter.packvalidation` | 85 | 0 |
-   | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
-   | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
+   | pack-validation | `pack-validation` | `ai.speckitty.charter.packvalidation` | 85 | 13 |
+   | packs | `domain+application` | `packs.domain`, `packs.application`, `packs.infra.storage.rules`, without `application.config` | 85 | 242 |
+   | packs | `infra.storage` | `packs.infra.storage`, without `infra.storage.rules` | 85 | 210 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
 
    The packs floors follow `floor5(score − 3)` of the first measured run (92.7 % and 90.7 % give 85 each, 77.3 % gives
@@ -361,3 +361,38 @@ mutates that package, so the scopes do not overlap.
   the floor is raised by pull request once the score clears it by 5.
 
 The `others` shard's `pitest` reaches the module, and `mutationModules` lists it. The other floors are unchanged.
+
+## Amendment, 2026-11-17 (#554): the pack-validation margin measured, and the storage rules join domain+application
+
+Status: Accepted, as an amendment of this accepted ADR. No floor is lowered.
+
+Slice 5 of ADR-0075 ([#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554)) put the validation edge into
+`pack-validation` (`PackCheck`, `PackVerdicts` and the placement rules) and the pack rules into `:packs`
+(`packs.domain.rules`, and the storage rules in `packs.infra.storage.rules`). Its operator ruling R3-b (i) asks that the
+margins documented here be re-set from a measurement.
+
+- **pack-validation.** A whole-module `:pack-validation:pitest` on #554's head scores 88.7 % (330 of 372 mutants
+  detected, 15 survived, 27 uncovered, test strength 95.6 %), against the one mutant of #553. The floor stays 85, which
+  is `floor5(score − 3)` of this run, and the margin widens from 0 to 13 mutants (317 of 372 needed). #554's own
+  classes (`PackCheck`, `PackVerdicts`, `Placement`, `LevelRules`, `OrgFragmentRules`, `PlacementCodes`) kill every
+  mutant; the survivors and uncovered mutants are the round trip's (#578: `MeaningComparator`,
+  `WholePackExpectation`, `RoundTripObservation`, `WholePackRoundTripRule`).
+- **packs: the storage rules count with domain+application** (#554 squad-shaping Q6). `packs.infra.storage.rules`
+  holds pure kernel rulesets over the one read, so it is held to the core rules' floor: the `domain+application` group
+  gains the package, and `infra.storage` excludes it. The shard `-PmutationGroups=domain+application` on #554's
+  head scores 90.7 % (3846 of 4240 detected, 240 survived, 154 uncovered, 31 timed out, test strength 94.1 %): the floor
+  stays 85 (`floor5(score − 3)`), and the margin is 242 mutants, against 126 in the run that set it.
+  The shard `-PmutationGroups=infra.storage`, without the storage rules, scores 91.1 % (3134 of 3439 detected, 170
+  survived, 135 uncovered, 11 timed out, test strength 94.8 %): the floor stays 85, and the margin is 210 mutants,
+  against 120.
+- **The narrowed run of #554's code** (not a floor measurement): `packs.domain.rules`, `packs.infra.storage.rules`,
+  `PackRefusals`, `StoreRead`, `Wording`, `CensusEntries`, `WholePackCensus` and `CompositionFactsBuilder` against the
+  `domain`, `infra.storage` and `application` tests kill 716 of 732 mutants (97.8 %), against 698 of 733 (95.2 %)
+  before WP10's triage (one uncovered mutant went with the dead method it mutated). The 16 left are named in the R2
+  note (`docs/development/notes/pack-code-unification.md`, "Outcomes of WP10"): 12 equivalent or with no difference a
+  read can show, and 4 uncovered, of which two are fail-safes no read reaches and two are exercised only from
+  `:pack-validation`.
+
+Decision 3's table carries these packages and margins.
+
+The other floors are unchanged.
