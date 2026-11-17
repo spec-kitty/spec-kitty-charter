@@ -91,11 +91,17 @@ class CompositionFactsTest {
                 - {urn: 'tactic:declared-only', kind: tactic}
                 edges: []
                 """);
+        write(pack, "drg/fragment.yaml", """
+                nodes:
+                - {id: shotgun-surgery, kind: anti_patterns, title: Shotgun surgery}
+                - {id: fragment-only, kind: tactics, title: Fragment only}
+                edges: []
+                """);
 
         assertThat(factsOf(pack).defined())
-                .contains("anti_pattern:copy-paste", "action:software-dev/plan")
+                .contains("anti_pattern:copy-paste", "action:software-dev/plan", "anti_pattern:shotgun-surgery")
                 .as("a kind with files of its own is defined by its file, not by a node")
-                .doesNotContain("tactic:declared-only");
+                .doesNotContain("tactic:declared-only", "tactic:fragment-only");
     }
 
     @Test
