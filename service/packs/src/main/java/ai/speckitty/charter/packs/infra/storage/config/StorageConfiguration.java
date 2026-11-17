@@ -61,11 +61,12 @@ public class StorageConfiguration {
      * The one reader of a pack tree (#554, S1, S6): the domain port a registration reads a staged tree through, so the
      * application ring names no storage type and no onion rule is widened.
      *
+     * @param strategy the serialization format the store reads, which the reader reads in too
      * @return the file-system reader
      */
     @Bean
-    PackReading packReading() {
-        return new FileSystemPackInspector();
+    PackReading packReading(SerializationStrategy strategy) {
+        return new FileSystemPackInspector(strategy);
     }
 
     /**

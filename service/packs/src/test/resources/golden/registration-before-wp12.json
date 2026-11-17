@@ -1,0 +1,1313 @@
+{
+  "example-packs/built-in": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "missions/software-dev/templates/README.md: not held (Orientation notes beside the mission templates they describe. Not pack content and not templates.)"
+        }
+      ]
+    }
+  },
+  "example-packs/org-base": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "docs/authoring-notes.md: not held (Author aid: Markdown that no files rule models (#451). Not pack content: not held, not served, not refused.)"
+        }
+      ]
+    }
+  },
+  "example-packs/project": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/artifact-not-utf8": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/artifact-not-utf8+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml.",
+      "violations": [
+        {
+          "pointer": "tactics/a.tactic.yaml",
+          "code": "unreadable",
+          "detail": "tactics/a.tactic.yaml: the file is not valid UTF-8"
+        }
+      ]
+    }
+  },
+  "planted/artifact-not-yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/artifact-not-yaml+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml.",
+      "violations": [
+        {
+          "pointer": "tactics/a.tactic.yaml",
+          "code": "unreadable",
+          "detail": "tactics/a.tactic.yaml: while parsing a flow node"
+        }
+      ]
+    }
+  },
+  "planted/artifact-utf16-with-a-byte-order-mark": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/artifact-utf16-with-a-byte-order-mark+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml.",
+      "violations": [
+        {
+          "pointer": "tactics/a.tactic.yaml",
+          "code": "unreadable",
+          "detail": "tactics/a.tactic.yaml: the file is not valid UTF-8"
+        }
+      ]
+    }
+  },
+  "planted/asset-id-not-kebab": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/run.py.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/run.py.asset.yaml",
+          "code": "artifact_schema_error",
+          "detail": "assets/run.py.asset.yaml: 'id' does not match its pattern"
+        }
+      ]
+    }
+  },
+  "planted/asset-mime-does-not-match-the-extension": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-mime-does-not-match-the-extension+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+        }
+      ]
+    }
+  },
+  "planted/asset-mime-malformed": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-mime-malformed+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: payload assets/doc.txt does not exist"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-absolute": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-absolute+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: asset path '/etc/hosts' escapes the pack's assets/ root"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-dot-dot": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-dot-dot+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: asset path '../../outside.png' escapes the pack's assets/ root"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-through-a-symlink": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-through-a-symlink+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-windows-drive": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-escape-windows-drive+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: asset path 'C:\\Windows\\x.txt' escapes the pack's assets/ root"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-inside-through-a-symlink-is-contained": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-inside-through-a-symlink-is-contained+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-symlink-loop": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-path-symlink-loop+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+        }
+      ]
+    }
+  },
+  "planted/asset-repeated-id-only-the-first-owner-is-checked": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-repeated-id-only-the-first-owner-is-checked+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: payload assets/ok.txt does not exist"
+        },
+        {
+          "pointer": "assets/b.asset.yaml",
+          "code": "asset",
+          "detail": "assets/b.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+        }
+      ]
+    }
+  },
+  "planted/asset-repeated-id-the-first-owner-escapes": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/asset-repeated-id-the-first-owner-escapes+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
+      "violations": [
+        {
+          "pointer": "assets/a.asset.yaml",
+          "code": "asset",
+          "detail": "assets/a.asset.yaml: asset path '../../escape.txt' escapes the pack's assets/ root"
+        },
+        {
+          "pointer": "assets/b.asset.yaml",
+          "code": "asset",
+          "detail": "assets/b.asset.yaml: payload assets/ok.txt does not exist"
+        }
+      ]
+    }
+  },
+  "planted/c10-agent-quoted-integer": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c10-agent-quoted-integer+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+      "violations": [
+        {
+          "pointer": "agent_profiles/p.agent.yaml",
+          "code": "artifact_schema_error",
+          "detail": "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+        }
+      ]
+    }
+  },
+  "planted/c10-agent-role-uppercase": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c10-agent-role-uppercase+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+      "violations": [
+        {
+          "pointer": "agent_profiles/p.agent.yaml",
+          "code": "artifact_schema_error",
+          "detail": "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
+        }
+      ]
+    }
+  },
+  "planted/c10-agent-scalar-role": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c10-agent-scalar-role+pack.yaml": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/c10-tactic-schema-version-unquoted": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c10-tactic-schema-version-unquoted+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml.",
+      "violations": [
+        {
+          "pointer": "tactics/a.tactic.yaml",
+          "code": "artifact_schema_error",
+          "detail": "tactics/a.tactic.yaml: 'schema_version' must be a string"
+        }
+      ]
+    }
+  },
+  "planted/c11-agent-routing-priority-101": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c11-agent-routing-priority-101+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+      "violations": [
+        {
+          "pointer": "agent_profiles/p.agent.yaml",
+          "code": "artifact_schema_error",
+          "detail": "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
+        }
+      ]
+    }
+  },
+  "planted/c11-directive-lenient-adherence-without-allowances": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c11-directive-lenient-adherence-without-allowances+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at directives/d.directive.yaml.",
+      "violations": [
+        {
+          "pointer": "directives/d.directive.yaml",
+          "code": "artifact_schema_error",
+          "detail": "directives/d.directive.yaml: missing 'explicit_allowances'"
+        }
+      ]
+    }
+  },
+  "planted/c16-shard-edge-provenance": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c16-shard-edge-provenance+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+      "violations": [
+        {
+          "pointer": "tactic.graph.yaml",
+          "code": "drg_schema_error",
+          "detail": "tactic.graph.yaml edge: unknown key 'provenance'"
+        }
+      ]
+    }
+  },
+  "planted/c2-agent-nested-unknown-key": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c2-agent-nested-unknown-key+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+      "violations": [
+        {
+          "pointer": "agent_profiles/p.agent.yaml",
+          "code": "artifact_schema_error",
+          "detail": "agent_profiles/p.agent.yaml: unknown key 'bogus'"
+        }
+      ]
+    }
+  },
+  "planted/c2-charter-nested-unknown-key": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c2-charter-nested-unknown-key+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "charter.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/c3-fragment-bare-local-id-declared": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
+        }
+      ]
+    }
+  },
+  "planted/c3-fragment-edge-bare-endpoint": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
+        }
+      ]
+    }
+  },
+  "planted/c3-root-shard-urn-malformed": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c3-root-shard-urn-malformed+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+      "violations": [
+        {
+          "pointer": "tactic.graph.yaml",
+          "code": "drg_schema_error",
+          "detail": "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+        },
+        {
+          "pointer": "tactic.graph.yaml",
+          "code": "drg_schema_error",
+          "detail": "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        }
+      ]
+    }
+  },
+  "planted/c3-shard-edge-bare-endpoint": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c3-shard-edge-bare-endpoint+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/c3-shard-urn-malformed": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c3-shard-urn-malformed+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/c4-shard-urn-prefix-differs-from-kind": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c4-shard-urn-prefix-differs-from-kind+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+      "violations": [
+        {
+          "pointer": "tactic.graph.yaml",
+          "code": "drg_schema_error",
+          "detail": "tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        }
+      ]
+    }
+  },
+  "planted/c5-fragment-kind-actions-is-accepted": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/c5-fragment-kind-mission-steps": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
+        }
+      ]
+    }
+  },
+  "planted/c5-fragment-kind-mission-type": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: node x has unknown kind 'mission_type'"
+        }
+      ]
+    }
+  },
+  "planted/c5-fragment-node-id-unsafe": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
+        }
+      ]
+    }
+  },
+  "planted/c6-fragment-header-pack-name": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: unknown key 'pack_name'"
+        }
+      ]
+    }
+  },
+  "planted/c7-fragment-relation-extends": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: unknown relation 'extends'"
+        }
+      ]
+    }
+  },
+  "planted/c7-shard-relation-extends": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c7-shard-relation-extends+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/c8-shard-without-generated-by-is-accepted": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/c8-shard-without-generated-by-is-accepted+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "drg/tactic.graph.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/c9-pack-version-missing-at-the-org-level": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack.yaml of qa has no pack_version",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack.yaml of qa has no pack_version"
+        }
+      ]
+    }
+  },
+  "planted/charter-cli-timeout-not-a-number": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/charter-cli-timeout-not-a-number+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "charter.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/charter-invalid": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/charter-invalid+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "charter.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/charter-template-set": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/charter-template-set+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "charter.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/charter-valid": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/charter-valid+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "charter.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/control-a-clean-org-pack": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/control-no-generated-by-and-no-pack-level": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/control-no-pack-level-on-a-bare-path": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/control-retired-pack-key-is-a-warning": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack.yaml of qa: unknown key 'accompanies_doctrine_pack'",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack.yaml of qa: unknown key 'accompanies_doctrine_pack'"
+        }
+      ]
+    }
+  },
+  "planted/control-unknown-pack-key-is-a-warning": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack.yaml of qa: unknown key 'mystery'",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack.yaml of qa: unknown key 'mystery'"
+        }
+      ]
+    }
+  },
+  "planted/duplicate-artifact-id": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/duplicate-artifact-id+pack.yaml": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at tactics/b.tactic.yaml.",
+      "violations": [
+        {
+          "pointer": "tactics/b.tactic.yaml",
+          "code": "duplicate_artifact_id",
+          "detail": "tactics/b.tactic.yaml: tactic id 'same' is already declared in tactics/a.tactic.yaml"
+        }
+      ]
+    }
+  },
+  "planted/duplicate-step-id": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+      "violations": [
+        {
+          "pointer": "missions/rx/rx.mission-type.yaml",
+          "code": "duplicate_step_id",
+          "detail": "missions/rx/rx.mission-type.yaml: substep id 'run' is declared more than once in the step 'a'"
+        }
+      ]
+    }
+  },
+  "planted/glossary-context-id-not-kebab": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+      "violations": [
+        {
+          "pointer": "glossaries/core.glossary.yaml",
+          "code": "artifact_schema_error",
+          "detail": "glossaries/core.glossary.yaml: 'id' does not match its pattern"
+        }
+      ]
+    }
+  },
+  "planted/glossary-context-id-not-the-stem": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossaries/a.glossary.yaml.",
+      "violations": [
+        {
+          "pointer": "glossaries/a.glossary.yaml",
+          "code": "artifact_schema_error",
+          "detail": "glossaries/a.glossary.yaml: glossary id 'b' is not its file stem 'a'"
+        }
+      ]
+    }
+  },
+  "planted/glossary-context-valid": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/glossary-pack-old-shape": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossary_packs/x.glossary-pack.yaml.",
+      "violations": [
+        {
+          "pointer": "glossary_packs/x.glossary-pack.yaml",
+          "code": "retired",
+          "detail": "glossary_packs/x.glossary-pack.yaml: the glossary_pack shape is replaced by glossaries/<id>.glossary.yaml (ADR-0049)"
+        }
+      ]
+    }
+  },
+  "planted/glossary-see-also-not-a-urn": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+      "violations": [
+        {
+          "pointer": "glossaries/core.glossary.yaml",
+          "code": "artifact_schema_error",
+          "detail": "glossaries/core.glossary.yaml: '0' does not match its pattern"
+        }
+      ]
+    }
+  },
+  "planted/glossary-term-as-a-non-vocabulary-target": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
+        }
+      ]
+    }
+  },
+  "planted/glossary-term-as-an-edge-source": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
+        }
+      ]
+    }
+  },
+  "planted/glossary-term-id-digit-first": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+      "violations": [
+        {
+          "pointer": "glossaries/core.glossary.yaml",
+          "code": "artifact_schema_error",
+          "detail": "glossaries/core.glossary.yaml: 'id' does not match its pattern"
+        }
+      ]
+    }
+  },
+  "planted/glossary-term-id-double-hyphen": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+      "violations": [
+        {
+          "pointer": "glossaries/core.glossary.yaml",
+          "code": "artifact_schema_error",
+          "detail": "glossaries/core.glossary.yaml: 'id' does not match its pattern"
+        }
+      ]
+    }
+  },
+  "planted/glossary-term-id-duplicate": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+      "violations": [
+        {
+          "pointer": "glossaries/core.glossary.yaml",
+          "code": "artifact_schema_error",
+          "detail": "glossaries/core.glossary.yaml: '/terms/2/id' breaks schema keyword 'uniqueItems'"
+        }
+      ]
+    }
+  },
+  "planted/org-fragment-missing": {
+    "accepted": {
+      "diagnostics": []
+    }
+  },
+  "planted/pack-yaml-tilde-is-null": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack.yaml of qa is not valid YAML: sequence entries are not allowed here",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack.yaml of qa is not valid YAML: sequence entries are not allowed here"
+        }
+      ]
+    }
+  },
+  "planted/r15-glossary-urn-as-an-edge-endpoint": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+      "violations": [
+        {
+          "pointer": "drg/fragment.yaml",
+          "code": "drg_schema_error",
+          "detail": "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
+        }
+      ]
+    }
+  },
+  "planted/r15-glossary-urn-in-a-shard": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: pack qa has no pack.yaml",
+      "violations": [
+        {
+          "pointer": "pack.yaml",
+          "code": "pack_unreadable",
+          "detail": "pack qa has no pack.yaml"
+        }
+      ]
+    }
+  },
+  "planted/r15-glossary-urn-in-a-shard+pack.yaml": {
+    "accepted": {
+      "diagnostics": [
+        {
+          "code": "file_not_held",
+          "detail": "drg/glossary.graph.yaml: not held (no pack file kind models this file)"
+        }
+      ]
+    }
+  },
+  "planted/r30-edge-procedure-requires-action": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at procedure.graph.yaml.",
+      "violations": [
+        {
+          "pointer": "procedure.graph.yaml",
+          "code": "relationship_endpoint_not_allowed",
+          "detail": "procedure.graph.yaml: a requires edge may not connect procedure to action"
+        }
+      ]
+    }
+  },
+  "planted/r31-edge-overrides-across-kinds": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at overrides.graph.yaml.",
+      "violations": [
+        {
+          "pointer": "overrides.graph.yaml",
+          "code": "relationship_endpoint_not_allowed",
+          "detail": "overrides.graph.yaml: an overrides edge may not connect directive to tactic"
+        }
+      ]
+    }
+  },
+  "planted/r32-mission-step-unlinked": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+      "violations": [
+        {
+          "pointer": "missions/rx/rx.mission-type.yaml",
+          "code": "mission_step_unlinked",
+          "detail": "missions/rx/rx.mission-type.yaml: the step b of mission_type:rx has no requires edge from its type: author mission_type:rx requires action:rx/b"
+        }
+      ]
+    }
+  },
+  "planted/r33-authored-action-sequence": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+      "violations": [
+        {
+          "pointer": "missions/rx/rx.mission-type.yaml",
+          "code": "artifact_schema_error",
+          "detail": "missions/rx/rx.mission-type.yaml: unknown key 'action_sequence'"
+        }
+      ]
+    }
+  },
+  "planted/r34-authored-template-set": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+      "violations": [
+        {
+          "pointer": "missions/rx/rx.mission-type.yaml",
+          "code": "artifact_schema_error",
+          "detail": "missions/rx/rx.mission-type.yaml: unknown key 'template_set'"
+        }
+      ]
+    }
+  },
+  "planted/r35-substep-delegation-unresolved": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+      "violations": [
+        {
+          "pointer": "missions/rx/rx.mission-type.yaml",
+          "code": "substep_delegation_unresolved",
+          "detail": "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, which the pack does not hold as a tactic"
+        }
+      ]
+    }
+  },
+  "planted/r36-substep-delegation-unscoped": {
+    "refused": {
+      "code": "validation_failed",
+      "detail": "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+      "violations": [
+        {
+          "pointer": "missions/rx/rx.mission-type.yaml",
+          "code": "substep_delegation_unscoped",
+          "detail": "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds action:rx/a scope tactic:tdd"
+        }
+      ]
+    }
+  },
+  "planted/requires-core-invalid": {
+    "accepted": {
+      "diagnostics": []
+    }
+  }
+}

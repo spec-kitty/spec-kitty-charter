@@ -197,8 +197,18 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   and 38): the four asset-mime and repeated-asset-id plants, each bare and `+pack.yaml`, and `requires-core-invalid`.
   Four rows are both. `SurfaceSubsetTest` pins the forward subset over the two goldens and names these rows.
 - **The store half's own faults are read faults, each stated once** (rows 16 to 19 and 32, A-M1). The verdict joins
-  the read faults, `registration()`, then each fault of the store's assembly that neither already states at its file
-  (`AssemblyRules.held`), then the manifest gate. Over the 108 golden subjects no store fault was left unstated; the
+  the read faults, `registration()`, then the store half's store-only faults (`AssemblyRules.held`), then the manifest
+  gate. The store-only faults are an allow-list the store half builds where it meets them
+  (`Assembly.Assembled.storeOnly`, review cycle 1 MAJOR-2): a template read twice, a value-object breach, a reference
+  or output template that does not close, a companion it cannot read, the named policy file, and the composition
+  facts' refusal. The rule families the store half also judges for the composing read (the step enhancements,
+  `duplicate_step_id`, the prompt slots, the step links, the substep delegations) are `content()`'s alone. A store-only
+  fault is left out only when the read states the same fault (MAJOR-1), by an explicit mapping: the companion's own
+  fault at the companion file, a companion the reader names missing or named more than once at the artifact, the
+  reader's one load refusal of a mission type file (`step '<id>' ...`, `names <path> ...`), or the same code at the same
+  file in words that end with the store's. Something else at the same file never hides it: a preset whose id is not its
+  stem answers its value-object breach too, and a blank fragment beside an enhancement that names a slot twice is
+  answered beside the two "more than once" faults (`StoreHalfFaultsTest`). Over the 108 golden subjects no store fault was left unstated; the
   plants of `StoreHalfFaultsTest` reach each one: a template read twice (`duplicate_artifact_id`, row 16), a value-object
   breach (`artifact_schema_error`, row 17), a guard reference that does not close, at the lifecycle that names it, and a
   template a mission type names and the pack lacks, in the reader's words (`names templates/x.md (named by the type):
@@ -214,7 +224,10 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   file, as validate mode placed it: in the reader's code and words where the reader reads it (`companion` for a file that
   does not parse, `artifact_schema_error` for a structure-schema breach, row 2's vocabulary), and `companion`,
   `missing` or `is not valid UTF-8`, where only the store meets it (a guide or a skill body that is missing or not
-  UTF-8); the registration answered each at the artifact (`<artifact>: <companion>: <why>`), so it changes. No golden
+  UTF-8); the registration answered each at the artifact (`<artifact>: <companion>: <why>`), so it changes. One
+  exception (review cycle 1 MINOR-3): an enhancement the store refuses itself (an id that is not its stem, a schema
+  fault) has no fragment read by the store, so a fragment of it that cannot be read is answered at the fragment, one
+  fault per finding, beside the enhancement's own fault. No golden
   subject reaches row 19; the `### Breaking` fragment `2026-11-17-registration-answers-every-fault.md` records both.
 - **Row 25 (WP07 review MINOR-1).** The store's refusal of a root is not stated beside the reader's `pack_unreadable`
   at `pack`, whatever name the pack is read under.
