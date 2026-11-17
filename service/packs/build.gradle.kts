@@ -13,6 +13,8 @@ plugins {
 dependencies {
     // The test fixtures (ADR-0070) resolve versions through the same BOM as main and test.
     testFixturesImplementation(platform(catalog.lib("spring-boot-bom")))
+    // GoldenSubjects reads each plant's expected.json: the golden subjects :packs and :pack-validation share (#554).
+    testFixturesImplementation(catalog.lib("jackson-databind"))
     api(project(":kernel"))
     // The profiles slice's domain: the pack store binds the agent-profile kind (ADR-0037, amendment of 2026-10-27).
     api(project(":profiles"))

@@ -16,8 +16,8 @@ import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.golden.SurfaceAnswers;
-import ai.speckitty.charter.packs.golden.SurfaceAnswers.Subject;
+import ai.speckitty.charter.packs.examples.GoldenSubjects;
+import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import java.io.IOException;
 import java.io.InputStream;
@@ -223,7 +223,7 @@ class PackRefusalsTest {
     }
 
     static List<Subject> subjects() {
-        return SurfaceAnswers.subjects();
+        return GoldenSubjects.subjects();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -232,7 +232,7 @@ class PackRefusalsTest {
             "over every golden pack, the verdict's refusal is the registration's recorded one, apart from the listed rows")
     void theVerdictAnswersAsTheRegistrationRecorded(Subject subject, @TempDir Path host) throws IOException {
         assumeLinks(subject, host);
-        Path pack = SurfaceAnswers.copy(subject, Files.createDirectories(host.resolve("registration")));
+        Path pack = GoldenSubjects.copy(subject, Files.createDirectories(host.resolve("registration")));
         // As the registration reads a staged tree: under its directory's name, with no configured level.
         Rationale verdict = new FileSystemPackInspector()
                 .read(new PackRoot(subject.name(), Optional.empty(), pack.toString()))

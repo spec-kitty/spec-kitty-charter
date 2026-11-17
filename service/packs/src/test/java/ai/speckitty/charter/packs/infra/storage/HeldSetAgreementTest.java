@@ -39,8 +39,9 @@ import tools.jackson.databind.json.JsonMapper;
  * The census is the one owner of "held" (#554, FR-016, I13, S3): over every planted pack (and each descriptor-less plant
  * again with a descriptor, as the golden judges it) and every example pack, the files the one reader's census lists as
  * not held are the {@code file_not_held} diagnostics of the golden snapshot ({@code golden/surfaces.json}), file for
- * file and in the store's words: validate mode's warnings always, and the registration's diagnostics when it accepted
- * the pack. The store's load lists what the census lists. A retired file is on neither list.
+ * file and in the store's words: the registration's diagnostics when it accepted the pack. Validate mode's warnings
+ * are checked against its own golden, {@code :pack-validation}'s {@code ValidateGoldenTest} (#554, WP09). The store's
+ * load lists what the census lists. A retired file is on neither list.
  *
  * <p>Open case 9 has a plant for each of its two cases: a {@code policy.yaml} the descriptor does not name is not held,
  * with its own kind and reason, and judged on neither surface; an orphan prompt fragment is not listed as not held and
@@ -119,10 +120,6 @@ class HeldSetAgreementTest {
         JsonNode golden = GOLDEN.get(subject.name());
         assertThat(golden).as("%s has a golden entry", subject).isNotNull();
 
-        assertThat(census)
-                .as("%s: the census's not-held files against validate mode's file_not_held warnings", subject)
-                .containsExactlyInAnyOrderElementsOf(
-                        notHeld(golden.get("validate").get("findings")));
         JsonNode accepted = golden.get("registration").get("accepted");
         if (accepted != null) {
             assertThat(census)

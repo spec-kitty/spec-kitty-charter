@@ -46,6 +46,8 @@ dependencies {
 
     // The charter-owned example packs (ADR-0070), their expected-red baseline and the round trip's lossy controls.
     testImplementation(testFixtures(project(":packs")))
+    // ValidateGoldenTest writes and reads golden/validate.json as the other golden files are written (#554).
+    testImplementation(catalog.lib("jackson-databind"))
 }
 
 // The nightly mutation floor (#239; ADR-0062, amendment of 2026-11-13): one group for the whole module. Its first run
@@ -62,9 +64,22 @@ mutationFloors {
 val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
 val testSourceSet = sourceSets.test.get()
 
+// The link plants of the golden subjects skip where the file system cannot make a symbolic link; -PrequireSymlinks=true,
+// which CI passes, makes them fail there instead (#286), as in :packs.
+val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
+
 // The whole-pack round trip's gate (`whole-pack`) runs in its own task, below, never in `test` or PIT.
 tasks.test {
     useJUnitPlatform { excludeTags("whole-pack") }
+    inputs.property("requireSymlinks", requireSymlinks)
+    systemProperty("charter.requireSymlinks", requireSymlinks.get())
+    // Validate mode's golden snapshot (#554, NFR-002): ValidateGoldenTest compares with src/test/resources/golden/,
+    // and `-Dgolden.update=true` makes it rewrite validate.json instead, the only way it is written. The switch is an
+    // input, so a cached comparison never stands in for a rewrite.
+    val goldenUpdate = providers.systemProperty("golden.update").orElse("false")
+    inputs.property("goldenUpdate", goldenUpdate)
+    systemProperty("golden.update", goldenUpdate.get())
+    systemProperty("charter.goldenDir", layout.projectDirectory.dir("src/test/resources/golden").asFile.absolutePath)
 }
 
 // The whole-pack round-trip gate (#187; ADR-0075 decision 8, as amended by operator ruling 2 of 2026-11-15): every file of

@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assumptions.abort;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.speckitty.charter.packs.golden.SurfaceAnswers.Subject;
+import ai.speckitty.charter.packs.examples.GoldenSubjects;
+import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
@@ -24,9 +25,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The golden snapshot of every pack-judging surface (#554, IC-01, NFR-002, SC-002): for each planted pack and each
- * example pack, what validate mode, the registration's staged load and the compose read answer, as {@link
- * SurfaceAnswers} records it, equals {@code golden/surfaces.json} byte for byte. It was taken before any behaviour of
+ * The golden snapshot of the registration and the compose read (#554, IC-01, NFR-002, SC-002): for each planted pack
+ * and each example pack, what the registration's staged load and the compose read answer, as {@link SurfaceAnswers}
+ * records it, equals {@code golden/surfaces.json} byte for byte. Validate mode's half is {@code :pack-validation}'s
+ * {@code golden/validate.json} (WP09). It was taken before any behaviour of
  * #554 changed; a later difference is allowed only when it cites Q1 or a row of the R2 code table
  * ({@code docs/development/notes/pack-code-unification.md}).
  *
@@ -34,11 +36,11 @@ import tools.jackson.databind.JsonNode;
  * a reviewer reads its diff. The contract scenarios build their archives inside Cucumber steps, so they stay their own
  * wire oracle, through {@code :deployable:test}.
  */
-@DisplayName("every pack-judging surface answers what golden/surfaces.json recorded (#554, NFR-002)")
+@DisplayName("the registration and the compose read answer what golden/surfaces.json recorded (#554, NFR-002)")
 class SurfaceGoldenTest {
 
     static List<Subject> subjects() {
-        return SurfaceAnswers.subjects();
+        return GoldenSubjects.subjects();
     }
 
     @ParameterizedTest(name = "{0}")
