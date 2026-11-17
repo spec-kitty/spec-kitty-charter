@@ -103,7 +103,7 @@ class AssetRulesTest {
     void everyPlantedEscapeIsAReadFault() {
         int escapes = 0;
         for (Planted planted : PlantedFixtures.all()) {
-            List<Reason> readFaults = planted.readout().rationale().failures();
+            List<Reason> readFaults = planted.tree().readFaults();
             for (AssetFacts asset : planted.contents().assets()) {
                 if (asset.path().isEmpty()
                         || (asset.containedInAssetsRoot() && !PackRelativePaths.leavesRoot(asset.path()))) {

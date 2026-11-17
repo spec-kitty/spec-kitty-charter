@@ -2,22 +2,16 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * The membership of a pack manifest (#110, ADR-0042 amendment of 2026-11-12, ADR-0074 decision 7): which files
@@ -94,26 +88,7 @@ final class ManifestMembership {
      * @return the reasons; empty when the lists hold the same entries
      */
     static List<String> mismatch(TreeCensus.Entries listed, TreeCensus.Entries derived) {
-        List<String> listedConstituents = listed.constituents();
-        Set<String> derivedConstituents = new LinkedHashSet<>(derived.constituents());
-        List<String> listedPresets = listed.presets();
-        Set<String> derivedPresets = new LinkedHashSet<>(derived.presets());
-        List<String> out = new ArrayList<>();
-        distinct(listedConstituents)
-                .filter(entry -> !derivedConstituents.contains(entry))
-                .forEach(entry -> out.add("lists constituent " + entry + ", which the pack does not hold"));
-        distinct(listedPresets)
-                .filter(entry -> !derivedPresets.contains(entry))
-                .forEach(entry -> out.add("lists preset " + entry + ", which the pack does not hold"));
-        repeated(listedConstituents, "constituent", out);
-        repeated(listedPresets, "preset", out);
-        derivedConstituents.stream()
-                .filter(entry -> !listedConstituents.contains(entry))
-                .forEach(entry -> out.add("leaves out constituent " + entry + ", which the pack holds"));
-        derivedPresets.stream()
-                .filter(entry -> !listedPresets.contains(entry))
-                .forEach(entry -> out.add("leaves out preset " + entry + ", which the pack holds"));
-        return List.copyOf(out);
+        return ManifestRules.mismatch(listed, derived);
     }
 
     /**
@@ -125,21 +100,6 @@ final class ManifestMembership {
      */
     static TreeCensus.Entries entries(PackManifestDso manifest) {
         return new TreeCensus.Entries(constituents(manifest), presets(manifest));
-    }
-
-    private static Stream<String> distinct(List<String> entries) {
-        return new LinkedHashSet<>(entries).stream();
-    }
-
-    /** One reason per entry the manifest lists more than once, in the order of its first listing. */
-    private static void repeated(List<String> entries, String what, List<String> out) {
-        Map<String, Long> counts =
-                entries.stream().collect(Collectors.groupingBy(e -> e, LinkedHashMap::new, Collectors.counting()));
-        counts.forEach((entry, count) -> {
-            if (count > 1) {
-                out.add("lists " + what + " " + entry + (count == 2 ? " twice" : " " + count + " times"));
-            }
-        });
     }
 
     private static List<String> constituents(PackManifestDso manifest) {

@@ -118,7 +118,7 @@ class StepRulesTest {
     void theRuleFindsWhatValidateModeFinds(Planted planted) {
         assertThat(StepRules.RULES.apply(planted.contents()))
                 .containsExactlyInAnyOrderElementsOf(
-                        PlantedFixtures.policyFindings(planted.readout(), Set.of(PackCodes.DUPLICATE_STEP_ID)));
+                        PlantedFixtures.policyFindings(planted, Set.of(PackCodes.DUPLICATE_STEP_ID)));
     }
 
     static List<Planted> expecting() {

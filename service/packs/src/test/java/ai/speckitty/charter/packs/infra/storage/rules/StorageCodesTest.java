@@ -56,6 +56,7 @@ class StorageCodesTest {
     @DisplayName("a token the contract enum spells is the contract's token (A-m1)")
     void aTokenTheContractSpellsIsTheContractsToken() {
         assertThat(StorageCodes.PACK_UNREADABLE.value()).isEqualTo(RefusalCode.PACK_UNREADABLE.token());
+        assertThat(StorageCodes.ASSEMBLY_REFUSED.value()).isEqualTo(RefusalCode.VALIDATION_FAILED.token());
         assertThat(StorageCodes.FILE_NOT_HELD.value()).isEqualTo(Diagnostic.Code.FILE_NOT_HELD.token());
     }
 }

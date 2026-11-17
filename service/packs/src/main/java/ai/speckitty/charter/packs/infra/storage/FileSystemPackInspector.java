@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
-import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.AssetMimeTable;
@@ -38,6 +37,7 @@ import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
@@ -67,8 +67,8 @@ import org.jspecify.annotations.Nullable;
  * The one reader of a pack tree (#554, S1, FR-016): one walk of a pack directory gives one {@link TreeRead}, the pack's
  * storage-agnostic {@link PackContents}, the {@link TreeCensus} that owns "held" (every file classified, the files not
  * held with their kind and reason, the manifest and the reserved shard) and the read faults, each a kernel reason with
- * the code its owner builds and the reader's wording. It decides nothing beyond the read: {@code PackPolicy} judges
- * what it finds, and the storage rules judge the census (WP07). It implements the domain port {@link PackReading}, so
+ * the code its owner builds and the reader's wording. It decides nothing beyond the read: the storage edge's
+ * compositions judge it ({@link StorageRulesets#verdict}), and the readout carries their verdict. It implements the domain port {@link PackReading}, so
  * registration and validate mode reach the read without naming a storage type (S6), and the domain port
  * {@link PackInspector} until its last consumer moves (WP09).
  *
@@ -248,7 +248,8 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
 
     /**
      * Reads one pack root once (S6): its contents, the files it classifies, the files the store does not hold and the
-     * read's faults as the rationale. The storage rules' verdict joins the faults in WP07.
+     * storage edge's verdict of the read ({@link StorageRulesets#verdict}: the read faults, the registration's
+     * composition and the manifest gate), in registration's order.
      *
      * @param root the pack to read; its {@code locator} is the directory
      * @return the readout
@@ -257,7 +258,7 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
     public PackReadout read(PackRoot root) {
         TreeRead tree = readTree(root);
         return new PackReadout(
-                tree.contents(), tree.census().files(), tree.census().notHeld(), new Rationale(tree.readFaults()));
+                tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
     }
 
     /**
@@ -1295,14 +1296,12 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
                         file, new ParseFailure(file, FilesystemPackStore.NOT_UTF8), List.of()));
     }
 
-    /** A root shard; the name the registration store writes to is reserved, so a source shard under it is refused. */
+    /**
+     * A root shard, the reserved one included, read as the store reads it: a source shard under the reserved name is the
+     * census's fact ({@link TreeCensus.ReservedShard#UNSTAMPED}) and the storage rule's fault, not an unreadable graph
+     * (#554, C-4).
+     */
     private static FileRead<RawGraph> shard(String text, String file) {
-        if (file.equals(RelationshipShard.SHARD_PATH) && !RelationshipShard.isWrittenByRegistration(text)) {
-            return new FileRead.Unreadable<>(
-                    file,
-                    ParseFailure.refused(file, RelationshipShard.RESERVED, StorageCodes.RESERVED_SHARD),
-                    List.of());
-        }
         return GraphDocumentReader.read(text, GraphDocumentReader.Shape.SHARD, file);
     }
 

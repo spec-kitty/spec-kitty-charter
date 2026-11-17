@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
@@ -60,7 +61,7 @@ final class PackFileSet {
     static final String PACK_YAML = "pack.yaml";
 
     /** The pack manifest's pack-relative path (ADR-0042). */
-    static final String MANIFEST = "pack-manifest.yaml";
+    static final String MANIFEST = ManifestRules.FILE;
 
     /** The DRG fragment's pack-relative path. */
     static final String FRAGMENT = "drg/fragment.yaml";

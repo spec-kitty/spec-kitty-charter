@@ -93,7 +93,8 @@ class TreeCensusTest {
                         NotHeldFile.unmodelled("project/charter.yaml"));
         assertThat(read.notHeld().getFirst().kind()).isEqualTo(NotHeldFile.Kind.EXCLUDED);
         assertThat(read.files()).extracting(ClassifiedFile::file).contains("docs/notes.md");
-        assertThat(read.rationale().failures())
+        // The verdict warns of each file not held (WP07): the retired file is its one violation.
+        assertThat(read.rationale().violations())
                 .as("the retired file is a read fault, never not held")
                 .extracting(fault -> fault.location().file())
                 .containsExactly("PROVENANCE.md");
