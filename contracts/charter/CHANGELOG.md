@@ -9,11 +9,11 @@ here too.
 A contract change does not edit this file: it adds a fragment under `changes/`, which the release
 pull request assembles into the top version section (`changes/README.md`, ADR-0047).
 
-## 0.2.0-SNAPSHOT
+## 0.2.0-rc.2
 
-The work toward the next candidate (`0.2.0-rc.2`) or the final `0.2.0`, after the release candidate
-`0.2.0-rc.1`. What changes is recorded in the fragments under `changes/`, assembled here at
-release; the `### Breaking` of `0.2.0-rc.1` already lists what the 0.2 line breaks.
+The second release candidate, cut together with the first service release candidate, `0.1.0-rc.1`, so
+that the service bundles a published contract (operator ruling, 2026-11-17). The contract is
+unchanged since `0.2.0-rc.1`: no path, schema or scenario differs, only `info.version`.
 
 ## 0.2.0-rc.1
 
