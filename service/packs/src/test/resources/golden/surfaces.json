@@ -2300,31 +2300,14 @@
   },
   "planted/control-a-clean-org-pack" : {
     "validate" : {
-      "findings" : [ {
-        "code" : "asset",
-        "severity" : "violation",
-        "file" : "assets/a.asset.yaml",
-        "place" : [ ],
-        "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
-      } ]
+      "findings" : [ ]
     },
     "registration" : {
-      "refused" : {
-        "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
-        "violations" : [ {
-          "pointer" : "assets/a.asset.yaml",
-          "code" : "asset",
-          "detail" : "assets/a.asset.yaml: payload assets/doc.txt does not exist"
-        } ]
+      "accepted" : {
+        "diagnostics" : [ ]
       }
     },
-    "composeRead" : {
-      "refused" : {
-        "code" : "pack_unreadable",
-        "detail" : "the file assets/a.asset.yaml of qa cannot be read: payload assets/doc.txt does not exist"
-      }
-    }
+    "composeRead" : "readable"
   },
   "planted/control-no-generated-by-and-no-pack-level" : {
     "validate" : {
