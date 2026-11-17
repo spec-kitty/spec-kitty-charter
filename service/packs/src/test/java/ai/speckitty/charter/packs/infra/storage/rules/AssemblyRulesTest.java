@@ -59,6 +59,30 @@ class AssemblyRulesTest {
                         missing, stated("toolguides/a.guide.md", StorageCodes.COMPANION, "something")))
                 .as("a missing companion has no fault of its own at its file")
                 .isFalse();
+        assertThat(AssemblyRules.sameFault(
+                        missing,
+                        stated(
+                                "toolguides/a.toolguide.yaml",
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                "toolguides/a.toolguide.yaml: the companion a.guide.md does not exist")))
+                .as("the reader's 'does not exist', naming the companion as the artifact declares it")
+                .isTrue();
+        assertThat(AssemblyRules.sameFault(
+                        missing,
+                        stated(
+                                "toolguides/a.toolguide.yaml",
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                "toolguides/a.toolguide.yaml: names b.guide.md: missing")))
+                .as("another companion missing is another fault")
+                .isFalse();
+        assertThat(AssemblyRules.sameFault(
+                        missing,
+                        stated(
+                                "toolguides/b.toolguide.yaml",
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                "toolguides/b.toolguide.yaml: names a.guide.md: missing")))
+                .as("the same companion missing at another artifact is another fault")
+                .isFalse();
     }
 
     @Test
@@ -106,6 +130,10 @@ class AssemblyRulesTest {
         assertThat(AssemblyRules.unreadFragments(
                         List.of(stated(enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank"))))
                 .containsExactly("missions/x/enhancements/e.prompt-fragment.md");
+        assertThat(AssemblyRules.unreadFragments(List.of(stated(
+                        enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "slot s:x is named more than once: twice"))))
+                .as("a reason whose words before the colon are no one-word path names no fragment")
+                .isEmpty();
     }
 
     @Test
