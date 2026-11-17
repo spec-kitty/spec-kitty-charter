@@ -16,14 +16,10 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.PromptSlotFacts;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
-import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Planted;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("PromptSlotRules (#554, T037)")
 class PromptSlotRulesTest {
@@ -142,22 +138,5 @@ class PromptSlotRulesTest {
                         org.assertj.core.groups.Tuple.tuple(REVIEW, PackCodes.PROMPT_SLOT_NOT_EMPTY),
                         org.assertj.core.groups.Tuple.tuple(REVIEW, PackCodes.PROMPT_SLOT_MALFORMED),
                         org.assertj.core.groups.Tuple.tuple(PLAN, PackCodes.PROMPT_SLOT_MALFORMED));
-    }
-
-    static List<Planted> planted() {
-        return PlantedFixtures.all();
-    }
-
-    @ParameterizedTest
-    @MethodSource("planted")
-    @DisplayName("over every planted and example pack, the rule finds what today's validate mode finds")
-    void theRuleFindsWhatValidateModeFinds(Planted planted) {
-        assertThat(PromptSlotRules.RULES.apply(planted.contents()))
-                .containsExactlyInAnyOrderElementsOf(PlantedFixtures.policyFindings(
-                        planted,
-                        Set.of(
-                                PackCodes.PROMPT_SLOT_MALFORMED,
-                                PackCodes.PROMPT_SLOT_NOT_EMPTY,
-                                PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING)));
     }
 }

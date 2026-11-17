@@ -321,7 +321,8 @@ final class PackAssembly {
                 read.assetFiles(),
                 read.templates(),
                 read.presets(),
-                read.document());
+                read.document(),
+                read.storeOnly());
     }
 
     /**

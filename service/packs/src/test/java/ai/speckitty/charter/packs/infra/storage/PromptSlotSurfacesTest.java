@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -9,15 +8,13 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
-import ai.speckitty.charter.packs.domain.PackPolicy.PromptSlotFault;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import java.io.IOException;
@@ -31,12 +28,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * A step prompt's slots are judged at load, in validate mode and at registration (FR-007, IC-03): a malformed marker is
- * blocking whatever the descriptor's version, a slot that holds text is blocking under {@code schema_version "1.0"} and
- * a warning, listed apart from the violations, for an unversioned descriptor (A4). Each case sits beside its twin.
+ * A step prompt's slots are judged on every surface (FR-007, IC-03): by the one read's verdict, which validate mode and a
+ * registration judge, and by the store half the composing read answers from (S7). A malformed marker is blocking
+ * whatever the descriptor's version, a slot that holds text is blocking under {@code schema_version "1.0"} and a
+ * warning, listed apart from the violations, for an unversioned descriptor (A4). Each case sits beside its twin.
  */
-@DisplayName("Step prompt slots are judged behind the descriptor-version gate (IC-03)")
-class PromptSlotLoadChecksTest {
+@DisplayName("Step prompt slots are judged behind the descriptor-version gate on every surface (IC-03)")
+class PromptSlotSurfacesTest {
 
     private static final Optional<String> UNVERSIONED = Optional.empty();
     private static final Optional<String> VERSIONED = Optional.of("1.0");
@@ -47,11 +45,11 @@ class PromptSlotLoadChecksTest {
             "# Plan\n\n<!-- spdd:reasons-block:start -->legacy<!-- spdd:reasons-block:end -->\n";
     private static final String EMPTY = "# Plan\n\n<!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->\n";
 
-    private static List<PromptSlotFault> faults(String text, Optional<String> version) {
-        return PackPolicy.promptSlotFaults(PromptSlots.parse(text), version);
+    private static List<PromptSlotRules.Fault> faults(String text, Optional<String> version) {
+        return PromptSlotRules.faults(PromptSlots.parse(text), PromptSlotRules.versioned(version));
     }
 
-    // ---- the gate, as the policy decides it (T023) ----------------------------------------------------------------
+    // ---- the gate, as the rule decides it (T023) ------------------------------------------------------------------
 
     @Test
     @DisplayName("a malformed marker is prompt_slot_malformed whatever the version, beside the empty slot that is none")
@@ -98,36 +96,29 @@ class PromptSlotLoadChecksTest {
     }
 
     @Test
-    @DisplayName("a blocking fault is a violation of its wire token at the file; the warning is a finding only")
-    void aBlockingFaultIsAViolationAndAWarningIsNot() {
-        PromptSlotFault malformed = faults(UNPAIRED, UNVERSIONED).getFirst();
-        PromptSlotFault notEmpty = faults(FILLED, VERSIONED).getFirst();
-        PromptSlotFault legacy = faults(FILLED, UNVERSIONED).getFirst();
+    @DisplayName("a fault is a finding of its code at the file, naming the file; the warning keeps its own severity")
+    void aFaultIsAFindingAtTheFile() {
+        PromptSlotRules.Fault malformed = faults(UNPAIRED, UNVERSIONED).getFirst();
+        PromptSlotRules.Fault notEmpty = faults(FILLED, VERSIONED).getFirst();
+        PromptSlotRules.Fault legacy = faults(FILLED, UNVERSIONED).getFirst();
 
-        assertThat(PackPolicy.violationOf(FILE, malformed))
-                .isEqualTo(new PackElementViolation(FILE, PackCodes.PROMPT_SLOT_MALFORMED, malformed.reason()));
-        assertThat(PackPolicy.violationOf(FILE, notEmpty).kind().value()).isEqualTo("prompt_slot_not_empty");
-        assertThatThrownBy(() -> PackPolicy.violationOf(FILE, legacy)).isInstanceOf(IllegalArgumentException.class);
-
-        PackFinding warning = PackPolicy.findingOf(FILE, legacy);
+        Reason refused = PromptSlotRules.finding(FILE, malformed);
+        assertThat(refused.code()).isEqualTo(PackCodes.PROMPT_SLOT_MALFORMED);
+        assertThat(refused.location().file()).isEqualTo(FILE);
+        assertThat(refused.detail()).isEqualTo(FILE + ": " + malformed.reason());
+        assertThat(PromptSlotRules.finding(FILE, notEmpty).severity()).isEqualTo(Severity.VIOLATION);
+        Reason warning = PromptSlotRules.finding(FILE, legacy);
         assertThat(warning.severity()).isEqualTo(Severity.WARNING);
-        assertThat(warning.file()).isEqualTo(FILE);
         assertThat(warning.detail()).startsWith(FILE + ": ").contains(legacy.reason());
-        assertThat(PackPolicy.findingOf(FILE, notEmpty).severity()).isEqualTo(Severity.VIOLATION);
     }
 
     @Test
-    @DisplayName("the codes project onto the refusal codes and the diagnostic code the contract declares")
-    void theCodesProjectOntoTheWire() {
-        assertThat(PackFindingCode.refusal(PackCodes.PROMPT_SLOT_MALFORMED))
-                .isEqualTo(RefusalCode.PROMPT_SLOT_MALFORMED);
-        assertThat(PackFindingCode.refusal(PackCodes.PROMPT_SLOT_NOT_EMPTY))
-                .isEqualTo(RefusalCode.PROMPT_SLOT_NOT_EMPTY);
-        assertThat(PackFindingCode.diagnostic(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING))
-                .contains(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY);
-        // the warning of an unversioned descriptor never refuses a load, so it has no refusal to project onto
-        assertThatThrownBy(() -> PackFindingCode.refusal(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING))
-                .isInstanceOf(IllegalStateException.class);
+    @DisplayName("the codes speak the tokens of the refusal codes and the diagnostic code the contract declares")
+    void theCodesSpeakTheWireTokens() {
+        assertThat(PackCodes.PROMPT_SLOT_MALFORMED.value()).isEqualTo(RefusalCode.PROMPT_SLOT_MALFORMED.token());
+        assertThat(PackCodes.PROMPT_SLOT_NOT_EMPTY.value()).isEqualTo(RefusalCode.PROMPT_SLOT_NOT_EMPTY.token());
+        assertThat(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING.value())
+                .isEqualTo(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY.token());
     }
 
     // ---- the moments: validate, load, the composing read, the registration's staged load (T024) ---------------------
@@ -206,12 +197,13 @@ class PromptSlotLoadChecksTest {
                     + (bare ? "" : "    prompt_path: steps/" + name + ".prompt.md\n");
         }
 
-        /** Validate mode: every finding about a slot. */
-        List<PackFinding> validate() {
+        /** The one read's verdict, which validate mode and a registration judge: every finding about a slot. */
+        List<Reason> validate() {
             PackRoot root = new PackRoot("slots", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
-                    .filter(finding -> finding.code().value().startsWith("prompt_slot"))
-                    .toList();
+            return new FileSystemPackInspector()
+                    .read(root).rationale().failures().stream()
+                            .filter(finding -> finding.code().value().startsWith("prompt_slot"))
+                            .toList();
         }
 
         /** The whole-pack load: the violations on the aggregate. */
@@ -220,7 +212,7 @@ class PromptSlotLoadChecksTest {
         }
 
         /** The whole-pack load: the warnings, apart from the violations. */
-        List<PackFinding> warnings() {
+        List<Reason> warnings() {
             return store.load(dir).warnings();
         }
 
@@ -269,7 +261,7 @@ class PromptSlotLoadChecksTest {
             assertThat(pack.validate()).singleElement().satisfies(finding -> {
                 assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_SLOT_MALFORMED);
                 assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-                assertThat(finding.file()).isEqualTo(FILE);
+                assertThat(finding.location().file()).isEqualTo(FILE);
             });
         }
         assertThat(plan(new Pack(true), EMPTY).validate()).isEmpty();
@@ -280,12 +272,12 @@ class PromptSlotLoadChecksTest {
     void validateModeGatesATextSlotOnTheDescriptorVersion() throws IOException {
         assertThat(plan(new Pack(true), FILLED).validate()).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY);
-            assertThat(finding.file()).isEqualTo(FILE);
+            assertThat(finding.location().file()).isEqualTo(FILE);
         });
         assertThat(plan(new Pack(false), FILLED).validate()).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING);
             assertThat(finding.severity()).isEqualTo(Severity.WARNING);
-            assertThat(finding.file()).isEqualTo(FILE);
+            assertThat(finding.location().file()).isEqualTo(FILE);
         });
     }
 
@@ -323,7 +315,7 @@ class PromptSlotLoadChecksTest {
                 .isEmpty();
         assertThat(unversioned.warnings()).singleElement().satisfies(warning -> {
             assertThat(warning.code()).isEqualTo(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING);
-            assertThat(warning.file()).isEqualTo(FILE);
+            assertThat(warning.location().file()).isEqualTo(FILE);
             assertThat(warning.detail()).contains("spdd:reasons-block");
         });
     }

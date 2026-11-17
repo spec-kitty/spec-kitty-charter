@@ -9,14 +9,13 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.util.List;
 import java.util.Optional;
@@ -49,9 +48,7 @@ class GraphDocumentReaderTest {
     }
 
     private static List<String> details(FileRead.Unreadable<RawGraph> unreadable) {
-        return Wording.unreadable("qa", unreadable).stream()
-                .map(PackFinding::detail)
-                .toList();
+        return Wording.unreadable("qa", unreadable).stream().map(Reason::detail).toList();
     }
 
     // ---- a document that conforms is read as written ----------------------------------------------
@@ -251,7 +248,7 @@ class GraphDocumentReaderTest {
                     Shape.SHARD,
                     SHARD);
             assertThat(Wording.unreadable("qa", shard))
-                    .extracting(PackFinding::detail)
+                    .extracting(Reason::detail)
                     .as(number)
                     .containsExactly("tactic.graph.yaml: 'label' must be a string");
         }

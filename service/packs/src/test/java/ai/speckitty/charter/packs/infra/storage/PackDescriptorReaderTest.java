@@ -6,10 +6,9 @@ import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,7 +38,7 @@ class PackDescriptorReaderTest {
 
     private static List<String> details(String text) {
         return Wording.unreadable("qa", unreadable(text)).stream()
-                .map(PackFinding::detail)
+                .map(Reason::detail)
                 .toList();
     }
 
@@ -267,7 +266,7 @@ class PackDescriptorReaderTest {
         assertThat(bad.parse()).isNotNull();
         assertThat(bad.violations()).isEmpty();
         assertThat(Wording.unreadable("qa", bad))
-                .extracting(PackFinding::detail)
+                .extracting(Reason::detail)
                 .singleElement()
                 .asString()
                 .startsWith("pack.yaml of qa is not valid YAML: ");
@@ -353,7 +352,7 @@ class PackDescriptorReaderTest {
         for (String number : List.of("1.5", ".nan", ".inf", "-.inf", "1e400")) {
             assertThat(Wording.unreadable(
                             "qa", unreadable(VALID.replace("pack_version: 1.0.0", "pack_version: " + number))))
-                    .extracting(PackFinding::detail)
+                    .extracting(Reason::detail)
                     .as(number)
                     .containsExactly("pack.yaml of qa: pack_version must be a string");
         }

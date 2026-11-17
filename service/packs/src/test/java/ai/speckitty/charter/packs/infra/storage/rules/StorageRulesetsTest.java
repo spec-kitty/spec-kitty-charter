@@ -69,7 +69,7 @@ class StorageRulesetsTest {
 
     private static TreeCensus census(
             List<NotHeldFile> notHeld, TreeCensus.Manifest manifest, TreeCensus.ReservedShard shard) {
-        return new TreeCensus(List.of(), notHeld, manifest, shard);
+        return new TreeCensus(List.of(), notHeld, manifest, shard, List.of(), List.of());
     }
 
     private static TreeRead read(PackContents contents, TreeCensus census, Reason... readFaults) {

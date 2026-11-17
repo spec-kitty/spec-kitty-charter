@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import java.util.List;
 import java.util.Map;
@@ -178,7 +179,7 @@ public record PackContents(
                 List<PackElementViolation> violations,
                 int assembled,
                 List<PackElementViolation> graphFaults,
-                List<PackFinding> warnings,
+                List<Reason> warnings,
                 List<PackElementViolation> storeOnly,
                 Optional<String> policyText,
                 Optional<String> policyFault,

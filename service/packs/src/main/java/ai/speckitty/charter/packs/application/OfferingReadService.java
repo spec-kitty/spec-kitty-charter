@@ -553,10 +553,10 @@ public final class OfferingReadService {
                 .find(pack.id())
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE, "pack " + pack.id().value() + " has no pack.yaml"));
-        DescriptorChecks.findings(pack.id().value(), descriptor).stream()
+        DescriptorChecks.faults(pack.id().value(), descriptor).stream()
                 .findFirst()
-                .ifPresent(finding -> {
-                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, finding.detail());
+                .ifPresent(fault -> {
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, fault.detail());
                 });
         return descriptor;
     }

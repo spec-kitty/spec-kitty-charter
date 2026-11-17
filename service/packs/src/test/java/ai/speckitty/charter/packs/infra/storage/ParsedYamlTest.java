@@ -4,13 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -50,15 +49,15 @@ class ParsedYamlTest {
                         Named.of("block sequences x201", "- ".repeat(201) + "x")));
     }
 
-    private static List<PackFinding> shard(String value) {
+    private static List<Reason> shard(String value) {
         return findings(GraphDocumentReader.read(HEADER + "nodes: " + indent(value) + "\n", Shape.SHARD, SHARD));
     }
 
-    private static List<PackFinding> fragment(String value) {
+    private static List<Reason> fragment(String value) {
         return findings(GraphDocumentReader.read("nodes: " + indent(value) + "\n", Shape.FRAGMENT, FRAGMENT));
     }
 
-    private static List<PackFinding> descriptor(String value) {
+    private static List<Reason> descriptor(String value) {
         FileRead<PackDescriptor> read = PackDescriptorReader.read(DESCRIPTOR + "extra: " + indent(value) + "\n");
         assertThat(read).isInstanceOf(FileRead.Unreadable.class);
         assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())
@@ -71,7 +70,7 @@ class ParsedYamlTest {
         return value.startsWith("- ") ? "\n" + value : value;
     }
 
-    private static List<PackFinding> findings(FileRead<RawGraph> read) {
+    private static List<Reason> findings(FileRead<RawGraph> read) {
         assertThat(read).isInstanceOf(FileRead.Unreadable.class);
         return Wording.unreadable("qa", (FileRead.Unreadable<RawGraph>) read);
     }
@@ -98,7 +97,7 @@ class ParsedYamlTest {
     @MethodSource("nested")
     void aPackDescriptorNestedTooDeeplyIsPackUnreadableWithTheFixedFirstLine(String value) {
         assertThat(descriptor(value)).singleElement().satisfies(f -> {
-            assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
+            assertThat(f.code()).isEqualTo(StorageCodes.PACK_UNREADABLE);
             assertThat(f.detail()).startsWith("pack.yaml of qa is not valid YAML: ");
         });
     }
@@ -145,7 +144,7 @@ class ParsedYamlTest {
         assertThat(Wording.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
                 .singleElement()
                 .satisfies(f -> {
-                    assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
+                    assertThat(f.code()).isEqualTo(StorageCodes.PACK_UNREADABLE);
                     assertThat(f.detail()).startsWith("pack.yaml of qa is not valid YAML: ");
                 });
     }
@@ -210,7 +209,7 @@ class ParsedYamlTest {
         assertThat(Wording.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
                 .singleElement()
                 .satisfies(f -> {
-                    assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
+                    assertThat(f.code()).isEqualTo(StorageCodes.PACK_UNREADABLE);
                     assertThat(f.detail()).startsWith("pack.yaml of qa is not valid YAML: ");
                 });
         assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())

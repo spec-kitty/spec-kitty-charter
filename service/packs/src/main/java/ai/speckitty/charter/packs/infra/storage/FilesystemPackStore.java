@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -12,12 +13,10 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Paths;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
@@ -149,6 +148,10 @@ final class FilesystemPackStore {
      * @param templates the templates, in path order
      * @param presets the readable presets whose id is their file stem, in path order (ADR-0042)
      * @param document the pack document ({@code README.md}) when the pack has a readable one (#260)
+     * @param storeOnly the violations among {@code violations} that only the store's read meets, in their order (#554,
+     *     A-M1 rows 16, 17 and 19): a companion it cannot read, a template read twice, and a value-object breach of an
+     *     asset file's name or of a preset. The read records each here where it meets it, so nothing tells them apart by
+     *     their words
      */
     record PackRead(
             PackDescriptorDso descriptor,
@@ -157,7 +160,8 @@ final class FilesystemPackStore {
             List<AssetFile> assetFiles,
             List<TemplateFile> templates,
             List<Stored<PresetDso>> presets,
-            Optional<Stored<MarkdownDocument>> document) {
+            Optional<Stored<MarkdownDocument>> document,
+            List<PackElementViolation> storeOnly) {
         /**
          * Copies the collections.
          *
@@ -168,6 +172,7 @@ final class FilesystemPackStore {
          * @param templates the templates, in path order
          * @param presets the readable presets, in path order
          * @param document the readable pack document, if any
+         * @param storeOnly the violations only the store's read meets
          */
         PackRead {
             Objects.requireNonNull(descriptor, "descriptor");
@@ -179,6 +184,7 @@ final class FilesystemPackStore {
             templates = List.copyOf(templates);
             presets = List.copyOf(presets);
             Objects.requireNonNull(document, "document");
+            storeOnly = List.copyOf(storeOnly);
         }
 
         /**
@@ -192,7 +198,7 @@ final class FilesystemPackStore {
                 PackDescriptorDso descriptor,
                 Map<ArtifactKind, List<Stored<?>>> elements,
                 List<PackElementViolation> violations) {
-            this(descriptor, elements, violations, List.of(), List.of(), List.of(), Optional.empty());
+            this(descriptor, elements, violations, List.of(), List.of(), List.of(), Optional.empty(), List.of());
         }
 
         /**
@@ -427,6 +433,7 @@ final class FilesystemPackStore {
                 : PackFileSet.listing(directory, companionRules.table(), walk);
         Map<ArtifactKind, List<Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
         List<PackElementViolation> violations = new ArrayList<>(retiredViolations(listing));
+        List<PackElementViolation> storeOnly = new ArrayList<>();
         List<AssetFile> assetFiles = new ArrayList<>();
         for (String file : listing.assetFiles()) {
             readPayload(directory, file, violations).ifPresent(bytes -> {
@@ -435,25 +442,63 @@ final class FilesystemPackStore {
                 try {
                     assetFiles.add(new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes)));
                 } catch (ConstraintBreachException breach) {
-                    violations.add(new PackElementViolation(
-                            file, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                    storeOnly(
+                            new PackElementViolation(
+                                    file, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())),
+                            violations,
+                            storeOnly);
                 }
             });
         }
-        List<TemplateFile> templates = readTemplates(directory, listing.templates(), violations);
+        List<TemplateFile> templates = readTemplates(directory, listing.templates(), violations, storeOnly);
         Set<String> claimed = new HashSet<>();
         for (KindBinding<?, ?> kind : kinds) {
-            List<Stored<?>> read = readKind(directory, listing.files(kind.kind()), kind, violations, claimed);
+            List<Stored<?>> read =
+                    readKind(directory, listing.files(kind.kind()), kind, violations, storeOnly, claimed);
             if (kind == AssetBinding.INSTANCE) {
                 read = withPayloads(read, assetFiles, violations);
             }
             elements.put(kind.kind(), read);
         }
-        List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations);
+        List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations, storeOnly);
         Optional<Stored<MarkdownDocument>> document =
                 listing.document().flatMap(file -> readDocument(directory, file, violations));
-        violations.addAll(RelationshipEndpointRule.violations(edgesOf(graphs), endpointScope(descriptor, elements)));
-        return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document);
+        violations.addAll(endpointViolations(edgesOf(graphs), endpointScope(descriptor, elements)));
+        return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document, storeOnly);
+    }
+
+    /** Records a fault only the store's read meets: among the read's violations, and apart as store-only. */
+    private static void storeOnly(
+            PackElementViolation fault, List<PackElementViolation> violations, List<PackElementViolation> storeOnly) {
+        violations.add(fault);
+        storeOnly.add(fault);
+    }
+
+    /**
+     * The store half's record of the endpoint rule's refusals ({@link RelationshipEndpointRule#refusal}), which the
+     * composing read answers from (S7): one violation per refused edge, at its graph document, under the code the
+     * content rule states it with, first every source refusal in the order of the edges, then every table refusal, as
+     * {@code GraphRules} lists them.
+     */
+    private static List<PackElementViolation> endpointViolations(
+            List<RelationshipEndpointRule.Edge> edges, RelationshipEndpointRule.Scope scope) {
+        List<PackElementViolation> sources = new ArrayList<>();
+        List<PackElementViolation> table = new ArrayList<>();
+        for (RelationshipEndpointRule.Edge edge : edges) {
+            RelationshipEndpointRule.refusal(edge, scope).ifPresent(refused -> {
+                boolean byTable = RelationshipEndpointRule.CODE.equals(refused.code());
+                (byTable ? table : sources)
+                        .add(new PackElementViolation(
+                                edge.file(),
+                                byTable
+                                        ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
+                                        : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+                                refused.reason()));
+            });
+        }
+        List<PackElementViolation> out = new ArrayList<>(sources);
+        out.addAll(table);
+        return out;
     }
 
     /**
@@ -506,7 +551,10 @@ final class FilesystemPackStore {
      * ({@link PresetFiles#stemMismatch}), the rule validate mode applies too.
      */
     private List<Stored<PresetDso>> readPresets(
-            Path directory, List<String> files, List<PackElementViolation> violations) {
+            Path directory,
+            List<String> files,
+            List<PackElementViolation> violations,
+            List<PackElementViolation> storeOnly) {
         List<Stored<PresetDso>> out = new ArrayList<>();
         for (String file : files) {
             switch (readFile(directory.resolve(file), file, text -> strategy.readPreset(text, file))) {
@@ -521,8 +569,13 @@ final class FilesystemPackStore {
                         try {
                             PresetFiles.toPreset(good.value());
                         } catch (ConstraintBreachException breach) {
-                            violations.add(new PackElementViolation(
-                                    file, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                            storeOnly(
+                                    new PackElementViolation(
+                                            file,
+                                            StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                            String.valueOf(breach.getMessage())),
+                                    violations,
+                                    storeOnly);
                         }
                     } else {
                         out.add(new Stored<>(file, good.value()));
@@ -566,15 +619,23 @@ final class FilesystemPackStore {
      * pack. A file that cannot be read claims no id.
      */
     private List<TemplateFile> readTemplates(
-            Path directory, List<String> files, List<PackElementViolation> violations) {
+            Path directory,
+            List<String> files,
+            List<PackElementViolation> violations,
+            List<PackElementViolation> storeOnly) {
         Map<String, String> readFrom = new HashMap<>();
         List<TemplateFile> templates = new ArrayList<>();
         for (String file : files) {
             String id = PackFileSet.templateId(file);
             String claimant = readFrom.get(id);
             if (claimant != null) {
-                violations.add(new PackElementViolation(
-                        file, PackCodes.DUPLICATE_ARTIFACT_ID, "template " + id + " is already read from " + claimant));
+                storeOnly(
+                        new PackElementViolation(
+                                file,
+                                PackCodes.DUPLICATE_ARTIFACT_ID,
+                                "template " + id + " is already read from " + claimant),
+                        violations,
+                        storeOnly);
             } else {
                 readPayload(directory, file, violations).ifPresent(bytes -> {
                     readFrom.put(id, file);
@@ -683,7 +744,13 @@ final class FilesystemPackStore {
      */
     <D> List<D> readAll(PackIdentifier id, KindBinding<D, ?> kind) {
         Path directory = existingDirectory(id);
-        return readKind(directory, PackFileSet.files(directory, kind.kind()), kind, new ArrayList<>(), new HashSet<>())
+        return readKind(
+                        directory,
+                        PackFileSet.files(directory, kind.kind()),
+                        kind,
+                        new ArrayList<>(),
+                        new ArrayList<>(),
+                        new HashSet<>())
                 .stream()
                 .map(stored -> kind.dsoType().cast(stored.dso()))
                 .toList();
@@ -726,7 +793,15 @@ final class FilesystemPackStore {
     <D> Optional<D> readListed(Path directory, String name, KindBinding<D, ?> kind) {
         return switch (readFile(directory.resolve(name), name, text -> strategy.read(kind, text, name))) {
             case FileRead.Read<D> good ->
-                withCompanions(companionRules, directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
+                withCompanions(
+                        companionRules,
+                        directory,
+                        name,
+                        kind,
+                        good.value(),
+                        new ArrayList<>(),
+                        new ArrayList<>(),
+                        new HashSet<>());
             case FileRead.Unreadable<D> bad -> Optional.empty();
             case FileRead.Absent<D> absent -> Optional.empty();
         };
@@ -809,6 +884,7 @@ final class FilesystemPackStore {
             List<String> files,
             KindBinding<D, ?> kind,
             List<PackElementViolation> violations,
+            List<PackElementViolation> storeOnly,
             Set<String> claimed) {
         List<Stored<?>> into = new ArrayList<>();
         for (String file : files) {
@@ -828,7 +904,7 @@ final class FilesystemPackStore {
                                 new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, unnamed.get()));
                         continue;
                     }
-                    withCompanions(companionRules, directory, file, kind, good.value(), violations, claimed)
+                    withCompanions(companionRules, directory, file, kind, good.value(), violations, storeOnly, claimed)
                             .ifPresent(dso -> into.add(new Stored<>(file, dso)));
                 }
                 case FileRead.Unreadable<D> bad -> violations.addAll(violationsOf(bad));
@@ -923,6 +999,7 @@ final class FilesystemPackStore {
             KindBinding<D, ?> kind,
             D dso,
             List<PackElementViolation> violations,
+            List<PackElementViolation> storeOnly,
             Set<String> claimed) {
         List<KindBinding.Companion> companions = kind.companions(dso);
         if (companions.isEmpty()) {
@@ -945,7 +1022,7 @@ final class FilesystemPackStore {
             }
             if (refusal != null) {
                 String reason = companion.path() + ": " + refusal;
-                violations.add(new PackElementViolation(file, COMPANION_KIND, reason));
+                storeOnly(new PackElementViolation(file, COMPANION_KIND, reason), violations, storeOnly);
                 return Optional.empty();
             }
         }
@@ -1453,13 +1530,13 @@ final class FilesystemPackStore {
         }
         // No descriptor reaches here, so the pack's name never shows in a detail.
         return Wording.schemaFindings("", bad.violations()).stream()
-                .map(finding -> new PackElementViolation(finding.file(), finding.code(), reasonOf(finding)))
+                .map(finding -> new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding)))
                 .toList();
     }
 
     /** A finding's detail without the file it opens with, as a violation's reason: the file is the violation's own. */
-    private static String reasonOf(PackFinding finding) {
-        String prefix = finding.file() + ": ";
+    private static String reasonOf(Reason finding) {
+        String prefix = finding.location().file() + ": ";
         return finding.detail().startsWith(prefix) ? finding.detail().substring(prefix.length()) : finding.detail();
     }
 
@@ -1471,11 +1548,11 @@ final class FilesystemPackStore {
     /** Why a {@code pack.yaml} that is there is no readable descriptor, as validate mode words it. */
     private static String descriptorFault(String packName, FileRead.Unreadable<?> bad) {
         if (bad.parse() != null) {
-            return Wording.origin(packName, PackFileSet.PACK_YAML) + " is not valid YAML: "
+            return Paths.origin(packName, PackFileSet.PACK_YAML) + " is not valid YAML: "
                     + bad.parse().firstLine();
         }
         return Wording.schemaFindings(packName, bad.violations()).stream()
-                .map(PackFinding::detail)
+                .map(Reason::detail)
                 .collect(Collectors.joining("; "));
     }
 

@@ -326,7 +326,7 @@ class MarkdownCompanionTest {
                 census,
                 new TreeMap<>(),
                 paired,
-                WholePackCensus.formsOf(source, WholePackCensus.companionsOf(source, BINDINGS, RULES)));
+                WholePackCensus.formsOf(WholePackCensus.census(source, BINDINGS, RULES)));
 
         assertThat(census).containsEntry(BODY_FILE, "skill");
         assertThat(WholePackGateRun.unpaired(target, paired)).isEmpty();

@@ -89,9 +89,7 @@ final class PackManifestDerivation {
         Path packDir = directory.toAbsolutePath().normalize();
         String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
         // The store's read refuses a directory that is not there before it lists anything.
-        PackFileSet.Walk walk = Files.isDirectory(packDir)
-                ? PackFileSet.walk(packDir, name)
-                : new PackFileSet.Walk(List.of(), List.of());
+        PackFileSet.Walk walk = Files.isDirectory(packDir) ? PackFileSet.walk(packDir, name) : PackFileSet.Walk.NONE;
         StoreRead read = StoreRead.of(packDir, name, walk, strategy, bindings, companionRules);
         return switch (read.assembly()) {
             case Assembly.Assembled held -> derived(PackAssembly.build(held), read.layout());

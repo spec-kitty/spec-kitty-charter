@@ -211,24 +211,31 @@ final class PackFileSet {
     }
 
     /**
-     * One walk of a pack tree (#554, T028): every regular file, a file link followed (the store's listing), and every
-     * regular file that is not itself a link (the census), each pack-relative, {@code /}-separated and in {@link String}
-     * order. Every tree walk of a pack goes through here, so a test counts them ({@link #walks()}).
+     * One walk of a pack tree (#554, T028): every regular file, a file link followed (the store's listing), every
+     * regular file that is not itself a link (the census), and every link, never followed (the census), each
+     * pack-relative, {@code /}-separated and in {@link String} order. Every tree walk of a pack goes through here, so a
+     * test counts them ({@link #walks()}).
      *
      * @param regular every regular file, a file link followed
      * @param unlinked every regular file that is not itself a link
+     * @param links every symbolic link, to a file, a directory or nothing
      */
-    record Walk(List<String> regular, List<String> unlinked) {
+    record Walk(List<String> regular, List<String> unlinked, List<String> links) {
         /**
          * Copies the lists.
          *
          * @param regular the regular files
          * @param unlinked the files that are not links
+         * @param links the links
          */
         Walk {
             regular = List.copyOf(regular);
             unlinked = List.copyOf(unlinked);
+            links = List.copyOf(links);
         }
+
+        /** A walk of nothing: a tree the read could not enter. */
+        static final Walk NONE = new Walk(List.of(), List.of(), List.of());
     }
 
     private static final java.util.concurrent.atomic.LongAdder WALKS = new java.util.concurrent.atomic.LongAdder();
@@ -256,15 +263,17 @@ final class PackFileSet {
         WALKS.increment();
         List<String> regular = new ArrayList<>();
         List<String> unlinked = new ArrayList<>();
+        List<String> links = new ArrayList<>();
         try {
             Path root = directory.toRealPath();
-            Files.walkFileTree(root, new FileCollector(root, regular, unlinked));
+            Files.walkFileTree(root, new FileCollector(root, regular, unlinked, links));
         } catch (IOException | UncheckedIOException e) {
             throw unlistable(packName, e);
         }
         Collections.sort(regular);
         Collections.sort(unlinked);
-        return new Walk(regular, unlinked);
+        Collections.sort(links);
+        return new Walk(regular, unlinked, links);
     }
 
     /**
@@ -592,11 +601,13 @@ final class PackFileSet {
         private final Path root;
         private final List<String> found;
         private final List<String> unlinked;
+        private final List<String> links;
 
-        FileCollector(Path root, List<String> found, List<String> unlinked) {
+        FileCollector(Path root, List<String> found, List<String> unlinked, List<String> links) {
             this.root = root;
             this.found = found;
             this.unlinked = unlinked;
+            this.links = links;
         }
 
         @Override
@@ -611,6 +622,9 @@ final class PackFileSet {
             // The walk does not follow links, so these are the entry's own attributes.
             if (attrs.isRegularFile()) {
                 unlinked.add(relative);
+            }
+            if (attrs.isSymbolicLink()) {
+                links.add(relative);
             }
             return FileVisitResult.CONTINUE;
         }

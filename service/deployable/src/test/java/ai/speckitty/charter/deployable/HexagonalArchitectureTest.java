@@ -11,8 +11,9 @@ import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.Diagnostic;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -287,7 +288,7 @@ class HexagonalArchitectureTest {
 
     /**
      * What the modules may not name directly, beyond {@link #FRAMEWORK_HTTP_STORE_OR_LOCK}: every ring of the packs slice
-     * but its domain (which holds the {@code PackInspector} port of the load, ADR-0075 as amended 2026-11-13), the
+     * but its domain (which holds the {@code PackReading} port of the read, ADR-0075 as amended 2026-11-13 and by S6), the
      * activations slice, every other {@code application} or {@code infra} ring and the composition root. The modules'
      * own packages have no rings; a composition root plugs the load's adapter in.
      */
@@ -313,7 +314,7 @@ class HexagonalArchitectureTest {
      * {@code pack-check} uses Spring, HTTP or other network I/O ({@code java.net} but {@code URI} and
      * {@code URISyntaxException}, the JDK's HTTP client and server, Jakarta, the generated contract, the web transport, the
      * kernel's transport vocabulary), a commit store or a lock, <em>directly or through any charter class it reaches</em>.
-     * {@code pack-validation} reads a pack through the packs slice's {@code PackInspector} port and its domain, so the
+     * {@code pack-validation} reads a pack through the packs slice's {@code PackReading} port and its domain, so the
      * direct half allows {@code packs.domain} and no other ring of the slice. The transitive half walks every charter class
      * the module reaches and fails on any that touches the refused set: it holds when a composition root
      * ({@code pack-check}'s main, #478) plugs in the file-system adapter, which shares its package with the slice's Spring
@@ -343,33 +344,41 @@ class HexagonalArchitectureTest {
      * The walk of the transitive half: from a class, through every charter class it reaches, to a class in
      * {@link #FRAMEWORK_HTTP_STORE_OR_LOCK}. A class outside {@code ai.speckitty.charter} is checked but never walked into.
      */
-    private static final ArchCondition<JavaClass> REACHES_NO_FRAMEWORK =
-            new ArchCondition<JavaClass>("reach no charter class that uses Spring, HTTP, a commit store or a lock") {
-                @Override
-                public void check(JavaClass item, ConditionEvents events) {
-                    java.util.Map<JavaClass, JavaClass> via = new java.util.HashMap<>();
-                    java.util.ArrayDeque<JavaClass> queue = new java.util.ArrayDeque<>(List.of(item));
-                    via.put(item, item);
-                    java.util.Set<JavaClass> reported = new java.util.HashSet<>();
-                    while (!queue.isEmpty()) {
-                        JavaClass current = queue.removeFirst();
-                        for (var dependency : current.getDirectDependenciesFromSelf()) {
-                            JavaClass target = dependency.getTargetClass().getBaseComponentType();
-                            if (FRAMEWORK_HTTP_STORE_OR_LOCK.test(target) && reported.add(target)) {
-                                events.add(SimpleConditionEvent.violated(
-                                        item,
-                                        item.getName() + " reaches " + target.getName() + " through "
-                                                + path(via, current)));
-                            } else if (!FRAMEWORK_HTTP_STORE_OR_LOCK.test(target)
-                                    && target.getPackageName().startsWith(ROOT + ".")
-                                    && !via.containsKey(target)) {
-                                via.put(target, current);
-                                queue.addLast(target);
-                            }
+    private static final ArchCondition<JavaClass> REACHES_NO_FRAMEWORK = reachesNone(
+            FRAMEWORK_HTTP_STORE_OR_LOCK, "reach no charter class that uses Spring, HTTP, a commit store or a lock");
+
+    /**
+     * The walk from a class, through every charter class it reaches, to a class {@code refused} matches. A class outside
+     * {@code ai.speckitty.charter} is checked but never walked into, and nor is a refused one.
+     */
+    private static ArchCondition<JavaClass> reachesNone(DescribedPredicate<JavaClass> refused, String description) {
+        return new ArchCondition<JavaClass>(description) {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                java.util.Map<JavaClass, JavaClass> via = new java.util.HashMap<>();
+                java.util.ArrayDeque<JavaClass> queue = new java.util.ArrayDeque<>(List.of(item));
+                via.put(item, item);
+                java.util.Set<JavaClass> reported = new java.util.HashSet<>();
+                while (!queue.isEmpty()) {
+                    JavaClass current = queue.removeFirst();
+                    for (var dependency : current.getDirectDependenciesFromSelf()) {
+                        JavaClass target = dependency.getTargetClass().getBaseComponentType();
+                        if (refused.test(target) && reported.add(target)) {
+                            events.add(SimpleConditionEvent.violated(
+                                    item,
+                                    item.getName() + " reaches " + target.getName() + " through "
+                                            + path(via, current)));
+                        } else if (!refused.test(target)
+                                && target.getPackageName().startsWith(ROOT + ".")
+                                && !via.containsKey(target)) {
+                            via.put(target, current);
+                            queue.addLast(target);
                         }
                     }
                 }
-            };
+            }
+        };
+    }
 
     /** The transitive half of {@link #packModuleIsFrameworkFree}: no charter class the module reaches is refused. */
     private static ArchRule packModuleReachesNoFramework(String modulePackage) {
@@ -1880,29 +1889,27 @@ class HexagonalArchitectureTest {
     }
 
     /**
-     * Rule A: only the pack policy and the enums themselves name {@code Diagnostic.Code.PACK_LEVEL_MISSING}. The
-     * prefix match covers the synthetic {@code $1} and {@code $SwitchMap} classes of a switch over the enum.
+     * Rule A: only the placement codes ({@code pack-validation}'s {@code PlacementCodes}, which builds the token from
+     * it) and the enum itself name {@code Diagnostic.Code.PACK_LEVEL_MISSING}. The prefix match covers the synthetic
+     * {@code $1} and {@code $SwitchMap} classes of a switch over the enum.
      */
-    private static ArchRule onlyThePolicyNamesTheMissingDiagnosticRule() {
+    private static ArchRule onlyThePlacementCodesNameTheMissingDiagnosticRule() {
         return noClasses()
                 .that(DescribedPredicate.not(namedWithPrefix(
-                        "ai.speckitty.charter.packs.domain.PackPolicy",
-                        "ai.speckitty.charter.packs.domain.PackFindingCode",
-                        "ai.speckitty.charter.packs.domain.Diagnostic")))
+                        PlacementCodes.class.getName(), "ai.speckitty.charter.packs.domain.Diagnostic")))
                 .should()
                 .accessField(Diagnostic.Code.class, "PACK_LEVEL_MISSING");
     }
 
     /**
-     * Rule B: only the pack policy, the enums and the inbound edge (the packs adapter and the shared web transport's
-     * refusal renderer) name {@code RefusalCode.PACK_LEVEL_MISMATCH}; {@code RefusalHandler$1} reads it with
-     * {@code getstatic}.
+     * Rule B: only the placement codes (which build the token from it), the enum and the inbound edge (the packs
+     * adapter and the shared web transport's refusal renderer) name {@code RefusalCode.PACK_LEVEL_MISMATCH};
+     * {@code RefusalHandler$1} reads it with {@code getstatic}.
      */
-    private static ArchRule onlyThePolicyNamesTheMismatchRefusalRule() {
+    private static ArchRule onlyThePlacementCodesNameTheMismatchRefusalRule() {
         return noClasses()
                 .that(DescribedPredicate.not(namedWithPrefix(
-                        "ai.speckitty.charter.packs.domain.PackPolicy",
-                        "ai.speckitty.charter.packs.domain.PackFindingCode",
+                        PlacementCodes.class.getName(),
                         "ai.speckitty.charter.kernel.domain.RefusalCode",
                         "ai.speckitty.charter.packs.infra.api.",
                         "ai.speckitty.charter.web.")))
@@ -1911,32 +1918,183 @@ class HexagonalArchitectureTest {
     }
 
     /**
-     * Rule C: only the pack policy and the finding enum name the pack-level finding codes, which closes the
-     * {@code new PackFinding(...).toDiagnostic()} bypass.
+     * Rule C: only the level rules ({@code placement.LevelRules}) and the placement codes name the pack-level codes, so
+     * no class outside the placement rules states a pack-level finding by hand.
      */
-    private static ArchRule onlyThePolicyNamesThePackLevelFindingsRule() {
+    private static ArchRule onlyTheLevelRulesNameThePackLevelFindingsRule() {
         return noClasses()
-                .that(DescribedPredicate.not(namedWithPrefix(
-                        "ai.speckitty.charter.packs.domain.PackPolicy",
-                        "ai.speckitty.charter.packs.domain.PackFindingCode")))
+                .that(DescribedPredicate.not(
+                        namedWithPrefix(PlacementCodes.class.getName(), ROOT + ".packvalidation.placement.LevelRules")))
                 .should()
-                .accessField(PackFindingCode.class, "PACK_LEVEL_MISSING")
+                .accessField(PlacementCodes.class, "PACK_LEVEL_MISSING")
                 .orShould()
-                .accessField(PackFindingCode.class, "PACK_LEVEL_MISMATCH");
+                .accessField(PlacementCodes.class, "PACK_LEVEL_MISMATCH");
     }
 
     @Test
-    void onlyThePolicyNamesThePackLevelFindings() {
-        onlyThePolicyNamesThePackLevelFindingsRule().check(classes);
+    void onlyTheLevelRulesNameThePackLevelFindings() {
+        onlyTheLevelRulesNameThePackLevelFindingsRule().check(classes);
     }
 
     @Test
-    void thePackLevelFindingRuleFailsOnAClassOutsideThePolicy() {
+    void thePackLevelFindingRuleFailsOnAClassOutsideTheLevelRules() {
         JavaClasses outside =
                 new ClassFileImporter().importPackages("ai.speckitty.charter.deployable.packlevelfixture");
-        assertThatThrownBy(() -> onlyThePolicyNamesThePackLevelFindingsRule().check(outside))
+        assertThatThrownBy(() -> onlyTheLevelRulesNameThePackLevelFindingsRule().check(outside))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("BuildsFindingDirectly");
+    }
+
+    // ---- where the pack rules live (#554, S1 to S3 and S6, T052) ---------------------------------------------------
+
+    /** The three owners of the pack tokens: each token is built exactly once, in one of them (data model). */
+    private static final String[] PACK_CODE_OWNERS = {
+        ROOT + ".packs.domain.PackCodes",
+        ROOT + ".packs.infra.storage.rules.StorageCodes",
+        PlacementCodes.class.getName()
+    };
+
+    /** A call of {@code ReasonCode}'s constructor or of {@code ReasonCode.of}, or a reference to either: a code built. */
+    private static final DescribedPredicate<JavaAccess<?>> BUILDS_A_REASON_CODE = DescribedPredicate.describe(
+            "build a ReasonCode",
+            access -> access.getTargetOwner().isEquivalentTo(ReasonCode.class)
+                    && (access.getName().equals("<init>") || access.getName().equals("of")));
+
+    /**
+     * PACK_CODES_HAVE_ONE_OWNER (#554, squad finding P6, reworded): each pack token is built exactly once, in
+     * {@code PackCodes} (the domain's), {@code StorageCodes} (the storage edge's) or {@code PlacementCodes} (the
+     * validation edge's placement, Q7); no other class of the packs slice or of {@code pack-validation} builds a
+     * {@code ReasonCode}, so a token cannot be spelled twice. The round trip's verdict ({@code packvalidation.roundtrip},
+     * #578) builds the two tokens of its own verdict, which name no pack fault, and is not a subject.
+     */
+    private static ArchRule packCodesHaveOneOwner(String... packages) {
+        return noClasses()
+                .that()
+                .resideInAnyPackage(packages)
+                .and()
+                .resideOutsideOfPackage(ROOT + ".packvalidation.roundtrip..")
+                .and(DescribedPredicate.not(namedWithPrefix(PACK_CODE_OWNERS)))
+                .should()
+                .accessTargetWhere(BUILDS_A_REASON_CODE)
+                .as("PACK_CODES_HAVE_ONE_OWNER: only PackCodes, StorageCodes and PlacementCodes build a pack token");
+    }
+
+    @Test
+    @DisplayName("PACK_CODES_HAVE_ONE_OWNER")
+    void packCodesHaveOneOwner() {
+        packCodesHaveOneOwner(ROOT + ".packs..", PACK_VALIDATION).check(classes);
+    }
+
+    @Test
+    void thePackCodeOwnerRuleFailsOnAClassThatBuildsAPackTokenAgain() {
+        assertBites(
+                packCodesHaveOneOwner(ROOT + ".deployable.packlevelfixture.."),
+                ROOT + ".deployable.packlevelfixture",
+                "BuildsAPackTokenTwice");
+    }
+
+    /** A file, a stream or a type of the storage edge: what a core rule may not name. */
+    private static final DescribedPredicate<JavaClass> A_FILE_OR_THE_STORAGE_EDGE = DescribedPredicate.describe(
+            "read a file (java.nio.file, java.io.File, a java.io stream) or name a packs.infra type", (JavaClass c) -> {
+                String pkg = c.getPackageName();
+                return pkg.startsWith("java.nio.file")
+                        || c.getName().equals("java.io.File")
+                        || c.getName().equals("java.io.RandomAccessFile")
+                        || (pkg.equals("java.io")
+                                && (c.isAssignableTo(java.io.InputStream.class)
+                                        || c.isAssignableTo(java.io.OutputStream.class)
+                                        || c.isAssignableTo(java.io.Reader.class)
+                                        || c.isAssignableTo(java.io.Writer.class)))
+                        || pkg.equals(ROOT + ".packs.infra")
+                        || pkg.startsWith(ROOT + ".packs.infra.");
+            });
+
+    /**
+     * PACK_RULES_READ_NO_FILE (#554, NFR-004, data model "Invariants"): a core rule reads only the facts of the one read
+     * ({@code PackContents}, {@code PackUnderResolution}), so {@code packs.domain.rules} names no {@code java.nio.file}
+     * type, no {@code java.io.File} and no {@code java.io} stream, and no {@code packs.infra} type.
+     */
+    private static ArchRule packRulesReadNoFile(String rulesPackage) {
+        return noClasses()
+                .that()
+                .resideInAPackage(rulesPackage)
+                .should()
+                .dependOnClassesThat(A_FILE_OR_THE_STORAGE_EDGE)
+                .as("PACK_RULES_READ_NO_FILE (" + rulesPackage + "): no file, no stream, no packs.infra type");
+    }
+
+    @Test
+    @DisplayName("PACK_RULES_READ_NO_FILE")
+    void packRulesReadNoFile() {
+        packRulesReadNoFile(ROOT + ".packs.domain.rules..").check(classes);
+    }
+
+    @Test
+    void thePackRulesReadNoFileRuleFailsOnARuleThatReadsAFile() {
+        assertBites(
+                packRulesReadNoFile(ROOT + ".deployable.packlevelfixture.."),
+                ROOT + ".deployable.packlevelfixture",
+                "RuleReadsAFile",
+                "java.nio.file.Files",
+                "StorageCodes");
+    }
+
+    /** A class of the storage edge outside its rules package. */
+    private static final DescribedPredicate<JavaClass> ANOTHER_STORAGE_CLASS = DescribedPredicate.describe(
+            "belong to packs.infra.storage outside packs.infra.storage.rules", (JavaClass c) -> {
+                String pkg = c.getPackageName();
+                return (pkg.equals(ROOT + ".packs.infra.storage") || pkg.startsWith(ROOT + ".packs.infra.storage."))
+                        && !pkg.equals(ROOT + ".packs.infra.storage.rules")
+                        && !pkg.startsWith(ROOT + ".packs.infra.storage.rules.");
+            });
+
+    /**
+     * STORAGE_RULES_ARE_FRAMEWORK_FREE (#554, S3, NFR-001): the storage rules ({@code packs.infra.storage.rules}), which
+     * the one reader composes and {@link #THE_PACKS_LOAD_REACHES_NO_FRAMEWORK} walks, use no Spring, HTTP, commit store
+     * or lock, and name no other class of the storage edge: they judge the one read's {@code TreeRead} and derive
+     * nothing. The direct half fails on a class the package names; {@link #storageRulesReachNoFramework} on one any
+     * charter class it reaches names.
+     */
+    private static ArchRule storageRulesAreFrameworkFree(String rulesPackage) {
+        return noClasses()
+                .that()
+                .resideInAPackage(rulesPackage)
+                .should()
+                .dependOnClassesThat(FRAMEWORK_HTTP_STORE_OR_LOCK.or(ANOTHER_STORAGE_CLASS))
+                .as("STORAGE_RULES_ARE_FRAMEWORK_FREE (" + rulesPackage + "), direct: no Spring, HTTP, commit store,"
+                        + " lock or other storage class");
+    }
+
+    /** The transitive half of {@link #storageRulesAreFrameworkFree}. */
+    private static ArchRule storageRulesReachNoFramework(String rulesPackage) {
+        return classes()
+                .that()
+                .resideInAPackage(rulesPackage)
+                .should(reachesNone(
+                        FRAMEWORK_HTTP_STORE_OR_LOCK.or(ANOTHER_STORAGE_CLASS),
+                        "reach no charter class that uses Spring, HTTP, a commit store, a lock or another storage"
+                                + " class"))
+                .as("STORAGE_RULES_ARE_FRAMEWORK_FREE (" + rulesPackage + "), transitive");
+    }
+
+    @Test
+    @DisplayName("STORAGE_RULES_ARE_FRAMEWORK_FREE")
+    void storageRulesAreFrameworkFree() {
+        storageRulesAreFrameworkFree(ROOT + ".packs.infra.storage.rules..").check(classes);
+        storageRulesReachNoFramework(ROOT + ".packs.infra.storage.rules..").check(classes);
+    }
+
+    @Test
+    void theStorageRulesRuleFailsOnAStorageRuleThatNamesSpring() {
+        assertBites(
+                storageRulesAreFrameworkFree(ROOT + ".deployable.packlevelfixture.."),
+                ROOT + ".deployable.packlevelfixture",
+                "StorageRuleNamesSpring",
+                "org.springframework.stereotype.Component");
+        assertBites(
+                storageRulesReachNoFramework(ROOT + ".deployable.packlevelfixture.."),
+                ROOT + ".deployable.packlevelfixture",
+                "StorageRuleNamesSpring reaches org.springframework.stereotype.Component");
     }
 
     /**
@@ -1953,13 +2111,13 @@ class HexagonalArchitectureTest {
     }
 
     @Test
-    void onlyThePolicyNamesTheMissingDiagnostic() {
-        onlyThePolicyNamesTheMissingDiagnosticRule().check(classes);
+    void onlyThePlacementCodesNameTheMissingDiagnostic() {
+        onlyThePlacementCodesNameTheMissingDiagnosticRule().check(classes);
     }
 
     @Test
-    void onlyThePolicyNamesTheMismatchRefusal() {
-        onlyThePolicyNamesTheMismatchRefusalRule().check(classes);
+    void onlyThePlacementCodesNameTheMismatchRefusal() {
+        onlyThePlacementCodesNameTheMismatchRefusalRule().check(classes);
     }
 
     @Test
@@ -1971,19 +2129,21 @@ class HexagonalArchitectureTest {
     // The rules check field access. Enum.valueOf("PACK_LEVEL_MISSING") or values() would get around them; no
     // production code does that today.
     @Test
-    void theMissingDiagnosticRuleFailsOnAClassOutsideThePolicy() {
+    void theMissingDiagnosticRuleFailsOnAClassOutsideThePlacementCodes() {
         JavaClasses outside =
                 new ClassFileImporter().importPackages("ai.speckitty.charter.deployable.packlevelfixture");
-        assertThatThrownBy(() -> onlyThePolicyNamesTheMissingDiagnosticRule().check(outside))
+        assertThatThrownBy(() ->
+                        onlyThePlacementCodesNameTheMissingDiagnosticRule().check(outside))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("BuildsMissingDiagnostic");
     }
 
     @Test
-    void theMismatchRefusalRuleFailsOnAClassOutsideThePolicy() {
+    void theMismatchRefusalRuleFailsOnAClassOutsideThePlacementCodes() {
         JavaClasses outside =
                 new ClassFileImporter().importPackages("ai.speckitty.charter.deployable.packlevelfixture");
-        assertThatThrownBy(() -> onlyThePolicyNamesTheMismatchRefusalRule().check(outside))
+        assertThatThrownBy(
+                        () -> onlyThePlacementCodesNameTheMismatchRefusalRule().check(outside))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("RefusesWithMismatch");
     }

@@ -11,6 +11,8 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The content rules of a mission type's step prompts (#554, FR-001, T037; FR-007 of ADR-0066): each slot marker is
@@ -22,6 +24,10 @@ import java.util.List;
  * {@link PackCodes#PROMPT_SLOT_NOT_EMPTY} violation when the descriptor declares {@code schema_version} {@value
  * #VERSIONED_SCHEMA}, and the {@link PackCodes#PROMPT_SLOT_NOT_EMPTY_WARNING} warning when it declares none (or could not
  * be read). The warning has this one source: the reader states none (C-9).
+ *
+ * <p>The judgement of one prompt is a plain function ({@link #faults(PromptSlots.Parse, boolean)}): the rule states each
+ * of its faults as a finding, and the store half, which the composing read answers from (S7), records the same faults
+ * on the aggregate.
  */
 public final class PromptSlotRules {
 
@@ -50,8 +56,8 @@ public final class PromptSlotRules {
         boolean versioned = versioned(contents);
         List<Reason> findings = new ArrayList<>();
         for (PackContents.PromptSlotFacts prompt : contents.promptSlots()) {
-            for (PromptSlots.Fault fault : prompt.parse().faults()) {
-                findings.add(finding(prompt.file(), fault, versioned));
+            for (Fault fault : faults(prompt.parse(), versioned)) {
+                findings.add(finding(prompt.file(), fault));
             }
         }
         return findings;
@@ -60,20 +66,75 @@ public final class PromptSlotRules {
     /** Whether the descriptor the read read declares the versioned schema. */
     static boolean versioned(PackContents contents) {
         return contents.descriptor() instanceof FileRead.Read<PackDescriptor> read
-                && read.value().schemaVersion().filter(VERSIONED_SCHEMA::equals).isPresent();
+                && versioned(read.value().schemaVersion());
     }
 
-    /** One fault as a finding at the prompt file, of the code the fault's kind and the version pick. */
-    static Reason finding(String file, PromptSlots.Fault fault, boolean versioned) {
-        String where = file + ": line " + fault.line() + " of the canonical text: ";
-        return switch (fault.kind()) {
-            case MALFORMED -> Findings.at(PackCodes.PROMPT_SLOT_MALFORMED, file, List.of(), where + fault.reason());
-            case NOT_EMPTY -> {
-                String slot =
-                        fault.slot().map(id -> "slot " + id + " holds text").orElse(fault.reason());
-                ReasonCode code = versioned ? PackCodes.PROMPT_SLOT_NOT_EMPTY : PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING;
-                yield Findings.at(code, file, List.of(), where + slot + (versioned ? "" : UNVERSIONED_WARNING));
-            }
-        };
+    /**
+     * Whether a descriptor's {@code schema_version} is the versioned one, {@value #VERSIONED_SCHEMA}.
+     *
+     * @param schemaVersion the descriptor's {@code schema_version}; empty for an unversioned descriptor
+     * @return whether a slot that holds text is a violation
+     */
+    public static boolean versioned(Optional<String> schemaVersion) {
+        return schemaVersion.filter(VERSIONED_SCHEMA::equals).isPresent();
+    }
+
+    /**
+     * One fault of a step prompt's slots: the code the fault's kind and the descriptor's version pick, and what is wrong.
+     *
+     * @param code the code, which owns the severity
+     * @param reason what is wrong, naming the line of the marker (and the slot); it does not name the file
+     */
+    public record Fault(ReasonCode code, String reason) {
+        /**
+         * Checks the fields.
+         *
+         * @param code the code
+         * @param reason the reason
+         */
+        public Fault {
+            Objects.requireNonNull(code, "code");
+            Objects.requireNonNull(reason, "reason");
+        }
+    }
+
+    /**
+     * Judges the slots of one step prompt (FR-007): each fault of its parse, in the parse's order, as the code the
+     * descriptor's version picks.
+     *
+     * @param parse the parse of the prompt's canonical text
+     * @param versioned whether the descriptor declares the versioned schema ({@link #versioned(Optional)})
+     * @return one fault per fault of the parse
+     */
+    public static List<Fault> faults(PromptSlots.Parse parse, boolean versioned) {
+        List<Fault> faults = new ArrayList<>();
+        for (PromptSlots.Fault fault : parse.faults()) {
+            String where = "line " + fault.line() + " of the canonical text: ";
+            faults.add(
+                    switch (fault.kind()) {
+                        case MALFORMED -> new Fault(PackCodes.PROMPT_SLOT_MALFORMED, where + fault.reason());
+                        case NOT_EMPTY -> {
+                            String slot = fault.slot()
+                                    .map(id -> "slot " + id + " holds text")
+                                    .orElse(fault.reason());
+                            ReasonCode code = versioned
+                                    ? PackCodes.PROMPT_SLOT_NOT_EMPTY
+                                    : PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING;
+                            yield new Fault(code, where + slot + (versioned ? "" : UNVERSIONED_WARNING));
+                        }
+                    });
+        }
+        return faults;
+    }
+
+    /**
+     * One fault as a finding at the prompt file: {@code <file>: <reason>}.
+     *
+     * @param file the prompt's pack-relative path
+     * @param fault the fault
+     * @return the finding
+     */
+    public static Reason finding(String file, Fault fault) {
+        return Findings.at(fault.code(), file, List.of(), file + ": " + fault.reason());
     }
 }

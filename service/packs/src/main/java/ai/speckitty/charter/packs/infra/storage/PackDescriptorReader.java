@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * breaks the schema is {@link FileRead.Unreadable}; any other is a {@link PackDescriptor} of what the file states,
  * with nothing defaulted: the declared {@code pack_level} is as written or empty and {@code requires_core} is the raw
  * text. The schema is closed, so a key it does not declare, a retired field included, makes the file unreadable
- * (ADR-0036 decision 3). {@code PackPolicy} decides what any of it means.
+ * (ADR-0036 decision 3). The rules decide what any of it means.
  */
 final class PackDescriptorReader {
 

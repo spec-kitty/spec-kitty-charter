@@ -181,6 +181,56 @@ WP04, WP05 and WP08 see it.
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
 
+## Outcomes of WP13
+
+WP13 deleted the glue and pinned the shape. `PackPolicy` (with `judge`, `Judgement` and its paired emitters),
+`PackFinding` (`reason`, `of`, `toRefusal`, `toDiagnostic`) and `PackFindingCode` are gone, with
+`RelationshipEndpointRule.violations()`, `NotHeldFile.finding()`, `Judged`, `PolicyReadouts`, `PlantedFixtures`'
+policy readout and the `PackPolicy*Test` and `PackFindingTest` classes. No golden row moves: `surfaces.json`,
+`validate.json` and `composition.json` are byte-equal.
+
+- **One finding type in the core.** A pack fault is a kernel `Reason`. `Findings` is the one RFC 6901 helper: it
+  encodes a place as a pointer and decodes one (`Findings.segments`, which `Precedence` and the fixtures read).
+  `GraphBinding` states its findings through it.
+- **The reader owns its wording.** `Wording`, which knows the JSON-Schema keywords and names the storage tokens
+  (`pack_unreadable`, `unreadable`, `artifact_schema_error`), moved to `packs.infra.storage`; `Paths.origin` is the
+  domain's one "where a finding comes from". `DescriptorChecks` stays a plain domain function (the resolver and the
+  offering call it) and returns code-free faults; the reader states each as its precheck code (S2).
+- **One rule function per check.** The store half, which the composing read answers from (S7), records the findings of
+  the one rule function: `FragmentRules.judge(facts, edgesRead)`, `StepRules.repeatedSubstepIds` and
+  `PromptSlotRules.faults`. The endpoint refusals it records come from `RelationshipEndpointRule.refusal`, in the order
+  `GraphRules` lists them. `PackElementViolation` stays: it is the store half's and the aggregate's record of a fault,
+  not a converter.
+- **Store-only faults are typed (WP12 review cycle 2, NIT-B).** `FilesystemPackStore.PackRead.storeOnly` holds the
+  faults only the store's read meets (a companion it cannot read, a template read twice, a value-object breach of an
+  asset file's name or a preset), recorded where it meets them; `StoreRead` reads them from there, and no message
+  prefix is matched.
+- **`file_not_held` has one wording.** `NotHeldFile.detail()` is the sentence `NotHeldRules` states and the tests read.
+- **The census gate reads the `TreeCensus` (operator, 2026-11-17).** The census carries every entry of the one walk
+  (each regular file and each link, never followed) with how it stands (mapped with its schema and content form, a
+  companion with its owner's schema, retired, excluded, or uncovered with its first segment) and every companion a
+  readable artifact names, present or not; it is built whether or not the descriptor can be read
+  (`CensusEntries`). `WholePackCensus` names the entries as gate kinds and walks and classifies nothing. The baseline
+  lists and the drift test are unchanged, and `wholePackRoundTrip` is green.
+- **Placement tokens from the contract.** `PlacementCodes` builds `pack_level_missing` from
+  `Diagnostic.Code.PACK_LEVEL_MISSING` and `pack_level_mismatch` from `RefusalCode.PACK_LEVEL_MISMATCH` (WP09 carry).
+  ArchUnit rules A and B now let `PlacementCodes` name those two constants, and rule C lets only `LevelRules` and
+  `PlacementCodes` name the pack-level codes. `ReservedRefusalCodesTest`'s off-wire allowance names `PlacementCodes`,
+  the one class that names `pack_level_mismatch`, which the service does not run.
+- **ArchUnit (T052).** `PACK_CODES_HAVE_ONE_OWNER` (no class of the packs slice or `pack-validation` but `PackCodes`,
+  `StorageCodes` and `PlacementCodes` builds a `ReasonCode`; the round trip's own verdict tokens are not pack tokens),
+  `PACK_RULES_READ_NO_FILE` and `STORAGE_RULES_ARE_FRAMEWORK_FREE` (direct and transitive), each with a bite fixture.
+  The onion rules, `PACK_VALIDATION_IS_FRAMEWORK_FREE`, `THE_PACKS_LOAD_REACHES_NO_FRAMEWORK` and
+  `STORAGE_RETURNS_DOMAIN` are unchanged; the transitive walk is factored so the new rule shares it.
+- **Coverage kept.** The path-order corpus is `ArtifactRulesTest`'s and `PrecedenceTest`'s, the escape corpus
+  `PackRelativePathsTest`'s, the graph binding cases `GraphBindingTest`'s, and the planted oracle (`expected.json`)
+  judges `GraphRules`; the parity-by-hand "finds what validate mode finds" tests are gone with their oracle. The tests
+  named after `LoadChecks` are `PromptSlotSurfacesTest`, `StepEnhancementSurfacesTest` and
+  `PackFileSetBudgetTest.theWholePackLoadsAreWithinBudget`.
+- **PIT.** The narrowed run on `packs.domain.rules`, `packs.infra.storage.rules`, `StoreRead`, `Wording`,
+  `CensusEntries` and `WholePackCensus` kills 587 of 645 mutants (91 %), against 545 of 616 (88 %) before over the
+  same packages without the two census classes.
+
 ## Outcomes of WP12
 
 WP12 switched the registration onto the one read. `PackRegistrationService` reads the staged tree once through the
@@ -216,13 +266,15 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   template a mission type names and the pack lacks, in the reader's words (`names templates/x.md (named by the type):
   missing`, row 18), and an edge that joins an artifact to itself through the pack's own name (`unreadable` at `pack`,
   as the registration answered it; `GraphBinding` judges the bare self-loop only). Validate mode gains each of them.
-- **Cascades the store half does not reach (review cycle 2).** The store stops at the first fault of a mission type
-  it cannot build, so a second fault of the same type is met by neither half. A named output template the pack lacks
-  refuses the type at the store's read, before its entity is built, so an artifact key standing twice in it is not
-  reached; and a step id standing twice is the entity's first breach, so the same artifact key is not reached either
-  (the domain's guard throws its first breach). Each is answered once the first fault is fixed. `StoreHalfFaultsTest`
-  pins both, and that a distinct fault the store does meet (a step's prompt path beside a step standing twice) is not
-  hidden by the reader's step fault.
+- **Cascades the store half does not reach (review cycle 2; corrected in WP13).** The store half stops a mission type
+  at the first fault it meets, so a second fault of the same type is met by neither half. A named output template the
+  pack lacks refuses the type at the store's read, before its entity is built, so an artifact key standing twice in it
+  is not reached. The entity build stops at the first fault it meets too: in `StoreHalfFaultsTest`'s plant that is the
+  renamed step's prompt path, thrown while the builder is filled, so the artifact key standing twice is not reached; the
+  step standing twice is the reader's fault, in its own words. (Had the build gone on, the domain's guards check the
+  artifact keys before the step ids.) Each is answered once the first fault is fixed. `StoreHalfFaultsTest` pins both,
+  and that a distinct fault the store does meet (the step's prompt path beside a step standing twice) is not hidden by
+  the reader's step fault.
 - **Not done here, for WP13 (review cycle 2 NIT-B).** `StoreRead.metOnlyByTheStore` tells the store read's own faults
   (a template read twice, a value-object breach) by their message's start; a typed marker would need the store's
   `PackRead` to carry them apart, through `readKind` and its callers.

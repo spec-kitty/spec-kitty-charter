@@ -2,9 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
-import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
@@ -12,8 +10,6 @@ import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
@@ -29,7 +25,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +35,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The content rules' fixtures (#554, T034). The planted and example packs, each read once per JVM by the one reader
- * into the {@link TreeRead} the rules judge and the {@link PackReadout} today's {@link PackPolicy} judges, with the findings a plant's {@code expected.json} names; and the facts a test writes by hand.
+ * into the {@link TreeRead} the rules judge and the {@link PackReadout} the domain port returns, with the findings a
+ * plant's {@code expected.json} names; and the facts a test writes by hand.
  *
  * <p>The subjects are the golden snapshot's ({@code SurfaceAnswers}): every plant that holds files, with its symbolic
  * links, judged at its configured level; a plant with no {@code pack.yaml} again as {@code <plant>+pack.yaml}, with the
@@ -77,8 +73,10 @@ final class PlantedFixtures {
          * @return its code's token, file and place
          */
         static Expected of(Reason reason) {
-            PackFinding finding = PackFinding.of(reason);
-            return new Expected(finding.code().value(), finding.file(), finding.place());
+            return new Expected(
+                    reason.code().value(),
+                    reason.location().file(),
+                    Findings.segments(reason.location().pointer()));
         }
     }
 
@@ -109,17 +107,6 @@ final class PlantedFixtures {
         PackReadout readout() {
             return new PackReadout(
                     tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
-        }
-
-        /**
-         * What today's {@link PackPolicy#judge} is given for the read: its facts, with the read faults alone as the
-         * rationale (staging until WP13; validate mode judges the storage edge's verdict, WP09).
-         *
-         * @return the readout
-         */
-        PackReadout policyReadout() {
-            return new PackReadout(
-                    tree.contents(), tree.census().files(), tree.census().notHeld(), new Rationale(tree.readFaults()));
         }
 
         @Override
@@ -159,25 +146,6 @@ final class PlantedFixtures {
                         .filter(expected -> expected.stream().anyMatch(finding -> codes.contains(finding.code())))
                         .isPresent())
                 .toList();
-    }
-
-    /**
-     * What today's validate mode ({@link PackPolicy#judge}) finds of the codes over a read, less the read faults of
-     * those codes that it reports as they came: the findings of the policy's own rules for that group, as reasons.
-     *
-     * @param planted the read pack
-     * @param codes the group's codes
-     * @return the policy's findings of the group, in its precedence order
-     */
-    static List<Reason> policyFindings(Planted planted, Collection<ReasonCode> codes) {
-        List<Reason> readFaults = new ArrayList<>(planted.tree().readFaults());
-        List<Reason> own = new ArrayList<>();
-        for (PackFinding finding : PackPolicy.judge(planted.policyReadout()).findings()) {
-            if (codes.contains(finding.code()) && !readFaults.remove(finding.reason())) {
-                own.add(finding.reason());
-            }
-        }
-        return own;
     }
 
     /**

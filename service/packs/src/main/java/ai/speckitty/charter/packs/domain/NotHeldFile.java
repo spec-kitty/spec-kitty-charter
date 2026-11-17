@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -105,11 +104,11 @@ public record NotHeldFile(String path, Kind kind, String reason) {
     }
 
     /**
-     * The {@code file_not_held} warning for this file (FR-021): the file named and the reason given.
+     * What the {@code file_not_held} warning says of this file, on every surface: the file named and the reason given.
      *
-     * @return the warning
+     * @return {@code <path>: not held (<reason>)}
      */
-    public PackFinding finding() {
-        return new PackFinding(PackFindingCode.FILE_NOT_HELD, path, List.of(), path + ": not held (" + reason + ")");
+    public String detail() {
+        return path + ": not held (" + reason + ")";
     }
 }

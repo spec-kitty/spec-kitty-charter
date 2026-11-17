@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import static ai.speckitty.charter.packs.domain.rules.PlantedFixtures.facts;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
@@ -10,8 +11,13 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Expected;
 import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Planted;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
@@ -109,19 +115,6 @@ class ArtifactRulesTest {
         return PlantedFixtures.all();
     }
 
-    @ParameterizedTest
-    @MethodSource("planted")
-    @DisplayName("over every planted and example pack, with the asset rule, the rule finds what validate mode finds")
-    void theRuleFindsWhatValidateModeFinds(Planted planted) {
-        // Today's artifact rule judges every kind; the asset sidecars' repeat is the asset rule's now (S2).
-        List<Reason> findings = new ArrayList<>(ArtifactRules.RULES.apply(planted.contents()));
-        findings.addAll(AssetRules.ID_REPEATED.apply(planted.contents()));
-
-        assertThat(findings)
-                .containsExactlyInAnyOrderElementsOf(
-                        PlantedFixtures.policyFindings(planted, Set.of(PackCodes.DUPLICATE_ARTIFACT_ID)));
-    }
-
     static List<Planted> expecting() {
         return PlantedFixtures.expecting(Set.of(PackCodes.DUPLICATE_ARTIFACT_ID.value()));
     }
@@ -141,6 +134,52 @@ class ArtifactRulesTest {
                         .filter(expected ->
                                 PackCodes.DUPLICATE_ARTIFACT_ID.value().equals(expected.code()))
                         .filter(expected -> !judgedElsewhere.contains(expected.file()))
+                        .toList());
+    }
+
+    /** The order {@code sorted()} gives pathlib paths, written by {@code scripts/packs/path_corpus.py}. */
+    static List<String> pythonPathOrder() throws IOException {
+        try (InputStream in = ArtifactRulesTest.class.getResourceAsStream("/paths/artifact-order.txt")) {
+            assertThat(in).as("the path-order corpus").isNotNull();
+            return new String(in.readAllBytes(), StandardCharsets.US_ASCII)
+                    .lines()
+                    .filter(line -> !line.startsWith("#") && !line.isEmpty())
+                    .map(ArtifactRulesTest::unescape)
+                    .toList();
+        }
+    }
+
+    /** The corpora write every non-printable or non-ASCII UTF-16 unit, and the backslash, as backslash-u-hhhh. */
+    static String unescape(String text) {
+        StringBuilder out = new StringBuilder();
+        int i = 0;
+        while (i < text.length()) {
+            if (text.charAt(i) == '\\') {
+                out.append((char) Integer.parseInt(text.substring(i + 2, i + 6), 16));
+                i += 6;
+            } else {
+                out.append(text.charAt(i));
+                i++;
+            }
+        }
+        return out.toString();
+    }
+
+    @Test
+    @DisplayName("over the whole path-order corpus the first file in pathlib order owns the id and the rest follow it")
+    void thePathOrderIsPythonsOnEveryPathOfTheCorpus() throws IOException {
+        List<String> expected = pythonPathOrder();
+        assertThat(expected).hasSizeGreaterThan(20);
+        List<String> shuffled = new ArrayList<>(expected);
+        Collections.shuffle(shuffled, new Random(7));
+
+        assertThat(judge(shuffled.stream()
+                        .map(path -> new ArtifactFacts(path, "styleguide", "x"))
+                        .toArray(ArtifactFacts[]::new)))
+                .extracting(reason -> reason.location().file(), Reason::detail)
+                .containsExactlyElementsOf(expected.subList(1, expected.size()).stream()
+                        .map(path ->
+                                tuple(path, path + ": styleguide id 'x' is already declared in " + expected.getFirst()))
                         .toList());
     }
 }

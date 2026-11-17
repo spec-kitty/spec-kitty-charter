@@ -43,6 +43,6 @@ public final class NotHeldRules {
                 Evaluation.FAIL,
                 StorageCodes.FILE_NOT_HELD,
                 Location.in(file.path()),
-                file.path() + ": not held (" + file.reason() + ")");
+                file.detail());
     }
 }

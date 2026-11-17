@@ -12,12 +12,11 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,13 +29,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The step enhancement and fragment rules at the load seat (FR-004 to FR-006, OD-3 (a), plan errata E-1 and E-3): a
- * fault is a violation at its file, never a throw, so the staged load of a registration lists every fault at once and a
- * composing read names the first. Each case plants a fault beside its passing twin; the cases that name a precedence
- * (T-08) run in validate mode too.
+ * The step enhancement and fragment rules on every surface (FR-004 to FR-006, OD-3 (a), plan errata E-1 and E-3): a
+ * fault is a finding at its file, never a throw, so a registration lists every fault at once, the store half records it
+ * on the aggregate and a composing read names the first. Each case plants a fault beside its passing twin; the cases
+ * that name a precedence (T-08) read the one read's verdict too, which validate mode and a registration judge.
  */
-@DisplayName("Step enhancement and fragment faults at the load seat are violations at their files (IC-02)")
-class StepEnhancementLoadChecksTest {
+@DisplayName("Step enhancement and fragment faults are findings at their files on every surface (IC-02)")
+class StepEnhancementSurfacesTest {
 
     private static final String CODE = "prompt_fragment_invalid";
     private static final String TYPE = "software-dev";
@@ -130,18 +129,17 @@ class StepEnhancementLoadChecksTest {
                     GRAPH, "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n" + String.join("", edges));
         }
 
-        /** Validate mode: every finding the policy raises for the code. */
-        List<PackFinding> validate() {
-            PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
+        /** The one read's verdict, which validate mode and a registration judge: every finding of the code. */
+        List<Reason> validate() {
+            return validateAll().stream()
                     .filter(finding -> PackCodes.PROMPT_FRAGMENT_INVALID.equals(finding.code()))
                     .toList();
         }
 
-        /** Validate mode, every finding. */
-        List<PackFinding> validateAll() {
+        /** The one read's verdict, every finding. */
+        List<Reason> validateAll() {
             PackRoot root = new PackRoot("enhancer", Optional.of(PackLevel.ORG), dir.toString());
-            return PackPolicy.judge(PolicyReadouts.of(root)).findings();
+            return new FileSystemPackInspector().read(root).rationale().failures();
         }
 
         /** The registration's staged load: the violations of the refusal, none when the pack registers. */
@@ -437,7 +435,7 @@ class StepEnhancementLoadChecksTest {
 
         assertThat(pointers(pack.staged())).containsExactly(pack.yamlOf(TYPE, "brief"), pack.fragmentOf(TYPE, "stray"));
         assertThat(pack.validate())
-                .extracting(PackFinding::file)
+                .extracting(reason -> reason.location().file())
                 .containsExactly(pack.yamlOf(TYPE, "brief"), pack.fragmentOf(TYPE, "stray"));
     }
 
@@ -455,7 +453,9 @@ class StepEnhancementLoadChecksTest {
                 .as("a file nothing models beside them is not held, never a fault (Q1)")
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
                 .containsExactly(tuple(CODE, pack.yamlOf(TYPE, "brief")));
-        assertThat(pack.validate()).extracting(PackFinding::file).containsExactly(pack.yamlOf(TYPE, "brief"));
+        assertThat(pack.validate())
+                .extracting(reason -> reason.location().file())
+                .containsExactly(pack.yamlOf(TYPE, "brief"));
     }
 
     // ---- the companion twins: each at its file, all listed at once -------------------------------------------------
@@ -502,7 +502,7 @@ class StepEnhancementLoadChecksTest {
                 .containsExactly(tuple("artifact_schema_error", pack.yamlOf(TYPE, "brief")));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
-                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR));
+                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR));
 
         pack.file(pack.yamlOf(TYPE, "brief"), "schema_version: '1.0'\nid: brief\n");
         assertThat(pack.staged()).singleElement().satisfies(violation -> {
@@ -511,7 +511,7 @@ class StepEnhancementLoadChecksTest {
         });
         assertThat(pack.validate())
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(pack.yamlOf(TYPE, "brief")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(pack.yamlOf(TYPE, "brief")));
     }
 
     @Test
@@ -535,7 +535,9 @@ class StepEnhancementLoadChecksTest {
             assertThat(violation.code()).isEqualTo(CODE);
             assertThat(violation.pointer()).isEqualTo(pack.yamlOf(TYPE, "brief"));
         });
-        assertThat(pack.validate()).extracting(PackFinding::file).containsExactly(pack.yamlOf(TYPE, "brief"));
+        assertThat(pack.validate())
+                .extracting(reason -> reason.location().file())
+                .containsExactly(pack.yamlOf(TYPE, "brief"));
     }
 
     @Test
@@ -553,11 +555,11 @@ class StepEnhancementLoadChecksTest {
                 .containsExactly(tuple("artifact_schema_error", yaml));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
-                .filteredOn(finding -> finding.file().equals(yaml))
+                .filteredOn(finding -> finding.location().file().equals(yaml))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-                    assertThat(finding.place()).containsExactly("id");
+                    assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.location().pointer()).isEqualTo("/id");
                 });
 
         pack.file(
@@ -582,9 +584,10 @@ class StepEnhancementLoadChecksTest {
         assertThat(pack.staged().getFirst().detail())
                 .contains("brief.prompt-fragment.md")
                 .doesNotContain("slot marker");
+        // R2 row 19 (WP12): the one read's verdict answers what the registration answers, at the enhancement.
         assertThat(pack.validate()).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(pack.fragmentOf(TYPE, "brief"));
-            assertThat(finding.detail()).doesNotContain("slot marker");
+            assertThat(finding.location().file()).isEqualTo(pack.yamlOf(TYPE, "brief"));
+            assertThat(finding.detail()).contains("brief.prompt-fragment.md").doesNotContain("slot marker");
         });
     }
 
@@ -600,9 +603,10 @@ class StepEnhancementLoadChecksTest {
         assertThat(pack.staged().getFirst().detail())
                 .contains("brief.prompt-fragment.md")
                 .doesNotContain("slot marker");
+        // R2 row 19 (WP12): the one read's verdict answers what the registration answers, at the enhancement.
         assertThat(pack.validate()).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(pack.fragmentOf(TYPE, "brief"));
-            assertThat(finding.detail()).doesNotContain("slot marker");
+            assertThat(finding.location().file()).isEqualTo(pack.yamlOf(TYPE, "brief"));
+            assertThat(finding.detail()).contains("brief.prompt-fragment.md").doesNotContain("slot marker");
         });
     }
 

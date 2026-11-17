@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
@@ -18,7 +19,6 @@ import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
@@ -98,7 +98,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             List<NotHeldFile> notHeld,
             Optional<PackManifestDso> manifest,
             Optional<String> policy,
-            List<PackFinding> warnings) {
+            List<Reason> warnings) {
         /**
          * Checks the fields and copies the lists.
          *
@@ -176,7 +176,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     private final Companions.Rules companionRules;
 
     /** The walk of a directory that is not there: the store's read refuses it before it lists anything. */
-    private static final PackFileSet.Walk NO_WALK = new PackFileSet.Walk(List.of(), List.of());
+    private static final PackFileSet.Walk NO_WALK = PackFileSet.Walk.NONE;
 
     /**
      * The one reader of a pack tree over this store's format, bindings and companion rules (#554, S1): what a test

@@ -414,7 +414,8 @@ class MissionTypeBindingTest {
                                     read.assetFiles(),
                                     templates,
                                     read.presets(),
-                                    read.document()),
+                                    read.document(),
+                                    read.storeOnly()),
                             new HashMap<>())
                     .build();
             assertThat(refused.artifacts(ArtifactKind.MISSION_TYPE))

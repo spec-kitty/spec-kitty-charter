@@ -22,12 +22,11 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.rules.Findings;
+import ai.speckitty.charter.packs.domain.rules.Precedence;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -40,8 +39,10 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
@@ -197,9 +198,9 @@ class FileSystemPackInspectorTest {
 
     /**
      * A {@code pack.yaml} with 217 unknown keys, {@code N} and {@code Nx} mixed, once made the segment order a cycle, and
-     * both the load and the judge threw TimSort's "Comparison method violates its general contract!". Each key is now a
+     * both the load and validate mode threw TimSort's "Comparison method violates its general contract!". Each key is now a
      * schema refusal at the root (ADR-0036 decision 3), so every finding has the same place and this fixture no longer
-     * exercises the segment order: {@code PackPolicyOrderTest} guards the comparator. This test keeps the fixture as a
+     * exercises the segment order: {@code PrecedenceTest} guards the comparator. This test keeps the fixture as a
      * load-and-judge smoke test: the pack loads, and each key is refused once.
      */
     @Test
@@ -213,7 +214,7 @@ class FileSystemPackInspectorTest {
         PackRoot project = new PackRoot("demo", Optional.of(PackLevel.PROJECT), dir.toString());
 
         // The closed descriptor schema (ADR-0036 decision 3) refuses each key at the root, naming it in the detail.
-        assertThat(PackPolicy.judge(PolicyReadouts.of(INSPECTOR, project)).findings())
+        assertThat(verdict(project))
                 .extracting(f -> f.detail()
                         .substring(f.detail().indexOf('\'') + 1, f.detail().lastIndexOf('\'')))
                 .as("every unknown key refused once")
@@ -230,8 +231,18 @@ class FileSystemPackInspectorTest {
         return INSPECTOR.readTree(root(dir));
     }
 
-    private static PackReadout readout(Path dir) {
-        return PolicyReadouts.of(INSPECTOR, root(dir));
+    /**
+     * The one read's verdict, which validate mode and a registration judge, in validate mode's order: every finding,
+     * sorted as {@code PackVerdicts} sorts them, with no placement group (the placement rules are validate mode's own).
+     */
+    private static List<Reason> verdict(PackRoot root) {
+        List<Reason> findings = new ArrayList<>(INSPECTOR.read(root).rationale().failures());
+        findings.sort(Precedence.comparator(Set.of()));
+        return findings;
+    }
+
+    private static List<Reason> verdict(Path dir) {
+        return verdict(root(dir));
     }
 
     /** The files the read refused, each once, in the order of their first fault. */
@@ -440,9 +451,9 @@ class FileSystemPackInspectorTest {
                 .asString()
                 .contains("has no H1");
         // #554, R2 row 19: a companion's own fault is companion in validate mode, as the registration answers it.
-        assertThat(PackPolicy.judge(readout(dir)).findings())
-                .filteredOn(finding -> finding.file().equals("toolguides/no-overview.guide.md"))
-                .extracting(PackFinding::code, PackFinding::detail)
+        assertThat(verdict(dir))
+                .filteredOn(finding -> finding.location().file().equals("toolguides/no-overview.guide.md"))
+                .extracting(Reason::code, Reason::detail)
                 .containsExactly(
                         tuple(StorageCodes.COMPANION, "toolguides/no-overview.guide.md: the guide has no ## Overview"));
         assertThat(full(dir).census().files())
@@ -522,18 +533,18 @@ class FileSystemPackInspectorTest {
                         ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md",
                         ENHANCEMENT_DIR + "blank.prompt-fragment.md");
         // OD-10 row 4: validate mode answers prompt_fragment_invalid, at the fragment, for the frontmatter fragment and
-        // for the blank one (an orphan: the staged load refuses it as well, StepEnhancementLoadChecksTest).
+        // for the blank one (an orphan: the staged load refuses it as well, StepEnhancementSurfacesTest).
         // A blank body breaks the structure schema three ways (no title, a preamble that is not text, no section); the
         // frontmatter fragment breaks it once. Nothing is reported twice.
         assertThat(promptFragmentFindings(dir))
-                .extracting(PackFinding::file)
+                .extracting(reason -> reason.location().file())
                 .containsExactly(
                         ENHANCEMENT_DIR + "blank.prompt-fragment.md",
                         ENHANCEMENT_DIR + "blank.prompt-fragment.md",
                         ENHANCEMENT_DIR + "blank.prompt-fragment.md",
                         ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md");
         assertThat(promptFragmentFindings(dir))
-                .extracting(PackFinding::detail)
+                .extracting(Reason::detail)
                 .as("three different reasons for the blank fragment")
                 .doesNotHaveDuplicates();
     }
@@ -792,12 +803,12 @@ class FileSystemPackInspectorTest {
                 """);
         String reason = "node D1 body_path '../outside.directive.yaml' escapes the pack root";
 
-        PackPolicy.Judgement verdict = PackPolicy.judge(readout(dir));
+        List<Reason> found = verdict(dir);
         FilesystemPackStore.GraphRead load =
                 new FilesystemPackStore(host, new YamlSerializationStrategy()).readGraphs(new PackIdentifier("qa"));
 
-        assertThat(verdict.findings())
-                .extracting(PackFinding::code, PackFinding::file, PackFinding::detail)
+        assertThat(found)
+                .extracting(Reason::code, finding -> finding.location().file(), Reason::detail)
                 .containsExactly(
                         tuple(PackCodes.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "drg/fragment.yaml: " + reason));
         assertThat(load.documents())
@@ -856,14 +867,14 @@ class FileSystemPackInspectorTest {
         Path builtIn = ExamplePacks.pack(ExamplePacks.BUILT_IN);
         PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), builtIn.toString());
 
-        PackPolicy.Judgement verdict = PackPolicy.judge(PolicyReadouts.of(INSPECTOR, root));
+        PackReadout verdict = INSPECTOR.read(root);
 
         // The five software-dev step prompts each declare an empty spdd:reasons-block slot (its text lives in the
         // org-base example's prompt fragments), which raises no slot finding. The one finding is the file_not_held
         // warning of the templates' orientation README, which the pack does not hold (#554, open case 6).
-        assertThat(verdict.findings())
-                .extracting(PackFinding::code, PackFinding::file)
-                .containsExactly(tuple(PackFindingCode.FILE_NOT_HELD, "missions/software-dev/templates/README.md"));
+        assertThat(verdict.rationale().failures())
+                .extracting(Reason::code, reason -> reason.location().file())
+                .containsExactly(tuple(StorageCodes.FILE_NOT_HELD, "missions/software-dev/templates/README.md"));
         for (String step : List.of("implement", "plan", "review", "specify", "tasks")) {
             assertThat(builtIn.resolve("missions/software-dev/steps/" + step + ".prompt.md"))
                     .content(StandardCharsets.UTF_8)
@@ -936,9 +947,9 @@ class FileSystemPackInspectorTest {
         Files.delete(copy.resolve("assets/carrier_lint.py"));
         PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), copy.toString());
 
-        PackPolicy.Judgement verdict = PackPolicy.judge(PolicyReadouts.of(INSPECTOR, root));
+        PackReadout verdict = INSPECTOR.read(root);
 
-        assertThat(verdict.findings()).isNotEmpty();
+        assertThat(verdict.rationale().failures()).isNotEmpty();
     }
 
     // ---- asset containment ---------------------------------------------------------------------------------------
@@ -1100,16 +1111,16 @@ class FileSystemPackInspectorTest {
         write(dir, "presets/minimal.yaml", preset);
         write(dir, "presets/other.yaml", preset);
 
-        List<PackFinding> findings = PackPolicy.judge(readout(dir)).findings();
+        List<Reason> findings = verdict(dir);
         WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(dir);
 
         // The org-level root also finds its missing fragment; only the preset findings are this test's.
         assertThat(findings)
-                .filteredOn(finding -> finding.file().startsWith(PresetFiles.PRESETS))
+                .filteredOn(finding -> finding.location().file().startsWith(PresetFiles.PRESETS))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-                    assertThat(finding.file()).isEqualTo("presets/other.yaml");
+                    assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.location().file()).isEqualTo("presets/other.yaml");
                     assertThat(finding.detail())
                             .endsWith("presets/other.yaml: preset id 'minimal' is not its file stem 'other'");
                 });
@@ -1122,8 +1133,8 @@ class FileSystemPackInspectorTest {
 
     // ---- step enhancements and prompt fragments in validate mode (FR-004 to FR-006) ------------------------------
 
-    private static List<PackFinding> promptFragmentFindings(Path dir) {
-        return PackPolicy.judge(readout(dir)).findings().stream()
+    private static List<Reason> promptFragmentFindings(Path dir) {
+        return verdict(dir).stream()
                 .filter(finding -> PackCodes.PROMPT_FRAGMENT_INVALID.equals(finding.code()))
                 .toList();
     }
@@ -1157,7 +1168,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(fragment("spdd-specify")));
     }
 
     @Test
@@ -1171,7 +1182,7 @@ class FileSystemPackInspectorTest {
         // every finding is at the fragment, none at the enhancement or as an orphan.
         assertThat(promptFragmentFindings(dir))
                 .isNotEmpty()
-                .allSatisfy(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
+                .allSatisfy(finding -> assertThat(finding.location().file()).isEqualTo(fragment("spdd-specify")));
 
         write(dir, fragment("spdd-specify"), "## REASONS guidance\n\nState the reasons.\n");
 
@@ -1187,7 +1198,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .isNotEmpty()
-                .allSatisfy(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
+                .allSatisfy(finding -> assertThat(finding.location().file()).isEqualTo(fragment("spdd-specify")));
     }
 
     @Test
@@ -1197,7 +1208,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify")));
     }
 
     @Test
@@ -1207,7 +1218,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(fragment("stray")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(fragment("stray")));
     }
 
     @Test
@@ -1219,7 +1230,7 @@ class FileSystemPackInspectorTest {
         write(dir, fragment("stray"), "## Stray\n\nNobody names it.\n");
 
         assertThat(promptFragmentFindings(dir))
-                .extracting(PackFinding::file)
+                .extracting(reason -> reason.location().file())
                 .containsExactlyInAnyOrder(yaml("spdd-specify"), fragment("stray"));
     }
 
@@ -1233,7 +1244,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify")));
     }
 
     @Test
@@ -1242,9 +1253,9 @@ class FileSystemPackInspectorTest {
         write(dir, fragment("stray"), "## Stray\n\nMaybe it was meant.\n");
 
         assertThat(promptFragmentFindings(dir)).isEmpty();
-        assertThat(PackPolicy.judge(readout(dir)).findings()).anySatisfy(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+        assertThat(verdict(dir)).anySatisfy(finding -> {
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
         });
     }
 
@@ -1262,7 +1273,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify")));
 
         // the same overrides edge, its source qualified with the pack's own name: the same enhancement (#460 R-OVR)
         write(
@@ -1273,7 +1284,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify")));
 
         // an overrides edge from another pack's enhancement is that pack's edge, not this pack's
         write(
@@ -1293,19 +1304,19 @@ class FileSystemPackInspectorTest {
 
         write(dir, ENHANCEMENT_GRAPH, edge.formatted("base::tactic:x"));
         assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
             assertThat(finding.detail()).contains("not an action:<type>/<step>");
         });
 
         write(dir, ENHANCEMENT_GRAPH, edge.formatted("base::action:research/specify"));
         assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
             assertThat(finding.detail()).contains("research");
         });
 
         write(dir, ENHANCEMENT_GRAPH, "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\n");
         assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
             assertThat(finding.detail()).contains("0 enhances edges");
         });
 
@@ -1316,7 +1327,7 @@ class FileSystemPackInspectorTest {
                 SPDD_EDGE + "- source: qa::step_enhancement:spdd-specify\n"
                         + "  target: base::action:software-dev/plan\n  relation: enhances\n");
         assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
             assertThat(finding.detail()).contains("2 enhances edges");
         });
 
@@ -1332,7 +1343,7 @@ class FileSystemPackInspectorTest {
         write(dir, ENHANCEMENT_GRAPH, "nodes: [\n");
 
         assertThat(promptFragmentFindings(dir)).isEmpty();
-        assertThat(PackPolicy.judge(readout(dir)).findings())
+        assertThat(verdict(dir))
                 .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR));
     }
 
@@ -1362,16 +1373,16 @@ class FileSystemPackInspectorTest {
                   relation: enhances
                 """);
 
-        List<PackFinding> findings = PackPolicy.judge(readout(dir)).findings();
+        List<Reason> findings = verdict(dir);
 
         assertThat(findings)
-                .filteredOn(finding -> finding.file().endsWith(".step-enhancement.yaml"))
+                .filteredOn(finding -> finding.location().file().endsWith(".step-enhancement.yaml"))
                 .singleElement()
                 .satisfies(finding -> {
                     assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_FRAGMENT_INVALID);
-                    assertThat(finding.file()).isEqualTo(software + ".step-enhancement.yaml");
+                    assertThat(finding.location().file()).isEqualTo(software + ".step-enhancement.yaml");
                 });
-        assertThat(findings).extracting(PackFinding::code).doesNotContain(PackCodes.DUPLICATE_ARTIFACT_ID);
+        assertThat(findings).extracting(Reason::code).doesNotContain(PackCodes.DUPLICATE_ARTIFACT_ID);
     }
 
     @Test
@@ -1380,10 +1391,10 @@ class FileSystemPackInspectorTest {
         write(dir, "tactics/same.tactic.yaml", tactic);
         write(dir, "more/same.tactic.yaml", tactic);
 
-        assertThat(PackPolicy.judge(readout(dir)).findings())
+        assertThat(verdict(dir))
                 .filteredOn(finding -> PackCodes.DUPLICATE_ARTIFACT_ID.equals(finding.code()))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo("tactics/same.tactic.yaml"));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo("tactics/same.tactic.yaml"));
     }
 
     @Test
@@ -1393,12 +1404,12 @@ class FileSystemPackInspectorTest {
         write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT.replace("id: spdd-specify", "id: spdd-other"));
 
         assertThat(promptFragmentFindings(dir)).isEmpty();
-        assertThat(PackPolicy.judge(readout(dir)).findings())
-                .filteredOn(finding -> finding.file().equals(yaml("spdd-specify")))
+        assertThat(verdict(dir))
+                .filteredOn(finding -> finding.location().file().equals(yaml("spdd-specify")))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-                    assertThat(finding.place()).containsExactly("id");
+                    assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.location().pointer()).isEqualTo("/id");
                 });
     }
 
@@ -1409,15 +1420,15 @@ class FileSystemPackInspectorTest {
 
         write(dir, yaml("spdd-specify"), "schema_version: '1.0'\nid: spdd-specify\nprompt_fragments: []\n");
         assertThat(promptFragmentFindings(dir)).isEmpty();
-        assertThat(PackPolicy.judge(readout(dir)).findings()).anySatisfy(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+        assertThat(verdict(dir)).anySatisfy(finding -> {
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
         });
 
         write(dir, yaml("spdd-specify"), "schema_version: '1.0'\nid: spdd-specify\n");
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify")));
     }
 
     @Test
@@ -1428,9 +1439,9 @@ class FileSystemPackInspectorTest {
 
         write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT + "  - slot: Bad:Id\n    path: second.prompt-fragment.md\n");
         assertThat(promptFragmentFindings(dir)).isEmpty();
-        assertThat(PackPolicy.judge(readout(dir)).findings()).anySatisfy(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+        assertThat(verdict(dir)).anySatisfy(finding -> {
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
         });
 
         write(
@@ -1439,7 +1450,7 @@ class FileSystemPackInspectorTest {
                 SPDD_ENHANCEMENT + "  - slot: spdd:reasons-block\n    path: second.prompt-fragment.md\n");
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+                .satisfies(finding -> assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify")));
     }
 
     @Test
@@ -1448,7 +1459,7 @@ class FileSystemPackInspectorTest {
         write(dir, fragment("spdd-specify"), "## Guidance\r\n\r\n<!-- other:slot:start -->\r\n");
 
         assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
-            assertThat(finding.file()).isEqualTo(fragment("spdd-specify"));
+            assertThat(finding.location().file()).isEqualTo(fragment("spdd-specify"));
             assertThat(finding.detail()).contains("a carriage return is not admitted");
         });
     }
@@ -1461,13 +1472,12 @@ class FileSystemPackInspectorTest {
     static Path mimePacks;
 
     /** The MIME precheck of one planted asset, as the one read's faults word it. */
-    private static List<PackFinding> mime(String path, String mime) {
+    private static List<Reason> mime(String path, String mime) {
         try {
             Path dir = Files.createTempDirectory(mimePacks, "pack");
             write(dir, SIDECAR, "id: logo\nmime: '%s'\npath: '%s'\n".formatted(mime, path));
             return full(dir).readFaults().stream()
                     .filter(fault -> StorageCodes.ASSET_MIME_INVALID.equals(fault.code()))
-                    .map(PackFinding::of)
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -1477,9 +1487,9 @@ class FileSystemPackInspectorTest {
     @ParameterizedTest
     @ValueSource(strings = {"png", "/png", "image/", "/"})
     void aMimeWithoutTwoSidesIsNotWellFormed(String mime) {
-        List<PackFinding> findings = mime("logo.zzz", mime);
+        List<Reason> findings = mime("logo.zzz", mime);
         assertThat(findings)
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         StorageCodes.ASSET_MIME_INVALID,
                         SIDECAR,
                         List.of(),
@@ -1490,7 +1500,7 @@ class FileSystemPackInspectorTest {
     @Test
     void aMimeThatDisagreesWithTheExtensionTableIsInvalidWithThePinnedText() {
         assertThat(mime("img/logo.png", "text/plain"))
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         StorageCodes.ASSET_MIME_INVALID,
                         SIDECAR,
                         List.of(),
@@ -1537,7 +1547,7 @@ class FileSystemPackInspectorTest {
     void aDisagreementNamesTheEffectiveExtensionAndTheExpectedType(
             String path, String mime, String extension, String expected) {
         assertThat(mime(path, mime))
-                .extracting(PackFinding::detail)
+                .extracting(Reason::detail)
                 .containsExactly(SIDECAR + ": asset mime '" + mime + "' does not match the '" + extension
                         + "' extension (" + expected + ")");
     }
@@ -1545,7 +1555,7 @@ class FileSystemPackInspectorTest {
     @Test
     void theMimeTypeIsComparedExactly() {
         assertThat(mime("logo.png", "IMAGE/PNG"))
-                .extracting(PackFinding::code)
+                .extracting(Reason::code)
                 .containsExactly(StorageCodes.ASSET_MIME_INVALID);
     }
 
@@ -1718,15 +1728,8 @@ class FileSystemPackInspectorTest {
     @Test
     void aReadFaultIsAKernelReasonWhosePointerIsItsPlace(@TempDir Path dir) throws IOException {
         write(dir, "procedures/misnamed.procedure.yaml", PROCEDURE.formatted("other"));
-        PackFinding finding = PackFinding.of(full(dir).readFaults().getFirst());
 
-        assertThat(finding.place()).containsExactly("id");
-        assertThat(finding.reason()).isEqualTo(full(dir).readFaults().getFirst());
-        assertThat(PackFinding.of(new PackFinding(StorageCodes.UNREADABLE, "a.yaml", List.of("x/y", "~z", "0"), "d")
-                                .reason())
-                        .place())
-                .as("a segment holding / or ~ is escaped in the pointer and restored from it (RFC 6901)")
-                .containsExactly("x/y", "~z", "0");
+        assertThat(full(dir).readFaults().getFirst().location().pointer()).isEqualTo("/id");
     }
 
     // ---- the A-M1 checklist: the load's faults are facts of the one read (#554, T025, T028) ---------------------

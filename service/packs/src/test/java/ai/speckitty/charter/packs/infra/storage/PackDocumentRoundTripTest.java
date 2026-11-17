@@ -6,12 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
@@ -453,11 +452,12 @@ class PackDocumentRoundTripTest {
                         Files.readString(written.resolve(PackDocumentMarkdown.FILE)));
     }
 
-    /** Validate mode's findings on the pack document of a pack directory. */
-    private static List<PackFinding> validateFindings(Path pack) {
+    /** The one read's findings on the pack document of a pack directory, which validate mode reports. */
+    private static List<Reason> validateFindings(Path pack) {
         PackRoot root = new PackRoot("documented", Optional.of(PackLevel.PROJECT), pack.toString());
-        return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
-                .filter(finding -> finding.file().equals(PackDocumentMarkdown.FILE))
-                .toList();
+        return new FileSystemPackInspector()
+                .read(root).rationale().failures().stream()
+                        .filter(finding -> finding.location().file().equals(PackDocumentMarkdown.FILE))
+                        .toList();
     }
 }

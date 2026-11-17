@@ -275,7 +275,7 @@ public final class PackCompositionResolver {
      * @throws Refusal the first fault {@link #faults} collects, when the graph cannot be served
      * @throws IllegalStateException when a descriptor is not well formed: the resolver decides the graph, not a
      *     descriptor, so a pack whose {@code pack_version} is no PEP 440 version or whose {@code depends_on} range is
-     *     no specifier set is {@code pack_unreadable} at the read ({@link DescriptorChecks#findings}, the one
+     *     no specifier set is {@code pack_unreadable} at the read ({@link DescriptorChecks#faults}, the one
      *     predicate), and never reaches here
      */
     public static List<PackUnderResolution> resolve(List<PackUnderResolution> packs) {
@@ -343,11 +343,11 @@ public final class PackCompositionResolver {
     private static Composition compose(List<PackUnderResolution> packs) {
         Objects.requireNonNull(packs, "packs");
         for (PackUnderResolution pack : packs) {
-            List<PackFinding> findings =
-                    DescriptorChecks.findings(pack.descriptor().name(), pack.descriptor());
-            if (!findings.isEmpty()) {
+            List<DescriptorChecks.Fault> faults =
+                    DescriptorChecks.faults(pack.descriptor().name(), pack.descriptor());
+            if (!faults.isEmpty()) {
                 throw new IllegalStateException("the resolver takes only well-formed descriptors, and "
-                        + findings.getFirst().detail());
+                        + faults.getFirst().detail());
             }
         }
         List<PackUnderResolution> ordered = new ArrayList<>(packs);

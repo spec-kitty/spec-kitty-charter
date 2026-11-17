@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain.rules;
+package ai.speckitty.charter.packs.infra.storage;
 
 import static ai.speckitty.charter.packs.domain.rules.GraphBinding.EDGES;
 import static ai.speckitty.charter.packs.domain.rules.GraphBinding.NODES;
@@ -6,13 +6,16 @@ import static ai.speckitty.charter.packs.domain.rules.GraphBinding.emptyId;
 import static ai.speckitty.charter.packs.domain.rules.Paths.PACK_YAML;
 import static ai.speckitty.charter.packs.domain.rules.Paths.isFragment;
 
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packs.domain.rules.Findings;
+import ai.speckitty.charter.packs.domain.rules.Paths;
+import ai.speckitty.charter.packs.domain.rules.Precedence;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -23,9 +26,10 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * The detail vocabulary of a file that could not be read: its parse failure or its schema violations, each as a
- * finding whose code follows the file kind and whose text is chosen by the violation's keyword and place, never by a
- * validator's message.
+ * The one reader's detail vocabulary of a file that could not be read (#554, FR-016: the reader owns the schema
+ * wording): its parse failure or its schema violations, each as a read fault whose code follows the file kind and whose
+ * text is chosen by the violation's keyword and place, never by a validator's message. It knows the JSON-Schema
+ * keywords, so it lives in the storage edge, not in the core.
  */
 public final class Wording {
 
@@ -74,24 +78,23 @@ public final class Wording {
      * @param unreadable the file that could not be read
      * @return the findings, in precedence order
      */
-    public static List<PackFinding> unreadable(String packName, FileRead.Unreadable<?> unreadable) {
+    public static List<Reason> unreadable(String packName, FileRead.Unreadable<?> unreadable) {
         String file = unreadable.file();
         PackContents.ParseFailure parse = unreadable.parse();
         if (parse != null) {
             if (parse.refusal().isPresent()) {
                 String refusal = parse.refusal().get();
-                return List.of(new PackFinding(
+                return List.of(Findings.at(
                         parse.code().orElseGet(() -> codeFor(file)), file, List.of(), PackCodes.detail(file, refusal)));
             }
             if (PACK_YAML.equals(file)) {
-                return List.of(new PackFinding(
-                        PackFindingCode.PACK_UNREADABLE,
+                return List.of(Findings.at(
+                        StorageCodes.PACK_UNREADABLE,
                         file,
                         List.of(),
-                        origin(packName, file) + " is not valid YAML: " + parse.firstLine()));
+                        Paths.origin(packName, file) + " is not valid YAML: " + parse.firstLine()));
             }
-            return List.of(
-                    new PackFinding(parseCodeFor(file), file, List.of(), PackCodes.detail(file, parse.firstLine())));
+            return List.of(Findings.at(parseCodeFor(file), file, List.of(), PackCodes.detail(file, parse.firstLine())));
         }
         return schemaFindings(packName, unreadable.violations());
     }
@@ -127,14 +130,14 @@ public final class Wording {
      * @param violations the violations
      * @return the findings, in precedence order, with identical findings reported once
      */
-    public static List<PackFinding> schemaFindings(String packName, List<SchemaViolation> violations) {
+    public static List<Reason> schemaFindings(String packName, List<SchemaViolation> violations) {
         List<SchemaViolation> ordered = new ArrayList<>(collapseNullable(violations));
         ordered.sort(Comparator.comparing(SchemaViolation::file, Precedence::comparePaths)
                 .thenComparing((a, b) -> Precedence.comparePlaces(a.file(), a.pointer(), b.pointer()))
                 .thenComparingInt(v -> keywordRank(v.keyword())));
-        Set<PackFinding> findings = new LinkedHashSet<>();
+        Set<Reason> findings = new LinkedHashSet<>();
         for (SchemaViolation violation : ordered) {
-            findings.add(new PackFinding(
+            findings.add(Findings.at(
                     codeFor(violation.file()), violation.file(), violation.pointer(), detail(packName, violation)));
         }
         return List.copyOf(findings);
@@ -179,7 +182,7 @@ public final class Wording {
 
     private static ReasonCode codeFor(String file) {
         if (PACK_YAML.equals(file)) {
-            return PackFindingCode.PACK_UNREADABLE;
+            return StorageCodes.PACK_UNREADABLE;
         }
         if (isPromptFragment(file)) {
             return PackCodes.PROMPT_FRAGMENT_INVALID;
@@ -187,7 +190,7 @@ public final class Wording {
         if (file.endsWith(".graph.yaml") || isFragment(file)) {
             return PackCodes.DRG_SCHEMA_ERROR;
         }
-        return PackFindingCode.ARTIFACT_SCHEMA_ERROR;
+        return StorageCodes.ARTIFACT_SCHEMA_ERROR;
     }
 
     /**
@@ -196,24 +199,12 @@ public final class Wording {
      */
     private static ReasonCode parseCodeFor(String file) {
         ReasonCode code = codeFor(file);
-        return code.equals(PackFindingCode.ARTIFACT_SCHEMA_ERROR) ? PackFindingCode.UNREADABLE : code;
+        return code.equals(StorageCodes.ARTIFACT_SCHEMA_ERROR) ? StorageCodes.UNREADABLE : code;
     }
 
     /** A step enhancement's companion: a fault of its own read (a codec refusal, a structure breach) is its code. */
     private static boolean isPromptFragment(String file) {
         return file.startsWith("missions/") && file.endsWith(".prompt-fragment.md");
-    }
-
-    /**
-     * Where a finding comes from, as its text names it: {@code pack.yaml of <pack>} for the descriptor, else the
-     * pack-relative file, never prefixed with the pack's name (#554, R2, squad finding C-11).
-     *
-     * @param packName the pack's configured name
-     * @param file the pack-relative path
-     * @return the origin
-     */
-    public static String origin(String packName, String file) {
-        return PACK_YAML.equals(file) ? "pack.yaml of " + packName : file;
     }
 
     /** Where in a document a pointer points; the vocabulary keys on it. */
@@ -239,7 +230,7 @@ public final class Wording {
     private static String detail(String packName, SchemaViolation v) {
         String file = v.file();
         boolean descriptor = PACK_YAML.equals(file);
-        String o = origin(packName, file);
+        String o = Paths.origin(packName, file);
         List<String> pointer = v.pointer();
         Place place = Place.of(pointer);
         String key = pointer.isEmpty() ? "" : pointer.get(pointer.size() - 1);

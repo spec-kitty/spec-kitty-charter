@@ -147,8 +147,9 @@ public final class AssemblyRules {
      *
      * <ul>
      *   <li>a companion the store cannot read is the reader's {@code companion} or {@code artifact_schema_error} at the
-     *       companion's own file (it does not parse, or breaks its structure), and the store does not state it again; one it finds missing, or named twice, is the
-     *       reader's fault at the artifact that names the companion missing, or named more than once;
+     *       companion's own file (it does not parse, or breaks its structure), and the store does not state it again;
+     *       one it finds missing, or named twice, is the reader's fault at the artifact that names the companion
+     *       missing, or named more than once;
      *   <li>a prompt fragment the store cannot read is stated by the store, at the step enhancement, unless the reader
      *       states the fragment missing, or named more than once, there;
      *   <li>a mission type whose step id stands twice is the reader's {@code step '<id>' stands twice ...} at that

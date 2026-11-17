@@ -4,13 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
@@ -18,6 +16,7 @@ import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -333,19 +332,20 @@ class PackManifestRoundTripTest {
 
         assertThat(validateFindings(clean)).isEmpty();
         assertThat(validateFindings(misplaced)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.detail())
                     .endsWith(
                             ": preset entry 'convenience' names presets/governing.yaml, not presets/convenience.yaml");
         });
     }
 
-    /** Validate mode's findings on the manifest of a pack directory. */
-    private static List<PackFinding> validateFindings(Path pack) {
+    /** The one read's findings on the manifest of a pack directory, which validate mode reports. */
+    private static List<Reason> validateFindings(Path pack) {
         PackRoot root = new PackRoot(FIXTURE, Optional.of(PackLevel.PROJECT), pack.toString());
-        return PackPolicy.judge(PolicyReadouts.of(root)).findings().stream()
-                .filter(finding -> finding.file().equals(PackFileSet.MANIFEST))
-                .toList();
+        return new FileSystemPackInspector()
+                .read(root).rationale().failures().stream()
+                        .filter(finding -> finding.location().file().equals(PackFileSet.MANIFEST))
+                        .toList();
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------

@@ -10,14 +10,23 @@ import org.junit.jupiter.params.provider.ValueSource;
 class PathsTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"../outside.md", "docs/../../outside.md", "/etc/passwd"})
+    @ValueSource(
+            strings = {
+                "../outside.md",
+                "docs/../../outside.md",
+                "/etc/passwd",
+                "C:\\x.md",
+                "C:/x.md",
+                "a\\..\\..\\x.md",
+                "\\\\host\\x.md"
+            })
     void aBodyPathThatLeavesThePackRootIsAFaultInTheSharedWording(String path) {
         assertThat(Paths.bodyPathEscape("directive:x", Optional.of(path)))
                 .contains("node directive:x body_path '" + path + "' escapes the pack root");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"docs/x.md", "x.md", "docs/./x.md"})
+    @ValueSource(strings = {"docs/x.md", "x.md", "docs/./x.md", "directives/b..md", "./b.md"})
     void aBodyPathThatStaysInsideIsNoFault(String path) {
         assertThat(Paths.bodyPathEscape("directive:x", Optional.of(path))).isEmpty();
     }

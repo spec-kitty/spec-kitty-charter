@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.PackRemovalStore;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -17,7 +18,6 @@ import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.WriteFacts;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -201,11 +201,11 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         if (!read.findings().isEmpty()) {
             // A shard is a pack file the fingerprint covers; one that does not bind whole is an unreadable pack, not
             // a fault of the request. Building a write on the bound subset would silently drop the rest.
-            PackFinding first = read.findings().getFirst();
+            Reason first = read.findings().getFirst();
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
-                    "the relationship shard of pack " + pack.value() + " does not bind (" + first.file() + ": "
-                            + first.detail() + "); refusing to rewrite it");
+                    "the relationship shard of pack " + pack.value() + " does not bind ("
+                            + first.location().file() + ": " + first.detail() + "); refusing to rewrite it");
         }
         return read.relationships();
     }

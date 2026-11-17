@@ -1,14 +1,14 @@
-package ai.speckitty.charter.packs.domain.rules;
+package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ class WordingTest {
 
     private static List<String> details(SchemaViolation... violations) {
         return Wording.schemaFindings("qa", List.of(violations)).stream()
-                .map(PackFinding::detail)
+                .map(Reason::detail)
                 .toList();
     }
 
@@ -56,16 +56,16 @@ class WordingTest {
 
     @Test
     void theCodeFollowsTheFileKind() {
-        assertThat(code(PACK_YAML)).isEqualTo(PackFindingCode.PACK_UNREADABLE);
+        assertThat(code(PACK_YAML)).isEqualTo(StorageCodes.PACK_UNREADABLE);
         assertThat(code(SHARD)).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
         assertThat(code(FRAGMENT)).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-        assertThat(code("tactics/x.tactic.yaml")).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+        assertThat(code("tactics/x.tactic.yaml")).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
     }
 
     private static ReasonCode code(String file) {
-        List<PackFinding> findings = Wording.schemaFindings("qa", List.of(typeAt(file, "array", "object")));
+        List<Reason> findings = Wording.schemaFindings("qa", List.of(typeAt(file, "array", "object")));
         assertThat(findings).hasSize(1);
-        assertThat(findings.get(0).file()).isEqualTo(file);
+        assertThat(findings.get(0).location().file()).isEqualTo(file);
         return findings.get(0).code();
     }
 
@@ -73,11 +73,11 @@ class WordingTest {
 
     @Test
     void aParseFailureNamesTheOriginAndTheParsersFirstLine() {
-        List<PackFinding> findings = Wording.unreadable(
+        List<Reason> findings = Wording.unreadable(
                 "qa",
                 new FileRead.Unreadable<>(SHARD, new ParseFailure(SHARD, "while parsing a block mapping"), List.of()));
         assertThat(findings)
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         PackCodes.DRG_SCHEMA_ERROR,
                         SHARD,
                         List.of(),
@@ -90,7 +90,7 @@ class WordingTest {
                         "qa",
                         new FileRead.Unreadable<>(
                                 FRAGMENT, new ParseFailure(FRAGMENT, "while scanning a quoted"), List.of())))
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         PackCodes.DRG_SCHEMA_ERROR, FRAGMENT, List.of(), "drg/fragment.yaml: while scanning a quoted"));
     }
 
@@ -103,7 +103,7 @@ class WordingTest {
                                 ParseFailure.refused(
                                         "org-charter.yaml", "org enforcement is a preset (#431)", StorageCodes.RETIRED),
                                 List.of())))
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         StorageCodes.RETIRED,
                         "org-charter.yaml",
                         List.of(),
@@ -116,11 +116,8 @@ class WordingTest {
         ParseFailure refused =
                 new ParseFailure(artifact, "names x.md: missing", Optional.of("names x.md: missing"), Optional.empty());
         assertThat(Wording.unreadable("qa", new FileRead.Unreadable<>(artifact, refused, List.of())))
-                .containsExactly(new PackFinding(
-                        PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                        artifact,
-                        List.of(),
-                        artifact + ": names x.md: missing"));
+                .containsExactly(Findings.at(
+                        StorageCodes.ARTIFACT_SCHEMA_ERROR, artifact, List.of(), artifact + ": names x.md: missing"));
     }
 
     @Test
@@ -129,17 +126,17 @@ class WordingTest {
         assertThat(Wording.unreadable(
                         "qa",
                         new FileRead.Unreadable<>(artifact, new ParseFailure(artifact, "found a tab"), List.of())))
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         StorageCodes.UNREADABLE, artifact, List.of(), "tactics/x.tactic.yaml: found a tab"));
     }
 
     @Test
     void aDescriptorParseFailureNamesTheParsersLine() {
-        List<PackFinding> findings = Wording.unreadable(
+        List<Reason> findings = Wording.unreadable(
                 "qa", new FileRead.Unreadable<>(PACK_YAML, new ParseFailure(PACK_YAML, "while scanning"), List.of()));
         assertThat(findings)
-                .containsExactly(new PackFinding(
-                        PackFindingCode.PACK_UNREADABLE,
+                .containsExactly(Findings.at(
+                        StorageCodes.PACK_UNREADABLE,
                         PACK_YAML,
                         List.of(),
                         "pack.yaml of qa is not valid YAML: while scanning"));
@@ -147,14 +144,14 @@ class WordingTest {
 
     @Test
     void unreadableCarryingViolationsGivesThemTheirSchemaTexts() {
-        List<PackFinding> findings = Wording.unreadable(
+        List<Reason> findings = Wording.unreadable(
                 "qa",
                 new FileRead.Unreadable<>(
                         SHARD,
                         null,
                         List.of(violation(SHARD, List.of(), "additionalProperties", "surprise", null, Map.of()))));
         assertThat(findings)
-                .containsExactly(new PackFinding(
+                .containsExactly(Findings.at(
                         PackCodes.DRG_SCHEMA_ERROR, SHARD, List.of(), "tactic.graph.yaml: unknown key 'surprise'"));
     }
 

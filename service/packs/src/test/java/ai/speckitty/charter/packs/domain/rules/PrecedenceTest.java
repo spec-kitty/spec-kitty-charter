@@ -1,12 +1,9 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
@@ -17,12 +14,10 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Readouts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
+import ai.speckitty.charter.packs.infra.storage.Wording;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -87,13 +82,34 @@ class PrecedenceTest {
                 List.of());
     }
 
+    /**
+     * The findings of hand-written facts in validate mode's order: the one reader's read faults ({@link Readouts}) and
+     * the content rules' findings, with any finding of the caller's first group given beside them, sorted by the
+     * precedence {@code PackVerdicts} sorts with.
+     */
+    private static List<Reason> judged(PackContents contents, Reason... firstGroup) {
+        List<Reason> all = new ArrayList<>(Readouts.of(contents).rationale().failures());
+        all.addAll(PackRulesets.content().check(contents).failures());
+        all.addAll(List.of(firstGroup));
+        all.sort(PRECEDENCE);
+        return all;
+    }
+
+    /** A finding of the first group at {@code pack.yaml}, as a placement rule states one. */
+    private static Reason packWide() {
+        return reason(PACK_WIDE, "pack.yaml", List.of());
+    }
+
+    /** The places of a shard's findings, in validate mode's order, as JSON pointers. */
     private static List<String> places(FileRead<RawGraph> shard) {
-        return PackPolicy.judge(
-                        Readouts.of(contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment())))
-                .findings()
-                .stream()
-                .map(f -> "/" + String.join("/", f.place()))
+        return judged(contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment())).stream()
+                .map(f -> f.location().pointer())
                 .toList();
+    }
+
+    /** The first segment of a pointer. */
+    private static String segment(Reason finding, int index) {
+        return finding.location().pointer().substring(1).split("/", -1)[index];
     }
 
     /** A fragment that was read and is empty: an org pack has one, so no {@code org_fragment_missing} fires. */
@@ -111,13 +127,13 @@ class PrecedenceTest {
                         broken("b.graph.yaml", fallback("b.graph.yaml")),
                         broken("a.graph.yaml", fallback("a.graph.yaml"))),
                 broken("drg/fragment.yaml", fallback("drg/fragment.yaml")));
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(PackFinding::file, PackFinding::code)
+        assertThat(judged(c, packWide()))
+                .extracting(f -> f.location().file(), Reason::code)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR),
                         org.assertj.core.groups.Tuple.tuple("b.graph.yaml", PackCodes.DRG_SCHEMA_ERROR),
                         org.assertj.core.groups.Tuple.tuple("drg/fragment.yaml", PackCodes.DRG_SCHEMA_ERROR),
-                        org.assertj.core.groups.Tuple.tuple("pack.yaml", PackFindingCode.PACK_LEVEL_MISMATCH),
+                        org.assertj.core.groups.Tuple.tuple("pack.yaml", PACK_WIDE),
                         org.assertj.core.groups.Tuple.tuple("nested/z.graph.yaml", PackCodes.DRG_SCHEMA_ERROR));
     }
 
@@ -126,9 +142,7 @@ class PrecedenceTest {
         FileRead<PackDescriptor> bad =
                 new FileRead.Unreadable<>("pack.yaml", new PackContents.ParseFailure("pack.yaml", "oops"), List.of());
         PackContents c = contents(bad, List.of(broken("a.graph.yaml", fallback("a.graph.yaml"))), emptyFragment());
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(PackFinding::file)
-                .containsExactly("pack.yaml", "a.graph.yaml");
+        assertThat(judged(c)).extracting(f -> f.location().file()).containsExactly("pack.yaml", "a.graph.yaml");
     }
 
     @Test
@@ -171,9 +185,7 @@ class PrecedenceTest {
                         "drg/fragment.yaml",
                         fallback("drg/fragment.yaml", "edges"),
                         fallback("drg/fragment.yaml", "nodes")));
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(f -> f.place().get(0))
-                .containsExactly("nodes", "edges");
+        assertThat(judged(c)).extracting(f -> segment(f, 0)).containsExactly("nodes", "edges");
     }
 
     @Test
@@ -210,9 +222,7 @@ class PrecedenceTest {
                         fallback("drg/fragment.yaml", "nodes", "0", "title"),
                         fallback("drg/fragment.yaml", "nodes", "0", "kind"),
                         fallback("drg/fragment.yaml", "nodes", "0", "id")));
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(f -> f.place().get(2))
-                .containsExactly("id", "kind", "title", "body_path");
+        assertThat(judged(c)).extracting(f -> segment(f, 2)).containsExactly("id", "kind", "title", "body_path");
     }
 
     @Test
@@ -237,9 +247,7 @@ class PrecedenceTest {
                         fallback("pack.yaml", "pack_version"),
                         fallback("pack.yaml", "pack_id")));
         PackContents c = contents(bad, List.of(), emptyFragment());
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(f -> f.place().get(0))
-                .containsExactly("pack_id", "pack_version", "name");
+        assertThat(judged(c)).extracting(f -> segment(f, 0)).containsExactly("pack_id", "pack_version", "name");
     }
 
     @Test
@@ -250,35 +258,21 @@ class PrecedenceTest {
                 fallback("a.graph.yaml", "nodes", "10", "label"),
                 unknownKey("a.graph.yaml", "surprise"));
         PackContents c = contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment());
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(PackFinding::detail)
+        assertThat(judged(c))
+                .extracting(Reason::detail)
                 .containsExactly(
                         "a.graph.yaml: unknown key 'surprise'",
                         "a.graph.yaml: '/nodes/10/label' breaks schema keyword 'uniqueItems'",
                         "a.graph.yaml: '/edges/0/impacts' breaks schema keyword 'uniqueItems'");
     }
 
-    /** Throws the refusal of the first blocking finding, in the order {@link PackPolicy#judge} reports them. */
-    private static void refuseOnFirstBlocking(PackContents contents) {
-        for (PackFinding finding : PackPolicy.judge(Readouts.of(contents)).findings()) {
-            if (finding.severity() == Severity.VIOLATION) {
-                throw finding.toRefusal();
-            }
-        }
-    }
-
     @Test
-    void aTwoFaultPackRefusesWithTheShardsFindingNotTheLevelMismatch() {
+    void aShardsFindingComesBeforeThePackWideOne() {
         FileRead<RawGraph> shard = broken("a.graph.yaml", unknownKey("a.graph.yaml", "surprise"));
         PackContents c = contents(descriptor(Optional.of(PackLevel.BUILT_IN)), List.of(shard), emptyFragment());
-        List<PackFinding> findings = PackPolicy.judge(Readouts.of(c)).findings();
-        assertThat(findings)
-                .extracting(PackFinding::code)
-                .containsExactly(PackCodes.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
-        assertThatThrownBy(() -> refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
-            assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
-            assertThat(r.getMessage()).isEqualTo("a.graph.yaml: unknown key 'surprise'");
-        });
+        List<Reason> findings = judged(c, packWide());
+        assertThat(findings).extracting(Reason::code).containsExactly(PackCodes.DRG_SCHEMA_ERROR, PACK_WIDE);
+        assertThat(findings.getFirst().detail()).isEqualTo("a.graph.yaml: unknown key 'surprise'");
     }
 
     @Test
@@ -294,9 +288,7 @@ class PrecedenceTest {
                 descriptor(Optional.of(PackLevel.ORG)),
                 List.of(new FileRead.Read<>("a.graph.yaml", raw)),
                 emptyFragment());
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(PackFinding::place)
-                .containsExactly(List.of("nodes", "1"), List.of("edges", "0"));
+        assertThat(judged(c)).extracting(f -> f.location().pointer()).containsExactly("/nodes/1", "/edges/0");
     }
 
     // ---- the comparators, directly --------------------------------------------------------------------
@@ -310,7 +302,7 @@ class PrecedenceTest {
                                         fallback("a.graph.yaml", "nodes", "0"),
                                         fallback("a.graph.yaml", "nodes")))
                         .stream()
-                        .map(f -> "/" + String.join("/", f.place())))
+                        .map(f -> f.location().pointer()))
                 .containsExactly("/nodes", "/nodes/0", "/nodes/0/tags");
     }
 
@@ -322,7 +314,7 @@ class PrecedenceTest {
                                         fallback("a.graph.yaml", "nodes", "1", "tags"),
                                         fallback("a.graph.yaml", "nodes", "0", "tags")))
                         .stream()
-                        .map(f -> "/" + String.join("/", f.place())))
+                        .map(f -> f.location().pointer()))
                 .containsExactly("/nodes/0/tags", "/nodes/1/tags");
     }
 
@@ -372,9 +364,9 @@ class PrecedenceTest {
         Reason tilde = reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of("a~"));
 
         assertThat(slash.location().pointer()).isEqualTo("/a~1b");
-        assertThat(Precedence.segments(slash.location().pointer())).containsExactly("a/b");
-        assertThat(Precedence.segments(tilde.location().pointer())).containsExactly("a~");
-        assertThat(Precedence.segments("")).isEmpty();
+        assertThat(Findings.segments(slash.location().pointer())).containsExactly("a/b");
+        assertThat(Findings.segments(tilde.location().pointer())).containsExactly("a~");
+        assertThat(Findings.segments("")).isEmpty();
         assertThat(PRECEDENCE.compare(slash, tilde))
                 .as("'a/b' sorts before 'a~' by code unit; '~1' would not")
                 .isNegative();
@@ -388,9 +380,18 @@ class PrecedenceTest {
                 List.of(broken("b.graph.yaml", fallback("b.graph.yaml")), rooted),
                 broken("drg/fragment.yaml", fallback("drg/fragment.yaml")));
 
-        assertThat(PackPolicy.judge(Readouts.of(c)).findings())
-                .extracting(PackFinding::file)
+        assertThat(judged(c))
+                .extracting(f -> f.location().file())
                 .containsExactly("b.graph.yaml", "drg/fragment.yaml", "/x.graph.yaml");
+    }
+
+    @Test
+    void thePathOrderIsPythonsOnEveryPathOfTheCorpus() throws java.io.IOException {
+        List<String> expected = ArtifactRulesTest.pythonPathOrder();
+        List<String> shuffled = new ArrayList<>(expected);
+        Collections.shuffle(shuffled, new Random(3));
+
+        assertThat(shuffled.stream().sorted(Precedence::comparePaths)).containsExactlyElementsOf(expected);
     }
 
     @Test
@@ -486,7 +487,7 @@ class PrecedenceTest {
                 .toList());
         sorted.sort(PRECEDENCE);
         assertThat(sorted.stream()
-                        .map(f -> Precedence.segments(f.location().pointer()).get(0)))
+                        .map(f -> Findings.segments(f.location().pointer()).get(0)))
                 .containsExactly(
                         "07", "7", "9", "10", "9223372036854775808", "12345678901234567890", "pack_id", "", "1a", "Nx");
     }

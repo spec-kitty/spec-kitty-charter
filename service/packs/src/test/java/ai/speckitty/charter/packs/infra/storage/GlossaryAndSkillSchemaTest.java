@@ -2,9 +2,8 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -104,7 +103,7 @@ class GlossaryAndSkillSchemaTest {
     }
 
     private static String detail(SchemaViolation violation) {
-        List<PackFinding> findings = Wording.schemaFindings("demo", List.of(violation));
+        List<Reason> findings = Wording.schemaFindings("demo", List.of(violation));
         assertThat(findings).hasSize(1);
         return findings.get(0).detail();
     }

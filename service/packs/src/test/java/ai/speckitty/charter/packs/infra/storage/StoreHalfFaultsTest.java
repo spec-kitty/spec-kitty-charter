@@ -300,8 +300,8 @@ class StoreHalfFaultsTest {
 
     @Test
     @DisplayName("review cycle 2 MAJOR-A: a mission type whose step stands twice answers the reader's step fault and"
-            + " the store's own distinct fault of the same type; the artifact key's breach is a cascade the store's"
-            + " entity build does not reach")
+            + " the store's own distinct fault of the same type, the renamed step's prompt path, which stops the"
+            + " entity build while the builder is filled, so the artifact key's breach is not reached")
     void aRepeatedStepDoesNotHideADistinctFault(@TempDir Path host) throws IOException {
         Path pack = builtIn(host);
         edit(pack, "- id: specify\n", "- id: discovery\n");

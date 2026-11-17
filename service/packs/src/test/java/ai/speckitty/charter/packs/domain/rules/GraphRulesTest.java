@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
+import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Expected;
 import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Planted;
 import java.util.ArrayList;
 import java.util.List;
@@ -173,20 +174,26 @@ class GraphRulesTest {
                 .containsExactly(contents.shards().getFirst(), contents.fragment());
     }
 
-    static List<Planted> planted() {
-        return PlantedFixtures.all();
+    private static final Set<String> GRAPH_TOKENS = Set.of(
+            PackCodes.DRG_SCHEMA_ERROR.value(),
+            PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED.value(),
+            PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE.value());
+
+    static List<Planted> expecting() {
+        return PlantedFixtures.expecting(GRAPH_TOKENS);
     }
 
     @ParameterizedTest
-    @MethodSource("planted")
-    @DisplayName("over every planted and example pack, the rules find what today's validate mode finds")
-    void theRulesFindWhatValidateModeFinds(Planted planted) {
+    @MethodSource("expecting")
+    @DisplayName("a plant's expected.json is the oracle of the rules' findings, less the read faults of the same codes")
+    void thePlantsExpectedFindingsAreTheOracle(Planted planted) {
+        List<Expected> expected = new ArrayList<>(planted.expected().orElseThrow().stream()
+                .filter(finding -> GRAPH_TOKENS.contains(finding.code()))
+                .toList());
+        planted.tree().readFaults().stream().map(Expected::of).forEach(expected::remove);
+
         assertThat(GraphRules.RULES.apply(planted.contents()))
-                .containsExactlyInAnyOrderElementsOf(PlantedFixtures.policyFindings(
-                        planted,
-                        Set.of(
-                                PackCodes.DRG_SCHEMA_ERROR,
-                                PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
-                                PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE)));
+                .extracting(Expected::of)
+                .containsExactlyInAnyOrderElementsOf(expected);
     }
 }

@@ -60,7 +60,7 @@ public final class MissionTypeRules {
                         PackCodes.MISSION_STEP_UNLINKED,
                         fault.file(),
                         List.of(),
-                        Wording.origin(contents.root().name(), fault.file()) + ": " + fault.reason()))
+                        Paths.origin(contents.root().name(), fault.file()) + ": " + fault.reason()))
                 .toList();
     }
 
@@ -75,7 +75,7 @@ public final class MissionTypeRules {
                                 : PackCodes.SUBSTEP_DELEGATION_UNSCOPED,
                         fault.file(),
                         fault.place(),
-                        Wording.origin(contents.root().name(), fault.file()) + ": " + fault.reason()))
+                        Paths.origin(contents.root().name(), fault.file()) + ": " + fault.reason()))
                 .toList();
     }
 

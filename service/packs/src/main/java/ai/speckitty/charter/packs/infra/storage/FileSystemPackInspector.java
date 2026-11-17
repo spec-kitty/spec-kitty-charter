@@ -23,7 +23,6 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRelativePaths;
@@ -31,8 +30,8 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.Paths;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -57,6 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -262,9 +262,7 @@ public final class FileSystemPackInspector implements PackReading {
         String name = root.name();
         if (!Files.isDirectory(directory)) {
             return unreadableRoot(
-                    root,
-                    "pack " + name + " is not a directory",
-                    storeRead(directory, name, new PackFileSet.Walk(List.of(), List.of())));
+                    root, "pack " + name + " is not a directory", storeRead(directory, name, PackFileSet.Walk.NONE));
         }
         try {
             return readDirectory(root, directory, name);
@@ -307,7 +305,7 @@ public final class FileSystemPackInspector implements PackReading {
         return new TreeRead(
                 nothing,
                 TreeCensus.empty(),
-                List.of(new PackFinding(StorageCodes.PACK_UNREADABLE, ROOT, List.of(), detail).reason()));
+                List.of(Findings.at(StorageCodes.PACK_UNREADABLE, ROOT, List.of(), detail)));
     }
 
     private TreeRead readDirectory(PackRoot root, Path directory, String name) {
@@ -343,8 +341,15 @@ public final class FileSystemPackInspector implements PackReading {
                 full.promptSlots,
                 full.missionTypes,
                 store.assembly());
+        SortedMap<String, TreeCensus.Companion> companions =
+                CensusEntries.companions(directory, full.listing(), bindings, companionRules, strategy);
         TreeCensus census = new TreeCensus(
-                full.files, full.notHeld, manifest(directory, full.manifestRead, store), reservedShard(directory));
+                full.files,
+                full.notHeld,
+                manifest(directory, full.manifestRead, store),
+                reservedShard(directory),
+                CensusEntries.of(packDirectoryName(directory), walk, table, companions),
+                List.copyOf(companions.values()));
         return new TreeRead(contents, census, readFaults(name, descriptor, shards, fragment, full));
     }
 
@@ -382,10 +387,11 @@ public final class FileSystemPackInspector implements PackReading {
             List<FileRead<RawGraph>> shards,
             FileRead<RawGraph> fragment,
             FullRead full) {
-        List<PackFinding> faults = new ArrayList<>();
+        List<Reason> faults = new ArrayList<>();
         switch (descriptor) {
             case FileRead.Unreadable<PackDescriptor> bad -> faults.addAll(Wording.unreadable(name, bad));
-            case FileRead.Read<PackDescriptor> good -> faults.addAll(DescriptorChecks.findings(name, good.value()));
+            case FileRead.Read<PackDescriptor> good ->
+                DescriptorChecks.faults(name, good.value()).forEach(fault -> faults.add(precheck(fault)));
             case FileRead.Absent<PackDescriptor> absent -> {}
         }
         List<FileRead<RawGraph>> documents = new ArrayList<>(shards);
@@ -398,10 +404,23 @@ public final class FileSystemPackInspector implements PackReading {
         full.unreadable.forEach(bad -> faults.addAll(Wording.unreadable(name, bad)));
         for (AssetFacts asset : full.assets) {
             mimeProblem(asset)
-                    .ifPresent(detail -> faults.add(
-                            new PackFinding(StorageCodes.ASSET_MIME_INVALID, asset.file(), List.of(), detail)));
+                    .ifPresent(detail ->
+                            faults.add(Findings.at(StorageCodes.ASSET_MIME_INVALID, asset.file(), List.of(), detail)));
         }
-        return faults.stream().map(PackFinding::reason).toList();
+        return faults;
+    }
+
+    /**
+     * A descriptor format fault as the reader states it (S2, FR-017): a precheck at {@code pack.yaml}, under the code
+     * the storage edge builds for the value it is about.
+     */
+    private static Reason precheck(DescriptorChecks.Fault fault) {
+        ReasonCode code = switch (fault.check()) {
+            case REQUIRES_CORE -> StorageCodes.REQUIRES_CORE_INVALID;
+            case PACK_VERSION -> StorageCodes.PACK_VERSION_INVALID;
+            case DEPENDENCY_RANGE -> StorageCodes.DEPENDENCY_RANGE_INVALID;
+        };
+        return Findings.at(code, PackFileSet.PACK_YAML, fault.place(), fault.detail());
     }
 
     /**
@@ -629,6 +648,17 @@ public final class FileSystemPackInspector implements PackReading {
         };
     }
 
+    /**
+     * The name of a pack directory as the file-kinds globs see it: the directory that holds it is their root.
+     *
+     * @param directory the pack directory
+     * @return its last segment, or {@code pack} for a root with none
+     */
+    private static String packDirectoryName(Path directory) {
+        Path last = directory.toAbsolutePath().normalize().getFileName();
+        return last == null ? "pack" : last.toString();
+    }
+
     /** The state of one full read: every YAML file of the pack, in path order, and what they yielded. */
     private static final class FullRead {
         private final Path directory;
@@ -671,13 +701,21 @@ public final class FileSystemPackInspector implements PackReading {
             loadPath.addAll(shards);
         }
 
+        /** The store's listing of the walk, once {@link #readAll} made it. */
+        private PackFileSet.@Nullable Listing listing;
+
+        /** The store's listing of the walk, which {@link #readAll} made. */
+        PackFileSet.Listing listing() {
+            return Objects.requireNonNull(listing, "the listing is made by readAll");
+        }
+
         void readAll() {
             // The classification globs are relative to the directory that holds the pack directories.
-            Path last = directory.toAbsolutePath().normalize().getFileName();
-            String prefix = (last == null ? "pack" : last.toString()) + "/";
+            String prefix = packDirectoryName(directory) + "/";
             readYamlFiles(prefix);
             readMarkdownFiles(prefix);
             PackFileSet.Listing listing = PackFileSet.listing(directory, table, walk);
+            this.listing = listing;
             listPayloads(listing, prefix);
             refuseSidecarsWithoutPayload(listing);
             listing.retired()

@@ -4,16 +4,16 @@ import ai.speckitty.charter.packs.domain.PackRelativePaths;
 import java.util.Optional;
 
 /**
- * The pack's file names the rules key on, and the faults of a pack-relative path that leaves its root, in the one
- * wording validate mode and the load share.
+ * The pack's file names the rules key on, where a finding comes from, and the faults of a pack-relative path that
+ * leaves its root, in the one wording every surface shares.
  */
 public final class Paths {
 
     /** The pack's descriptor. */
-    static final String PACK_YAML = "pack.yaml";
+    public static final String PACK_YAML = "pack.yaml";
 
     /** The org fragment of a pack. */
-    static final String FRAGMENT = "drg/fragment.yaml";
+    public static final String FRAGMENT = "drg/fragment.yaml";
 
     private Paths() {}
 
@@ -41,8 +41,25 @@ public final class Paths {
         return "asset path '" + path + "' escapes the pack's assets/ root";
     }
 
-    /** Whether a pack-relative path is an org fragment, at the root or nested. */
-    static boolean isFragment(String file) {
+    /**
+     * Whether a pack-relative path is an org fragment, at the root or nested.
+     *
+     * @param file the pack-relative path
+     * @return whether it is {@value #FRAGMENT}, at the root or under a directory
+     */
+    public static boolean isFragment(String file) {
         return file.equals(FRAGMENT) || file.endsWith("/" + FRAGMENT);
+    }
+
+    /**
+     * Where a finding comes from, as its text names it: {@code pack.yaml of <pack>} for the descriptor, else the
+     * pack-relative file, never prefixed with the pack's name (#554, R2, squad finding C-11).
+     *
+     * @param packName the pack's configured name
+     * @param file the pack-relative path
+     * @return the origin
+     */
+    public static String origin(String packName, String file) {
+        return PACK_YAML.equals(file) ? "pack.yaml of " + packName : file;
     }
 }

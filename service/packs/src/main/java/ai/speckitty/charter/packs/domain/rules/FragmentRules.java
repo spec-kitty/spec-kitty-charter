@@ -105,23 +105,37 @@ public final class FragmentRules {
 
     /** The faults of the read's facts, the edge rules only when every graph document was read, as reasons. */
     static List<Reason> reasons(PackContents contents, boolean orphans) {
-        boolean edgesRead = GraphRules.graphsRead(contents);
         List<Reason> findings = new ArrayList<>();
-        for (Finding fault : judge(contents.stepEnhancements())) {
-            if ((fault.rule() == StepEnhancementFault.COMPANION_ORPHAN) == orphans
-                    && (edgesRead || !EDGE_RULES.contains(fault.rule()))) {
+        for (Finding fault : judge(contents.stepEnhancements(), GraphRules.graphsRead(contents))) {
+            if ((fault.rule() == StepEnhancementFault.COMPANION_ORPHAN) == orphans) {
                 findings.add(Findings.at(
                         PackCodes.PROMPT_FRAGMENT_INVALID,
                         fault.path(),
                         List.of(),
-                        Wording.origin(contents.root().name(), fault.path()) + ": " + fault.reason()));
+                        Paths.origin(contents.root().name(), fault.path()) + ": " + fault.reason()));
             }
         }
         return findings;
     }
 
     /**
-     * Judges the facts of one pack.
+     * Judges the facts of one pack, the rules that read the pack's edges only when every graph document was read: a
+     * graph document that could not be read is refused on its own, and an enhancement would otherwise lack an edge the
+     * pack may well hold. The content rules state each fault as a finding; the store half, which the composing read
+     * answers from (S7), records the same faults on the aggregate.
+     *
+     * @param facts the pack's facts
+     * @param edgesRead whether every graph document of the pack was read
+     * @return every fault found, ordered by pack-relative path and then rule order
+     */
+    public static List<Finding> judge(StepEnhancementFacts facts, boolean edgesRead) {
+        return judge(facts).stream()
+                .filter(fault -> edgesRead || !EDGE_RULES.contains(fault.rule()))
+                .toList();
+    }
+
+    /**
+     * Judges the facts of one pack, every rule.
      *
      * @param facts the pack's facts
      * @return every fault found, ordered by pack-relative path and then rule order

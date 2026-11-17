@@ -8,12 +8,18 @@ import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
+import ai.speckitty.charter.packs.domain.rules.GraphRules;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -59,19 +65,16 @@ class RelationshipEndpointRuleTest {
     @DisplayName("validate mode refuses one edge of each relation family with one finding, beside a twin that passes")
     void eachRelationFamilyRefusesKindsItsRowsDoNotHold(
             String source, String relation, String target, String twinSource, String twinTarget) {
-        List<PackFinding> findings = PackPolicy.judge(Readouts.of(validated(source, relation, target)))
-                .findings();
+        List<Reason> findings = content(validated(source, relation, target));
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-            assertThat(finding.file()).isEqualTo(FILE);
-            assertThat(finding.place()).containsExactly("edges", "0");
+            assertThat(finding.location().file()).isEqualTo(FILE);
+            assertThat(finding.location().pointer()).isEqualTo("/edges/0");
             assertThat(finding.detail()).startsWith(FILE + ": ").contains(relation);
         });
-        assertThat(PackPolicy.judge(Readouts.of(validated(twinSource, relation, twinTarget)))
-                        .findings())
-                .isEmpty();
+        assertThat(content(validated(twinSource, relation, twinTarget))).isEmpty();
     }
 
     /** The pack "main", which holds the step enhancement e. */
@@ -118,9 +121,7 @@ class RelationshipEndpointRuleTest {
     @Test
     @DisplayName("validate mode reports a bare self-loop once, as the graph fault it is")
     void validateModeReportsABareSelfLoopOnce() {
-        List<PackFinding> findings = PackPolicy.judge(
-                        Readouts.of(validated("action:m/s", "instantiates", "action:m/s")))
-                .findings();
+        List<Reason> findings = content(validated("action:m/s", "instantiates", "action:m/s"));
 
         assertThat(findings)
                 .singleElement()
@@ -130,8 +131,7 @@ class RelationshipEndpointRuleTest {
     @Test
     @DisplayName("validate mode refuses an edge from an enhancement the pack does not hold")
     void validateModeRefusesAnUnheldEnhancementEdge() {
-        assertThat(PackPolicy.judge(Readouts.of(validated("step_enhancement:ghost", "enhances", "directive:D")))
-                        .findings())
+        assertThat(content(validated("step_enhancement:ghost", "enhances", "directive:D")))
                 .singleElement()
                 .satisfies(
                         finding -> assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED));
@@ -156,55 +156,74 @@ class RelationshipEndpointRuleTest {
         assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings()).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
-            assertThat(finding.place()).containsExactly("edges", "0");
+            assertThat(finding.location().pointer()).isEqualTo("/edges/0");
         });
     }
 
     @Test
-    @DisplayName("the load lists one violation per refused edge, at its graph document, in edge order")
-    void theLoadListsOneViolationPerEdge() {
-        List<PackElementViolation> violations = RelationshipEndpointRule.violations(
-                List.of(
-                        edge("procedure:p", "requires", "action:software-dev/implement"),
-                        edge("procedure:p", "requires", "directive:D"),
-                        edge("directive:d", "overrides", "tactic:t")),
-                MAIN);
+    @DisplayName("the endpoint rule finds one fault per refused edge, at its place, in edge order")
+    void theRuleFindsOneFaultPerEdge() {
+        List<Reason> findings = endpoints(
+                edge("procedure:p", "requires", "action:software-dev/implement"),
+                edge("procedure:p", "requires", "directive:D"),
+                edge("directive:d", "overrides", "tactic:t"));
 
-        assertThat(violations)
-                .extracting(PackElementViolation::file, v -> v.kind().value(), PackElementViolation::reason)
+        assertThat(findings)
+                .extracting(
+                        f -> f.location().file(),
+                        f -> f.code().value(),
+                        f -> f.location().pointer(),
+                        Reason::detail)
                 .containsExactly(
                         tuple(
                                 FILE,
                                 RelationshipEndpointRule.CODE,
-                                "a requires edge may not connect procedure to action"),
+                                "/edges/0",
+                                FILE + ": a requires edge may not connect procedure to action"),
                         tuple(
                                 FILE,
                                 RelationshipEndpointRule.CODE,
-                                "an overrides edge may not connect directive to tactic"));
+                                "/edges/2",
+                                FILE + ": an overrides edge may not connect directive to tactic"));
     }
 
     @Test
     @DisplayName("validate mode reports the edge as one blocking finding at its place, and the twin passes")
     void validateModeReportsTheEdgeAtItsPlace() {
-        List<PackFinding> findings = PackPolicy.judge(
-                        Readouts.of(validated("procedure:p", "requires", "action:software-dev/implement")))
-                .findings();
+        List<Reason> findings = content(validated("procedure:p", "requires", "action:software-dev/implement"));
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-            assertThat(finding.file()).isEqualTo(FILE);
-            assertThat(finding.place()).containsExactly("edges", "0");
+            assertThat(finding.location().file()).isEqualTo(FILE);
+            assertThat(finding.location().pointer()).isEqualTo("/edges/0");
             assertThat(finding.detail()).isEqualTo(FILE + ": a requires edge may not connect procedure to action");
         });
-        assertThat(PackPolicy.judge(Readouts.of(validated("procedure:p", "requires", "directive:D")))
-                        .findings())
-                .isEmpty();
+        assertThat(content(validated("procedure:p", "requires", "directive:D"))).isEmpty();
     }
 
     @Test
     void theFindingCodeAndTheViolationCodeAreOneToken() {
         assertThat(PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED.value()).isEqualTo(RelationshipEndpointRule.CODE);
+    }
+
+    /** The content rules' findings over hand-written facts: what validate mode and a registration find there. */
+    private static List<Reason> content(PackContents contents) {
+        return PackRulesets.content().check(contents).failures();
+    }
+
+    /** The endpoint rule's findings over the edges, each graph document a root shard, in the order it first appears. */
+    private static List<Reason> endpoints(RelationshipEndpointRule.Edge... edges) {
+        Map<String, List<RawEdge>> byFile = new LinkedHashMap<>();
+        for (RelationshipEndpointRule.Edge edge : edges) {
+            byFile.computeIfAbsent(edge.file(), file -> new ArrayList<>())
+                    .add(new RawEdge(
+                            edge.source(), edge.target(), edge.relation(), Optional.empty(), Optional.empty()));
+        }
+        List<FileRead<RawGraph>> shards = new ArrayList<>();
+        byFile.forEach((file, written) ->
+                shards.add(new FileRead.Read<>(file, new RawGraph(file, RawGraph.Shape.SHARD, List.of(), written))));
+        return GraphRules.ENDPOINT_NOT_ALLOWED.apply(main(shards));
     }
 
     private static PackContents validated(String source, String relation, String target) {
@@ -213,6 +232,11 @@ class RelationshipEndpointRuleTest {
                 RawGraph.Shape.SHARD,
                 List.of(),
                 List.of(new RawEdge(source, target, relation, Optional.empty(), Optional.empty())));
+        return main(List.of(new FileRead.Read<>(FILE, shard)));
+    }
+
+    /** The pack "main" at the org level with the given root shards and an empty fragment. */
+    private static PackContents main(List<FileRead<RawGraph>> shards) {
         return new PackContents(
                 new PackRoot("main", Optional.of(PackLevel.ORG), "loc"),
                 new FileRead.Read<>(
@@ -224,7 +248,7 @@ class RelationshipEndpointRuleTest {
                                 "main",
                                 Optional.of(PackLevel.ORG),
                                 Optional.empty())),
-                List.of(new FileRead.Read<>(FILE, shard)),
+                shards,
                 new FileRead.Read<>(
                         "drg/fragment.yaml",
                         new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of())),
@@ -258,16 +282,14 @@ class RelationshipEndpointRuleTest {
     void anOverridesEdgeFromEachKindThatIsNotActivatableIsOneViolationAtItsFile(ArtifactKind kind) {
         String source = NodeKind.of(kind).token() + ":t";
 
-        assertThat(RelationshipEndpointRule.violations(List.of(overrides(source)), MAIN))
-                .singleElement()
-                .satisfies(violation -> {
-                    assertThat(violation.file()).isEqualTo(OVERRIDES_FILE);
-                    assertThat(violation.kind().value()).isEqualTo("overrides_source_not_activatable");
-                    assertThat(violation.reason())
-                            .contains(source)
-                            .contains(OVERRIDES_TARGET)
-                            .contains("not an activatable kind");
-                });
+        assertThat(endpoints(overrides(source))).singleElement().satisfies(finding -> {
+            assertThat(finding.location().file()).isEqualTo(OVERRIDES_FILE);
+            assertThat(finding.code().value()).isEqualTo("overrides_source_not_activatable");
+            assertThat(finding.detail())
+                    .contains(source)
+                    .contains(OVERRIDES_TARGET)
+                    .contains("not an activatable kind");
+        });
     }
 
     @Test
@@ -296,41 +318,35 @@ class RelationshipEndpointRuleTest {
     }
 
     @Test
-    void theLoadListsTheSourceFaultsFirstThenTheTablesEachInEdgeOrder() {
-        List<PackElementViolation> violations = RelationshipEndpointRule.violations(
-                List.of(
-                        edge("procedure:p", "requires", "action:software-dev/implement"),
-                        overrides("template:t.md"),
-                        overrides("directive:E"),
-                        new RelationshipEndpointRule.Edge(
-                                "other.graph.yaml", "asset:logo", OVERRIDES_TARGET, "overrides")),
-                MAIN);
+    void theRuleListsTheSourceFaultsFirstThenTheTablesEachInEdgeOrder() {
+        List<Reason> findings = endpoints(
+                edge("procedure:p", "requires", "action:software-dev/implement"),
+                overrides("template:t.md"),
+                overrides("directive:E"),
+                new RelationshipEndpointRule.Edge("other.graph.yaml", "asset:logo", OVERRIDES_TARGET, "overrides"));
 
-        assertThat(violations)
-                .extracting(PackElementViolation::file, v -> v.kind().value())
+        assertThat(findings)
+                .extracting(f -> f.location().file(), f -> f.code().value())
                 .containsExactly(
                         tuple(OVERRIDES_FILE, "overrides_source_not_activatable"),
                         tuple("other.graph.yaml", "overrides_source_not_activatable"),
                         tuple(FILE, RelationshipEndpointRule.CODE));
-        assertThat(violations.get(0).reason()).contains("template:t.md");
-        assertThat(violations.get(1).reason()).contains("asset:logo");
+        assertThat(findings.get(0).detail()).contains("template:t.md");
+        assertThat(findings.get(1).detail()).contains("asset:logo");
     }
 
     @Test
     void validateModeReportsAnInactivatableOverriderAsOneBlockingFindingAndTheTwinPasses() {
-        List<PackFinding> findings = PackPolicy.judge(
-                        Readouts.of(validated("template:t.md", "overrides", OVERRIDES_TARGET)))
-                .findings();
+        List<Reason> findings = content(validated("template:t.md", "overrides", OVERRIDES_TARGET));
 
         assertThat(findings).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
             assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
-            assertThat(finding.file()).isEqualTo(FILE);
-            assertThat(finding.place()).containsExactly("edges", "0");
+            assertThat(finding.location().file()).isEqualTo(FILE);
+            assertThat(finding.location().pointer()).isEqualTo("/edges/0");
             assertThat(finding.detail()).startsWith(FILE + ": ").contains("template:t.md");
         });
-        assertThat(PackPolicy.judge(Readouts.of(validated("directive:E", "overrides", OVERRIDES_TARGET)))
-                        .findings())
+        assertThat(content(validated("directive:E", "overrides", OVERRIDES_TARGET)))
                 .isEmpty();
     }
 
