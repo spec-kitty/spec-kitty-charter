@@ -289,4 +289,61 @@ class StoreHalfFaultsTest {
                 .anySatisfy(detail -> assertThat(detail).contains("Constraint breached"))
                 .anySatisfy(detail -> assertThat(detail).doesNotContain("Constraint breached"));
     }
+
+    private static final String MISSION_TYPE = "missions/software-dev/software-dev.mission-type.yaml";
+
+    private static void edit(Path pack, String from, String to) throws IOException {
+        String text = Files.readString(pack.resolve(MISSION_TYPE));
+        assertThat(text).contains(from);
+        Files.writeString(pack.resolve(MISSION_TYPE), text.replace(from, to));
+    }
+
+    @Test
+    @DisplayName("review cycle 2 MAJOR-A: a mission type whose step stands twice answers the reader's step fault and"
+            + " the store's own distinct fault of the same type; the artifact key's breach is a cascade the store's"
+            + " entity build does not reach")
+    void aRepeatedStepDoesNotHideADistinctFault(@TempDir Path host) throws IOException {
+        Path pack = builtIn(host);
+        edit(pack, "- id: specify\n", "- id: discovery\n");
+        edit(pack, "- artifact_key: evidence.gap-analysis", "- artifact_key: evidence.quickstart");
+
+        assertThat(violations(pack))
+                .extracting(reason -> reason.location().file(), Reason::detail)
+                .containsExactly(
+                        tuple(
+                                MISSION_TYPE,
+                                MISSION_TYPE + ": step 'discovery' stands twice across steps and on_demand_steps"),
+                        tuple(
+                                MISSION_TYPE,
+                                "mission type 'software-dev' step 'discovery': names steps/specify.prompt.md, not its"
+                                        + " derived path steps/discovery.prompt.md"));
+    }
+
+    @Test
+    @DisplayName("a missing output template refuses the mission type at the store's read, before its entity is built,"
+            + " so the artifact key's breach is a cascade neither half meets (recorded in the R2 note)")
+    void aMissingTemplateStopsTheTypeBeforeItsBreach(@TempDir Path host) throws IOException {
+        Path pack = builtIn(host);
+        Files.delete(pack.resolve("missions/software-dev/templates/research-template.md"));
+        edit(pack, "- artifact_key: evidence.gap-analysis", "- artifact_key: evidence.quickstart");
+
+        assertThat(violations(pack))
+                .extracting(reason -> reason.location().file(), Reason::detail)
+                .containsExactly(tuple(
+                        MISSION_TYPE,
+                        MISSION_TYPE + ": names templates/research-template.md (named by the type): missing"));
+    }
+
+    @Test
+    @DisplayName("the artifact key's breach alone is the store's row 17 fault, at the mission type")
+    void anArtifactKeyBreachIsStated(@TempDir Path host) throws IOException {
+        Path pack = builtIn(host);
+        edit(pack, "- artifact_key: evidence.gap-analysis", "- artifact_key: evidence.quickstart");
+
+        assertThat(violations(pack))
+                .extracting(reason -> reason.location().file(), Reason::detail)
+                .singleElement()
+                .satisfies(fault -> assertThat(String.valueOf(fault))
+                        .contains("An artifact key stands once in a mission type's expected outputs."));
+    }
 }
