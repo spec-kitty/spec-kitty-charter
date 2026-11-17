@@ -206,11 +206,13 @@ record StoreRead(
         try {
             return new DsoRead(graphs, store.read(key, bindings, graphs, walk));
         } catch (CharterRefusal refused) {
+            // The graph read found the directory, so the rest of the read refuses only the descriptor: its fault is
+            // placed at pack.yaml with no second read of the file (#554, WP04 review MINOR-4).
             refusal.add(refused(
                     List.of(),
                     refused.code(),
                     String.valueOf(refused.getMessage()),
-                    descriptorFault(store, key),
+                    true,
                     !graphs.violations().isEmpty()));
             return null;
         }
@@ -283,15 +285,6 @@ record StoreRead(
                 Optional.empty(),
                 Optional.empty(),
                 graphsUnreadable);
-    }
-
-    /** Whether the pack's descriptor is missing or unreadable, read as the store reads it. */
-    private static boolean descriptorFault(FilesystemPackStore store, PackIdentifier key) {
-        try {
-            return store.descriptorFault(key).isPresent();
-        } catch (CharterRefusal missing) {
-            return false;
-        }
     }
 
     /**

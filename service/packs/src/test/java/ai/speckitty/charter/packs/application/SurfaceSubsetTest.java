@@ -1,9 +1,19 @@
 package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.WholePackStore;
+import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -12,9 +22,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
@@ -189,6 +201,34 @@ class SurfaceSubsetTest {
 
         assertThat(s8).as("the S8 rows (R2 rows 22 to 24)").isEqualTo(38);
         assertThat(s8 + s2Only).isEqualTo(43);
+    }
+
+    @Test
+    @DisplayName("one violation per descriptor finding: two unknown keys of pack.yaml are two violations, each one"
+            + " validate mode answers (WP04 review MINOR-3)")
+    void eachDescriptorFindingIsOneViolation(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
+        Path descriptor = pack.resolve("pack.yaml");
+        Files.writeString(descriptor, Files.readString(descriptor) + "mystery: 1\nenigma: 2\n");
+        PackReadout read =
+                new FileSystemPackInspector().read(new PackRoot("org-base", Optional.empty(), pack.toString()));
+
+        assertThatThrownBy(() -> PackRegistrationService.readUpload(
+                        new FileSystemPackInspector(),
+                        new WholePackStore(new YamlSerializationStrategy()),
+                        "org-base",
+                        new StagedPack(pack)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.violations())
+                            .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                            .containsExactly(
+                                    tuple("pack.yaml", "pack_unreadable"), tuple("pack.yaml", "pack_unreadable"));
+                    assertThat(refusal.violations())
+                            .extracting(RefusalViolation::detail)
+                            .containsExactlyElementsOf(read.rationale().violations().stream()
+                                    .map(reason -> reason.detail())
+                                    .toList());
+                });
     }
 
     private static boolean isS2(Fault fault) {

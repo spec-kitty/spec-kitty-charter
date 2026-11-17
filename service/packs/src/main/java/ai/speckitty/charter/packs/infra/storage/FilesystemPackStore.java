@@ -1460,24 +1460,6 @@ final class FilesystemPackStore {
         return new CharterRefusal(RefusalCode.PACK_UNREADABLE, detail);
     }
 
-    /**
-     * Why a pack has no readable descriptor, in validate mode's words, so that a registration reports it at
-     * {@code pack.yaml} (#554, R2 rows 22 to 24, open case 5); empty when {@code pack.yaml} reads.
-     *
-     * @param id the pack
-     * @return the fault; empty when the descriptor reads
-     * @throws CharterRefusal when the pack directory is missing
-     */
-    Optional<String> descriptorFault(PackIdentifier id) {
-        Path directory = existingDirectory(id);
-        try {
-            descriptorOf(directory, id);
-            return Optional.empty();
-        } catch (CharterRefusal refusal) {
-            return Optional.of(String.valueOf(refusal.getMessage()));
-        }
-    }
-
     /** Why a {@code pack.yaml} that is there is no readable descriptor, as validate mode words it. */
     private static String descriptorFault(String packName, FileRead.Unreadable<?> bad) {
         if (bad.parse() != null) {
