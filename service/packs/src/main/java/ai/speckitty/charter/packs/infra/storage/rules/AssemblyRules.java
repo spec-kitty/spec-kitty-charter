@@ -146,14 +146,13 @@ public final class AssemblyRules {
      * mapping:
      *
      * <ul>
-     *   <li>a companion the store cannot read is the reader's fault at the companion's own file (it does not parse, or
-     *       breaks its structure), and the store does not state it again; one it finds missing, or named twice, is the
+     *   <li>a companion the store cannot read is the reader's {@code companion} or {@code artifact_schema_error} at the
+     *       companion's own file (it does not parse, or breaks its structure), and the store does not state it again; one it finds missing, or named twice, is the
      *       reader's fault at the artifact that names the companion missing, or named more than once;
      *   <li>a prompt fragment the store cannot read is stated by the store, at the step enhancement, unless the reader
      *       states the fragment missing, or named more than once, there;
-     *   <li>a mission type the store refuses (a step standing twice, a companion or an output template it cannot
-     *       resolve) is the reader's one load refusal of that mission type file, which the reader words as
-     *       {@code step '<id>' ...} or {@code names <path> ...};
+     *   <li>a mission type whose step id stands twice is the reader's {@code step '<id>' stands twice ...} at that
+     *       file, the one breach the reader states in its own words ({@link #statesMissionTypeRefusal});
      *   <li>any other fault is the reader's or a rule's at the same file with the same code whose words end with the
      *       store's.
      * </ul>
@@ -166,7 +165,11 @@ public final class AssemblyRules {
         String file = reason.location().file();
         boolean ownFault = !MISSING.equals(why(violation)) && !NAMED_TWICE.equals(why(violation));
         if (StorageCodes.COMPANION.equals(violation.kind())) {
-            return (file.equals(companionOf(violation)) && ownFault) || namesMissing(violation, reason);
+            return (file.equals(companionOf(violation))
+                            && ownFault
+                            && (StorageCodes.COMPANION.equals(reason.code())
+                                    || StorageCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())))
+                    || namesMissing(violation, reason);
         }
         if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation)) {
             return namesMissing(violation, reason);
@@ -180,13 +183,16 @@ public final class AssemblyRules {
     }
 
     /**
-     * Whether {@code reason} is the reader's load refusal of the mission type file the store refused: the reader states
-     * the first fault the store's load meets in such a file, once ({@code MissionTypeChecks}), so it is the same fault
-     * as each of the store's there.
+     * Whether {@code reason} is the reader's statement of the one mission type fault the store states as a breach in
+     * other words (WP12 review cycle 2, MAJOR-A): a step id that stands twice. The domain's invariant names no step
+     * ({@value #STEP_STANDS_ONCE}), the reader names it ({@code step '<id>' stands twice ...}); both are the type's file.
+     * No other breach of a mission type is the reader's: an artifact key standing twice, say, is the store's alone. A
+     * template or companion the type names and the pack lacks is matched by its path, by the other mappings.
      */
-    private static boolean statesMissionTypeRefusal(PackElementViolation violation, Reason reason) {
+    static boolean statesMissionTypeRefusal(PackElementViolation violation, Reason reason) {
         String file = violation.file();
         if (!file.endsWith(MISSION_TYPE_FILE)
+                || !violation.reason().endsWith(STEP_STANDS_ONCE)
                 || !reason.location().file().equals(file)
                 || !StorageCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())) {
             return false;
@@ -194,8 +200,11 @@ public final class AssemblyRules {
         String detail = reason.detail().startsWith(file + ": ")
                 ? reason.detail().substring(file.length() + 2)
                 : reason.detail();
-        return detail.startsWith("step '") || detail.startsWith("names ");
+        return detail.startsWith("step '") && detail.contains("' stands twice across steps and on_demand_steps");
     }
+
+    /** The domain's invariant of a mission type's step ids, as its breach ends ({@code MissionType}). */
+    static final String STEP_STANDS_ONCE = "A step id stands once across a mission type's steps and on-demand steps.";
 
     /** What a mission type's file ends with. */
     private static final String MISSION_TYPE_FILE = ".mission-type.yaml";

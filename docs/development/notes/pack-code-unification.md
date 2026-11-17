@@ -202,18 +202,30 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   (`Assembly.Assembled.storeOnly`, review cycle 1 MAJOR-2): a template read twice, a value-object breach, a reference
   or output template that does not close, a companion it cannot read, the named policy file, and the composition
   facts' refusal. The rule families the store half also judges for the composing read (the step enhancements,
-  `duplicate_step_id`, the prompt slots, the step links, the substep delegations) are `content()`'s alone. A store-only
-  fault is left out only when the read states the same fault (MAJOR-1), by an explicit mapping: the companion's own
-  fault at the companion file, a companion the reader names missing or named more than once at the artifact, the
-  reader's one load refusal of a mission type file (`step '<id>' ...`, `names <path> ...`), or the same code at the same
-  file in words that end with the store's. Something else at the same file never hides it: a preset whose id is not its
-  stem answers its value-object breach too, and a blank fragment beside an enhancement that names a slot twice is
-  answered beside the two "more than once" faults (`StoreHalfFaultsTest`). Over the 108 golden subjects no store fault was left unstated; the
-  plants of `StoreHalfFaultsTest` reach each one: a template read twice (`duplicate_artifact_id`, row 16), a value-object
-  breach (`artifact_schema_error`, row 17), a guard reference that does not close, at the lifecycle that names it, and a
+  `duplicate_step_id`, the prompt slots, the step links, the substep delegations) are `content()`'s alone. A
+  store-only fault is left out only when the read states the same fault (MAJOR-1), by an explicit mapping: the
+  companion's own fault at the companion file (with the reader's `companion` or `artifact_schema_error`), a companion
+  the reader names missing or named more than once at the artifact, a step id standing twice, which the reader words
+  `step '<id>' stands twice ...` and the domain's breach names no step (review cycle 2 MAJOR-A: no other breach of a
+  mission type is the reader's), or the same code at the same file in words that end with the store's. Something else
+  at the same file never hides it: a preset whose id is not its stem answers its value-object breach too, and a blank
+  fragment beside an enhancement that names a slot twice is answered beside the two "more than once" faults
+  (`StoreHalfFaultsTest`). Over the 108 golden subjects no store fault was left unstated; the plants of
+  `StoreHalfFaultsTest` reach each one: a template read twice (`duplicate_artifact_id`, row 16), a value-object breach
+  (`artifact_schema_error`, row 17), a guard reference that does not close, at the lifecycle that names it, and a
   template a mission type names and the pack lacks, in the reader's words (`names templates/x.md (named by the type):
   missing`, row 18), and an edge that joins an artifact to itself through the pack's own name (`unreadable` at `pack`,
   as the registration answered it; `GraphBinding` judges the bare self-loop only). Validate mode gains each of them.
+- **Cascades the store half does not reach (review cycle 2).** The store stops at the first fault of a mission type
+  it cannot build, so a second fault of the same type is met by neither half. A named output template the pack lacks
+  refuses the type at the store's read, before its entity is built, so an artifact key standing twice in it is not
+  reached; and a step id standing twice is the entity's first breach, so the same artifact key is not reached either
+  (the domain's guard throws its first breach). Each is answered once the first fault is fixed. `StoreHalfFaultsTest`
+  pins both, and that a distinct fault the store does meet (a step's prompt path beside a step standing twice) is not
+  hidden by the reader's step fault.
+- **Not done here, for WP13 (review cycle 2 NIT-B).** `StoreRead.metOnlyByTheStore` tells the store read's own faults
+  (a template read twice, a value-object breach) by their message's start; a typed marker would need the store's
+  `PackRead` to carry them apart, through `readKind` and its callers.
 - **Row 32 is one answer.** The policy file `mutability_policy` names is stated by the store half, `unreadable`,
   `<file>: named by mutability_policy, the file is missing` or `the file cannot be read: <why>`, on both surfaces; the
   reader's own parse or schema fault at that file is not stated beside it.

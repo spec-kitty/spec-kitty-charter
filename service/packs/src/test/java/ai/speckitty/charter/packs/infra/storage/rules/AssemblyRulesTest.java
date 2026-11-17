@@ -107,4 +107,32 @@ class AssemblyRulesTest {
                         List.of(stated(enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank"))))
                 .containsExactly("missions/x/enhancements/e.prompt-fragment.md");
     }
+
+    @Test
+    @DisplayName("review cycle 2: a companion fault needs the reader's companion or schema code at the companion; a"
+            + " mission type breach is the reader's step fault only for a step id standing twice")
+    void theMappingsMatchTheirCodeAndSubject() {
+        PackElementViolation broken = new PackElementViolation(
+                "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: structure: const violated");
+        String type = "missions/x/x.mission-type.yaml";
+        PackElementViolation stepTwice = new PackElementViolation(
+                type, StorageCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: " + AssemblyRules.STEP_STANDS_ONCE);
+        PackElementViolation keyTwice = new PackElementViolation(
+                type,
+                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                "Constraint breached: An artifact key stands once in a mission type's expected outputs.");
+        Reason step = stated(
+                type,
+                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                type + ": step 'a' stands twice across steps and on_demand_steps");
+        Reason names = stated(
+                type, StorageCodes.ARTIFACT_SCHEMA_ERROR, type + ": names templates/t.md (named by the type): missing");
+
+        assertThat(AssemblyRules.sameFault(broken, stated("toolguides/a.guide.md", StorageCodes.RETIRED, "retired")))
+                .isFalse();
+        assertThat(AssemblyRules.sameFault(stepTwice, step)).isTrue();
+        assertThat(AssemblyRules.sameFault(stepTwice, names)).isFalse();
+        assertThat(AssemblyRules.sameFault(keyTwice, step)).isFalse();
+        assertThat(AssemblyRules.sameFault(keyTwice, names)).isFalse();
+    }
 }
