@@ -460,7 +460,8 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
     /**
      * The files of a pack directory the store does not hold, as the census lists them: each regular file that is not
      * itself a link, in {@link String} order, that the table excludes or no rule models, unless a held artifact claims
-     * it as a companion (a skill body); and a {@code policy.yaml} the descriptor does not name (open case 9). A retired
+     * it as a companion (a skill body); a {@code policy.yaml} the descriptor does not name; and a file a rule maps that
+     * nothing names, a companion no artifact names, but not an orphan prompt fragment, which is refused (open case 9). A retired
      * file is refused by name, never listed (WP02 review L2). The store's load lists what it does not hold through here,
      * so "held" has one owner (#554, S3).
      *
@@ -488,7 +489,12 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
             switch (table.classify(prefix + file)) {
                 case PackFileKind.Excluded excluded -> out.add(NotHeldFile.excluded(file, excluded.reason()));
                 case PackFileKind.Unclassified unclassified -> out.add(NotHeldFile.unmodelled(file));
-                case PackFileKind.Mapped mapped -> {}
+                case PackFileKind.Mapped mapped -> {
+                    // A mapped file nothing names is not held (open case 9); an orphan prompt fragment is refused.
+                    if (!StepEnhancementBinding.FRAGMENT_SCHEMA.equals(mapped.kind())) {
+                        out.add(NotHeldFile.unnamedCompanion(file));
+                    }
+                }
                 case PackFileKind.Retired retired -> {}
             }
         }
@@ -694,7 +700,7 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
 
         /** Lists the excluded Markdown files, and reads the companions and documents. */
         private void readMarkdownFiles(String prefix) {
-            @Nullable Set<String> held = null;
+            Set<String> held = new HashSet<>(PackFileSet.digested(directory, table, walk));
             for (Path path : packFiles(directory, walk, MARKDOWN)) {
                 String file = slashed(directory.relativize(path));
                 PackFileKind.Classification classification = table.classify(prefix + file);
@@ -702,9 +708,6 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
                     // Excluded Markdown (an exclusions rule, or the ignored fallback, #451) is listed as excluded
                     // YAML is: never read, never a finding. A file a bound kind claims as its companion (a skill
                     // body) is held with its owner, so it is not listed; the digest knows which files are held.
-                    if (held == null) {
-                        held = new HashSet<>(PackFileSet.digested(directory, table, walk));
-                    }
                     if (!held.contains(file)) {
                         files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
                     }
@@ -715,7 +718,11 @@ public final class FileSystemPackInspector implements PackInspector, PackReading
                     continue;
                 }
                 if (KindBindings.isCompanionStructure(mapped.kind())) {
-                    readCompanion(path, file, mapped.kind());
+                    // A companion no artifact names is not held, so nothing in it is judged (open case 9); a prompt
+                    // fragment is still read, as the orphan rule judges it.
+                    if (held.contains(file) || StepEnhancementBinding.FRAGMENT_SCHEMA.equals(mapped.kind())) {
+                        readCompanion(path, file, mapped.kind());
+                    }
                 } else if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {
                     readDocument(path, file);
                 } else {

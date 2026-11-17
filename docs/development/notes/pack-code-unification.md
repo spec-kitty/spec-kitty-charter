@@ -175,9 +175,11 @@ WP04, WP05 and WP08 see it.
    descriptor cannot be read, which file it names is unknown, and the file stays held and judged. An orphan prompt
    fragment is held by the census (a rule maps it), so it is no longer listed as not held, and it keeps its refusal,
    `prompt_fragment_invalid`, on both surfaces. A plant for each case is in `HeldSetAgreementTest`. No golden row
-   changes. One more case the census settles the same way: a mapped file the load does not take that has no fault
-   of its own and is not a prompt fragment (an orphan companion, such as a guide no toolguide names) is held by the
-   census, so a registration no longer removes it as `unmodelled`; no golden subject holds one.
+   changes. A companion a rule maps that no artifact names (a guide no toolguide names, a step prompt no mission type
+   names) is not held either, with the same kind and the reason `no artifact of the pack names it` (WP05 review M1):
+   both surfaces warn `file_not_held` for it, validate mode does not read it, and a registration removes it before
+   the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
+   orphan step prompt.
 
 ## Outcomes of WP05
 

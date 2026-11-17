@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.application.WholePackWriteStore.ExcludedFile;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -260,6 +261,35 @@ class HeldSetAgreementTest {
                                 .filteredOn(violation -> violation.pointer().equals(orphan))
                                 .extracting(RefusalViolation::code)
                                 .containsExactly(PackCodes.PROMPT_FRAGMENT_INVALID.value()));
+    }
+
+    @Test
+    @DisplayName("open case 9 (WP05 review M1): a companion no artifact names, an orphan guide or step prompt, is not"
+            + " held, with its own kind and reason; both surfaces warn about it, and the registration removes it")
+    void anOrphanCompanionIsNotHeld(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        String guide = "toolguides/orphan.guide.md";
+        String prompt = "missions/software-dev/steps/orphan.prompt.md";
+        write(pack, guide, "no heading, and no toolguide names it\n");
+        write(pack, prompt, "---\nunclosed: [\n");
+
+        List<NotHeldFile> census = validated(pack, PackLevel.BUILT_IN);
+        assertThat(census).contains(NotHeldFile.unnamedCompanion(guide), NotHeldFile.unnamedCompanion(prompt));
+        assertThat(PackPolicy.judge(inspect(pack, PackLevel.BUILT_IN)).findings())
+                .as("validate mode warns and judges nothing in either")
+                .filteredOn(finding ->
+                        finding.file().equals(guide) || finding.file().equals(prompt))
+                .containsExactlyInAnyOrder(
+                        NotHeldFile.unnamedCompanion(guide).finding(),
+                        NotHeldFile.unnamedCompanion(prompt).finding());
+        WholePackWriteStore.Contents contents = store().loadStaged(new StagedPack(pack));
+        assertThat(contents.warnings())
+                .filteredOn(finding ->
+                        finding.file().equals(guide) || finding.file().equals(prompt))
+                .hasSize(2);
+        store().removeNotHeld(new StagedPack(pack), contents);
+        assertThat(pack.resolve(guide)).doesNotExist();
+        assertThat(pack.resolve(prompt)).doesNotExist();
     }
 
     private static List<NotHeldFile> validated(Path pack, PackLevel level) {

@@ -434,6 +434,20 @@ class FileSystemPackInspectorTest {
         write(dir, "toolguides/fenced.guide.md", "# Use make\n\n## Overview\n\n```\nunclosed\n");
         write(dir, "toolguides/README.md", "Not a guide.\n");
         write(dir, "notes/loose.md", "Read me.\n");
+        // Each guide is read with the toolguide that names it; a guide no toolguide names is not held (open case 9).
+        for (String id : List.of("good", "preamble", "no-overview", "no-h1", "fenced")) {
+            write(dir, "toolguides/" + id + ".toolguide.yaml", """
+                    id: %s
+                    schema_version: '1.0'
+                    tool: make
+                    title: Make
+                    guide_path: %s.guide.md
+                    summary: S.
+                    commands:
+                    - make
+                    last_updated: '2026-07-28'
+                    """.formatted(id, id));
+        }
 
         TreeRead read = full(dir);
 
@@ -462,6 +476,7 @@ class FileSystemPackInspectorTest {
         assertThat(full(dir).census().files())
                 .as("a Markdown file a rule models is read, not listed; Markdown nothing models is listed as excluded"
                         + " (#451)")
+                .filteredOn(file -> file.file().endsWith(".md"))
                 .containsExactlyInAnyOrder(
                         excluded("notes/loose.md", "**/*.md"), excluded("toolguides/README.md", "**/*.md"));
     }
