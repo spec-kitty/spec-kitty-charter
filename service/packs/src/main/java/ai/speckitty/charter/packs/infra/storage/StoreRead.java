@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -117,7 +118,8 @@ record StoreRead(
         Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
         List<PackFinding> warnings = new ArrayList<>();
-        Pack.Builder builder = assembly(id, read, places, graphs, warnings);
+        List<PackElementViolation> storeOnly = new ArrayList<>();
+        Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add);
         // The manifest's and the policy file's faults follow the assembly's; the composing read does not judge them.
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir.resolve(PackFileSet.MANIFEST), strategy, trailing);
@@ -125,6 +127,13 @@ record StoreRead(
         Optional<PolicyYaml.Named> policy =
                 read.descriptor().mutabilityPolicy().flatMap(file -> policy(packDir, file, trailing, policyFault));
         trailing.forEach(builder::violation);
+        // Row 32: the named policy file's fault is the store's alone.
+        trailing.stream()
+                .filter(violation -> read.descriptor()
+                        .mutabilityPolicy()
+                        .filter(violation.file()::equals)
+                        .isPresent())
+                .forEach(storeOnly::add);
         Pack pack;
         try {
             pack = builder.build();
@@ -144,6 +153,7 @@ record StoreRead(
                 pack.violations().size() - trailing.size(),
                 graphs.violations(),
                 warnings,
+                storeOnly,
                 policy.map(PolicyYaml.Named::text),
                 policyFault.stream().findFirst(),
                 facts,
@@ -281,6 +291,24 @@ record StoreRead(
                 graphsUnreadable);
     }
 
+    /** What a step enhancement's file ends with, whose companion faults the assembly keeps as the fragment's. */
+    private static final String ENHANCEMENT_FILE = ".step-enhancement.yaml";
+
+    /**
+     * Whether a fault of the store's read is one only the store meets (A-M1 rows 16, 17 and 19): a companion it cannot
+     * read, a template read twice, and a value-object breach. The read's other faults (a file that does not parse or
+     * breaks its schema, a retired file, a sidecar's payload, an edge's endpoints) are the reader's and the rules' too.
+     */
+    static boolean metOnlyByTheStore(PackElementViolation violation) {
+        return FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
+                || (PackCodes.DUPLICATE_ARTIFACT_ID.equals(violation.kind())
+                        && violation.reason().startsWith("template "))
+                || violation.reason().startsWith(BREACH);
+    }
+
+    /** How a value-object breach's message starts ({@code ConstraintBreachException}). */
+    private static final String BREACH = "Constraint breached";
+
     /**
      * The manifest, when the pack holds a readable one whose preset entries name their own files; otherwise empty, and
      * an unreadable or misplaced manifest is a violation.
@@ -381,6 +409,41 @@ record StoreRead(
             Map<Urn, String> places,
             FilesystemPackStore.GraphRead graphs,
             List<PackFinding> warnings) {
+        return assembly(pack, read, places, graphs, warnings, violation -> {});
+    }
+
+    /**
+     * The store half's assembly ({@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map,
+     * FilesystemPackStore.GraphRead, List)}), handing {@code storeOnly} each fault only the store half meets, which no
+     * reader or rule states (#554, A-M1, WP12 review MAJOR-2): a template read twice (row 16), a value-object breach
+     * (row 17), a reference or an output template that does not close (row 18), and a companion the store cannot read
+     * (row 19), a step enhancement's under {@code prompt_fragment_invalid} as the assembly keeps it. The rule families
+     * it judges for the composing read (the step enhancements, {@code duplicate_step_id}, the prompt slots, the step
+     * links and the substep delegations) are not among them: the content rules state those.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param graphs what the store read of the pack's graph documents
+     * @param warnings receives the load findings that do not refuse the pack
+     * @param storeOnly receives each fault only the store half meets
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            FilesystemPackStore.GraphRead graphs,
+            List<PackFinding> warnings,
+            Consumer<PackElementViolation> storeOnly) {
+        read.violations().stream()
+                .filter(StoreRead::metOnlyByTheStore)
+                .forEach(violation -> storeOnly.accept(
+                        FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
+                                        && violation.file().endsWith(ENHANCEMENT_FILE)
+                                ? new PackElementViolation(
+                                        violation.file(), PackCodes.PROMPT_FRAGMENT_INVALID, violation.reason())
+                                : violation));
         List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
                 PackAssembly.stepEnhancementFacts(read, graphs.documents()),
                 graphs.violations().isEmpty());
@@ -400,7 +463,7 @@ record StoreRead(
                 withheld.add(fault.path());
             }
         }
-        Pack.Builder builder = PackAssembly.assembly(pack, read, places, withheld, repeating);
+        Pack.Builder builder = PackAssembly.assembly(pack, read, places, withheld, repeating, storeOnly);
         repeats.forEach(builder::violation);
         recordPromptSlotFaults(read, builder, warnings);
         faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);

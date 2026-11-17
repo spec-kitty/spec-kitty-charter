@@ -101,12 +101,22 @@ public final class AssemblyRules {
 
     /**
      * The store half's own faults that {@code stated} does not state already, each once, in the store's order (A-M1 rows
-     * 16 to 19 and 32, WP12). A fault is stated already when a violation of {@code stated} sits at its file, or, for a
-     * companion the store could not read ({@link StorageCodes#COMPANION}), at the companion's own file: the reader and
-     * the content rules speak first, in their words. One the read does not state is placed at its file, a companion's at
-     * the companion's own file (R2 row 19, as validate mode places it), with the store's code and words. An edge that
-     * joins an artifact to itself through its pack's own qualifier stops the store's composition facts, and the read
-     * does not see it: it is stated at {@value #PACK} as {@link StorageCodes#UNREADABLE}, as the registration answers it.
+     * 16 to 19 and 32, WP12). They are the read's {@link Assembly.Assembled#storeOnly() store-only} faults alone, an
+     * allow-list the store half builds where it meets them: a template read twice, a value-object breach, a reference or
+     * an output template that does not close, a companion it cannot read, the policy file {@code mutability_policy}
+     * names. The rule families the store half also judges for the composing read (the step enhancements,
+     * {@code duplicate_step_id}, the prompt slots, the step links, the substep delegations) are the content rules' alone,
+     * and never come from here.
+     *
+     * <p>A fault is suppressed only when {@code stated} holds the same fault, never because something else sits at its
+     * file ({@link #sameFault}). A companion fault the reader does not state is placed at the companion's own file (R2
+     * row 19, as validate mode places it); a prompt fragment's stays at the step enhancement that names it, as the
+     * contract places it, and the verdict then states nothing else at the fragment ({@link #unreadFragments}).
+     *
+     * <p>An edge that joins an artifact to itself through the pack's own name stops the store's composition facts, which
+     * the read does not see: it is stated at {@value #PACK} as {@link StorageCodes#UNREADABLE}, as the registration
+     * answered it, and only when nothing else is stated, since the facts are built only for a pack the store reads
+     * whole (WP12 review MINOR-4).
      *
      * @param read the one read
      * @param stated the violations the read faults and the registration's composition already state
@@ -116,14 +126,13 @@ public final class AssemblyRules {
         if (!(read.contents().assembly() instanceof Assembly.Assembled held)) {
             return List.of();
         }
-        Set<String> files = new HashSet<>();
-        stated.forEach(reason -> files.add(reason.location().file()));
         List<Reason> out = new ArrayList<>();
-        for (PackElementViolation violation : held.violations()) {
-            if (StorageCodes.COMPANION.equals(violation.kind())) {
-                companionFault(violation, files).ifPresent(out::add);
-            } else if (!files.contains(violation.file())) {
-                out.add(fault(violation.kind(), violation.file(), violation.reason()));
+        for (PackElementViolation violation : held.storeOnly()) {
+            if (stated.stream().noneMatch(reason -> sameFault(violation, reason))) {
+                out.add(
+                        StorageCodes.COMPANION.equals(violation.kind())
+                                ? fault(violation.kind(), companionOf(violation), why(violation))
+                                : fault(violation.kind(), violation.file(), violation.reason()));
             }
         }
         if (stated.isEmpty() && out.isEmpty()) {
@@ -133,33 +142,117 @@ public final class AssemblyRules {
     }
 
     /**
-     * A companion fault, as the store words it at the artifact ({@code <declared path>: <why>}), placed at the
-     * companion's own file; empty when a violation sits at the artifact or at the companion already.
+     * Whether {@code reason} states the same fault as the store's {@code violation} (WP12 review MAJOR-1), by an explicit
+     * mapping:
+     *
+     * <ul>
+     *   <li>a companion the store cannot read is the reader's fault at the companion's own file (it does not parse, or
+     *       breaks its structure), and the store does not state it again; one it finds missing, or named twice, is the
+     *       reader's fault at the artifact that names the companion missing, or named more than once;
+     *   <li>a prompt fragment the store cannot read is stated by the store, at the step enhancement, unless the reader
+     *       states the fragment missing, or named more than once, there;
+     *   <li>a mission type the store refuses (a step standing twice, a companion or an output template it cannot
+     *       resolve) is the reader's one load refusal of that mission type file, which the reader words as
+     *       {@code step '<id>' ...} or {@code names <path> ...};
+     *   <li>any other fault is the reader's or a rule's at the same file with the same code whose words end with the
+     *       store's.
+     * </ul>
+     *
+     * @param violation the store's fault
+     * @param reason a violation the read already states
+     * @return whether the two are one fault
      */
-    static Optional<Reason> companionFault(PackElementViolation violation, Set<String> stated) {
-        String reason = violation.reason();
-        int colon = reason.indexOf(": ");
-        String companion = companionOf(violation);
-        if (stated.contains(violation.file()) || stated.contains(companion)) {
-            return Optional.empty();
+    static boolean sameFault(PackElementViolation violation, Reason reason) {
+        String file = reason.location().file();
+        boolean ownFault = !MISSING.equals(why(violation)) && !NAMED_TWICE.equals(why(violation));
+        if (StorageCodes.COMPANION.equals(violation.kind())) {
+            return (file.equals(companionOf(violation)) && ownFault) || namesMissing(violation, reason);
         }
-        String why = colon < 0 ? reason : reason.substring(colon + 2);
-        return Optional.of(fault(violation.kind(), companion, why));
+        if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation)) {
+            return namesMissing(violation, reason);
+        }
+        if (statesMissionTypeRefusal(violation, reason)) {
+            return true;
+        }
+        return file.equals(violation.file())
+                && violation.kind().equals(reason.code())
+                && reason.detail().endsWith(violation.reason());
     }
 
     /**
-     * The prompt fragments whose read fault the store states at the step enhancement that names them
-     * ({@code <declared path>: <why>}): there the contract places it ({@code prompt-fragment-refusals.feature}, R2 row
-     * 19), so the verdict states it there, once, and no fault at the fragment itself beside it.
+     * Whether {@code reason} is the reader's load refusal of the mission type file the store refused: the reader states
+     * the first fault the store's load meets in such a file, once ({@code MissionTypeChecks}), so it is the same fault
+     * as each of the store's there.
+     */
+    private static boolean statesMissionTypeRefusal(PackElementViolation violation, Reason reason) {
+        String file = violation.file();
+        if (!file.endsWith(MISSION_TYPE_FILE)
+                || !reason.location().file().equals(file)
+                || !StorageCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())) {
+            return false;
+        }
+        String detail = reason.detail().startsWith(file + ": ")
+                ? reason.detail().substring(file.length() + 2)
+                : reason.detail();
+        return detail.startsWith("step '") || detail.startsWith("names ");
+    }
+
+    /** What a mission type's file ends with. */
+    private static final String MISSION_TYPE_FILE = ".mission-type.yaml";
+
+    /** What the store says of a companion it finds missing. */
+    private static final String MISSING = "missing";
+
+    /** What the store says of a companion two artifacts, or two entries of one, name. */
+    private static final String NAMED_TWICE = "named by two artifacts";
+
+    /**
+     * Whether {@code reason} states, at the artifact, the store's companion fault in the reader's words: a companion
+     * the store found missing that the reader names missing ({@code missing}, {@code does not exist}), or one named
+     * twice that the reader names more than once.
+     */
+    private static boolean namesMissing(PackElementViolation violation, Reason reason) {
+        String detail = reason.detail();
+        if (!reason.location().file().equals(violation.file())
+                || !(detail.contains(companionOf(violation)) || detail.contains(declaredOf(violation)))) {
+            return false;
+        }
+        return switch (why(violation)) {
+            case MISSING -> detail.endsWith(MISSING) || detail.contains("does not exist");
+            case NAMED_TWICE -> detail.contains("more than once");
+            default -> false;
+        };
+    }
+
+    /** The store's reason of a companion fault without the companion it names: {@code <why>}. */
+    static String why(PackElementViolation violation) {
+        String reason = violation.reason();
+        int colon = reason.indexOf(": ");
+        return colon < 0 ? reason : reason.substring(colon + 2);
+    }
+
+    /** The companion path as the artifact declares it, or the reason when it names none. */
+    private static String declaredOf(PackElementViolation violation) {
+        int colon = violation.reason().indexOf(": ");
+        return colon < 0 ? violation.reason() : violation.reason().substring(0, colon);
+    }
+
+    /**
+     * The prompt fragments whose read fault the verdict states at the step enhancement that names them ({@code
+     * emitted}, from {@link #held}): there the contract places it ({@code prompt-fragment-refusals.feature}, R2 row
+     * 19), so the verdict states nothing else at the fragment itself. A fragment whose fault is not emitted keeps the
+     * reader's faults (WP12 review MAJOR-1).
      *
-     * @param read the one read
+     * @param emitted the store's faults the verdict states
      * @return the fragments, pack-relative
      */
-    static Set<String> unreadFragments(TreeRead read) {
+    static Set<String> unreadFragments(List<Reason> emitted) {
         Set<String> out = new HashSet<>();
-        if (read.contents().assembly() instanceof Assembly.Assembled held) {
-            for (PackElementViolation violation : held.violations()) {
-                if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation)) {
+        for (Reason reason : emitted) {
+            if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(reason.code())) {
+                PackElementViolation violation =
+                        new PackElementViolation(reason.location().file(), reason.code(), reason.detail());
+                if (namesCompanion(violation)) {
                     out.add(companionOf(violation));
                 }
             }

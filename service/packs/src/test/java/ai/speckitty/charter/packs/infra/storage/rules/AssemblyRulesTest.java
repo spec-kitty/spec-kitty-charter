@@ -2,9 +2,13 @@ package ai.speckitty.charter.packs.infra.storage.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import java.util.Set;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -24,31 +28,83 @@ class AssemblyRulesTest {
         assertThat(AssemblyRules.sibling("d/a.yaml", "../../out.md")).isEqualTo("../out.md");
     }
 
-    @Test
-    @DisplayName("a companion fault moves to the companion's file with its reason, unless either file is stated")
-    void aCompanionFaultIsPlacedAtTheCompanion() {
-        PackElementViolation missing =
-                new PackElementViolation("toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: missing");
-
-        assertThat(AssemblyRules.companionFault(missing, Set.of())).hasValueSatisfying(fault -> {
-            assertThat(fault.code()).isEqualTo(StorageCodes.COMPANION);
-            assertThat(fault.location()).isEqualTo(Location.in("toolguides/a.guide.md"));
-            assertThat(fault.detail()).isEqualTo("missing");
-        });
-        assertThat(AssemblyRules.companionFault(missing, Set.of("toolguides/a.guide.md")))
-                .isEmpty();
-        assertThat(AssemblyRules.companionFault(missing, Set.of("toolguides/a.toolguide.yaml")))
-                .isEmpty();
+    private static Reason stated(String file, ReasonCode code, String detail) {
+        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), detail);
     }
 
     @Test
-    @DisplayName("a companion fault with no declared path stays at its file")
-    void aCompanionFaultWithoutAPathStays() {
-        PackElementViolation odd = new PackElementViolation("a.yaml", StorageCodes.COMPANION, "named by two");
+    @DisplayName("a companion fault is the reader's fault at the companion, or its 'missing' at the artifact; nothing"
+            + " else at the artifact is the same fault")
+    void aCompanionFaultIsTheSameFaultOnlyByItsMapping() {
+        PackElementViolation broken = new PackElementViolation(
+                "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: structure: const violated");
+        PackElementViolation missing =
+                new PackElementViolation("toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: missing");
 
-        assertThat(AssemblyRules.companionFault(odd, Set.of())).hasValueSatisfying(fault -> {
-            assertThat(fault.location()).isEqualTo(Location.in("a.yaml"));
-            assertThat(fault.detail()).isEqualTo("named by two");
-        });
+        assertThat(AssemblyRules.sameFault(
+                        broken, stated("toolguides/a.guide.md", StorageCodes.ARTIFACT_SCHEMA_ERROR, "bad")))
+                .isTrue();
+        assertThat(AssemblyRules.sameFault(
+                        broken, stated("toolguides/a.toolguide.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "other")))
+                .as("another fault of the artifact")
+                .isFalse();
+        assertThat(AssemblyRules.sameFault(
+                        missing,
+                        stated(
+                                "toolguides/a.toolguide.yaml",
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                "toolguides/a.toolguide.yaml: names a.guide.md: missing")))
+                .isTrue();
+        assertThat(AssemblyRules.sameFault(
+                        missing, stated("toolguides/a.guide.md", StorageCodes.COMPANION, "something")))
+                .as("a missing companion has no fault of its own at its file")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("any other store fault is the same fault only at its file, with its code, in words that end with its")
+    void anyOtherFaultIsTheSameFaultByFileCodeAndWords() {
+        PackElementViolation breach = new PackElementViolation(
+                "presets/dup.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: twice");
+
+        assertThat(AssemblyRules.sameFault(
+                        breach,
+                        stated(
+                                "presets/dup.yaml",
+                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                "presets/dup.yaml: Constraint breached: twice")))
+                .isTrue();
+        assertThat(AssemblyRules.sameFault(
+                        breach, stated("presets/dup.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "id is not the stem")))
+                .as("another fault of the same file")
+                .isFalse();
+        assertThat(AssemblyRules.sameFault(
+                        breach, stated("presets/dup.yaml", StorageCodes.UNREADABLE, "Constraint breached: twice")))
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("a fragment's read fault the store states stands unless the reader states the fragment missing")
+    void aFragmentFaultIsTheSameFaultOnlyWhenMissing() {
+        String enhancement = "missions/x/enhancements/e.step-enhancement.yaml";
+        PackElementViolation blank =
+                new PackElementViolation(enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank");
+        PackElementViolation gone = new PackElementViolation(
+                enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: missing");
+        Reason twice = stated(
+                enhancement,
+                PackCodes.PROMPT_FRAGMENT_INVALID,
+                "slot s:x is named more than once by e.prompt-fragment.md");
+        Reason absent = stated(
+                enhancement,
+                PackCodes.PROMPT_FRAGMENT_INVALID,
+                "the companion missions/x/enhancements/e.prompt-fragment.md does not exist");
+
+        assertThat(AssemblyRules.sameFault(blank, twice)).isFalse();
+        assertThat(AssemblyRules.sameFault(blank, absent)).isFalse();
+        assertThat(AssemblyRules.sameFault(gone, absent)).isTrue();
+        assertThat(AssemblyRules.unreadFragments(
+                        List.of(stated(enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank"))))
+                .containsExactly("missions/x/enhancements/e.prompt-fragment.md");
     }
 }

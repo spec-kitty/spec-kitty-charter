@@ -516,6 +516,14 @@ final class FilesystemPackStore {
                     if (mismatch.isPresent()) {
                         violations.add(
                                 new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, mismatch.get()));
+                        // A preset left out for its stem still answers its own value-object breach (WP12 review
+                        // MAJOR-1): two faults of one file are two violations.
+                        try {
+                            PresetFiles.toPreset(good.value());
+                        } catch (ConstraintBreachException breach) {
+                            violations.add(new PackElementViolation(
+                                    file, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
+                        }
                     } else {
                         out.add(new Stored<>(file, good.value()));
                     }

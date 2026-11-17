@@ -95,14 +95,14 @@ public final class StorageRulesets {
      * {@code mutability_policy} names follow the rule faults and the store's, and the orphan prompt fragments come last,
      * as the registration listed them (WP07 review MINOR-3). When the store could not read the named policy file, its
      * fault is stated once, in its words (R2 row 32), and the reader's own fault at that file is not; so is a prompt
-     * fragment the store cannot read, at the step enhancement that names it (R2 row 19, as the contract places it).
+     * fragment the store cannot read, at the step enhancement that names it (R2 row 19, as the contract places it),
+     * and then nothing else is stated at the fragment.
      *
      * @param read the one read
      * @return the verdict
      */
     public static Rationale verdict(TreeRead read) {
         Optional<String> policy = AssemblyRules.unreadablePolicy(read);
-        Set<String> fragments = AssemblyRules.unreadFragments(read);
         Set<String> trailing = new HashSet<>();
         trailing.add(MANIFEST);
         policy.ifPresent(trailing::add);
@@ -110,7 +110,7 @@ public final class StorageRulesets {
         List<Reason> trailingFaults = new ArrayList<>();
         for (Reason fault : read.readFaults()) {
             String file = fault.location().file();
-            if (policy.filter(file::equals).isPresent() || fragments.contains(file)) {
+            if (policy.filter(file::equals).isPresent()) {
                 continue;
             }
             (trailing.contains(file) ? trailingFaults : readFaults).add(fault);
@@ -118,8 +118,6 @@ public final class StorageRulesets {
         List<Reason> orphans = ORPHANS.apply(read);
         List<Reason> rules = new ArrayList<>(registration().apply(read));
         rules.removeAll(orphans);
-        rules.removeIf(reason -> reason.isFailing(Severity.VIOLATION)
-                && fragments.contains(reason.location().file()));
         List<Reason> stated = new ArrayList<>(readFaults);
         stated.addAll(trailingFaults);
         stated.addAll(rules);
@@ -129,6 +127,13 @@ public final class StorageRulesets {
                 stated.stream()
                         .filter(reason -> reason.isFailing(Severity.VIOLATION))
                         .toList());
+        // A prompt fragment whose read fault the store states at its enhancement: nothing else is stated at it.
+        Set<String> fragments = AssemblyRules.unreadFragments(held);
+        Predicate<Reason> kept = reason -> !(reason.isFailing(Severity.VIOLATION)
+                && fragments.contains(reason.location().file()));
+        readFaults.removeIf(kept.negate());
+        trailingFaults.removeIf(kept.negate());
+        rules.removeIf(kept.negate());
         List<Reason> joined = new ArrayList<>(readFaults);
         joined.addAll(rules);
         held.stream()
