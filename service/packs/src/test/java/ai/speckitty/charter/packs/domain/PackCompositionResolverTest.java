@@ -194,6 +194,23 @@ class PackCompositionResolverTest {
     }
 
     @Test
+    void theMergeOrderIsTheResolvedOrderThenTheUnplacedPacksInTheStableOrder() {
+        PackUnderResolution base = pack("01ZBASE", "base", "1.0.0", PackLevel.ORG);
+        PackUnderResolution top =
+                pack("01AATOP", "top", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01ZBASE", ">=1.0")));
+        PackUnderResolution first =
+                pack("01MFIRST", "first", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01NSECOND", ">=1.0")));
+        PackUnderResolution second =
+                pack("01NSECOND", "second", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01MFIRST", ">=1.0")));
+
+        assertThat(ids(PackCompositionResolver.mergeOrder(List.of(top, base))))
+                .isEqualTo(ids(PackCompositionResolver.resolve(List.of(top, base))))
+                .containsExactly("01ZBASE", "01AATOP");
+        assertThat(ids(PackCompositionResolver.mergeOrder(List.of(second, top, first, base))))
+                .containsExactly("01ZBASE", "01AATOP", "01MFIRST", "01NSECOND");
+    }
+
+    @Test
     void theRefusalIsTheFirstFaultTheResolverCollectsAndAComposeThatResolvesHasNone() {
         PackUnderResolution loop = extending("01LOOP", "loop", PackLevel.ORG, "01LOOP");
         PackUnderResolution orphan = extending("01ORPH", "orphan", PackLevel.ORG, "01MISSING");

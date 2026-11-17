@@ -100,8 +100,8 @@ public final class CompositionRules {
 
     /**
      * The preset phase of {@code CLOSURE}: the preset ids are composition facts the {@link PackUnderResolution} does
-     * not carry, so the caller names them. It judges the packs in the order given, which is the merge order when the
-     * set resolves ({@link PackCompositionResolver#resolve}).
+     * not carry, so the caller names them. It judges the packs in merge order ({@link #presetFaults}), whatever order
+     * they are given in.
      *
      * @param presetIdsOf the ids of the presets a pack holds
      * @return the rule
@@ -127,15 +127,20 @@ public final class CompositionRules {
     }
 
     /**
-     * Every preset contest of a set of packs ({@link PackCompositionResolver#presetContests}).
+     * Every preset contest of a set of packs ({@link PackCompositionResolver#presetContests}), judged in the set's merge
+     * order ({@link PackCompositionResolver#mergeOrder}): the order the offering judges a resolved set in, and the
+     * stable order for the packs a set that does not resolve leaves unplaced. So the answer does not depend on the
+     * order the packs are given in.
      *
-     * @param ordered the packs, in merge order
+     * @param packs the packs, in any order
      * @param presetIdsOf the ids of the presets a pack holds
      * @return the faults; empty when no two unrelated packs of one level hold one preset id
+     * @throws IllegalStateException when a descriptor is not well formed, as {@link #faults} refuses it
      */
     public static List<CompositionFault> presetFaults(
-            List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
-        return PackCompositionResolver.presetContests(ordered, presetIdsOf).stream()
+            List<PackUnderResolution> packs, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
+        Objects.requireNonNull(presetIdsOf, "presetIdsOf");
+        return PackCompositionResolver.presetContests(PackCompositionResolver.mergeOrder(packs), presetIdsOf).stream()
                 .map(CompositionFault::of)
                 .toList();
     }
