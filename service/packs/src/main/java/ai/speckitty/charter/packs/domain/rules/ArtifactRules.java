@@ -45,13 +45,13 @@ public final class ArtifactRules {
 
     private ArtifactRules() {}
 
-    private static List<ArtifactFacts> judgedHere(PackContents contents) {
+    static List<ArtifactFacts> judgedHere(PackContents contents) {
         return contents.artifacts().stream()
                 .filter(artifact -> !JUDGED_ELSEWHERE.contains(artifact.kind()))
                 .toList();
     }
 
-    private static List<Reason> repeatedIds(List<ArtifactFacts> artifacts) {
+    static List<Reason> repeatedIds(List<ArtifactFacts> artifacts) {
         List<ArtifactFacts> ordered = new ArrayList<>(artifacts);
         ordered.sort(Comparator.comparing(ArtifactFacts::file, Precedence::comparePaths));
         Map<List<String>, String> owners = new HashMap<>();

@@ -53,7 +53,7 @@ public final class MissionTypeRules {
 
     private MissionTypeRules() {}
 
-    private static List<Reason> unlinkedSteps(PackContents contents) {
+    static List<Reason> unlinkedSteps(PackContents contents) {
         return MissionStepLinkRule.judge(ownName(contents), heldTypes(contents), edgesOf(contents)).stream()
                 .map(fault -> Findings.at(
                         PackCodes.MISSION_STEP_UNLINKED,
@@ -63,7 +63,7 @@ public final class MissionTypeRules {
                 .toList();
     }
 
-    private static List<Reason> delegations(PackContents contents) {
+    static List<Reason> delegations(PackContents contents) {
         Set<String> held = contents.artifacts().stream()
                 .map(artifact -> artifact.kind() + ":" + artifact.id())
                 .collect(Collectors.toSet());
@@ -79,21 +79,21 @@ public final class MissionTypeRules {
     }
 
     /** The mission types the pack holds: one whose step repeats a substep id is refused on its own. */
-    private static List<MissionTypeFacts> heldTypes(PackContents contents) {
+    static List<MissionTypeFacts> heldTypes(PackContents contents) {
         return contents.missionTypes().stream()
                 .filter(type -> !type.repeatsASubstepId())
                 .toList();
     }
 
     /** The name the pack's descriptor declares, else its configured name. */
-    private static String ownName(PackContents contents) {
+    static String ownName(PackContents contents) {
         return contents.descriptor() instanceof FileRead.Read<PackDescriptor> descriptor
                 ? descriptor.value().name()
                 : contents.root().name();
     }
 
     /** The edges of every graph document that was read, as written, in merge order: the shards, then the fragment. */
-    private static List<MissionStepLinkRule.Edge> edgesOf(PackContents contents) {
+    static List<MissionStepLinkRule.Edge> edgesOf(PackContents contents) {
         List<MissionStepLinkRule.Edge> edges = new ArrayList<>();
         for (FileRead<RawGraph> document : documents(contents)) {
             if (document instanceof FileRead.Read<RawGraph> read) {
@@ -107,12 +107,12 @@ public final class MissionTypeRules {
     }
 
     /** Whether every graph document of the pack was read: one that could not be read is refused on its own. */
-    private static boolean graphsRead(PackContents contents) {
+    static boolean graphsRead(PackContents contents) {
         return documents(contents).stream().noneMatch(FileRead.Unreadable.class::isInstance);
     }
 
     /** The graph documents of the pack, in merge order: the shards, then the fragment. */
-    private static List<FileRead<RawGraph>> documents(PackContents contents) {
+    static List<FileRead<RawGraph>> documents(PackContents contents) {
         List<FileRead<RawGraph>> documents = new ArrayList<>(contents.shards());
         documents.add(contents.fragment());
         return documents;
