@@ -355,6 +355,18 @@ class PrecedenceTest {
     }
 
     @Test
+    void withinAGroupTheFilesSortByPathThenByPlace() {
+        Comparator<Reason> order = Precedence.comparator(Set.of());
+        Reason later = reason(PackCodes.DUPLICATE_ARTIFACT_ID, "tactics/b.tactic.yaml", List.of());
+        Reason earlier = reason(PackCodes.DUPLICATE_ARTIFACT_ID, "tactics/a.tactic.yaml", List.of("id"));
+        Reason legacy = reason(PackCodes.DUPLICATE_ARTIFACT_ID, "python-legacy/y.tactic.yaml", List.of());
+
+        assertThat(Stream.of(later, legacy, earlier).sorted(order))
+                .as("the path decides before the place: a whole later file sorts after a place in an earlier one")
+                .containsExactly(legacy, earlier, later);
+    }
+
+    @Test
     void aPointerSegmentIsDecodedBeforeItIsCompared() {
         Reason slash = reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of("a/b"));
         Reason tilde = reason(PackCodes.DRG_SCHEMA_ERROR, "pack.yaml", List.of("a~"));
