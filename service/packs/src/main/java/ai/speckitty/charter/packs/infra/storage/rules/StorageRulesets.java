@@ -3,12 +3,17 @@ package ai.speckitty.charter.packs.infra.storage.rules;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -28,6 +33,12 @@ public final class StorageRulesets {
 
     private static final ModularRuleset<TreeRead> REGISTRATION =
             HOLDING.must(PackRulesets.content().on(TreeRead::contents));
+
+    /** The orphan prompt fragments of {@code content()}, which a registration lists after the pack's other faults. */
+    private static final Rule<TreeRead> ORPHANS = FragmentRules.ORPHAN.on(TreeRead::contents);
+
+    /** Where the manifest stands in a pack. */
+    private static final String MANIFEST = "pack-manifest.yaml";
 
     /**
      * The faults a registration lists last, in its order: the reserved shard, then a manifest that is not a regular file,
@@ -76,15 +87,55 @@ public final class StorageRulesets {
     }
 
     /**
-     * The storage edge's verdict of one read (S6): the read faults, then {@link #registration()}, then the manifest gate
-     * when those pass, joined with the kernel's {@link Rationale#and} and put in registration's wire order
-     * ({@link #inRegistrationOrder}).
+     * The storage edge's verdict of one read (S6): the read faults, then {@link #registration()}, then the store half's
+     * own faults the two do not state ({@link AssemblyRules#held}), then the manifest gate when those pass, joined with
+     * the kernel's {@link Rationale#and} and put in registration's wire order ({@link #inRegistrationOrder}).
+     *
+     * <p>Among the violations left in the order given, the read faults at the manifest and at the policy file
+     * {@code mutability_policy} names follow the rule faults and the store's, and the orphan prompt fragments come last,
+     * as the registration listed them (WP07 review MINOR-3). When the store could not read the named policy file, its
+     * fault is stated once, in its words (R2 row 32), and the reader's own fault at that file is not.
      *
      * @param read the one read
      * @return the verdict
      */
     public static Rationale verdict(TreeRead read) {
-        Rationale judged = new Rationale(read.readFaults()).and(registration().check(read));
+        Optional<String> policy = AssemblyRules.unreadablePolicy(read);
+        Set<String> trailing = new HashSet<>();
+        trailing.add(MANIFEST);
+        policy.ifPresent(trailing::add);
+        List<Reason> readFaults = new ArrayList<>();
+        List<Reason> trailingFaults = new ArrayList<>();
+        for (Reason fault : read.readFaults()) {
+            String file = fault.location().file();
+            if (policy.filter(file::equals).isPresent()) {
+                continue;
+            }
+            (trailing.contains(file) ? trailingFaults : readFaults).add(fault);
+        }
+        List<Reason> orphans = ORPHANS.apply(read);
+        List<Reason> rules = new ArrayList<>(registration().apply(read));
+        rules.removeAll(orphans);
+        List<Reason> stated = new ArrayList<>(readFaults);
+        stated.addAll(trailingFaults);
+        stated.addAll(rules);
+        stated.addAll(orphans);
+        List<Reason> held = AssemblyRules.held(
+                read,
+                stated.stream()
+                        .filter(reason -> reason.isFailing(Severity.VIOLATION))
+                        .toList());
+        List<Reason> joined = new ArrayList<>(readFaults);
+        joined.addAll(rules);
+        held.stream()
+                .filter(fault -> !trailing.contains(fault.location().file()))
+                .forEach(joined::add);
+        joined.addAll(trailingFaults);
+        held.stream()
+                .filter(fault -> trailing.contains(fault.location().file()))
+                .forEach(joined::add);
+        joined.addAll(orphans);
+        Rationale judged = new Rationale(joined);
         Rationale gated = judged.isPassing() ? judged.and(new Rationale(manifestMembership(read))) : judged;
         return inRegistrationOrder(gated);
     }

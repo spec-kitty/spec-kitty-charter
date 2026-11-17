@@ -434,6 +434,22 @@ class StorageRulesetsTest {
         }
 
         @Test
+        @DisplayName("a read fault at the manifest follows the rule faults, as the registration lists it (MINOR-3)")
+        void aManifestReadFaultFollowsTheRules() {
+            Reason binding = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "tactics/c.tactic.yaml");
+            Reason manifest = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "pack-manifest.yaml");
+
+            assertThat(StorageRulesets.verdict(read(
+                                    contents(A, B),
+                                    census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT),
+                                    manifest,
+                                    binding))
+                            .violations())
+                    .extracting(reason -> reason.location().file())
+                    .containsExactly("tactics/c.tactic.yaml", "tactics/b.tactic.yaml", "pack-manifest.yaml");
+        }
+
+        @Test
         @DisplayName("the verdict joins the read faults before the rules, so a binding-level fault is named first")
         void theReadFaultsComeBeforeTheRules() {
             Reason binding = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "tactics/b.tactic.yaml");
