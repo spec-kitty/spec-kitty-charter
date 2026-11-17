@@ -188,10 +188,8 @@ class CharterWiringTest {
 
     @Test
     void validateModeIsNoBeanOfTheService() {
-        // C-003 (#554): validate mode is pack-validation's PackCheck, which deployable keeps on its test classpath
-        // only;
-        // the service runs no pack-validation main code, so no bean carries it.
-        runner.run(
-                context -> assertThat(context.getBeansOfType(PackCheck.class)).isEmpty());
+        // C-003 (#554): validate mode is pack-validation's PackCheck, which deployable keeps on its test
+        // classpath only; the service runs no pack-validation main code, so no bean carries it.
+        runner.run(context -> assertThat(context.getBeansOfType(PackCheck.class)).isEmpty());
     }
 }

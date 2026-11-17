@@ -3,7 +3,7 @@
     "C13"
   ],
   "proven_by": [
-    "packs:PackPolicyVocabularyTest#aNullableAnyOfCollapsesToTheNonNullBranch",
-    "packs:PackPolicyVocabularyTest#theRealNullableShapeWithNoAnyOfErrorCollapsesToTheNonNullBranch"
+    "packs:WordingTest#aNullableAnyOfCollapsesToTheNonNullBranch",
+    "packs:WordingTest#theRealNullableShapeWithNoAnyOfErrorCollapsesToTheNonNullBranch"
   ]
 }

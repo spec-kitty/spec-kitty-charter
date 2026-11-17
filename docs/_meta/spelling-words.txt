@@ -288,3 +288,6 @@ ntfs
 # mission-type step substeps (ADR-0077)
 substep
 substeps
+# pack closure rulesets (#554): S2 "prechecks are edge"
+precheck
+prechecks

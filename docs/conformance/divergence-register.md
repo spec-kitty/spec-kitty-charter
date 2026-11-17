@@ -456,13 +456,13 @@ ruling, its status and the evidence.
 
 ### DIV-028: A pack with no pack.yaml, in validate mode
 
-- **Core:** Validates a pack with no `pack.yaml` as if the descriptor were optional: it skips the descriptor's checks and reports nothing for its absence (`offering/packs/pack_validator.py`, `_validate_pack_descriptor` returns no issue when `pack.yaml` is not a file). None of the 33 core verdicts recorded for the 34 planted packs without a descriptor names `pack.yaml`, and 11 of them are accepted.
+- **Core:** Validates a pack with no `pack.yaml` as if the descriptor were optional: it skips the descriptor's checks and reports nothing for its absence (`offering/packs/pack_validator.py:787-788`, `_validate_pack_descriptor` returns no issue when `pack.yaml` is not a file). None of the 33 core verdicts recorded for the 34 planted packs without a descriptor names `pack.yaml`, and 11 of them are accepted.
 - **Service:** Refuses it: validate mode answers `pack_unreadable` at `pack.yaml`, `pack <name> has no pack.yaml`, beside the pack's other findings, as the registration answers it (R2 row 24). Validate mode judges the one read's storage verdict, and the store refuses a pack it cannot describe.
 - **Rationale:** One fault answers one code on every surface (operator ruling R2): a pack the registration refuses for its missing descriptor is not valid in validate mode. A pack's descriptor names it, its version and its level, so a pack without one has no identity to store or compose.
 - **Ruling:** #554 operator rulings R2 (b) and S6 (2026-11-16); R2 row 24, landed by WP09
 - **Status:** open, since 2026-11-17
 - **Evidence:**
-  - Core: `offering/packs/pack_validator.py:_validate_pack_descriptor` (`if not path.is_file(): return []`)
+  - Core: `offering/packs/pack_validator.py:787-788` (`_validate_pack_descriptor`, defined at `:770`: `if not path.is_file(): return []`)
   - Charter: `planted/core-verdicts.json`: no recorded verdict of a plant without `pack.yaml` names `pack.yaml`; 11 are ok (for example `artifact-utf16-with-a-byte-order-mark`, `charter-valid`, `c10-agent-scalar-role`)
   - Charter: `service/pack-validation/src/test/resources/golden/validate.json` (the 34 plants without `pack.yaml` answer `pack_unreadable` at `pack.yaml`) and `PackCheckTest.aPackWithNoDescriptorIsRefusedAtPackYamlAsTheRegistrationRefusesIt`
 
