@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -31,8 +30,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -156,20 +153,6 @@ final class PlantedFixtures {
             }
         }
         return own;
-    }
-
-    /**
-     * The files today's validate mode treats as refused by the read: every file a read fault names, but for a MIME
-     * precheck, which refuses nothing.
-     *
-     * @param readout the readout
-     * @return the files
-     */
-    static Set<String> refusedByTheRead(PackReadout readout) {
-        return readout.rationale().failures().stream()
-                .filter(Predicate.not(reason -> PackFindingCode.ASSET_MIME_INVALID.equals(reason.code())))
-                .map(reason -> reason.location().file())
-                .collect(Collectors.toSet());
     }
 
     /**

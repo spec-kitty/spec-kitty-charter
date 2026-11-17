@@ -2,7 +2,7 @@
 title: "Note: one code per pack fault (the R2 table)"
 description: "The R2 code table of #554: for each pack fault, what validate mode and the registration answer today, and the one code and wording kept."
 doc_status: draft
-updated: 2026-11-16T00:00:00Z
+updated: 2026-11-17T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -180,6 +180,30 @@ WP04, WP05 and WP08 see it.
    both surfaces warn `file_not_held` for it, validate mode does not read it, and a registration removes it before
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
+
+## Outcomes of WP06
+
+WP06 wrote the first content rules in `packs.domain.rules` (`StepRules`, `ArtifactRules`, `AssetRules`,
+`MissionTypeRules`), as kernel rule constants over `PackContents`. Nothing is wired yet: `PackPolicy` still judges, and
+each rule's tests prove it finds what `PackPolicy` finds over every planted and example pack. The orchestrator decided
+three cases under S2 (format and schema checks are the edge's; core holds only consistency logic, with no duplicate
+implementations):
+
+- **D1: no glossary content rule.** #106's glossary checks are the one reader's schema and stem prechecks, the storage
+  format rule of a repeated term id (`GlossaryYaml.rules`), the retired `glossary_pack` shape and `GraphBinding`'s term
+  endpoint rule. `PackContents` carries no glossary fact, and moving any of them into the domain would take a fault
+  away from the compose read, which runs no `content()`. They stay where they are, and there is no `GlossaryRules`.
+- **D2: the read owns the asset escape (row 13).** The store's sidecar rule (`SidecarPayloads`) refuses every sidecar
+  whose path leaves `assets/`, with the code `asset` and row 13's wording, on every surface, so a domain escape rule
+  could only repeat it. There is none. `AssetRules` holds the repeated asset id alone (S2, row 15), and
+  `AssetRulesTest` pins every planted escape as that read fault: row 13's wording when the path leaves as written, the
+  missing payload's through a symbolic link (open case 1, as WP04 settled it).
+- **D3: the substep id check is `StepRules`' alone** (`duplicate_step_id`, row 9). `MissionTypeRules` holds slice F's
+  step link and substep delegation rules, and judges no mission type that repeats a substep id.
+
+**PIT and rule constants (for WP07).** PIT leaves out a private method that only a static initializer reaches, and a
+rule constant names its function from the class's initializer, so a private rule function is never mutated and a
+narrowed run reports nothing for it. The rule functions are package-private, so PIT mutates them.
 
 ## Outcomes of WP05
 
