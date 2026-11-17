@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.ReadCounters;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -32,9 +33,16 @@ class OneReadRegistrationTest {
         Rig rig = new Rig(host);
         StagedPack upload =
                 rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One"));
+        ReadCounters before = ReadCounters.now();
 
         assertThat(rig.register("pack-x", upload, Preconditions.none()).outcome())
                 .isEqualTo(Outcome.CREATED);
+
+        // The registry holds no pack before this one. One walk, one run of the store half and one whole read are the
+        // read the registration judges; the two other walks are listings to digest bytes, not reads: the revision of
+        // the staged tree after the strip and the stamp (accepted, WP12 review), and the commit's revision of the
+        // pack it stored (PackCommitStore).
+        assertThat(ReadCounters.now().since(before)).isEqualTo(new ReadCounters(3, 1, 1));
 
         assertThat(rig.reading.roots)
                 .containsExactly(new PackRoot(

@@ -100,15 +100,8 @@ record StoreRead(
             Companions.Rules companionRules) {
         RUNS.increment();
         Path packDir = directory.toAbsolutePath().normalize();
-        Path parent = packDir.getParent();
-        if (parent == null || packDir.getFileName() == null) {
-            return refused(
-                    List.of(), RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory", false, false);
-        }
-        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
         List<StoreRead> refusal = new ArrayList<>();
-        DsoRead dso = dsoRead(store, key, bindings, walk, refusal);
+        DsoRead dso = dsoRead(packDir, strategy, companionRules, bindings, walk, refusal);
         if (dso == null) {
             return refusal.getFirst();
         }
@@ -120,20 +113,13 @@ record StoreRead(
         List<PackFinding> warnings = new ArrayList<>();
         List<PackElementViolation> storeOnly = new ArrayList<>();
         Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add);
-        // The manifest's and the policy file's faults follow the assembly's; the composing read does not judge them.
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir.resolve(PackFileSet.MANIFEST), strategy, trailing);
         List<String> policyFault = new ArrayList<>();
         Optional<PolicyYaml.Named> policy =
                 read.descriptor().mutabilityPolicy().flatMap(file -> policy(packDir, file, trailing, policyFault));
         trailing.forEach(builder::violation);
-        // Row 32: the named policy file's fault is the store's alone.
-        trailing.stream()
-                .filter(violation -> read.descriptor()
-                        .mutabilityPolicy()
-                        .filter(violation.file()::equals)
-                        .isPresent())
-                .forEach(storeOnly::add);
+        storeOnly.addAll(namedPolicyFaults(read, trailing));
         Pack pack;
         try {
             pack = builder.build();
@@ -185,6 +171,27 @@ record StoreRead(
             artifacts.add(new Assembly.Placed(place, artifact));
         }
         return artifacts;
+    }
+
+    /**
+     * The store's read of the pack in {@code packDir}, its graph documents first; a directory with no parent, or a
+     * refusal of either read, goes to {@code refusal}.
+     */
+    private static @Nullable DsoRead dsoRead(
+            Path packDir,
+            SerializationStrategy strategy,
+            Companions.Rules companionRules,
+            List<KindBinding<?, ?>> bindings,
+            PackFileSet.Walk walk,
+            List<StoreRead> refusal) {
+        Path parent = packDir.getParent();
+        if (parent == null || packDir.getFileName() == null) {
+            refusal.add(refused(
+                    List.of(), RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory", false, false));
+            return null;
+        }
+        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
+        return dsoRead(store, new PackIdentifier(String.valueOf(packDir.getFileName())), bindings, walk, refusal);
     }
 
     /** What the store's reader read of a pack: its graph documents, then everything else. */
@@ -289,6 +296,17 @@ record StoreRead(
                 Optional.empty(),
                 Optional.empty(),
                 graphsUnreadable);
+    }
+
+    /** Row 32: the fault of the policy file the descriptor names, among the trailing ones, is the store's alone. */
+    private static List<PackElementViolation> namedPolicyFaults(
+            FilesystemPackStore.PackRead read, List<PackElementViolation> trailing) {
+        return trailing.stream()
+                .filter(violation -> read.descriptor()
+                        .mutabilityPolicy()
+                        .filter(violation.file()::equals)
+                        .isPresent())
+                .toList();
     }
 
     /** What a step enhancement's file ends with, whose companion faults the assembly keeps as the fragment's. */
