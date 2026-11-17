@@ -116,6 +116,19 @@ public final class PackCodes {
         return file.isEmpty() || reason.contains(file) ? reason : file + ": " + reason;
     }
 
+    /**
+     * The reason of a {@link #DUPLICATE_ARTIFACT_ID}: the one wording validate mode and the load give a second file that
+     * declares an id of its kind (#554, R2 row 10).
+     *
+     * @param kind the kind's token, for example {@code tactic}
+     * @param id the repeated id
+     * @param first the pack-relative file that declared it first
+     * @return the reason, without the second file
+     */
+    public static String duplicateArtifactId(String kind, String id, String first) {
+        return kind + " id '" + id + "' is already declared in " + first;
+    }
+
     private static ReasonCode violation(String token) {
         return new ReasonCode(token, Severity.VIOLATION);
     }

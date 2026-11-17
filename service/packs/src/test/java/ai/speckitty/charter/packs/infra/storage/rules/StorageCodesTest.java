@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,19 @@ class StorageCodesTest {
         assertThat(StorageCodes.ORDERED)
                 .filteredOn(code -> code.severity() == Severity.WARNING)
                 .containsExactly(StorageCodes.FILE_NOT_HELD);
+    }
+
+    @Test
+    @DisplayName("each staging twin in PackFindingCode is its StorageCodes constant, token and severity (until WP13)")
+    void eachStagingTwinIsItsStorageCode() {
+        assertThat(PackFindingCode.PACK_UNREADABLE).isEqualTo(StorageCodes.PACK_UNREADABLE);
+        assertThat(PackFindingCode.UNREADABLE).isEqualTo(StorageCodes.UNREADABLE);
+        assertThat(PackFindingCode.ARTIFACT_SCHEMA_ERROR).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+        assertThat(PackFindingCode.REQUIRES_CORE_INVALID).isEqualTo(StorageCodes.REQUIRES_CORE_INVALID);
+        assertThat(PackFindingCode.PACK_VERSION_INVALID).isEqualTo(StorageCodes.PACK_VERSION_INVALID);
+        assertThat(PackFindingCode.DEPENDENCY_RANGE_INVALID).isEqualTo(StorageCodes.DEPENDENCY_RANGE_INVALID);
+        assertThat(PackFindingCode.ASSET_MIME_INVALID).isEqualTo(StorageCodes.ASSET_MIME_INVALID);
+        assertThat(PackFindingCode.FILE_NOT_HELD).isEqualTo(StorageCodes.FILE_NOT_HELD);
     }
 
     @Test

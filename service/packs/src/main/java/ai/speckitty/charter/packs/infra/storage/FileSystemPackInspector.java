@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -501,7 +502,7 @@ public final class FileSystemPackInspector implements PackInspector {
         private void readCompanion(Path path, String file, String structure) {
             FileRead<Object> outcome = read(path, file, name, text -> companion(text, file, structure));
             if (outcome instanceof FileRead.Unreadable<?> bad) {
-                unreadable.add(bad);
+                unreadable.add(coded(bad, companionCode(structure)));
             }
             if (StepEnhancementBinding.FRAGMENT_SCHEMA.equals(structure)) {
                 fragmentFact(file, outcome);
@@ -690,13 +691,15 @@ public final class FileSystemPackInspector implements PackInspector {
 
     /**
      * Reads a Markdown companion as the store's load does: parsed, validated against its structure schema, then held
-     * to its binding's own rules. A Markdown refusal and a broken rule are parse failures naming the line or the rule;
-     * a structure breach is a schema violation.
+     * to its binding's own rules. A Markdown refusal and a broken rule are refusals naming the line or the rule, under
+     * the code the registration answers (#554, R2 row 19): {@code prompt_fragment_invalid} for a step enhancement's
+     * prompt fragment, {@code companion} for any other companion. A structure breach is a schema violation.
      */
     private static FileRead<Object> companion(String text, String file, String structure) {
+        ReasonCode code = companionCode(structure);
         return switch (MarkdownCodec.parse(text)) {
             case MarkdownRefusal refusal ->
-                new FileRead.Unreadable<>(file, new ParseFailure(file, refusal.message()), List.of());
+                new FileRead.Unreadable<>(file, ParseFailure.refused(file, refusal.message(), code), List.of());
             case MarkdownCodec.Parsed parsed -> {
                 List<SchemaViolation> violations =
                         PackSchemas.bundled().validateMarkdown(structure, file, parsed.document());
@@ -708,11 +711,28 @@ public final class FileSystemPackInspector implements PackInspector {
                             .ifPresent(binding -> binding.checkCompanion(structure, parsed.document()));
                 } catch (IllegalArgumentException broken) {
                     yield new FileRead.Unreadable<>(
-                            file, new ParseFailure(file, String.valueOf(broken.getMessage())), List.of());
+                            file, ParseFailure.refused(file, String.valueOf(broken.getMessage()), code), List.of());
                 }
                 yield new FileRead.Read<>(file, parsed.document());
             }
         };
+    }
+
+    /** The code of a companion's own refusal, as the registration answers it (#554, R2 row 19). */
+    private static ReasonCode companionCode(String structure) {
+        return StepEnhancementBinding.FRAGMENT_SCHEMA.equals(structure)
+                ? PackCodes.PROMPT_FRAGMENT_INVALID
+                : StorageCodes.COMPANION;
+    }
+
+    /** A companion whose bytes are not text, refused under the companion's code like its other read faults. */
+    private static FileRead.Unreadable<?> coded(FileRead.Unreadable<?> bad, ReasonCode code) {
+        ParseFailure parse = bad.parse();
+        if (parse == null || parse.code().isPresent()) {
+            return bad;
+        }
+        return new FileRead.Unreadable<>(
+                bad.file(), ParseFailure.refused(bad.file(), parse.firstLine(), code), bad.violations());
     }
 
     /** Parses and validates a mapped file that is not read for the load path. */

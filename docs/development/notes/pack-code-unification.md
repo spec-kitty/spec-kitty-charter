@@ -193,5 +193,24 @@ departed from a row or settled an open case, it is recorded here.
 - **A schema keyword with no vocabulary row answers the fixed fallback on both surfaces.** `maxLength` has none, so an
   over-long value reads `<file>: '/id' breaks schema keyword 'maxLength'` (the `pack-id-length` scenarios pin it in
   the composing read's detail). Adding a row is a wording change of its own.
+- **Row 19: a companion's own fault is `companion` on both surfaces** (review cycle 1). Validate mode answered a
+  Markdown companion that does not parse, is not UTF-8 or breaks its kind's rule as `artifact_schema_error`; it now
+  answers `companion`, and a prompt fragment's `prompt_fragment_invalid`, as the registration does. Two differences
+  remain for the one read (WP05, WP12): validate mode places the fault at the companion file (`<companion>: <why>`),
+  the registration at the artifact that names it (`<artifact>: <companion path>: <why>`); and a companion that breaks
+  its structure schema is a schema fault in validate mode (`artifact_schema_error`) but `companion` (`structure:
+  ...`) at registration. No golden subject reaches either.
 - **Severity is the kernel's.** Validate mode's findings, the golden snapshot and the planted `expected.json` files
   spell a violation `violation` where they said `blocking` (ruling 4, M-8). NFR-002 lists it.
+- **Edits outside WP04's owned files** (review cycle 1, MINOR-6), each for the retyping or a row of the table:
+  `PackFinding`, `PackFindingCode`, `PackFindingTest` and `ReservedRefusalCodesTest` (WP13's: retyped, the view
+  narrowed); `WholePackStore` and `DomainRepositoryService` (WP12's: typed kinds, the `invalid` fallback deleted, the
+  descriptor's fault at `pack.yaml`, a repeated id as `duplicate_artifact_id`, a `domain` violation at its file);
+  `PackPolicy`, `RelationshipEndpointRule`, `MissionTypeFacts`, `GraphBinding`, `Precedence` and `Wording` (typed
+  codes, no pack prefix, the parse codes, one asset finding, the slot warning's token); `PackContents.ParseFailure`
+  (an optional code); `FileSystemPackInspector`, `GraphDocumentReader`, `GraphDocumentYaml`, `RelationshipShard`,
+  `ManifestMembership` and `DomainRoundTrip` (refusal codes, one reserved-shard and schema wording); about 45 `:packs`
+  test classes, `SurfaceAnswers`, `GlossaryPlantedRefusalsTest`, `PrecedenceTest` (a lane-merge import),
+  `BuildsFindingDirectly` and `CharterWiringTest`; the scenarios `whole-pack-registration`, `prompt-fragment-refusals`,
+  `offering` and `pack-id-length`; `planted/*/expected.json` (WP01's); `ExamplePacksTest` (WP02's) and
+  `NotHeldValidateTest` (WP11's); and DIV-027 in `docs/conformance/divergences.yaml` and its register page.
