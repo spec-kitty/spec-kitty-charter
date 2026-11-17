@@ -360,7 +360,8 @@ public final class OfferingReadService {
             checkDelegations(composed, facts);
             checkReferences(composed, facts);
             checkStepEnhancementTargets(composed, facts);
-            PackCompositionResolver.refusePresetContests(
+            // Each phase answers its first fault, in the offering's interleaved order (#554, FR-003).
+            PackCompositionResolver.refuseFirst(PackCompositionResolver.presetContests(
                     composed,
                     pack ->
                             Objects.requireNonNull(
@@ -368,7 +369,7 @@ public final class OfferingReadService {
                                     .presets()
                                     .stream()
                                     .map(Preset::id)
-                                    .toList());
+                                    .toList()));
             PackCompositionResolver.refuseCaseOnlyMatches(
                     composed,
                     pack -> mentionsOf(Objects.requireNonNull(

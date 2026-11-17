@@ -268,17 +268,56 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Resolves the compose.
+     * Resolves the compose: the first of its {@linkplain #faults faults} refuses it.
      *
      * @param packs the configured packs with their descriptors
      * @return the closure, dependencies first, each pack once
-     * @throws Refusal when the graph cannot be served
+     * @throws Refusal the first fault {@link #faults} collects, when the graph cannot be served
      * @throws IllegalStateException when a descriptor is not well formed: the resolver decides the graph, not a
      *     descriptor, so a pack whose {@code pack_version} is no PEP 440 version or whose {@code depends_on} range is
      *     no specifier set is {@code pack_unreadable} at the read ({@link DescriptorChecks#findings}, the one
      *     predicate), and never reaches here
      */
     public static List<PackUnderResolution> resolve(List<PackUnderResolution> packs) {
+        Composition composition = compose(packs);
+        refuseFirst(composition.faults());
+        return composition.order();
+    }
+
+    /**
+     * Every composition fault of a set of packs (#554, FR-003), each with the packs it names, in the order the
+     * resolver judges them: every duplicate {@code pack_id}, every duplicate name, every pair of disjoint ranges, then
+     * pack by pack in the stable order its dependencies (a pack that depends on itself, an unknown pack, a version out of
+     * range, a level further from built-in) and its parent (itself, an unknown pack, a level further from built-in),
+     * then every sibling contest, the changed artifacts before the defined ones, then every dependency cycle. The first
+     * is the refusal {@link #resolve} throws. A fault leaves the rest judged: a later check reads the first holder of a
+     * duplicated {@code pack_id}, and an edge to the pack itself or to a pack no one declares orders nothing.
+     *
+     * @param packs the configured packs with their descriptors
+     * @return the faults; empty when the compose resolves
+     * @throws IllegalStateException when a descriptor is not well formed, as {@link #resolve} refuses it
+     */
+    public static List<Refusal> faults(List<PackUnderResolution> packs) {
+        return compose(packs).faults();
+    }
+
+    /**
+     * Throws the first of a set of faults, as a caller that answers one refusal needs: the offering answers the first
+     * fault of each of its phases in turn.
+     *
+     * @param faults the faults, in the order they were judged
+     * @throws Refusal the first, when there is one
+     */
+    public static void refuseFirst(List<Refusal> faults) {
+        if (!faults.isEmpty()) {
+            throw faults.getFirst();
+        }
+    }
+
+    /** What one judgement of a compose found: its faults, and the order of the packs it could place. */
+    private record Composition(List<Refusal> faults, List<PackUnderResolution> order) {}
+
+    private static Composition compose(List<PackUnderResolution> packs) {
         Objects.requireNonNull(packs, "packs");
         for (PackUnderResolution pack : packs) {
             List<PackFinding> findings =
@@ -291,15 +330,25 @@ public final class PackCompositionResolver {
         List<PackUnderResolution> ordered = new ArrayList<>(packs);
         ordered.sort(STABLE_ORDER);
 
-        Map<String, PackUnderResolution> byId = indexById(ordered);
-        indexByName(ordered);
-        refuseDisjointRanges(ordered, byId);
+        List<Refusal> faults = new ArrayList<>(duplicateIds(ordered));
+        Map<String, PackUnderResolution> byId = firstById(ordered);
+        faults.addAll(nameConflicts(ordered));
+        faults.addAll(disjointRanges(ordered, byId));
         Map<String, List<String>> edges = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
-            edges.put(pack.descriptor().packId(), dependenciesOf(pack, byId));
+            List<String> placedAfter = new ArrayList<>();
+            faults.addAll(dependenciesOf(pack, byId, placedAfter));
+            // The first holder of a pack_id is the one the compose places, as byId names it.
+            edges.putIfAbsent(pack.descriptor().packId(), placedAfter);
         }
-        refuseSiblingContests(ordered);
-        return topologicalOrder(ordered, byId, edges);
+        faults.addAll(siblingContests(ordered));
+        Set<String> seen = new HashSet<>();
+        List<PackUnderResolution> distinct = ordered.stream()
+                .filter(pack -> seen.add(pack.descriptor().packId()))
+                .toList();
+        Ordering ordering = topologicalOrder(distinct, byId, edges);
+        faults.addAll(ordering.cycles());
+        return new Composition(List.copyOf(faults), ordering.order());
     }
 
     /**
@@ -614,14 +663,16 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Refuses two packs that ask one pack for ranges no version can satisfy together (ADR-0053 decision 7; the operator
+     * Every two packs that ask one pack for ranges no version can satisfy together (ADR-0053 decision 7; the operator
      * ruling of 2026-11-03): the compose holds one copy of the depended-on pack, so two declarations whose ranges
-     * share no version, including ranges that only touch ({@code <2} and {@code >=2}), cannot both be honoured. The
-     * refusal names both declaring packs and both ranges, and it comes before the held version is checked against
+     * share no version, including ranges that only touch ({@code <2} and {@code >=2}), cannot both be honoured. Each
+     * refusal names both declaring packs and both ranges, and they come before the held version is checked against
      * either range. A range pair that overlaps, even only partly, is fine and is not reported. A dependency on an
      * unknown pack is left to {@link #dependenciesOf}, which refuses it with its own reason.
      */
-    private static void refuseDisjointRanges(List<PackUnderResolution> ordered, Map<String, PackUnderResolution> byId) {
+    private static List<Refusal> disjointRanges(
+            List<PackUnderResolution> ordered, Map<String, PackUnderResolution> byId) {
+        List<Refusal> faults = new ArrayList<>();
         Map<String, List<Declared>> byTarget = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
             for (PackDependency dependency : pack.descriptor().dependencies()) {
@@ -638,7 +689,7 @@ public final class PackCompositionResolver {
                     Declared first = declarations.get(earlier);
                     Declared second = declarations.get(later);
                     if (!Pep440Range.overlaps(first.range(), second.range())) {
-                        throw new Refusal(
+                        faults.add(new Refusal(
                                 Failure.OUT_OF_RANGE,
                                 named(second.pack(), first.pack()),
                                 "packs `" + first.pack().descriptor().name() + "` ("
@@ -647,19 +698,21 @@ public final class PackCompositionResolver {
                                         + second.pack().descriptor().packId() + ") require pack `"
                                         + nameOf(asked.getKey(), byId) + "` (" + asked.getKey() + ") in ranges `"
                                         + first.range() + "` and `" + second.range()
-                                        + "`, which no version satisfies together");
+                                        + "`, which no version satisfies together"));
                     }
                 }
             }
         }
+        return faults;
     }
 
     private record Declared(PackUnderResolution pack, String range) {}
 
     /**
-     * Refuses two packs of one configured level that contest an artifact, unless a pack of the compose declares an
-     * {@code overrides} edge settling it (FR-012; ADR-0048 decision 9, ADR-0053 decision 5): a conflict must be a
-     * decision, not load order. Two packs contest an artifact when both change it (an
+     * Every set of two or more packs of one configured level that contest an artifact, one refusal per artifact and
+     * level, unless a pack of the compose declares an {@code overrides} edge settling it (FR-012; ADR-0048 decision 9,
+     * ADR-0053 decision 5): a conflict must be a decision, not load order. Two packs contest an artifact when both
+     * change it (an
      * {@code overrides} relation on it) or when both define it (each holds an artifact with that id); a definer and an
      * enhancer, or two enhancers, contest nothing (A14, decision {@code DM-01M6RA92BS6GGCYTRCFQDYYY5S}, rule C14), and
      * a settlement names exactly one winner (rule C15). An edge settles
@@ -673,9 +726,10 @@ public final class PackCompositionResolver {
      * <p>Artifacts are compared by their bare URN: a {@code <pack>::} qualifier on a reference or an
      * {@code overrides.artifact} names where it is read, not which artifact it is.
      */
-    private static void refuseSiblingContests(List<PackUnderResolution> ordered) {
-        refuseContests(ordered, PackUnderResolution::changedArtifacts, "change");
-        refuseContests(ordered, PackCompositionResolver::contestableDefinitions, "define");
+    private static List<Refusal> siblingContests(List<PackUnderResolution> ordered) {
+        List<Refusal> faults = new ArrayList<>(contests(ordered, PackUnderResolution::changedArtifacts, "change"));
+        faults.addAll(contests(ordered, PackCompositionResolver::contestableDefinitions, "define"));
+        return faults;
     }
 
     /**
@@ -691,8 +745,9 @@ public final class PackCompositionResolver {
                 .toList();
     }
 
-    private static void refuseContests(
+    private static List<Refusal> contests(
             List<PackUnderResolution> ordered, Function<PackUnderResolution, List<String>> artifactsOf, String verb) {
+        List<Refusal> faults = new ArrayList<>();
         Map<String, List<PackUnderResolution>> contestants = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
             for (String artifact : artifactsOf.apply(pack)) {
@@ -741,29 +796,33 @@ public final class PackCompositionResolver {
                                         + ", which is not a contestant";
                 List<PackUnderResolution> named = new ArrayList<>(siblings);
                 named.addFirst(named.remove(1));
-                throw new Refusal(
+                faults.add(new Refusal(
                         Failure.SIBLING_CONFLICT,
                         named(named.toArray(PackUnderResolution[]::new)),
                         labels(siblings) + " at "
                                 + siblings.getFirst().configured().level().token()
-                                + " both " + verb + " the artifact `" + artifact + "`, and " + reason);
+                                + " both " + verb + " the artifact `" + artifact + "`, and " + reason));
             }
         }
+        return faults;
     }
 
     /**
-     * Refuses two packs of one configured level that hold one preset id and are not related by {@code parent_pack}
-     * (the operator ruling of 2026-11-06, as {@link #refuseSiblingContests} refuses two siblings that contest an
-     * artifact): neither would win by anything but load order. A child and a pack on its {@code parent_pack} line are
-     * related, the child merging after the parent it extends, so its copy takes the place of the parent's. A preset id
-     * held at different levels is no contest: the layer merge applies (ADR-0053 decision 6, ADR-0059 D3), the pack
-     * nearer the project winning. Presets are not artifacts, so no {@code overrides} edge settles a contest.
+     * Every two packs of one configured level that hold one preset id and are not related by {@code parent_pack} (the
+     * operator ruling of 2026-11-06, as {@link #siblingContests} judges two siblings that contest an artifact): neither
+     * would win by anything but load order. A child and a pack on its {@code parent_pack} line are related, the child
+     * merging after the parent it extends, so its copy takes the place of the parent's. A preset id held at different
+     * levels is no contest: the layer merge applies (ADR-0053 decision 6, ADR-0059 D3), the pack nearer the project
+     * winning. Presets are not artifacts, so no {@code overrides} edge settles a contest. The preset ids are composition
+     * facts a {@link PackUnderResolution} does not carry, so this is a phase of its own, which the offering runs after
+     * the references.
      *
      * @param ordered the packs of one compose, in merge order
      * @param presetIdsOf the ids of the presets a pack holds
-     * @throws Refusal {@link Failure#SIBLING_CONFLICT} naming the second contestant first, as the artifact contest does
+     * @return a {@link Failure#SIBLING_CONFLICT} for each contesting pair, by preset id in first-held order, naming the
+     *     second contestant first, as the artifact contest does; empty when there is none
      */
-    public static void refusePresetContests(
+    public static List<Refusal> presetContests(
             List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
         Objects.requireNonNull(ordered, "ordered");
         Objects.requireNonNull(presetIdsOf, "presetIdsOf");
@@ -775,6 +834,7 @@ public final class PackCompositionResolver {
                 holders.computeIfAbsent(presetId, key -> new ArrayList<>()).add(pack);
             }
         }
+        List<Refusal> faults = new ArrayList<>();
         for (Map.Entry<String, List<PackUnderResolution>> held : holders.entrySet()) {
             List<PackUnderResolution> packs = held.getValue();
             for (int later = 1; later < packs.size(); later++) {
@@ -782,16 +842,17 @@ public final class PackCompositionResolver {
                     PackUnderResolution first = packs.get(earlier);
                     PackUnderResolution second = packs.get(later);
                     if (first.configured().level() == second.configured().level() && !related(first, second, byId)) {
-                        throw new Refusal(
+                        faults.add(new Refusal(
                                 Failure.SIBLING_CONFLICT,
                                 named(second, first),
                                 labels(List.of(first, second)) + " at "
                                         + first.configured().level().token() + " both hold the preset `"
-                                        + held.getKey() + "`, and neither extends the other by parent_pack");
+                                        + held.getKey() + "`, and neither extends the other by parent_pack"));
                     }
                 }
             }
         }
+        return faults;
     }
 
     /**
@@ -837,7 +898,7 @@ public final class PackCompositionResolver {
         }
     }
 
-    /** Whether one pack is on the other's {@code parent_pack} line. A cycle was refused before, so the walk ends. */
+    /** Whether one pack is on the other's {@code parent_pack} line. The walk visits each pack once, so a cycle ends it. */
     private static boolean related(
             PackUnderResolution first, PackUnderResolution second, Map<String, PackUnderResolution> byId) {
         return extendsOnLine(first, second, byId) || extendsOnLine(second, first, byId);
@@ -887,68 +948,116 @@ public final class PackCompositionResolver {
         return byId;
     }
 
-    private static void indexByName(List<PackUnderResolution> packs) {
+    /**
+     * Every pack whose descriptor declares a {@code pack_id} an earlier pack of the stable order declares, each named
+     * with the first holder.
+     */
+    private static List<Refusal> duplicateIds(List<PackUnderResolution> ordered) {
+        List<Refusal> faults = new ArrayList<>();
+        Map<String, PackUnderResolution> byId = new HashMap<>();
+        for (PackUnderResolution pack : ordered) {
+            PackUnderResolution previous = byId.putIfAbsent(pack.descriptor().packId(), pack);
+            if (previous != null) {
+                faults.add(new Refusal(
+                        Failure.DUPLICATE_ID,
+                        named(pack, previous),
+                        labels(List.of(previous, pack)) + " both declare the pack_id "
+                                + pack.descriptor().packId()));
+            }
+        }
+        return faults;
+    }
+
+    /** The packs by descriptor {@code pack_id}, the first holder of a duplicated id standing for it. */
+    private static Map<String, PackUnderResolution> firstById(List<PackUnderResolution> ordered) {
+        Map<String, PackUnderResolution> byId = new HashMap<>();
+        ordered.forEach(pack -> byId.putIfAbsent(pack.descriptor().packId(), pack));
+        return byId;
+    }
+
+    /** Every pack that declares a name an earlier pack of the stable order declares, each named with the first. */
+    private static List<Refusal> nameConflicts(List<PackUnderResolution> ordered) {
+        List<Refusal> faults = new ArrayList<>();
         Map<String, PackUnderResolution> byName = new HashMap<>();
-        for (PackUnderResolution pack : packs) {
+        for (PackUnderResolution pack : ordered) {
             String name = pack.descriptor().name();
             PackUnderResolution previous = byName.putIfAbsent(name, pack);
             if (previous != null) {
-                throw new Refusal(
+                faults.add(new Refusal(
                         Failure.NAME_CONFLICT,
                         named(pack, previous),
-                        labels(List.of(previous, pack)) + " both declare the name `" + name + "`");
+                        labels(List.of(previous, pack)) + " both declare the name `" + name + "`"));
             }
         }
+        return faults;
     }
 
     /**
-     * The packs one pack must be placed after: its {@code depends_on} targets and its {@code parent_pack}, each checked
-     * as the compose checks it. Both are edges of the order and of the cycle check, so a parent cycle, a pack that
-     * names itself as parent included, is {@link Failure#CYCLE}.
+     * Judges the edges one pack must be placed after: its {@code depends_on} targets and its {@code parent_pack}, each
+     * checked as the compose checks it, in that order. Both are edges of the order and of the cycle check, so a parent
+     * cycle is {@link Failure#CYCLE}. An edge to a pack that is there, out of range or at a level further from
+     * built-in included, joins {@code placedAfter}; an edge to the pack itself or to a pack no one declares does not,
+     * since it is refused on its own and orders nothing.
+     *
+     * @param pack the pack
+     * @param byId the packs of the compose, by descriptor {@code pack_id}
+     * @param placedAfter receives the {@code pack_id}s the pack is placed after
+     * @return the faults of its edges
      */
-    private static List<String> dependenciesOf(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
-        List<String> dependencies = new ArrayList<>();
+    private static List<Refusal> dependenciesOf(
+            PackUnderResolution pack, Map<String, PackUnderResolution> byId, List<String> placedAfter) {
+        List<Refusal> faults = new ArrayList<>();
         for (PackDependency dependency : pack.descriptor().dependencies()) {
             String targetId = dependency.packId();
             if (targetId.equals(pack.descriptor().packId())) {
-                throw new Refusal(Failure.CYCLE, named(pack), label(pack) + " depends on itself");
+                faults.add(new Refusal(Failure.CYCLE, named(pack), label(pack) + " depends on itself"));
+                continue;
             }
             PackUnderResolution target = byId.get(targetId);
             if (target == null) {
-                throw new Refusal(
+                faults.add(new Refusal(
                         Failure.UNKNOWN_DEPENDENCY,
                         named(pack),
-                        label(pack) + " depends on pack `" + targetId + "`, which no configured pack declares");
+                        label(pack) + " depends on pack `" + targetId + "`, which no configured pack declares"));
+                continue;
             }
             if (!admits(dependency, target)) {
-                throw new Refusal(
+                faults.add(new Refusal(
                         Failure.OUT_OF_RANGE,
                         named(pack, target),
                         label(pack) + " requires " + label(target) + " in range `" + dependency.range()
                                 + "`, but `" + target.descriptor().name() + "` is at version "
-                                + target.descriptor().packVersion());
+                                + target.descriptor().packVersion()));
             }
-            requireLevel(pack, target, false);
-            dependencies.add(targetId);
+            levelViolation(pack, target, false).ifPresent(faults::add);
+            placedAfter.add(targetId);
         }
-        pack.descriptor().parentPack().ifPresent(parent -> {
-            if (parent.equals(pack.descriptor().packId())) {
-                throw new Refusal(Failure.CYCLE, named(pack), label(pack) + " names itself as its parent_pack");
-            }
-            PackUnderResolution parentPack = byId.get(parent);
-            if (parentPack == null) {
-                throw new Refusal(
-                        Failure.PARENT_UNRESOLVED,
-                        named(pack),
-                        label(pack) + " names parent_pack `" + parent + "`, which no configured pack declares");
-            }
-            requireLevel(pack, parentPack, true);
-            // The parent is an ordering and cycle edge as a dependency is: the child merges after the pack it extends.
-            if (!dependencies.contains(parent)) {
-                dependencies.add(parent);
-            }
-        });
-        return dependencies;
+        Optional<String> parent = pack.descriptor().parentPack();
+        if (parent.isPresent()) {
+            parentFault(pack, parent.get(), byId, placedAfter).ifPresent(faults::add);
+        }
+        return faults;
+    }
+
+    /** The fault of a pack's {@code parent_pack} edge, if any; the parent, when it is there, joins the order. */
+    private static Optional<Refusal> parentFault(
+            PackUnderResolution pack, String parent, Map<String, PackUnderResolution> byId, List<String> placedAfter) {
+        if (parent.equals(pack.descriptor().packId())) {
+            return Optional.of(
+                    new Refusal(Failure.CYCLE, named(pack), label(pack) + " names itself as its parent_pack"));
+        }
+        PackUnderResolution parentPack = byId.get(parent);
+        if (parentPack == null) {
+            return Optional.of(new Refusal(
+                    Failure.PARENT_UNRESOLVED,
+                    named(pack),
+                    label(pack) + " names parent_pack `" + parent + "`, which no configured pack declares"));
+        }
+        // The parent is an ordering and cycle edge as a dependency is: the child merges after the pack it extends.
+        if (!placedAfter.contains(parent)) {
+            placedAfter.add(parent);
+        }
+        return levelViolation(pack, parentPack, true);
     }
 
     private static boolean admits(PackDependency dependency, PackUnderResolution target) {
@@ -959,19 +1068,21 @@ public final class PackCompositionResolver {
      * A pack may take a dependency or a parent only at its own level or one nearer built-in (ADR-0048 decision 7); the
      * levels run built-in, org, project, and a pack at one level reaches no pack further from built-in than itself.
      */
-    private static void requireLevel(PackUnderResolution pack, PackUnderResolution target, boolean parentEdge) {
+    private static Optional<Refusal> levelViolation(
+            PackUnderResolution pack, PackUnderResolution target, boolean parentEdge) {
         PackLevel own = pack.configured().level();
         PackLevel targetLevel = target.configured().level();
-        if (rank(targetLevel) > rank(own)) {
-            String edge = parentEdge
-                    ? " names " + label(target) + " at " + targetLevel.token() + " as its parent_pack"
-                    : " depends on " + label(target) + " at " + targetLevel.token();
-            throw new Refusal(
-                    Failure.LEVEL_VIOLATION,
-                    named(pack, target),
-                    label(pack) + " at " + own.token() + edge
-                            + "; a pack may take a dependency or a parent only at its own level or one nearer built-in");
+        if (rank(targetLevel) <= rank(own)) {
+            return Optional.empty();
         }
+        String edge = parentEdge
+                ? " names " + label(target) + " at " + targetLevel.token() + " as its parent_pack"
+                : " depends on " + label(target) + " at " + targetLevel.token();
+        return Optional.of(new Refusal(
+                Failure.LEVEL_VIOLATION,
+                named(pack, target),
+                label(pack) + " at " + own.token() + edge
+                        + "; a pack may take a dependency or a parent only at its own level or one nearer built-in"));
     }
 
     private static int rank(PackLevel level) {
@@ -982,7 +1093,10 @@ public final class PackCompositionResolver {
         };
     }
 
-    private static List<PackUnderResolution> topologicalOrder(
+    /** The packs Kahn's pass placed, in merge order, and a {@link Failure#CYCLE} for each cycle it left behind. */
+    private record Ordering(List<PackUnderResolution> order, List<Refusal> cycles) {}
+
+    private static Ordering topologicalOrder(
             List<PackUnderResolution> packs,
             Map<String, PackUnderResolution> byId,
             Map<String, List<String>> dependenciesByPack) {
@@ -1017,47 +1131,59 @@ public final class PackCompositionResolver {
                 }
             }
         }
+        List<Refusal> cycles = new ArrayList<>();
         if (ordered.size() != packs.size()) {
-            List<PackUnderResolution> cycle = cycleOf(ordered, byId, dependenciesByPack);
-            String path = cycle.stream()
-                    .map(member -> "`" + member.descriptor().name() + "`")
-                    .collect(java.util.stream.Collectors.joining(" -> "));
-            throw new Refusal(
-                    Failure.CYCLE,
-                    named(cycle.toArray(PackUnderResolution[]::new)),
-                    label(cycle.getFirst()) + " is on a dependency cycle: " + path + " -> `"
-                            + cycle.getFirst().descriptor().name() + "`");
+            for (List<PackUnderResolution> cycle : cyclesOf(ordered, byId, dependenciesByPack)) {
+                String path = cycle.stream()
+                        .map(member -> "`" + member.descriptor().name() + "`")
+                        .collect(java.util.stream.Collectors.joining(" -> "));
+                cycles.add(new Refusal(
+                        Failure.CYCLE,
+                        named(cycle.toArray(PackUnderResolution[]::new)),
+                        label(cycle.getFirst()) + " is on a dependency cycle: " + path + " -> `"
+                                + cycle.getFirst().descriptor().name() + "`"));
+            }
         }
-        return List.copyOf(ordered);
+        return new Ordering(List.copyOf(ordered), cycles);
     }
 
     /**
-     * The packs of one cycle, starting at a pack on it. What Kahn's pass leaves behind is the cycles and everything
-     * downstream of them, and the first leftover in the stable order may be only downstream. Every leftover has an
-     * unplaced dependency, so walking from one along unplaced dependencies must repeat a pack, and the walk from the
-     * first repeat back to it is the cycle.
+     * The cycles Kahn's pass left behind, each starting at a pack on it. What the pass leaves is the cycles and
+     * everything downstream of them, and a leftover may be only downstream. Every leftover has an unplaced dependency,
+     * so walking from one along its first unplaced dependency must repeat a pack, and the walk from the first repeat back
+     * to it is a cycle. The walks start at each leftover in turn, in the order the packs were judged; a walk that reaches
+     * a pack an earlier walk visited finds no new cycle, so each cycle is reported once, from the first leftover that
+     * leads to it.
      */
-    private static List<PackUnderResolution> cycleOf(
+    private static List<List<PackUnderResolution>> cyclesOf(
             List<PackUnderResolution> placed,
             Map<String, PackUnderResolution> byId,
             Map<String, List<String>> dependenciesByPack) {
-        Set<String> done = new LinkedHashSet<>();
+        Set<String> done = new HashSet<>();
         placed.forEach(pack -> done.add(pack.descriptor().packId()));
-        String current = dependenciesByPack.keySet().stream()
-                .filter(id -> !done.contains(id))
-                .findFirst()
-                .orElseThrow();
-        Set<String> walked = new LinkedHashSet<>();
-        while (walked.add(current)) {
-            current = dependenciesByPack.getOrDefault(current, List.of()).stream()
-                    .filter(id -> !done.contains(id))
-                    .findFirst()
-                    .orElseThrow();
+        Set<String> visited = new HashSet<>();
+        List<List<PackUnderResolution>> cycles = new ArrayList<>();
+        for (String start : dependenciesByPack.keySet()) {
+            if (done.contains(start) || visited.contains(start)) {
+                continue;
+            }
+            Set<String> walked = new LinkedHashSet<>();
+            String current = start;
+            while (!visited.contains(current) && walked.add(current)) {
+                current = dependenciesByPack.getOrDefault(current, List.of()).stream()
+                        .filter(id -> !done.contains(id))
+                        .findFirst()
+                        .orElseThrow();
+            }
+            if (walked.contains(current) && !visited.contains(current)) {
+                List<String> path = new ArrayList<>(walked);
+                cycles.add(path.subList(path.indexOf(current), path.size()).stream()
+                        .map(id -> Objects.requireNonNull(byId.get(id), "a leftover pack is in the compose"))
+                        .toList());
+            }
+            visited.addAll(walked);
         }
-        List<String> path = new ArrayList<>(walked);
-        return path.subList(path.indexOf(current), path.size()).stream()
-                .map(id -> Objects.requireNonNull(byId.get(id), "a leftover pack is in the compose"))
-                .toList();
+        return cycles;
     }
 
     // ---- how a refusal names a pack -----------------------------------------------------------------------------
