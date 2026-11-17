@@ -1,10 +1,9 @@
 package ai.speckitty.charter.packs.infra.storage.rules;
 
-import ai.speckitty.charter.kernel.validation.Evaluation;
-import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Rule;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import java.util.List;
 
 /**
@@ -41,11 +40,6 @@ public final class ReservedShardRules {
         if (read.census().reservedShard() != TreeCensus.ReservedShard.UNSTAMPED) {
             return List.of();
         }
-        return List.of(new Reason(
-                StorageCodes.RESERVED_SHARD.value(),
-                Evaluation.FAIL,
-                StorageCodes.RESERVED_SHARD,
-                Location.in(SHARD),
-                RESERVED));
+        return List.of(Findings.at(StorageCodes.RESERVED_SHARD, SHARD, List.of(), RESERVED));
     }
 }

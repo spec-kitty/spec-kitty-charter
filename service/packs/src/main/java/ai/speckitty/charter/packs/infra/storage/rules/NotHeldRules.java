@@ -1,11 +1,10 @@
 package ai.speckitty.charter.packs.infra.storage.rules;
 
-import ai.speckitty.charter.kernel.validation.Evaluation;
-import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import java.util.List;
 
 /**
@@ -38,11 +37,6 @@ public final class NotHeldRules {
      * @return the {@link StorageCodes#FILE_NOT_HELD} warning at it
      */
     static Reason warning(NotHeldFile file) {
-        return new Reason(
-                StorageCodes.FILE_NOT_HELD.value(),
-                Evaluation.FAIL,
-                StorageCodes.FILE_NOT_HELD,
-                Location.in(file.path()),
-                file.detail());
+        return Findings.at(StorageCodes.FILE_NOT_HELD, file.path(), List.of(), file.detail());
     }
 }

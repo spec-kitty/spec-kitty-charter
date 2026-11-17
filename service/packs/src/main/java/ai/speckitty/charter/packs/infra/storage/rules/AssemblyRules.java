@@ -2,8 +2,6 @@ package ai.speckitty.charter.packs.infra.storage.rules;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.validation.Evaluation;
-import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -12,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -63,12 +62,7 @@ public final class AssemblyRules {
         ReasonCode code = refused.code() == RefusalCode.PACK_UNREADABLE
                 ? StorageCodes.PACK_UNREADABLE
                 : StorageCodes.ASSEMBLY_REFUSED;
-        Reason reason = new Reason(
-                code.value(),
-                Evaluation.FAIL,
-                code,
-                Location.in(refused.atDescriptor() ? DESCRIPTOR : PACK),
-                refused.message());
+        Reason reason = Findings.at(code, refused.atDescriptor() ? DESCRIPTOR : PACK, List.of(), refused.message());
         return read.readFaults().contains(reason) ? List.of() : List.of(reason);
     }
 
@@ -310,7 +304,7 @@ public final class AssemblyRules {
     }
 
     private static Reason fault(ReasonCode code, String file, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), detail);
+        return Findings.at(code, file, List.of(), detail);
     }
 
     /**

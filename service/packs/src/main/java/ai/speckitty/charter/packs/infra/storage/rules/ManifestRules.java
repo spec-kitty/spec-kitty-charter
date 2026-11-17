@@ -1,12 +1,11 @@
 package ai.speckitty.charter.packs.infra.storage.rules;
 
-import ai.speckitty.charter.kernel.validation.Evaluation;
-import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -135,6 +134,6 @@ public final class ManifestRules {
 
     /** A failing reason at the manifest, in the one wording ({@link PackCodes#detail}). */
     private static Reason at(ReasonCode code, String reason) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(FILE), PackCodes.detail(FILE, reason));
+        return Findings.at(code, FILE, List.of(), PackCodes.detail(FILE, reason));
     }
 }

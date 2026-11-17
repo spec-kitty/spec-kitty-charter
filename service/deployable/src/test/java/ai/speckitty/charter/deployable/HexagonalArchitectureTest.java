@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
+import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -1954,6 +1955,9 @@ class HexagonalArchitectureTest {
         PlacementCodes.class.getName()
     };
 
+    /** The round trip's verdict rule, which builds the two tokens of its own verdict (#578), not pack tokens. */
+    private static final String ROUND_TRIP_RULE = WholePackRoundTripRule.class.getName();
+
     /** A call of {@code ReasonCode}'s constructor or of {@code ReasonCode.of}, or a reference to either: a code built. */
     private static final DescribedPredicate<JavaAccess<?>> BUILDS_A_REASON_CODE = DescribedPredicate.describe(
             "build a ReasonCode",
@@ -1964,15 +1968,16 @@ class HexagonalArchitectureTest {
      * PACK_CODES_HAVE_ONE_OWNER (#554, squad finding P6, reworded): each pack token is built exactly once, in
      * {@code PackCodes} (the domain's), {@code StorageCodes} (the storage edge's) or {@code PlacementCodes} (the
      * validation edge's placement, Q7); no other class of the packs slice or of {@code pack-validation} builds a
-     * {@code ReasonCode}, so a token cannot be spelled twice. The round trip's verdict ({@code packvalidation.roundtrip},
-     * #578) builds the two tokens of its own verdict, which name no pack fault, and is not a subject.
+     * {@code ReasonCode}, so a token cannot be spelled twice. The round trip's verdict rule ({@code
+     * WholePackRoundTripRule}, #578) builds the two tokens of its own verdict, which name no pack fault, and is the one
+     * class left out (WP13 review m2): any other class of {@code packvalidation.roundtrip} is a subject.
      */
     private static ArchRule packCodesHaveOneOwner(String... packages) {
         return noClasses()
                 .that()
                 .resideInAnyPackage(packages)
                 .and()
-                .resideOutsideOfPackage(ROOT + ".packvalidation.roundtrip..")
+                .doNotHaveFullyQualifiedName(ROUND_TRIP_RULE)
                 .and(DescribedPredicate.not(namedWithPrefix(PACK_CODE_OWNERS)))
                 .should()
                 .accessTargetWhere(BUILDS_A_REASON_CODE)
@@ -2036,7 +2041,9 @@ class HexagonalArchitectureTest {
                 ROOT + ".deployable.packlevelfixture",
                 "RuleReadsAFile",
                 "java.nio.file.Files",
-                "StorageCodes");
+                "StorageCodes",
+                "RuleReadsAStream",
+                "java.io.InputStream");
     }
 
     /** A class of the storage edge outside its rules package. */
@@ -2090,11 +2097,14 @@ class HexagonalArchitectureTest {
                 storageRulesAreFrameworkFree(ROOT + ".deployable.packlevelfixture.."),
                 ROOT + ".deployable.packlevelfixture",
                 "StorageRuleNamesSpring",
-                "org.springframework.stereotype.Component");
+                "org.springframework.stereotype.Component",
+                "StorageRuleNamesAStorageClass",
+                "ai.speckitty.charter.packs.infra.storage.PackLayout");
         assertBites(
                 storageRulesReachNoFramework(ROOT + ".deployable.packlevelfixture.."),
                 ROOT + ".deployable.packlevelfixture",
-                "StorageRuleNamesSpring reaches org.springframework.stereotype.Component");
+                "StorageRuleNamesSpring reaches org.springframework.stereotype.Component",
+                "StorageRuleNamesAStorageClass reaches ai.speckitty.charter.packs.infra.storage.PackLayout");
     }
 
     /**

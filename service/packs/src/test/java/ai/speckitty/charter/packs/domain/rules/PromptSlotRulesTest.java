@@ -16,10 +16,15 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.PromptSlotFacts;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
+import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Expected;
+import ai.speckitty.charter.packs.domain.rules.PlantedFixtures.Planted;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("PromptSlotRules (#554, T037)")
 class PromptSlotRulesTest {
@@ -138,5 +143,33 @@ class PromptSlotRulesTest {
                         org.assertj.core.groups.Tuple.tuple(REVIEW, PackCodes.PROMPT_SLOT_NOT_EMPTY),
                         org.assertj.core.groups.Tuple.tuple(REVIEW, PackCodes.PROMPT_SLOT_MALFORMED),
                         org.assertj.core.groups.Tuple.tuple(PLAN, PackCodes.PROMPT_SLOT_MALFORMED));
+    }
+
+    /** The tokens of the rule's three codes; the slot's violation and its warning share one token. */
+    private static final Set<String> TOKENS = Set.copyOf(List.of(
+            PackCodes.PROMPT_SLOT_MALFORMED.value(),
+            PackCodes.PROMPT_SLOT_NOT_EMPTY.value(),
+            PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING.value()));
+
+    /**
+     * Every plant with an {@code expected.json}. None plants a prompt slot fault today (a new plant would add golden
+     * rows), so the oracle pins that the rule finds nothing the plants do not expect; the hand-written facts above pin
+     * each code's finding.
+     */
+    static List<Planted> withExpectations() {
+        return PlantedFixtures.all().stream()
+                .filter(planted -> planted.expected().isPresent())
+                .toList();
+    }
+
+    @ParameterizedTest
+    @MethodSource("withExpectations")
+    @DisplayName("a plant's expected.json is the oracle of the rule's findings")
+    void thePlantsExpectedFindingsAreTheOracle(Planted planted) {
+        assertThat(PromptSlotRules.RULES.apply(planted.contents()))
+                .extracting(Expected::of)
+                .containsExactlyElementsOf(planted.expected().orElseThrow().stream()
+                        .filter(expected -> TOKENS.contains(expected.code()))
+                        .toList());
     }
 }

@@ -409,6 +409,11 @@ class VocabularyEqualityTest {
      * warning is a diagnostic, by its token, as the registration's mapper answers it ({@code PackRefusals}); a violation
      * whose token a refusal code spells is that refusal code. The codes are the three owners' ({@link PackCodes},
      * {@link StorageCodes}, {@link PlacementCodes}), each built once.
+     *
+     * <p>Only the warning half asserts something new (WP13 review N2): a warning no diagnostic code spells fails. The
+     * violation half projects only the tokens a {@link RefusalCode} already spells, and {@code WireTokenParityTest}
+     * already pins every {@link RefusalCode} token to {@code CharterRefusalCode}, so it repeats that parity for the
+     * refusal codes a pack code names.
      */
     @Test
     void everyPackWireTokenIsInTheContractsCodeEnums() throws IOException {
