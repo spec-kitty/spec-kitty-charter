@@ -35,8 +35,8 @@ class TreeCensusTest {
     @DisplayName("the census copies its lists, and a manifest that is a regular file is present")
     void theCensusHoldsItsInvariants() {
         List<NotHeldFile> notHeld = new ArrayList<>(List.of(NotHeldFile.unmodelled("notes.txt")));
-        TreeCensus census =
-                new TreeCensus(List.of(), notHeld, TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT);
+        TreeCensus census = new TreeCensus(
+                List.of(), notHeld, TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT, List.of(), List.of());
         notHeld.clear();
 
         assertThat(census.notHeld()).containsExactly(NotHeldFile.unmodelled("notes.txt"));

@@ -80,14 +80,14 @@ class PackFileSetBudgetTest {
 
     @Test
     @Timeout(HANG_CAP_SECONDS)
-    void theLoadChecksAreWithinBudget() {
+    void theWholePackLoadsAreWithinBudget() {
         long start = cpuNanos();
         for (GeneratedPackTree tree : TREES) {
             PackFileSetExactnessTest.assertLoadIsExact(tree);
         }
-        long spent = report("the load checks", cpuNanos() - start);
+        long spent = report("the whole-pack loads", cpuNanos() - start);
         assertThat(spent)
-                .as("CPU time of the load checks over %d trees", TREES.size())
+                .as("CPU time of the whole-pack loads over %d trees", TREES.size())
                 .isLessThan(CPU_BUDGET_NANOS);
     }
 

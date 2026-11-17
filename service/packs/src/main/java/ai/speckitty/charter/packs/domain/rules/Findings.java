@@ -4,14 +4,16 @@ import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * How a content rule states one finding (#554, FR-001): a failing kernel {@link Reason} of its code, at its file and
- * the place in it as a JSON pointer (RFC 6901), with the detail the rule wrote. The rule's description is the code's
- * token, as the one reader states its read faults, so a finding reads the same whichever owner states it.
+ * How a pack fault is stated (#554, FR-001): a failing kernel {@link Reason} of its code, at its file and the place in
+ * it as a JSON pointer (RFC 6901), with the detail its owner wrote. The description is the code's token. The content
+ * rules, the graph binding and the one reader all state their faults through here, so a finding reads the same
+ * whichever owner states it, and the pointer is encoded, and decoded, in one place.
  */
-final class Findings {
+public final class Findings {
 
     private Findings() {}
 
@@ -24,7 +26,7 @@ final class Findings {
      * @param detail what the rule says about this fault
      * @return the failing reason
      */
-    static Reason at(ReasonCode code, String file, List<String> place, String detail) {
+    public static Reason at(ReasonCode code, String file, List<String> place, String detail) {
         Location where = Location.in(file);
         if (!place.isEmpty()) {
             StringBuilder pointer = new StringBuilder();
@@ -33,5 +35,23 @@ final class Findings {
             where = where.at(pointer.toString());
         }
         return new Reason(code.value(), Evaluation.FAIL, code, where, detail);
+    }
+
+    /**
+     * The place a finding's pointer names: the segments of a JSON pointer (RFC 6901), decoded, the inverse of
+     * {@link #at}'s encoding.
+     *
+     * @param pointer the pointer; empty for the whole file
+     * @return the segments; none for the whole file
+     */
+    public static List<String> segments(String pointer) {
+        if (pointer.isEmpty()) {
+            return List.of();
+        }
+        List<String> segments = new ArrayList<>();
+        for (String segment : pointer.substring(1).split("/", -1)) {
+            segments.add(segment.replace("~1", "/").replace("~0", "~"));
+        }
+        return segments;
     }
 }

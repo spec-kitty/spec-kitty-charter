@@ -6,8 +6,6 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -34,9 +32,9 @@ import java.util.Set;
  * graph rules, which refuse them on their own. An {@code in_tension_with} edge joins two guidance kinds
  * ({@link EndpointRule#bindTension}).
  *
- * <p>The load records each fault as a violation of the pack at its graph document, so a registration lists one
- * violation per edge inside {@code 422 validation_failed} and a composing read answers {@code 500 pack_unreadable}
- * naming the document. Validate mode reports the same fault as a blocking finding at the edge. It is pure.
+ * <p>The content rule ({@code GraphRules}) states each refusal as a finding at the edge, so a registration and validate
+ * mode list one per edge; the store half records the same refusal at the graph document, so a composing read answers
+ * {@code pack_unreadable} naming it. It is pure.
  */
 public final class RelationshipEndpointRule {
 
@@ -183,32 +181,6 @@ public final class RelationshipEndpointRule {
             return Optional.empty();
         }
         return binding instanceof EndpointRule.Fault fault ? Optional.of(fault.message()) : Optional.empty();
-    }
-
-    /**
-     * Judges a pack's edges.
-     *
-     * @param edges the edges of the pack's graph documents, in document order
-     * @param scope the pack
-     * @return one violation per refused edge, at its graph document, under the fault's code: first every
-     *     {@value EndpointRule#OVERRIDES_SOURCE_NOT_ACTIVATABLE} in the order of the edges, then every {@value #CODE}
-     */
-    public static List<PackElementViolation> violations(List<Edge> edges, Scope scope) {
-        List<PackElementViolation> sources = new ArrayList<>();
-        List<PackElementViolation> table = new ArrayList<>();
-        for (Edge edge : edges) {
-            refusal(edge, scope)
-                    .ifPresent(refused -> (CODE.equals(refused.code()) ? table : sources)
-                            .add(new PackElementViolation(
-                                    edge.file(),
-                                    CODE.equals(refused.code())
-                                            ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
-                                            : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
-                                    refused.reason())));
-        }
-        List<PackElementViolation> out = new ArrayList<>(sources);
-        out.addAll(table);
-        return List.copyOf(out);
     }
 
     /** Only a bare pair is a self-loop: a qualifier names another pack's artifact of the same id (ADR-0053 D7). */

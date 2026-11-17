@@ -252,19 +252,6 @@ class MissionTypeRulesTest {
         return PlantedFixtures.all();
     }
 
-    @ParameterizedTest
-    @MethodSource("planted")
-    @DisplayName("over every planted and example pack, the rules find what today's validate mode finds")
-    void theRulesFindWhatValidateModeFinds(Planted planted) {
-        assertThat(MissionTypeRules.RULES.apply(planted.contents()))
-                .containsExactlyInAnyOrderElementsOf(PlantedFixtures.policyFindings(
-                        planted,
-                        Set.of(
-                                PackCodes.MISSION_STEP_UNLINKED,
-                                PackCodes.SUBSTEP_DELEGATION_UNRESOLVED,
-                                PackCodes.SUBSTEP_DELEGATION_UNSCOPED)));
-    }
-
     static List<Planted> expecting() {
         return PlantedFixtures.expecting(CODES);
     }

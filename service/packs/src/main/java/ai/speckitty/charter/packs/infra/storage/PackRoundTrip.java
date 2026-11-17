@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.domain.roundtrip.Reading;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -89,7 +90,8 @@ public final class PackRoundTrip {
      * @return what the round trip observed
      */
     static PackRoundTripResult run(WholePackRoundTrip roundTrip, Path source, Path target) {
-        return run(roundTrip, source, target, WholePackCensus.of(source), WholePackCensus.formsOf(source));
+        TreeCensus census = WholePackCensus.census(source);
+        return run(roundTrip, source, target, WholePackCensus.kinds(census), WholePackCensus.formsOf(census));
     }
 
     /**

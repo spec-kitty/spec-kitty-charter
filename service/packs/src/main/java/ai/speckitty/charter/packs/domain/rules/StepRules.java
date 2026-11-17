@@ -34,7 +34,14 @@ public final class StepRules {
 
     private StepRules() {}
 
-    static List<Reason> repeatedSubstepIds(MissionTypeFacts type) {
+    /**
+     * The repeated substep ids of one mission type: the rule's function, which the store half also records on the
+     * aggregate for the composing read (S7).
+     *
+     * @param type the facts of one mission type
+     * @return one finding per repeated id, at its second occurrence, in written order
+     */
+    public static List<Reason> repeatedSubstepIds(MissionTypeFacts type) {
         List<Reason> findings = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         Set<String> reported = new HashSet<>();

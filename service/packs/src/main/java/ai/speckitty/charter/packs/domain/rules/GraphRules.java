@@ -8,7 +8,6 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import java.util.ArrayList;
@@ -54,9 +53,7 @@ public final class GraphRules {
     static List<Reason> unbound(PackContents contents) {
         List<Reason> findings = new ArrayList<>();
         for (RawGraph raw : read(contents)) {
-            GraphBinding.graph(contents.root().name(), raw).findings().stream()
-                    .map(PackFinding::reason)
-                    .forEach(findings::add);
+            findings.addAll(GraphBinding.graph(contents.root().name(), raw).findings());
         }
         return findings;
     }
@@ -85,7 +82,7 @@ public final class GraphRules {
                                             : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
                                     raw.file(),
                                     List.of(EDGES, Integer.toString(i)),
-                                    Wording.origin(contents.root().name(), raw.file()) + ": "
+                                    Paths.origin(contents.root().name(), raw.file()) + ": "
                                             + refusal.get().reason()));
                 }
             }

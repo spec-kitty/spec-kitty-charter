@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.validation.Reason;
-import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
@@ -91,8 +90,7 @@ class ValidateGoldenTest {
 
         List<String> notHeld = new FileSystemPackInspector()
                 .read(new PackRoot(subject.name(), subject.configuredLevel(), pack.toString())).notHeld().stream()
-                        .map(NotHeldFile::finding)
-                        .map(finding -> normaliser.apply(finding.detail()))
+                        .map(file -> normaliser.apply(file.detail()))
                         .toList();
         List<String> warned = new ArrayList<>();
         recorded.path("findings").forEach(row -> {

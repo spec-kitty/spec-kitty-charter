@@ -8,7 +8,6 @@ import static ai.speckitty.charter.packs.domain.rules.Paths.isFragment;
 
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -53,8 +52,8 @@ public final class Precedence {
                 .thenComparing(reason -> reason.location().file(), Precedence::comparePaths)
                 .thenComparing((a, b) -> comparePlaces(
                         a.location().file(),
-                        segments(a.location().pointer()),
-                        segments(b.location().pointer())));
+                        Findings.segments(a.location().pointer()),
+                        Findings.segments(b.location().pointer())));
     }
 
     /**
@@ -77,18 +76,6 @@ public final class Precedence {
             return 3;
         }
         return file.endsWith(".graph.yaml") && file.indexOf('/') < 0 ? 2 : 5;
-    }
-
-    /** The segments of a JSON pointer (RFC 6901), decoded; none for the whole file. */
-    static List<String> segments(String pointer) {
-        if (pointer.isEmpty()) {
-            return List.of();
-        }
-        List<String> segments = new ArrayList<>();
-        for (String segment : pointer.substring(1).split("/", -1)) {
-            segments.add(segment.replace("~1", "/").replace("~0", "~"));
-        }
-        return segments;
     }
 
     /**

@@ -6,8 +6,6 @@ import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -30,46 +28,42 @@ class DescriptorChecksTest {
 
     @Test
     void aWellFormedDescriptorHasNoFinding() {
-        assertThat(DescriptorChecks.findings("qa", descriptor("1.0.0", Optional.of(">=3.2"), ">=1.0,<2")))
+        assertThat(DescriptorChecks.faults("qa", descriptor("1.0.0", Optional.of(">=3.2"), ">=1.0,<2")))
                 .isEmpty();
     }
 
     @Test
     void anAbsentRequiresCoreIsNoFinding() {
-        assertThat(DescriptorChecks.findings("qa", descriptor("1.0.0", Optional.empty())))
+        assertThat(DescriptorChecks.faults("qa", descriptor("1.0.0", Optional.empty())))
                 .isEmpty();
     }
 
     @Test
     void eachMalformedValueIsOneFindingAtItsPlaceInDeclarationOrder() {
-        assertThat(DescriptorChecks.findings("qa", descriptor("one", Optional.of("banana"), ">=1.0,<2", "nope", "~=1")))
+        assertThat(DescriptorChecks.faults("qa", descriptor("one", Optional.of("banana"), ">=1.0,<2", "nope", "~=1")))
                 .containsExactly(
-                        new PackFinding(
-                                PackFindingCode.REQUIRES_CORE_INVALID,
-                                "pack.yaml",
+                        new DescriptorChecks.Fault(
+                                DescriptorChecks.Check.REQUIRES_CORE,
                                 List.of("requires_core"),
                                 "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"),
-                        new PackFinding(
-                                PackFindingCode.PACK_VERSION_INVALID,
-                                "pack.yaml",
+                        new DescriptorChecks.Fault(
+                                DescriptorChecks.Check.PACK_VERSION,
                                 List.of("pack_version"),
                                 "pack.yaml of qa: pack_version 'one' is not a PEP 440 version"),
-                        new PackFinding(
-                                PackFindingCode.DEPENDENCY_RANGE_INVALID,
-                                "pack.yaml",
+                        new DescriptorChecks.Fault(
+                                DescriptorChecks.Check.DEPENDENCY_RANGE,
                                 List.of("depends_on", "1", "range"),
                                 "pack.yaml of qa: depends_on[1] range 'nope' is not a PEP 440 version specifier"),
-                        new PackFinding(
-                                PackFindingCode.DEPENDENCY_RANGE_INVALID,
-                                "pack.yaml",
+                        new DescriptorChecks.Fault(
+                                DescriptorChecks.Check.DEPENDENCY_RANGE,
                                 List.of("depends_on", "2", "range"),
                                 "pack.yaml of qa: depends_on[2] range '~=1' is not a PEP 440 version specifier"));
     }
 
     @Test
     void theTextNamesThePackItIsGiven() {
-        assertThat(DescriptorChecks.findings("other", descriptor("one", Optional.empty())))
-                .extracting(PackFinding::detail)
+        assertThat(DescriptorChecks.faults("other", descriptor("one", Optional.empty())))
+                .extracting(DescriptorChecks.Fault::detail)
                 .containsExactly("pack.yaml of other: pack_version 'one' is not a PEP 440 version");
     }
 }

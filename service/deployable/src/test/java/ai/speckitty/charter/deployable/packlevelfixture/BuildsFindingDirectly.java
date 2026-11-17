@@ -1,15 +1,15 @@
 package ai.speckitty.charter.deployable.packlevelfixture;
 
 import ai.speckitty.charter.kernel.validation.ReasonCode;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 
-/** Route C, the positive control: builds a pack-level finding by hand, which would bypass the policy. */
+/** Route C, the positive control: names a pack-level code outside the level rules, which would state one by hand. */
 public final class BuildsFindingDirectly {
 
     private BuildsFindingDirectly() {}
 
-    /** The finding code a class outside the policy must not name. */
+    /** The pack-level code a class outside the level rules must not name. */
     public static ReasonCode code() {
-        return PackFindingCode.PACK_LEVEL_MISSING;
+        return PlacementCodes.PACK_LEVEL_MISSING;
     }
 }

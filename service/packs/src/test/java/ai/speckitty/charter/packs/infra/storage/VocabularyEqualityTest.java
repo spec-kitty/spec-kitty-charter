@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Directionality;
 import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -18,12 +19,14 @@ import ai.speckitty.charter.packs.application.KindTaxonomyReadService.HeldAs;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.KindFacts;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.RelationFacts;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.Taxonomy;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -399,10 +402,16 @@ class VocabularyEqualityTest {
                 .isEqualTo(model);
     }
 
-    // ---- the wire codes the load path projects onto ---------------------------------------------------
+    // ---- the wire codes the pack codes are answered with -----------------------------------------------
 
+    /**
+     * Every pack code's token that reaches the wire as a code of the contract's enums is one of them (#554, T070): a
+     * warning is a diagnostic, by its token, as the registration's mapper answers it ({@code PackRefusals}); a violation
+     * whose token a refusal code spells is that refusal code. The codes are the three owners' ({@link PackCodes},
+     * {@link StorageCodes}, {@link PlacementCodes}), each built once.
+     */
     @Test
-    void everyLoadPathWireTokenIsInTheContractsCodeEnums() throws IOException {
+    void everyPackWireTokenIsInTheContractsCodeEnums() throws IOException {
         Path schemas = Path.of(System.getProperty("charter.contractSchemas"));
         Set<String> contract = new LinkedHashSet<>();
         for (String file : List.of("DiagnosticCode.yaml", "CharterRefusalCode.yaml")) {
@@ -412,9 +421,9 @@ class VocabularyEqualityTest {
         Set<String> projected = new LinkedHashSet<>();
         for (ReasonCode code : findingCodes()) {
             if (code.severity() == Severity.WARNING) {
-                PackFindingCode.diagnostic(code).ifPresent(diagnostic -> projected.add(diagnostic.token()));
-            } else if (isOnTheLoadPath(code)) {
-                projected.add(PackFindingCode.refusal(code).token());
+                projected.add(diagnostic(code).token());
+            } else {
+                refusal(code).ifPresent(refusal -> projected.add(refusal.token()));
             }
         }
 
@@ -728,31 +737,26 @@ class VocabularyEqualityTest {
         }
     }
 
-    /** Every code a finding is built with: the domain's codes, then the staging view's. */
+    /** Every code a finding is built with: the domain's, the storage edge's, then the validation edge's placement. */
     private static List<ReasonCode> findingCodes() {
-        List<ReasonCode> codes = new ArrayList<>(PackCodes.CONTENT);
-        codes.addAll(List.of(
-                PackFindingCode.PACK_LEVEL_MISSING,
-                PackFindingCode.PACK_LEVEL_MISMATCH,
-                PackFindingCode.ORG_FRAGMENT_MISSING,
-                PackFindingCode.PACK_UNREADABLE,
-                PackFindingCode.REQUIRES_CORE_INVALID,
-                PackFindingCode.PACK_VERSION_INVALID,
-                PackFindingCode.DEPENDENCY_RANGE_INVALID,
-                PackFindingCode.ARTIFACT_SCHEMA_ERROR,
-                PackFindingCode.UNREADABLE,
-                PackFindingCode.ASSET_MIME_INVALID,
-                PackFindingCode.FILE_NOT_HELD));
+        List<ReasonCode> codes = new ArrayList<>(PackCodes.ALL);
+        codes.addAll(StorageCodes.ORDERED);
+        codes.addAll(PlacementCodes.ALL);
         return codes;
     }
 
-    /** A blocking code that projects onto a refusal; the validate-only codes do not and throw. */
-    private static boolean isOnTheLoadPath(ReasonCode code) {
-        try {
-            PackFindingCode.refusal(code);
-            return true;
-        } catch (IllegalStateException validateOnly) {
-            return false;
-        }
+    /** The diagnostic a warning is answered with: the one its token spells, or a failure. */
+    private static Diagnostic.Code diagnostic(ReasonCode warning) {
+        return Arrays.stream(Diagnostic.Code.values())
+                .filter(code -> code.token().equals(warning.value()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(warning.value() + " is a warning no diagnostic code spells"));
+    }
+
+    /** The refusal code a violation's token spells, if one does. */
+    private static Optional<RefusalCode> refusal(ReasonCode violation) {
+        return Arrays.stream(RefusalCode.values())
+                .filter(code -> code.token().equals(violation.value()))
+                .findFirst();
     }
 }

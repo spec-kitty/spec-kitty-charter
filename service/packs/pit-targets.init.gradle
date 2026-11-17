@@ -8,7 +8,7 @@
 //   ./gradlew :packs:pitest --no-configuration-cache --max-workers=2 \
 //     -I service/packs/pit-targets.init.gradle \
 //     -PrequireSymlinks=true \
-//     -Dpit.classes=ai.speckitty.charter.packs.domain.PackPolicy \
+//     -Dpit.classes=ai.speckitty.charter.packs.domain.rules.StepRules \
 //     -Dpit.tests='ai.speckitty.charter.packs.domain.*'
 //
 // -Dpit.classes and -Dpit.tests are comma-separated; without -Dpit.tests the module's own target tests run. A narrowed

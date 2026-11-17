@@ -2,21 +2,22 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -116,7 +117,7 @@ class HeldSetAgreementTest {
     void theCensusListsTheGoldensNotHeldFiles(Subject subject, @TempDir Path host) {
         Path pack = subject.copy().apply(host);
         List<String> census = validated(pack, subject.level()).stream()
-                .map(file -> file.finding().detail())
+                .map(NotHeldFile::detail)
                 .toList();
         JsonNode golden = GOLDEN.get(subject.name());
         assertThat(golden).as("%s has a golden entry", subject).isNotNull();
@@ -209,10 +210,10 @@ class HeldSetAgreementTest {
 
         assertThat(store().load(pack).notHeld()).extracting(NotHeldFile::path).doesNotContain("PROVENANCE.md");
         assertThat(validated(pack, PackLevel.ORG)).extracting(NotHeldFile::path).doesNotContain("PROVENANCE.md");
-        assertThat(PackPolicy.judge(inspect(pack, PackLevel.ORG)).findings())
-                .filteredOn(finding -> finding.file().equals("PROVENANCE.md"))
-                .extracting(PackFinding::code)
-                .doesNotContain(PackFindingCode.FILE_NOT_HELD)
+        assertThat(findings(pack, PackLevel.ORG))
+                .filteredOn(finding -> finding.location().file().equals("PROVENANCE.md"))
+                .extracting(Reason::code)
+                .doesNotContain(StorageCodes.FILE_NOT_HELD)
                 .isNotEmpty();
     }
 
@@ -226,12 +227,13 @@ class HeldSetAgreementTest {
 
         NotHeldFile unnamed = NotHeldFile.unnamedPolicy("policy.yaml");
         assertThat(validated(pack, PackLevel.ORG)).contains(unnamed);
-        assertThat(PackPolicy.judge(inspect(pack, PackLevel.ORG)).findings())
-                .filteredOn(finding -> finding.file().equals("policy.yaml"))
-                .containsExactly(unnamed.finding());
+        assertThat(findings(pack, PackLevel.ORG))
+                .filteredOn(finding -> finding.location().file().equals("policy.yaml"))
+                .extracting(Reason::code, Reason::detail)
+                .containsExactly(tuple(StorageCodes.FILE_NOT_HELD, unnamed.detail()));
         assertThat(StagedReads.read(store(), pack).diagnostics())
                 .filteredOn(diagnostic -> diagnostic.detail().startsWith("policy.yaml:"))
-                .containsExactly(unnamed.finding().toDiagnostic());
+                .containsExactly(new Diagnostic(Diagnostic.Code.FILE_NOT_HELD, unnamed.detail()));
     }
 
     @Test
@@ -243,9 +245,9 @@ class HeldSetAgreementTest {
         write(pack, orphan, "## Stray\n\nNobody names this.\n");
 
         assertThat(validated(pack, PackLevel.ORG)).extracting(NotHeldFile::path).doesNotContain(orphan);
-        assertThat(PackPolicy.judge(inspect(pack, PackLevel.ORG)).findings())
-                .filteredOn(finding -> finding.file().equals(orphan))
-                .extracting(PackFinding::code)
+        assertThat(findings(pack, PackLevel.ORG))
+                .filteredOn(finding -> finding.location().file().equals(orphan))
+                .extracting(Reason::code)
                 .containsExactly(PackCodes.PROMPT_FRAGMENT_INVALID);
         assertThatThrownBy(() -> StagedReads.contents(store(), pack))
                 .isInstanceOfSatisfying(
@@ -268,13 +270,18 @@ class HeldSetAgreementTest {
 
         List<NotHeldFile> census = validated(pack, PackLevel.BUILT_IN);
         assertThat(census).contains(NotHeldFile.unnamedCompanion(guide), NotHeldFile.unnamedCompanion(prompt));
-        assertThat(PackPolicy.judge(inspect(pack, PackLevel.BUILT_IN)).findings())
+        assertThat(findings(pack, PackLevel.BUILT_IN))
                 .as("validate mode warns and judges nothing in either")
-                .filteredOn(finding ->
-                        finding.file().equals(guide) || finding.file().equals(prompt))
+                .filteredOn(finding -> finding.location().file().equals(guide)
+                        || finding.location().file().equals(prompt))
+                .extracting(Reason::code, Reason::detail)
                 .containsExactlyInAnyOrder(
-                        NotHeldFile.unnamedCompanion(guide).finding(),
-                        NotHeldFile.unnamedCompanion(prompt).finding());
+                        tuple(
+                                StorageCodes.FILE_NOT_HELD,
+                                NotHeldFile.unnamedCompanion(guide).detail()),
+                        tuple(
+                                StorageCodes.FILE_NOT_HELD,
+                                NotHeldFile.unnamedCompanion(prompt).detail()));
         PackRegistrationService.ReadUpload read = StagedReads.read(store(), pack);
         assertThat(read.diagnostics())
                 .filteredOn(diagnostic -> diagnostic.detail().startsWith(guide + ":")
@@ -329,7 +336,13 @@ class HeldSetAgreementTest {
     }
 
     private static PackReadout inspect(Path pack, PackLevel level) {
-        return PolicyReadouts.of(new PackRoot(String.valueOf(pack.getFileName()), Optional.of(level), pack.toString()));
+        return new FileSystemPackInspector()
+                .read(new PackRoot(String.valueOf(pack.getFileName()), Optional.of(level), pack.toString()));
+    }
+
+    /** The one read's findings, which validate mode and a registration judge. */
+    private static List<Reason> findings(Path pack, PackLevel level) {
+        return inspect(pack, level).rationale().failures();
     }
 
     /** The store's not-held list, or empty when the store refuses to load the pack at all. */

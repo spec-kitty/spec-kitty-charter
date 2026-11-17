@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
@@ -331,12 +330,11 @@ class RetiredFilesTest {
             assertThat(contents.readFaults())
                     .extracting(fault -> fault.location().file())
                     .containsExactlyInAnyOrderElementsOf(files.keySet());
-            List<PackFinding> findings =
-                    contents.readFaults().stream().map(PackFinding::of).toList();
+            List<Reason> findings = contents.readFaults();
             // A retired file is retired, whatever its kind, a graph document's included (#554, R2 row 11).
-            assertThat(findings).extracting(PackFinding::code).containsOnly(StorageCodes.RETIRED);
+            assertThat(findings).extracting(Reason::code).containsOnly(StorageCodes.RETIRED);
             assertThat(findings)
-                    .filteredOn(f -> f.file().equals("mission_step_contract.graph.yaml"))
+                    .filteredOn(f -> f.location().file().equals("mission_step_contract.graph.yaml"))
                     .singleElement()
                     .satisfies(f -> {
                         assertThat(f.code()).isEqualTo(StorageCodes.RETIRED);
@@ -345,22 +343,22 @@ class RetiredFilesTest {
                                         + " mission-type steps' substeps (slice F)");
                     });
             assertThat(findings)
-                    .filteredOn(f -> f.file().equals("mission_step_contracts/specify.step-contract.yaml"))
+                    .filteredOn(f -> f.location().file().equals("mission_step_contracts/specify.step-contract.yaml"))
                     .singleElement()
-                    .extracting(PackFinding::detail)
+                    .extracting(Reason::detail)
                     .asString()
                     .isEqualTo("mission_step_contracts/specify.step-contract.yaml: folded into the"
                             + " mission-type steps' substeps (slice F)");
             assertThat(findings)
-                    .filteredOn(f -> f.file().equals("missions/plan/mission-runtime.yaml"))
+                    .filteredOn(f -> f.location().file().equals("missions/plan/mission-runtime.yaml"))
                     .singleElement()
-                    .extracting(PackFinding::detail)
+                    .extracting(Reason::detail)
                     .asString()
                     .isEqualTo("missions/plan/mission-runtime.yaml: folded into the mission-type file" + " (ADR-0044)");
             assertThat(findings)
-                    .filteredOn(f -> f.file().equals("mission-steps/qa/review/prompt.md"))
+                    .filteredOn(f -> f.location().file().equals("mission-steps/qa/review/prompt.md"))
                     .singleElement()
-                    .extracting(PackFinding::detail)
+                    .extracting(Reason::detail)
                     .asString()
                     .contains(": folded into the mission-type steps and their companions");
         }

@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
@@ -19,10 +20,11 @@ import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
+import ai.speckitty.charter.packs.domain.rules.FragmentRules;
+import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
+import ai.speckitty.charter.packs.domain.rules.StepRules;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.nio.file.Files;
@@ -110,7 +112,7 @@ record StoreRead(
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
         Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
-        List<PackFinding> warnings = new ArrayList<>();
+        List<Reason> warnings = new ArrayList<>();
         List<PackElementViolation> storeOnly = new ArrayList<>();
         Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add);
         List<PackElementViolation> trailing = new ArrayList<>();
@@ -313,21 +315,6 @@ record StoreRead(
     private static final String ENHANCEMENT_FILE = ".step-enhancement.yaml";
 
     /**
-     * Whether a fault of the store's read is one only the store meets (A-M1 rows 16, 17 and 19): a companion it cannot
-     * read, a template read twice, and a value-object breach. The read's other faults (a file that does not parse or
-     * breaks its schema, a retired file, a sidecar's payload, an edge's endpoints) are the reader's and the rules' too.
-     */
-    static boolean metOnlyByTheStore(PackElementViolation violation) {
-        return FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
-                || (PackCodes.DUPLICATE_ARTIFACT_ID.equals(violation.kind())
-                        && violation.reason().startsWith("template "))
-                || violation.reason().startsWith(BREACH);
-    }
-
-    /** How a value-object breach's message starts ({@code ConstraintBreachException}). */
-    private static final String BREACH = "Constraint breached";
-
-    /**
      * The manifest, when the pack holds a readable one whose preset entries name their own files; otherwise empty, and
      * an unreadable or misplaced manifest is a violation.
      */
@@ -426,7 +413,7 @@ record StoreRead(
             FilesystemPackStore.PackRead read,
             Map<Urn, String> places,
             FilesystemPackStore.GraphRead graphs,
-            List<PackFinding> warnings) {
+            List<Reason> warnings) {
         return assembly(pack, read, places, graphs, warnings, violation -> {});
     }
 
@@ -452,24 +439,25 @@ record StoreRead(
             FilesystemPackStore.PackRead read,
             Map<Urn, String> places,
             FilesystemPackStore.GraphRead graphs,
-            List<PackFinding> warnings,
+            List<Reason> warnings,
             Consumer<PackElementViolation> storeOnly) {
-        read.violations().stream()
-                .filter(StoreRead::metOnlyByTheStore)
+        read.storeOnly()
                 .forEach(violation -> storeOnly.accept(
                         FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
                                         && violation.file().endsWith(ENHANCEMENT_FILE)
                                 ? new PackElementViolation(
                                         violation.file(), PackCodes.PROMPT_FRAGMENT_INVALID, violation.reason())
                                 : violation));
-        List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
+        List<StepEnhancementFault.Finding> faults = FragmentRules.judge(
                 PackAssembly.stepEnhancementFacts(read, graphs.documents()),
                 graphs.violations().isEmpty());
         List<PackElementViolation> repeats = new ArrayList<>();
         Set<String> repeating = new LinkedHashSet<>();
         for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
             List<PackElementViolation> found =
-                    PackPolicy.substepIdViolations(PackAssembly.missionTypeFacts(stored.file(), stored.dso()));
+                    StepRules.repeatedSubstepIds(PackAssembly.missionTypeFacts(stored.file(), stored.dso())).stream()
+                            .map(StoreRead::heldBack)
+                            .toList();
             if (!found.isEmpty()) {
                 repeating.add(stored.file());
                 repeats.addAll(found);
@@ -484,7 +472,9 @@ record StoreRead(
         Pack.Builder builder = PackAssembly.assembly(pack, read, places, withheld, repeating, storeOnly);
         repeats.forEach(builder::violation);
         recordPromptSlotFaults(read, builder, warnings);
-        faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
+        faults.stream()
+                .map(fault -> new PackElementViolation(fault.path(), PackCodes.PROMPT_FRAGMENT_INVALID, fault.reason()))
+                .forEach(builder::violation);
         missionStepViolations(read, places, graphs).forEach(builder::violation);
         substepDelegationViolations(read, places, graphs).forEach(builder::violation);
         return builder;
@@ -531,6 +521,15 @@ record StoreRead(
     }
 
     /**
+     * A mission type the store half withholds for a substep id it repeats ({@link StepRules#repeatedSubstepIds}): the
+     * rule's finding recorded on the aggregate at the type's file, under the rule's code and in its words, so the
+     * composing read refuses the pack with the content rule's answer (FR-004, S7).
+     */
+    private static PackElementViolation heldBack(Reason finding) {
+        return new PackElementViolation(finding.location().file(), finding.code(), finding.detail());
+    }
+
+    /**
      * The facts of the mission types the assembly holds: a type the domain refuses is refused on its own and is no fact.
      */
     private static List<MissionTypeFacts> heldTypes(FilesystemPackStore.PackRead read, Map<Urn, String> places) {
@@ -563,8 +562,9 @@ record StoreRead(
      * with no prompt has nothing to judge.
      */
     private static void recordPromptSlotFaults(
-            FilesystemPackStore.PackRead read, Pack.Builder builder, List<PackFinding> warnings) {
-        Optional<String> version = read.descriptor().toDescriptor().schemaVersion();
+            FilesystemPackStore.PackRead read, Pack.Builder builder, List<Reason> warnings) {
+        boolean versioned =
+                PromptSlotRules.versioned(read.descriptor().toDescriptor().schemaVersion());
         for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
             List<MissionTypeDso.Step> steps = new ArrayList<>(stored.dso().steps());
             steps.addAll(stored.dso().onDemandSteps());
@@ -576,11 +576,11 @@ record StoreRead(
                         stored.file(), step.promptPath().get());
                 PromptSlots.Parse parse =
                         PromptSlots.parse(MarkdownCodec.write(step.prompt().get()));
-                for (PackPolicy.PromptSlotFault fault : PackPolicy.promptSlotFaults(parse, version)) {
+                for (PromptSlotRules.Fault fault : PromptSlotRules.faults(parse, versioned)) {
                     if (fault.code().severity() == Severity.VIOLATION) {
-                        builder.violation(PackPolicy.violationOf(file, fault));
+                        builder.violation(new PackElementViolation(file, fault.code(), fault.reason()));
                     } else {
-                        warnings.add(PackPolicy.findingOf(file, fault));
+                        warnings.add(PromptSlotRules.finding(file, fault));
                     }
                 }
             }

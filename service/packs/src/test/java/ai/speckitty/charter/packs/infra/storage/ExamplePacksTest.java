@@ -1,17 +1,19 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,9 +33,13 @@ class ExamplePacksTest {
 
     private static final FileSystemPackInspector INSPECTOR = new FileSystemPackInspector();
 
-    private static PackPolicy.Judgement judge(String name, Path dir) {
+    /** The one read's verdict on a pack, which validate mode and a registration judge: every finding. */
+    private static List<Reason> findings(String name, Path dir) {
         PackLevel level = ExamplePacks.level(name);
-        return PackPolicy.judge(PolicyReadouts.of(INSPECTOR, new PackRoot(name, Optional.of(level), dir.toString())));
+        return INSPECTOR
+                .read(new PackRoot(name, Optional.of(level), dir.toString()))
+                .rationale()
+                .failures();
     }
 
     @ParameterizedTest
@@ -41,11 +47,12 @@ class ExamplePacksTest {
     void everyExamplePackValidatesWithOnlyFileNotHeldWarnings(String name) {
         // A file the pack does not hold (an orientation README, an author's note) is a file_not_held warning, one for
         // each file the store's load lists not held, and nothing else is found (#554, open case 6).
-        assertThat(judge(name, ExamplePacks.pack(name)).findings())
+        assertThat(findings(name, ExamplePacks.pack(name)))
                 .as(name)
+                .extracting(reason -> reason.location().file(), Reason::code, Reason::detail)
                 .containsExactlyElementsOf(new WholePackStore(new YamlSerializationStrategy())
                         .load(ExamplePacks.pack(name)).notHeld().stream()
-                                .map(NotHeldFile::finding)
+                                .map(file -> tuple(file.path(), StorageCodes.FILE_NOT_HELD, file.detail()))
                                 .toList());
     }
 
@@ -55,7 +62,7 @@ class ExamplePacksTest {
         Path copy = ExamplePacks.copyOf(name, dir);
         Files.delete(copy.resolve("pack.yaml"));
 
-        assertThat(judge(name, copy).findings())
+        assertThat(findings(name, copy))
                 .as("the control: the check reads the example")
                 .isNotEmpty();
     }

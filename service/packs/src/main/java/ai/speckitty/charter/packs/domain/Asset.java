@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * {@link AssetFile} the pack holds; the asset names it by {@link #path()}. Two assets are equal when they have the same
  * identity.
  *
- * <p>{@code mime} and {@code path} are kept exactly as authored: the MIME vocabulary is checked by {@link PackPolicy},
+ * <p>{@code mime} and {@code path} are kept exactly as authored: the MIME vocabulary is the one reader's precheck,
  * and the path is not normalized. Build one with {@link #builder()}.
  */
 public final class Asset implements CharterArtifact {

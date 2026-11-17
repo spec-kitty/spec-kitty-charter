@@ -9,11 +9,11 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -26,10 +26,10 @@ import java.util.Optional;
 public final class GraphBinding {
 
     /** The list of a graph document's nodes. */
-    static final String NODES = "nodes";
+    public static final String NODES = "nodes";
 
     /** The list of a graph document's edges. */
-    static final String EDGES = "edges";
+    public static final String EDGES = "edges";
 
     /** The finding text of an authored edge to or from a guard or a lifecycle (#156), before the endpoint. */
     public static final String NOT_AUTHORED =
@@ -56,7 +56,7 @@ public final class GraphBinding {
      * @param graph the nodes and edges that bound
      * @param findings one finding for each node or edge that did not bind, in document order
      */
-    public record GraphBuild(DoctrineGraph graph, List<PackFinding> findings) {
+    public record GraphBuild(DoctrineGraph graph, List<Reason> findings) {
         /**
          * Copies the findings.
          *
@@ -99,11 +99,11 @@ public final class GraphBinding {
     }
 
     private static GraphBuild build(String packName, RawGraph raw, boolean registered) {
-        String origin = Wording.origin(packName, raw.file());
+        String origin = Paths.origin(packName, raw.file());
         List<DrgNode> nodes = new ArrayList<>();
         List<Relationship> relationships = new ArrayList<>();
         List<Tension> tensions = new ArrayList<>();
-        List<PackFinding> findings = new ArrayList<>();
+        List<Reason> findings = new ArrayList<>();
         for (int i = 0; i < raw.nodes().size(); i++) {
             RawNode node = raw.nodes().get(i);
             Optional<DrgNode> bound = switch (raw.shape()) {
@@ -129,7 +129,7 @@ public final class GraphBinding {
                 // it under its own code; the registered shard is read on its own, so its read reports it here.
                 case EndpointRule.Fault refused -> {
                     if (registered) {
-                        findings.add(new PackFinding(
+                        findings.add(Findings.at(
                                 EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE.equals(refused.code())
                                         ? PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE
                                         : PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
@@ -144,8 +144,8 @@ public final class GraphBinding {
         return new GraphBuild(new DoctrineGraph(nodes, relationships, tensions), findings);
     }
 
-    private static PackFinding graphFinding(RawGraph raw, String list, int index, String detail) {
-        return new PackFinding(PackCodes.DRG_SCHEMA_ERROR, raw.file(), List.of(list, Integer.toString(index)), detail);
+    private static Reason graphFinding(RawGraph raw, String list, int index, String detail) {
+        return Findings.at(PackCodes.DRG_SCHEMA_ERROR, raw.file(), List.of(list, Integer.toString(index)), detail);
     }
 
     private static Optional<DrgNode> shardNode(RawNode node) {
@@ -184,8 +184,13 @@ public final class GraphBinding {
         };
     }
 
-    /** The text of a fragment node with an empty id; the detail vocabulary gives a schema violation the same. */
-    static String emptyId(String kind) {
+    /**
+     * The text of a fragment node with an empty id; the detail vocabulary gives a schema violation the same.
+     *
+     * @param kind the node's plural kind
+     * @return the text
+     */
+    public static String emptyId(String kind) {
         return "a node of kind '" + kind + "' has an empty id";
     }
 

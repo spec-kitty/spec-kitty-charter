@@ -86,7 +86,7 @@ class WireTokenParityTest {
      * The contract values the domain retired and the contract keeps so a client built against an earlier draft still
      * reads them. {@code pack_unknown_key} was once raised as a load warning; the pack descriptor schema has been
      * closed since ADR-0036 decision 3, so such a pack is refused as {@code pack_unreadable}, and ADR-0042 removed the
-     * constant. {@code PackPolicyRulesTest} asserts it stays absent from the domain, so it must stay out of
+     * constant. this test asserts it stays absent from the domain, so it must stay out of
      * {@code Diagnostic.Code}.
      */
     private static final Map<String, String> RETIRED_DIAGNOSTIC_CODES = Map.of(

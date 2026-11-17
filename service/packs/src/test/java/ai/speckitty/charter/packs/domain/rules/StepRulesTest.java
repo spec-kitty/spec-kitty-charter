@@ -112,15 +112,6 @@ class StepRulesTest {
         return PlantedFixtures.all();
     }
 
-    @ParameterizedTest
-    @MethodSource("planted")
-    @DisplayName("over every planted and example pack, the rule finds what today's validate mode finds")
-    void theRuleFindsWhatValidateModeFinds(Planted planted) {
-        assertThat(StepRules.RULES.apply(planted.contents()))
-                .containsExactlyInAnyOrderElementsOf(
-                        PlantedFixtures.policyFindings(planted, Set.of(PackCodes.DUPLICATE_STEP_ID)));
-    }
-
     static List<Planted> expecting() {
         return PlantedFixtures.expecting(Set.of(PackCodes.DUPLICATE_STEP_ID.value()));
     }

@@ -6,10 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
-import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.domain.JavaAccess;
+import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaFieldAccess;
@@ -45,19 +42,21 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * class outside those two; this says only that the code can raise it, not that a request of this version provokes it.
  *
  * <p>One class names an unraised code off the wire, and is allowed to name exactly that code ({@link #OFF_WIRE}):
- * {@code PackFindingCode} projects its load-path findings onto refusal codes through {@code PackFinding.toRefusal()},
- * and {@code pack_level_mismatch} is the one code only that projection names (no operation reaches the projection).
- * {@link #offWireRules()} fail the day a main class does, by a call or a method reference, so that the code's
- * {@code x-refusal} entry is corrected with it. {@code drg_schema_error} is raised by the amended definition of
- * {@code raised} (a violation code of {@code 422 validation_failed}, OD-3 (a)), so the whole-pack load that names it
- * is no longer off the wire.
+ * {@code pack-validation}'s {@code PlacementCodes} builds the placement token {@code pack_level_mismatch} from the
+ * refusal code's spelling, so the token has one source (#554, WP13). Validate mode is the validation edge, which the
+ * service does not run (C-003), so no operation answers it. {@link #offWireRules()} fail the day a class outside
+ * {@code pack-validation} names that class, so that the code's {@code x-refusal} entry is corrected with it.
+ * {@code drg_schema_error} is raised by the amended definition of {@code raised} (a violation code of
+ * {@code 422 validation_failed}, OD-3 (a)), so the whole-pack load that names it is no longer off the wire.
  */
 class ReservedRefusalCodesTest {
 
     private static final String REFUSAL_CODES = "contract/charter/schemas/CharterRefusalCode.yaml";
 
-    private static final String PACK_FINDING = PackFinding.class.getName();
-    private static final String PACK_FINDING_CODE = PackFindingCode.class.getName();
+    private static final String PLACEMENT_CODES = PlacementCodes.class.getName();
+
+    /** The validation edge's packages: the service does not run them (C-003). */
+    private static final String VALIDATION_EDGE = "ai.speckitty.charter.packvalidation..";
 
     private static final String ENUM = pattern(RefusalCode.class.getName());
     private static final String HANDLER_CLASS = "ai.speckitty.charter.web.RefusalHandler";
@@ -67,7 +66,7 @@ class ReservedRefusalCodesTest {
     private static final Set<String> MAPPINGS = Set.of("statusOf", "title");
 
     /** The classes that may name an unraised code because no operation reaches them, and the codes each may name. */
-    private static final Map<String, Set<String>> OFF_WIRE = Map.of(PACK_FINDING_CODE, Set.of("PACK_LEVEL_MISMATCH"));
+    private static final Map<String, Set<String>> OFF_WIRE = Map.of(PLACEMENT_CODES, Set.of("PACK_LEVEL_MISMATCH"));
 
     private static final JavaClasses MAIN = ServiceClasses.main();
 
@@ -88,34 +87,20 @@ class ReservedRefusalCodesTest {
         return rule.should().accessField(RefusalCode.class, constant);
     }
 
-    /** A call to, or a method reference of, {@code owner.method}: {@code callMethod} sees only the call. */
-    private static DescribedPredicate<JavaAccess<?>> reaches(String owner, String method) {
-        return DescribedPredicate.describe(
-                owner + "." + method,
-                access -> access.getTargetOwner().getName().equals(owner)
-                        && access.getName().equals(method));
-    }
-
     /**
      * The rules that keep the off-wire classes of {@link #OFF_WIRE} off the wire.
      *
-     * @return one rule per way onto the wire: the two projections of a finding to a refusal
+     * @return one rule per way onto the wire: a class outside the validation edge that names the placement codes
      */
     static Stream<ArchRule> offWireRules() {
-        String because = "the refusal it raises is pack_level_mismatch, which x-refusal marks raised: false";
-        return Stream.of(
-                noClasses()
-                        .that()
-                        .haveNameNotMatching(pattern(PACK_FINDING))
-                        .should()
-                        .accessTargetWhere(reaches(PACK_FINDING, "toRefusal"))
-                        .because(because),
-                noClasses()
-                        .that()
-                        .haveNameNotMatching(pattern(PACK_FINDING))
-                        .should()
-                        .accessTargetWhere(reaches(PACK_FINDING_CODE, "refusal"))
-                        .because(because));
+        return Stream.of(noClasses()
+                .that()
+                .resideOutsideOfPackage(VALIDATION_EDGE)
+                .should()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName(PLACEMENT_CODES)
+                .because("the placement token pack_level_mismatch is validate mode's, which x-refusal marks raised:"
+                        + " false"));
     }
 
     /**
@@ -177,8 +162,8 @@ class ReservedRefusalCodesTest {
     @Test
     void theContractMarksTheCodesTheWritesAndTheLoadRaiseAsDecided() {
         // #293: the registration writes raise governance_policy_violation (PackMutabilityPolicy, 409), so it is
-        // raised; drg_schema_error is raised as a violation code of a refused registration (WholePackStore, OD-3 (a)),
-        // so it is raised too, and pack_level_mismatch, named only by the off-wire projection, is not.
+        // raised; drg_schema_error is raised as a violation code of a refused registration (OD-3 (a)), so it is raised
+        // too, and pack_level_mismatch, named only by validate mode's placement codes, is not.
         assertThat(raisedCodes()).contains("GOVERNANCE_POLICY_VIOLATION");
         assertThat(raisedCodes()).contains("DRG_SCHEMA_ERROR");
         // #125, #291, #360: the activation register, its per-artifact writes and the preset write raise all six of
@@ -279,13 +264,14 @@ class ReservedRefusalCodesTest {
     }
 
     @Test
-    void theOffWireMethodsTheRulesNameExist() {
-        // The rules name the two projections by string: a renamed method would make its rule match nothing.
-        assertThat(MAIN.get(PACK_FINDING).getMethod("toRefusal").getName()).isEqualTo("toRefusal");
-        assertThat(MAIN.get(PACK_FINDING_CODE)
-                        .getMethod("refusal", ReasonCode.class)
-                        .getName())
-                .isEqualTo("refusal");
+    void theOffWireClassTheRulesNameExists() {
+        // The rules name the off-wire class by string: a renamed class would make its rule match nothing.
+        assertThat(MAIN.get(PLACEMENT_CODES).getPackageName()).startsWith("ai.speckitty.charter.packvalidation");
+        assertThat(MAIN.get(PLACEMENT_CODES).getFieldAccessesFromSelf().stream()
+                        .filter(access -> access.getTargetOwner().isEquivalentTo(RefusalCode.class))
+                        .map(JavaFieldAccess::getName))
+                .as("it builds pack_level_mismatch from the refusal code's spelling")
+                .containsExactly("PACK_LEVEL_MISMATCH");
     }
 
     /** Names every refusal code the way a raising class would, for the rule to find. */
@@ -371,15 +357,10 @@ class ReservedRefusalCodesTest {
         }
     }
 
-    /**
-     * Reaches each off-wire projection the way an operation would: it turns findings into refusals by method
-     * reference, the stream shape a {@code callMethod} rule does not see.
-     */
+    /** Reaches the off-wire placement token the way an operation outside the validation edge would. */
     static final class ReachesTheOffWireClasses {
-        List<?> reach(List<PackFinding> findings, List<ReasonCode> codes) {
-            return List.of(
-                    findings.stream().map(PackFinding::toRefusal).toList(),
-                    codes.stream().map(PackFindingCode::refusal).toList());
+        List<ReasonCode> reach() {
+            return List.of(PlacementCodes.PACK_LEVEL_MISMATCH);
         }
     }
 }

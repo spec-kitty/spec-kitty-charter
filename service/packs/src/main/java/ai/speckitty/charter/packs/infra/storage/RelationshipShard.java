@@ -4,12 +4,11 @@ import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
-import ai.speckitty.charter.packs.domain.rules.Wording;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.rules.ReservedShardRules;
 import java.util.LinkedHashMap;
@@ -80,7 +79,7 @@ public final class RelationshipShard {
      * @param relationships the relationships that bound, in document order
      * @param findings one finding per thing that did not bind, in document order
      */
-    public record ShardRead(List<Relationship> relationships, List<PackFinding> findings) {
+    public record ShardRead(List<Relationship> relationships, List<Reason> findings) {
         /**
          * Copies the lists.
          *

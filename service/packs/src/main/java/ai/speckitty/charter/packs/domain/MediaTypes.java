@@ -4,8 +4,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The one media-type rule of an asset's {@code mime} (research R6 of the slice-a2 cutover reads): well-formed is a
- * slash with text on both sides. Validate reports a {@code mime} that breaks it as {@code asset_mime_invalid}
- * ({@link PackPolicy}), and the payload read serves a {@code mime} that keeps it as the payload's
+ * slash with text on both sides. The one reader reports a {@code mime} that breaks it as {@code asset_mime_invalid}
+ * (a precheck, S2), and the payload read serves a {@code mime} that keeps it as the payload's
  * {@code Content-Type}, {@code application/octet-stream} otherwise. It is deliberately not RFC 6838: tightening it would
  * refuse packs that register today, which ADR-0074 rejected.
  */

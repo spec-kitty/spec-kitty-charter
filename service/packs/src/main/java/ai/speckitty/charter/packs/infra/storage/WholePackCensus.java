@@ -1,23 +1,23 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Function;
-import java.util.stream.Stream;
-import org.jspecify.annotations.Nullable;
 
 /**
- * Every file of a pack with its gate kind: the universe the whole-pack gate accounts for.
+ * Every file of a pack with its gate kind: the universe the whole-pack gate accounts for, read from the one read's
+ * {@link TreeCensus} (#554, WP13, operator ruling 2026-11-17 "Switch it in WP13"). The census is the one owner of "held"
+ * and of how each file stands ({@link CensusEntries}); this class only names each entry the way the gate counts it, and
+ * walks and classifies nothing itself.
  *
  * <p>A file that {@code contracts/packs/file-kinds.yaml} maps to a schema takes the schema's name ({@code directive},
  * {@code graph-shard}, {@code pack-descriptor}, {@code agent-profile}, …). Any other file takes
@@ -26,9 +26,9 @@ import org.jspecify.annotations.Nullable;
  * {@code exclusions} rule, or the {@code ignored} fallback for Markdown nothing models) takes
  * {@code excluded:<rule's glob>}: it is not pack content, so it is never {@code other:} and never red (#451).
  *
- * <p>A companion file (ADR-0039, #194) that no rule maps takes its owning artifact's gate kind, so it is modelled with
- * that artifact: the gate pairs it with the owner's written companion at the same relative path and compares it in the
- * companion's declared form ({@link #companionsOf}, {@link #formsOf}), never as YAML.
+ * <p>A companion file (ADR-0039, #194) takes its owning artifact's gate kind, so it is modelled with that artifact: the
+ * gate pairs it with the owner's written companion at the same relative path and compares it in the companion's declared
+ * form ({@link #companionsOf}, {@link #formsOf}), never as YAML.
  */
 final class WholePackCensus {
 
@@ -78,54 +78,92 @@ final class WholePackCensus {
     }
 
     /**
-     * Lists every regular file under {@code pack}, and every symbolic link as kind {@link #SYMLINK}, never followed.
+     * The census of one pack directory: the one read's, under the pack directory's own name.
+     *
+     * @param pack the pack directory
+     * @return the census
+     */
+    static TreeCensus census(Path pack) {
+        return census(pack, new FileSystemPackInspector());
+    }
+
+    /**
+     * The census of one pack directory under the reader's bindings and companion rules: the seam a test uses for
+     * bindings of its own.
+     *
+     * @param pack the pack directory
+     * @param bindings the bindings whose companions the census lists
+     * @param rules the table that classifies companion paths
+     * @return the census
+     */
+    static TreeCensus census(Path pack, List<KindBinding<?, ?>> bindings, Companions.Rules rules) {
+        return census(
+                pack, new FileSystemPackInspector(rules.table(), new YamlSerializationStrategy(), bindings, rules));
+    }
+
+    private static TreeCensus census(Path pack, FileSystemPackInspector reader) {
+        Path directory = pack.toAbsolutePath().normalize();
+        return reader.readTree(
+                        new PackRoot(String.valueOf(directory.getFileName()), Optional.empty(), directory.toString()))
+                .census();
+    }
+
+    /**
+     * Every regular file under {@code pack} with its gate kind, and every symbolic link as kind {@link #SYMLINK}, never
+     * followed.
      *
      * @param pack the pack directory
      * @return pack-relative path ({@code /}-separated) to gate kind, sorted by path
      */
     static SortedMap<String, String> of(Path pack) {
-        String packName = String.valueOf(pack.getFileName());
-        SortedMap<String, CompanionFile> companions = companionsOf(pack);
-        SortedMap<String, String> census = new TreeMap<>();
-        try (Stream<Path> walk = Files.walk(pack)) {
-            walk.filter(file -> Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(file))
-                    .forEach(file -> {
-                        String path = pack.relativize(file)
-                                .toString()
-                                .replace(file.getFileSystem().getSeparator(), "/");
-                        census.put(path, Files.isSymbolicLink(file) ? SYMLINK : kindOf(packName, path, companions));
-                    });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return census;
+        return kinds(census(pack));
     }
 
     /**
-     * The gate kind of one file.
+     * Every entry of a census with its gate kind.
+     *
+     * @param census the census
+     * @return pack-relative path to gate kind, sorted by path
+     */
+    static SortedMap<String, String> kinds(TreeCensus census) {
+        SortedMap<String, String> kinds = new TreeMap<>();
+        census.entries().forEach(entry -> kinds.put(entry.path(), kindOf(entry)));
+        return kinds;
+    }
+
+    /**
+     * The gate kind of one census entry: the schema name of a mapped file, the owner's for a companion,
+     * {@link #RETIRED} and the rule's glob for a retired file, {@link #EXCLUDED} and the rule's glob for an excluded
+     * one, {@link #OTHER} and the first path segment for any other file, {@link #SYMLINK} for a link.
+     *
+     * @param entry the entry
+     * @return the gate kind
+     */
+    static String kindOf(TreeCensus.Entry entry) {
+        return switch (entry.standing()) {
+            case LINK -> SYMLINK;
+            case MAPPED, COMPANION -> entry.name();
+            case RETIRED -> RETIRED + entry.name();
+            case EXCLUDED -> EXCLUDED + entry.name();
+            case UNCOVERED -> OTHER + entry.name();
+        };
+    }
+
+    /**
+     * The gate kind of one file under the bundled table, as the census classifies a file no artifact names as its
+     * companion.
      *
      * @param packName the pack directory's name ({@code file-kinds.yaml} globs start at the directory holding packs)
      * @param path the pack-relative path
-     * @return the schema name, or {@code other:<first path segment>}
+     * @return the gate kind
      */
     static String kindOf(String packName, String path) {
-        return kindOf(packName, path, new TreeMap<>());
+        return kindOf(packName, path, PackFileKind.bundled());
     }
 
     /**
-     * The owning artifact's gate kind for a companion, else the schema name, else {@code other:<first segment>}. A
-     * companion the companion rule admits is unclassified or at its own rule (a toolguide's guide at the
-     * {@code toolguide-guide} rule, #194); either way it is modelled with its owner.
-     */
-    private static String kindOf(String packName, String path, SortedMap<String, CompanionFile> companions) {
-        @Nullable CompanionFile companion = companions.get(path);
-        return companion != null ? companion.ownerKind() : kindOf(packName, path, PackFileKind.bundled());
-    }
-
-    /**
-     * The gate kind of one file under {@code table}: the schema name, {@link #RETIRED} and the rule's glob for a retired
-     * file, {@link #EXCLUDED} and the rule's glob for an excluded one, else {@code other:<first segment>}. The seam a
-     * test uses before the bundled table has a retired rule.
+     * The gate kind of one file under {@code table}, as the census classifies a file no artifact names as its
+     * companion: the seam a test uses before the bundled table has a retired rule.
      *
      * @param packName the pack directory's name
      * @param path the pack-relative path
@@ -133,73 +171,37 @@ final class WholePackCensus {
      * @return the gate kind
      */
     static String kindOf(String packName, String path, PackFileKind table) {
-        PackFileKind.Classification classification = table.classify(packName + "/" + path);
-        if (classification instanceof PackFileKind.Mapped mapped) {
-            return mapped.kind();
-        }
-        if (classification instanceof PackFileKind.Retired retired) {
-            return RETIRED + retired.match();
-        }
-        if (classification instanceof PackFileKind.Excluded excluded) {
-            return EXCLUDED + excluded.exclusionClass();
-        }
-        int slash = path.indexOf('/');
-        return OTHER + (slash < 0 ? path : path.substring(0, slash));
+        return kindOf(CensusEntries.entry(packName, path, table, Map.of()));
     }
 
     /**
-     * The companion files the readable artifacts of the pack name, under the registry's bindings and the bundled rules.
+     * The companion files the readable artifacts of the pack name, as the census lists them.
      *
      * @param pack the pack directory
      * @return pack-relative companion path to its owner, sorted by path
      */
     static SortedMap<String, CompanionFile> companionsOf(Path pack) {
-        return companionsOf(pack, KindBindings.all(), Companions.Rules.bundled());
+        return companionsOf(census(pack));
     }
 
     /**
-     * The companion files the readable artifacts of the pack name, as the companion rule resolves them (whether the
-     * file exists is the round trip's to report). Each artifact file is read as YAML through its binding, as the
-     * source fingerprint reads it; a companion itself is never read here.
+     * The companion files a census lists.
      *
-     * @param pack the pack directory
-     * @param bindings the bindings whose companions to list; a test passes one of its own
-     * @param rules the table that classifies companion paths
+     * @param census the census
      * @return pack-relative companion path to its owner, sorted by path
      */
-    static SortedMap<String, CompanionFile> companionsOf(
-            Path pack, List<KindBinding<?, ?>> bindings, Companions.Rules rules) {
-        Path packDir = pack.toAbsolutePath().normalize();
+    static SortedMap<String, CompanionFile> companionsOf(TreeCensus census) {
         SortedMap<String, CompanionFile> out = new TreeMap<>();
-        for (KindBinding<?, ?> binding : bindings) {
-            if (binding.hasCompanions()) {
-                for (String file : PackFileSet.files(packDir, binding.kind())) {
-                    companionsOf(packDir, file, binding, rules, out);
-                }
-            }
+        for (TreeCensus.Companion companion : census.companions()) {
+            out.put(
+                    companion.path(),
+                    new CompanionFile(
+                            companion.owner(),
+                            companion.ownerKind(),
+                            companion.declared(),
+                            ContentForm.fromToken(companion.form())));
         }
         return out;
-    }
-
-    private static <D> void companionsOf(
-            Path packDir,
-            String file,
-            KindBinding<D, ?> binding,
-            Companions.Rules rules,
-            SortedMap<String, CompanionFile> out) {
-        Optional<String> text = FilesystemPackStore.readText(packDir.resolve(file));
-        if (text.isEmpty()
-                || !(new YamlSerializationStrategy().read(binding, text.get(), file)
-                        instanceof FileRead.Read<D> read)) {
-            return;
-        }
-        for (KindBinding.Companion companion : binding.companions(read.value())) {
-            if (Companions.resolve(rules, packDir, file, companion) instanceof Companions.Inside at) {
-                out.putIfAbsent(
-                        at.packRelative(),
-                        new CompanionFile(file, binding.schemaName(), companion.path(), companion.form()));
-            }
-        }
     }
 
     /**
@@ -210,21 +212,32 @@ final class WholePackCensus {
      * @return the form of a pack-relative path
      */
     static Function<String, ContentForm> formsOf(Path pack) {
-        return formsOf(pack, companionsOf(pack));
+        return formsOf(census(pack));
     }
 
     /**
-     * How the gate compares each file of a pack, given its companions.
+     * How the gate compares each file a census lists: a companion in its declared form, a mapped file in its rule's form,
+     * any other file as YAML.
      *
-     * @param pack the pack directory
-     * @param companions the pack's companions, as {@link #companionsOf} lists them
+     * @param census the census
      * @return the form of a pack-relative path
      */
-    static Function<String, ContentForm> formsOf(Path pack, SortedMap<String, CompanionFile> companions) {
-        String packName = String.valueOf(pack.getFileName());
+    static Function<String, ContentForm> formsOf(TreeCensus census) {
+        Map<String, String> companions = new HashMap<>();
+        census.companions().forEach(companion -> companions.put(companion.path(), companion.form()));
+        Map<String, TreeCensus.Entry> mapped = new HashMap<>();
+        for (TreeCensus.Entry entry : census.entries()) {
+            if (entry.standing() == TreeCensus.Standing.MAPPED) {
+                mapped.put(entry.path(), entry);
+            }
+        }
         return path -> {
-            @Nullable CompanionFile companion = companions.get(path);
-            return companion != null ? companion.form() : contentFormOf(packName, path);
+            String declared = companions.get(path);
+            if (declared != null) {
+                return ContentForm.fromToken(declared);
+            }
+            TreeCensus.Entry entry = mapped.get(path);
+            return entry == null ? ContentForm.YAML : formOf(entry);
         };
     }
 
@@ -241,13 +254,17 @@ final class WholePackCensus {
      *     refuses anyway: the dispatch is exhaustive, so a newly built form must be decided here
      */
     static ContentForm contentFormOf(String packName, String path) {
-        if (!(PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped)) {
-            return ContentForm.YAML;
-        }
-        return switch (mapped.contentForm()) {
-            case YAML, MARKDOWN, BYTES -> mapped.contentForm();
+        TreeCensus.Entry entry = CensusEntries.entry(packName, path, PackFileKind.bundled(), Map.of());
+        return entry.standing() == TreeCensus.Standing.MAPPED ? formOf(entry) : ContentForm.YAML;
+    }
+
+    /** The form of a mapped entry, refusing a form the gate does not compare. */
+    private static ContentForm formOf(TreeCensus.Entry entry) {
+        ContentForm form = ContentForm.fromToken(entry.form().orElseThrow());
+        return switch (form) {
+            case YAML, MARKDOWN, BYTES -> form;
             case TEXT ->
-                throw new IllegalStateException(packName + "/" + path + ": content form '" + ContentForm.TEXT.token()
+                throw new IllegalStateException(entry.path() + ": content form '" + ContentForm.TEXT.token()
                         + "' is not built; the gate has no comparison for it");
         };
     }

@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
-import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -116,13 +115,11 @@ class GlossaryOldShapeRefusalTest {
             assertThat(contents.readFaults())
                     .extracting(fault -> fault.location().file())
                     .containsExactly(FILE);
-            assertThat(contents.readFaults().stream().map(PackFinding::of))
-                    .singleElement()
-                    .satisfies(finding -> {
-                        assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);
-                        assertThat(finding.file()).isEqualTo(FILE);
-                        assertThat(finding.detail()).isEqualTo(FILE + ": " + REASON);
-                    });
+            assertThat(contents.readFaults().stream()).singleElement().satisfies(finding -> {
+                assertThat(finding.code()).isEqualTo(StorageCodes.RETIRED);
+                assertThat(finding.location().file()).isEqualTo(FILE);
+                assertThat(finding.detail()).isEqualTo(FILE + ": " + REASON);
+            });
         }
 
         @Test
