@@ -6,14 +6,15 @@ import java.util.Objects;
 /**
  * A file of a pack that is not pack content, so not held (#554, operator ruling Q1, open case 6): an {@code exclusions}
  * rule names it, or it is Markdown only the {@code ignored} fallback takes (#451), or no pack file kind models it, or a
- * rule maps it but only as the file the descriptor names, and the descriptor names none (open case 9). Both
+ * rule maps it but the load reads it only as a file something names (the descriptor's policy file, an artifact's
+ * companion), and nothing names it (open case 9). Both
  * validate mode and a registration report it as one {@code file_not_held} warning and judge nothing in it. A retired
  * file is never one: it is refused by name.
  *
  * @param path the pack-relative path, {@code /}-separated
  * @param kind why the file is not held, decided where the file is classified
- * @param reason the reviewable reason of the rule that excludes it, {@value #UNMODELLED_REASON}, or
- *     {@value #UNNAMED_POLICY_REASON}
+ * @param reason the reviewable reason of the rule that excludes it, {@value #UNMODELLED_REASON},
+ *     {@value #UNNAMED_POLICY_REASON} or {@value #UNNAMED_COMPANION_REASON}
  */
 public record NotHeldFile(String path, Kind kind, String reason) {
 
@@ -26,6 +27,13 @@ public record NotHeldFile(String path, Kind kind, String reason) {
      */
     public static final String UNNAMED_POLICY_REASON = "the descriptor's mutability_policy does not name it";
 
+    /**
+     * The reason of a companion file a rule maps that no artifact of the pack names (#554, open case 9, WP05 review M1):
+     * a guide no toolguide names, a step prompt no mission type names. The load reads a companion only with the artifact
+     * that names it, so an unnamed one affects nothing. An orphan prompt fragment is not one: it is refused.
+     */
+    public static final String UNNAMED_COMPANION_REASON = "no artifact of the pack names it";
+
     /** Why a file is not held. */
     public enum Kind {
         /** An {@code exclusions} rule or the {@code ignored} fallback takes the file, with the rule's reason. */
@@ -33,8 +41,8 @@ public record NotHeldFile(String path, Kind kind, String reason) {
         /** No pack file kind models the file. */
         UNMODELLED,
         /**
-         * A rule maps the file, but the load reads it only when the descriptor names it, and the descriptor does not: a
-         * {@code policy.yaml} no {@code mutability_policy} names (#554, open case 9).
+         * A rule maps the file, but the load reads it only as a file something names, and nothing does: a
+         * {@code policy.yaml} no {@code mutability_policy} names, or a companion no artifact names (#554, open case 9).
          */
         UNNAMED
     }
@@ -84,6 +92,16 @@ public record NotHeldFile(String path, Kind kind, String reason) {
      */
     public static NotHeldFile unnamedPolicy(String path) {
         return new NotHeldFile(path, Kind.UNNAMED, UNNAMED_POLICY_REASON);
+    }
+
+    /**
+     * A companion file no artifact of the pack names (#554, open case 9).
+     *
+     * @param path the pack-relative path
+     * @return the file, with {@value #UNNAMED_COMPANION_REASON} as its reason
+     */
+    public static NotHeldFile unnamedCompanion(String path) {
+        return new NotHeldFile(path, Kind.UNNAMED, UNNAMED_COMPANION_REASON);
     }
 
     /**
