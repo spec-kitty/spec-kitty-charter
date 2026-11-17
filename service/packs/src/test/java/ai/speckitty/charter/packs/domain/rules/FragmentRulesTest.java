@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.packs.domain.rules;
 
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.COMPANION_MISSING;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.COMPANION_ORPHAN;
@@ -17,17 +17,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
+import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Companion;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Edge;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Enhancement;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts.Entry;
+import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault.Finding;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +54,7 @@ import org.junit.jupiter.api.Test;
  * This test pins the {@code prompt_fragment_invalid} side of FR-005: a repeated slot, a missing companion and an
  * orphan.
  */
-class StepEnhancementRulesTest {
+class FragmentRulesTest {
 
     private static final String PLAN = "software-dev";
 
@@ -119,7 +132,7 @@ class StepEnhancementRulesTest {
     }
 
     private static List<Finding> judge(PackFixture pack) {
-        return StepEnhancementRules.judge(pack.facts());
+        return FragmentRules.judge(pack.facts());
     }
 
     private static void assertOnly(List<Finding> found, StepEnhancementFault rule, String path) {
@@ -531,6 +544,108 @@ class StepEnhancementRulesTest {
                             Optional.empty()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("base::action:software-dev/plan");
+        }
+    }
+
+    /** The facts of the pack {@code qa}, read in full, with these step enhancement facts and the fragment given. */
+    private static PackContents contents(PackFixture pack, FileRead<RawGraph> fragment) {
+        return new PackContents(
+                new PackRoot("qa", Optional.of(PackLevel.ORG), "loc"),
+                new FileRead.Absent<>("pack.yaml"),
+                List.of(),
+                fragment,
+                List.of(),
+                List.of(),
+                pack.facts(),
+                List.of(),
+                List.of());
+    }
+
+    private static PackContents contents(PackFixture pack) {
+        return contents(pack, new FileRead.Absent<>("drg/fragment.yaml"));
+    }
+
+    /** The rule constants over the facts of the one read (#554, T037): one reason per fault. */
+    @Nested
+    class AsRules {
+
+        @Test
+        @DisplayName("each fault is one prompt_fragment_invalid at its file, in the one wording")
+        void eachFaultIsOneReasonAtItsFile() {
+            PackFixture pack = new PackFixture()
+                    .valid(PLAN, "brief", "plan")
+                    .enhancement(PLAN, "bare", new Entry("tone:style", "missing.prompt-fragment.md"))
+                    .enhances("bare", "base", "action:" + PLAN + "/plan");
+
+            List<Reason> findings = FragmentRules.ENHANCEMENT.apply(contents(pack));
+
+            assertThat(findings).singleElement().satisfies(finding -> {
+                assertThat(finding.code()).isEqualTo(PackCodes.PROMPT_FRAGMENT_INVALID);
+                assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
+                assertThat(finding.isFailing()).isTrue();
+                assertThat(finding.rule()).isEqualTo("prompt_fragment_invalid");
+                assertThat(finding.location()).isEqualTo(Location.in(PackFixture.path(PLAN, "bare")));
+                assertThat(finding.detail())
+                        .isEqualTo(PackFixture.path(PLAN, "bare") + ": the companion "
+                                + PackFixture.fragmentPath(PLAN, "missing.prompt-fragment.md") + " does not exist");
+            });
+            assertThat(FragmentRules.ORPHAN.apply(contents(pack))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("an orphan is the orphan rule's alone, at the fragment, in path order")
+        void anOrphanIsTheOrphanRulesAlone() {
+            PackFixture pack = new PackFixture()
+                    .valid(PLAN, "brief", "plan")
+                    .orphan(PLAN, "z.prompt-fragment.md")
+                    .orphan(PLAN, "a.prompt-fragment.md");
+
+            assertThat(FragmentRules.ENHANCEMENT.apply(contents(pack))).isEmpty();
+            assertThat(FragmentRules.ORPHAN.apply(contents(pack)))
+                    .extracting(reason -> reason.location().file())
+                    .containsExactly(
+                            PackFixture.fragmentPath(PLAN, "a.prompt-fragment.md"),
+                            PackFixture.fragmentPath(PLAN, "z.prompt-fragment.md"));
+            assertThat(FragmentRules.RULES.apply(contents(pack))).isEqualTo(FragmentRules.ORPHAN.apply(contents(pack)));
+        }
+
+        @Test
+        @DisplayName("the fragments beside an enhancement the read refused are no orphans")
+        void theCompanionsOfARefusedEnhancementAreNoOrphans() {
+            PackFixture pack = new PackFixture().unparsed(PLAN, "broken").orphan(PLAN, "broken.prompt-fragment.md");
+
+            assertThat(FragmentRules.RULES.apply(contents(pack))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("a companion the codec refused is judged by no content rule: the codec's fault wins over a marker")
+        void aCodecFaultWinsOverAMarker() {
+            PackFixture marked = new PackFixture()
+                    .enhancement(PLAN, "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment(PLAN, "brief.prompt-fragment.md", "<!-- spdd:x:start -->\n")
+                    .enhances("brief", "base", "action:" + PLAN + "/plan");
+            PackFixture refused = new PackFixture()
+                    .enhancement(PLAN, "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment(Companion.unreadable(PackFixture.fragmentPath(PLAN, "brief.prompt-fragment.md")))
+                    .enhances("brief", "base", "action:" + PLAN + "/plan");
+
+            assertThat(FragmentRules.ENHANCEMENT.apply(contents(marked))).hasSize(1);
+            assertThat(FragmentRules.ENHANCEMENT.apply(contents(refused))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("with a graph document the read could not read, the rules that read the edges are not judged")
+        void theEdgeRulesNeedEveryGraphRead() {
+            PackFixture edgeless = new PackFixture()
+                    .enhancement(PLAN, "brief", new Entry("tone:style", "brief.prompt-fragment.md"))
+                    .fragment(PLAN, "brief.prompt-fragment.md", "Be brief.\n")
+                    .overrides("brief", "action:" + PLAN + "/plan");
+            FileRead<RawGraph> refused = new FileRead.Unreadable<>(
+                    "drg/fragment.yaml", new ParseFailure("drg/fragment.yaml", "not YAML"), List.of());
+
+            assertThat(FragmentRules.ENHANCEMENT.apply(contents(edgeless))).hasSize(2);
+            assertThat(FragmentRules.ENHANCEMENT.apply(contents(edgeless, refused)))
+                    .isEmpty();
         }
     }
 }

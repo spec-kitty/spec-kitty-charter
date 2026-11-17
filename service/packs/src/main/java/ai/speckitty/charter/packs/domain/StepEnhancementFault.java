@@ -3,7 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import java.util.Objects;
 
 /**
- * The rules {@link StepEnhancementRules} judges, one member each. The declaration order is the tie-break order of the
+ * The rules {@link ai.speckitty.charter.packs.domain.rules.FragmentRules} judges, one member each. The declaration order is the tie-break order of the
  * answer: faults at one file come out in this order (research P9).
  *
  * <p>There is no member for an id that differs from its file stem, nor for a slot id that breaks
