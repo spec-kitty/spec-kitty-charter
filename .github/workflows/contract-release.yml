@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT" = push ]; then tag="$PUSHED"; else tag="$REHEARSED"; fi
-          if ! printf '%s' "$tag" | grep -Eq '^contract-charter-v[0-9A-Za-z.+-]+$'; then
+          if ! grep -Eq '^contract-charter-v[0-9A-Za-z.+-]+$' <<<"$tag"; then
             echo "::error::The tag is not a contract release tag (contract-charter-v<version>)"
             exit 1
           fi

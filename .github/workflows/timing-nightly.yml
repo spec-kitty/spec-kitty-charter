@@ -42,7 +42,7 @@ jobs:
         id: open-packs-pin
         run: |
           ref="$(grep '^openPacksRef=' gradle.properties | cut -d= -f2-)"
-          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
+          if ! grep -Eq '^[0-9a-f]{40}$' <<<"$ref"; then
             echo "::error::openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '$ref'"
             exit 1
           fi

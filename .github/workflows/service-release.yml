@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT" = push ]; then tag="$PUSHED"; else tag="$REHEARSED"; fi
-          if ! printf '%s' "$tag" | grep -Eq '^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+          if ! grep -Eq '^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' <<<"$tag"; then
             echo "::error::The tag is not a service release tag (service-vX.Y.Z[-pre], ADR-0046 decision 1)"
             exit 1
           fi
