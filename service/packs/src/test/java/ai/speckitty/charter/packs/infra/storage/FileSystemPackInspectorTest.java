@@ -1758,6 +1758,27 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
+    void theManifestsReadFaultAndTheNamedPolicysFaultTrailOnceEachTheManifestFirst(@TempDir Path dir)
+            throws IOException {
+        write(dir, "pack.yaml", """
+                pack_id: 01ARWG13C00000000000001ABC
+                pack_version: 1.0.0
+                name: qa
+                pack_level: org
+                mutability_policy: policy.yaml
+                """);
+        write(dir, "pack-manifest.yaml", "constituents: [\n");
+        write(dir, "tactics/t.tactic.yaml", "id: t\nschema_version: '1.0'\nname: T\nsteps:\n- title: Do\n");
+
+        // WP07 review MINOR-3 and R2 row 32: the read faults at the manifest and the store's fault at the named policy
+        // file follow the pack's other faults, the manifest's first, and each is stated once.
+        assertThat(verdict(dir))
+                .extracting(finding -> finding.location().file())
+                .filteredOn(file -> file.equals("pack-manifest.yaml") || file.equals("policy.yaml"))
+                .containsExactly("pack-manifest.yaml", "policy.yaml");
+    }
+
+    @Test
     void aPackWithNoManifestHasNoManifestFacts(@TempDir Path dir) throws IOException {
         write(
                 dir,
