@@ -90,6 +90,14 @@ class PackCodesCoverageTest {
             "# Plan\n\n<!-- spdd:reasons-block:start -->legacy<!-- spdd:reasons-block:end -->\n";
 
     private static List<Written> written() {
+        List<Written> all = new ArrayList<>(promptPacks());
+        all.addAll(graphPacks());
+        all.addAll(storagePacks());
+        return all;
+    }
+
+    /** The prompt slot codes, each beside the descriptor version that gates it. */
+    private static List<Written> promptPacks() {
         return List.of(
                 bare(
                         "prompt_slot_malformed",
@@ -102,7 +110,12 @@ class PackCodesCoverageTest {
                 bare(
                         "prompt_slot_not_empty (warning, unversioned)",
                         PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING,
-                        pack -> promptOf(pack, FILLED)),
+                        pack -> promptOf(pack, FILLED)));
+    }
+
+    /** The prompt fragment and the graph's endpoint codes. */
+    private static List<Written> graphPacks() {
+        return List.of(
                 bare("prompt_fragment_invalid", PackCodes.PROMPT_FRAGMENT_INVALID, pack -> {
                     write(pack, "enhancements.graph.yaml", """
                             schema_version: '1.0'
@@ -136,7 +149,12 @@ class PackCodesCoverageTest {
                         - source: template:t
                           target: directive:d
                           relation: overrides
-                        """)),
+                        """)));
+    }
+
+    /** The companion, the descriptor format and the storage codes. */
+    private static List<Written> storagePacks() {
+        return List.of(
                 bare("companion", StorageCodes.COMPANION, pack -> {
                     write(pack, "toolguides/make.toolguide.yaml", """
                             id: make
