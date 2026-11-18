@@ -79,6 +79,17 @@ class NodeKindTest {
     }
 
     @Test
+    void aKindIsNamedByTheContractWhenAGraphDeclaresItAnEdgeNamesItOrItIsActivatable() {
+        // ADR-0080: the routing catalog is no graph kind, yet a read names it; a guard and a lifecycle are not (#156).
+        assertThat(java.util.Arrays.stream(NodeKind.values()).filter(kind -> !kind.named()))
+                .containsExactlyInAnyOrder(NodeKind.GUARD, NodeKind.LIFECYCLE);
+        assertThat(NodeKind.ROUTING_CATALOG.named()).isTrue();
+        assertThat(NodeKind.ROUTING_CATALOG.declarableInGraphs()).isFalse();
+        assertThat(NodeKind.ROUTING_CATALOG.edgeTarget()).isFalse();
+        assertThat(NodeKind.TERM.named()).as("an edge target only").isTrue();
+    }
+
+    @Test
     void aTermIsAnEdgeEndpointOnlyAsTheTargetOfAVocabularyEdge() {
         assertThat(NodeKind.TERM.edgeSource()).as("term as a source").isFalse();
         assertThat(NodeKind.TERM.edgeTargetOf(Optional.of(RelationType.VOCABULARY)))

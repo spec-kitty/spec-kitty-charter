@@ -99,14 +99,14 @@ class WireTokenParityTest {
     private static final List<String> DIAGNOSTIC_CODES = contractEnum("DiagnosticCode.yaml");
 
     /**
-     * The wire's set of URN kinds: the node kinds a graph document may declare or an edge may name. The contract's
-     * {@code NodeKind} lists these and no more: {@code guard} and {@code lifecycle} are in the domain but are neither
-     * declared in graphs nor edge endpoints, and stay out of the contract until their contract set lands (operator
-     * ruling of 2026-11-02, #156); {@code routing_catalog} is no graph kind at all (ADR-0080), so the domain side is filtered by {@link NodeKind#declarableInGraphs()} or
-     * {@link NodeKind#edgeTarget()}.
+     * The wire's set of URN kinds: the node kinds a graph document may declare or an edge may name, and the activatable
+     * routing catalog, which no graph declares but a read names (ADR-0080). The contract's {@code NodeKind} lists these
+     * and no more: {@code guard} and {@code lifecycle} are in the domain but are neither, and stay out of the contract
+     * until their contract set lands (operator ruling of 2026-11-02, #156), so the domain side is filtered by
+     * {@link NodeKind#named()}.
      */
     private static final List<String> WIRE_NODE_KINDS = Arrays.stream(NodeKind.values())
-            .filter(kind -> kind.declarableInGraphs() || kind.edgeTarget())
+            .filter(NodeKind::named)
             .map(NodeKind::token)
             .toList();
 
@@ -428,14 +428,14 @@ class WireTokenParityTest {
     }
 
     @Test
-    void onlyGuardLifecycleAndRoutingCatalogAreLeftOutOfTheNodeKindRow() {
+    void onlyGuardAndLifecycleAreLeftOutOfTheNodeKindRow() {
         // The NodeKind row compares only the kinds declared in graphs or named by edges. A new kind the filter
         // leaves out must be a deliberate choice made here, not a gap the row cannot see.
         assertThat(Arrays.stream(NodeKind.values())
                         .map(NodeKind::token)
                         .filter(token -> !WIRE_NODE_KINDS.contains(token))
                         .toList())
-                .containsExactlyInAnyOrder("guard", "lifecycle", "routing_catalog");
+                .containsExactlyInAnyOrder("guard", "lifecycle");
     }
 
     @TestFactory
