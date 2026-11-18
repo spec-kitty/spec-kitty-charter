@@ -335,7 +335,7 @@
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
-      "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+      "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
     } ]
   },
   "planted/asset-path-inside-through-a-symlink-is-contained+pack.yaml" : {
@@ -350,7 +350,7 @@
       "severity" : "violation",
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
-      "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+      "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
     } ]
   },
   "planted/asset-path-symlink-loop" : {
@@ -767,6 +767,36 @@
       "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
     } ]
   },
+  "planted/c3-root-shard-edge-bare-endpoint" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "edges", "0", "source" ],
+      "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+    } ]
+  },
+  "planted/c3-root-shard-edge-bare-endpoint+pack.yaml" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "edges", "0", "source" ],
+      "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+    }, {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
   "planted/c3-root-shard-urn-malformed" : {
     "findings" : [ {
       "code" : "pack_unreadable",
@@ -945,6 +975,36 @@
       "file" : "drg/fragment.yaml",
       "place" : [ "edges", "0", "relation" ],
       "detail" : "drg/fragment.yaml: unknown relation 'extends'"
+    } ]
+  },
+  "planted/c7-root-shard-relation-extends" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "edges", "0", "relation" ],
+      "detail" : "tactic.graph.yaml: unknown relation 'extends'"
+    } ]
+  },
+  "planted/c7-root-shard-relation-extends+pack.yaml" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "tactic.graph.yaml",
+      "place" : [ "edges", "0", "relation" ],
+      "detail" : "tactic.graph.yaml: unknown relation 'extends'"
+    }, {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
     } ]
   },
   "planted/c7-shard-relation-extends" : {
@@ -1317,6 +1377,48 @@
       "file" : "drg/fragment.yaml",
       "place" : [ "edges", "0", "source" ],
       "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
+    } ]
+  },
+  "planted/r15-glossary-urn-in-a-root-shard" : {
+    "findings" : [ {
+      "code" : "pack_unreadable",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "pack qa has no pack.yaml"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "glossary.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "glossary.graph.yaml",
+      "place" : [ "nodes", "0", "kind" ],
+      "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+    } ]
+  },
+  "planted/r15-glossary-urn-in-a-root-shard+pack.yaml" : {
+    "findings" : [ {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "glossary.graph.yaml",
+      "place" : [ "nodes", "0", "urn" ],
+      "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
+    }, {
+      "code" : "drg_schema_error",
+      "severity" : "violation",
+      "file" : "glossary.graph.yaml",
+      "place" : [ "nodes", "0", "kind" ],
+      "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+    }, {
+      "code" : "org_fragment_missing",
+      "severity" : "violation",
+      "file" : "pack.yaml",
+      "place" : [ ],
+      "detail" : "org pack qa has no drg/fragment.yaml"
     } ]
   },
   "planted/r15-glossary-urn-in-a-shard" : {

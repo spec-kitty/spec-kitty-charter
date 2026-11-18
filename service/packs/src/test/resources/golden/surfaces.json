@@ -454,7 +454,7 @@
         }, {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
-          "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+          "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
         } ]
       }
     },
@@ -473,14 +473,14 @@
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
-          "detail" : "assets/a.asset.yaml: payload assets/in/x.txt does not exist"
+          "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file assets/a.asset.yaml of qa cannot be read: payload assets/in/x.txt does not exist"
+        "detail" : "the file assets/a.asset.yaml of qa cannot be read: payload assets/in/keep.txt does not exist"
       }
     }
   },
@@ -1031,6 +1031,48 @@
       }
     }
   },
+  "planted/c3-root-shard-edge-bare-endpoint" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+        }, {
+          "pointer" : "pack.yaml",
+          "code" : "pack_unreadable",
+          "detail" : "pack qa has no pack.yaml"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
+  },
+  "planted/c3-root-shard-edge-bare-endpoint+pack.yaml" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
+  },
   "planted/c3-root-shard-urn-malformed" : {
     "registration" : {
       "refused" : {
@@ -1276,6 +1318,48 @@
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: unknown relation 'extends'"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
+  },
+  "planted/c7-root-shard-relation-extends" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: unknown relation 'extends'"
+        }, {
+          "pointer" : "pack.yaml",
+          "code" : "pack_unreadable",
+          "detail" : "pack qa has no pack.yaml"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
+  },
+  "planted/c7-root-shard-relation-extends+pack.yaml" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: unknown relation 'extends'"
         } ]
       }
     },
@@ -1823,6 +1907,56 @@
           "pointer" : "drg/fragment.yaml",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
+  },
+  "planted/r15-glossary-urn-in-a-root-shard" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at glossary.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
+        }, {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+        }, {
+          "pointer" : "pack.yaml",
+          "code" : "pack_unreadable",
+          "detail" : "pack qa has no pack.yaml"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "a graph document of qa cannot be read"
+      }
+    }
+  },
+  "planted/r15-glossary-urn-in-a-root-shard+pack.yaml" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at glossary.graph.yaml.",
+        "violations" : [ {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
+        }, {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
         } ]
       }
     },
