@@ -1,0 +1,212 @@
+schema_version: 1
+mission_id: 01M7PVHQF72SKVY48WB787M7GM
+mission_slug: model-task-routing-01M7PVHQ
+mission_number: 27
+friendly_name: 'Model-task routing: the catalog kind and the advisory recommendation'
+mission_type: software-dev
+target_branch: feat/108-model-task-routing
+created_at: '2026-11-18T22:47:15.167386+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-18T22:47:15.167386+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-007
+  category: doc
+  summary: analysis-report.md present with no recorded findings
+  evidence_refs:
+  - e-023
+  details: An analysis-report.md artifact is present and its frontmatter records zero findings with a resolved verdict —
+    the analysis raised nothing.
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-002
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-003
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-004
+  category: implementation
+  summary: WP07 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-005
+  category: implementation
+  summary: WP08 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-006
+  category: implementation
+  summary: WP09 completed without rejection cycles
+  evidence_refs:
+  - e-015
+not_helpful:
+- id: n-004
+  category: process
+  summary: WP02 had 1 lane bounce(s) before approval
+  evidence_refs:
+  - e-019
+  details: WP WP02 moved backward across workflow lanes 1 time(s) outside the documented reviewer-feedback flow.
+- id: n-006
+  category: process
+  summary: WP02 required 1 --force override(s) during workflow
+  evidence_refs:
+  - e-021
+  details: WP WP02 required 1 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-005
+  category: process
+  summary: WP10 had 1 lane bounce(s) before approval
+  evidence_refs:
+  - e-020
+  details: WP WP10 moved backward across workflow lanes 1 time(s) outside the documented reviewer-feedback flow.
+- id: n-007
+  category: process
+  summary: WP10 required 1 --force override(s) during workflow
+  evidence_refs:
+  - e-022
+  details: WP WP10 required 1 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-001
+  category: review_loop
+  summary: WP05 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-016
+  details: WP WP05 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP06 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-017
+  details: WP WP06 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP10 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-018
+  details: WP WP10 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP01-routing-slice-governance.md
+- id: e-006
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP02-kernel-kind-and-cost-tier.md
+- id: e-007
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP03-schemas-file-rule-link-relations.md
+- id: e-008
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP04-step-model-tier.md
+- id: e-009
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP05-catalog-domain-binding-rules.md
+- id: e-010
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP06-example-packs.md
+- id: e-011
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP07-ranker.md
+- id: e-012
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP08-catalog-reads.md
+- id: e-013
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP09-recommendation-read.md
+- id: e-014
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/tasks/WP10-records.md
+- id: e-015
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+- id: e-016
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7QFR3NYB1TWGJ4ZQDZT7GXZ
+- id: e-017
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7QQ7KZY6BCXHCJ1VCBSRWJD
+- id: e-018
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7RA5HVQVPNHSTQVJVYN6ZPZ
+- id: e-019
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7RCDXSN425WQVAKBW7PA22Q
+- id: e-020
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7RCDMYJT2WJ9X9CSFTW73ZJ
+- id: e-021
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7RCDXSN425WQVAKBW7PA22Q
+- id: e-022
+  kind: event_range
+  path: kitty-specs/model-task-routing-01M7PVHQ/status.events.jsonl
+  range: 01M7RCDMYJT2WJ9X9CSFTW73ZJ
+- id: e-023
+  kind: file
+  path: kitty-specs/model-task-routing-01M7PVHQ/analysis-report.md
+generator_version: '1.0'
+provenance_history: []
