@@ -351,7 +351,8 @@ final class PackFileKind {
     /**
      * The first {@code ignored} rule that matches {@code path}, as the file's exclusion; empty when none does, and
      * empty when a files, retired or payload rule takes the path in another letter case ({@code a.guide.MD}): such a
-     * file is refused as unmodelled, never swept up by the fallback.
+     * file stays unclassified, so it is not held and warned about as {@code file_not_held} (Q1), never swept up by the
+     * fallback.
      */
     private Optional<Classification> ignored(String path) {
         Classification folded = classifyFolded(path);
