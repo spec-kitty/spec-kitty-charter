@@ -2,12 +2,13 @@
 title: "ADR-0077: The kind taxonomy is served, and the mission-type step is the one authoring surface"
 description: "Slice F: the kind taxonomy is served; substeps fold into the step and the step contract retires; each relation's endpoint kinds are typed and refused; four shapes retire."
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-18T00:00:00Z
+decision_status: 'Accepted; decision 5 amended 2026-11-18 (ADR-0080: no relation admits the routing catalog)'
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
 related:
+  - adr/0080-the-routing-catalog-kind-and-the-model-recommendation
   - adr/0022-contract-versions-start-at-0-x
   - adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship
   - adr/0044-mission-types-consolidated-into-one-sanitized-shape
@@ -171,8 +172,8 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
    | `instantiates` | action → template |
    | `refines` | G → G |
    | `specializes_from` | agent_profile → agent_profile |
-   | `enhances` | step_enhancement → action; X → X for every activatable X except mission_type and step_enhancement |
-   | `overrides` | X → X, where X is activatable and not step_enhancement |
+   | `enhances` | step_enhancement → action; X → X for every activatable X except mission_type, step_enhancement and routing_catalog |
+   | `overrides` | X → X, where X is activatable and not step_enhancement or routing_catalog |
    | `reconciles_tension` | G → G |
    | `rejects` | G → anti_pattern |
    | `implemented_by` | guard → asset (derived, never authored) |
@@ -245,6 +246,18 @@ These were made in the work packages and approved in their reviews; none changes
   (WP07, WP08).
 - **A retired file rule beats a files rule that also matches**, unless an exclusion matches too (WP08), so a retired
   `mission_step_contract.graph.yaml` is refused by name and not read as a graph shard.
+
+### Amendment 2026-11-18: no relation admits the routing catalog
+
+[ADR-0080](/adr/0080-the-routing-catalog-kind-and-the-model-recommendation/) decision 5 adds `routing_catalog`. It is
+activatable but neither declarable in graphs nor an edge target: nothing relates to a catalog, and an org pack replaces
+one by its id across levels, with no edge.
+
+The `enhances` and `overrides` diagonals were built from every activatable kind, so they would have admitted
+`routing_catalog → routing_catalog`. Decision 5's two rows now name it among the exclusions. The kernel reaches the
+same sets by one rule: it takes only the activatable kinds that are edge targets (`EndpointTable`). Every kind those
+diagonals admitted before is an edge target, so no other row changes. `EndpointTableAdrTest` keeps this record and the
+code equal.
 
 ## Consequences
 

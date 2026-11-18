@@ -109,11 +109,18 @@ final class EndpointTable {
         return kinds;
     }
 
+    /**
+     * The activatable kinds an edge may reach, less the excluded ones: the diagonals of {@code enhances} and
+     * {@code overrides}. A kind that is activatable but no edge target, the routing catalog (ADR-0080 decision 5), is
+     * left out, so no relation admits it; a layer override needs no edge, because the same id across levels is the
+     * override.
+     */
     private static Set<NodeKind> activatableExcept(NodeKind... excluded) {
         Set<NodeKind> kinds = EnumSet.noneOf(NodeKind.class);
         for (ArtifactKind kind : ArtifactKind.values()) {
-            if (kind.activatable()) {
-                kinds.add(NodeKind.of(kind));
+            NodeKind node = NodeKind.of(kind);
+            if (kind.activatable() && node.edgeTarget()) {
+                kinds.add(node);
             }
         }
         kinds.removeAll(Arrays.asList(excluded));

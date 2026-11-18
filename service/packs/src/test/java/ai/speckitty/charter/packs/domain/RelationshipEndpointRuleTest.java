@@ -256,6 +256,7 @@ class RelationshipEndpointRuleTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 

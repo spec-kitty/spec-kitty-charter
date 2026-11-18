@@ -558,6 +558,7 @@ class FragmentRulesTest {
                 List.of(),
                 pack.facts(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 

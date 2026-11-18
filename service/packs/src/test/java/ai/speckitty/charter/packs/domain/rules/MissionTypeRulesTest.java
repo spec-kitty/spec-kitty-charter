@@ -79,7 +79,8 @@ class MissionTypeRulesTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
-                List.of(type));
+                List.of(type),
+                List.of());
     }
 
     private static FileRead<PackDescriptor> declaring(String name) {

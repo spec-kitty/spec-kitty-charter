@@ -57,7 +57,7 @@ class DoctrineRoundTripTest {
     void aStyleguideKeepsToolingOrderAndEveryConfigValueType() {
         Map<String, ConfigValue> lint = new LinkedHashMap<>();
         lint.put("limit", ConfigValue.of(42));
-        lint.put("ratio", ConfigValue.of(1.5));
+        lint.put("ratio", ConfigValue.of(new java.math.BigDecimal("1.5")));
         lint.put("strict", ConfigValue.of(true));
         lint.put("quotedNumber", ConfigValue.of("42"));
         lint.put("nothing", ConfigValue.of(null));

@@ -79,6 +79,7 @@ class PrecedenceTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 

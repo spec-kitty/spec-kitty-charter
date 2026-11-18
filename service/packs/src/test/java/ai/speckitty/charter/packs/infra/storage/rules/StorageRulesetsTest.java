@@ -50,6 +50,7 @@ class StorageRulesetsTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 
@@ -64,6 +65,7 @@ class StorageRulesetsTest {
                 contents.stepEnhancements(),
                 contents.promptSlots(),
                 contents.missionTypes(),
+                List.of(),
                 assembly);
     }
 
@@ -255,6 +257,7 @@ class StorageRulesetsTest {
                     List.of(),
                     List.of(),
                     StepEnhancementFacts.none(),
+                    List.of(),
                     List.of(),
                     List.of(),
                     noDescriptor);

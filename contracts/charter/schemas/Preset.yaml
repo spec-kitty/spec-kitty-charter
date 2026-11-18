@@ -156,6 +156,17 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
       symbol: Preset.artifacts
+  activatedRoutingCatalogs:
+    type: array
+    minItems: 1
+    description: >-
+      The routing catalogs applying the preset selects, in the order the file lists them (activated_routing_catalogs,
+      ADR-0080). Left out when the preset lists none.
+    items:
+      $ref: PresetItem.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java
+      symbol: Preset.artifacts
   _links:
     $ref: Links.yaml
 x-source:
