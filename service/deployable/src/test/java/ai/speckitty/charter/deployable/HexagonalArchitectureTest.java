@@ -61,6 +61,8 @@ class HexagonalArchitectureTest {
     private static final String PACKS_ARCHIVE = ROOT + ".packs.infra.archive..";
 
     private static final String PROFILES_DOMAIN = ROOT + ".profiles.domain..";
+    /** The routing slice's domain (ADR-0080): the routing catalog and the ranker. */
+    private static final String ROUTING_DOMAIN = ROOT + ".routing.domain..";
     /** The missions slice's domain (ADR-0044). */
     private static final String MISSIONS_DOMAIN = ROOT + ".missions.domain..";
     /** The activations slice's domain (ADR-0020), over the packs slice. */
@@ -82,10 +84,10 @@ class HexagonalArchitectureTest {
     private static final String JSPECIFY = "org.jspecify.annotations..";
     /** Every slice domain and the shared kernel (including {@code kernel.validation}). */
     private static final String[] DOMAIN_RINGS = {
-        KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, MISSIONS_DOMAIN, ACTIVATIONS_DOMAIN
+        KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, ROUTING_DOMAIN, MISSIONS_DOMAIN, ACTIVATIONS_DOMAIN
     };
     /** The vertical slices; each slice's domain may depend only on itself and the kernel. */
-    private static final List<String> SLICES = List.of("packs", "profiles", "missions", "activations");
+    private static final List<String> SLICES = List.of("packs", "profiles", "routing", "missions", "activations");
 
     private static void assertBites(ArchRule rule, String fixturePackage, String... violators) {
         JavaClasses fixtures = new ClassFileImporter().importPackages(fixturePackage);
@@ -174,6 +176,18 @@ class HexagonalArchitectureTest {
             .dependOnClassesThat()
             .resideOutsideOfPackages(PROFILES_DOMAIN, KERNEL, JAVA, JSPECIFY);
 
+    /**
+     * The routing slice's domain (ADR-0080): only itself, the kernel, {@code java} and JSpecify. It holds the catalog and
+     * the ranker, which name neither the pack store nor an activation: the edge gathers their inputs.
+     */
+    private static final ArchRule ROUTING_DOMAIN_IS_PURE = noClasses()
+            .that()
+            .resideInAPackage(ROUTING_DOMAIN)
+            .should()
+            .dependOnClassesThat()
+            .resideOutsideOfPackages(ROUTING_DOMAIN, KERNEL, JAVA, JSPECIFY)
+            .because("the ranker is pure advice over a catalog, and packs binds the catalog, never the other way");
+
     /** The missions slice's domain (ADR-0044): only itself, the kernel, {@code java} and JSpecify. */
     private static final ArchRule MISSIONS_DOMAIN_IS_PURE = noClasses()
             .that()
@@ -207,6 +221,7 @@ class HexagonalArchitectureTest {
         KERNEL_IS_PURE.check(classes);
         PACKS_DOMAIN_IS_PURE.check(classes);
         PROFILES_DOMAIN_IS_PURE.check(classes);
+        ROUTING_DOMAIN_IS_PURE.check(classes);
         MISSIONS_DOMAIN_IS_PURE.check(classes);
         NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN.check(classes);
     }
@@ -216,6 +231,7 @@ class HexagonalArchitectureTest {
         assertBites(
                 PACKS_DOMAIN_IS_PURE, ROOT + ".packs.domain.badfixture", "DomainUsesSpring", "DomainReachesOutward");
         assertBites(PROFILES_DOMAIN_IS_PURE, ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(ROUTING_DOMAIN_IS_PURE, ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
         assertBites(MISSIONS_DOMAIN_IS_PURE, ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         assertBites(
                 NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN,
@@ -735,14 +751,15 @@ class HexagonalArchitectureTest {
 
     /**
      * ENTRYPOINT_STAYS_IN_ITS_SLICE (ADR-0037, amendment of 2026-10-27): the pack store binds the kinds of other slices,
-     * so {@code packs.infra.storage} may name the profiles and missions domains; the inbound adapter may not.
+     * so {@code packs.infra.storage} may name the profiles, missions and routing domains (ADR-0037, amendment of
+     * 2026-11-18); the inbound adapter may not.
      */
     private static final ArchRule ENTRYPOINT_STAYS_IN_ITS_SLICE = noClasses()
             .that()
             .resideInAPackage(PACKS_API)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(PROFILES_DOMAIN, MISSIONS_DOMAIN);
+            .resideInAnyPackage(PROFILES_DOMAIN, MISSIONS_DOMAIN, ROUTING_DOMAIN);
 
     @Test
     @DisplayName("ENTRYPOINT_STAYS_IN_ITS_SLICE")
@@ -793,6 +810,8 @@ class HexagonalArchitectureTest {
         assertBites(sliceDomainDoesNotCross("packs"), ROOT + ".packs.domain.badfixture", "DomainCrossesSlice");
         assertBites(
                 sliceDomainDoesNotCross("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(
+                sliceDomainDoesNotCross("routing"), ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
         assertBites(
                 sliceDomainDoesNotCross("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         assertBites(
@@ -1177,6 +1196,7 @@ class HexagonalArchitectureTest {
         String packs = ROOT + ".packs.domain.badfixture";
         assertBites(domainIsPure("packs"), packs, "DomainUsesSpring", "DomainReachesOutward");
         assertBites(domainIsPure("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(domainIsPure("routing"), ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
         assertBites(domainIsPure("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         String activations = ROOT + ".activations.domain.badfixture";
         assertBites(
