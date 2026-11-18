@@ -1,7 +1,7 @@
 {
-  "event_count": 58,
-  "last_event_id": "01M7R1XGPKPQSNY829RBQRCXF3",
-  "materialized_at": "2026-11-18T19:25:10.227187+00:00",
+  "event_count": 59,
+  "last_event_id": "01M7R2105V8S2KQXS5P51GW4FW",
+  "materialized_at": "2026-11-18T19:27:04.379468+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 2
   },
   "work_packages": {
@@ -254,14 +254,14 @@
       }
     },
     "WP08": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M7R1XGPKPQSNY829RBQRCXF3",
-      "last_transition_at": "2026-11-18T19:25:10.227187+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7R2105V8S2KQXS5P51GW4FW",
+      "last_transition_at": "2026-11-18T19:27:04.379468+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T13:21:39Z – claude – Folded in from the WP03 review: T008's prose edit to contracts/charter/parameters/ArtifactKind.yaml (list routing_catalog) was not made and disagrees with ArtifactKindToken.yaml; make it here as a recorded edit.",
@@ -270,9 +270,9 @@
         "Ready for review"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 17969,
-      "shell_pid_created_at": "1795026117.08",
+      "role": "reviewer",
+      "shell_pid": 459,
+      "shell_pid_created_at": "1795030008.26",
       "subtasks": {
         "T027": "done",
         "T028": "done",
