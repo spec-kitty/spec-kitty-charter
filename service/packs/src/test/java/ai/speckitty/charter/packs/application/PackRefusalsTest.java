@@ -19,6 +19,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -109,6 +111,26 @@ class PackRefusalsTest {
         assertThatThrownBy(() -> PackRefusals.diagnostics(verdict))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("mystery");
+    }
+
+    @Test
+    @DisplayName(
+            "every warning the PACK ruleset can emit is a diagnostic code, so an accepted upload never answers 500")
+    void everyWarningTheRulesetCanEmitIsADiagnosticCode() {
+        // What the registration can emit; PackCodesCoverageTest holds every emitted code to these two lists.
+        List<ReasonCode> warnings = Stream.concat(PackCodes.CONTENT.stream(), StorageCodes.ORDERED.stream())
+                .filter(code -> code.severity() == Severity.WARNING)
+                .toList();
+        assertThat(warnings).as("the ruleset emits warnings").isNotEmpty();
+
+        for (ReasonCode warning : warnings) {
+            Rationale verdict = new Rationale(List.of(failing(warning, "a.yaml", "a.yaml: what")));
+
+            assertThat(PackRefusals.diagnostics(verdict))
+                    .as("%s is a DiagnosticCode", warning.value())
+                    .extracting(diagnostic -> diagnostic.code().token())
+                    .containsExactly(warning.value());
+        }
     }
 
     // ---- golden equivalence (T041) --------------------------------------------------------------------------------
