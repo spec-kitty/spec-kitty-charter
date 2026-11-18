@@ -163,244 +163,339 @@ class ClosureSymmetryTest {
 
     static Stream<Row> rows() {
         return Stream.of(
-                // ---- the reference closure ----------------------------------------------------------------------
-                new Row(
-                        "an executable entry that is no payload of the pack, with its cascade",
-                        edit(ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n")),
-                        List.of(
-                                Expected.exactly(
-                                        ASSET,
-                                        "asset 'carrier-lint' declares executable entry 'other.py', which is not a"
-                                                + " payload file the pack holds under assets/"),
-                                Expected.exactly(GUARD, GUARD_LOSES_ASSET),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Commit(pack -> withEntry(asset(pack), "other.py")),
-                        "asset 'carrier-lint' declares executable entry 'other.py', which is not a payload file the pack"
-                                + " holds under assets/"),
-                new Row(
-                        "a guard implemented_by an asset the pack does not hold",
-                        edit(GUARD, text -> text.replace("asset:carrier-lint", "asset:missing-lint")),
-                        List.of(
-                                Expected.exactly(
-                                        GUARD,
-                                        "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack"
-                                                + " does not hold"),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Commit(pack -> implementedBy(guard(pack), "asset:missing-lint")),
-                        "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack does not hold"),
-                new Row(
-                        "a guard implemented_by an asset with no executable block",
-                        edit(GUARD, text -> text.replace("asset:carrier-lint", "asset:logo")),
-                        List.of(
-                                Expected.exactly(
-                                        GUARD,
-                                        "guard 'traceability-ready' is implemented_by asset:logo, which declares no"
-                                                + " executable block"),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Commit(pack -> implementedBy(guard(pack), "asset:logo")),
-                        "guard 'traceability-ready' is implemented_by asset:logo, which declares no executable block"),
-                new Row(
-                        "a guard implemented_by another pack's asset",
-                        edit(GUARD, text -> text.replace("asset:carrier-lint", "qa::asset:qa-lint")),
-                        List.of(
-                                Expected.exactly(
-                                        GUARD,
-                                        "guard 'traceability-ready' is implemented_by qa::asset:qa-lint, a"
-                                                + " pack-qualified reference; it is refused until the pack dependency"
-                                                + " closure resolves it"),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Commit(pack -> implementedBy(guard(pack), "qa::asset:qa-lint")),
-                        "guard 'traceability-ready' is implemented_by qa::asset:qa-lint, a pack-qualified reference; it is"
-                                + " refused until the pack dependency closure resolves it"),
-                new Row(
-                        "a guard whose config_schema is not a valid JSON Schema",
-                        edit(GUARD, text -> text.replace("      type: string\n", "      type: text\n")),
-                        List.of(
-                                Expected.startingWith(
-                                        GUARD,
-                                        "guard 'traceability-ready': its config_schema is not a valid JSON Schema:"),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Commit(pack -> withSchema(guard(pack), ConfigValue.of(Map.of("type", "text")))),
-                        "guard 'traceability-ready': its config_schema is not a valid JSON Schema:"),
-                new Row(
-                        "a lifecycle naming a guard the pack does not hold",
-                        edit(
-                                LIFECYCLE,
-                                text -> text.replace("  - ref: traceability-ready\n", "  - ref: missing-ready\n")),
-                        List.of(Expected.exactly(
-                                LIFECYCLE,
-                                "lifecycle 'work-package' transition in_progress -> for_review names guard"
-                                        + " 'missing-ready', which the pack does not hold")),
-                        new Commit(pack ->
-                                withEntry(lifecycle(pack), 1, "traceability-ready", "missing-ready", Optional.empty())),
-                        "lifecycle 'work-package' transition in_progress -> for_review names guard 'missing-ready', which"
-                                + " the pack does not hold"),
-                new Row(
-                        "a lifecycle naming another pack's guard",
-                        edit(
-                                LIFECYCLE,
-                                text -> text.replace("  - ref: traceability-ready\n", "  - ref: qa::guard:other\n")),
-                        List.of(Expected.exactly(
-                                LIFECYCLE,
-                                "lifecycle 'work-package' transition in_progress -> for_review names guard"
-                                        + " qa::guard:other, a pack-qualified reference; it is refused until the pack"
-                                        + " dependency closure resolves it")),
-                        new Commit(pack -> withEntry(
-                                lifecycle(pack), 1, "traceability-ready", "qa::guard:other", Optional.empty())),
-                        "lifecycle 'work-package' transition in_progress -> for_review names guard qa::guard:other, a"
-                                + " pack-qualified reference; it is refused until the pack dependency closure resolves"
-                                + " it"),
-                new Row(
-                        "a guard entry whose config does not fit the guard's config_schema",
-                        edit(LIFECYCLE, text -> text.replace("      carrier: qa-carrier.yaml\n", "      carrier: 3\n")),
-                        List.of(Expected.startingWith(
-                                LIFECYCLE,
-                                "lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
-                                        + " 'traceability-ready' does not fit its config_schema:")),
-                        new Commit(pack -> withEntry(
-                                lifecycle(pack),
-                                1,
-                                "traceability-ready",
-                                "traceability-ready",
-                                Optional.of(ConfigValue.of(Map.of("carrier", 3))))),
+                // row01 to row11: the reference closure; row12 to row17: the Executable and Lifecycle invariants
+                row01(),
+                row02(),
+                row03(),
+                row04(),
+                row05(),
+                row06(),
+                row07(),
+                row08(),
+                row09(),
+                row10(),
+                row11(),
+                row12(),
+                row13(),
+                row14(),
+                row15(),
+                row16(),
+                row17());
+    }
+
+    /** The row: an executable entry that is no payload of the pack, with its cascade. */
+    private static Row row01() {
+        return new Row(
+                "an executable entry that is no payload of the pack, with its cascade",
+                edit(ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n")),
+                List.of(
+                        Expected.exactly(
+                                ASSET,
+                                "asset 'carrier-lint' declares executable entry 'other.py', which is not a"
+                                        + " payload file the pack holds under assets/"),
+                        Expected.exactly(GUARD, GUARD_LOSES_ASSET),
+                        Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Commit(pack -> withEntry(asset(pack), "other.py")),
+                "asset 'carrier-lint' declares executable entry 'other.py', which is not a payload file the pack"
+                        + " holds under assets/");
+    }
+
+    /** The row: a guard implemented_by an asset the pack does not hold. */
+    private static Row row02() {
+        return new Row(
+                "a guard implemented_by an asset the pack does not hold",
+                edit(GUARD, text -> text.replace("asset:carrier-lint", "asset:missing-lint")),
+                List.of(
+                        Expected.exactly(
+                                GUARD,
+                                "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack"
+                                        + " does not hold"),
+                        Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Commit(pack -> implementedBy(guard(pack), "asset:missing-lint")),
+                "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack does not hold");
+    }
+
+    /** The row: a guard implemented_by an asset with no executable block. */
+    private static Row row03() {
+        return new Row(
+                "a guard implemented_by an asset with no executable block",
+                edit(GUARD, text -> text.replace("asset:carrier-lint", "asset:logo")),
+                List.of(
+                        Expected.exactly(
+                                GUARD,
+                                "guard 'traceability-ready' is implemented_by asset:logo, which declares no"
+                                        + " executable block"),
+                        Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Commit(pack -> implementedBy(guard(pack), "asset:logo")),
+                "guard 'traceability-ready' is implemented_by asset:logo, which declares no executable block");
+    }
+
+    /** The row: a guard implemented_by another pack's asset. */
+    private static Row row04() {
+        return new Row(
+                "a guard implemented_by another pack's asset",
+                edit(GUARD, text -> text.replace("asset:carrier-lint", "qa::asset:qa-lint")),
+                List.of(
+                        Expected.exactly(
+                                GUARD,
+                                "guard 'traceability-ready' is implemented_by qa::asset:qa-lint, a"
+                                        + " pack-qualified reference; it is refused until the pack dependency"
+                                        + " closure resolves it"),
+                        Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Commit(pack -> implementedBy(guard(pack), "qa::asset:qa-lint")),
+                "guard 'traceability-ready' is implemented_by qa::asset:qa-lint, a pack-qualified reference; it is"
+                        + " refused until the pack dependency closure resolves it");
+    }
+
+    /** The row: a guard whose config_schema is not a valid JSON Schema. */
+    private static Row row05() {
+        return new Row(
+                "a guard whose config_schema is not a valid JSON Schema",
+                edit(GUARD, text -> text.replace("      type: string\n", "      type: text\n")),
+                List.of(
+                        Expected.startingWith(
+                                GUARD, "guard 'traceability-ready': its config_schema is not a valid JSON Schema:"),
+                        Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Commit(pack -> withSchema(guard(pack), ConfigValue.of(Map.of("type", "text")))),
+                "guard 'traceability-ready': its config_schema is not a valid JSON Schema:");
+    }
+
+    /** The row: a lifecycle naming a guard the pack does not hold. */
+    private static Row row06() {
+        return new Row(
+                "a lifecycle naming a guard the pack does not hold",
+                edit(LIFECYCLE, text -> text.replace("  - ref: traceability-ready\n", "  - ref: missing-ready\n")),
+                List.of(Expected.exactly(
+                        LIFECYCLE,
+                        "lifecycle 'work-package' transition in_progress -> for_review names guard"
+                                + " 'missing-ready', which the pack does not hold")),
+                new Commit(
+                        pack -> withEntry(lifecycle(pack), 1, "traceability-ready", "missing-ready", Optional.empty())),
+                "lifecycle 'work-package' transition in_progress -> for_review names guard 'missing-ready', which"
+                        + " the pack does not hold");
+    }
+
+    /** The row: a lifecycle naming another pack's guard. */
+    private static Row row07() {
+        return new Row(
+                "a lifecycle naming another pack's guard",
+                edit(LIFECYCLE, text -> text.replace("  - ref: traceability-ready\n", "  - ref: qa::guard:other\n")),
+                List.of(Expected.exactly(
+                        LIFECYCLE,
+                        "lifecycle 'work-package' transition in_progress -> for_review names guard"
+                                + " qa::guard:other, a pack-qualified reference; it is refused until the pack"
+                                + " dependency closure resolves it")),
+                new Commit(pack ->
+                        withEntry(lifecycle(pack), 1, "traceability-ready", "qa::guard:other", Optional.empty())),
+                "lifecycle 'work-package' transition in_progress -> for_review names guard qa::guard:other, a"
+                        + " pack-qualified reference; it is refused until the pack dependency closure resolves"
+                        + " it");
+    }
+
+    /** The row: a guard entry whose config does not fit the guard's config_schema. */
+    private static Row row08() {
+        return new Row(
+                "a guard entry whose config does not fit the guard's config_schema",
+                edit(LIFECYCLE, text -> text.replace("      carrier: qa-carrier.yaml\n", "      carrier: 3\n")),
+                List.of(Expected.startingWith(
+                        LIFECYCLE,
                         "lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
-                                + " 'traceability-ready' does not fit its config_schema:"),
-                new Row(
-                        "a guard entry with a config, for a guard that declares no config_schema",
-                        edit(
-                                LIFECYCLE,
-                                text -> text.replace(
-                                        "  - ref: subtasks-ready\n    blocking: true\n",
-                                        "  - ref: subtasks-ready\n    config:\n      strict: true\n")),
-                        List.of(Expected.exactly(
-                                LIFECYCLE,
-                                "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready'"
-                                        + " declares no config_schema, so its config cannot be checked")),
-                        new Commit(pack -> withEntry(
-                                lifecycle(pack),
-                                3,
-                                "subtasks-ready",
-                                "subtasks-ready",
-                                Optional.of(ConfigValue.of(Map.of("strict", true))))),
-                        "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready' declares no"
-                                + " config_schema, so its config cannot be checked"),
-                new Row(
-                        "a mission type naming a template the pack does not hold (a delete of that template)",
-                        tree -> Files.delete(tree.resolve(TEMPLATE)),
-                        // The read's own check of a named file states it first, on validate mode and the load alike;
-                        // the two write
-                        // paths, which carry no file, refuse it through the closure.
-                        List.of(Expected.exactly(
-                                MISSION_TYPE, "templates/plan-template.md (named by step 'plan'): missing")),
-                        new Remove(List.of(new Urn(NodeKind.TEMPLATE, "software-dev/plan-template.md"))),
-                        "mission_type 'software-dev' names templates/plan-template.md (named by step 'plan'): is not a template of the"
-                                + " type"),
-                new Row(
-                        "a delete of the asset a guard names is refused, not cascaded",
-                        tree -> {
-                            Files.delete(tree.resolve(ASSET));
-                            Files.delete(tree.resolve(PAYLOAD));
-                        },
-                        List.of(
-                                Expected.exactly(GUARD, GUARD_LOSES_ASSET),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Remove(List.of(new Urn(NodeKind.ASSET, "carrier-lint"))),
-                        GUARD_LOSES_ASSET),
-                // ---- the domain invariants -------------------------------------------------------------------------
-                new Row(
-                        "an executable whose args repeat its entry",
-                        edit(ASSET, text -> text.replace("  - --guard\n", "  - --guard\n  - carrier_lint.py\n")),
-                        List.of(
-                                Expected.startingWith(ASSET, ""),
-                                Expected.exactly(GUARD, GUARD_LOSES_ASSET),
-                                Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
-                        new Unbuildable(pack -> () -> new Executable(
-                                asset(pack).executable().orElseThrow().runtime(),
-                                Optional.empty(),
-                                "carrier_lint.py",
-                                List.of("--guard", "carrier_lint.py"))),
-                        "exactly one argv element"),
-                lifecycleInvariant(
-                        "a lifecycle transition to a state it does not declare",
-                        text -> text.replace("  to: in_progress\n  event: claim\n", "  to: doing\n  event: claim\n"),
-                        "names only states the lifecycle declares",
-                        lifecycle -> replaceTransition(
-                                lifecycle,
-                                0,
-                                new LifecycleTransition(
-                                        new TransitionSource.One("planned"),
-                                        "doing",
-                                        Optional.of("claim"),
-                                        List.of()))),
-                lifecycleInvariant(
-                        "a lifecycle with no terminal state",
-                        text -> text.replace("  terminal: true\n", ""),
-                        "at least one terminal state",
-                        lifecycle -> rebuild(
-                                lifecycle,
-                                lifecycle.states().stream()
-                                        .map(state -> new LifecycleState(
-                                                state.id(), state.title(), state.description(), Optional.empty()))
-                                        .toList(),
-                                lifecycle.transitions())),
-                lifecycleInvariant(
-                        "a lifecycle with a state the initial state cannot reach",
+                                + " 'traceability-ready' does not fit its config_schema:")),
+                new Commit(pack -> withEntry(
+                        lifecycle(pack),
+                        1,
+                        "traceability-ready",
+                        "traceability-ready",
+                        Optional.of(ConfigValue.of(Map.of("carrier", 3))))),
+                "lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
+                        + " 'traceability-ready' does not fit its config_schema:");
+    }
+
+    /** The row: a guard entry with a config, for a guard that declares no config_schema. */
+    private static Row row09() {
+        return new Row(
+                "a guard entry with a config, for a guard that declares no config_schema",
+                edit(
+                        LIFECYCLE,
                         text -> text.replace(
-                                "- id: blocked\n  title: Blocked\n",
-                                "- id: blocked\n  title: Blocked\n- id: limbo\n  title: Limbo\n"),
-                        "state 'limbo' is not reachable",
-                        lifecycle -> {
-                            List<LifecycleState> states = new ArrayList<>(lifecycle.states());
-                            states.add(new LifecycleState("limbo", "Limbo", Optional.empty(), Optional.empty()));
-                            return rebuild(lifecycle, states, lifecycle.transitions());
-                        }),
-                lifecycleInvariant(
-                        "a lifecycle transition out of a terminal state",
-                        text -> text + "- from: done\n  to: in_progress\n  event: reopen\n",
-                        "No lifecycle transition leaves a terminal state",
-                        lifecycle -> appendTransition(
-                                lifecycle,
-                                new LifecycleTransition(
-                                        new TransitionSource.One("done"),
-                                        "in_progress",
-                                        Optional.of("reopen"),
-                                        List.of()))),
-                lifecycleInvariant(
-                        "a lifecycle with two targets for one state and event",
-                        text -> text + "- from: planned\n  to: blocked\n  event: claim\n",
-                        "leads to both 'in_progress' and 'blocked'",
-                        lifecycle -> appendTransition(
-                                lifecycle,
-                                new LifecycleTransition(
-                                        new TransitionSource.One("planned"),
-                                        "blocked",
-                                        Optional.of("claim"),
-                                        List.of()))));
+                                "  - ref: subtasks-ready\n    blocking: true\n",
+                                "  - ref: subtasks-ready\n    config:\n      strict: true\n")),
+                List.of(Expected.exactly(
+                        LIFECYCLE,
+                        "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready'"
+                                + " declares no config_schema, so its config cannot be checked")),
+                new Commit(pack -> withEntry(
+                        lifecycle(pack),
+                        3,
+                        "subtasks-ready",
+                        "subtasks-ready",
+                        Optional.of(ConfigValue.of(Map.of("strict", true))))),
+                "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready' declares no"
+                        + " config_schema, so its config cannot be checked");
+    }
+
+    /** The row: a mission type naming a template the pack does not hold (a delete of that template). */
+    private static Row row10() {
+        return new Row(
+                "a mission type naming a template the pack does not hold (a delete of that template)",
+                tree -> Files.delete(tree.resolve(TEMPLATE)),
+                // The read's own check of a named file states it first, on validate mode and the load alike;
+                // the two write
+                // paths, which carry no file, refuse it through the closure.
+                List.of(Expected.exactly(MISSION_TYPE, "templates/plan-template.md (named by step 'plan'): missing")),
+                new Remove(List.of(new Urn(NodeKind.TEMPLATE, "software-dev/plan-template.md"))),
+                "mission_type 'software-dev' names templates/plan-template.md (named by step 'plan'): is not a template of the"
+                        + " type");
+    }
+
+    /** The row: a delete of the asset a guard names is refused, not cascaded. */
+    private static Row row11() {
+        return new Row(
+                "a delete of the asset a guard names is refused, not cascaded",
+                tree -> {
+                    Files.delete(tree.resolve(ASSET));
+                    Files.delete(tree.resolve(PAYLOAD));
+                },
+                List.of(Expected.exactly(GUARD, GUARD_LOSES_ASSET), Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Remove(List.of(new Urn(NodeKind.ASSET, "carrier-lint"))),
+                GUARD_LOSES_ASSET);
+    }
+
+    /** The row: an executable whose args repeat its entry. */
+    private static Row row12() {
+        return new Row(
+                "an executable whose args repeat its entry",
+                edit(ASSET, text -> text.replace("  - --guard\n", "  - --guard\n  - carrier_lint.py\n")),
+                List.of(
+                        Expected.startingWith(ASSET, ""),
+                        Expected.exactly(GUARD, GUARD_LOSES_ASSET),
+                        Expected.exactly(LIFECYCLE, LIFECYCLE_LOSES_GUARD)),
+                new Unbuildable(pack -> () -> new Executable(
+                        asset(pack).executable().orElseThrow().runtime(),
+                        Optional.empty(),
+                        "carrier_lint.py",
+                        List.of("--guard", "carrier_lint.py"))),
+                "exactly one argv element");
+    }
+
+    /** The row: a lifecycle transition to a state it does not declare. */
+    private static Row row13() {
+        return lifecycleInvariant(
+                "a lifecycle transition to a state it does not declare",
+                text -> text.replace("  to: in_progress\n  event: claim\n", "  to: doing\n  event: claim\n"),
+                "names only states the lifecycle declares",
+                lifecycle -> replaceTransition(
+                        lifecycle,
+                        0,
+                        new LifecycleTransition(
+                                new TransitionSource.One("planned"), "doing", Optional.of("claim"), List.of())));
+    }
+
+    /** The row: a lifecycle with no terminal state. */
+    private static Row row14() {
+        return lifecycleInvariant(
+                "a lifecycle with no terminal state",
+                text -> text.replace("  terminal: true\n", ""),
+                "at least one terminal state",
+                lifecycle -> rebuild(
+                        lifecycle,
+                        lifecycle.states().stream()
+                                .map(state -> new LifecycleState(
+                                        state.id(), state.title(), state.description(), Optional.empty()))
+                                .toList(),
+                        lifecycle.transitions()));
+    }
+
+    /** The row: a lifecycle with a state the initial state cannot reach. */
+    private static Row row15() {
+        return lifecycleInvariant(
+                "a lifecycle with a state the initial state cannot reach",
+                text -> text.replace(
+                        "- id: blocked\n  title: Blocked\n",
+                        "- id: blocked\n  title: Blocked\n- id: limbo\n  title: Limbo\n"),
+                "state 'limbo' is not reachable",
+                lifecycle -> {
+                    List<LifecycleState> states = new ArrayList<>(lifecycle.states());
+                    states.add(new LifecycleState("limbo", "Limbo", Optional.empty(), Optional.empty()));
+                    return rebuild(lifecycle, states, lifecycle.transitions());
+                });
+    }
+
+    /** The row: a lifecycle transition out of a terminal state. */
+    private static Row row16() {
+        return lifecycleInvariant(
+                "a lifecycle transition out of a terminal state",
+                text -> text + "- from: done\n  to: in_progress\n  event: reopen\n",
+                "No lifecycle transition leaves a terminal state",
+                lifecycle -> appendTransition(
+                        lifecycle,
+                        new LifecycleTransition(
+                                new TransitionSource.One("done"), "in_progress", Optional.of("reopen"), List.of())));
+    }
+
+    /** The row: a lifecycle with two targets for one state and event. */
+    private static Row row17() {
+        return lifecycleInvariant(
+                "a lifecycle with two targets for one state and event",
+                text -> text + "- from: planned\n  to: blocked\n  event: claim\n",
+                "leads to both 'in_progress' and 'blocked'",
+                lifecycle -> appendTransition(
+                        lifecycle,
+                        new LifecycleTransition(
+                                new TransitionSource.One("planned"), "blocked", Optional.of("claim"), List.of())));
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("rows")
     void everyPathJudgesTheRowAlike(Row row, @TempDir Path host) throws IOException {
-        // The repaired control: the unbroken pack passes every path.
         Path control = ExamplePacks.copyOf(PACK, host.resolve("control"));
         Pack held = load(control);
+        WholePackStore whole = new WholePackStore(STRATEGY);
+        WholePackStore.LoadedPack controlTree = whole.load(control);
+        assertTheControlPasses(control, held, whole, controlTree, host);
+
+        Path broken = ExamplePacks.copyOf(PACK, host.resolve("broken"));
+        row.edit().apply(broken);
+        assertTheReadPathsAgree(row, broken);
+
+        switch (row.write()) {
+            case Unbuildable unbuildable ->
+                assertThatThrownBy(unbuildable.build().apply(held))
+                        .as("the value the write would carry does not build")
+                        .isInstanceOf(ConstraintBreachException.class)
+                        .hasMessageContaining(row.refusal());
+            case Commit commit -> assertTheCommitIsRefused(row, commit, held, whole, controlTree, control, host);
+            case Remove remove -> {
+                assertWholePackWriteRefuses(whole, controlTree, held.without(remove.artifacts()), host, row.refusal());
+                CommitStorePackWriteStore store = commitStore(host.resolve("control"));
+                assertPerFileRefusal(
+                        () -> store.remove(
+                                PACK_ID,
+                                PackRemovalStore.Removal.ofArtifacts(
+                                        remove.artifacts(), List.of(), List.of(), List.of())),
+                        control,
+                        row.refusal());
+            }
+        }
+    }
+
+    /** The repaired control: the unbroken pack passes validate mode, the load, registration and the whole-pack write. */
+    private static void assertTheControlPasses(
+            Path control, Pack held, WholePackStore whole, WholePackStore.LoadedPack controlTree, Path host) {
         assertThat(validated(control)).as("validate mode over the control").isEmpty();
         assertThat(loaded(held)).as("the load of the control").isEmpty();
         assertThat(registered(control).rationale().details().stream()
                         .filter(reason -> PackCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())))
                 .as("registration's verdict over the control")
                 .isEmpty();
-        WholePackStore whole = new WholePackStore(STRATEGY);
-        WholePackStore.LoadedPack controlTree = whole.load(control);
         assertThatCode(() ->
                         whole.write(controlTree, host.resolve("control-out").resolve(PACK)))
                 .as("the whole-pack write of the control")
                 .doesNotThrowAnyException();
+    }
 
-        // The broken pack.
-        Path broken = ExamplePacks.copyOf(PACK, host.resolve("broken"));
-        row.edit().apply(broken);
-
+    /** Validate mode, the load and registration state the broken tree's closure findings alike. */
+    private static void assertTheReadPathsAgree(Row row, Path broken) {
         List<Finding> validated = validated(broken);
         List<Finding> loaded = loaded(load(broken));
         for (Expected expected : row.expected()) {
@@ -420,40 +515,31 @@ class ClosureSymmetryTest {
         assertThat(loaded)
                 .as("registration's verdict states the load's findings")
                 .allSatisfy(recorded -> assertThat(registered).anyMatch(recorded::statedBy));
+    }
 
-        switch (row.write()) {
-            case Unbuildable unbuildable ->
-                assertThatThrownBy(unbuildable.build().apply(held))
-                        .as("the value the write would carry does not build")
-                        .isInstanceOf(ConstraintBreachException.class)
-                        .hasMessageContaining(row.refusal());
-            case Commit commit -> {
-                CharterArtifact artifact = commit.artifact().apply(held);
-                Pack after = held.with(artifact);
-                assertWholePackWriteRefuses(whole, controlTree, after, host, row.refusal());
-                CommitStorePackWriteStore store = commitStore(host.resolve("control"));
-                String revision = store.currentRevision(PACK_ID).token();
-                assertPerFileRefusal(
-                        () -> store.commit(PACK_ID, revision, PackWriteStore.Change.artifact(after, artifact)),
-                        control,
-                        row.refusal());
-                assertThatCode(() -> store.commit(
-                                PACK_ID, revision, PackWriteStore.Change.artifact(held, sameAs(held, artifact))))
-                        .as("the per-file write of the unbroken artifact")
-                        .doesNotThrowAnyException();
-            }
-            case Remove remove -> {
-                assertWholePackWriteRefuses(whole, controlTree, held.without(remove.artifacts()), host, row.refusal());
-                CommitStorePackWriteStore store = commitStore(host.resolve("control"));
-                assertPerFileRefusal(
-                        () -> store.remove(
-                                PACK_ID,
-                                PackRemovalStore.Removal.ofArtifacts(
-                                        remove.artifacts(), List.of(), List.of(), List.of())),
-                        control,
-                        row.refusal());
-            }
-        }
+    /** The two write paths refuse the broken artifact, and the per-file write takes the unbroken one. */
+    private static void assertTheCommitIsRefused(
+            Row row,
+            Commit commit,
+            Pack held,
+            WholePackStore whole,
+            WholePackStore.LoadedPack controlTree,
+            Path control,
+            Path host)
+            throws IOException {
+        CharterArtifact artifact = commit.artifact().apply(held);
+        Pack after = held.with(artifact);
+        assertWholePackWriteRefuses(whole, controlTree, after, host, row.refusal());
+        CommitStorePackWriteStore store = commitStore(host.resolve("control"));
+        String revision = store.currentRevision(PACK_ID).token();
+        assertPerFileRefusal(
+                () -> store.commit(PACK_ID, revision, PackWriteStore.Change.artifact(after, artifact)),
+                control,
+                row.refusal());
+        assertThatCode(() ->
+                        store.commit(PACK_ID, revision, PackWriteStore.Change.artifact(held, sameAs(held, artifact))))
+                .as("the per-file write of the unbroken artifact")
+                .doesNotThrowAnyException();
     }
 
     // ---- the paths -----------------------------------------------------------------------------------------------

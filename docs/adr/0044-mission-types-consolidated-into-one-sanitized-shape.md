@@ -75,8 +75,9 @@ decision. The issue offered two forms; the record takes the second.
   build the domain, so it does not resolve. *(Amended 2026-11-01, #300: the check reads the
   pack's spelling; see the amendment below.)* *(Amended 2026-11-18, #355: the one place is the PACK ruleset's
   reference closure, `ReferenceClosure`, which replaces `MissionTemplates`. The wording is unchanged. Validate mode
-  states the unresolved template as an error at the type's file, and a per-file write that would leave it, such as the
-  removal of the template, is refused `409 registration_conflict`.)*
+  states the unresolved template as an error at the type's file, and the commit store refuses a per-file write that
+  would leave it, such as a removal of the template, with `409 registration_conflict`; no route removes a template on its
+  own yet.)*
 - **Rejected: a typed reference with the path derived on write.** `ExpectedArtifact` lives in `:missions`, which
   depends on the kernel only, and `TemplateIdentifier` lives in `packs.domain`; holding one would reverse this
   record's dependency direction, or need a new kernel type. Every `template_path` at the open-packs pin, 13 in all,

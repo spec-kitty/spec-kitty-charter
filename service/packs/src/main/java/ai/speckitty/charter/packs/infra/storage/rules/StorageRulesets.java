@@ -150,11 +150,10 @@ public final class StorageRulesets {
         references.removeIf(kept.negate());
         List<Reason> joined = new ArrayList<>(readFaults);
         joined.addAll(rules);
-        List<Reason> assembled = new ArrayList<>(references);
-        held.stream()
+        List<Reason> storeFaults = held.stream()
                 .filter(fault -> !trailing.contains(fault.location().file()))
-                .forEach(assembled::add);
-        joined.addAll(inLoadOrder(read, assembled));
+                .toList();
+        joined.addAll(inLoadOrder(read, references, storeFaults));
         joined.addAll(trailingFaults);
         held.stream()
                 .filter(fault -> trailing.contains(fault.location().file()))
@@ -166,16 +165,33 @@ public final class StorageRulesets {
     }
 
     /**
-     * The store half's faults and the reference closure's in the order the load records them at their files
-     * ({@code Assembly.Assembled#violations()}), so a cause is stated before what it takes with it. A fault the load
-     * records in other words (a companion's, placed at the companion) keeps its place after the one before it.
+     * The reference closure's findings and the store half's own faults in the order the load records them at their files
+     * ({@code Assembly.Assembled#violations()}), so a cause is stated before what it takes with it. Each list keeps its
+     * own order: a fault the load records in other words (a companion's, placed at the companion) takes the place of
+     * the fault before it in its own list.
      */
-    static List<Reason> inLoadOrder(TreeRead read, List<Reason> faults) {
+    static List<Reason> inLoadOrder(TreeRead read, List<Reason> references, List<Reason> storeFaults) {
         if (!(read.contents().assembly() instanceof PackContents.Assembly.Assembled held)) {
-            return faults;
+            List<Reason> both = new ArrayList<>(references);
+            both.addAll(storeFaults);
+            return both;
         }
         List<PackElementViolation> recorded = held.violations();
+        List<Reason> faults = new ArrayList<>(references);
+        faults.addAll(storeFaults);
         int[] keys = new int[faults.size()];
+        keyed(recorded, references, keys, 0);
+        keyed(recorded, storeFaults, keys, references.size());
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < faults.size(); i++) {
+            order.add(i);
+        }
+        order.sort(Comparator.comparingInt(index -> keys[index]));
+        return order.stream().map(faults::get).toList();
+    }
+
+    /** Each fault's place among the load's violations; an unmatched one takes the place of the one before it in its list. */
+    private static void keyed(List<PackElementViolation> recorded, List<Reason> faults, int[] keys, int offset) {
         int carried = -1;
         for (int i = 0; i < faults.size(); i++) {
             Reason fault = faults.get(i);
@@ -189,14 +205,8 @@ public final class StorageRulesets {
                 }
             }
             carried = found >= 0 ? found : carried;
-            keys[i] = carried;
+            keys[offset + i] = carried;
         }
-        List<Integer> order = new ArrayList<>();
-        for (int i = 0; i < faults.size(); i++) {
-            order.add(i);
-        }
-        order.sort(Comparator.comparingInt(index -> keys[index]));
-        return order.stream().map(faults::get).toList();
     }
 
     /**
