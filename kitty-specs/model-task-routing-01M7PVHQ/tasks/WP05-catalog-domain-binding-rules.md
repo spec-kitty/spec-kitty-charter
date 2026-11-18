@@ -210,7 +210,13 @@ In `service/routing/src/main/java/ai/speckitty/charter/routing/domain/`:
 ## Definition of Done
 
 - A catalog loads, round-trips and is refused for each content fault, on every write path and in `pack-check`.
-- `./gradlew verifyAll` passes on Java 25 for the modules this WP touches, with no new style-gate finding.
+- `./gradlew verifyAll` passes on Java 25 with no new style-gate finding, except the four `ExamplePackCoverageTest`
+  cases that need example-pack content WP06 owns: `everyArtifactKindWithAFileKindHasAnExample`,
+  `aKindWithNoExampleFileIsNamed`, `everySchemaPropertyHasAnExample` and `anExampleFieldRemovedFromACopyIsNamed`
+  (operator ruling of 2026-11-18 on the WP05 review: the green point moves to WP06).
+- A catalog's numbers are exact decimals end to end (operator ruling of 2026-11-18): the shared loader reads a finite
+  float as the `BigDecimal` its text writes, a write-back is byte for byte, and tests cover a number of more than 15
+  significant digits and a near-tie that a double would make a tie.
 - Every subtask's status is recorded with `spec-kitty agent tasks mark-status`.
 - Nothing outside `owned_files` changed, except a recorded edit outside the map, named in the WP history with its
   reason.

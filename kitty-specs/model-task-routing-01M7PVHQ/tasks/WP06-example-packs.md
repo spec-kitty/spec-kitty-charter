@@ -142,7 +142,11 @@ no field excluded (SC-003; ADR-0070; plan IC-01; squad findings D1, D8, D12, A8)
 ## Definition of Done
 
 - The example packs hold the R7 matrix exactly, and the round trip and coverage pass.
-- `./gradlew verifyAll` passes on Java 25 for the modules this WP touches, with no new style-gate finding.
+- This WP is the kind's full green point (operator ruling of 2026-11-18): `./gradlew verifyAll` passes on Java 25 with
+  no exception and no new style-gate finding, including the four `ExamplePackCoverageTest` cases WP05 left red:
+  `everyArtifactKindWithAFileKindHasAnExample`, `aKindWithNoExampleFileIsNamed`, `everySchemaPropertyHasAnExample` and
+  `anExampleFieldRemovedFromACopyIsNamed`. An example routing catalog covers every schema property, optional ones
+  included, and a preset carries `activated_routing_catalogs`.
 - Every subtask's status is recorded with `spec-kitty agent tasks mark-status`.
 - Nothing outside `owned_files` changed, except a recorded edit outside the map, named in the WP history with its
   reason.
