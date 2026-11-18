@@ -96,6 +96,15 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/SelectedArtifacts/properties/step_enhancement'
+  routing_catalog:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The routing_catalog ids: the catalogs the activation selects (ADR-0080). The model recommendation reads the one
+      catalog in force. Absent means none of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/routing_catalog'
 x-source:
   path: contracts/offering/schemas/ActivationConfig.schema.json
   symbol: '#/$defs/SelectedArtifacts'
