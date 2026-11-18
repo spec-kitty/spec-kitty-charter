@@ -2107,6 +2107,39 @@ class HexagonalArchitectureTest {
                 "StorageRuleNamesAStorageClass reaches ai.speckitty.charter.packs.infra.storage.PackLayout");
     }
 
+    /** The storage rules and their tokens ({@code StorageRulesets}, {@code StorageCodes}, {@code TreeRead}). */
+    private static final String PACKS_STORAGE_RULES = ROOT + ".packs.infra.storage.rules..";
+
+    /**
+     * STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE (#554, S6; ADR-0075's 2026-11-16 amendment): nothing outside
+     * {@code packs.infra.storage} and the composition root names {@code packs.infra.storage.rules}. The validation edge
+     * reaches the storage verdict through the domain port {@code PackReading}'s readout only (C-003), and the other
+     * adapters through the application ring. No existing rule is widened: this one is added beside them.
+     */
+    private static final ArchRule STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE = noClasses()
+            .that()
+            .resideOutsideOfPackages(PACKS_STORAGE, DEPLOYABLE)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS_STORAGE_RULES)
+            .as("STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE: only packs.infra.storage and the composition root name"
+                    + " packs.infra.storage.rules");
+
+    @Test
+    @DisplayName("STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE")
+    void storageRulesStayInTheStorageEdge() {
+        STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE.check(classes);
+    }
+
+    @Test
+    void theStorageRulesEdgeRuleFailsOnAValidationClassThatNamesTheStorageRules() {
+        assertBites(
+                STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE,
+                ROOT + ".packvalidation.badfixture",
+                "ValidationNamesTheStorageRules",
+                "ai.speckitty.charter.packs.infra.storage.rules.StorageCodes");
+    }
+
     /**
      * RESOLVER_OWNS_NETWORK (Rule D): only the storage adapter depends on {@code com.networknt}, so the validator never leaks into the
      * domain or the other adapters.
