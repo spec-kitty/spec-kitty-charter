@@ -108,11 +108,11 @@
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (rows 1, 2, 6; the held profile out of force); ModelRecommendationServiceTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:39.612401+00:00",
+      "notes": "The effective profile's model and effort, listed last, whatever the profile's state."
     },
     {
       "criterion_id": "FR-012",
