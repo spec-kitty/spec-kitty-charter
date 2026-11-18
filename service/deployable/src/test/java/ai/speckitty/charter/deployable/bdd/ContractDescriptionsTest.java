@@ -55,8 +55,9 @@ class ContractDescriptionsTest {
                 .doesNotContain("Only the four effective reads")
                 .doesNotContain("One stays reserved")
                 .doesNotContain("No operation of this version raises that one")
-                .contains("artifact_required, artifact_locked, mission_type_not_in_force, routing_catalog_not_in_force and"
-                        + " routing_catalog_conflict are 409")
+                .contains(
+                        "artifact_required, artifact_locked, mission_type_not_in_force, routing_catalog_not_in_force and"
+                                + " routing_catalog_conflict are 409")
                 .contains("validation_failed and activation_invalid are 422")
                 .doesNotContain("are no longer raised: the action-context operation");
     }
