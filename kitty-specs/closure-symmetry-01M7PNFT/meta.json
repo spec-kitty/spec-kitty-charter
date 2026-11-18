@@ -1,5 +1,4 @@
 {
-  "accept_commit": "afa9989ff89e7ed9917d7459dfaaac93d342bbf4",
   "acceptance_history": [
     {
       "accept_commit": "afa9989ff89e7ed9917d7459dfaaac93d342bbf4",
@@ -7,12 +6,18 @@
       "accepted_at": "2026-11-18T09:58:16.391096+00:00",
       "accepted_by": "system",
       "accepted_from_commit": "b8089292b58726b438504576898efcd5339a70d2"
+    },
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-18T10:04:15.288610+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "2193dfa543f673a128cf860aacce90ea15090765"
     }
   ],
   "acceptance_mode": "pr",
-  "accepted_at": "2026-11-18T09:58:16.391096+00:00",
+  "accepted_at": "2026-11-18T10:04:15.288610+00:00",
   "accepted_by": "system",
-  "accepted_from_commit": "b8089292b58726b438504576898efcd5339a70d2",
+  "accepted_from_commit": "2193dfa543f673a128cf860aacce90ea15090765",
   "change_mode": "bulk_edit",
   "contracts": "none",
   "contracts_rationale": "No interface changes: 409 registration_conflict is already declared on every per-file write and delete path of contracts/charter (packs_packId_artifacts_*.yaml, packs_packId_relationships.yaml).",
