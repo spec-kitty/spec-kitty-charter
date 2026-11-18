@@ -36,6 +36,8 @@ The work toward the next candidate (`0.1.0-rc.2`) or the final `0.1.0`, after th
   classifier cases' `unmodelled` outcome say it is warned as `file_not_held` and not held, as an excluded file is; they
   said it is refused as `unmodelled`. The outcome stays `unmodelled`, a classification and not a verdict, and no case
   changes.
+- A mission step may advise a model tier (ADR-0080 decision 12, #108): `mission-type.schema.json`'s step gains an
+  optional `model_tier`, one of `low`, `medium`, `high` and `premium`. A step without it is valid as before.
 
 ## 0.1.0-rc.1
 

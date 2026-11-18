@@ -40,6 +40,7 @@ class IdentifierBoundsTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 List.of(),
                 List.of(),
                 List.of());
@@ -97,6 +98,7 @@ class IdentifierBoundsTest {
                 "Plan",
                 Optional.empty(),
                 Optional.of(role),
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 List.of(),

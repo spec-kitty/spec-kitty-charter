@@ -1,0 +1,14 @@
+title: CostTier
+description: >-
+  The cost tier of a model, from cheapest to dearest: low < medium < high < premium (ADR-0080 decisions 5 and 12). It
+  is the one tier vocabulary of model routing: a catalog model's cost tier, a task type's tier constraint, a mission
+  step's model tier and the model tier a client asks for all use it.
+type: string
+enum:
+  - low
+  - medium
+  - high
+  - premium
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CostTier.java
+  symbol: CostTier.token

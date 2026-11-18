@@ -90,6 +90,7 @@ class ActivationsMissionTypesTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         List.of(),
                         List.of(),
                         List.of()))

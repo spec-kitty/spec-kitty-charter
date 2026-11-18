@@ -89,6 +89,7 @@ record MissionTypeDso(
      * @param title the {@code title}
      * @param description the {@code description}, when present
      * @param role the {@code role}, when present
+     * @param modelTier the {@code model_tier}, when present (ADR-0080 decision 12)
      * @param promptPath the {@code prompt_path}, when present
      * @param guidelinesPath the {@code guidelines_path}, when present
      * @param expectedInputArtifacts the {@code expected_input_artifacts}
@@ -102,6 +103,7 @@ record MissionTypeDso(
             String title,
             Optional<String> description,
             Optional<String> role,
+            Optional<String> modelTier,
             Optional<String> promptPath,
             Optional<String> guidelinesPath,
             List<Artifact> expectedInputArtifacts,
@@ -117,6 +119,7 @@ record MissionTypeDso(
          * @param title the title
          * @param description the description, possibly empty
          * @param role the role, possibly empty
+         * @param modelTier the model tier, possibly empty
          * @param promptPath the prompt path, possibly empty
          * @param guidelinesPath the guidelines path, possibly empty
          * @param expectedInputArtifacts the inputs
@@ -130,6 +133,7 @@ record MissionTypeDso(
             Objects.requireNonNull(title, "title");
             Objects.requireNonNull(description, "description");
             Objects.requireNonNull(role, "role");
+            Objects.requireNonNull(modelTier, "modelTier");
             Objects.requireNonNull(promptPath, "promptPath");
             Objects.requireNonNull(guidelinesPath, "guidelinesPath");
             expectedInputArtifacts = List.copyOf(expectedInputArtifacts);
@@ -152,6 +156,7 @@ record MissionTypeDso(
                     title,
                     description,
                     role,
+                    modelTier,
                     promptPath,
                     guidelinesPath,
                     expectedInputArtifacts,

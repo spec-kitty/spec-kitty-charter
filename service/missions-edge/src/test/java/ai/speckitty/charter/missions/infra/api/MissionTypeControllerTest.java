@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ai.speckitty.charter.api.ArtifactsApi;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.HeaderNames;
@@ -117,6 +118,7 @@ class MissionTypeControllerTest {
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
                 .andExpect(header().string("ETag", ETAG))
                 .andExpect(jsonPath("$.prompt").value("# Specify\n"))
+                .andExpect(jsonPath("$.modelTier").value("medium"))
                 .andExpect(jsonPath("$._links.self.href")
                         .value("/api/v1/packs/main/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(jsonPath("$._links.mission-type.href")
@@ -206,6 +208,7 @@ class MissionTypeControllerTest {
                         "Specification",
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.of(CostTier.MEDIUM),
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
