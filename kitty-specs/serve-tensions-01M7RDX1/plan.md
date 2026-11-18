@@ -1,135 +1,219 @@
-# Implementation Plan: [MISSION]
+# Implementation Plan: Serve tensions
 
-**Branch**: `[###-mission-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Mission specification from `kitty-specs/[mission-slug]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `packs/built-in/missions/mission-steps/software-dev/plan/prompt.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `kitty/mission-serve-tensions-01M7RDX1` (lands on `feat/602-tensions`, PR #606 to `main`) | **Date**: 2026-11-18 | **Spec**: [spec.md](spec.md)
+**Input**: Mission specification from `kitty-specs/serve-tensions-01M7RDX1/spec.md`; ADR-0045 as accepted 2026-11-18.
 
 ## Summary
 
-[Extract from mission spec: primary requirement + technical approach from research]
+A tension becomes a relation of the one catalogue (`RelationType.TENSION`, token `tension`, bidirectional,
+`G ↔ G`). Its identity is the unordered pair plus its pair class, so it stands beside the pair's one structural
+relationship. The kernel `Tension` value, the `in_tension_with` spelling and every special path for them are removed.
+Once typed, tension edges flow through the existing edge path: the composition facts, the merged `EdgeIndex` with its
+layer-override resolution, and the registration upsert. The walks keep their explicit relation sets, so no walk
+follows a tension. On top of that, one application-level projection, `TensionsInForce`, computes the tensions in force
+and their reconcilers. The effective graph, the action context and the new `getActivationTensions` read all answer
+from it.
+
+## Engineering Alignment
+
+- **The intent is the operator's rulings** (decision DM-01M7RDXACK9SVR5E3G21BD9KW2). No planning question was asked
+  of the operator beyond F1 to F3, which are answered; the three calls without a ruling are ADR-0045's open review
+  items.
+- **Invariant.** No walk, cascade, reach or governance read follows `tension`; the plan relies on their explicit
+  relation sets (`CascadeRules.CASCADE_RELATIONS`, `EffectiveSet.HARD_RELATIONS`, `ActionContextWalk.Step`,
+  `GovernanceWalk.Step`, `ReachRequest`) and pins it with a test.
+- **Identity.** `Relationship.equals` and `hashCode` become pair plus class; `samePair` stays the pair test. Each pair
+  user is classified: `RelationshipMerge`, `RelationshipRegistrationService` (`created`, the step-enhancement guards)
+  and `RelationshipRemovalService.names` use the class.
+- **Orientation.** Canonical is the smaller bare URN as `source`, judged without the pack qualifier.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
-
-  If multiple developers/agents will work on this mission, add an "Implementation
-  Concern Map" section below to decompose architectural intent into IC-## concerns
-  before generating tasks.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-**Testing**: [Project-specific test approach or NEEDS CLARIFICATION]
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Java 25 (Gradle toolchain). OpenAPI 3.1 contract in `contracts/charter/`, and the packs contract
+in `contracts/packs/`.
+**Primary Dependencies**: no new dependency (supply chain: no dependency is added, upgraded or removed, so
+DIRECTIVE_051's controls have nothing to judge).
+**Storage**: pack files on disk; `registered.graph.yaml` written by the registration path (`RelationshipShard`,
+`GraphShardWriter`).
+**Testing**: the tests live in the module of their subject (ADR-0062).
+- Kernel unit tests for the relation, the endpoint row and the pair-class identity.
+- `:packs:test` for the binding, the consistency rules, the round trip, the merge, the registration and
+  `TensionsInForce`.
+- `:activations:test` for the reads, the mapper, the tags and the links.
+- `@contract` scenarios through `:deployable:test`, over one new example pack (FR-012) plus the shared
+  every-operation, read-refusal, unexpected-failure and activation-links rows; the switch gate (ADR-0059 D1).
+- The whole-pack round trip (`:pack-validation:wholePackRoundTrip`) over charter's example packs.
+- `./gradlew verifyAll --max-workers=1`, in the foreground, one run at a time; the docs checks.
+**Target Platform**: the charter service (Linux container and native image).
+**Project Type**: multi-module service (`service/*`).
+**Performance Goals**: no new pass over the packs: `TensionsInForce` reads the merged links already built for the
+graph (NFR-004).
+**Constraints**: the canonical model with no legacy reader (C-001); `0.2.0-SNAPSHOT` with `### Breaking` entries
+(C-002); signed commits, rebase only; no write to open-packs (C-004); keep #108's neighbouring lines (C-005).
+**Scale/Scope**: about 45 production files and 40 test files, 6 schemas, 1 path, about 8 scenario files.
 
 ## Charter Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+| Charter rule | Status |
+| --- | --- |
+| The charter's model is canonical; no legacy reader | Pass. `in_tension_with` and `Tension` are removed outright; open-packs follows through its own PR. |
+| Tests and examples carry only the canonical shape | Pass. `in_tension_with`, reversed and duplicate tensions appear only as refusal fixtures. |
+| Contract: 0.x may break on a minor, with `### Breaking` | Pass. Fragments for the rename, the stricter loads and the removal parameter (breaking); the new read and fields (added). |
+| No unverified dependency | Pass. None added. |
+| The whole-pack round trip over the example packs | Pass. The new example pack's tensions round-trip. |
+| Adversarial squad at the plan point and before merge | Plan point: [research/squad-plan.md](research/squad-plan.md). Before merge: one squad over the diff. |
+| Issues stay small | Pass. Nothing new is filed here; the open-packs draft goes to the orchestrator. `Closes #602`. |
 
-[Gates determined based on charter file]
+No violations.
 
 ## Project Structure
 
 ### Documentation (this mission)
 
 ```
-kitty-specs/[###-mission]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/serve-tensions-01M7RDX1/
+├── spec.md
+├── plan.md
+├── research.md
+├── research/squad-plan.md
+├── research/draft-open-packs-tension-rename.md
+├── data-model.md
+├── quickstart.md
+├── occurrence_map.yaml
+├── contracts/tensions.openapi.yaml
+└── tasks.md            (by /spec-kitty.tasks)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this mission. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+service/kernel/.../kernel/domain/        RelationType, EndpointTable, EndpointRule, Relationship, DoctrineGraph, NodeKind; Tension removed
+service/packs/.../packs/domain/rules/    GraphBinding, GraphRules (+ tension consistency), PackRulesets
+service/packs/.../packs/domain/          PackCodes, RelationshipEndpointRule, PackEdgeRepository
+service/packs/.../packs/application/     RelationshipMerge, RelationshipRegistrationService, RelationshipRemovalService,
+                                         KindTaxonomyReadService, GraphProjection, ClosureView, TensionsInForce (new)
+service/packs/.../packs/infra/storage/   GraphShardWriter, RelationshipShard, DomainRoundTrip, DomainRepositoryService,
+                                         CompositionFactsBuilder, WholePackStore
+service/packs/.../packs/infra/api/       RelationshipWire, PackRemovalController
+service/packs/src/testFixtures/resources/example-packs/tensions/   (new example pack)
+service/activations/...                  EffectiveReadService, EffectiveContext, GraphSnapshot, EffectiveTag,
+                                         ClosureViewSession, PacksSession, ActivationController, ActivationMapper,
+                                         EffectiveReadMapper
+contracts/charter/                       schemas (Relation, EffectiveGraphEdge, EffectiveActionContext, ContextTension,
+                                         ActivationTensions, TensionFinding, TaxonomyRelation, RelationRow, KindTaxonomy),
+                                         paths (activations_activationId_tensions, packs_packId_relationships), openapi.yaml,
+                                         examples, scenarios, switch-gate.yaml, headers, changes/
+contracts/packs/schemas/                 graph-shard.schema.json, org-fragment.schema.json
+contracts/lint/ruleset.yaml              link relation `tensions`
+docs/                                    adr, api/service-contract.md, conformance/divergences.yaml (+ register),
+                                         development/hypermedia-hateoas.md, _meta/terminology.yaml
 ```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
 
 ## Complexity Tracking
 
-*Fill ONLY if Charter Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Choice | Why | Simpler alternative rejected |
+| --- | --- | --- |
+| One `TensionsInForce` projection shared by three reads | The three reads must agree (FR-006, NFR-001) | Computing per read would let the graph and the finding disagree on a reconciler |
+| `EffectiveTag.DOMAIN` bumped to v4 | Bodies change for the same inputs (graph, context, activation links) | Keeping v3 would serve a stale 304 to a client holding an old tag |
 
 ## Implementation Concern Map
 
-*Include this section when the mission has multiple distinct architectural areas that inform how tasks are decomposed.*
+### IC-01 — Tension is a relation of the model (kernel and storage)
 
-> **Note**: Implementation concerns are NOT work packages and are NOT executable units.
-> `/spec-kitty.tasks` translates these into executable WPs — one concern may become
-> multiple WPs; multiple small concerns may merge into one WP. Do not label concerns
-> with WP-style IDs or sequencing language.
+- **Purpose**: one model of an edge: `RelationType.TENSION`, the pair-class identity, the `tension` spelling in files
+  and schemas, and the removal of `Tension` and every special path.
+- **Relevant requirements**: FR-001, FR-002, FR-003, C-001.
+- **Affected surfaces**: kernel `RelationType`, `EndpointTable` (row, drop the separate set), `EndpointRule`
+  (`bindTension` out), `Relationship` (identity, `tension(...)` factory, `sameSlot`), `DoctrineGraph`, `NodeKind`;
+  packs `GraphBinding`, `RelationshipEndpointRule`, `GraphShardWriter`, `RelationshipShard`, `DomainRoundTrip`,
+  `DomainRepositoryService` (skip out), `CompositionFactsBuilder`, `WholePackStore`, `PackEdgeRepository` docs;
+  `contracts/packs/schemas/*`, `contracts/charter/schemas/Relation.yaml`, `WireTokenParityTest`; the load fixture
+  `shard-tension-binds-as-tension`; the registered-shard tension finding removed (it is FR-005's, but it lives in
+  `GraphBinding`).
+- **Sequencing/depends-on**: none. Everything else follows.
+- **Risks**: the kernel change breaks compilation of packs until both land, so this concern is one WP. Tensions start
+  reaching `EdgeIndex`, `GraphProjection`, `InboundReferences` and the references listing; GraphProjection must keep
+  answering a valid body (the `Relation` enum gains `tension` in the same WP).
 
-### IC-01 — [Name]
+### IC-02 — Pack tension consistency
 
-- **Purpose**: [One sentence: what this concern addresses and why it matters]
-- **Relevant requirements**: [FR-### refs from spec.md]
-- **Affected surfaces**: [File paths or module names this concern touches]
-- **Sequencing/depends-on**: [IC-## IDs this concern must follow, or "none"]
-- **Risks**: [Key coordination notes or implementation risks]
+- **Purpose**: refuse a pack holding two tensions on one unordered pair, or a reversed tension.
+- **Relevant requirements**: FR-004.
+- **Affected surfaces**: `GraphRules` (a third rule over `read(contents)`), `PackCodes` (two codes,
+  `tension_duplicated` and `tension_orientation`), the validate goldens, `planted/` verdicts, load fixtures. The codes
+  reach the wire as violations of the existing refusals, so `CharterRefusalCode.yaml` is unchanged.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: the rule must judge bare URNs (qualifier stripped) and count across all shards and the fragment of the
+  pack.
 
-### IC-02 — [Name]
+### IC-03 — Registration carries tensions
 
-- **Purpose**: [One sentence]
-- **Relevant requirements**: [FR-### refs]
-- **Affected surfaces**: [Paths/modules]
-- **Sequencing/depends-on**: [IC-## or "none"]
-- **Risks**: [Notes]
+- **Purpose**: `putPackRelationship` with `type: tension`, stored canonically, kept through rewrites; removal by
+  relation.
+- **Relevant requirements**: FR-005.
+- **Affected surfaces**: `RelationshipWire`, `RelationshipDraft`, `RelationshipRegistrationService` (`created`, the
+  step-enhancement guards), `RelationshipMerge`, `RelationshipRemovalService` (`names`, `heldOutsideTheShard`),
+  `PackRemovalController`, `paths/packs_packId_relationships.yaml` (the `relation` query parameter), the relationship
+  scenarios.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: canonical storage when the smaller side is the qualified `to`; `PackRegistrationService.edgeKey` is
+  orientation-sensitive.
+
+### IC-04 — Taxonomy and references
+
+- **Purpose**: the taxonomy row `tension`; references list tension edges; the walk never follows a tension.
+- **Relevant requirements**: FR-011.
+- **Affected surfaces**: `KindTaxonomyReadService` (drop the extra row; `HeldAs.TENSION` for `RelationType.TENSION`),
+  `TaxonomyRelation.yaml`, `RelationRow.yaml`, `KindTaxonomy.yaml`, `offering_kinds.yaml`,
+  `KindTaxonomy.model.yaml`, `offering.feature`, the references scenarios, a walk test.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: the taxonomy row moves from last to RelationType order; the scenario's index (`/relations/13`) changes.
+
+### IC-05 — Tensions in force and the effective graph
+
+- **Purpose**: the one projection of tensions in force with their reconcilers, and the graph's tension edges.
+- **Relevant requirements**: FR-006, FR-007, FR-012 (the example pack), NFR-001, NFR-004.
+- **Affected surfaces**: `TensionsInForce` (new, `packs.application`), `ClosureView`, `GraphProjection` (keep `when`,
+  `reason` for tension; `reconciledBy`), `GraphSnapshot`, `ClosureViewSession.graphOf`, `EffectiveReadMapper.toGraph`,
+  `EffectiveGraphEdge.yaml`, `EffectiveTag.DOMAIN` v4, the example pack `example-packs/tensions` with its
+  activations, a new `tensions.feature`.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: canonicalize after override re-pointing; collapse across packs with the first in merge order; the ETag
+  domain bump changes every effective tag (tests that pin tags).
+
+### IC-06 — Tensions in the action context
+
+- **Purpose**: `tensions` in `getEffectiveActionContext`, from the context's listed in-force artifacts.
+- **Relevant requirements**: FR-008.
+- **Affected surfaces**: `EffectiveContext`, `PacksSession`/`ClosureViewSession`, `EffectiveReadMapper.toContext`,
+  `EffectiveActionContext.yaml`, new `ContextTension.yaml`, `examples/EffectiveActionContext.*`, scenarios.
+- **Sequencing/depends-on**: IC-05.
+- **Risks**: depth and suggestions both exclude a side; a mission type not in force answers `[]`.
+
+### IC-07 — The activation's tensions read
+
+- **Purpose**: `getActivationTensions` with findings, resolutions and links.
+- **Relevant requirements**: FR-009, FR-010, C-003.
+- **Affected surfaces**: the path file, `openapi.yaml`, `_index.yaml` (schemas, examples), `ActivationTensions.yaml`,
+  `TensionFinding.yaml`, `EffectiveETag.yaml` and `CharterSourceFingerprint.yaml` op lists, `Activation.yaml` and its
+  example, `ActivationMapper` (`tensions` link), `EffectiveTag.Read.TENSIONS`, `EffectiveReadService`,
+  `ActivationController`, `EffectiveReadMapper`, `every-operation.feature`, `read-refusals.feature`,
+  `unexpected-failure.feature`, `activation-links.feature`, `switch-gate.yaml`, `contracts/lint/ruleset.yaml`,
+  `docs/development/hypermedia-hateoas.md` (relations `tensions`, `deactivate-source`, `deactivate-target`, `source`,
+  `target`).
+- **Sequencing/depends-on**: IC-05.
+- **Risks**: shared files with #108 (append, keep both sides).
+
+### IC-08 — Records and the open-packs draft
+
+- **Purpose**: the docs and registers match the reads; the companion migration is drafted.
+- **Relevant requirements**: FR-013, FR-014.
+- **Affected surfaces**: `docs/api/service-contract.md`, `docs/conformance/divergences.yaml` and the register page,
+  `docs/_meta/terminology.yaml`, `site/.contextive/definitions.yaml`, `contracts/charter/changes/2026-11-18-*.md`,
+  `contracts/packs/README.md`, `research/draft-open-packs-tension-rename.md`.
+- **Sequencing/depends-on**: IC-01 to IC-07.
+- **Risks**: none beyond the docs checks.
+
+### Sequence
+
+IC-01 first. Then IC-02, IC-03, IC-04 and IC-05 can run in parallel. IC-06 and IC-07 follow IC-05. IC-08 comes last.
