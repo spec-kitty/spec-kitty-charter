@@ -14,6 +14,15 @@ Design authority: ADR-0080 (accepted 2026-11-18). This note records the planning
 
   The real collision is where the FR-002 rules plug in: a `RoutingCatalogFacts` view in `PackContents` (IC-01).
 - **Alternatives**: build on the #599 branch. Rejected: it may change before merge.
+- **Rechecked on 2026-11-18, after #599 merged** (main `a925ede5`):
+  - Every literal path the WPs own exists; only globs over files still to be created match nothing.
+  - `PackContents` is a record with `List<MissionTypeFacts> missionTypes` and an `Assembly`, whose
+    `references()` gives the `ReferenceFacts`. `PackRulesets.content()` composes `MissionTypeRules`, then
+    `ReferenceRules`, then `FragmentRules.ORPHAN`.
+  - WP05's `RoutingCatalogFacts` is a new record component beside `missionTypes`. Its rules join `content()` before
+    `ReferenceRules`.
+  - #601 (a pre-lock judge race in `CommitStorePackWriteStore.commit`) is outside every WP's map: no WP touches the
+    commit store.
 
 ## R2. Where the domain lives
 
