@@ -50,7 +50,7 @@
     },
     "WP02": {
       "actor": "user",
-      "agent": "claude-reviewer",
+      "agent": "claude::",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -61,7 +61,8 @@
       "notes": [
         "- 2026-11-18T11:58:51Z – claude – shell_pid=16157 – Scope of green (tasks.md): :kernel:check passes (CostTierTest, RoutingCatalogEndpointTest, ArtifactKindTest and NodeKindTest updated); EndpointTableAdrTest passes; compileTestJava passes for every module. Known red until WP03 and WP05: the packs and deployable parity tests that iterate the kind enums (WireTokenParityTest, KindBindingsTest and the like). T006: the diagonals use 'activatable and edge target' (every kind they admitted before is an edge target); ADR-0077 rows name routing_catalog among the exclusions, because the ADR parser reads exclusions literally. T007: CascadeRules and selection run off activatable() and the graph; a catalog has no edges, so no change. Recorded edits outside the map: contracts/charter/schemas/Preset.yaml (activatedRoutingCatalogs, WP03's file) and PresetMapper (case ROUTING_CATALOG, WP05's file), because PresetMapper's exhaustive switch otherwise breaks :packs compilation.",
         "Ready for review: kernel kind, CostTier, endpoint exclusion, ADR-0077 rows",
-        "Approved by independent reviewer (session_019C2Tk2EBfnVS3Cj2pGMmxF) at lane-b f858fe49, merge base 0fba407. Verified on Java 25: :kernel:check (3047 kernel tests, 0 failures, incl. CostTierTest 3/0 and RoutingCatalogEndpointTest 3/0), :packs EndpointTableAdrTest 3/0, compileTestJava for every module: BUILD SUCCESSFUL. ROUTING_CATALOG is the last constant of ArtifactKind and NodeKind; it is activatable, not declarable and not an edge target. T006: the 'activatable and edge target' rule changes no other diagonal; I checked both enums, and routing_catalog is the only activatable non-edge-target kind. ADR-0077 rows and amendment match EndpointTable. CostTier matches ADR-0080 decisions 5 and 12. T007: there is no CascadeRules change, which is reasonable because a catalog has no edges. Edits outside the map accepted: Preset.yaml activatedRoutingCatalogs (follows the sibling pattern; WP03 owns the file) and the PresetMapper ROUTING_CATALOG case (needed for :packs to compile). Expected red (packs/deployable parity tests until WP03/WP05) is per tasks.md. Note, not blocking: KindRef.routingCatalog has no direct test; WP05 or later should cover it when the binding names it."
+        "Approved by independent reviewer (session_019C2Tk2EBfnVS3Cj2pGMmxF) at lane-b f858fe49, merge base 0fba407. Verified on Java 25: :kernel:check (3047 kernel tests, 0 failures, incl. CostTierTest 3/0 and RoutingCatalogEndpointTest 3/0), :packs EndpointTableAdrTest 3/0, compileTestJava for every module: BUILD SUCCESSFUL. ROUTING_CATALOG is the last constant of ArtifactKind and NodeKind; it is activatable, not declarable and not an edge target. T006: the 'activatable and edge target' rule changes no other diagonal; I checked both enums, and routing_catalog is the only activatable non-edge-target kind. ADR-0077 rows and amendment match EndpointTable. CostTier matches ADR-0080 decisions 5 and 12. T007: there is no CascadeRules change, which is reasonable because a catalog has no edges. Edits outside the map accepted: Preset.yaml activatedRoutingCatalogs (follows the sibling pattern; WP03 owns the file) and the PresetMapper ROUTING_CATALOG case (needed for :packs to compile). Expected red (packs/deployable parity tests until WP03/WP05) is per tasks.md. Note, not blocking: KindRef.routingCatalog has no direct test; WP05 or later should cover it when the binding names it.",
+        "Back for re-review before consolidate (see the consolidate dry-run refusal)"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -70,9 +71,9 @@
         "reviewer": "claude-reviewer",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 5036,
-      "shell_pid_created_at": "1795003481.26",
+      "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
         "T004": "done",
         "T005": "done",
