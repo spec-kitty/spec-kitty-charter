@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
@@ -279,13 +280,34 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     }
 
     /**
+     * Whether a removal can leave an artifact naming what it removes: an asset (a guard names it), a guard (a lifecycle
+     * names it), or a template that a mission type which stays names. Nothing the closure judges names a lifecycle or a
+     * mission type, and a mission type goes with its own templates, so its removal reads no pack here.
+     */
+    private static boolean mayBreakReferences(List<Urn> removed) {
+        Set<String> types = removed.stream()
+                .filter(urn -> urn.kind() == NodeKind.MISSION_TYPE)
+                .map(Urn::id)
+                .collect(Collectors.toSet());
+        return removed.stream().anyMatch(urn -> switch (urn.kind()) {
+            case ASSET, GUARD -> true;
+            case TEMPLATE ->
+                !types.contains(urn.id().substring(0, Math.max(0, urn.id().indexOf('/'))));
+            default -> false;
+        });
+    }
+
+    /**
      * Refuses a per-file write whose pack would not close over its references (#355, operator rulings of 2026-11-17):
      * {@code 409 registration_conflict}, with the reason the load would record when it left the artifact out. It runs
      * under the registry lock and the pack's own, before the impact check and before anything is staged. The pack it
      * judges is the aggregate as it will be after the write; a loaded aggregate leaves out what does not close, so
-     * only what the write changes can fail.
+     * only what the write changes can fail. No route writes or removes an asset, guard, lifecycle or template yet (work
+     * breakdown item 13 adds them); a route that does inherits this check.
      */
     private static void requireReferencesClose(Pack after) {
+        // Before the If-Match comparison in the commit store, as the impact check is: a stale write whose pack would
+        // also not close answers 409, not 412.
         ReferenceSubjects.firstRefusal(after).ifPresent(finding -> {
             throw new CharterRefusal(RefusalCode.REGISTRATION_CONFLICT, finding.refusal());
         });
@@ -383,11 +405,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     @Override
     public PackRevision remove(PackIdentifier pack, Removal removal) {
         return exclusivelyAt(pack, location -> {
-            if (removal.artifacts().stream()
-                    .anyMatch(urn -> urn.kind()
-                            .artifactKind()
-                            .filter(REFERENCE_KINDS::contains)
-                            .isPresent())) {
+            if (mayBreakReferences(removal.artifacts())) {
                 requireReferencesClose(new DomainRepositoryService(locations, strategy)
                         .load(pack)
                         .without(removal.artifacts()));

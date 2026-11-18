@@ -24,7 +24,7 @@ import java.util.Set;
 public record ReferenceFacts(
         List<Placed> candidates, Set<String> payloads, Set<String> namableTemplates, ConfigSchemas schemas) {
 
-    /** No candidate: facts a test writes by hand, which judge no closure. */
+    /** No candidate: the facts of a read the load refused, or of facts a test writes by hand; they judge no closure. */
     public static final ReferenceFacts NONE = new ReferenceFacts(List.of(), Set.of(), Set.of(), new ConfigSchemas() {
         @Override
         public List<String> schemaProblems(ConfigValue schema) {

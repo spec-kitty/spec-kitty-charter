@@ -215,9 +215,10 @@ changes.
 - **Validate mode reports what the load drops, as an error.** Each artifact the load leaves out for the closure, and
   each `Executable` or `Lifecycle` invariant the domain refuses at load, is an `artifact_schema_error` error at its
   file, in the load's words. Validate mode never reads greener than the load (operator ruling).
-- **A per-file write is judged on the pack it leaves.** The commit store refuses a write or a removal whose pack would
-  not close with `409 registration_conflict` and the load's reason (operator ruling). A delete of an asset a guard names
-  is refused, not cascaded (operator ruling).
+- **A per-file write is judged on the pack it leaves.** The commit store, the choke point every per-file write and
+  removal goes through, refuses one whose pack would not close with `409 registration_conflict` and the load's reason
+  (operator ruling). A delete of an asset a guard names is refused, not cascaded (operator ruling). No route writes or
+  removes an asset, guard, lifecycle or template yet: work breakdown item 13 adds them, and each inherits the refusal.
 - **One standing test holds the paths together**: `ClosureSymmetryTest`, a table of broken packs, each row with a
   repaired control.
 
