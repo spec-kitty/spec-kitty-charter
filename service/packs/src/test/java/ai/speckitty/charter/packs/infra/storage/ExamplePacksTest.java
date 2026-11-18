@@ -67,16 +67,19 @@ class ExamplePacksTest {
                 .isNotEmpty();
     }
 
-    /** The three example packs as the store configures them, built-in first. */
+    /** The four example packs as the store configures them, built-in first. */
     static List<PackLocation> locations() {
         return ExamplePacks.names().stream()
                 .map(name -> new PackLocation(name, ExamplePacks.level(name), ExamplePacks.pack(name)))
                 .toList();
     }
 
-    /** The three packs compose through the production store and the offering read: org-base on built-in, project on both. */
+    /**
+     * The four packs compose through the production store and the offering read: org-base and org-alt on built-in,
+     * project on both org packs, settling their contest (#358).
+     */
     @Test
-    void theThreePacksComposeThroughTheOfferingRead() {
+    void theExamplePacksComposeThroughTheOfferingRead() {
         DomainRepositoryService store =
                 new DomainRepositoryService(ExamplePacksTest::locations, new YamlSerializationStrategy());
         OfferingReadService read =
@@ -84,12 +87,12 @@ class ExamplePacksTest {
 
         assertThat(read.offering().value())
                 .extracting(entry -> entry.name())
-                .containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+                .containsExactlyElementsOf(ExamplePacks.names());
     }
 
     /** Every artifact file of every pack loads into the domain through the whole-pack load, with no violation. */
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.ORG_ALT, ExamplePacks.PROJECT})
     void everyPackLoadsWholeWithNoViolation(String name) {
         WholePackStore.LoadedPack loaded =
                 new WholePackStore(new YamlSerializationStrategy()).load(ExamplePacks.pack(name));

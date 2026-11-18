@@ -820,9 +820,8 @@ class CompositionRulesTest {
                     });
         }
 
-        // #358 (operator ruling (a), 2026-11-17): the distribution pack is derived, the pack of the contest's level
-        // that
-        // depends on every contestant and that no other pack of that level depends on (ADR-0048 decisions 8, 9 and 12).
+        // #358 (operator ruling (a), 2026-11-17, refined on Q4 2026-11-18): the distribution pack is derived, the pack
+        // that depends on every contestant and that no pack of the contest's level depends on (ADR-0048 d8, d9, d12).
         // Only its overrides edge settles a contest.
         @Test
         @DisplayName("#358: the distribution pack, which depends on both contestants, settles the contest")
@@ -869,9 +868,9 @@ class CompositionRulesTest {
                         assertThat(fault.detail())
                                 .isEqualTo("packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact"
                                         + " `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by"
-                                        + " pack `member` (01MEMB), which is not the distribution pack, the pack of"
-                                        + " that level that depends on every contestant and that no other pack of that"
-                                        + " level depends on");
+                                        + " pack `member` (01MEMB), which is not the distribution pack, the pack that"
+                                        + " depends on every contestant and that no pack of the contest's level depends"
+                                        + " on");
                     });
             assertThat(CompositionRules.closure()
                             .check(List.of(distribution, member, right, left))
@@ -893,10 +892,10 @@ class CompositionRulesTest {
                     assertThat(fault.packs())
                             .containsExactly(refusalPack("01LEFT", "left"), refusalPack("01RIGHT", "right"));
                     assertThat(fault.detail())
-                            .endsWith(
-                                    "an overrides edge settling it is declared by pack `left` (01LEFT),"
-                                            + " which is not the distribution pack"
-                                            + ", the pack of that level that depends on every contestant and that no other pack of that level depends on");
+                            .endsWith("an overrides edge settling it is declared by pack `left` (01LEFT),"
+                                    + " which is not the distribution pack"
+                                    + ", the pack that depends on every contestant and that no pack of the"
+                                    + " contest's level depends on");
                 });
             }
         }
@@ -958,6 +957,33 @@ class CompositionRulesTest {
                     .singleElement()
                     .satisfies(fault -> assertThat(fault.detail())
                             .contains("declared by pack `distribution` (01DSTR), which is not the distribution pack"));
+        }
+
+        @Test
+        @DisplayName("#358 Q4: a pack of another level that reaches every contestant is their distribution pack")
+        void aPackOfAnotherLevelReachingTheContestantsSettles() {
+            PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution project = new PackUnderResolution(
+                    configured("01PROJ", PackLevel.PROJECT),
+                    new PackDescriptor(
+                            "01PROJ",
+                            "1.0.0",
+                            Optional.empty(),
+                            "project",
+                            Optional.of(PackLevel.PROJECT),
+                            Optional.empty(),
+                            PackPaths.none(),
+                            List.of(new PackDependency("01LEFT", ">=1.0"), new PackDependency("01RIGHT", ">=1.0")),
+                            List.of(new PackOverride(DIRECTIVE, "01LEFT"))));
+            PackUnderResolution orgDistribution =
+                    settling("01DSTR", "distribution", DIRECTIVE, "01RIGHT", "01LEFT", "01RIGHT");
+
+            assertThat(CompositionRules.faults(List.of(project, right, left))).isEmpty();
+            assertThat(CompositionRules.faults(List.of(project, orgDistribution, right, left)))
+                    .as("with an org distribution settling too, there are two distribution packs")
+                    .singleElement()
+                    .satisfies(fault -> assertThat(fault.detail()).contains("more than one distribution pack"));
         }
 
         @Test

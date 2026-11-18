@@ -2,8 +2,8 @@
 title: "ADR-0048: Pack composition: a dependency graph of named packs, with built-in as a distribution pack"
 description: Packs compose through versioned depends_on edges into a diamond-shaped graph; built-in becomes a content-free distribution pack over a slimmed foundation pack.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-08 (sibling step enhancers compose)'
+updated: 2026-11-18T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053), Amendment 2026-11-08 (sibling step enhancers compose) and Amendment 2026-11-18 (the distribution pack is derived, #358)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -91,6 +91,33 @@ The operator ruled on 2026-11-08 (review of [#422](https://github.com/spec-kitty
 sibling step overrides are refused and sibling step enhancers compose (composition rule C14). Decision 9 and open
 question 5 each carry an annotation; the original text stands. [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21 and
 [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decision 23 carry the same ruling.
+
+### Amendment 2026-11-18 (#358): the distribution pack is derived
+
+The operator ruled on #358 that the distribution pack is derived, never declared (ruling (a), 2026-11-17). It is the
+pack of the compose that no other member depends on, because the distribution depends on its members (decisions 8 and
+12). No descriptor field marks it, and the packs contract does not change. On 2026-11-18 the operator refined the ruling
+for a compose that spans levels (Q4 on [#603](https://github.com/spec-kitty/spec-kitty-charter/pull/603), option (C)).
+For a sibling contest at level ℓ, the distribution pack is the pack that:
+
+- is not one of the contestants;
+- reaches every contestant over `depends_on` and `parent_pack`;
+- has no pack of level ℓ depending on it.
+
+A dependent at another level does not count. A project pack that builds on an org or `built-in` distribution therefore
+leaves it the distribution of the contests at its own level.
+
+This sharpens decision 9 ("the distribution pack may settle it explicitly with its own edge"):
+
+- Only the distribution pack's `overrides` entry settles a contest.
+- An entry naming a contestant that any other pack declares is refused `pack_sibling_conflict`, naming the declaring
+  pack. That covers a member, a contestant, and a pack that does not reach every contestant, and it holds even beside
+  the distribution pack's entry.
+- Entries of two distribution packs are refused, naming both, even when they name one winner.
+- A step `action:<M>/<step>` settles from `M`'s settlement (Q5). It is in force only from the pack whose `M` won.
+
+The compose and the layer merge settle through one function (`PackCompositionResolver.settle`). The original text
+stands; composition rule C15 and DIV-219 carry the rule.
 
 ## Context
 

@@ -63,7 +63,7 @@ class PackDigestBaselineTest {
 
         assertThat(covered)
                 .as("every example pack but the two that hold step enhancements is covered")
-                .containsExactly(ExamplePacks.PROJECT);
+                .containsExactly(ExamplePacks.ORG_ALT, ExamplePacks.PROJECT);
     }
 
     @Test

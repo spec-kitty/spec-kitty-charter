@@ -225,6 +225,10 @@ class LayerMergeTest {
                         LayerMergeTest::c15StepSettledByASiblingIsUnsettled),
                 new Row(
                         "C15",
+                        "#358 Q5: a step settles from its mission type's settlement, even to a pack that lacks the step",
+                        LayerMergeTest::c15StepSettlesFromItsMissionType),
+                new Row(
+                        "C15",
                         "an action that names no step (action:M/) shares no contest with its mission type",
                         LayerMergeTest::c15ActionWithoutAStepNameIsNoStep),
                 new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder));
@@ -471,6 +475,35 @@ class LayerMergeTest {
                     .contains("action:M/s", "declared by pack `org-x` (id-org-x), which is not the distribution pack");
             assertThat(refusal.packs()).extracting(RefusalPack::name).containsExactly("org-x", "org-y");
         });
+    }
+
+    private static void c15StepSettlesFromItsMissionType() {
+        for (String winner : List.of("org-c", "org-a")) {
+            MergedClosure merged = new Fixture()
+                    .pack("org-a", PackLevel.ORG, "mission_type:M", "action:M/s")
+                    .pack("org-b", PackLevel.ORG, "mission_type:M", "action:M/s")
+                    .pack("org-c", PackLevel.ORG, "mission_type:M")
+                    .distribution(
+                            "org-dist",
+                            PackLevel.ORG,
+                            List.of(new PackOverride("mission_type:M", packId(winner))),
+                            "org-a",
+                            "org-b",
+                            "org-c")
+                    .merge();
+
+            assertThat(winner(merged, urn("mission_type:M")).packId()).isEqualTo(configured(winner));
+            if (winner.equals("org-c")) {
+                assertThat(merged.winnerOf(urn("action:M/s")))
+                        .as(
+                                "M is settled to C, which lacks the step: the losers' steps are not in force, and no refusal")
+                        .isEmpty();
+            } else {
+                assertThat(winner(merged, urn("action:M/s")).packId())
+                        .as("the step is in force from the pack whose M won")
+                        .isEqualTo(configured("org-a"));
+            }
+        }
     }
 
     private static void c15ActionWithoutAStepNameIsNoStep() {

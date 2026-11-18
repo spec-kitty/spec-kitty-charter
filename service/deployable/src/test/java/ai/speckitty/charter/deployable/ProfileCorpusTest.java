@@ -37,7 +37,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * NFR-001, SC-003 and SC-004 over the example packs (ADR-0070): every agent profile of the three example packs,
+ * NFR-001, SC-003 and SC-004 over the example packs (ADR-0070): every agent profile of the example packs,
  * {@code built-in}, {@code org-base} and {@code project}, is read through the service's {@link ProfileSource} and
  * through its REST edge, and the body means what the pack YAML means. The expected wire is built here from the YAML
  * alone, by the rules the contract states (camel case, a list that is not declared is {@code []}, a field the pack
@@ -92,7 +92,11 @@ class ProfileCorpusTest {
     /** The profile files of a pack of the corpus, by profile id, in file-name order. */
     private static Map<String, Map<String, Object>> profilesOf(String pack) throws IOException {
         Map<String, Map<String, Object>> profiles = new LinkedHashMap<>();
-        try (Stream<Path> files = Files.list(CORPUS.resolve(pack).resolve("agent_profiles"))) {
+        Path directory = CORPUS.resolve(pack).resolve("agent_profiles");
+        if (!Files.isDirectory(directory)) {
+            return profiles; // org-alt holds no profile
+        }
+        try (Stream<Path> files = Files.list(directory)) {
             for (Path file : files.filter(f -> f.getFileName().toString().endsWith(".agent.yaml"))
                     .sorted()
                     .toList()) {
@@ -319,7 +323,9 @@ class ProfileCorpusTest {
     void everyProfileFileOfEachExamplePackIsServedAndNothingElse() throws Exception {
         for (String pack : PACKS) {
             Set<String> onDisk = profilesOf(pack).keySet();
-            assertThat(onDisk).as("%s profile files", pack).isNotEmpty();
+            if (!ExamplePacks.ORG_ALT.equals(pack)) {
+                assertThat(onDisk).as("%s profile files", pack).isNotEmpty();
+            }
             assertThat(servedProfileIds(pack))
                     .as("%s profiles served", pack)
                     .containsExactlyInAnyOrderElementsOf(onDisk);

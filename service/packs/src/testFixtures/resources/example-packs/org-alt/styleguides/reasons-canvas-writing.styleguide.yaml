@@ -1,0 +1,9 @@
+schema_version: "1.0"
+id: reasons-canvas-writing
+title: REASONS Canvas Writing Styleguide (alternative)
+scope: docs
+principles:
+  - name: Lead with the decision
+    description: "Lead each section with the decision it records, then its reasons."
+  - name: Keep the canvas short
+    description: "Keep each canvas to one page; link to the spec and plan for detail."

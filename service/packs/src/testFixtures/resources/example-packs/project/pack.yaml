@@ -1,4 +1,4 @@
-# Example project pack (ADR-0070): depends on org-base, overrides an open artifact, names built-in's locked
+# Example project pack (ADR-0070): depends on org-base and org-alt, overrides an open artifact, names built-in's locked
 # generic profile as its fallback through the closure (ADR-0068 decision 2), and pins a role in its policy (ADR-0030).
 schema_version: "1.0"
 pack_id: 01M74H0000000000000000PRJ1
@@ -9,11 +9,14 @@ pack_level: project
 depends_on:
   - pack_id: 01M6Y9ACNAAD96XPNQS0XWP2FF
     range: ">=1.0,<2"
+  - pack_id: 01M74H0000000000000000RG2A
+    range: ">=1.0,<2"
 mutability_policy: policy.yaml
 fallback_profile: generic-agent
 requires_core: ">=4.0,<5"
-# Declares a settlement of org-base's styleguide (ADR-0048 decision 9). No sibling contest arises among the example
-# packs, so it settles nothing: only the distribution pack of the contest's level settles one (#358).
+# Settles the contest over styleguide:reasons-canvas-writing between its siblings org-base and org-alt, in favour of
+# org-base. It is their distribution pack: it depends on both, and no org pack depends on it (ADR-0048 decision 9 as
+# amended 2026-11-18, #358).
 overrides:
   - artifact: styleguide:reasons-canvas-writing
     member: 01M6Y9ACNAAD96XPNQS0XWP2FF

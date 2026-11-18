@@ -806,7 +806,7 @@ public final class PackCompositionResolver {
 
     /** Who the distribution pack is, as a refusal explains it (#358). */
     private static final String DISTRIBUTION =
-            "the pack of that level that depends on every contestant and that no other pack of that level depends on";
+            "the pack that depends on every contestant and that no pack of the contest's level depends on";
 
     /**
      * How a sibling contest is settled (C15, #358): by the member the distribution pack's {@code overrides} edge names,
@@ -859,14 +859,14 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Settles a sibling contest (C15; #358, operator ruling (a) of 2026-11-17). Only the distribution pack settles: it is
-     * derived, never declared, as a pack of the contest's level that is not a contestant, that reaches every contestant
-     * over {@code depends_on} and {@code parent_pack} (ADR-0048 decisions 8 and 12: the distribution depends on its
-     * members), and that no other pack of that level depends on. An edge naming a contestant that any other pack
-     * declares (a member, a contestant, a pack that does not reach the contestants) refuses the contest, naming that
-     * pack, even beside the distribution pack's edge; edges of two distribution packs refuse it, naming both, whether
-     * or not they name one winner. An edge naming a pack that is not a contestant settles nothing. A pack names one
-     * winner per artifact at most ({@link PackDescriptor}).
+     * Settles a sibling contest (C15; #358, operator ruling (a) of 2026-11-17 as refined on 2026-11-18). Only the
+     * distribution pack settles: it is derived, never declared, as the pack that is not a contestant, that reaches every
+     * contestant over {@code depends_on} and {@code parent_pack} (ADR-0048 decisions 8 and 12: the distribution depends
+     * on its members), and that no pack of the contest's level depends on. An edge naming a contestant that any other
+     * pack declares (a member, a contestant, a pack that does not reach the contestants) refuses the contest, naming
+     * that pack, even beside the distribution pack's edge; edges of two distribution packs refuse it, naming both,
+     * whether or not they name one winner. An edge naming a pack that is not a contestant settles nothing. A pack names
+     * one winner per artifact at most ({@link PackDescriptor}).
      *
      * @param compose the packs of the compose, each {@code pack_id} once
      * @param artifact the bare URN of the contested artifact, or for a step the mission type whose contest it shares
@@ -958,15 +958,15 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Whether a pack is the distribution pack of a contest (#358): of the contest's level, not a contestant, reaching
-     * every contestant over {@code depends_on} and {@code parent_pack}, and with no other pack of that level depending
-     * on it. A dependent at another level does not count: a project pack that builds on a distribution leaves it the
-     * distribution of its own level.
+     * Whether a pack is the distribution pack of a contest (#358; operator ruling of 2026-11-18 on Q4, refining ruling
+     * (a)): it is not a contestant, it reaches every contestant over {@code depends_on} and {@code parent_pack}, and no
+     * pack of the contest's level depends on it. A dependent at another level does not count: a project pack that builds
+     * on an org distribution leaves it the distribution of the org contests.
      */
     private static boolean isDistribution(
             PackUnderResolution pack, List<PackUnderResolution> compose, PackLevel level, Set<String> contestants) {
         String packId = pack.descriptor().packId();
-        if (pack.configured().level() != level || contestants.contains(packId)) {
+        if (contestants.contains(packId)) {
             return false;
         }
         Map<String, PackUnderResolution> byId = new HashMap<>();

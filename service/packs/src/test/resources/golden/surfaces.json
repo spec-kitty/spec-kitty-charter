@@ -10,6 +10,14 @@
     },
     "composeRead" : "readable"
   },
+  "example-packs/org-alt" : {
+    "registration" : {
+      "accepted" : {
+        "diagnostics" : [ ]
+      }
+    },
+    "composeRead" : "readable"
+  },
   "example-packs/org-base" : {
     "registration" : {
       "accepted" : {

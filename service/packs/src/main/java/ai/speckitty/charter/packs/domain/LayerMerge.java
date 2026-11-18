@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -62,8 +63,13 @@ public final class LayerMerge {
                 closure.stream().map(pack -> pack.descriptor().packId()).toList();
         Map<Urn, MergedClosure.Winner> winners = new LinkedHashMap<>();
         List<LayerOverride> overrides = new ArrayList<>();
-        holdersByUrn(closure).forEach((urn, holders) -> {
-            List<PackUnderResolution> byLevel = levelWinners(holders, settledBy(urn, closure));
+        Map<Urn, List<PackUnderResolution>> holdersByUrn = holdersByUrn(closure);
+        holdersByUrn.forEach((urn, holders) -> {
+            List<PackUnderResolution> byLevel = levelWinners(holders, settledBy(urn, closure, holdersByUrn));
+            if (byLevel.isEmpty()) {
+                // Every copy is a step of a mission type that lost its contest: none is in force (C15, #358).
+                return;
+            }
             PackUnderResolution winner = byLevel.getLast();
             winners.put(urn, winnerOf(winner, urn, policy.levelIn(closurePackIds, urn)));
             for (PackUnderResolution loser : byLevel.subList(0, byLevel.size() - 1)) {
@@ -298,7 +304,8 @@ public final class LayerMerge {
 
     /**
      * The pack holding the version in force at each level that holds the id, from the nearest built-in level to the
-     * farthest.
+     * farthest. The picker gets every level's holders, one or more, and may pick none: a level whose copies are all
+     * steps of a losing mission type holds no version in force.
      */
     private static List<PackUnderResolution> levelWinners(
             List<PackUnderResolution> holders, UnaryOperator<List<PackUnderResolution>> pickAmongSiblings) {
@@ -306,22 +313,48 @@ public final class LayerMerge {
         holders.forEach(pack -> byLevel.computeIfAbsent(pack.configured().level(), level -> new ArrayList<>())
                 .add(pack));
         return byLevel.values().stream()
-                .map(siblings -> siblings.size() == 1 ? siblings : pickAmongSiblings.apply(siblings))
+                .map(pickAmongSiblings)
+                .filter(picked -> !picked.isEmpty())
                 .map(List::getLast)
                 .toList();
     }
 
     /**
-     * The sibling the distribution pack's {@code overrides} entry names, as a one-element list (C15, #358), settled as the
-     * compose settles it ({@link PackCompositionResolver#settle}). A contest it does not settle is refused, never
-     * decided by load order: the compose leaves a step ({@code action:<M>/<step>}) out of the sibling contest, so two
-     * packs that both declare one can reach this point. An entry of a pack that is not the distribution pack, or entries
-     * of two distribution packs, refuse it as the compose does, naming the declaring packs.
+     * The copy in force at one level (C15, #358), settled as the compose settles a contest
+     * ({@link PackCompositionResolver#settle}). A lone holder is in force, except a step of a mission type that lost its
+     * contest. A step ({@code action:<M>/<step>}) is part of {@code M}: when two or more packs of the level hold
+     * {@code M}, the step is settled by {@code M}'s settlement over all of them, and is in force only from the pack whose
+     * {@code M} won, so a level where the winner does not hold the step holds no copy of it. Otherwise a contest is
+     * settled over its own holders, keyed by {@code M} for a step: the compose leaves a step out of the sibling contest,
+     * so an unsettled step contest is refused here, never decided by load order. An entry of a pack that is not the
+     * distribution pack, or entries of two distribution packs, refuse it as the compose does, naming the declaring packs.
      */
-    private static UnaryOperator<List<PackUnderResolution>> settledBy(Urn urn, List<PackUnderResolution> closure) {
-        return siblings -> switch (PackCompositionResolver.settle(closure, settlementKey(urn), siblings)) {
-            case PackCompositionResolver.Settlement.Settled settled -> List.of(settled.winner());
-            case PackCompositionResolver.Settlement.Unsettled unsettled -> throw refused(urn, siblings, unsettled);
+    private static UnaryOperator<List<PackUnderResolution>> settledBy(
+            Urn urn, List<PackUnderResolution> closure, Map<Urn, List<PackUnderResolution>> holdersByUrn) {
+        return siblings -> {
+            PackLevel level = siblings.getFirst().configured().level();
+            Optional<Urn> missionType = StepHolding.missionTypeOf(urn);
+            if (missionType.isPresent()) {
+                List<PackUnderResolution> typeHolders = holdersByUrn.getOrDefault(missionType.get(), List.of()).stream()
+                        .filter(pack -> pack.configured().level() == level)
+                        .toList();
+                if (typeHolders.size() > 1) {
+                    return switch (PackCompositionResolver.settle(
+                            closure, missionType.get().toString(), typeHolders)) {
+                        case PackCompositionResolver.Settlement.Settled settled ->
+                            siblings.contains(settled.winner()) ? List.of(settled.winner()) : List.of();
+                        case PackCompositionResolver.Settlement.Unsettled unsettled ->
+                            throw refused(missionType.get(), typeHolders, unsettled);
+                    };
+                }
+            }
+            if (siblings.size() == 1) {
+                return siblings;
+            }
+            return switch (PackCompositionResolver.settle(closure, settlementKey(urn), siblings)) {
+                case PackCompositionResolver.Settlement.Settled settled -> List.of(settled.winner());
+                case PackCompositionResolver.Settlement.Unsettled unsettled -> throw refused(urn, siblings, unsettled);
+            };
         };
     }
 

@@ -1,0 +1,7 @@
+# The org-alt pack's only DRG document (ADR-0064): its one styleguide, which contests org-base's at org (#358).
+nodes:
+- id: reasons-canvas-writing
+  kind: styleguides
+  title: REASONS Canvas Writing Styleguide (alternative)
+  body_path: styleguides/reasons-canvas-writing.styleguide.yaml
+edges: []

@@ -237,7 +237,7 @@ and two enhancers do not.
 **Built (PR A0):** `changedArtifacts` no longer counts `enhances`, so two sibling enhancers compose, and a settlement names exactly one winner.
 
 **C15 Sibling settlement.** For a conflict on `u` among siblings `S` at level `ℓ`, let
-`Dist(ℓ, S) = {p ∈ C | lv(p) = ℓ ∧ p ∉ S ∧ S ⊆ reach(p) ∧ ¬∃q ∈ C, q ≠ p, lv(q) = ℓ. pid(p) ∈ deps(q) ∪ parent(q)}`,
+`Dist(ℓ, S) = {p ∈ C | p ∉ S ∧ S ⊆ reach(p) ∧ ¬∃q ∈ C, q ≠ p, lv(q) = ℓ. pid(p) ∈ deps(q) ∪ parent(q)}`,
 where `reach(p)` is what `p` reaches over `depends_on` and `parent_pack`, and let `E(u, S)` be the packs that declare
 `{artifact: u, member: m} ∈ ovr(p)` with `m ∈ {pid(s) | s ∈ S}`. The conflict is settled iff `E(u, S) = {d}` with
 `d ∈ Dist(ℓ, S)`; then the `m` that `d` names has the version of `u` in force at level `ℓ`. No entry, an entry naming
@@ -245,10 +245,10 @@ a non-contestant only, an entry of a pack outside `Dist(ℓ, S)` (named first), 
 `Dist(ℓ, S)` (whether or not they name one winner) leave it refused.
 The compose names exactly one winning sibling; there is no "last loaded wins".
 *Source:* ADR-0048 d9; ADR-0053 d5; spec FR-012 of the layer-merge mission;
-`PackCompositionResolver.contests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. **Built (#358):** only the distribution pack settles, derived as `Dist(ℓ, S)` (operator ruling (a), 2026-11-17); the compose and the layer merge settle through one function (`PackCompositionResolver.settle`), and the settlement is not gated by mutability (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
+`PackCompositionResolver.contests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. **Built (#358, Q5):** a step `action:M/s` at a level where two or more packs hold `M` is settled by `M`'s settlement over all of them, and is in force only from the pack whose `M` won; a level where that pack does not hold the step holds no copy of it. **Built (#358):** only the distribution pack settles, derived as `Dist(ℓ, S)` (operator ruling (a), 2026-11-17, refined on Q4, 2026-11-18, ADR-0048 amendment); the compose and the layer merge settle through one function (`PackCompositionResolver.settle`), and the settlement is not gated by mutability (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
 > **Resolved (#358):** ADR-0053 d5 says the conflict is settled by "the distribution pack's own `overrides` edge". The
 > edge is the descriptor `overrides` entry `{artifact, member}` in `pack.yaml`, and only the distribution pack's counts:
-> the pack of the contest's level that depends on every contestant and that no other pack of that level depends on.
+> the pack that depends on every contestant and that no pack of the contest's level depends on.
 
 **C16 Artifact identity per level.** `∀ℓ: |{p ∈ C | lv(p) = ℓ ∧ defines(p, u)}| ≤ 1` after C15.
 An artifact id is unique within a level; across levels the same id is a layer override, not a conflict.

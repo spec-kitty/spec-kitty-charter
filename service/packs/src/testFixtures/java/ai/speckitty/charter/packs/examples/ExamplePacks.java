@@ -6,9 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The charter-owned example packs every pack-reading test reads (ADR-0070): {@code built-in}, the org pack
- * {@code org-base} that depends on it, and the project pack {@code project} that depends on {@code org-base}. They carry
- * only canonical shapes; an invalid shape belongs to an error-handling fixture, never here.
+ * The charter-owned example packs every pack-reading test reads (ADR-0070): {@code built-in}; the org packs
+ * {@code org-base} and {@code org-alt} that depend on it, siblings that contest one styleguide; and the project pack
+ * {@code project} that depends on both and settles that contest as their distribution pack (#358). They carry only
+ * canonical shapes; an invalid shape belongs to an error-handling fixture, never here.
  *
  * <p>The packs ship as classpath resources, inside a jar when another module reads them. On first use the tree is
  * copied once per JVM to a temporary directory, deleted when the JVM exits, so every caller gets real paths it can walk; a test that changes a
@@ -22,19 +23,25 @@ public final class ExamplePacks {
     /** The org example pack; it depends on {@link #BUILT_IN}. */
     public static final String ORG = "org-base";
 
-    /** The project example pack; it depends on {@link #ORG}. */
+    /**
+     * The second org example pack; it depends on {@link #BUILT_IN} and contests {@code styleguide:reasons-canvas-writing}
+     * with {@link #ORG}, a contest {@link #PROJECT} settles (#358).
+     */
+    public static final String ORG_ALT = "org-alt";
+
+    /** The project example pack; it depends on {@link #ORG} and {@link #ORG_ALT}, and is their distribution pack. */
     public static final String PROJECT = "project";
 
     private static final String RESOURCE = "/example-packs";
-    private static final Map<String, PackLevel> LEVELS =
-            Map.of(BUILT_IN, PackLevel.BUILT_IN, ORG, PackLevel.ORG, PROJECT, PackLevel.PROJECT);
+    private static final Map<String, PackLevel> LEVELS = Map.of(
+            BUILT_IN, PackLevel.BUILT_IN, ORG, PackLevel.ORG, ORG_ALT, PackLevel.ORG, PROJECT, PackLevel.PROJECT);
 
     private static volatile Path copied;
 
     private ExamplePacks() {}
 
     /**
-     * The directory that holds the three packs, one sub-directory each.
+     * The directory that holds the four packs, one sub-directory each.
      *
      * @return a real directory
      */
@@ -55,7 +62,7 @@ public final class ExamplePacks {
     /**
      * One example pack's directory.
      *
-     * @param name {@link #BUILT_IN}, {@link #ORG} or {@link #PROJECT}
+     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT} or {@link #PROJECT}
      * @return its directory
      */
     public static Path pack(String name) {
@@ -66,18 +73,18 @@ public final class ExamplePacks {
     }
 
     /**
-     * The three pack names, built-in first, as the store configures them.
+     * The four pack names in the compose's stable order, built-in first, as the store configures them.
      *
-     * @return {@link #BUILT_IN}, {@link #ORG}, {@link #PROJECT}
+     * @return {@link #BUILT_IN}, {@link #ORG_ALT}, {@link #ORG}, {@link #PROJECT}
      */
     public static List<String> names() {
-        return List.of(BUILT_IN, ORG, PROJECT);
+        return List.of(BUILT_IN, ORG_ALT, ORG, PROJECT);
     }
 
     /**
      * The level one example pack is configured at.
      *
-     * @param name {@link #BUILT_IN}, {@link #ORG} or {@link #PROJECT}
+     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT} or {@link #PROJECT}
      * @return its level
      */
     public static PackLevel level(String name) {
