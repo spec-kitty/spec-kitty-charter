@@ -12,7 +12,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:14.625915+00:00",
-      "notes": "Acceptance criterion (from spec.md): Each pack file kind with consistency checks (graph, artifact, asset, step, prompt slot, fragment, mission type) has one ruleset in packs.domain.rules, and each of today's checks is a rule of exactly one of them; the descriptor and format checks are the one reader's prechecks, and the glossary and the asset escape have no domain rule."
+      "notes": "Acceptance criterion (from spec.md): Each pack file kind with consistency checks (graph, artifact, asset, step, prompt slot, fragment, mission type) has one ruleset in packs.domain.rules, and each of today's checks is a rule of exactly one of them; the descriptor's checks are pure functions in packs.domain.rules (DescriptorChecks) that the one reader's prechecks call, with the format checks, and the glossary and the asset escape have no domain rule."
     },
     {
       "criterion_id": "FR-002",
@@ -32,7 +32,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:25.164918+00:00",
-      "notes": "Acceptance criterion (from spec.md): PackRulesets.closure() over the composition facts of a set of packs with levels reports every duplicate-id, dependency (cycle, unknown, out of range), parent, level and conflict fault with today's codes, and a valid set on the same fixture reports nothing; the offering still refuses with its first fault in today's order and its pack list."
+      "notes": "Acceptance criterion (from spec.md): PackRulesets.closure() over the composition facts of a set of packs with levels reports every duplicate-id, dependency (cycle, unknown, out of range), parent, level, name and sibling conflict fault with today's codes, and every preset conflict is reported (the offering through PackCompositionResolver.presetContests; CompositionRules.presets states the preset phase as a rule); a valid set on the same fixture reports nothing; the offering still refuses with its first fault in today's order and its pack list."
     },
     {
       "criterion_id": "FR-004",
@@ -68,7 +68,7 @@
       "criterion_id": "FR-007",
       "description": "PackFinding/PackElementViolation/RefusalViolation converters deleted: no shim, no Surface table; PackElementViolation stays as the aggregate's record (WP13 ruling).",
       "proof_type": "inspection",
-      "evidence": "git grep over service for PackPolicy|PackFindingCode|PackFindingb|enum Surface|violationOf|findingOf|violationKind|toRefusal|toDiagnostic finds none; PackPolicy*/PackFinding tests deleted",
+      "evidence": "git grep over service for \\bPackPolicy\\b|PackFindingCode|PackFinding\\b|enum Surface|violationOf|findingOf|violationKind|toRefusal|toDiagnostic finds none; PackPolicy*/PackFinding tests deleted",
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:44.709699+00:00",
