@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.GuideSection;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
@@ -371,7 +372,7 @@ class ToolguideGuideTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         TOOLGUIDE_FILE,
-                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                        PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "the guide has the H1 'Another title', which differs from the toolguide title '" + TITLE
                                 + "'"));
     }
@@ -390,7 +391,7 @@ class ToolguideGuideTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         TOOLGUIDE_FILE,
-                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                        PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "the guide has no H1; a stored guide carries its toolguide's title '" + TITLE + "' as its H1"));
 
         Files.writeString(pack.resolve(GUIDE_FILE), "# " + TITLE + "\n\n## Overview\n\nO.\n");

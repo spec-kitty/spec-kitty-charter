@@ -120,7 +120,7 @@ class PackCompositionTest {
                 .isNotEmpty()
                 .allSatisfy(fault -> assertThat(fault.location().file()).isEqualTo("tactics/b.tactic.yaml"))
                 .extracting(Reason::code)
-                .containsOnly(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                .containsOnly(PackCodes.ARTIFACT_SCHEMA_ERROR);
         assertThat(PackRulesets.content().apply(read.contents())).isEmpty();
         assertThat(StorageRulesets.verdict(read).violations()).isEqualTo(read.readFaults());
 
@@ -231,7 +231,7 @@ class PackCompositionTest {
         write(pack, "tactics/c.tactic.yaml", "id: c\nschema_version: 1.0\nname: T\nsteps:\n- title: s\n");
 
         assertThat(codes(StorageRulesets.verdict(read(pack)).violations()))
-                .containsExactly(StorageCodes.ARTIFACT_SCHEMA_ERROR, PackCodes.DUPLICATE_ARTIFACT_ID);
+                .containsExactly(PackCodes.ARTIFACT_SCHEMA_ERROR, PackCodes.DUPLICATE_ARTIFACT_ID);
     }
 
     @Test

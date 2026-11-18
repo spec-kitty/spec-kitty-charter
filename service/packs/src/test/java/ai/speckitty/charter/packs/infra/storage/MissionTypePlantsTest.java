@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -181,7 +180,7 @@ class MissionTypePlantsTest {
         List<Reason> findings = validate(planted(host, plant));
 
         assertThat(findings).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail())
                     .as("an unknown field, by its name")

@@ -636,8 +636,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                     "pack " + pack.id().value() + " has " + pack.violations().size()
                             + " unreadable files; writing it would drop them");
         }
-        MissionTemplates.requireResolved(pack);
-        GuardClosure.requireResolved(pack);
+        ReferenceSubjects.firstRefusal(pack).ifPresent(finding -> {
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, finding.refusal());
+        });
         Path destination = target.toAbsolutePath().normalize();
         Path parent = destination.getParent();
         if (parent == null) {

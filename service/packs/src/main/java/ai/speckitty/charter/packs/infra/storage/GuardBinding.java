@@ -11,7 +11,7 @@ import ai.speckitty.charter.packs.domain.OnIndeterminate;
 /**
  * The {@link KindBinding} of the guard (ADR-0054): {@link GuardDso} to {@link Guard} and back. A guard lives at
  * {@code guards/<id>.guard.yaml}; a file anywhere else is refused by placement. Whether its {@code implemented_by}
- * resolves is checked when the pack is assembled ({@link GuardClosure}), where the pack's assets are known.
+ * resolves is checked when the pack is assembled ({@link ReferenceSubjects}, judged by {@code ReferenceClosure}), where the pack's assets are known.
  */
 enum GuardBinding implements KindBinding<GuardDso, Guard> {
     /** The binding. */

@@ -118,6 +118,16 @@ public record PackContents(
      */
     public sealed interface Assembly {
 
+        /**
+         * What the reference closure judges of the read: the assembled read's facts, and none for a read the load refused
+         * or facts a test writes by hand.
+         *
+         * @return the facts
+         */
+        default ReferenceFacts references() {
+            return ReferenceFacts.NONE;
+        }
+
         /** No assembly input: facts a test writes by hand. */
         record None() implements Assembly {}
 
@@ -168,6 +178,8 @@ public record PackContents(
          * @param policyFault why the named policy file cannot be read, when it cannot
          * @param facts the composition facts, when every graph document was read and they could be built
          * @param factsRefusal why the composition facts could not be built, when they could not
+         * @param references what the reference closure judges of the read (#355): the candidates the load meets before
+         *     it leaves any out, from the same read the aggregate is built from
          */
         record Assembled(
                 PackIdentifier id,
@@ -184,7 +196,8 @@ public record PackContents(
                 Optional<String> policyText,
                 Optional<String> policyFault,
                 Optional<PackCompositionFacts> facts,
-                Optional<String> factsRefusal)
+                Optional<String> factsRefusal,
+                ReferenceFacts references)
                 implements Assembly {
             /**
              * Checks the fields and copies the collections.
@@ -204,6 +217,7 @@ public record PackContents(
              * @param policyFault the policy fault
              * @param facts the composition facts
              * @param factsRefusal why the facts could not be built
+             * @param references what the reference closure judges
              */
             public Assembled {
                 Objects.requireNonNull(id, "id");
@@ -223,6 +237,7 @@ public record PackContents(
                 Objects.requireNonNull(policyFault, "policyFault");
                 Objects.requireNonNull(facts, "facts");
                 Objects.requireNonNull(factsRefusal, "factsRefusal");
+                Objects.requireNonNull(references, "references");
             }
         }
 

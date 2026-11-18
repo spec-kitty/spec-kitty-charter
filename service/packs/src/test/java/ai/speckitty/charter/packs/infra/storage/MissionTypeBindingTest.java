@@ -17,6 +17,7 @@ import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.StepDocument;
 import ai.speckitty.charter.missions.domain.StepSection;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Template;
@@ -238,7 +239,7 @@ class MissionTypeBindingTest {
         assertThat(read().violations())
                 .containsExactly(new PackElementViolation(
                         FILE,
-                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                        PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "templates/spec-template.md (named by step 'scoping'): missing"));
 
         Files.createDirectories(pack.resolve("missions/research/templates"));
@@ -347,10 +348,10 @@ class MissionTypeBindingTest {
                 + " missions/research/templates/spec-template.md";
 
         assertThat(read().violations())
-                .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason));
+                .containsExactly(new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, reason));
         assertThat(load(pack).violations())
                 .as("the type is refused once, by the file check; the resolution never sees it")
-                .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason));
+                .containsExactly(new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, reason));
         TreeRead validated =
                 new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()));
         assertThat(validated.readFaults())
@@ -423,7 +424,7 @@ class MissionTypeBindingTest {
                     .isEmpty();
             assertThat(refused.violations())
                     .as("%s", templates)
-                    .containsExactly(new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
+                    .containsExactly(new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
         }
     }
 
@@ -464,7 +465,7 @@ class MissionTypeBindingTest {
                                 "missions/research/templates/spec-template.md",
                                 StorageCodes.UNREADABLE,
                                 "the file cannot be read"),
-                        new PackElementViolation(FILE, StorageCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
+                        new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
     }
 
     @Test

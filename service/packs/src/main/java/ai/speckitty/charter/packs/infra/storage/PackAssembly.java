@@ -6,17 +6,19 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
-import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.ReferenceFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.domain.rules.ReferenceClosure;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Builds the {@link Pack} aggregate from what the store read, and judges nothing (#554, S1, T023): a plain class, not a
@@ -77,6 +80,28 @@ final class PackAssembly {
             FilesystemPackStore.PackRead read,
             Map<Urn, String> places,
             Consumer<PackElementViolation> storeOnly) {
+        return assembly(pack, read, places, storeOnly, facts -> {});
+    }
+
+    /**
+     * The assembly of {@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map, Consumer)}, handing
+     * {@code references} what the reference closure judges of the read (#355): every asset, guard, lifecycle and
+     * mission type that builds, with its file, before the load leaves any out. The PACK ruleset states the closure from
+     * those facts ({@code ReferenceRules}), so its faults are not store-only.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param storeOnly receives each fault only the assembly meets, as it is recorded on the builder
+     * @param references receives the reference closure's facts of the read
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            Consumer<PackElementViolation> storeOnly,
+            Consumer<ReferenceFacts> references) {
         Pack.Builder builder =
                 Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
         read.violations().forEach(builder::violation);
@@ -88,15 +113,16 @@ final class PackAssembly {
                 templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 PackElementViolation fault = new PackElementViolation(
-                        place, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage()));
+                        place, PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage()));
                 templateViolations.add(fault);
                 storeOnly.accept(fault);
             }
         }
-        Set<String> namable = MissionTemplates.namable(templates.values());
-        GuardClosure closure = GuardClosure.of(pack, read);
+        ReferenceFacts facts = referenceFacts(pack, read, templates.values());
+        references.accept(facts);
+        ReferenceClosure closure = ReferenceClosure.of(facts);
         for (KindBinding<?, ?> kind : KindBindings.all()) {
-            collect(pack, kind, read, builder, places, namable, closure, storeOnly);
+            collect(pack, kind, read, builder, places, closure, storeOnly);
         }
         read.assetFiles().forEach(builder::assetFile);
         templates.forEach((place, template) -> {
@@ -112,9 +138,7 @@ final class PackAssembly {
                         builder,
                         storeOnly,
                         new PackElementViolation(
-                                stored.file(),
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                                String.valueOf(breach.getMessage())));
+                                stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }
         // #260: the document's parts are the read model's; one the domain refuses is a violation, never a failed load.
@@ -126,9 +150,7 @@ final class PackAssembly {
                         builder,
                         storeOnly,
                         new PackElementViolation(
-                                stored.file(),
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                                String.valueOf(breach.getMessage())));
+                                stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         });
         return builder;
@@ -199,7 +221,67 @@ final class PackAssembly {
             Set<String> withheld,
             Set<String> repeating,
             Consumer<PackElementViolation> storeOnly) {
-        return assembly(pack, shaped(read, withheld, repeating), places, storeOnly);
+        return assembly(pack, read, places, withheld, repeating, storeOnly, facts -> {});
+    }
+
+    /**
+     * The shaped assembly, handing {@code storeOnly} each fault only the assembly meets and {@code references} the
+     * reference closure's facts of the shaped read, the one the aggregate is built from.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param withheld the step enhancement files the aggregate leaves out
+     * @param repeating the mission type files the aggregate leaves out
+     * @param storeOnly receives each fault only the assembly meets
+     * @param references receives the reference closure's facts
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            Set<String> withheld,
+            Set<String> repeating,
+            Consumer<PackElementViolation> storeOnly,
+            Consumer<ReferenceFacts> references) {
+        return assembly(pack, shaped(read, withheld, repeating), places, storeOnly, references);
+    }
+
+    /**
+     * What the reference closure judges of a read: each asset, guard, lifecycle and mission type that builds, with its
+     * file, in the order the load meets them (the kinds in {@link KindBindings#all()} order, each in the read's order);
+     * the asset payload paths; the ids of the mission types' own templates.
+     */
+    private static ReferenceFacts referenceFacts(
+            PackIdentifier pack, FilesystemPackStore.PackRead read, Collection<Template> templates) {
+        List<ReferenceFacts.Placed> candidates = new ArrayList<>();
+        for (KindBinding<?, ?> kind : KindBindings.all()) {
+            candidates(pack, kind, read, candidates);
+        }
+        return new ReferenceFacts(
+                candidates,
+                read.assetFiles().stream().map(AssetFile::path).collect(Collectors.toSet()),
+                ReferenceClosure.namable(templates),
+                EmbeddedSchemas.PORT);
+    }
+
+    private static <D, E extends CharterArtifact> void candidates(
+            PackIdentifier pack,
+            KindBinding<D, E> kind,
+            FilesystemPackStore.PackRead read,
+            List<ReferenceFacts.Placed> into) {
+        for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
+            Optional<E> entity;
+            try {
+                entity = Optional.of(kind.toEntity(pack, stored.dso()));
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
+                // The value-object breach is the assembly's own fault; the closure judges what builds.
+                entity = Optional.empty();
+            }
+            entity.flatMap(ReferenceSubjects::of)
+                    .ifPresent(subject -> into.add(new ReferenceFacts.Placed(stored.file(), subject)));
+        }
     }
 
     /**
@@ -327,52 +409,27 @@ final class PackAssembly {
 
     /**
      * Adds each readable element of one kind to the aggregate, failing closed: a domain-invalid element is recorded as
-     * a violation, named by its id, rather than aborting assembly. A mission type whose output template names no
-     * template of the pack (#277) is left out with a {@code reference} violation of its file, as the read's own check of
-     * a named file words it; so is a guard or a lifecycle that does not close over its references (ADR-0054,
-     * {@link GuardClosure}). Each added element's file is put in {@code places} under its URN.
+     * a violation, named by its id, rather than aborting assembly. An artifact that does not close over its references
+     * ({@link ReferenceClosure}: a mission type whose output template is not one of its own, #277; an asset, a guard or
+     * a lifecycle, ADR-0054) is left out with an {@code artifact_schema_error} at its file, in the rule's words. That
+     * fault is the PACK ruleset's to state ({@code ReferenceRules}), so it is not handed to {@code storeOnly}. Each added
+     * element's file is put in {@code places} under its URN.
      */
-    static <D, E extends CharterArtifact> void collect(
-            PackIdentifier pack,
-            KindBinding<D, E> kind,
-            FilesystemPackStore.PackRead read,
-            Pack.Builder builder,
-            Map<Urn, String> places,
-            Set<String> namableTemplates,
-            GuardClosure closure) {
-        collect(pack, kind, read, builder, places, namableTemplates, closure, violation -> {});
-    }
-
     private static <D, E extends CharterArtifact> void collect(
             PackIdentifier pack,
             KindBinding<D, E> kind,
             FilesystemPackStore.PackRead read,
             Pack.Builder builder,
             Map<Urn, String> places,
-            Set<String> namableTemplates,
-            GuardClosure closure,
+            ReferenceClosure closure,
             Consumer<PackElementViolation> storeOnly) {
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
-                Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
-                if (unresolved.isPresent()) {
-                    record(
-                            builder,
-                            storeOnly,
-                            new PackElementViolation(
-                                    stored.file(),
-                                    StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                                    MissionTemplates.reason(unresolved.get())));
-                    continue;
-                }
-                Optional<String> unclosed = closure.firstUnresolved(entity);
+                Optional<String> unclosed = ReferenceSubjects.of(entity).flatMap(closure::firstUnresolved);
                 if (unclosed.isPresent()) {
-                    record(
-                            builder,
-                            storeOnly,
-                            new PackElementViolation(
-                                    stored.file(), StorageCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
+                    builder.violation(
+                            new PackElementViolation(stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
                     continue;
                 }
                 Urn urn = entity.urn();
@@ -392,9 +449,7 @@ final class PackAssembly {
                         builder,
                         storeOnly,
                         new PackElementViolation(
-                                stored.file(),
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                                String.valueOf(breach.getMessage())));
+                                stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }
     }

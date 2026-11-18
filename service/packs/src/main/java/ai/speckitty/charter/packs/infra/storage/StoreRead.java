@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.ReferenceFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
@@ -114,7 +115,8 @@ record StoreRead(
         Map<Urn, String> places = new HashMap<>();
         List<Reason> warnings = new ArrayList<>();
         List<PackElementViolation> storeOnly = new ArrayList<>();
-        Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add);
+        List<ReferenceFacts> references = new ArrayList<>();
+        Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add, references::add);
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir.resolve(PackFileSet.MANIFEST), strategy, trailing);
         List<String> policyFault = new ArrayList<>();
@@ -145,7 +147,8 @@ record StoreRead(
                 policy.map(PolicyYaml.Named::text),
                 policyFault.stream().findFirst(),
                 facts,
-                factsRefusal.stream().findFirst());
+                factsRefusal.stream().findFirst(),
+                references.stream().findFirst().orElse(ReferenceFacts.NONE));
         return new StoreRead(
                 assembled,
                 new PackLayout(places),
@@ -334,7 +337,7 @@ record StoreRead(
             case FileRead.Read<PackManifestDso> good -> {
                 List<String> misplaced = misplacedPresetEntries(good.value());
                 misplaced.forEach(reason -> violations.add(
-                        new PackElementViolation(PackFileSet.MANIFEST, StorageCodes.ARTIFACT_SCHEMA_ERROR, reason)));
+                        new PackElementViolation(PackFileSet.MANIFEST, PackCodes.ARTIFACT_SCHEMA_ERROR, reason)));
                 return misplaced.isEmpty() ? Optional.of(good.value()) : Optional.empty();
             }
             case FileRead.Unreadable<PackManifestDso> bad -> violations.addAll(FilesystemPackStore.violationsOf(bad));
@@ -421,8 +424,8 @@ record StoreRead(
      * The store half's assembly ({@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map,
      * FilesystemPackStore.GraphRead, List)}), handing {@code storeOnly} each fault only the store half meets, which no
      * reader or rule states (#554, A-M1, WP12 review MAJOR-2): a template read twice (row 16), a value-object breach
-     * (row 17), a reference or an output template that does not close (row 18), and a companion the store cannot read
-     * (row 19), a step enhancement's under {@code prompt_fragment_invalid} as the assembly keeps it. The rule families
+     * (row 17), and a companion the store cannot read (row 19; a reference or an output template that does not close,
+     * row 18, is the PACK ruleset's since #355), a step enhancement's under {@code prompt_fragment_invalid} as the assembly keeps it. The rule families
      * it judges for the composing read (the step enhancements, {@code duplicate_step_id}, the prompt slots, the step
      * links and the substep delegations) are not among them: the content rules state those.
      *
@@ -441,6 +444,30 @@ record StoreRead(
             FilesystemPackStore.GraphRead graphs,
             List<Reason> warnings,
             Consumer<PackElementViolation> storeOnly) {
+        return assembly(pack, read, places, graphs, warnings, storeOnly, facts -> {});
+    }
+
+    /**
+     * The store half's assembly, handing {@code storeOnly} each fault only the store half meets and {@code references}
+     * what the reference closure judges of the shaped read the aggregate is built from (#355).
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param graphs what the store read of the pack's graph documents
+     * @param warnings receives the load findings that do not refuse the pack
+     * @param storeOnly receives each fault only the store half meets
+     * @param references receives the reference closure's facts
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            FilesystemPackStore.GraphRead graphs,
+            List<Reason> warnings,
+            Consumer<PackElementViolation> storeOnly,
+            Consumer<ReferenceFacts> references) {
         read.storeOnly()
                 .forEach(violation -> storeOnly.accept(
                         FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
@@ -469,7 +496,7 @@ record StoreRead(
                 withheld.add(fault.path());
             }
         }
-        Pack.Builder builder = PackAssembly.assembly(pack, read, places, withheld, repeating, storeOnly);
+        Pack.Builder builder = PackAssembly.assembly(pack, read, places, withheld, repeating, storeOnly, references);
         repeats.forEach(builder::violation);
         recordPromptSlotFaults(read, builder, warnings);
         faults.stream()

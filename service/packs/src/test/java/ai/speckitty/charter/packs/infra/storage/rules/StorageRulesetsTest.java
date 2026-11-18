@@ -392,7 +392,7 @@ class StorageRulesetsTest {
             Reason shard = SHARD;
             Reason notRegular = NOT_REGULAR;
             Reason membership = fault(StorageCodes.MANIFEST_MEMBERSHIP, "pack-manifest.yaml");
-            Reason manifestSchema = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "pack-manifest.yaml");
+            Reason manifestSchema = fault(PackCodes.ARTIFACT_SCHEMA_ERROR, "pack-manifest.yaml");
             Reason slot = fault(PackCodes.PROMPT_SLOT_NOT_EMPTY_WARNING, "p.prompt.md");
             Reason notHeldZ = NotHeldRules.warning(NotHeldFile.unmodelled("z.txt"));
             Reason notHeldA = NotHeldRules.warning(NotHeldFile.unmodelled("a.txt"));
@@ -436,8 +436,8 @@ class StorageRulesetsTest {
         @Test
         @DisplayName("a read fault at the manifest follows the rule faults, as the registration lists it (MINOR-3)")
         void aManifestReadFaultFollowsTheRules() {
-            Reason binding = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "tactics/c.tactic.yaml");
-            Reason manifest = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "pack-manifest.yaml");
+            Reason binding = fault(PackCodes.ARTIFACT_SCHEMA_ERROR, "tactics/c.tactic.yaml");
+            Reason manifest = fault(PackCodes.ARTIFACT_SCHEMA_ERROR, "pack-manifest.yaml");
 
             assertThat(StorageRulesets.verdict(read(
                                     contents(A, B),
@@ -452,7 +452,7 @@ class StorageRulesetsTest {
         @Test
         @DisplayName("the verdict joins the read faults before the rules, so a binding-level fault is named first")
         void theReadFaultsComeBeforeTheRules() {
-            Reason binding = fault(StorageCodes.ARTIFACT_SCHEMA_ERROR, "tactics/b.tactic.yaml");
+            Reason binding = fault(PackCodes.ARTIFACT_SCHEMA_ERROR, "tactics/b.tactic.yaml");
 
             assertThat(StorageRulesets.verdict(read(
                                     contents(A, B),
@@ -460,7 +460,7 @@ class StorageRulesetsTest {
                                     binding))
                             .violations())
                     .extracting(Reason::code)
-                    .containsExactly(StorageCodes.ARTIFACT_SCHEMA_ERROR, PackCodes.DUPLICATE_ARTIFACT_ID);
+                    .containsExactly(PackCodes.ARTIFACT_SCHEMA_ERROR, PackCodes.DUPLICATE_ARTIFACT_ID);
         }
     }
 }

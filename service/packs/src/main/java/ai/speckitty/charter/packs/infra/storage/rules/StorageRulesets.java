@@ -6,8 +6,11 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
+import ai.speckitty.charter.packs.domain.rules.ReferenceRules;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -36,6 +39,13 @@ public final class StorageRulesets {
 
     /** The orphan prompt fragments of {@code content()}, which a registration lists after the pack's other faults. */
     private static final Rule<TreeRead> ORPHANS = FragmentRules.ORPHAN.on(TreeRead::contents);
+
+    /**
+     * The reference closure of {@code content()} (#355), which a verdict states among the store half's own faults, in the
+     * order the load meets them: an asset's value-object breach (the store's) before the guard and the lifecycle it
+     * takes with it (the closure's).
+     */
+    private static final Rule<TreeRead> REFERENCES = ReferenceRules.UNCLOSED.on(TreeRead::contents);
 
     /** Where the manifest stands in a pack. */
     private static final String MANIFEST = "pack-manifest.yaml";
@@ -116,11 +126,14 @@ public final class StorageRulesets {
             (trailing.contains(file) ? trailingFaults : readFaults).add(fault);
         }
         List<Reason> orphans = ORPHANS.apply(read);
+        List<Reason> references = new ArrayList<>(REFERENCES.apply(read));
         List<Reason> rules = new ArrayList<>(registration().apply(read));
         rules.removeAll(orphans);
+        rules.removeAll(references);
         List<Reason> stated = new ArrayList<>(readFaults);
         stated.addAll(trailingFaults);
         stated.addAll(rules);
+        stated.addAll(references);
         stated.addAll(orphans);
         List<Reason> held = AssemblyRules.held(
                 read,
@@ -134,11 +147,14 @@ public final class StorageRulesets {
         readFaults.removeIf(kept.negate());
         trailingFaults.removeIf(kept.negate());
         rules.removeIf(kept.negate());
+        references.removeIf(kept.negate());
         List<Reason> joined = new ArrayList<>(readFaults);
         joined.addAll(rules);
+        List<Reason> assembled = new ArrayList<>(references);
         held.stream()
                 .filter(fault -> !trailing.contains(fault.location().file()))
-                .forEach(joined::add);
+                .forEach(assembled::add);
+        joined.addAll(inLoadOrder(read, assembled));
         joined.addAll(trailingFaults);
         held.stream()
                 .filter(fault -> trailing.contains(fault.location().file()))
@@ -147,6 +163,40 @@ public final class StorageRulesets {
         Rationale judged = new Rationale(joined);
         Rationale gated = judged.isPassing() ? judged.and(new Rationale(manifestMembership(read))) : judged;
         return inRegistrationOrder(gated);
+    }
+
+    /**
+     * The store half's faults and the reference closure's in the order the load records them at their files
+     * ({@code Assembly.Assembled#violations()}), so a cause is stated before what it takes with it. A fault the load
+     * records in other words (a companion's, placed at the companion) keeps its place after the one before it.
+     */
+    static List<Reason> inLoadOrder(TreeRead read, List<Reason> faults) {
+        if (!(read.contents().assembly() instanceof PackContents.Assembly.Assembled held)) {
+            return faults;
+        }
+        List<PackElementViolation> recorded = held.violations();
+        int[] keys = new int[faults.size()];
+        int carried = -1;
+        for (int i = 0; i < faults.size(); i++) {
+            Reason fault = faults.get(i);
+            int found = -1;
+            for (int j = 0; j < recorded.size() && found < 0; j++) {
+                PackElementViolation violation = recorded.get(j);
+                if (violation.file().equals(fault.location().file())
+                        && violation.kind().equals(fault.code())
+                        && violation.reason().equals(fault.detail())) {
+                    found = j;
+                }
+            }
+            carried = found >= 0 ? found : carried;
+            keys[i] = carried;
+        }
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < faults.size(); i++) {
+            order.add(i);
+        }
+        order.sort(Comparator.comparingInt(index -> keys[index]));
+        return order.stream().map(faults::get).toList();
     }
 
     /**

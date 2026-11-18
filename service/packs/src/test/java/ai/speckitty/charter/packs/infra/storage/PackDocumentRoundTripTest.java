@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -263,7 +264,7 @@ class PackDocumentRoundTripTest {
         assertThat(violation.file()).isEqualTo(PackDocumentMarkdown.FILE);
         assertThat(validateFindings(clean)).isEmpty();
         assertThat(validateFindings(refused)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isIn(StorageCodes.UNREADABLE, StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isIn(StorageCodes.UNREADABLE, PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.detail()).endsWith(validateReason.isEmpty() ? violation.reason() : validateReason);
         });
     }

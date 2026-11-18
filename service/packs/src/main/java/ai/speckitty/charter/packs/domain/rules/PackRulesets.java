@@ -25,6 +25,7 @@ public final class PackRulesets {
             .must(PromptSlotRules.RULES)
             .must(FragmentRules.ENHANCEMENT)
             .must(MissionTypeRules.RULES)
+            .must(ReferenceRules.RULES)
             .must(FragmentRules.ORPHAN);
 
     private PackRulesets() {}
@@ -32,8 +33,9 @@ public final class PackRulesets {
     /**
      * The pack's consistency, over the facts of the one read: the graph (binding and the endpoint bridge), the repeated
      * artifact and asset ids, the repeated substep id, the prompt slots, the step enhancements with their fragments, the
-     * mission type's step links and substep delegations, and the orphan fragments last, in the order a registration
-     * lists them. Collect-all: every rule runs, in this order.
+     * mission type's step links and substep delegations, the reference closure ({@link ReferenceRules}, #355: an
+     * asset, guard, lifecycle or mission type that does not close over what it names), and the orphan fragments last,
+     * in the order a registration lists them. Collect-all: every rule runs, in this order.
      *
      * @return the composition
      */

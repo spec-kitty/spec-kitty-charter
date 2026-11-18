@@ -27,7 +27,7 @@ import java.util.Set;
  * could not read too.
  *
  * <p>The store half also meets faults of its own while it assembles a pack the read held (A-M1 rows 16 to 19 and 32,
- * WP12): a template read twice, a value-object breach, a reference that does not close, a companion it cannot read, the
+ * WP12): a template read twice, a value-object breach, a companion it cannot read, the
  * policy file {@code mutability_policy} names, an edge that joins an artifact to itself. {@link #held} states each of
  * them once, where the read does not state the same fault already.
  */
@@ -96,11 +96,11 @@ public final class AssemblyRules {
     /**
      * The store half's own faults that {@code stated} does not state already, each once, in the store's order (A-M1 rows
      * 16 to 19 and 32, WP12). They are the read's {@link Assembly.Assembled#storeOnly() store-only} faults alone, an
-     * allow-list the store half builds where it meets them: a template read twice, a value-object breach, a reference or
-     * an output template that does not close, a companion it cannot read, the policy file {@code mutability_policy}
+     * allow-list the store half builds where it meets them: a template read twice, a value-object breach,
+     * a companion it cannot read, the policy file {@code mutability_policy}
      * names. The rule families the store half also judges for the composing read (the step enhancements,
-     * {@code duplicate_step_id}, the prompt slots, the step links, the substep delegations) are the content rules' alone,
-     * and never come from here.
+     * {@code duplicate_step_id}, the prompt slots, the step links, the substep delegations, the reference closure) are
+     * the content rules' alone, and never come from here.
      *
      * <p>A fault is suppressed only when {@code stated} holds the same fault, never because something else sits at its
      * file ({@link #sameFault}). A companion fault the reader does not state is placed at the companion's own file (R2
@@ -167,7 +167,7 @@ public final class AssemblyRules {
             return (file.equals(companionOf(violation.file(), violation.reason()))
                             && ownFault
                             && (StorageCodes.COMPANION.equals(reason.code())
-                                    || StorageCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())))
+                                    || PackCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())))
                     || namesMissing(violation, reason);
         }
         if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation.reason())) {
@@ -193,7 +193,7 @@ public final class AssemblyRules {
         if (!file.endsWith(MISSION_TYPE_FILE)
                 || !violation.reason().endsWith(STEP_STANDS_ONCE)
                 || !reason.location().file().equals(file)
-                || !StorageCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())) {
+                || !PackCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())) {
             return false;
         }
         String detail = reason.detail().startsWith(file + ": ")
