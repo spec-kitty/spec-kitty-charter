@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
@@ -179,8 +180,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     private static final PackFileSet.Walk NO_WALK = PackFileSet.Walk.NONE;
 
     /**
-     * The one reader of a pack tree over this store's format, bindings and companion rules (#554, S1): what a test
-     * that carries a binding of its own reads a staged tree with before it asks {@link #loadStaged}.
+     * The one reader of a pack tree over this store's format, bindings and companion rules (#554, S1): the strict load
+     * reads through it ({@link #load}), and a test that carries a binding of its own reads a staged tree with it before
+     * it asks {@link #loadStaged}.
      */
     private final FileSystemPackInspector reader;
 
@@ -210,7 +212,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * The one reader over this store's format, bindings and companion rules.
+     * The one reader over this store's format, bindings and companion rules. Test-serving: production code reaches the
+     * reader through the {@code PackReading} bean and this store's own methods; a test that carries a binding of its own
+     * reads a staged tree with this store's reader, so its readout and the store's assembly agree.
      *
      * @return the reader
      */
@@ -245,30 +249,28 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     /**
-     * The strict load over the store's read ({@link StoreRead}): the files not held are the census's (#554, S3).
+     * The strict load over the one read ({@link FileSystemPackInspector#readWithStore}): the aggregate from its store
+     * half ({@link StoreRead}), and the files not held from its census ({@code readTree(...).census().notHeld()}), so
+     * "held" has one owner (#554, S3). A root that is not a directory, or cannot be listed, is the store half's refusal,
+     * in its words.
      */
     private LoadedPack loadStrict(Path directory) {
         Path packDir = directory.toAbsolutePath().normalize();
         String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
-        if (!Files.isDirectory(packDir)) {
-            // As the store's read refuses it, with its words.
-            throw refusalOf(StoreRead.of(packDir, name, NO_WALK, strategy, bindings, companionRules));
-        }
-        PackFileSet.Walk walk = PackFileSet.walk(packDir, name);
-        StoreRead read = StoreRead.of(packDir, name, walk, strategy, bindings, companionRules);
+        FileSystemPackInspector.OneRead one =
+                reader.readWithStore(new PackRoot(name, Optional.empty(), packDir.toString()));
+        StoreRead read = one.store();
         read.graphRefusal().ifPresent(refusal -> {
             throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, refusal);
         });
         if (!(read.assembly() instanceof Assembly.Assembled held)) {
             throw refusalOf(read);
         }
-        List<NotHeldFile> notHeld = FileSystemPackInspector.notHeld(
-                packDir, name, walk, companionRules.table(), FileSystemPackInspector.unnamedPolicy(held.descriptor()));
         return new LoadedPack(
                 PackAssembly.build(held),
                 read.layout(),
                 read.graphs(),
-                notHeld,
+                one.tree().census().notHeld(),
                 read.manifest(),
                 held.policyText(),
                 held.warnings());

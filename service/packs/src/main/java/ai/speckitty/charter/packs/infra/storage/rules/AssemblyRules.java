@@ -125,7 +125,10 @@ public final class AssemblyRules {
             if (stated.stream().noneMatch(reason -> sameFault(violation, reason))) {
                 out.add(
                         StorageCodes.COMPANION.equals(violation.kind())
-                                ? fault(violation.kind(), companionOf(violation), why(violation))
+                                ? fault(
+                                        violation.kind(),
+                                        companionOf(violation.file(), violation.reason()),
+                                        why(violation.reason()))
                                 : fault(violation.kind(), violation.file(), violation.reason()));
             }
         }
@@ -158,15 +161,16 @@ public final class AssemblyRules {
      */
     static boolean sameFault(PackElementViolation violation, Reason reason) {
         String file = reason.location().file();
-        boolean ownFault = !MISSING.equals(why(violation)) && !NAMED_TWICE.equals(why(violation));
+        String why = why(violation.reason());
+        boolean ownFault = !MISSING.equals(why) && !NAMED_TWICE.equals(why);
         if (StorageCodes.COMPANION.equals(violation.kind())) {
-            return (file.equals(companionOf(violation))
+            return (file.equals(companionOf(violation.file(), violation.reason()))
                             && ownFault
                             && (StorageCodes.COMPANION.equals(reason.code())
                                     || StorageCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())))
                     || namesMissing(violation, reason);
         }
-        if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation)) {
+        if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind()) && namesCompanion(violation.reason())) {
             return namesMissing(violation, reason);
         }
         if (statesMissionTypeRefusal(violation, reason)) {
@@ -218,10 +222,11 @@ public final class AssemblyRules {
     private static boolean namesMissing(PackElementViolation violation, Reason reason) {
         String detail = reason.detail();
         if (!reason.location().file().equals(violation.file())
-                || !(detail.contains(companionOf(violation)) || detail.contains(declaredOf(violation)))) {
+                || !(detail.contains(companionOf(violation.file(), violation.reason()))
+                        || detail.contains(declaredOf(violation.reason())))) {
             return false;
         }
-        return switch (why(violation)) {
+        return switch (why(violation.reason())) {
             case MISSING -> detail.endsWith(MISSING) || detail.contains("does not exist");
             case NAMED_TWICE -> detail.contains("more than once");
             default -> false;
@@ -229,16 +234,15 @@ public final class AssemblyRules {
     }
 
     /** The store's reason of a companion fault without the companion it names: {@code <why>}. */
-    static String why(PackElementViolation violation) {
-        String reason = violation.reason();
+    static String why(String reason) {
         int colon = reason.indexOf(": ");
         return colon < 0 ? reason : reason.substring(colon + 2);
     }
 
     /** The companion path as the artifact declares it, or the reason when it names none. */
-    private static String declaredOf(PackElementViolation violation) {
-        int colon = violation.reason().indexOf(": ");
-        return colon < 0 ? violation.reason() : violation.reason().substring(0, colon);
+    private static String declaredOf(String reason) {
+        int colon = reason.indexOf(": ");
+        return colon < 0 ? reason : reason.substring(0, colon);
     }
 
     /**
@@ -253,32 +257,30 @@ public final class AssemblyRules {
     static Set<String> unreadFragments(List<Reason> emitted) {
         Set<String> out = new HashSet<>();
         for (Reason reason : emitted) {
-            if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(reason.code())) {
-                PackElementViolation violation =
-                        new PackElementViolation(reason.location().file(), reason.code(), reason.detail());
-                if (namesCompanion(violation)) {
-                    out.add(companionOf(violation));
-                }
+            if (PackCodes.PROMPT_FRAGMENT_INVALID.equals(reason.code()) && namesCompanion(reason.detail())) {
+                out.add(companionOf(reason.location().file(), reason.detail()));
             }
         }
         return out;
     }
 
     /** Whether the store's reason starts with the companion path it names: {@code <path>: <why>}, the path one word. */
-    static boolean namesCompanion(PackElementViolation violation) {
-        int colon = violation.reason().indexOf(": ");
-        return colon > 0 && !violation.reason().substring(0, colon).contains(" ");
+    static boolean namesCompanion(String reason) {
+        int colon = reason.indexOf(": ");
+        return colon > 0 && !reason.substring(0, colon).contains(" ");
     }
 
     /**
      * The companion a companion fault of the store names, as it words it at the artifact
      * ({@code <declared path>: <why>}), pack-relative; the artifact's own file when the reason names no path.
+     *
+     * @param file the artifact the fault is placed at
+     * @param reason the store's words
+     * @return the companion's pack-relative file
      */
-    static String companionOf(PackElementViolation violation) {
-        int colon = violation.reason().indexOf(": ");
-        return colon < 0
-                ? violation.file()
-                : sibling(violation.file(), violation.reason().substring(0, colon));
+    static String companionOf(String file, String reason) {
+        int colon = reason.indexOf(": ");
+        return colon < 0 ? file : sibling(file, reason.substring(0, colon));
     }
 
     /**
