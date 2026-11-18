@@ -333,12 +333,19 @@
       "last_transition_at": "2026-11-18T21:32:12.408175+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "- 2026-11-18T16:14:57Z – claude – From WP06: contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md (T037's file) already exists. It holds one ### Breaking block whose first entry is NodeKind gaining routing_catalog. Extend that block with the rest of T037's list rather than creating the file."
+        "- 2026-11-18T16:14:57Z – claude – From WP06: contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md (T037's file) already exists. It holds one ### Breaking block whose first entry is NodeKind gaining routing_catalog. Extend that block with the rest of T037's list rather than creating the file.",
+        "- 2026-11-18T21:47:45Z – claude – shell_pid=240 – WP10 implemented (T037–T040) on lane-j.\n\nT037, the changelog fragment (contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md): one `### Breaking` block. The NodeKind entry WP06 wrote stays first (operator ruling, recorded in the ADR-0080 decision 5 amendment). Then the kind in ActivatableKind, ArtifactKindToken, TaxonomyKind and CascadeKind and the Artifact member routingCatalog; the selection, deny and preset properties; the four catalog reads; getModelRecommendation; the three refusal codes; MissionStep.modelTier with CostTier; the link relations; and core's seam: regenerate the DTOs, handle the kind and the codes, and replace charter.model_routing.load and evaluate (checked in core: charter/model_routing.py re-exports both) with getModelRecommendation.\n\nT038, docs/api/service-contract.md: the built-surface rows of listPackRoutingCatalogs/getPackRoutingCatalog, listEffectiveRoutingCatalogs/getEffectiveRoutingCatalog and getModelRecommendation beside the skill rows; the pack-path and activation-path table rows; and the R14 row, now \"Decided and built 2026-11-18\" naming the five operations, ADR-0080, DIV-701 to DIV-707 and that core's load/evaluate is replaced by the activation read.\n\n#94's decided-reads table: R14 now has its shape. The done-when (\"lists the decided reads, with no row lacking a shape\") does NOT hold yet: two rows still have no shape, \"Tension annotation over authored tension relationships\" (#16, #77; being decided and built in #602) and \"The other reads (expected-artifact manifests)\" (#101), both \"Not built\". #94 stays open; its last child is not #108.\n\nT039, the divergence register: DIV-701 to DIV-707 move from proposed to open in divergences.yaml and divergence-register.md; the block intro and the block list say they are open since the reads are built. Each entry's ADR-only charter line is replaced by the scenarios and tests that pin it: DIV-701 routing-catalogs.feature, effective-routing-catalogs.feature, RoutingCatalogBindingTest; DIV-702 RoutingCatalogPolicy.yaml (closed) and rows 4 to 6; DIV-703 RoutingCatalog.yaml (closed), the two-identical-requests scenario and the 100-call test; DIV-704 rows 4 to 6 and RankerTest; DIV-705 row 2 and RankerTest; DIV-706 row 1, the held profile out of force and the unknown profile; DIV-707 rows 7 to 10 and the 404 and order outlines.\n\nT040: docs/architecture/logical-model.md gains the routing_catalog row of the kind table and its activation facts; docs/guides/compose-packs.md gains \"Ship a routing catalog\" (the file and placement, layering by id with open and locked, one catalog in force and the 409 on none or two, a step's model_tier, advice only), linking ADR-0080.\n\nDocs checks: check_docs.py all clean (frontmatter, related, freshness, adr, changelog, terms, orphans, links); cspell 10.5.2 clean on the five files; markdownlint-cli2 0.24.1: no new finding, the MD060 counts of the four docs equal main's.\nVerification: ./gradlew verifyAll --continue at 0121a1a8b: BUILD SUCCESSFUL (ChangelogFragmentsTest and DivergenceRegisterTest included)."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 240,
-      "shell_pid_created_at": "1795037523.19"
+      "shell_pid_created_at": "1795037523.19",
+      "subtasks": {
+        "T037": "done",
+        "T038": "done",
+        "T039": "done",
+        "T040": "done"
+      }
     }
   }
 }
