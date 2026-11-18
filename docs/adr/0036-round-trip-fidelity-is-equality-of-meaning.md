@@ -2,8 +2,8 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-11-15T00:00:00Z
-decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05); decisions 3 and 6 and the per-kind table amended 2026-11-11 (#451, #431); the round trip made main code by ADR-0075 (2026-11-15, #555)
+updated: 2026-11-18T00:00:00Z
+decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05); decisions 3 and 6 and the per-kind table amended 2026-11-11 (#451, #431); the round trip made main code by ADR-0075 (2026-11-15, #555); the graph-shard and charter rows superseded in part by #554 open case 6 (2026-11-16)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -408,6 +408,7 @@ below.)*
 | `*/pack.yaml` | pack-descriptor | YAML | none | yes, once the schema is closed (Decision 3) |
 | *(Superseded in part by ADR-0042, 2026-10-28, on the row above: the schema is closed, so unknown fields are refused.)* | | | | |
 | `**/*.graph.yaml` | graph-shard | YAML | `edges` (`source`, `target`, `relation`); `nodes` (`urn`) | yes |
+| *(Superseded in part by [#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554), open case 6, 2026-11-16, on the row above: the rule is narrowed to `*/*.graph.yaml`, a shard at the pack root. A `*.graph.yaml` below the root, `drg/<kind>.graph.yaml` included, is not held: it is a `file_not_held` warning, and its contents are neither judged nor compared.)* | | | | |
 | `*/drg/fragment.yaml` | org-fragment | YAML | `edges` (`source`, `target`, `relation`); `nodes` (`kind`, `id`) | yes |
 | `*/org-charter.yaml` | org-charter | YAML; open maps such as `interview_defaults`, `activation_context` | none | yes |
 | *(Retired 2026-11-11, #431, on the row above: `*/org-charter.yaml` is a `retired` rule, refused by name; the `org-charter` schema is deleted.)* | | | | |
@@ -422,6 +423,7 @@ below.)*
 | `**/*.asset.yaml` | asset | YAML; the payload it names compares by bytes | none | yes |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the payload is an `asset-payload` file of the `bytes` form under `assets/`, classified by its own rule whether or not a sidecar names it; a sidecar whose payload is missing is refused.)* | | | | |
 | `**/charter.yaml` | charter | YAML; open maps such as `overrides`, `activation_context` | none | yes (a project file; not expected in a pack) |
+| *(Superseded by [#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554), open case 6, 2026-11-16, on the row above: the rule is removed. A `charter.yaml` in a pack is not held: it is a `file_not_held` warning, and its contents are neither judged nor compared.)* | | | | |
 | `**/mission-steps/**/step.yaml`, `**/actions/*/index.yaml`, `**/missions/*/mission.yaml`, `**/missions/*/mission-runtime.yaml`, `**/missions/*/expected-artifacts.yaml`, `**/governance-profile.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | `**/mission_types/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | *(Superseded by ADR-0044, 2026-10-30, on the two rows above: the exclusions are retired rules, and a file of those families is refused by name. A mission type is `missions/<id>/<id>.mission-type.yaml`, validated by the closed schema `mission-type` and compared as YAML. Unknown fields are refused.)* | | | | |
