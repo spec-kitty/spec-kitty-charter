@@ -1,0 +1,77 @@
+title: RoutingCatalog
+description: >-
+  A model-task routing catalog as its pack declares it (ADR-0080 decision 5), in camel case: the task types it rates,
+  the models with their fits and costs, the routing policy and the sources. Scores, weights and prices are the exact
+  decimals the file writes, in plain notation and unrounded. Advisory only: the service ranks it under an activation
+  and never decides for the client. An optional member is absent when the file declares none, never null.
+type: object
+additionalProperties: false
+required:
+  - id
+  - generatedAt
+  - taskTypes
+  - models
+  - routingPolicy
+  - sources
+properties:
+  id:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      The catalog id within its pack, its file stem.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.id
+  description:
+    type: string
+    minLength: 1
+    description: >-
+      What the catalog is for, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.description
+  generatedAt:
+    type: string
+    format: date-time
+    description: >-
+      When the content was generated, an ISO 8601 date-time with its offset, as written; provenance only.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.generatedAt
+  taskTypes:
+    type: array
+    minItems: 1
+    items:
+      $ref: RoutingCatalogTaskType.yaml
+    description: >-
+      The task types, in file order.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.taskTypes
+  models:
+    type: array
+    minItems: 1
+    items:
+      $ref: RoutingCatalogModel.yaml
+    description: >-
+      The models, in file order. The order is no preference; the ranking never reads it.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.models
+  routingPolicy:
+    $ref: RoutingCatalogPolicy.yaml
+  sources:
+    type: array
+    minItems: 1
+    items:
+      $ref: RoutingCatalogSource.yaml
+    description: >-
+      The sources, in file order.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.sources
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+  symbol: RoutingCatalog

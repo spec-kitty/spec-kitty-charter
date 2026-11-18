@@ -85,6 +85,13 @@ public record EffectiveTag(String token) {
          * tag with the generic read of the same skill.
          */
         SKILL,
+        /** {@code listEffectiveRoutingCatalogs}: the routing catalog winners of the closure, each with its summary. */
+        ROUTING_CATALOGS,
+        /**
+         * {@code getEffectiveRoutingCatalog}: the winner of one routing catalog, with the catalog as its pack stores it,
+         * so it never shares a tag with the generic read of the same catalog (ADR-0080 decision 6).
+         */
+        ROUTING_CATALOG,
         /** {@code listEffectiveAssets}: the asset winners of the closure, each with its summary. */
         ASSETS,
         /** {@code getEffectiveAsset}: the winner of one asset, with its descriptor and no state. */
@@ -466,9 +473,10 @@ public record EffectiveTag(String token) {
 
     /**
      * The tag of the list of the winners of one kind ({@code listEffectiveSkills}, {@code listEffectiveAssets},
-     * {@code listEffectiveGlossaryContexts}): its read names the kind, and the query repeats it.
+     * {@code listEffectiveGlossaryContexts}, {@code listEffectiveRoutingCatalogs}): its read names the kind, and the query
+     * repeats it.
      *
-     * @param read {@link Read#SKILLS}, {@link Read#ASSETS} or {@link Read#GLOSSARIES}
+     * @param read {@link Read#SKILLS}, {@link Read#ASSETS}, {@link Read#GLOSSARIES} or {@link Read#ROUTING_CATALOGS}
      * @param kind the kind listed
      * @param revision the activation's revision
      * @param closure the closure the answer was computed from
@@ -477,7 +485,7 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag winners(Read read, ArtifactKind kind, Revision revision, ClosureSnapshot closure) {
         Objects.requireNonNull(kind, "kind");
-        if (read != Read.SKILLS && read != Read.ASSETS && read != Read.GLOSSARIES) {
+        if (read != Read.SKILLS && read != Read.ASSETS && read != Read.GLOSSARIES && read != Read.ROUTING_CATALOGS) {
             throw new IllegalArgumentException("The read " + read + " lists no winners of one kind.");
         }
         return of(read, revision, closure, "kind=" + kind.token());
@@ -485,10 +493,11 @@ public record EffectiveTag(String token) {
 
     /**
      * The tag of the read of one winner at a literal path of its kind ({@code getEffectiveSkill},
-     * {@code getEffectiveGlossaryContext}, {@code getEffectiveAsset}, {@code getEffectiveAssetPayload}): its kind, id and
-     * depth.
+     * {@code getEffectiveGlossaryContext}, {@code getEffectiveAsset}, {@code getEffectiveAssetPayload},
+     * {@code getEffectiveRoutingCatalog}): its kind, id and depth.
      *
-     * @param read {@link Read#SKILL}, {@link Read#GLOSSARY}, {@link Read#ASSET} or {@link Read#ASSET_PAYLOAD}
+     * @param read {@link Read#SKILL}, {@link Read#GLOSSARY}, {@link Read#ASSET}, {@link Read#ASSET_PAYLOAD} or
+     *     {@link Read#ROUTING_CATALOG}
      * @param revision the activation's revision
      * @param closure the closure the answer was computed from
      * @param query the kind, the id and the depth
@@ -496,7 +505,11 @@ public record EffectiveTag(String token) {
      * @throws IllegalArgumentException when {@code read} is not the read of one winner at a literal path
      */
     public static EffectiveTag winner(Read read, Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
-        if (read != Read.SKILL && read != Read.GLOSSARY && read != Read.ASSET && read != Read.ASSET_PAYLOAD) {
+        if (read != Read.SKILL
+                && read != Read.GLOSSARY
+                && read != Read.ASSET
+                && read != Read.ASSET_PAYLOAD
+                && read != Read.ROUTING_CATALOG) {
             throw new IllegalArgumentException("The read " + read + " is no read of one winner at a literal path.");
         }
         return of(read, revision, closure, query.normalized());

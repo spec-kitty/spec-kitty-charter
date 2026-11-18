@@ -1,0 +1,30 @@
+title: RoutingCatalogTierConstraint
+description: >-
+  The cost tier a routing catalog advises at most for one task type (ADR-0080 decision 12); it flags a model, never hides it.
+type: object
+additionalProperties: false
+required:
+  - taskType
+  - maxTier
+properties:
+  taskType:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      A task type the catalog declares, at most one constraint each.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TierConstraint.java
+      symbol: TierConstraint.taskType
+  maxTier:
+    allOf:
+      - $ref: CostTier.yaml
+    description: >-
+      The highest cost tier advised for the task type.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TierConstraint.java
+      symbol: TierConstraint.maxTier
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TierConstraint.java
+  symbol: TierConstraint

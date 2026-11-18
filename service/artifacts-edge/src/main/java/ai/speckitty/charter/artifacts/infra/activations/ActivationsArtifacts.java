@@ -10,6 +10,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
+import ai.speckitty.charter.artifacts.application.ActivationRoutingCatalogs;
 import ai.speckitty.charter.artifacts.application.ContextsInForce;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Component;
  * nothing: the refusals, the {@code 304} and the order of the judgements are the service's, unchanged.
  */
 @Component
-public final class ActivationsArtifacts implements ActivationArtifacts {
+public final class ActivationsArtifacts implements ActivationArtifacts, ActivationRoutingCatalogs {
 
     private final EffectiveReadService effective;
 
@@ -72,6 +73,18 @@ public final class ActivationsArtifacts implements ActivationArtifacts {
         return outcome(
                 effective.artifact(new ActivationId(activationId), ArtifactKind.SKILL, skillId, 0, ifNoneMatch),
                 answer -> new SkillWinner(
+                        scope(answer.stored(), answer.governanceFingerprint(), answer.sourceFingerprint()),
+                        facts(answer.winner()),
+                        answer.artifact()));
+    }
+
+    @Override
+    public Outcome<ActivationRoutingCatalogs.CatalogWinner> routingCatalog(
+            String activationId, String catalogId, @Nullable String ifNoneMatch) {
+        return outcome(
+                effective.artifact(
+                        new ActivationId(activationId), ArtifactKind.ROUTING_CATALOG, catalogId, 0, ifNoneMatch),
+                answer -> new ActivationRoutingCatalogs.CatalogWinner(
                         scope(answer.stored(), answer.governanceFingerprint(), answer.sourceFingerprint()),
                         facts(answer.winner()),
                         answer.artifact()));

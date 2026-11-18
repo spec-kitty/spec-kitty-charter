@@ -727,9 +727,10 @@ public class EffectiveReadService {
      * is the {@link EffectiveTag} of the read, which names the kind, the id and the depth and, for an agent profile, its
      * own read; and only a request whose header does not match asks the session for the entity and the in-force
      * resolution, once each. An agent profile's answer carries its governance with the state of each entry, under the
-     * tag of its own read ({@link EffectiveTag.Read#PROFILE}); a skill's and a glossary context's answers are the reads of
-     * their literal routes, under the tags of their own reads too ({@link EffectiveTag.Read#SKILL},
-     * {@link EffectiveTag.Read#GLOSSARY}), so none shares a tag with the generic route.
+     * tag of its own read ({@link EffectiveTag.Read#PROFILE}); a skill's, a glossary context's and a routing catalog's
+     * answers are the reads of their literal routes, under the tags of their own reads too
+     * ({@link EffectiveTag.Read#SKILL}, {@link EffectiveTag.Read#GLOSSARY}, {@link EffectiveTag.Read#ROUTING_CATALOG}),
+     * so none shares a tag with the generic route.
      *
      * @param id the activation's id
      * @param kind the artifact's kind
@@ -755,6 +756,7 @@ public class EffectiveReadService {
             case AGENT_PROFILE -> EffectiveTag.Read.PROFILE;
             case SKILL -> EffectiveTag.Read.SKILL;
             case GLOSSARY -> EffectiveTag.Read.GLOSSARY;
+            case ROUTING_CATALOG -> EffectiveTag.Read.ROUTING_CATALOG;
             default -> EffectiveTag.Read.ARTIFACT;
         };
         return artifactOf(stored, kind, artifactId, depth, ifNoneMatch, route);
@@ -762,14 +764,14 @@ public class EffectiveReadService {
 
     /**
      * The winners of one kind under an activation, in id order (research R2, R3): {@code listEffectiveSkills},
-     * {@code listEffectiveAssets} and {@code listEffectiveGlossaryContexts}. Each is the version the layer merge keeps
+     * {@code listEffectiveAssets}, {@code listEffectiveGlossaryContexts} and {@code listEffectiveRoutingCatalogs}. Each is the version the layer merge keeps
      * across the levels of the closure, with the pack and level that hold it and its policy, and no state; a skill's and
      * a glossary context's state is its own read's, and an asset has none. The whole set is answered, unpaged, from one
      * {@link PacksSession}, with no in-force resolution; what each winner's pack stores is the packs slice's to read,
      * against the source fingerprint of the answer.
      *
      * @param id the activation's id
-     * @param kind {@code skill}, {@code asset} or {@code glossary}
+     * @param kind {@code skill}, {@code asset}, {@code glossary} or {@code routing_catalog}
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the winners, or {@code NotModified} when the header matches the tag of the list
      * @throws IllegalArgumentException when the contract lists no winners of the kind under an activation
@@ -781,6 +783,7 @@ public class EffectiveReadService {
             case SKILL -> EffectiveTag.Read.SKILLS;
             case ASSET -> EffectiveTag.Read.ASSETS;
             case GLOSSARY -> EffectiveTag.Read.GLOSSARIES;
+            case ROUTING_CATALOG -> EffectiveTag.Read.ROUTING_CATALOGS;
             default ->
                 throw new IllegalArgumentException("No read lists the winners of " + kind.token()
                         + " under an activation; listEffectiveArtifacts lists them.");

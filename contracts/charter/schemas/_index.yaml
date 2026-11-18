@@ -131,6 +131,18 @@ files:
   - SkillSummary.yaml
   - EffectiveAssetRead.yaml
   - EffectiveSkillRead.yaml
+  - EffectiveRoutingCatalogRead.yaml
+  - RoutingCatalog.yaml
+  - RoutingCatalogCost.yaml
+  - RoutingCatalogList.yaml
+  - RoutingCatalogModel.yaml
+  - RoutingCatalogPolicy.yaml
+  - RoutingCatalogSource.yaml
+  - RoutingCatalogSummary.yaml
+  - RoutingCatalogTaskFit.yaml
+  - RoutingCatalogTaskType.yaml
+  - RoutingCatalogTierConstraint.yaml
+  - RoutingCatalogWeights.yaml
   - EffectiveGlossaryContextRead.yaml
   - EffectiveGlossaryTermRead.yaml
   - VocabularyTermList.yaml
