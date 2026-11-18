@@ -2,9 +2,10 @@
 
 - A registration of a pack whose `pack.yaml` is missing or cannot be read answers every fault of the pack, not that
   one refusal (#554, operator ruling S8; R2 rows 22 to 24). The descriptor's `pack_unreadable` at `pack.yaml` follows
-  the graph faults and comes before the pack's other faults, and the problem `detail` is the one of every refused
-  registration, `The pack cannot be registered: N fault(s), the first at <file>.`, where it was `The pack cannot be
-  registered: <the descriptor's fault>`. Validate mode answered the same faults already. 38 golden rows change: every
+  the graph faults and comes before the pack's other faults (validate mode lists it first, before the graph faults,
+  so the two surfaces order a missing descriptor's fault differently), and the problem `detail` is the one of every
+  refused registration, `The pack cannot be registered: N fault(s), the first at <file>.`, where it was `The pack
+  cannot be registered: <the descriptor's fault>`. Validate mode answered the same faults already. 38 golden rows change: every
   planted pack without a `pack.yaml`, and `c9-pack-version-missing-at-the-org-level`,
   `control-retired-pack-key-is-a-warning`, `control-unknown-pack-key-is-a-warning` and `pack-yaml-tilde-is-null`.
 - The faults only the store's assembly met are faults of the one read, so registration and validate mode answer each

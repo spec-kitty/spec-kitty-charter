@@ -2,7 +2,7 @@
 title: "Note: one code per pack fault (the R2 table)"
 description: "The R2 code table of #554: for each pack fault, what validate mode and the registration answer today, and the one code and wording kept."
 doc_status: draft
-updated: 2026-11-17T00:00:00Z
+updated: 2026-11-18T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -72,7 +72,7 @@ at a pointer, which is the file unless the row says otherwise.
 | 11 | Retired file | `artifact_schema_error`, `qa/<file> is retired: <why>` | `retired`, `<file>: <why>` | `retired`, registration's | V | V | checked against golden: `glossary-pack-old-shape` |
 | 12 | Asset sidecar's payload is missing | `artifact_schema_error`, `qa/<file> payload <path> does not exist` | `asset`, `<file>: payload <path> does not exist` | `asset`, registration's | V | V | checked against golden: `asset-mime-*+pack.yaml`, `asset-path-inside-through-a-symlink-is-contained+pack.yaml`, `control-a-clean-org-pack` |
 | 13 | Asset path escapes `assets/` | two findings: `artifact_schema_error` and `asset_path_escape`, both `… asset path '<p>' escapes the pack's assets/ root` | one `asset`, `<file>: asset path '<p>' escapes the pack's assets/ root` | one `asset`, registration's | V (code, and the duplicate goes) | V | checked against golden: `asset-path-escape-absolute+pack.yaml`, `asset-path-escape-dot-dot+pack.yaml`, `asset-path-escape-windows-drive+pack.yaml` (open case 1) |
-| 14 | Asset mime is malformed or does not match the extension | `asset_mime_invalid` | not judged | `asset_mime_invalid` (validate only, R1) | none | none | checked against golden: `asset-mime-*+pack.yaml` |
+| 14 | Asset mime is malformed or does not match the extension | `asset_mime_invalid` | not judged | `asset_mime_invalid` (validate only, R1) | none | none | not judged: registration's code does not check the mime, so there is no registration answer to check against golden; validate mode's is in the golden at `asset-mime-*+pack.yaml` (landing fix W2) |
 | 15 | Two asset sidecars declare one id | `duplicate_artifact_id` at the second sidecar | not reported (each sidecar answers its own `asset` fault) | `duplicate_artifact_id` (validate only, R1) | none | none | checked against golden: `asset-repeated-id-*+pack.yaml` (open case 2) |
 | 16 | Template read twice | not judged as such | `template`, `template <id> is already read from <file>` | `duplicate_artifact_id`, registration's wording | R | R | no golden subject; `FilesystemPackStore.java:535` |
 | 17 | Value-object breach in an artifact | not judged as such | `domain`, the breach's message, at the file (at the artifact id for one path, `DomainRepositoryService.java:1261`) | `artifact_schema_error` at the file, the breach's reason | R | R | no golden subject; `FilesystemPackStore.java:406`, `DomainRepositoryService.java:920, :939, :948, :1261` (open case 4) |
@@ -180,6 +180,58 @@ WP04, WP05 and WP08 see it.
    both surfaces warn `file_not_held` for it, validate mode does not read it, and a registration removes it before
    the commit, as it did before WP05 (then as `unmodelled`). `HeldSetAgreementTest` plants an orphan guide and an
    orphan step prompt.
+
+## Landing fixes
+
+The pre-merge squad (reviewer-renata, architect-alphonso) and the acceptance verifier said LAND; their folded findings
+were applied on the landing branch. Two of them deliberately change golden rows, recorded here as open case 8 was. No
+other golden row moves, and `composition.json` is byte-equal.
+
+- **W1: a fixed fixture defect, not a behavior change (NFR-002).**
+  `planted/asset-path-inside-through-a-symlink-is-contained` declared `path: in/x.txt`, and no payload of that name exists anywhere in the plant, so it pinned a missing payload,
+  not the through-a-link case its name claims. It now declares `in/keep.txt`, which `assets/in` (a link to `real`)
+  reaches. R2 row 12 cites the plant as a golden subject of the missing payload. The plant is still refused, for a
+  reason the old path hid: the store's walk enters no directory link (WP05, T026), so a payload reached only through
+  a linked directory is not found, and the plant pins that a contained path through a link is a missing payload, never
+  an escape (row 13 stays silent). Its `expected.json` now names that `asset` finding. Four rows change, each only in
+  the payload path of the detail (`payload assets/in/x.txt does not exist` becomes `payload assets/in/keep.txt does
+  not exist`): `surfaces.json` `planted/asset-path-inside-through-a-symlink-is-contained` and its `+pack.yaml` twin
+  (the registration's `asset` violation, and the compose read's refusal), and the same two keys of `validate.json`.
+- **R1: three root twins keep the graph-shard rules planted.** WP11 left `c3-shard-edge-bare-endpoint`,
+  `c7-shard-relation-extends` and `r15-glossary-urn-in-a-shard` as `file_not_held` plants under `drg/` (open case 6),
+  so `graph-shard.schema` lost its planted coverage of a bare endpoint, the `extends` relation and a glossary-kind
+  node. Their root twins plant the same shard at the pack root, which the store holds:
+  `c3-root-shard-edge-bare-endpoint`, `c7-root-shard-relation-extends` and `r15-glossary-urn-in-a-root-shard`. The `drg/` copies stay the `file_not_held`
+  plants. Twelve rows are added, two per twin (the bare plant and its `+pack.yaml`) in each of `surfaces.json` and
+  `validate.json`:
+  - the C3 twin: `drg_schema_error` at `tactic.graph.yaml` `edges/0/source`, `edge endpoint 'QA_404' is not a URN`
+    (row 4);
+  - the C7 twin: `drg_schema_error` at `tactic.graph.yaml` `edges/0/relation`, `unknown relation 'extends'` (row 4);
+  - the R15 twin: two `drg_schema_error` at `glossary.graph.yaml`, `node urn 'glossary:term' is not <kind>:<id>` at
+    `nodes/0/urn` and `node glossary:term has unknown kind 'glossary'` at `nodes/0/kind` (row 4).
+
+  Beside them, each bare plant answers `pack_unreadable` at `pack.yaml` (row 24) and each `+pack.yaml` subject
+  `org_fragment_missing` in validate mode (row 37); the compose read refuses all six, `a graph document of qa cannot
+  be read`. Core never reads a root shard, so the twins are DIV-023 subjects, with their core verdicts to record.
+- **The reverse subset names both.** `SurfaceSubsetTest` compares the registration with its frozen pre-WP12 baseline
+  (`registration-before-wp12.json`, unchanged). It names the six twin subjects, which the baseline predates (the three
+  bare ones are S8 rows, so the S8 count is WP12's 38 and those 3), and compares W1's `+pack.yaml` row with its
+  baseline under the one payload-path fix, so every other field of that row is still compared.
+- **W3: a plant's `expected.json` is not an oracle.** The golden snapshot is the oracle of what each surface answers.
+  A plant's `expected.json` is a partial statement: the rule tests (`GraphRulesTest`, `AssetRulesTest`, and the
+  others that call `PlantedFixtures.expecting`) read only the findings of their own codes from it, and no test
+  compares a plant's whole `expected.json` with a surface. So an `expected.json` can omit a read fault, as open case 8
+  and W1 show, and a disagreement with the golden is a fixture defect to fix, never a verdict.
+- **W2:** row 14's golden column says "not judged", not "checked against golden": the registration did not check the
+  mime when the table was written. Since S2 the mime is a precheck of the one reader, and the registration answers it.
+- **AA1, AA2 (deferred half) and AA5** are recorded as known limits of the single-parse unification, under the outcomes
+  of WP05.
+- **AA3:** `HexagonalArchitectureTest` adds `STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE` (nothing outside
+  `packs.infra.storage` and the composition root names `packs.infra.storage.rules`), with the bite fixture
+  `packvalidation.badfixture.ValidationNamesTheStorageRules`. No existing rule is widened.
+- **AA4:** `WholePackStore.load` reads through the one reader (`FileSystemPackInspector.readWithStore`): the aggregate
+  from its store half, the files not held from its census (`readTree(...).census().notHeld()`), so the store no longer
+  computes them itself. `reader()` is documented as test-serving.
 
 ## Outcomes of WP10
 
@@ -553,7 +605,23 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
   one read on it was measured first (warmed, 200 calls each): built-in 35.4 ms today against 161 ms (4.6x), org-base
   3.8 ms against 18.3 ms (4.8x), project 1.1 ms against 3.8 ms (3.5x). The cost is two parses of every file: the
   inspector's generic parse and validation, and the store's DSO parse. A single-parse unification, deriving the
-  inspector's facts from the DSOs, is later work.
+  inspector's facts from the DSOs, is later work. **Known limits, deferred to that unification** (the pre-merge
+  squad, architect-alphonso; recorded at the landing, with no code change):
+  - **AA1: "held" is decided by two companion resolutions.** `PackFileSet.digested`, which the census's not-held list
+    and the digest read, resolves companions with the hard-wired bundled bindings (`KindBindings`), while
+    `CensusEntries` resolves them with the reader's own bindings and companion rules. They agree in production, where
+    the reader's bindings are the bundled ones, but they can split under the binding seam a test uses (a binding of
+    its own), and each resolution parses the companions' owners again. The unification gives "held" one resolution,
+    over the reader's bindings.
+  - **AA2, the deferred half: what the aggregate holds.** `PackElementViolation` is converted to a kernel `Reason`
+    and back in three places (the store half's records, the verdict's `AssemblyRules.held`, and the aggregate's
+    refusal). The landing removed the one synthetic conversion (`AssemblyRules.unreadFragments` now reads the
+    `Reason`'s file and words directly). Whether the store half and the aggregate should hold a `Reason` in place of
+    `PackElementViolation` is decided with the unification.
+  - **AA5: the read counters are global statics.** `FilesystemPackStore`'s `LOOKUP_PARSES` and `READS`,
+    `PackFileSet`'s `WALKS` and `StoreRead`'s `RUNS` are static `LongAdder`s that the one-read tests sample before
+    and after a call. They count every read of the JVM, so a test that runs beside another read can miscount. The
+    unification replaces them with a counter the reader is given.
 
 ## Outcomes of WP04
 

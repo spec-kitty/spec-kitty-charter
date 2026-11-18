@@ -1,7 +1,7 @@
 ### Breaking
 
-- Validate mode (`PackValidation`, the pack doctor's check) answers each fault with the code and the wording the
-  registration answers for it (#554, operator ruling R2, the R2 table in
+- Validate mode (`pack-validation`'s `PackCheck`, the pack doctor's check) answers each fault with the code and the
+  wording the registration answers for it (#554, operator ruling R2, the R2 table in
   `docs/development/notes/pack-code-unification.md`). Its findings change as follows (old → new):
   - A detail names the file pack-relative and no longer opens with the pack's name: `qa/tactics/a.tactic.yaml: 'role'
     does not match its pattern` becomes `tactics/a.tactic.yaml: 'role' does not match its pattern`, for every schema,

@@ -2,7 +2,7 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-17T00:00:00Z
+updated: 2026-11-18T00:00:00Z
 decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554)
 decision_date: '2026-11-13'
 type: ADR
@@ -172,10 +172,23 @@ pack check in pack-validation", decision 4's pipeline and the 2026-11-13 amendme
 - **ArchUnit.** No rule is widened. The onion rules, `PACK_VALIDATION_IS_FRAMEWORK_FREE`,
   `THE_PACKS_LOAD_REACHES_NO_FRAMEWORK` and `STORAGE_RETURNS_DOMAIN` stand. `STORAGE_RULES_ARE_FRAMEWORK_FREE`,
   `PACK_RULES_READ_NO_FILE` and `PACK_CODES_HAVE_ONE_OWNER` are added, each with a bite fixture, and the single-owner
-  rules A to C point at `LevelRules` and `PlacementCodes`.
+  rules A to C point at `LevelRules` and `PlacementCodes`. At the landing, `STORAGE_RULES_STAY_IN_THE_STORAGE_EDGE`
+  gates the rule above that nothing outside `packs.infra.storage` and `deployable` names `packs.infra.storage.rules`,
+  with its bite fixture (pre-merge squad AA3).
 - **The mutation floors stay with their subjects.** The core rules and the storage rules count in `:packs`'
   domain+application group; `PackCheck`, `PackVerdicts` and the placement rules in `pack-validation`'s
   (ADR-0062).
+- **Known limits, deferred to the single-parse unification.** The one read still parses each file twice, once for the
+  reader's facts and once for the store's DSOs (S7). Two limits of the pre-merge squad (architect-alphonso) are
+  deferred to the follow-up that derives the reader's facts from the DSOs, with no change at this landing:
+  - **AA1.** "Held" is decided by two companion resolutions: `PackFileSet.digested` resolves companions with the
+    hard-wired bundled bindings, `CensusEntries` with the reader's own. They agree in production, can split under the
+    binding seam a test uses, and parse the owners again. The unification gives "held" one resolution.
+  - **AA5.** The read counters (`LOOKUP_PARSES`, `READS`, `WALKS`, `RUNS`) are global static `LongAdder`s that the
+    one-read tests sample, so a concurrent read can miscount. The unification gives the reader its own counter.
+
+  The note `docs/development/notes/pack-code-unification.md` records both, with AA2's deferred half (whether the
+  aggregate holds a `Reason` in place of `PackElementViolation`), under the outcomes of WP05.
 
 **A note on the title and the description.** They still say "one pack-validation module" that holds every pack check
 and that the service shares. After this amendment the checks live in the packs domain and the storage edge, and
