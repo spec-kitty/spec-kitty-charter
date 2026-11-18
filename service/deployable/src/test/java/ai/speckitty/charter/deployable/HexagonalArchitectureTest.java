@@ -61,6 +61,8 @@ class HexagonalArchitectureTest {
     private static final String PACKS_ARCHIVE = ROOT + ".packs.infra.archive..";
 
     private static final String PROFILES_DOMAIN = ROOT + ".profiles.domain..";
+    /** The routing slice's domain (ADR-0080): the routing catalog and the ranker. */
+    private static final String ROUTING_DOMAIN = ROOT + ".routing.domain..";
     /** The missions slice's domain (ADR-0044). */
     private static final String MISSIONS_DOMAIN = ROOT + ".missions.domain..";
     /** The activations slice's domain (ADR-0020), over the packs slice. */
@@ -82,10 +84,10 @@ class HexagonalArchitectureTest {
     private static final String JSPECIFY = "org.jspecify.annotations..";
     /** Every slice domain and the shared kernel (including {@code kernel.validation}). */
     private static final String[] DOMAIN_RINGS = {
-        KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, MISSIONS_DOMAIN, ACTIVATIONS_DOMAIN
+        KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, ROUTING_DOMAIN, MISSIONS_DOMAIN, ACTIVATIONS_DOMAIN
     };
     /** The vertical slices; each slice's domain may depend only on itself and the kernel. */
-    private static final List<String> SLICES = List.of("packs", "profiles", "missions", "activations");
+    private static final List<String> SLICES = List.of("packs", "profiles", "routing", "missions", "activations");
 
     private static void assertBites(ArchRule rule, String fixturePackage, String... violators) {
         JavaClasses fixtures = new ClassFileImporter().importPackages(fixturePackage);
@@ -174,6 +176,18 @@ class HexagonalArchitectureTest {
             .dependOnClassesThat()
             .resideOutsideOfPackages(PROFILES_DOMAIN, KERNEL, JAVA, JSPECIFY);
 
+    /**
+     * The routing slice's domain (ADR-0080): only itself, the kernel, {@code java} and JSpecify. It holds the catalog and
+     * the ranker, which name neither the pack store nor an activation: the edge gathers their inputs.
+     */
+    private static final ArchRule ROUTING_DOMAIN_IS_PURE = noClasses()
+            .that()
+            .resideInAPackage(ROUTING_DOMAIN)
+            .should()
+            .dependOnClassesThat()
+            .resideOutsideOfPackages(ROUTING_DOMAIN, KERNEL, JAVA, JSPECIFY)
+            .because("the ranker is pure advice over a catalog, and packs binds the catalog, never the other way");
+
     /** The missions slice's domain (ADR-0044): only itself, the kernel, {@code java} and JSpecify. */
     private static final ArchRule MISSIONS_DOMAIN_IS_PURE = noClasses()
             .that()
@@ -207,6 +221,7 @@ class HexagonalArchitectureTest {
         KERNEL_IS_PURE.check(classes);
         PACKS_DOMAIN_IS_PURE.check(classes);
         PROFILES_DOMAIN_IS_PURE.check(classes);
+        ROUTING_DOMAIN_IS_PURE.check(classes);
         MISSIONS_DOMAIN_IS_PURE.check(classes);
         NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN.check(classes);
     }
@@ -216,6 +231,7 @@ class HexagonalArchitectureTest {
         assertBites(
                 PACKS_DOMAIN_IS_PURE, ROOT + ".packs.domain.badfixture", "DomainUsesSpring", "DomainReachesOutward");
         assertBites(PROFILES_DOMAIN_IS_PURE, ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(ROUTING_DOMAIN_IS_PURE, ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
         assertBites(MISSIONS_DOMAIN_IS_PURE, ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         assertBites(
                 NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN,
@@ -735,14 +751,15 @@ class HexagonalArchitectureTest {
 
     /**
      * ENTRYPOINT_STAYS_IN_ITS_SLICE (ADR-0037, amendment of 2026-10-27): the pack store binds the kinds of other slices,
-     * so {@code packs.infra.storage} may name the profiles and missions domains; the inbound adapter may not.
+     * so {@code packs.infra.storage} may name the profiles, missions and routing domains (ADR-0037, amendment of
+     * 2026-11-18); the inbound adapter may not.
      */
     private static final ArchRule ENTRYPOINT_STAYS_IN_ITS_SLICE = noClasses()
             .that()
             .resideInAPackage(PACKS_API)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(PROFILES_DOMAIN, MISSIONS_DOMAIN);
+            .resideInAnyPackage(PROFILES_DOMAIN, MISSIONS_DOMAIN, ROUTING_DOMAIN);
 
     @Test
     @DisplayName("ENTRYPOINT_STAYS_IN_ITS_SLICE")
@@ -752,7 +769,11 @@ class HexagonalArchitectureTest {
 
     @Test
     void theEntrypointSliceRuleFailsOnAnEntrypointThatNamesAnotherSlicesDomain() {
-        assertBites(ENTRYPOINT_STAYS_IN_ITS_SLICE, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesProfiles");
+        assertBites(
+                ENTRYPOINT_STAYS_IN_ITS_SLICE,
+                ROOT + ".packs.infra.api.badfixture",
+                "EntrypointReachesProfiles",
+                "EntrypointReachesRouting");
     }
 
     @Test
@@ -793,6 +814,8 @@ class HexagonalArchitectureTest {
         assertBites(sliceDomainDoesNotCross("packs"), ROOT + ".packs.domain.badfixture", "DomainCrossesSlice");
         assertBites(
                 sliceDomainDoesNotCross("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(
+                sliceDomainDoesNotCross("routing"), ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
         assertBites(
                 sliceDomainDoesNotCross("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         assertBites(
@@ -940,6 +963,7 @@ class HexagonalArchitectureTest {
                     ROOT + ".activations..",
                     ROOT + ".profiles..",
                     ROOT + ".missions..",
+                    ROOT + ".routing..",
                     ROOT + ".artifacts..");
 
     @Test
@@ -1177,6 +1201,7 @@ class HexagonalArchitectureTest {
         String packs = ROOT + ".packs.domain.badfixture";
         assertBites(domainIsPure("packs"), packs, "DomainUsesSpring", "DomainReachesOutward");
         assertBites(domainIsPure("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(domainIsPure("routing"), ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
         assertBites(domainIsPure("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         String activations = ROOT + ".activations.domain.badfixture";
         assertBites(
@@ -1437,6 +1462,122 @@ class HexagonalArchitectureTest {
                 onlyDeployableComposesAdapters("profiles"),
                 ROOT + ".activations.application.badfixture",
                 "ApplicationNamesProfilesInfra");
+    }
+
+    // ---- The routing slice over the activations slice (ADR-0080; ADR-0037, amendment of 2026-11-18) ------------
+    // The routing slice follows the profiles pattern: its domain stays in :routing, which packs.infra.storage binds,
+    // and
+    // its edge rings live in :routing-edge. The edge asks the activations slice from one adapter package of its own,
+    // and
+    // only its application and domain rings; it never names the packs slice; and neither slice names the routing edge
+    // back.
+
+    private static final String ROUTING = ROOT + ".routing..";
+    /** The one routing package that may name the activations slice. */
+    private static final String ROUTING_ACTIVATIONS_ADAPTER = ROOT + ".routing.infra.activations..";
+
+    private static final String ROUTING_APPLICATION = ROOT + ".routing.application..";
+    private static final String ROUTING_INFRA = ROOT + ".routing.infra..";
+
+    /** The routing edge rings, each of which must be on the classpath for the rules below to check anything. */
+    private static final List<String> ROUTING_EDGE_RINGS = List.of(
+            "ai.speckitty.charter.routing.application",
+            "ai.speckitty.charter.routing.infra.api",
+            "ai.speckitty.charter.routing.infra.activations");
+
+    /** A ROUTING OVER ACTIVATIONS (1/2): no routing class names the activations slice, but those of its adapter. */
+    private static final ArchRule ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(ROUTING)
+            .and()
+            .resideOutsideOfPackage(ROUTING_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ACTIVATIONS);
+
+    /** A ROUTING OVER ACTIVATIONS (2/2): that adapter names only the activations application and domain rings. */
+    private static final ArchRule ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(ROUTING_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ACTIVATIONS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(
+                            ACTIVATIONS_APPLICATION, ACTIVATIONS_DOMAIN_RING)));
+
+    /** The routing edge reads the catalog under an activation, never from a pack: no routing class names the packs slice. */
+    private static final ArchRule ROUTING_NAMES_NO_PACKS = noClasses()
+            .that()
+            .resideInAPackage(ROUTING)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS);
+
+    /**
+     * The routing domain is named only where the catalog is stored and adapted (ADR-0037, amendment of 2026-11-18): the
+     * routing slice itself, {@code packs.infra.storage}, which binds the catalog, and {@code artifacts.infra.packs}, which
+     * copies it into the catalog reads' view.
+     */
+    private static final ArchRule ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER = noClasses()
+            .that()
+            .resideOutsideOfPackages(ROUTING, ROOT + ".packs.infra.storage..", ROOT + ".artifacts.infra.packs..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ROUTING_DOMAIN);
+
+    /** THE EDGE IS NOT NAMED BACK: the packs and activations slices never name the routing edge rings. */
+    private static final ArchRule NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS, ACTIVATIONS)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(ROUTING_APPLICATION, ROUTING_INFRA);
+
+    @Test
+    @DisplayName("ROUTING_OVER_ACTIVATIONS")
+    void theRoutingSliceNamesActivationsOnlyThroughItsAdapter() {
+        ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER.check(classes);
+        ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION.check(classes);
+        ROUTING_NAMES_NO_PACKS.check(classes);
+        ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER.check(classes);
+        NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE.check(classes);
+    }
+
+    /** As for the profiles edge: every routing edge ring holds a class, so the rules above gate the real packages. */
+    @Test
+    void everyRoutingEdgeRingIsOnTheGatedClasspath() {
+        for (String ring : ROUTING_EDGE_RINGS) {
+            assertThat(classes.stream()
+                            .filter(c -> c.getPackageName().equals(ring)
+                                    || c.getPackageName().startsWith(ring + ".")))
+                    .as("classes in the ring %s", ring)
+                    .isNotEmpty();
+        }
+    }
+
+    @Test
+    void theRoutingOverActivationsRulesFailOnTheKnownBads() {
+        assertBites(
+                ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER,
+                ROOT + ".routing.application.badfixture",
+                "RoutingApplicationNamesActivations");
+        assertBites(
+                ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION,
+                ROOT + ".routing.infra.activations.badfixture",
+                "RoutingActivationsAdapterNamesActivationsApi",
+                "ActivationController");
+        assertBites(ROUTING_NAMES_NO_PACKS, ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
+        assertBites(
+                ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesRoutingDomain");
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesRoutingEdge");
+        assertBites(
+                applicationIsEdge("routing"),
+                ROOT + ".routing.application.badfixture",
+                "RoutingApplicationNamesActivations");
     }
 
     // ---- The missions slice over the packs and activations slices (ADR-0037, amendment of 2026-11-09) ----------

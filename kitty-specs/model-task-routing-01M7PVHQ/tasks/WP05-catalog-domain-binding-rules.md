@@ -13,6 +13,9 @@ requirement_refs:
 planning_base_branch: feat/108-model-task-routing
 merge_target_branch: feat/108-model-task-routing
 branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-model-task-routing-01M7PVHQ
+base_commit: a08eb3fc7a7f24d7ab84bc926dfa44ab044baccd
+created_at: '2026-11-18T12:36:30.810664+00:00'
 subtasks:
 - T016
 - T017
@@ -207,7 +210,13 @@ In `service/routing/src/main/java/ai/speckitty/charter/routing/domain/`:
 ## Definition of Done
 
 - A catalog loads, round-trips and is refused for each content fault, on every write path and in `pack-check`.
-- `./gradlew verifyAll` passes on Java 25 for the modules this WP touches, with no new style-gate finding.
+- `./gradlew verifyAll` passes on Java 25 with no new style-gate finding, except the four `ExamplePackCoverageTest`
+  cases that need example-pack content WP06 owns: `everyArtifactKindWithAFileKindHasAnExample`,
+  `aKindWithNoExampleFileIsNamed`, `everySchemaPropertyHasAnExample` and `anExampleFieldRemovedFromACopyIsNamed`
+  (operator ruling of 2026-11-18 on the WP05 review: the green point moves to WP06).
+- A catalog's numbers are exact decimals end to end (operator ruling of 2026-11-18): the shared loader reads a finite
+  float as the `BigDecimal` its text writes, a write-back is byte for byte, and tests cover a number of more than 15
+  significant digits and a near-tie that a double would make a tie.
 - Every subtask's status is recorded with `spec-kitty agent tasks mark-status`.
 - Nothing outside `owned_files` changed, except a recorded edit outside the map, named in the WP history with its
   reason.

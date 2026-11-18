@@ -51,6 +51,16 @@ class KindRefTest {
     }
 
     @Test
+    @DisplayName("a routing catalog's reference names its kind and id, and takes a pack qualifier (ADR-0080)")
+    void aRoutingCatalogReference() {
+        KindRef<?> catalog = KindRef.routingCatalog("default");
+
+        assertThat(catalog.urn()).isEqualTo(Urn.parse("routing_catalog:default").orElseThrow());
+        assertThat(catalog.pack()).isEmpty();
+        assertThat(catalog.inPack("org-base").pack()).contains("org-base");
+    }
+
+    @Test
     @DisplayName("a pack qualifier follows the pack-name grammar")
     void aBadPackNameIsRefused() {
         assertThatThrownBy(() -> KindRef.directive("d").inPack("Not A Pack"))

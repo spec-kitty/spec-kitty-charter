@@ -13,6 +13,7 @@ import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import java.util.List;
 import java.util.Optional;
 
@@ -261,6 +262,19 @@ public interface PacksSession {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #stepPlace} does
      */
     default Optional<String> stepRole(String missionType, String action) {
+        return Optional.empty();
+    }
+
+    /**
+     * The model tier one step declares at its place (ADR-0080 decision 13), read as {@link #stepRole} reads the role.
+     * The default answers none: a session that holds no closure holds no step.
+     *
+     * @param missionType the mission type of the step
+     * @param action the step
+     * @return the step's tier; empty when the step declares none, or no version at either place declares the step
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #stepPlace} does
+     */
+    default Optional<CostTier> stepModelTier(String missionType, String action) {
         return Optional.empty();
     }
 }

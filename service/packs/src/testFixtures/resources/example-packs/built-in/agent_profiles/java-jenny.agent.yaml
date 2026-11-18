@@ -196,7 +196,7 @@ toolguide-references:
     rationale: Searches and edits the repository with the fast local tools.
 excluding:
   - frontend
-model: claude-opus
+model: model-x
 effort: high
 avatar-image: avatars/java-jenny.png
 performer: agent

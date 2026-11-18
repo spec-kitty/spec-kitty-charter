@@ -1,0 +1,94 @@
+title: RoutingCatalogModel
+description: >-
+  One model a routing catalog rates (ADR-0080 decision 5), as ModelEntry holds it.
+type: object
+additionalProperties: false
+required:
+  - id
+  - provider
+  - tools
+  - strengths
+  - weaknesses
+  - taskFit
+  - cost
+properties:
+  id:
+    type: string
+    minLength: 1
+    description: >-
+      The model id, unique in the catalog.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.id
+  provider:
+    type: string
+    minLength: 1
+    description: >-
+      Who provides the model.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.provider
+  family:
+    type: string
+    minLength: 1
+    description: >-
+      The model family, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.family
+  tools:
+    type: array
+    items:
+      type: string
+      minLength: 1
+    description: >-
+      The tools the model uses, possibly none.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.tools
+  strengths:
+    type: array
+    items:
+      type: string
+      minLength: 1
+    description: >-
+      The model strengths, possibly none.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.strengths
+  weaknesses:
+    type: array
+    items:
+      type: string
+      minLength: 1
+    description: >-
+      The model weaknesses, possibly none.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.weaknesses
+  taskFit:
+    type: array
+    minItems: 1
+    items:
+      $ref: RoutingCatalogTaskFit.yaml
+    description: >-
+      The task types the model fits, at most one fit each.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.taskFit
+  cost:
+    $ref: RoutingCatalogCost.yaml
+  latencyTier:
+    type: string
+    enum:
+      - low
+      - medium
+      - high
+    description: >-
+      The model latency tier, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+      symbol: ModelEntry.latencyTier
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java
+  symbol: ModelEntry

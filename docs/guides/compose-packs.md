@@ -343,6 +343,25 @@ The service does not remember the selections before the select. So a select of `
 does not always restore the earlier set: an artifact that was selected before, and that the walk reached, is removed.
 Decision `DM-01M6RA8XSM9CZZX1ADX6G80T3X`; see also `depth` in the [activation changelog](/changelog/2026-11-07-a0-kind-model/).
 
+## Ship a routing catalog
+
+A routing catalog says which models suit which task types
+([ADR-0080](/adr/0080-the-routing-catalog-kind-and-the-model-recommendation/)). It is the artifact kind
+`routing_catalog`, one file per catalog at `routing_catalogs/<id>.routing-catalog.yaml` in the pack, listed in the
+pack's manifest like any other artifact. It declares its task types, its models (each with a fit per task type and a
+cost tier), a routing policy (an objective, weights and per-task-type tier caps) and its sources.
+
+- **Layering.** A catalog layers by its id: an org pack's `default` replaces built-in's `default`, whole. A catalog
+  its pack's `policy.yaml` marks `locked` cannot be replaced by a pack at a higher level (an org pack over built-in);
+  one marked `open` can.
+- **One in force.** An activation selects the catalog it uses (`"selected": {"routing_catalog": ["default"]}`), or a
+  preset lists it in `activated_routing_catalogs`. The recommendation reads exactly one catalog in force: none is
+  `409 routing_catalog_not_in_force`, and two are `409 routing_catalog_conflict`, naming both.
+- **A step's tier.** A mission step may declare `model_tier` (`low`, `medium`, `high` or `premium`), the tier of
+  model it advises. A request's `modelTier` overrides it.
+- **Advice only.** `getModelRecommendation` ranks the catalog's models for a task type and flags each against the
+  tiers in play; it never hides a model and never enforces a choice. The client picks.
+
 ## See also
 
 - [HTTP status codes](/development/http-status-codes/): the 422 a relationship registration answers, and the statuses of registration and removal.

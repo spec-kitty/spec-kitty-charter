@@ -400,6 +400,7 @@ Feature: The offering lists the configured packs in force
       guard
       lifecycle
       step_enhancement
+      routing_catalog
       """
     And the field "relation" of the elements of "relations" is, in order:
       """
@@ -441,6 +442,11 @@ Feature: The offering lists the configured packs in force
     And the field at "/kinds/0/_links/artifacts/templated" is true
     And the field at "/kinds/13/_links/artifacts" is absent
     And the field at "/kinds/8/_links/artifacts" is absent
+    And the field at "/kinds/18/artifactKind" is "routing_catalog"
+    And the field at "/kinds/18/activatable" is true
+    And the field at "/kinds/18/declarableInGraphs" is false
+    And the field at "/kinds/18/edgeTarget" is false
+    And the field at "/kinds/18/_links/artifacts/href" is "/api/v1/packs/{packId}/artifacts?kind=routing_catalog"
     And the field at "/_links/self/href" is "/api/v1/offering/kinds"
 
   Scenario: A kind's artifacts template, expanded with a configured pack, answers that pack's artifacts of the kind

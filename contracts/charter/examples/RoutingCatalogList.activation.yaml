@@ -1,0 +1,30 @@
+summary: >-
+  The routing catalogs of an activation's closure over org-base, in id order, each the copy the layer merge keeps:
+  org-base's default wins over built-in's by the same id. Each is linked to its read under the activation and to the
+  pack-scoped read of the winning copy.
+value:
+  items:
+  - id: cost-led
+    description: A cost-led catalog for the example packs.
+    objective: cost_first
+    taskTypeCount: 1
+    modelCount: 2
+    _links:
+      effective-artifact:
+        href: /api/v1/activations/a-1/artifacts/routing_catalog/cost-led
+      artifact:
+        href: /api/v1/packs/org-base/artifacts/routing_catalog/cost-led
+  - id: default
+    objective: balanced
+    taskTypeCount: 3
+    modelCount: 5
+    _links:
+      effective-artifact:
+        href: /api/v1/activations/a-1/artifacts/routing_catalog/default
+      artifact:
+        href: /api/v1/packs/org-base/artifacts/routing_catalog/default
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/routing_catalog
+    up:
+      href: /api/v1/activations/a-1

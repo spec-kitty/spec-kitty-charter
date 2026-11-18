@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/routing-catalog.schema.json",
+  "title": "Routing catalog",
+  "description": "A model-task routing catalog (URN routing_catalog:<id>; ADR-0080 decision 5): the task types, the models with their fit per task type, cost and latency, the routing policy and the sources the content came from. The canonical shape of this repository; core's model-to-task_type catalog is evidence only (ADR-0015, DIV-701 to DIV-703): no schema_version, source_snapshot, override_policy or freshness_policy. Closed at every level. JSON Schema cannot state the cross-references: a task_fit or a tier constraint naming an undeclared task type, a duplicate task type or model id, two fits for one task type in a model and two constraints for one task type are invalid content, refused by the pack's content rules at registration and in validate mode.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "generated_at",
+    "task_types",
+    "models",
+    "routing_policy",
+    "sources"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^(?!.*\\n)[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the content was generated, an ISO 8601 date-time with its offset: provenance only, never read by a rule."
+    },
+    "task_types": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/TaskType"
+      }
+    },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Model"
+      }
+    },
+    "routing_policy": {
+      "$ref": "#/$defs/RoutingPolicy"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Source"
+      }
+    }
+  },
+  "$defs": {
+    "TaskType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^(?!.*\\n)[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quality_sensitivity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "cost_sensitivity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      }
+    },
+    "Model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "provider",
+        "task_fit",
+        "cost"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "strengths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "weaknesses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "task_fit": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/TaskFit"
+          }
+        },
+        "cost": {
+          "$ref": "#/$defs/Cost"
+        },
+        "latency_tier": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      }
+    },
+    "TaskFit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_type",
+        "score"
+      ],
+      "properties": {
+        "task_type": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^(?!.*\\n)[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How well the model fits the task type, 0 to 1; read as an exact decimal."
+        },
+        "confidence": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "Cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "properties": {
+        "tier": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "premium"
+          ],
+          "description": "A cost tier, from cheapest to dearest: low < medium < high < premium (the kernel's CostTier)."
+        },
+        "input_per_1m_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "output_per_1m_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pricing_source_url": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "RoutingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "weights"
+      ],
+      "properties": {
+        "objective": {
+          "enum": [
+            "quality_first",
+            "balanced",
+            "cost_first"
+          ],
+          "description": "What the ranking favours (ADR-0080 decision 10). quality_first ranks by the fit score, the weighted sum second; balanced and cost_first rank by the weighted sum, alike today, and differ in meaning."
+        },
+        "weights": {
+          "$ref": "#/$defs/Weights"
+        },
+        "tier_constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TierConstraint"
+          }
+        }
+      }
+    },
+    "Weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quality",
+        "cost",
+        "risk",
+        "latency"
+      ],
+      "properties": {
+        "quality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "risk": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "latency": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "description": "Each weight is 0 to 1, and the four need not sum to 1."
+    },
+    "TierConstraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_type",
+        "max_tier"
+      ],
+      "properties": {
+        "task_type": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^(?!.*\\n)[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "max_tier": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "premium"
+          ],
+          "description": "The highest cost tier the catalog advises for the task type; a model above it is flagged, never hidden (ADR-0080 decision 12)."
+        }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "url",
+        "access_method",
+        "snapshot_at"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "access_method": {
+          "enum": [
+            "api",
+            "dataset",
+            "manual"
+          ]
+        },
+        "snapshot_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license_notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

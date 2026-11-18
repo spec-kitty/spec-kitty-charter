@@ -86,7 +86,7 @@ final class RelationshipWire {
                 toReference.asUrn().orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
         for (Urn endpoint : List.of(fromUrn, toUrn)) {
             if (!endpoint.kind().edgeTarget()) {
-                throw new IllegalArgumentException(GraphBinding.NOT_AUTHORED + endpoint);
+                throw new IllegalArgumentException(GraphBinding.notAuthored(endpoint.kind()) + endpoint);
             }
         }
         RelationType relationType = RelationType.fromToken(type).orElseThrow(() -> unknownType(type));

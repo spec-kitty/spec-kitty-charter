@@ -59,6 +59,11 @@ tags:
     description: >-
       The skills of a Charter Pack (ADR-0074): the list of a pack's skills and the read of one skill as the pack
       declares it, with the body of a prompt skill exactly as held.
+  - name: RoutingCatalogs
+    description: >-
+      The routing catalogs of a Charter Pack (ADR-0080 decision 6): the list of a pack's catalogs and the read of one
+      catalog as the pack declares it. Its own tag, so that the :artifacts-edge module implements it in a controller of
+      its own beside the other pack-scoped reads.
   - name: Glossaries
     description: >-
       The glossary contexts of a Charter Pack (ADR-0049, ADR-0074): the list of a pack's contexts with their term
@@ -89,6 +94,18 @@ tags:
       answers every winner, unpaged and unfiltered; a client that wants the skills by state, or paged, reads
       listEffectiveArtifacts with ?kind=skill (and ?state=), the stateful, paged list of the same winners. Its own tag,
       so that the :artifacts-edge module implements it in a controller of its own beside the pack-scoped reads.
+  - name: EffectiveRoutingCatalogs
+    description: >-
+      The routing catalogs of an activation (ADR-0080 decision 6): the catalogs the activation's closure holds, each the
+      copy the layer merge keeps, and the read of one with its state and the catalog as the winning pack declares it,
+      whatever its state. The list answers every winner, unpaged and unfiltered; a client that wants the catalogs by
+      state, or paged, reads listEffectiveArtifacts with ?kind=routing_catalog. Its own tag, so that the :artifacts-edge
+      module implements it in a controller of its own beside the pack-scoped reads.
+  - name: ModelRecommendations
+    description: >-
+      The model recommendation under an activation (ADR-0080 decisions 7 to 13): the models the routing catalog in
+      force recommends for a task type, flagged against the tiers in play, beside the model of an agent profile. It is
+      advisory and deterministic. Its own tag, so that the :routing-edge module implements it.
   - name: EffectiveGlossaries
     description: >-
       The glossary contexts of an activation (#106, ADR-0074 decision 12): the contexts the activation's closure holds,
@@ -166,6 +183,10 @@ paths:
     $ref: paths/packs_packId_artifacts_skill.yaml
   /packs/{packId}/artifacts/skill/{artifactId}:
     $ref: paths/packs_packId_artifacts_skill_artifactId.yaml
+  /packs/{packId}/artifacts/routing_catalog:
+    $ref: paths/packs_packId_artifacts_routing_catalog.yaml
+  /packs/{packId}/artifacts/routing_catalog/{artifactId}:
+    $ref: paths/packs_packId_artifacts_routing_catalog_artifactId.yaml
   /packs/{packId}/artifacts/glossary:
     $ref: paths/packs_packId_artifacts_glossary.yaml
   /packs/{packId}/artifacts/glossary/{contextId}:
@@ -224,6 +245,10 @@ paths:
     $ref: paths/activations_activationId_artifacts_skill.yaml
   /activations/{activationId}/artifacts/skill/{artifactId}:
     $ref: paths/activations_activationId_artifacts_skill_artifactId.yaml
+  /activations/{activationId}/artifacts/routing_catalog:
+    $ref: paths/activations_activationId_artifacts_routing_catalog.yaml
+  /activations/{activationId}/artifacts/routing_catalog/{artifactId}:
+    $ref: paths/activations_activationId_artifacts_routing_catalog_artifactId.yaml
   /activations/{activationId}/artifacts/glossary:
     $ref: paths/activations_activationId_artifacts_glossary.yaml
   /activations/{activationId}/artifacts/glossary/{contextId}:
@@ -258,6 +283,8 @@ paths:
     $ref: paths/activations_activationId_missionTypes_missionType_actions_action_profile-selection.yaml
   /activations/{activationId}/roles/{role}/profile-selection:
     $ref: paths/activations_activationId_roles_role_profile-selection.yaml
+  /activations/{activationId}/task-types/{taskType}/model-recommendation:
+    $ref: paths/activations_activationId_taskTypes_taskType_model-recommendation.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

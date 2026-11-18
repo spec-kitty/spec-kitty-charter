@@ -94,6 +94,7 @@ class PackCheckTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
+                List.of(),
                 List.of());
         return new PackReadout(contents, FILES, List.of(), new Rationale(reasons));
     }

@@ -29,6 +29,14 @@
     },
     "composeRead" : "readable"
   },
+  "example-packs/org-mandate" : {
+    "registration" : {
+      "accepted" : {
+        "diagnostics" : [ ]
+      }
+    },
+    "composeRead" : "readable"
+  },
   "example-packs/project" : {
     "registration" : {
       "accepted" : {

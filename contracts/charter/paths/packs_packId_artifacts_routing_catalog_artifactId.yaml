@@ -1,0 +1,81 @@
+get:
+  operationId: getPackRoutingCatalog
+  summary: Get one routing catalog of a Charter Pack.
+  description: >-
+    One routing catalog of one pack in the Artifact envelope (ADR-0080 decision 6, ADR-0074 decisions 4, 9 and 10):
+    kind routing_catalog, id, packId, _links and, in member routingCatalog, the catalog as its file declares it, in
+    camel case: its task types, its models with their fits and costs, its routing policy and its sources. Scores and
+    weights are answered as exact decimals in plain notation, unrounded. The link collection leads to the pack's
+    catalog list (listPackRoutingCatalogs). The generic artifact item read (getPackArtifact) never renders a catalog:
+    this literal path is the read of the kind.
+
+    The pack is judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a 404
+    pack_not_found. A catalog the pack does not hold is a 404 artifact_not_found. A configured pack without a readable
+    pack.yaml, or a pack holding a file the fingerprint covers that cannot be read, is a 500 pack_unreadable. The answer
+    is verified against the source fingerprint and carries it; inputs that change while it is read are stale_input.
+
+    The ETag is the pack revision the catalog was read at, quoted, as a skill's read answers it. The read takes no
+    If-None-Match and never answers 304.
+  tags:
+    - RoutingCatalogs
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/RoutingCatalogId.yaml
+  responses:
+    '200':
+      description: The routing catalog.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/PackRevisionETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            org-base-default:
+              $ref: ../examples/RoutingCatalog.org-base-default.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        The pack or the routing catalog the path names is not there, refused with 404. The pack is judged first: an
+        identifier that matches no configured pack (by name or by declared pack_id) is pack_not_found. Then a catalog
+        the pack does not hold is artifact_not_found. A client error: the request named something that is not there.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-not-found:
+              summary: No configured pack matches the identifier.
+              value:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+                detail: Pack nope was not found.
+            artifact-not-found:
+              summary: The pack holds no routing catalog with the asked identity.
+              value:
+                title: Artifact not found
+                status: 404
+                code: artifact_not_found
+                detail: Pack built-in has no routing_catalog nothing.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

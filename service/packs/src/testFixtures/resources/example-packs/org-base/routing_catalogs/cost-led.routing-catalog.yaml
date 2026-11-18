@@ -1,0 +1,55 @@
+# Org-base's cost-led catalog, in no preset (ADR-0080; research R7 rows 3 and 8). cost_first ranks by score:
+# design: model-a 0.5 x 0.3 + 0.5 x 0 = 0.15; model-b 0.5 x 0.1 + 0.5 x 1 = 0.55, so model-b is the one top.
+# It also carries every optional member of the schema (ADR-0070 coverage). Each is inert here: confidence feeds
+# the risk term and latency_tier the latency term, and both weigh 0; prices, sensitivities and notes are provenance.
+id: cost-led
+description: A cost-led catalog for the example packs.
+generated_at: '2026-11-18T00:00:00Z'
+task_types:
+- id: design
+  title: Design
+  description: Weighing designs against each other.
+  quality_sensitivity: high
+  cost_sensitivity: medium
+models:
+- id: model-a
+  provider: example
+  family: example-large
+  tools:
+  - code
+  strengths:
+  - judgment
+  weaknesses:
+  - cost
+  task_fit:
+  - task_type: design
+    score: 0.3
+    confidence: high
+    rationale: Strong at trade-offs.
+  cost:
+    tier: premium
+    input_per_1m_usd: 15
+    output_per_1m_usd: 75
+    currency: USD
+    pricing_source_url: https://example.invalid/pricing
+  latency_tier: high
+- id: model-b
+  provider: example
+  task_fit:
+  - task_type: design
+    score: 0.1
+  cost:
+    tier: low
+routing_policy:
+  objective: cost_first
+  weights:
+    quality: 0.5
+    cost: 0.5
+    risk: 0
+    latency: 0
+sources:
+- name: example
+  url: https://example.invalid/catalog
+  access_method: manual
+  snapshot_at: '2026-11-18T00:00:00Z'
+  license_notes: Example content, no licence terms.

@@ -36,6 +36,23 @@ public final class GraphBinding {
             "a guard or a lifecycle is not an authored edge endpoint until its contract set lands: ";
 
     /**
+     * The finding text of a graph node or an authored edge that names a routing catalog (ADR-0080 decision 5, squad
+     * A1), before the node or the endpoint: a catalog layers by its id, and nothing relates to it.
+     */
+    public static final String NOT_A_GRAPH_KIND =
+            "a routing catalog is no graph node and no edge endpoint, it layers by its id: ";
+
+    /**
+     * The finding text, before the node or the endpoint, of a kind that is no authored graph node or edge endpoint.
+     *
+     * @param kind the kind a node or an endpoint names
+     * @return {@link #NOT_A_GRAPH_KIND} for a routing catalog, {@link #NOT_AUTHORED} for a guard or a lifecycle
+     */
+    public static String notAuthored(NodeKind kind) {
+        return kind == NodeKind.ROUTING_CATALOG ? NOT_A_GRAPH_KIND : NOT_AUTHORED;
+    }
+
+    /**
      * The finding text of an authored or registered edge that names a term anywhere but as the target of a
      * {@code vocabulary} edge (ADR-0049 decision 4; operator ruling of 2026-11-14), before the edge.
      */
@@ -171,14 +188,14 @@ public final class GraphBinding {
     private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
         return switch (shape) {
             case SHARD ->
-                Urn.parse(node.ref()).isPresent()
-                        ? origin + ": " + NOT_AUTHORED + "'" + node.ref() + "'"
-                        : origin + ": node urn '" + node.ref() + "' is not <kind>:<id>";
+                Urn.parse(node.ref())
+                        .map(urn -> origin + ": " + notAuthored(urn.kind()) + "'" + node.ref() + "'")
+                        .orElseGet(() -> origin + ": node urn '" + node.ref() + "' is not <kind>:<id>");
             case FRAGMENT ->
                 node.ref().isEmpty()
                         ? origin + ": " + emptyId(node.kind())
                         : NodeKind.fromPlural(node.kind())
-                                .map(kind -> origin + ": " + NOT_AUTHORED + "'" + new Urn(kind, node.ref()) + "'")
+                                .map(kind -> origin + ": " + notAuthored(kind) + "'" + new Urn(kind, node.ref()) + "'")
                                 .orElseGet(() ->
                                         origin + ": node " + node.ref() + " has unknown kind '" + node.kind() + "'");
         };
@@ -264,7 +281,7 @@ public final class GraphBinding {
         }
         for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
             if (!endpoint.kind().edgeTarget()) {
-                return origin + ": " + NOT_AUTHORED + "'" + endpoint + "'";
+                return origin + ": " + notAuthored(endpoint.kind()) + "'" + endpoint + "'";
             }
         }
         if (!sourceUrn.get().kind().edgeSource() || !targetUrn.get().kind().edgeTargetOf(relation)) {

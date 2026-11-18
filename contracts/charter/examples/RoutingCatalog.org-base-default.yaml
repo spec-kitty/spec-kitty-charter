@@ -1,0 +1,89 @@
+summary: >-
+  The default routing catalog of the org-base example pack of the charter (ADR-0070, ADR-0080), as
+  getPackRoutingCatalog answers it: the catalog as its file declares it, in camel case, its numbers the exact decimals
+  the file writes. model-b is listed before model-a, as the file lists them.
+value:
+  kind: routing_catalog
+  id: default
+  packId: org-base
+  _links:
+    self:
+      href: /api/v1/packs/org-base/artifacts/routing_catalog/default
+    collection:
+      href: /api/v1/packs/org-base/artifacts/routing_catalog
+  routingCatalog:
+    id: default
+    generatedAt: '2026-11-18T00:00:00Z'
+    taskTypes:
+    - id: design
+      title: Design
+    - id: review
+      title: Review
+    - id: triage
+      title: Triage
+    models:
+    - id: model-b
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: design
+        score: 0.1
+      cost:
+        tier: low
+    - id: model-a
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: design
+        score: 0.3
+      cost:
+        tier: premium
+    - id: model-c
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: review
+        score: 0.9
+      cost:
+        tier: premium
+    - id: model-d
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: review
+        score: 0.6
+      cost:
+        tier: medium
+    - id: model-e
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: review
+        score: 0.5
+      cost:
+        tier: low
+    routingPolicy:
+      objective: balanced
+      weights:
+        quality: 1
+        cost: 0.2
+        risk: 0
+        latency: 0
+      tierConstraints:
+      - taskType: review
+        maxTier: medium
+    sources:
+    - name: example
+      url: https://example.invalid/catalog
+      accessMethod: manual
+      snapshotAt: '2026-11-18T00:00:00Z'

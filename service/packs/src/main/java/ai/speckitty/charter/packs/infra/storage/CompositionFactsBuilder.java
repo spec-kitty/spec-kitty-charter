@@ -169,7 +169,9 @@ final class CompositionFactsBuilder {
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
             termsOf(artifact).forEach(terms::add);
-            if (artifact.urn().kind().declarableInGraphs()) {
+            // Held: a kind a graph declares, or an activatable artifact no graph declares (the routing catalog,
+            // ADR-0080), which layers, takes the policy and comes into force as any activatable kind does.
+            if (artifact.urn().kind().declarableInGraphs() || artifact.kind().activatable()) {
                 defined.add(artifact.urn().toString());
                 List<String> declaredLanguages = languagesOf(artifact);
                 if (!declaredLanguages.isEmpty()) {

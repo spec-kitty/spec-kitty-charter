@@ -43,9 +43,15 @@ class SchemaKeywordCoverageTest {
     /** Keywords whose value is a list of schemas. */
     private static final Set<String> SCHEMA_LISTS = Set.of("allOf", "anyOf", "oneOf", "prefixItems");
 
-    /** Annotations and applicators: they carry no violation of their own; their children report. */
+    /**
+     * Annotations and applicators: they carry no violation of their own; their children report. {@code format} is an
+     * annotation under the Draft 2020-12 default (the format-annotation vocabulary, no format assertion configured):
+     * the routing catalog's {@code generated_at} carries {@code date-time} for its readers, and the domain refuses a
+     * value that is no date-time (ADR-0080 decision 5).
+     */
     private static final Set<String> NO_VIOLATION_OF_THEIR_OWN = Set.of(
             "$schema",
+            "format",
             "$id",
             "$ref",
             "$defs",

@@ -51,6 +51,7 @@ cases:
   - {path: core/assets/a.asset.yaml, expect: mapped, rule: "**/*.asset.yaml", kind: asset, schema: schemas/asset.schema.json, content_form: yaml}
   - {path: core/glossaries/a.glossary.yaml, expect: mapped, rule: "**/*.glossary.yaml", kind: glossary, schema: schemas/glossary.schema.json, content_form: yaml}
   - {path: core/skills/a.skill.yaml, expect: mapped, rule: "**/*.skill.yaml", kind: skill, schema: schemas/skill.schema.json, content_form: yaml}
+  - {path: core/routing_catalogs/default.routing-catalog.yaml, expect: mapped, rule: "**/*.routing-catalog.yaml", kind: routing-catalog, schema: schemas/routing-catalog.schema.json, content_form: yaml}
   - {path: core/presets/minimal.yaml, expect: mapped, rule: "*/presets/*.yaml", kind: preset, schema: schemas/preset.schema.json, content_form: yaml}
   - {path: core/pack-manifest.yaml, expect: mapped, rule: "*/pack-manifest.yaml", kind: pack-manifest, schema: schemas/pack-manifest.schema.json, content_form: yaml}
   - {path: core/policy.yaml, expect: mapped, rule: "*/policy.yaml", kind: policy, schema: schemas/policy.schema.json, content_form: yaml}

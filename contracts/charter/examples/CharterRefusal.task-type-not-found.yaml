@@ -1,0 +1,8 @@
+summary: >-
+  The routing catalog in force declares no task type of that name.
+value:
+  title: Task type not found
+  status: 404
+  code: task_type_not_found
+  detail: >-
+    The routing catalog default in force declares no task type deploy.

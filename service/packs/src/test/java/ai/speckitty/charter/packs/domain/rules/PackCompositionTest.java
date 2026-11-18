@@ -84,7 +84,8 @@ class PackCompositionTest {
                 List.of(),
                 enhancements,
                 prompts,
-                types);
+                types,
+                List.of());
     }
 
     private static Path pack(Path host) throws IOException {

@@ -60,6 +60,7 @@ class PacksMissionTypesTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         List.of(),
                         List.of(),
                         List.of()))
@@ -114,6 +115,7 @@ class PacksMissionTypesTest {
                 .step(new MissionStep(
                         "a",
                         "A",
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),

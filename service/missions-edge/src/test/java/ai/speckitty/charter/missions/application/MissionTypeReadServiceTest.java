@@ -237,6 +237,7 @@ class MissionTypeReadServiceTest {
                 title,
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 prompt ? Optional.of(parsed) : Optional.empty(),
                 guidelines ? Optional.of(parsed) : Optional.empty(),
                 List.of(),

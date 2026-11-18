@@ -303,6 +303,7 @@ class EffectiveMissionTypeReadServiceTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         List.of(),
                         List.of(),
                         List.of()))
@@ -336,6 +337,7 @@ class EffectiveMissionTypeReadServiceTest {
                         "Review at main",
                         Optional.empty(),
                         Optional.of("reviewer"),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),

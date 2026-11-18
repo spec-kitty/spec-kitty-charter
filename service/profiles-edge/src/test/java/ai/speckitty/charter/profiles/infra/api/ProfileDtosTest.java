@@ -635,9 +635,10 @@ class ProfileDtosTest {
 
     @Test
     void theKindsOfAnEntryAreTheNodeKindsTheContractAuthors() {
-        // PackGovernanceEntry.kind is the contract's NodeKind: the kinds a graph declares or an edge names.
+        // PackGovernanceEntry.kind is the contract's NodeKind: the kinds a graph declares or an edge names, and the
+        // activatable routing catalog (ADR-0080).
         Set<String> authored = Arrays.stream(NodeKind.values())
-                .filter(kind -> kind.declarableInGraphs() || kind.edgeTarget())
+                .filter(NodeKind::named)
                 .map(NodeKind::token)
                 .collect(Collectors.toCollection(TreeSet::new));
 

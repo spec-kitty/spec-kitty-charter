@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: feat/108-model-task-routing
 merge_target_branch: feat/108-model-task-routing
 branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-model-task-routing-01M7PVHQ
+base_commit: b5759ead82dbcae5d839d4cb1ad039e7f477f9a3
+created_at: '2026-11-18T15:07:10.654559+00:00'
 subtasks:
 - T020
 - T021
@@ -142,7 +145,11 @@ no field excluded (SC-003; ADR-0070; plan IC-01; squad findings D1, D8, D12, A8)
 ## Definition of Done
 
 - The example packs hold the R7 matrix exactly, and the round trip and coverage pass.
-- `./gradlew verifyAll` passes on Java 25 for the modules this WP touches, with no new style-gate finding.
+- This WP is the kind's full green point (operator ruling of 2026-11-18): `./gradlew verifyAll` passes on Java 25 with
+  no exception and no new style-gate finding, including the four `ExamplePackCoverageTest` cases WP05 left red:
+  `everyArtifactKindWithAFileKindHasAnExample`, `aKindWithNoExampleFileIsNamed`, `everySchemaPropertyHasAnExample` and
+  `anExampleFieldRemovedFromACopyIsNamed`. An example routing catalog covers every schema property, optional ones
+  included, and a preset carries `activated_routing_catalogs`.
 - Every subtask's status is recorded with `spec-kitty agent tasks mark-status`.
 - Nothing outside `owned_files` changed, except a recorded edit outside the map, named in the WP history with its
   reason.

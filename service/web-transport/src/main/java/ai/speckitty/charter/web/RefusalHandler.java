@@ -381,7 +381,8 @@ public class RefusalHandler {
                 RefusalCode.RELATIONSHIP_NOT_FOUND,
                 RefusalCode.REGISTRATION_NOT_FOUND,
                 RefusalCode.SKELETON_NOT_FOUND,
-                RefusalCode.NO_PROFILE_MATCHED);
+                RefusalCode.NO_PROFILE_MATCHED,
+                RefusalCode.TASK_TYPE_NOT_FOUND);
 
         private static final Set<RefusalCode> UNPROCESSABLE_CODES = EnumSet.of(
                 RefusalCode.VALIDATION_FAILED,
@@ -411,7 +412,9 @@ public class RefusalHandler {
                 RefusalCode.PACK_VERSION_CONFLICT,
                 RefusalCode.ARTIFACT_REFERENCED,
                 RefusalCode.RELATIONSHIP_NOT_REGISTERED,
-                RefusalCode.MISSION_TYPE_NOT_IN_FORCE);
+                RefusalCode.MISSION_TYPE_NOT_IN_FORCE,
+                RefusalCode.ROUTING_CATALOG_NOT_IN_FORCE,
+                RefusalCode.ROUTING_CATALOG_CONFLICT);
 
         private static final Set<RefusalCode> UNAVAILABLE_CODES =
                 EnumSet.of(RefusalCode.PACK_SOURCE_UNAVAILABLE, RefusalCode.PACK_STORAGE_FULL);

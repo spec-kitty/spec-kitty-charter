@@ -19,6 +19,9 @@ dependencies {
     // infra.packs: the one adapter that names the packs slice, and only its application and domain rings.
     // :activations does not pass :packs on, so it is declared here.
     implementation(project(":packs"))
+    // infra.packs also names the routing domain, to copy a stored catalog into the catalog reads' view (ADR-0080).
+    // :packs passes :routing on, but a slice's domain is declared where it is named.
+    implementation(project(":routing"))
     // infra.activations: the one adapter that names the activations slice, and only its application and domain rings.
     implementation(project(":activations"))
     // The service-wide transport: problem rendering, refusal mapping and the JSON body guard.

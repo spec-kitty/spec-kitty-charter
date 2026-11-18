@@ -1,0 +1,12 @@
+name: taskType
+in: path
+required: true
+description: >-
+  The task type, by its id in the routing catalog in force: a kebab-case token of at most 64 characters. A value outside
+  the pattern is a 400 Problem without a code; a token the catalog in force does not declare is a 404
+  task_type_not_found, judged after the catalog in force is found.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 64
+  pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'

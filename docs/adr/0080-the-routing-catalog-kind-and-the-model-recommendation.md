@@ -131,6 +131,13 @@ and tiers that filter the catalog's pick. Those proposals are kept under
    not catalog content. The cost tiers are `low` < `medium` < `high` < `premium`; the latency tiers and confidences are
    `low`, `medium`, `high`. A reference to an undeclared task type, a duplicate id, or a second `tier_constraints` entry
    for one task type is invalid content, refused at registration.
+
+   *Amendment, 2026-11-18 (Mission WP06, accepted by the orchestrator):* not declarable and not an edge target, the
+   catalog is still a kind the contract names. An activation holds it (the composition facts count every activatable
+   artifact as held, not only the kinds a graph declares), layers it and reports its same-id override, so the contract's
+   `NodeKind` lists `routing_catalog`. The kernel's `NodeKind.named()` is the one test of a kind the contract names: a
+   graph declares it, an edge names it, or it is activatable. A guard and a lifecycle remain unnamed (#156). This
+   replaces the Mission's earlier reading (WP05) that left `routing_catalog` out of the contract's `NodeKind`.
 6. **The catalog's reads follow ADR-0074 decisions 9 to 14.** `?kind=routing_catalog` lists it in both trees, and the
    kind gets its own collection, item and twin:
    - `GET /packs/{packId}/artifacts/routing_catalog` (`listPackRoutingCatalogs`): id, description, `objective`, and
@@ -282,10 +289,12 @@ and tiers that filter the catalog's pick. Those proposals are kept under
 
 ## Divergences from core
 
-Recorded in the [divergence register](/conformance/divergence-register/) as DIV-701 to DIV-707, `proposed` until the
-reads are built: the catalog is pack content; there is no enforcement mode; no answer is stale; the tiers flag and
-never filter; every tied model is answered; the step's tier and the request's override relate to the candidates; and
-an unknown task type, no catalog and two catalogs are refusals.
+Recorded in the [divergence register](/conformance/divergence-register/) as DIV-701 to DIV-707, `open` since the reads
+are built: the catalog is pack content; there is no enforcement mode; no answer is stale; the tiers flag and never
+filter, and the step's `recommended_model_tier` is renamed `model_tier` and narrowed to a cost tier; every tied model
+is answered, and the scores are exact decimals where core's are binary floats; the step's tier and the request's
+override relate to the candidates; and an unknown task type, no catalog and two catalogs are refusals, while a catalog
+core tolerates (an undeclared task type reference, a duplicate) is refused at registration.
 
 ## References
 

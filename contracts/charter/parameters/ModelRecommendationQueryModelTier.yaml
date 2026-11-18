@@ -1,0 +1,8 @@
+name: modelTier
+in: query
+required: false
+description: >-
+  A cost tier that overrides the step's model_tier as the effective tier (source request). A value that is not a cost
+  tier is a 400 Problem without a code.
+schema:
+  $ref: ../schemas/CostTier.yaml
