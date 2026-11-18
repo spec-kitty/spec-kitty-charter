@@ -563,6 +563,7 @@ implementations):
 **PIT and rule constants (for WP07).** PIT leaves out a private method that only a static initializer reaches, and a
 rule constant names its function from the class's initializer, so a private rule function is never mutated and a
 narrowed run reports nothing for it. The rule functions are package-private, so PIT mutates them.
+
 ## Outcomes of WP08
 
 - **Every composition fault is collected (FR-003).** `PackCompositionResolver.faults` judges a set in today's order:
