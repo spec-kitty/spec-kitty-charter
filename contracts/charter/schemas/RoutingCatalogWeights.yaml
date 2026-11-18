@@ -1,0 +1,50 @@
+title: RoutingCatalogWeights
+description: >-
+  The weights of a routing catalog score (ADR-0080 decision 10), each from 0 to 1, as RoutingWeights holds them.
+type: object
+additionalProperties: false
+required:
+  - quality
+  - cost
+  - risk
+  - latency
+properties:
+  quality:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: >-
+      The weight of the fit, an exact decimal.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingWeights.java
+      symbol: RoutingWeights.quality
+  cost:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: >-
+      The weight of the cost desirability, an exact decimal.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingWeights.java
+      symbol: RoutingWeights.cost
+  risk:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: >-
+      The weight of the confidence desirability, an exact decimal.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingWeights.java
+      symbol: RoutingWeights.risk
+  latency:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: >-
+      The weight of the latency desirability, an exact decimal.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingWeights.java
+      symbol: RoutingWeights.latency
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingWeights.java
+  symbol: RoutingWeights

@@ -1,0 +1,66 @@
+# Org-base's routing catalog, replacing built-in's by the same id (ADR-0080; research R7 rows 2 and 4 to 10).
+# balanced: score = 1 x fit + 0.2 x cost desirability (low 1, medium 0.66, premium 0); risk and latency weigh 0.
+# design: model-b 0.1 + 0.2 x 1 = 0.3; model-a 0.3 + 0.2 x 0 = 0.3, an exact tie (a double would give model-b
+# 0.30000000000000004). model-b is listed before model-a on purpose: the answer must not follow file order.
+# review (max_tier medium): model-c 0.9 + 0 = 0.9; model-d 0.6 + 0.2 x 0.66 = 0.732; model-e 0.5 + 0.2 x 1 = 0.7.
+# triage is declared with no fit, so it has no candidate.
+id: default
+generated_at: '2026-11-18T00:00:00Z'
+task_types:
+- id: design
+  title: Design
+- id: review
+  title: Review
+- id: triage
+  title: Triage
+models:
+- id: model-b
+  provider: example
+  task_fit:
+  - task_type: design
+    score: 0.1
+  cost:
+    tier: low
+- id: model-a
+  provider: example
+  task_fit:
+  - task_type: design
+    score: 0.3
+  cost:
+    tier: premium
+- id: model-c
+  provider: example
+  task_fit:
+  - task_type: review
+    score: 0.9
+  cost:
+    tier: premium
+- id: model-d
+  provider: example
+  task_fit:
+  - task_type: review
+    score: 0.6
+  cost:
+    tier: medium
+- id: model-e
+  provider: example
+  task_fit:
+  - task_type: review
+    score: 0.5
+  cost:
+    tier: low
+routing_policy:
+  objective: balanced
+  weights:
+    quality: 1
+    cost: 0.2
+    risk: 0
+    latency: 0
+  tier_constraints:
+  - task_type: review
+    max_tier: medium
+sources:
+- name: example
+  url: https://example.invalid/catalog
+  access_method: manual
+  snapshot_at: '2026-11-18T00:00:00Z'

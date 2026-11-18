@@ -42,6 +42,7 @@ operations:
   getEffectiveMissionStep: {switch: ready}
   getEffectiveMissionType: {switch: ready}
   getEffectiveSkill: {switch: ready}
+  getEffectiveRoutingCatalog: {switch: ready}
   getEffectiveStepPrompt: {switch: ready}
   getKindTaxonomy: {switch: ready}
   getOffering: {switch: ready}
@@ -59,6 +60,7 @@ operations:
   getPackMissionType: {switch: ready}
   getPackPreset: {switch: ready}
   getPackSkill: {switch: ready}
+  getPackRoutingCatalog: {switch: ready}
   getPackRegistration:
     switch: held
     statuses: [500]
@@ -73,11 +75,13 @@ operations:
   listEffectiveAssets: {switch: ready}
   listEffectiveGlossaryContexts: {switch: ready}
   listEffectiveSkills: {switch: ready}
+  listEffectiveRoutingCatalogs: {switch: ready}
   listPackArtifacts: {switch: ready}
   listPackAssets: {switch: ready}
   listPackGlossaryContexts: {switch: ready}
   listPackPresets: {switch: ready}
   listPackSkills: {switch: ready}
+  listPackRoutingCatalogs: {switch: ready}
   putPackDirective: {switch: ready}
   putPackParadigm: {switch: ready}
   putPackRelationship: {switch: ready}

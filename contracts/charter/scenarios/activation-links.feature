@@ -3,7 +3,8 @@ Feature: An activation is discoverable by links
   A client that knows only the root reaches an activation's reads and writes by links (#409, decision
   DM-01M78RKM6Q23PA9QAC80QJKQFF, FR-013 and FR-014). The root's activations link is followed with POST to create one;
   the activation answers self, artifacts, offering, packs, graph, skipped, the templated effective-context, its held
-  assets, skills and glossary contexts (assets, the templated asset, skills, glossaries), its vocabulary
+  assets, skills, routing catalogs and glossary contexts (assets, the templated asset, skills, routing-catalogs,
+  glossaries), its vocabulary
   (vocabulary-terms, vocabulary-contextive, vocabulary-taboos), and its writes with their methods: edit (PUT) and delete
   (DELETE) on itself, and select, exclude and apply-preset (PUT), templated. unselect and include are not on the
   activation. Every href the scenarios use comes from a link: none is built by hand, not even by a guard runner that
@@ -116,6 +117,7 @@ Feature: An activation is discoverable by links
       | skipped               |
       | assets                |
       | skills                |
+      | routing-catalogs      |
       | glossaries            |
       | vocabulary-terms      |
       | vocabulary-contextive |

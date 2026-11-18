@@ -43,7 +43,7 @@ class ExamplePacksTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT, ExamplePacks.ORG_MANDATE})
     void everyExamplePackValidatesWithOnlyFileNotHeldWarnings(String name) {
         // A file the pack does not hold (an orientation README, an author's note) is a file_not_held warning, one for
         // each file the store's load lists not held, and nothing else is found (#554, open case 6).
@@ -57,7 +57,7 @@ class ExamplePacksTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT, ExamplePacks.ORG_MANDATE})
     void aPackWithoutItsDescriptorIsCaught(String name, @TempDir Path dir) throws Exception {
         Path copy = ExamplePacks.copyOf(name, dir);
         Files.delete(copy.resolve("pack.yaml"));
@@ -74,9 +74,12 @@ class ExamplePacksTest {
                 .toList();
     }
 
-    /** The three packs compose through the production store and the offering read: org-base on built-in, project on both. */
+    /**
+     * The four packs compose through the production store and the offering read: org-base and org-mandate on built-in,
+     * project on org-base and built-in.
+     */
     @Test
-    void theThreePacksComposeThroughTheOfferingRead() {
+    void theFourPacksComposeThroughTheOfferingRead() {
         DomainRepositoryService store =
                 new DomainRepositoryService(ExamplePacksTest::locations, new YamlSerializationStrategy());
         OfferingReadService read =
@@ -84,12 +87,12 @@ class ExamplePacksTest {
 
         assertThat(read.offering().value())
                 .extracting(entry -> entry.name())
-                .containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+                .containsExactlyElementsOf(ExamplePacks.names());
     }
 
     /** Every artifact file of every pack loads into the domain through the whole-pack load, with no violation. */
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT, ExamplePacks.ORG_MANDATE})
     void everyPackLoadsWholeWithNoViolation(String name) {
         WholePackStore.LoadedPack loaded =
                 new WholePackStore(new YamlSerializationStrategy()).load(ExamplePacks.pack(name));

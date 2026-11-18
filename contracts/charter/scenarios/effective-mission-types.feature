@@ -830,3 +830,19 @@ Feature: A mission type, its steps and its skeletons are read under an activatio
     And the field at "/substeps/1/delegatesTo/candidates/1/_links/effective-artifact/href" is "/api/v1/activations/sd-1/artifacts/tactic/tdd"
     When I GET "/activations/sd-1/artifacts/tactic/tdd"
     Then the response status is 200
+
+  Scenario: A step's model tier is served on the effective step read, and a step without one omits it (ADR-0080, #108)
+    On charter's example packs, under an activation that selects software-dev: the effective step read answers the
+    review step's model_tier low as modelTier, and omits the key for the plan step, which declares none.
+    Given the example pack "built-in" of the charter
+    And the activation "mt-tier" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "built-in"}], "selected": {"mission_type": ["software-dev"]}}
+      """
+    When I GET "/activations/mt-tier/artifacts/mission_type/software-dev/steps/review"
+    Then the response status is 200
+    And the field at "/id" is "review"
+    And the field at "/modelTier" is "low"
+    When I GET "/activations/mt-tier/artifacts/mission_type/software-dev/steps/plan"
+    Then the response status is 200
+    And the field at "/modelTier" is absent

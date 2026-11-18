@@ -89,6 +89,12 @@ class SurfaceSubsetTest {
             "planted/pack-yaml-tilde-is-null");
 
     /**
+     * Example packs added after the frozen baseline (org-mandate: ADR-0080, operator ruling of 2026-11-18 on #108): new
+     * subjects the baseline predates, which register with no fault.
+     */
+    private static final Set<String> LATER_EXAMPLES = Set.of("example-packs/org-mandate");
+
+    /**
      * The root twins of three open-case-6 plants, added at the landing (R1, the R2 note's "Landing fixes"): new subjects
      * the frozen baseline predates. The bare ones are S8 rows.
      */
@@ -216,6 +222,13 @@ class SurfaceSubsetTest {
         assertThat(descriptor)
                 .as("%s answers the descriptor's refusal, among every fault, exactly on an S8 row", key)
                 .isEqualTo(s8);
+        if (LATER_EXAMPLES.contains(key)) {
+            assertThat(BEFORE.has(key))
+                    .as("%s is a later example, which the baseline predates", key)
+                    .isFalse();
+            assertThat(faults).as("%s registers with no fault", key).isEmpty();
+            return;
+        }
         if (ROOT_TWINS.contains(key)) {
             assertThat(BEFORE.has(key))
                     .as("%s is a landing twin, which the baseline predates", key)

@@ -196,6 +196,17 @@ public enum NodeKind {
     }
 
     /**
+     * Whether a read of the contract may name a node of this kind (the contract's {@code NodeKind}): a kind a graph
+     * declares or an edge names, or the kind of an activatable artifact, which an activation holds, layers and reports
+     * though no graph declares it (the routing catalog, ADR-0080).
+     *
+     * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE}, which wait for their contract set (#156)
+     */
+    public boolean named() {
+        return declarable || edgeTarget || (artifactKind != null && artifactKind.activatable());
+    }
+
+    /**
      * The artifact kind this node kind stands for.
      *
      * @return the artifact kind; empty for {@link #ACTION} and {@link #TERM}

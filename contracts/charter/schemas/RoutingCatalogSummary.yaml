@@ -1,0 +1,66 @@
+title: RoutingCatalogSummary
+description: >-
+  One routing catalog as a RoutingCatalogList lists it: its id, its description when it has one, its objective and the
+  counts of its task types and models. In a pack (listPackRoutingCatalogs) it is the pack's catalog, and _links holds
+  self, the catalog's own read (getPackRoutingCatalog). Under an activation (listEffectiveRoutingCatalogs) it is the
+  copy the layer merge keeps, and _links holds effective-artifact, its read under the activation
+  (getEffectiveRoutingCatalog), and artifact, the winning copy's read in its pack (getPackRoutingCatalog).
+type: object
+additionalProperties: false
+required:
+  - id
+  - objective
+  - taskTypeCount
+  - modelCount
+  - _links
+properties:
+  id:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      The catalog id within its pack.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.id
+  description:
+    type: string
+    minLength: 1
+    description: >-
+      What the catalog is for, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+      symbol: RoutingCatalog.description
+  objective:
+    type: string
+    enum:
+      - quality_first
+      - balanced
+      - cost_first
+    description: >-
+      The catalog objective, as its routing policy declares it.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingObjective.java
+      symbol: RoutingObjective.token
+  taskTypeCount:
+    type: integer
+    minimum: 1
+    description: How many task types the catalog declares.
+    x-derived:
+      rule: The size of RoutingCatalog.taskTypes.
+      inputs:
+        - the catalog file
+  modelCount:
+    type: integer
+    minimum: 1
+    description: How many models the catalog rates.
+    x-derived:
+      rule: The size of RoutingCatalog.models.
+      inputs:
+        - the catalog file
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java
+  symbol: RoutingCatalog

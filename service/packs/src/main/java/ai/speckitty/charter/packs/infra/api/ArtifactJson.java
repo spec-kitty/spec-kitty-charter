@@ -5,6 +5,13 @@ import ai.speckitty.charter.api.model.Asset;
 import ai.speckitty.charter.api.model.AssetExecutable;
 import ai.speckitty.charter.api.model.KindRow;
 import ai.speckitty.charter.api.model.ReferencedArtifact;
+import ai.speckitty.charter.api.model.RoutingCatalog;
+import ai.speckitty.charter.api.model.RoutingCatalogCost;
+import ai.speckitty.charter.api.model.RoutingCatalogModel;
+import ai.speckitty.charter.api.model.RoutingCatalogSource;
+import ai.speckitty.charter.api.model.RoutingCatalogSummary;
+import ai.speckitty.charter.api.model.RoutingCatalogTaskFit;
+import ai.speckitty.charter.api.model.RoutingCatalogTaskType;
 import ai.speckitty.charter.api.model.Skill;
 import ai.speckitty.charter.api.model.SkillExpansion;
 import ai.speckitty.charter.api.model.SkillInvocation;
@@ -38,7 +45,7 @@ public class ArtifactJson {
     /**
      * The module Spring Boot adds to the application's JSON mapper.
      *
-     * @return a module that omits the {@code null} members of the artifact DTOs, of an asset's or a skill's parts,
+     * @return a module that omits the {@code null} members of the artifact DTOs, of an asset's, a skill's or a routing catalog's parts,
      *     and of a kind taxonomy row (a kind with no plural or no artifact kind)
      */
     @Bean
@@ -52,6 +59,13 @@ public class ArtifactJson {
                 .setMixInAnnotation(SkillParameter.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SkillInvocation.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SkillExpansion.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalog.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalogTaskType.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalogModel.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalogTaskFit.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalogCost.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalogSource.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(RoutingCatalogSummary.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(KindRow.class, OmitAbsentMembers.class);
     }
 

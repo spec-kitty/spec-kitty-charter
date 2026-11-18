@@ -58,6 +58,7 @@ class ActivationMapperLinksTest {
                         tuple("assets", SELF + "/artifacts/asset", null, null),
                         tuple("asset", SELF + "/artifacts/asset/{artifactId}", null, true),
                         tuple("skills", SELF + "/artifacts/skill", null, null),
+                        tuple("routing-catalogs", SELF + "/artifacts/routing_catalog", null, null),
                         tuple("glossaries", SELF + "/artifacts/glossary", null, null),
                         tuple("vocabulary-terms", SELF + "/vocabulary/terms", null, null),
                         tuple("vocabulary-contextive", SELF + "/vocabulary/contextive", null, null),

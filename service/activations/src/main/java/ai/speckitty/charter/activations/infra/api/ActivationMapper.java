@@ -11,6 +11,7 @@ import ai.speckitty.charter.api.EffectiveAgentProfilesApi;
 import ai.speckitty.charter.api.EffectiveAssetsApi;
 import ai.speckitty.charter.api.EffectiveGlossariesApi;
 import ai.speckitty.charter.api.EffectiveMissionTypesApi;
+import ai.speckitty.charter.api.EffectiveRoutingCatalogsApi;
 import ai.speckitty.charter.api.EffectiveSkillsApi;
 import ai.speckitty.charter.api.MissionTypesApi;
 import ai.speckitty.charter.api.OfferingApi;
@@ -159,6 +160,9 @@ public class ActivationMapper {
         links.put("assets", link(under(EffectiveAssetsApi.PATH_LIST_EFFECTIVE_ASSETS, activationId)));
         links.put("asset", templated(under(EffectiveAssetsApi.PATH_GET_EFFECTIVE_ASSET, activationId)));
         links.put("skills", link(under(EffectiveSkillsApi.PATH_LIST_EFFECTIVE_SKILLS, activationId)));
+        links.put(
+                "routing-catalogs",
+                link(under(EffectiveRoutingCatalogsApi.PATH_LIST_EFFECTIVE_ROUTING_CATALOGS, activationId)));
         links.put(
                 "glossaries", link(under(EffectiveGlossariesApi.PATH_LIST_EFFECTIVE_GLOSSARY_CONTEXTS, activationId)));
         links.put("vocabulary-terms", link(under(VocabularyApi.PATH_LIST_ACTIVATION_VOCABULARY_TERMS, activationId)));

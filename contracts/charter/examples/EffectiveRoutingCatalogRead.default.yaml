@@ -1,0 +1,101 @@
+summary: >-
+  The routing catalog default under an activation that selects it: org-base's copy wins the layer merge over
+  built-in's by the same id, and is in force (state active, reason selected). self is this request, artifact the
+  pack-scoped read of the winner's pack, collection the activation's routing catalogs and up the activation.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  kind: routing_catalog
+  artifactId: default
+  packId: org-base
+  level: org
+  state: active
+  required: false
+  policy: open
+  reason: selected
+  routingCatalog:
+    id: default
+    generatedAt: '2026-11-18T00:00:00Z'
+    taskTypes:
+    - id: design
+      title: Design
+    - id: review
+      title: Review
+    - id: triage
+      title: Triage
+    models:
+    - id: model-b
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: design
+        score: 0.1
+      cost:
+        tier: low
+    - id: model-a
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: design
+        score: 0.3
+      cost:
+        tier: premium
+    - id: model-c
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: review
+        score: 0.9
+      cost:
+        tier: premium
+    - id: model-d
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: review
+        score: 0.6
+      cost:
+        tier: medium
+    - id: model-e
+      provider: example
+      tools: []
+      strengths: []
+      weaknesses: []
+      taskFit:
+      - taskType: review
+        score: 0.5
+      cost:
+        tier: low
+    routingPolicy:
+      objective: balanced
+      weights:
+        quality: 1
+        cost: 0.2
+        risk: 0
+        latency: 0
+      tierConstraints:
+      - taskType: review
+        maxTier: medium
+    sources:
+    - name: example
+      url: https://example.invalid/catalog
+      accessMethod: manual
+      snapshotAt: '2026-11-18T00:00:00Z'
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/routing_catalog/default
+    artifact:
+      href: /api/v1/packs/org-base/artifacts/routing_catalog/default
+    collection:
+      href: /api/v1/activations/a-1/artifacts/routing_catalog
+    up:
+      href: /api/v1/activations/a-1

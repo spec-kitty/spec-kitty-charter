@@ -2,6 +2,7 @@ description: >-
   A strong entity tag of a read that depends on the packs of an activation's closure (the effective reads,
   listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph, getEffectiveActionContext,
   getEffectiveArtifact, getEffectiveAgentProfile, getEffectiveStepPrompt, listEffectiveSkills, getEffectiveSkill,
+  listEffectiveRoutingCatalogs, getEffectiveRoutingCatalog,
   listEffectiveAssets, getEffectiveAsset, getEffectiveAssetPayload, listEffectiveGlossaryContexts,
   getEffectiveGlossaryContext, getEffectiveGlossaryTerm, selectAgentProfile, selectAgentProfileForStep,
   listActivationVocabularyTerms, getActivationVocabularyContextive and listActivationVocabularyTaboos, and
@@ -9,7 +10,7 @@ description: >-
   revision or a pack of its closure changes (any of its files, a step prompt or a prompt fragment included), and, for
   the effective reads, with the query (the artifact list's kind, state, cursor and page size; the context's mission
   type, action and depth; the artifact read's kind, id and depth; the agent profile read's id and depth; the prompt's
-  mission type and action; the skill, asset, payload and glossary context reads' id; the term read's context and term;
+  mission type and action; the skill, routing catalog, asset, payload and glossary context reads' id; the term read's context and term;
   the selection's role, language and framework; the step selection's mission type, step, language and framework); a
   pack outside the closure leaves it unchanged. In double quotes. Opaque to consumers, who compare it and never parse
   it. The recipe carries a version, bumped whenever a read answers another body for the same inputs (today v3:

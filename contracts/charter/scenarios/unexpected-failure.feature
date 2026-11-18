@@ -72,6 +72,8 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getPackAssetPayload      | /packs/qa/artifacts/asset/a/payload                  |
       | listPackSkills           | /packs/qa/artifacts/skill                            |
       | getPackSkill             | /packs/qa/artifacts/skill/s                          |
+      | listPackRoutingCatalogs  | /packs/qa/artifacts/routing_catalog                  |
+      | getPackRoutingCatalog    | /packs/qa/artifacts/routing_catalog/c                |
       | listPackGlossaryContexts | /packs/qa/artifacts/glossary                         |
       | getPackGlossaryContext   | /packs/qa/artifacts/glossary/g                       |
       | getPackGlossaryTerm      | /packs/qa/artifacts/glossary/g/terms/t               |
@@ -104,6 +106,8 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | getEffectiveAssetPayload          | /activations/a-1/artifacts/asset/a/payload                  |
       | listEffectiveSkills               | /activations/a-1/artifacts/skill                            |
       | getEffectiveSkill                 | /activations/a-1/artifacts/skill/s                          |
+      | listEffectiveRoutingCatalogs      | /activations/a-1/artifacts/routing_catalog                  |
+      | getEffectiveRoutingCatalog        | /activations/a-1/artifacts/routing_catalog/c                |
       | listEffectiveGlossaryContexts     | /activations/a-1/artifacts/glossary                         |
       | getEffectiveGlossaryContext       | /activations/a-1/artifacts/glossary/g                       |
       | getEffectiveGlossaryTerm          | /activations/a-1/artifacts/glossary/g/terms/t               |
