@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -26,6 +27,7 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import java.io.IOException;
@@ -174,6 +176,45 @@ class PackCommitStoreTest {
                 assertThat(after.get(file)).as("%s is byte-unchanged", file).isEqualTo(content));
         assertThat(after.get(RelationshipShard.SHARD_PATH)).isEqualTo(SHARD);
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+    }
+
+    @Test
+    @DisplayName(
+            "a removal is judged on the pack it leaves (#605): removing a step enhancement's fragment alone is refused"
+                    + " at the enhancement, and removing the whole enhancement with its fragment lands")
+    void aRemovalThatLeavesAFaultIsRefusedAndItsTwinLands(@TempDir Path host) throws IOException {
+        Path packDir = ExamplePacks.copyOf(ExamplePacks.ORG, host);
+        PackIdentifier org = new PackIdentifier(ExamplePacks.ORG);
+        PackCommitStore store = new PackCommitStore(
+                () -> List.of(new PackLocation(ExamplePacks.ORG, PackLevel.ORG, packDir)),
+                new YamlSerializationStrategy());
+        String enhancements = "missions/software-dev/enhancements/";
+        Map<String, String> before = snapshot(packDir);
+
+        assertThatThrownBy(
+                        () -> store.remove(org, List.of(enhancements + "spdd-plan.prompt-fragment.md"), null, Map.of()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .extracting(violation -> violation.pointer(), violation -> violation.code())
+                            .containsExactly(
+                                    tuple(enhancements + "spdd-plan.step-enhancement.yaml", "prompt_fragment_invalid"));
+                });
+        assertThat(snapshot(packDir)).as("nothing is removed").isEqualTo(before);
+        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+
+        store.remove(
+                org,
+                List.of(
+                        enhancements + "spdd-review.step-enhancement.yaml",
+                        enhancements + "spdd-review.prompt-fragment.md"),
+                null,
+                Map.of());
+
+        assertThat(packDir.resolve(enhancements + "spdd-review.step-enhancement.yaml"))
+                .doesNotExist();
+        assertThat(packDir.resolve(enhancements + "spdd-plan.prompt-fragment.md"))
+                .exists();
     }
 
     /** A stamped shard whose one edge names a relation no edge may carry: a graph fault at the shard. */
