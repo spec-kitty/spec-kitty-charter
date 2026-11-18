@@ -1,7 +1,7 @@
 {
-  "event_count": 53,
-  "last_event_id": "01M7QY6AD3G0QPZS0D0QVB80AQ",
-  "materialized_at": "2026-11-18T18:20:04.387968+00:00",
+  "event_count": 54,
+  "last_event_id": "01M7QY86QC17SS6Q09Z406RB0D",
+  "materialized_at": "2026-11-18T18:21:06.156312+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -222,23 +222,23 @@
       }
     },
     "WP07": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M7QY6AD3G0QPZS0D0QVB80AQ",
-      "last_transition_at": "2026-11-18T18:20:04.387968+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7QY86QC17SS6Q09Z406RB0D",
+      "last_transition_at": "2026-11-18T18:21:06.156312+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T18:19:50Z – claude – shell_pid=197 – WP07 implemented (T023–T026). Code is in routing.domain.ranking.\n\nDelivered:\n- Ranker.recommend(catalog, taskType, Optional<CostTier>) answers a Recommendation: task type, objective, tierConstraint and the ordered candidates.\n- score (rule 1) is exact BigDecimal. The constants are built from strings, never doubles; nothing is rounded and no MathContext is used. The desirabilities are exhaustive switches (cost, risk and latency; absent is 0.5), so there are no nullable map lookups.\n- rankKey (rule 2): quality_first ranks by (fit, score); balanced and cost_first rank by score. Ranks are compared with compareTo. The javadoc says balanced and cost_first compute alike and differ in meaning (decision 10).\n- TiersInPlay (rule 3): the cap and the effective tier combine, and \"inside\" means within both.\n- Candidates are top(inside) ∪ top(fitting) with all ties, deduplicated by model id; an empty inside contributes nothing (rule 4).\n- Order (rule 6): rank descending, then model id by String.compareTo (code point). The catalog's order never matters.\n- CatalogCandidate: modelId, score, fitScore, rationale, costTier, withinTierConstraint, and withinModelTier (present only with an effective tier).\n- TaskTypeNotDeclared (taskType, catalogId) is the typed refusal; WP09 maps it to task_type_not_found.\n\nTests:\n- RankerTest (15): R7 rows 1–7, each an exact ordered list with every flag. Plus:\n  - exact decimal against a double control (0.30000000000000004);\n  - all-zero weights (balanced ties all; quality_first decides by fit);\n  - file order reversed gives the same answer;\n  - overlap is answered once;\n  - ties straddling a tier;\n  - an empty inside;\n  - an unknown task type;\n  - rationale, and 0.50 against 0.5 by compareTo, with code-point id order.\n- ScoreTest (15) pins each desirability constant and the weighted sum. TiersInPlayTest (2) covers combining the tiers.\n\n\"Fails when removed\": each rule was broken in turn, the named tests failed, and the rule was restored:\n\n| Rule broken (Ranker / TiersInPlay) | Failing tests |\n| --- | --- |\n| rank key: quality_first by score alone | row 1, row 3, all-zero weights |\n| top(inside) ignores the tiers (inside = fitting) | rows 4, 5, 6, ties straddling a tier |\n| top(fitting) dropped | rows 4, 5, 6, ties straddling a tier |\n| top keeps the first max only (ties dropped) | row 2, ties straddling, all-zero weights, code-point order |\n| no model-id tie-break | row 2, ties straddling, all-zero weights, code-point order |\n| order ascending | rows 4, 5, 6, ties straddling |\n| tier cap ignored | rows 4, 6, TiersInPlayTest |\n| effective tier ignored | row 5, ties straddling, TiersInPlayTest |\n| cost desirability fixed (premium for all) | rows 2, 3, 4, 5 |\n| cost medium 0.66 → 0.33 | rows 4, 6, overlap, ScoreTest cost |\n| risk/latency constants swapped | ScoreTest risk, weighted sum |\n| absent 0.5 → 0 | ScoreTest risk and latency |\n| unknown task type not refused | the unknown-task-type test |\n| score through double | row 2, exact decimal vs double |\n| rank compared by text, not compareTo | ties straddling, code-point order (0.50 vs 0.5), all-zero weights |\n| no dedupe of top(inside) ∪ top(fitting) | rows 1, 3, ties straddling, code-point order |\n\nNo edit outside owned_files. The WP06 reviewer note (restore ProfileCorpusTest's per-pack \"profile files not empty\" check, skipping only org-mandate) cannot be made here: lane-g depends on lane-e only, so WP06's org-mandate and ProfileCorpusTest changes are not in this lane. It moves to WP08, whose lane (lane-f) holds WP06.\n\nVerification: `./gradlew verifyAll --continue` on lane-g at the WP07 head. :routing (compile, tests, checkstyle, spotless, javadoc, jacoco) and every other module are green. The exceptions are the 4 ExamplePackCoverageTest cases, red in this lane because it is based on WP05 without WP06's example content; they are the cases the operator moved to WP06, which turns them green (approved). 6739 :packs tests, 4 failed.",
         "Ready for review at lane-g"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 197,
-      "shell_pid_created_at": "1795024906.55",
+      "role": "reviewer",
+      "shell_pid": 347,
+      "shell_pid_created_at": "1795026059.79",
       "subtasks": {
         "T023": "done",
         "T024": "done",
