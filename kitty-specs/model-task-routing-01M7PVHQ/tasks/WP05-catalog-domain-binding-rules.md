@@ -10,13 +10,15 @@ requirement_refs:
 - FR-002
 - FR-005
 - C-003
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T016
 - T017
 - T018
 - T019
 phase: Phase 2 - The kind
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -67,7 +69,9 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/**/RoutingCatalog*Test.java
 - service/packs/src/test/resources/routing-catalog-fixtures/**
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP05 – Catalog domain, binding and content rules

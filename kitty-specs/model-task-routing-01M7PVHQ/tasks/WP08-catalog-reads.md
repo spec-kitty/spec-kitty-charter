@@ -7,6 +7,9 @@ requirement_refs:
 - FR-003
 - FR-004
 - FR-014
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T027
 - T028
@@ -14,7 +17,6 @@ subtasks:
 - T030
 - T031
 phase: Phase 3 - Reads
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -22,6 +24,7 @@ history:
 agent_profile: java-jenny
 authoritative_surface: contracts/charter/paths/
 create_intent:
+- contracts/charter/schemas/EffectiveRoutingCatalogRead.yaml
 - contracts/charter/paths/packs_packId_artifacts_routing_catalog.yaml
 - contracts/charter/paths/packs_packId_artifacts_routing_catalog_artifactId.yaml
 - contracts/charter/paths/activations_activationId_artifacts_routing_catalog.yaml
@@ -77,7 +80,9 @@ owned_files:
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP08 – The catalog reads

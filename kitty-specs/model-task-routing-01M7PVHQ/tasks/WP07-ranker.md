@@ -9,13 +9,15 @@ requirement_refs:
 - FR-009
 - NFR-001
 - NFR-002
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T023
 - T024
 - T025
 - T026
 phase: Phase 3 - Reads
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -33,7 +35,9 @@ owned_files:
 - service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/**
 - service/routing/src/test/java/ai/speckitty/charter/routing/domain/ranking/**
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP07 – The ranker

@@ -8,12 +8,14 @@ requirement_refs:
 - SC-003
 - FR-005
 - C-002
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T020
 - T021
 - T022
 phase: Phase 2 - The kind
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -30,7 +32,9 @@ owned_files:
 - service/packs/src/testFixtures/resources/whole-pack/**
 - service/packs/src/test/java/ai/speckitty/charter/packs/examples/ExamplePackCoverageTest.java
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP06 – Example packs

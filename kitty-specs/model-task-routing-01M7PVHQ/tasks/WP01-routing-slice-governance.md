@@ -5,12 +5,14 @@ dependencies: []
 requirement_refs:
 - NFR-003
 - C-001
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
 - T003
 phase: Phase 1 - Foundations
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -37,7 +39,9 @@ owned_files:
 - docs/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam.md
 - docs/adr/0006-onion-vertical-slices-archunit.md
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP01 – The routing slice and its governance

@@ -5,13 +5,15 @@ dependencies: []
 requirement_refs:
 - FR-001
 - FR-005
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T004
 - T005
 - T006
 - T007
 phase: Phase 1 - Foundations
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -37,7 +39,9 @@ owned_files:
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java
 - docs/adr/0077-kind-taxonomy-and-step-authority.md
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 – The kernel kind and cost tier

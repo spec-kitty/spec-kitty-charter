@@ -13,6 +13,9 @@ requirement_refs:
 - FR-014
 - SC-001
 - SC-002
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T032
 - T033
@@ -20,7 +23,6 @@ subtasks:
 - T035
 - T036
 phase: Phase 3 - Reads
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -28,6 +30,9 @@ history:
 agent_profile: java-jenny
 authoritative_surface: service/routing-edge/
 create_intent:
+- contracts/charter/parameters/TaskType.yaml
+- contracts/charter/examples/CharterRefusal.task-type-not-found.yaml
+- service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/RecommendationInputs.java
 - contracts/charter/paths/activations_activationId_taskTypes_taskType_model-recommendation.yaml
 - contracts/charter/scenarios/model-recommendation.feature
 - service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationService.java
@@ -53,7 +58,9 @@ owned_files:
 - service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/config/**
 - service/routing-edge/src/test/java/**
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP09 – The recommendation read

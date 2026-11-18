@@ -9,13 +9,15 @@ requirement_refs:
 - SC-004
 - NFR-004
 - C-004
+planning_base_branch: feat/108-model-task-routing
+merge_target_branch: feat/108-model-task-routing
+branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
 subtasks:
 - T037
 - T038
 - T039
 - T040
 phase: Phase 4 - Records
-agent: claude
 history:
 - at: '2026-11-18T08:55:00Z'
   actor: system
@@ -33,7 +35,9 @@ owned_files:
 - docs/architecture/logical-model.md
 - docs/guides/compose-packs.md
 role: documentarian
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP10 – Records and closeout docs
