@@ -64,7 +64,7 @@ with their scores and rationale, and the profile's model and effort.
    catalog candidate, and the weighted sum only separates equal fits.
 2. **Given** a `balanced` or a `cost_first` catalog, **When** the client asks, **Then** the models are ranked by the
    weighted sum, and the answer names the objective the catalog declares.
-3. **Given** two models tied at the top rank, **When** the client asks, **Then** both are catalog candidates.
+3. **Given** two models tied at the top rank, **When** the client asks, **Then** exactly these two are the catalog candidates, in rank order and then by model id.
 4. **Given** a profile that declares a model and an effort, **When** the client asks, **Then** a profile candidate
    carries them, beside the catalog candidates.
 5. **Given** a declared task type no model fits and a profile with no model, **When** the client asks, **Then** the
@@ -88,8 +88,8 @@ is above the tiers.
    with source `step` and the step's offer.
 2. **Given** the same step and a `modelTier` in the request, **When** the client asks, **Then** the request's tier is
    effective, with source `request`, and the step's offer is still reported.
-3. **Given** a best model above the effective tier, **When** the client asks, **Then** the best model inside the tier
-   and the best model overall are both catalog candidates, each flagged.
+3. **Given** a best model above the effective tier, **When** the client asks, **Then** exactly the best model inside the tier
+   and the best model overall are the catalog candidates, each flagged.
 4. **Given** a best model above the task type's tier constraint, **When** the client asks, **Then** it is answered,
    flagged outside the constraint, beside the best model inside it.
 

@@ -229,6 +229,8 @@ undeclared, never `null`.
   - the org-base `default` wins over built-in's, with pack, level, state, policy and required;
   - `cost-led` is listed `inactive` / `not_selected` until it is selected;
   - `?kind=routing_catalog` in both trees;
+  - deny `default` (an exclusion), and it is `inactive` with reason `denied`; require it through a preset item marked
+    `must_have`, and it is `required` (FR-005, analysis G2);
   - the `304` outline, as in `effective-assets-and-skills.feature` near line 249;
   - `404 activation_not_found` and `404 artifact_not_found`.
 - **Rows** for the four operations in `every-operation.feature` (401 and 403), `unexpected-failure.feature` (500) and

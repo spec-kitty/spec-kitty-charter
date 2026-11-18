@@ -65,7 +65,7 @@ model id, two fits for one task type in a model, two constraints for one task ty
 3. **Tiers in play.** These are the task type's `max_tier` and the effective tier: the request's `modelTier`, else the
    step's `model_tier`. A model is *inside* when its cost tier is at most every tier in play, so the two tiers always
    combine and neither replaces the other. With no tier in play, every model is inside.
-4. **Catalog candidates.** `top(inside) ∪ top(all)`, each `top` with all its ties, with no model listed twice.
+4. **Catalog candidates.** `top(inside) ∪ top(fitting)`, where *fitting* means the models with a fit for the task type; each `top` with all its ties, with no model listed twice.
 5. **Profile candidate.** The effective profile's `model` and `effort`, and none when `model` is absent. It is listed
    even when a catalog candidate names the same model.
 6. **Order.** Catalog candidates by rank descending, then by model id in code-point order; the profile candidate last.

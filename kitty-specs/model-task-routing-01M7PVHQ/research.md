@@ -42,7 +42,7 @@ Design authority: ADR-0080 (accepted 2026-11-18). This note records the planning
 ## R4. The two top-ranked sets
 
 - **Decision**: rank every model with a fit for the task type; `inside` = models within every tier in play; answer
-  `top(inside) ∪ top(all)`, each `top` with all ties; order by rank descending, then model id. With no tier in play
+  `top(inside) ∪ top(fitting)`, each `top` with all ties; order by rank descending, then model id. With no tier in play
   the two sets are equal.
 - **Rationale**: ADR-0080 decision 12.
 
