@@ -1,20 +1,20 @@
 {
-  "event_count": 24,
-  "last_event_id": "01M7Q9928YHT64QDSEXVWW730D",
-  "materialized_at": "2026-11-18T12:14:34.270216+00:00",
+  "event_count": 25,
+  "last_event_id": "01M7Q9BD6BT997XEY0SMKZVZH9",
+  "materialized_at": "2026-11-18T12:15:50.987320+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 2,
+    "approved": 3,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 7
   },
   "work_packages": {
@@ -90,15 +90,21 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M7Q9928YHT64QDSEXVWW730D",
-      "last_transition_at": "2026-11-18T12:14:34.270216+00:00",
+      "lane": "approved",
+      "last_event_id": "01M7Q9BD6BT997XEY0SMKZVZH9",
+      "last_transition_at": "2026-11-18T12:15:50.987320+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T12:12:33Z – claude – shell_pid=22588 – Scope of green: ./gradlew :contracts:check passes (lint, planted fixtures, bundle, the breaking-change check against the released tags, changelog fragments, the packs CHANGELOG rules). Known red until WP05, by plan: KindBindingsTest and the inspector-kind parity (a files rule maps routing-catalog with no binding yet), and the service-run scenarios that list served kinds. Choices: charter.schema.json unchanged (core's imported charter.yaml shape; it never listed step_enhancement); graph-shard and org-fragment unchanged (their URN alternations are the declarable and edge-target sets, per VocabularyEqualityTest); the KindTaxonomy example and offering.feature give the catalog row its artifacts link, which the taxonomy read renders once WP05 serves the kind. Preset.yaml's activatedRoutingCatalogs landed in WP02.",
         "Ready for review: contract and pack enums, routing-catalog schema, file rule, link relations"
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/model-task-routing-01M7PVHQ-coord/kitty-specs/model-task-routing-01M7PVHQ/tasks/WP03-schemas-file-rule-link-relations/review-cycle-1.md",
+        "reference": "review-cycle://model-task-routing-01M7PVHQ/WP03-schemas-file-rule-link-relations/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 445,
       "shell_pid_created_at": "1795004067.26",
