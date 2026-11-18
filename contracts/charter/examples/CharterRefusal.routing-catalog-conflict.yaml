@@ -1,0 +1,8 @@
+summary: >-
+  The activation puts two routing catalogs in force, so no one catalog answers the recommendation.
+value:
+  title: Routing catalog conflict
+  status: 409
+  code: routing_catalog_conflict
+  detail: >-
+    The activation a-1 puts the routing catalogs cost-led, default in force; deselect all but one.

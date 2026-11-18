@@ -45,6 +45,7 @@ operations:
   getEffectiveRoutingCatalog: {switch: ready}
   getEffectiveStepPrompt: {switch: ready}
   getKindTaxonomy: {switch: ready}
+  getModelRecommendation: {switch: ready}
   getOffering: {switch: ready}
   getOpenApiDocument: {switch: ready}
   getPack: {switch: ready}

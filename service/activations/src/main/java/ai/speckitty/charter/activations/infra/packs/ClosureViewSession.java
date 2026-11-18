@@ -21,6 +21,7 @@ import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -312,6 +313,12 @@ final class ClosureViewSession implements PacksSession {
     @Override
     public Optional<String> stepRole(String missionType, String action) {
         return view.stepRole(missionType, action);
+    }
+
+    /** The step's model tier at its place, by the packs slice's one place rule ({@link ClosureView#stepModelTier}). */
+    @Override
+    public Optional<CostTier> stepModelTier(String missionType, String action) {
+        return view.stepModelTier(missionType, action);
     }
 
     /**

@@ -1463,6 +1463,105 @@ class HexagonalArchitectureTest {
                 "ApplicationNamesProfilesInfra");
     }
 
+    // ---- The routing slice over the activations slice (ADR-0080; ADR-0037, amendment of 2026-11-18) ------------
+    // The routing slice follows the profiles pattern: its domain stays in :routing, which packs.infra.storage binds,
+    // and
+    // its edge rings live in :routing-edge. The edge asks the activations slice from one adapter package of its own,
+    // and
+    // only its application and domain rings; it never names the packs slice; and neither slice names the routing edge
+    // back.
+
+    private static final String ROUTING = ROOT + ".routing..";
+    /** The one routing package that may name the activations slice. */
+    private static final String ROUTING_ACTIVATIONS_ADAPTER = ROOT + ".routing.infra.activations..";
+
+    private static final String ROUTING_APPLICATION = ROOT + ".routing.application..";
+    private static final String ROUTING_INFRA = ROOT + ".routing.infra..";
+
+    /** The routing edge rings, each of which must be on the classpath for the rules below to check anything. */
+    private static final List<String> ROUTING_EDGE_RINGS = List.of(
+            "ai.speckitty.charter.routing.application",
+            "ai.speckitty.charter.routing.infra.api",
+            "ai.speckitty.charter.routing.infra.activations");
+
+    /** A ROUTING OVER ACTIVATIONS (1/2): no routing class names the activations slice, but those of its adapter. */
+    private static final ArchRule ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(ROUTING)
+            .and()
+            .resideOutsideOfPackage(ROUTING_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ACTIVATIONS);
+
+    /** A ROUTING OVER ACTIVATIONS (2/2): that adapter names only the activations application and domain rings. */
+    private static final ArchRule ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(ROUTING_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ACTIVATIONS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(
+                            ACTIVATIONS_APPLICATION, ACTIVATIONS_DOMAIN_RING)));
+
+    /** The routing edge reads the catalog under an activation, never from a pack: no routing class names the packs slice. */
+    private static final ArchRule ROUTING_NAMES_NO_PACKS = noClasses()
+            .that()
+            .resideInAPackage(ROUTING)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS);
+
+    /** THE EDGE IS NOT NAMED BACK: the packs and activations slices never name the routing edge rings. */
+    private static final ArchRule NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS, ACTIVATIONS)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(ROUTING_APPLICATION, ROUTING_INFRA);
+
+    @Test
+    @DisplayName("ROUTING_OVER_ACTIVATIONS")
+    void theRoutingSliceNamesActivationsOnlyThroughItsAdapter() {
+        ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER.check(classes);
+        ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION.check(classes);
+        ROUTING_NAMES_NO_PACKS.check(classes);
+        NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE.check(classes);
+    }
+
+    /** As for the profiles edge: every routing edge ring holds a class, so the rules above gate the real packages. */
+    @Test
+    void everyRoutingEdgeRingIsOnTheGatedClasspath() {
+        for (String ring : ROUTING_EDGE_RINGS) {
+            assertThat(classes.stream()
+                            .filter(c -> c.getPackageName().equals(ring)
+                                    || c.getPackageName().startsWith(ring + ".")))
+                    .as("classes in the ring %s", ring)
+                    .isNotEmpty();
+        }
+    }
+
+    @Test
+    void theRoutingOverActivationsRulesFailOnTheKnownBads() {
+        assertBites(
+                ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER,
+                ROOT + ".routing.application.badfixture",
+                "RoutingApplicationNamesActivations");
+        assertBites(
+                ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION,
+                ROOT + ".routing.infra.activations.badfixture",
+                "RoutingActivationsAdapterNamesActivationsApi",
+                "ActivationController");
+        assertBites(ROUTING_NAMES_NO_PACKS, ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesRoutingEdge");
+        assertBites(
+                applicationIsEdge("routing"),
+                ROOT + ".routing.application.badfixture",
+                "RoutingApplicationNamesActivations");
+    }
+
     // ---- The missions slice over the packs and activations slices (ADR-0037, amendment of 2026-11-09) ----------
     // The missions slice follows the profiles pattern: its domain stays in :missions, which packs.infra.storage binds,
     // and its edge rings live in :missions-edge. The edge asks the packs slice and the activations slice, each from one

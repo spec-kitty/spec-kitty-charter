@@ -101,6 +101,11 @@ tags:
       whatever its state. The list answers every winner, unpaged and unfiltered; a client that wants the catalogs by
       state, or paged, reads listEffectiveArtifacts with ?kind=routing_catalog. Its own tag, so that the :artifacts-edge
       module implements it in a controller of its own beside the pack-scoped reads.
+  - name: ModelRecommendations
+    description: >-
+      The model recommendation under an activation (ADR-0080 decisions 7 to 13): the models the routing catalog in
+      force recommends for a task type, flagged against the tiers in play, beside the model of an agent profile. It is
+      advisory and deterministic. Its own tag, so that the :routing-edge module implements it.
   - name: EffectiveGlossaries
     description: >-
       The glossary contexts of an activation (#106, ADR-0074 decision 12): the contexts the activation's closure holds,
@@ -278,6 +283,8 @@ paths:
     $ref: paths/activations_activationId_missionTypes_missionType_actions_action_profile-selection.yaml
   /activations/{activationId}/roles/{role}/profile-selection:
     $ref: paths/activations_activationId_roles_role_profile-selection.yaml
+  /activations/{activationId}/task-types/{taskType}/model-recommendation:
+    $ref: paths/activations_activationId_taskTypes_taskType_model-recommendation.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

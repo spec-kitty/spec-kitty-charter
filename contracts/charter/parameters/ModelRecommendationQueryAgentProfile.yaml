@@ -1,0 +1,11 @@
+name: agentProfile
+in: query
+required: true
+description: >-
+  The agent profile whose model is set beside the catalog's, by its id as getEffectiveAgentProfile spells it. It is
+  resolved as that read resolves it (ADR-0078), whatever its state; a profile no pack of the activation's closure holds
+  is a 404 artifact_not_found. A missing or empty value is a 400 Problem without a code.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 128

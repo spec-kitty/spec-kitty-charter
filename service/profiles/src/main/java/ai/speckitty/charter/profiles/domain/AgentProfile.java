@@ -2,6 +2,7 @@ package ai.speckitty.charter.profiles.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.ModelBearer;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
@@ -24,7 +25,7 @@ import org.jspecify.annotations.Nullable;
  * {@code specializes_from} edge of the pack's graph, and resolving {@code enhances}, {@code overrides} or
  * {@link #excluding()} is not done here (ADR-0032). Build one with {@link #builder()}.
  */
-public final class AgentProfile implements CharterArtifact, RoleBearer {
+public final class AgentProfile implements CharterArtifact, RoleBearer, ModelBearer {
 
     private static final Pattern SCHEMA_VERSION = Pattern.compile("^(1\\.0|2)$");
 
@@ -303,6 +304,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
      *
      * @return the model, or empty
      */
+    @Override
     public Optional<String> model() {
         return model;
     }
@@ -312,6 +314,7 @@ public final class AgentProfile implements CharterArtifact, RoleBearer {
      *
      * @return the effort, or empty
      */
+    @Override
     public Optional<String> effort() {
         return effort;
     }

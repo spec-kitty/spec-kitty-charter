@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -976,6 +977,27 @@ public record ClosureView(
                             "pack `" + place.value() + "` holds the step " + missionType + "/" + action
                                     + " and cannot read its mission type"));
             return type instanceof StepRoles roles ? roles.stepRole(action) : Optional.empty();
+        });
+    }
+
+    /**
+     * The model tier one step declares at its place (ADR-0080 decision 13), read as {@link #stepRole} reads the role.
+     *
+     * @param missionType the mission type of the step
+     * @param action the step
+     * @return the step's tier; empty when the step declares none, or no version at either place declares the step
+     * @throws CharterRefusal as {@link #stepRole} does
+     */
+    public Optional<CostTier> stepModelTier(String missionType, String action) {
+        return stepPlace(missionType, action).flatMap(place -> {
+            CharterArtifact type = mergeInputs
+                    .winners()
+                    .read(place, ArtifactKind.MISSION_TYPE, missionType)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.PACK_UNREADABLE,
+                            "pack `" + place.value() + "` holds the step " + missionType + "/" + action
+                                    + " and cannot read its mission type"));
+            return type instanceof StepRoles steps ? steps.stepModelTier(action) : Optional.empty();
         });
     }
 

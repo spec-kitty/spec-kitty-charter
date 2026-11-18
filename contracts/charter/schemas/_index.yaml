@@ -141,6 +141,10 @@ files:
   - RoutingCatalogSummary.yaml
   - RoutingCatalogTaskFit.yaml
   - RoutingCatalogTaskType.yaml
+  - ModelRecommendation.yaml
+  - ModelRecommendationCandidate.yaml
+  - ModelRecommendationCatalog.yaml
+  - ModelRecommendationTier.yaml
   - RoutingCatalogTierConstraint.yaml
   - RoutingCatalogWeights.yaml
   - EffectiveGlossaryContextRead.yaml

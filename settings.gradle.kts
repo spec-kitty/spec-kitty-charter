@@ -34,6 +34,9 @@ listOf(
     // The routing vertical slice (ADR-0080): the routing catalog's domain and the ranker, plain Java. packs depends on it,
     // because packs.infra.storage binds the catalog (ADR-0037, amendment of 2026-11-18).
     "routing",
+    // The edge rings of the routing slice (application, infra.api, infra.activations), apart from the domain because
+    // packs depends on routing (ADR-0080; ADR-0037, amendment of 2026-11-18).
+    "routing-edge",
     "missions",
     // The edge rings of the missions slice (application, infra.api, infra.packs, infra.activations), apart from the
     // domain because packs depends on missions (ADR-0037, amendment of 2026-11-09).

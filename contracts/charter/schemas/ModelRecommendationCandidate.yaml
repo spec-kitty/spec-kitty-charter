@@ -1,0 +1,85 @@
+title: ModelRecommendationCandidate
+description: >-
+  One model a recommendation answers. source says where it comes from: catalog, a model the catalog in force ranks,
+  with its score, fit, cost tier and flags; or profile, the effective profile's model, with its effort and no score
+  (ADR-0080 decision 13). A catalog candidate always carries score, fitScore, costTier and withinTierConstraint, and
+  never effort; a profile candidate carries none of the catalog members. The members of each source are stated here and
+  on each member rather than as a oneOf, which the generated clients cannot model as one closed object.
+type: object
+additionalProperties: false
+required:
+- source
+- modelId
+properties:
+  source:
+    type: string
+    enum:
+    - catalog
+    - profile
+    description: Where the candidate comes from.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCandidate.java
+      symbol: ModelRecommendationCandidate.source
+  modelId:
+    type: string
+    minLength: 1
+    description: The model's id, as the catalog or the profile names it. The service does not check a profile's model against the catalog.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCandidate.java
+      symbol: ModelRecommendationCandidate.modelId
+  score:
+    type: number
+    minimum: 0
+    description: >-
+      Catalog only. The weighted score, the exact decimal sum of the weights times the fit, cost, risk and latency
+      desirabilities, unrounded, from 0 to the sum of the weights. On the wire a plain-notation number with trailing
+      zeros stripped: 0.3, 0.732, 1.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/CatalogCandidate.java
+      symbol: CatalogCandidate.score
+  fitScore:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: Catalog only. The model's fit for the task type, as the catalog writes it, in the wire form of score.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/CatalogCandidate.java
+      symbol: CatalogCandidate.fitScore
+  rationale:
+    type: string
+    minLength: 1
+    description: Catalog only. The fit's rationale, when the catalog states one; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/CatalogCandidate.java
+      symbol: CatalogCandidate.rationale
+  costTier:
+    allOf:
+    - $ref: CostTier.yaml
+    description: Catalog only. The model's cost tier.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/CatalogCandidate.java
+      symbol: CatalogCandidate.costTier
+  withinTierConstraint:
+    type: boolean
+    description: Catalog only. True when the task type declares no tierConstraint or the model's cost tier is at most it.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/CatalogCandidate.java
+      symbol: CatalogCandidate.withinTierConstraint
+  withinModelTier:
+    type: boolean
+    description: >-
+      Catalog only, and present only when the recommendation has a modelTier: true when the model's cost tier is at
+      most the effective tier.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/CatalogCandidate.java
+      symbol: CatalogCandidate.withinModelTier
+  effort:
+    type: string
+    minLength: 1
+    description: Profile only. The effective profile's effort, when it declares one; absent otherwise.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCandidate.java
+      symbol: ModelRecommendationCandidate.effort
+x-source:
+  path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCandidate.java
+  symbol: ModelRecommendationCandidate

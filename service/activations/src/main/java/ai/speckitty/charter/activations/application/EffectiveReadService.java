@@ -26,7 +26,10 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.CostTier;
+import ai.speckitty.charter.kernel.domain.ModelBearer;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.TermHolder;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -64,6 +67,19 @@ public class EffectiveReadService {
 
     /** The page size part of the tag of a set: a set has no page size. */
     private static final int WHOLE_SET = 0;
+
+    /** A profile that declares no model and no effort: what any other artifact gives the recommendation. */
+    private static final ModelBearer NO_MODEL = new ModelBearer() {
+        @Override
+        public Optional<String> model() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> effort() {
+            return Optional.empty();
+        }
+    };
 
     private final ActivationRepository repository;
     private final AvailablePacks packs;
@@ -281,6 +297,57 @@ public class EffectiveReadService {
             Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
             Objects.requireNonNull(role, "role");
             Objects.requireNonNull(candidates, "candidates");
+            Objects.requireNonNull(etag, "etag");
+        }
+    }
+
+    /**
+     * The activation's half of {@code getModelRecommendation} (ADR-0080 decisions 7 to 13), as
+     * {@link #modelRecommendation} answers it: the catalog in force and what the routing slice ranks it beside.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param catalogWinner the catalog in force, with the pack and level that hold it
+     * @param catalog the catalog as its winning pack declares it
+     * @param profileModel the effective profile's model, when it declares one
+     * @param profileEffort the effective profile's effort, when it declares one
+     * @param stepOffer the asked step's model tier at its place, when a step was asked and declares one
+     * @param etag the tag of the representation, unquoted
+     */
+    public record RecommendationRead(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveHeldWinner catalogWinner,
+            CharterArtifact catalog,
+            Optional<String> profileModel,
+            Optional<String> profileEffort,
+            Optional<CostTier> stepOffer,
+            String etag) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param stored the stored activation
+         * @param sourceFingerprint the source fingerprint
+         * @param governanceFingerprint the closure's digest
+         * @param catalogWinner the catalog's winner
+         * @param catalog the catalog
+         * @param profileModel the profile's model
+         * @param profileEffort the profile's effort
+         * @param stepOffer the step's tier
+         * @param etag the tag
+         */
+        public RecommendationRead {
+            Objects.requireNonNull(stored, "stored");
+            Objects.requireNonNull(sourceFingerprint, "sourceFingerprint");
+            Objects.requireNonNull(governanceFingerprint, "governanceFingerprint");
+            Objects.requireNonNull(catalogWinner, "catalogWinner");
+            Objects.requireNonNull(catalog, "catalog");
+            Objects.requireNonNull(profileModel, "profileModel");
+            Objects.requireNonNull(profileEffort, "profileEffort");
+            Objects.requireNonNull(stepOffer, "stepOffer");
             Objects.requireNonNull(etag, "etag");
         }
     }
@@ -675,6 +742,87 @@ public class EffectiveReadService {
         requireNoConflict(id, role.orElse(""), candidates);
         return new SelectionRead(
                 stored, closure.fingerprint(), closure.closureFingerprint(), role, candidates, tag.token());
+    }
+
+    /**
+     * {@code getModelRecommendation}, the activation's half (ADR-0080 decisions 7, 9 and 13; data-model "Refusal
+     * order"): from one {@link PacksSession} under the stored document, the asked profile as the effective profile read
+     * resolves it, whatever its state; with a step, the step judged as {@link #stepProfileSelection} judges it and its
+     * model tier read at its place, a held step offered whether or not its mission type is in force; then the one
+     * routing catalog in force, and the tag. A closure that cannot compose or merge answers its {@code 500} when the
+     * session is first asked for what needs the merge. The routing slice then judges the task type, ranks and compares
+     * {@code If-None-Match}, so every refusal comes before the {@code 304}.
+     *
+     * @param id the activation's id
+     * @param query the task type, the profile, the step and the asked tier
+     * @return the catalog in force, the profile's model and effort, the step's offer and the tag
+     * @throws CharterRefusal with {@code activation_not_found}; {@code artifact_not_found} when no pack of the closure
+     *     holds the profile; {@code mission_type_not_found} or {@code action_not_found} as {@link #stepProfileSelection}
+     *     judges the step; the closure's own refusals; then {@code routing_catalog_not_in_force} when no catalog is in
+     *     force, or {@code routing_catalog_conflict} when more than one is, naming the ids
+     */
+    public RecommendationRead modelRecommendation(ActivationId id, EffectiveTag.RecommendationQuery query) {
+        Objects.requireNonNull(query, "query");
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        InForceQuery inForce = EffectiveSet.queryOf(stored.document());
+        CharterArtifact profile = session.profileResolution(query.profileId(), inForce)
+                .map(ProfileResolution::profile)
+                .orElseThrow(() -> notHeld(ArtifactKind.AGENT_PROFILE, query.profileId()));
+        Optional<CostTier> offer = Optional.empty();
+        if (query.step().isPresent()) {
+            offer = stepOffer(session, query.step().get());
+        }
+        EffectiveHeldWinner winner = catalogInForce(id, session, inForce);
+        CharterArtifact catalog = winnerOf(
+                        session, winner.ref(), inForce, "The model recommendation under activation " + id.value())
+                .artifact();
+        ModelBearer bearer = profile instanceof ModelBearer each ? each : NO_MODEL;
+        return new RecommendationRead(
+                stored,
+                closure.fingerprint(),
+                closure.closureFingerprint(),
+                winner,
+                catalog,
+                bearer.model(),
+                bearer.effort(),
+                offer,
+                EffectiveTag.recommendation(stored.revision(), closure, query).token());
+    }
+
+    /** The asked step's model tier at its place, the step judged as {@link #stepProfileSelection} judges it. */
+    private static Optional<CostTier> stepOffer(PacksSession session, EffectiveTag.StepRef step) {
+        session.requireAction(step.missionType(), step.step());
+        if (session.stepPlace(step.missionType(), step.step()).isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.ACTION_NOT_FOUND,
+                    "No version of the mission type " + step.missionType()
+                            + " in the activation's closure declares the step " + step.step() + ".");
+        }
+        return session.stepModelTier(step.missionType(), step.step());
+    }
+
+    /** The one routing catalog winner the document puts in force (ADR-0080 decision 9). */
+    private static EffectiveHeldWinner catalogInForce(ActivationId id, PacksSession session, InForceQuery inForce) {
+        List<EffectiveHeldWinner> inForceCatalogs = session.heldWinners(ArtifactKind.ROUTING_CATALOG).stream()
+                .filter(each -> session.isInForce(each.ref(), inForce))
+                .toList();
+        if (inForceCatalogs.isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.ROUTING_CATALOG_NOT_IN_FORCE,
+                    "The activation " + id.value() + " puts no routing catalog in force; select one.");
+        }
+        if (inForceCatalogs.size() > 1) {
+            throw new CharterRefusal(
+                    RefusalCode.ROUTING_CATALOG_CONFLICT,
+                    "The activation " + id.value() + " puts the routing catalogs "
+                            + inForceCatalogs.stream()
+                                    .map(each -> each.ref().id())
+                                    .collect(Collectors.joining(", "))
+                            + " in force; deselect all but one.");
+        }
+        return inForceCatalogs.getFirst();
     }
 
     /** The conflicts selection cannot read past (ADR-0068 decision 7, ruling D3): the fallback's, then the pin's. */

@@ -1,0 +1,9 @@
+name: missionType
+in: query
+required: false
+description: >-
+  The mission type of the step whose model_tier is offered, sent with step or not at all: one without the other is a 400
+  Problem without a code. A slug the activation's merged closure does not hold is a 404 mission_type_not_found; a held
+  mission type is judged whether or not the activation puts it in force.
+schema:
+  $ref: ../schemas/Slug.yaml

@@ -166,6 +166,34 @@ Feature: Failures outside the charter's refusals
     And the contract says "fallback_profile_conflict" may not be retried
     And the contract says "fallback_profile_conflict" is raised by an operation
 
+  Scenario: routing_catalog_not_in_force is raised by the model recommendation
+    A declaration pin (ADR-0080 decision 9): the model recommendation (getModelRecommendation) raises the code, as a
+    409, when the activation puts no routing catalog in force, and model-recommendation.feature pins the behavior and
+    its place in the order. ReservedRefusalCodesTest fails when the contract marks it raised and no main class names it.
+    Nothing here calls the service.
+    Then the contract declares the refusal code "routing_catalog_not_in_force"
+    And the contract says "routing_catalog_not_in_force" is answered with status 409
+    And the contract says "routing_catalog_not_in_force" may not be retried
+    And the contract says "routing_catalog_not_in_force" is raised by an operation
+
+  Scenario: routing_catalog_conflict is raised by the model recommendation
+    A declaration pin (ADR-0080 decision 9): the model recommendation raises the code, as a 409 whose detail names the
+    ids in force, when the activation puts more than one routing catalog in force; model-recommendation.feature pins the
+    behavior. Nothing here calls the service.
+    Then the contract declares the refusal code "routing_catalog_conflict"
+    And the contract says "routing_catalog_conflict" is answered with status 409
+    And the contract says "routing_catalog_conflict" may not be retried
+    And the contract says "routing_catalog_conflict" is raised by an operation
+
+  Scenario: task_type_not_found is raised by the model recommendation
+    A declaration pin (ADR-0080 decision 9): the model recommendation raises the code, as a 404, when the routing catalog
+    in force declares no such task type, after the two routing catalog 409 codes; model-recommendation.feature pins the
+    behavior. Nothing here calls the service.
+    Then the contract declares the refusal code "task_type_not_found"
+    And the contract says "task_type_not_found" is answered with status 404
+    And the contract says "task_type_not_found" may not be retried
+    And the contract says "task_type_not_found" is raised by an operation
+
   Scenario: preset_not_found is raised by the preset application and the pack's preset read
     A declaration pin: applying a preset raises the code when the path names a preset no pack of the
     activation's closure holds, and activation-presets.feature pins the behavior; getPackPreset raises it when
@@ -268,7 +296,8 @@ Feature: Failures outside the charter's refusals
     the activation writes refuse an enhancement in force whose slot the prompt in force does not declare. The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
-    preset_not_found. The effective prompt read adds mission_type_not_in_force (OD-5).
+    preset_not_found. The effective prompt read adds mission_type_not_in_force (OD-5). The model recommendation adds
+    routing_catalog_not_in_force, routing_catalog_conflict and task_type_not_found (ADR-0080 decision 9).
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable             |
       | internal_error              |
@@ -335,3 +364,6 @@ Feature: Failures outside the charter's refusals
       | profile_enhancement_drops_field |
       | fallback_profile_conflict   |
       | no_profile_matched          |
+      | routing_catalog_not_in_force |
+      | routing_catalog_conflict    |
+      | task_type_not_found         |

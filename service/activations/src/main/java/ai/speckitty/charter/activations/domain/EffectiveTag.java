@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -133,7 +134,13 @@ public record EffectiveTag(String token) {
          * step's role is read from the closure, whose fingerprint digests the mission types that declare it, so the query
          * names the step and the context, and the tag never matches the role-keyed read's.
          */
-        STEP_SELECTION
+        STEP_SELECTION,
+        /**
+         * {@code getModelRecommendation}: the models the routing catalog in force recommends for one task type, beside
+         * one profile's model (ADR-0080 decisions 7 to 13). The closure fingerprint digests the catalog, the profile and
+         * the step that offers a tier, so the query names the task type, the profile, the step and the asked tier.
+         */
+        RECOMMENDATION
     }
 
     /**
@@ -305,6 +312,64 @@ public record EffectiveTag(String token) {
     }
 
     /**
+     * The query of {@code getModelRecommendation}, as it selects a representation: the task type, the profile, the step
+     * and the asked tier, an absent part the same representation however the request spelled its absence.
+     *
+     * @param taskType the task type of the path
+     * @param profileId the asked agent profile's id, exactly as the request names it
+     * @param step the asked step, if the request sent one
+     * @param tier the asked model tier, if the request sent one
+     */
+    public record RecommendationQuery(
+            String taskType, String profileId, Optional<StepRef> step, Optional<CostTier> tier) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param taskType the task type
+         * @param profileId the profile's id
+         * @param step the asked step
+         * @param tier the asked tier
+         */
+        public RecommendationQuery {
+            Objects.requireNonNull(taskType, "taskType");
+            Objects.requireNonNull(profileId, "profileId");
+            Objects.requireNonNull(step, "step");
+            Objects.requireNonNull(tier, "tier");
+        }
+
+        /** The query as one unambiguous line: an absent part is {@code -}, a present one is marked {@code +}. */
+        private String normalized() {
+            return "taskType=" + taskType
+                    + "\nprofile=" + profileId
+                    + "\nmissionType="
+                    + step.map(each -> "+" + each.missionType()).orElse("-")
+                    + "\nstep=" + step.map(each -> "+" + each.step()).orElse("-")
+                    + "\ntier=" + tier.map(each -> "+" + each.token()).orElse("-");
+        }
+    }
+
+    /**
+     * A step a request names by its mission type and its id.
+     *
+     * @param missionType the mission type's id
+     * @param step the step's id
+     */
+    public record StepRef(String missionType, String step) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param missionType the mission type
+         * @param step the step
+         */
+        public StepRef {
+            Objects.requireNonNull(missionType, "missionType");
+            Objects.requireNonNull(step, "step");
+        }
+    }
+
+    /**
      * The query of {@code listEffectiveArtifacts}, as it selects a representation: a filter that is absent is the same
      * representation however the request spelled its absence.
      *
@@ -445,6 +510,19 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag stepSelection(Revision revision, ClosureSnapshot closure, StepSelectionQuery query) {
         return of(Read.STEP_SELECTION, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of one model recommendation: the task type, the profile, the step and the asked tier, over the revision
+     * (what is in force) and the closure's fingerprint (the catalog, the profile and the step of the closure's packs).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the task type, the profile, the step and the tier
+     * @return the tag
+     */
+    public static EffectiveTag recommendation(Revision revision, ClosureSnapshot closure, RecommendationQuery query) {
+        return of(Read.RECOMMENDATION, revision, closure, query.normalized());
     }
 
     /**

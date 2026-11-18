@@ -352,7 +352,10 @@ class ReservedRefusalCodesTest {
                 RefusalCode.ROLE_PIN_NOT_FITTING,
                 RefusalCode.ROLE_PIN_CONFLICT,
                 RefusalCode.SPECIALIZATION_CYCLE,
-                RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD
+                RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
+                RefusalCode.ROUTING_CATALOG_NOT_IN_FORCE,
+                RefusalCode.ROUTING_CATALOG_CONFLICT,
+                RefusalCode.TASK_TYPE_NOT_FOUND
             };
         }
     }
