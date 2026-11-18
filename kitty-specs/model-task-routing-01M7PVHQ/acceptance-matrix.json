@@ -38,11 +38,11 @@
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: effective-routing-catalogs.feature; EffectiveRoutingCatalogReadsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:05.973016+00:00",
+      "notes": "listEffectiveRoutingCatalogs, getEffectiveRoutingCatalog and ?kind=routing_catalog under an activation, with state, reason, policy and required."
     },
     {
       "criterion_id": "FR-005",
