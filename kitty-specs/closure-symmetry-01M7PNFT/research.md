@@ -15,14 +15,14 @@
 
 ## Decisions
 
-### D1. The rule's home: `packs.domain.rules.PackClosure`, a member of `content()` through `ClosureRules`
+### D1. The rule's home: `packs.domain.rules.ReferenceClosure`, a member of `content()` through `ReferenceRules`
 
 - **Decision**: one pure class decides the closure over a subject (candidate assets, guards, lifecycles, mission types;
-  payload paths; namable template ids) and a `ConfigSchemas` port. `ClosureRules.RULES` lifts it onto
-  `PackContents` through a new fact, `ClosureFacts`, which the store half fills from the candidates it built.
+  payload paths; namable template ids) and a `ConfigSchemas` port. `ReferenceRules.RULES` lifts it onto
+  `PackContents` through a new fact, `ReferenceFacts`, which the store half fills from the candidates it built.
 - **Rationale**: #355's ruling "one rule, one place" names #554's PACK ruleset. A content rule over the read's facts is
   what every surface runs by name.
-- **Alternatives**: a `PackClosure` beside the ruleset, called by each path (rejected by #355's re-scope); judging the
+- **Alternatives**: a `ReferenceClosure` beside the ruleset, called by each path (rejected by #355's re-scope); judging the
   assembled pack (misses exactly the artifacts the load leaves out).
 
 ### D2. The code stays `artifact_schema_error`, moved to `PackCodes`
@@ -37,7 +37,7 @@
 ### D3. Schema compilation is a port
 
 - **Decision**: `packs.domain.ConfigSchemas` (`schemaProblems`, `valueProblems`); `EmbeddedSchemas` implements it as a
-  singleton. The rule is given it through `ClosureFacts` (validate, registration) or as an argument (load, writes).
+  singleton. The rule is given it through `ReferenceFacts` (validate, registration) or as an argument (load, writes).
 - **Rationale**: #355 ("`EmbeddedSchemas` stays an infra port that the rule is given"); ADR-0006.
 
 ### D4. The per-file judge sits at the commit store's choke point
@@ -58,14 +58,30 @@
 
 ### D6. #593
 
-- **Decision**: each write records the time from the barrier's release to the end of its call. After each round, the
-  slowest write is compared to a 10 s bound; a breach fails as `write P7 waited 12.3 s in round 63 (bound 10 s)`. The
-  class `@Timeout(30)` on that case becomes `@Timeout(120)`, documented as the hang guard only.
-- **Rationale**: the issue's proposal. 10 s per write is about 50 times the slowest write a quiet runner shows (17 writes
-  in a round, each a few ms to a few hundred ms), so a breach is starvation, not a slow runner.
+- **Decision** (as amended by plan review finding 2): each write records the time from the barrier's release to the end
+  of its call, held to 4 s, under the rig's 5 s registry lock; a breach fails as
+  `write P7 waited 4.2 s in round 63 (bound 4.0 s)`. A write the lock gave up on, or one still running at the round's
+  15 s deadline, is named with its round. The method's `@Timeout(30)` becomes `@Timeout(120)`, the hang guard only.
+- **Rationale**: the issue's proposal. A round's 17 writes take a few hundred milliseconds together on a loaded runner,
+  so a write that waits 4 s waited behind something, not behind a slow runner.
 - **Alternatives**: raising the 30 s timeout alone (rejected by #593).
 
 ## Plan review
 
-One independent reviewer read the plan against the code (charter: an adversarial squad at the plan point). Its findings
-and their dispositions are recorded below when it returns. Logged as an open review item: a full squad was not run.
+One independent reviewer read the plan against the code (charter: an adversarial squad at the plan point). Logged as
+an open review item: a full squad was not run. Its eleven findings, and what the implementation did with each:
+
+| # | Severity | Finding | Disposition |
+|---|----------|---------|-------------|
+| 1 | CRITICAL | No `DELETE` reaches an asset: `ArtifactRemovalService.REMOVABLE` has no asset, guard or lifecycle (404 first) | Accepted. The delete row is proven at the store's `remove`, the choke point every removal goes through; the PR says so. Opening asset removal needs a payload removal rule and is out of scope. |
+| 2 | CRITICAL | #593's 10 s bound can never fire: the rig's registry lock gives up at 5 s; cancellations are unnamed | Accepted. Bound 4 s, under the lock; a `RegistryBusyException` and a cancelled write are named with the round; a second case starves one round on purpose. |
+| 3 | HIGH | `WholePackStore.write` is not what `PUT /packs` calls | Accepted. The table asserts registration's verdict (the read's rationale, which `PackRegistrationService` refuses whenever it fails) as its own column, and keeps the whole-pack write. |
+| 4 | HIGH | Moving the closure into `content()` reorders `PUT /packs` faults (effects before causes) | Accepted. `StorageRulesets.verdict` states the closure findings among the store's own faults, in the order the load records them (`inLoadOrder`). |
+| 5 | HIGH | `Removal.after` supplied by the caller can be left out; first-by-id edge; 422 before 409 on removal | Accepted the first: the store reads the pack itself and takes the removed artifacts out (`Pack.without`). The first-by-id edge (two files of one guard id) is recorded as a known limit: a repeated id is already a `duplicate_artifact_id` fault. On a removal the impact check (422) runs before the store's judge (409); recorded. |
+| 6 | MEDIUM | Facts must follow the shaped read and the refusal; avoid the 17 `PackContents` call sites | Accepted. `ReferenceFacts` lives on `Assembly.Assembled`, built from the shaped read; `Refused` and `None` carry none. |
+| 7 | MEDIUM | A port instance inside a domain fact record | Kept, with reason: the rule stays a static member of `content()` by name, which #355 asks for; the port is a stateless capability, and `ReferenceFacts` is never compared. |
+| 8 | MEDIUM | The `guard-lifecycle` fixture is not visible to `:pack-validation` | Accepted. The table runs over the built-in example pack from `:packs`' test fixtures. |
+| 9 | MEDIUM | The code move's knock-ons, and a name clash with the pack-set `CLOSURE` | Accepted. The code is in `PackCodes.CONTENT`, gone from `StorageCodes`; the classes are named `ReferenceClosure`, `ReferenceRules`, `ReferenceFacts`. |
+| 10 | LOW | The mission-type wording differs between the write paths | Accepted. Both write paths answer `Finding.refusal()`, which names the type. |
+| 11 | LOW | The judge recompiles every schema on every directive write | Accepted. The commit judge runs only for a write or removal of an asset, guard, lifecycle, mission type or template. |
+

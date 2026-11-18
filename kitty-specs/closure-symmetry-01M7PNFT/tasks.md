@@ -6,12 +6,12 @@ Mission: `closure-symmetry-01M7PNFT` · Planning base and merge target: `feat/35
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Red tests for PackClosure and ClosureRules | WP01 | |
+| T001 | Red tests for ReferenceClosure and ReferenceRules | WP01 | |
 | T002 | ConfigSchemas port; EmbeddedSchemas implements it | WP01 | |
-| T003 | PackClosure in packs.domain.rules | WP01 | |
+| T003 | ReferenceClosure in packs.domain.rules | WP01 | |
 | T004 | Bulk edit: artifact_schema_error moves to PackCodes | WP01 | |
-| T005 | Load and whole-pack write call PackClosure; delete GuardClosure, MissionTemplates | WP01 | |
-| T006 | ClosureFacts on PackContents; ClosureRules in content() | WP01 | |
+| T005 | Load and whole-pack write call ReferenceClosure; delete GuardClosure, MissionTemplates | WP01 | |
+| T006 | ReferenceFacts on PackContents; ReferenceRules in content() | WP01 | |
 | T007 | Store half fills the facts; closure faults leave store-only | WP01 | |
 | T008 | Golden snapshot and example packs | WP01 | |
 | T009 | Red tests at the commit store's choke point | WP02 | |
@@ -34,14 +34,14 @@ Mission: `closure-symmetry-01M7PNFT` · Planning base and merge target: `feat/35
 
 Prompt: `tasks/WP01-closure-rule-in-pack-ruleset.md` · Priority P1 · Dependencies: none.
 Goal: one pure rule; load and whole-pack write call it; `content()` runs it, so validate mode states it.
-Independent test: `PackClosureTest`, `ClosureRulesTest`; the load tests unchanged.
+Independent test: `ReferenceClosureTest`, `ReferenceRulesTest`; the load tests unchanged.
 
-T001 Red tests for PackClosure and ClosureRules (WP01)
+T001 Red tests for ReferenceClosure and ReferenceRules (WP01)
 T002 ConfigSchemas port; EmbeddedSchemas implements it (WP01)
-T003 PackClosure in packs.domain.rules (WP01)
+T003 ReferenceClosure in packs.domain.rules (WP01)
 T004 Bulk edit: artifact_schema_error moves to PackCodes (WP01)
-T005 Load and whole-pack write call PackClosure; delete the old classes (WP01)
-T006 ClosureFacts on PackContents; ClosureRules in content() (WP01)
+T005 Load and whole-pack write call ReferenceClosure; delete the old classes (WP01)
+T006 ReferenceFacts on PackContents; ReferenceRules in content() (WP01)
 T007 Store half fills the facts; closure faults leave store-only (WP01)
 T008 Golden snapshot and example packs (WP01)
 

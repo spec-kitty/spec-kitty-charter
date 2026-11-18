@@ -7,7 +7,7 @@
 | `schemaProblems(ConfigValue schema)` | the problems that stop the schema compiling offline; empty when it compiles |
 | `valueProblems(ConfigValue schema, Optional<ConfigValue> value)` | the problems of the value against the schema; empty when it fits |
 
-## `PackClosure` (domain rule, `packs.domain.rules`)
+## `ReferenceClosure` (domain rule, `packs.domain.rules`)
 
 Built from a subject:
 
@@ -31,7 +31,7 @@ Invariants (the cascade, as the load applies it today):
 Operations: `firstUnresolved(artifact) -> Optional<String>` (the load's reason); `findings(artifacts) -> List<Finding>`,
 `Finding(Urn artifact, String reason)`.
 
-## `ClosureFacts` (a fact of `PackContents`)
+## `ReferenceFacts` (on `PackContents.Assembly.Assembled`, built from the shaped read)
 
 | Field | Meaning |
 |-------|---------|
@@ -39,9 +39,16 @@ Operations: `firstUnresolved(artifact) -> Optional<String>` (the load's reason);
 | payloads, templates | as above |
 | schemas | the port |
 
-`ClosureFacts.NONE` for facts a test writes by hand. `ClosureRules.RULES` maps each finding to a `Reason`
+`ReferenceFacts.NONE` for facts a test writes by hand. `ReferenceRules.RULES` maps each finding to a `Reason`
 (`artifact_schema_error`, the candidate's file, the reason).
 
-## `PackRemovalStore.Removal`
+## `Pack.without`
 
-Gains `Optional<Pack> after`: the aggregate as it will be after an artifact removal; empty for a relationship removal.
+`Pack.without(Collection<Urn>)`: the aggregate a removal leaves. The commit store reads the pack and takes the removed
+artifacts out itself (plan review finding 5), so `PackRemovalStore.Removal` is unchanged.
+
+## Views of the missions slice
+
+`ReferenceFacts.LifecycleView` and `ReferenceFacts.MissionTypeView`: the packs domain does not name the missions slice
+(`SLICES_DO_NOT_CROSS`), so the storage edge (`ReferenceSubjects`) gives the rule a lifecycle's guard entries and a
+mission type's output templates.

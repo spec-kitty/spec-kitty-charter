@@ -8,22 +8,22 @@
 
 The closure (asset entry, guard asset, guard `config_schema`, lifecycle guard entries and `config`, mission-type output
 templates, with the cascade) moves from `packs.infra.storage` (`GuardClosure`, `MissionTemplates`) into one pure domain
-class, `PackClosure`, in `packs.domain.rules`. `PackRulesets.content()` gains `ClosureRules.RULES`, which runs
-`PackClosure` over a new fact of the one read, `ClosureFacts`. The four paths then call the same rule:
+class, `ReferenceClosure`, in `packs.domain.rules`. `PackRulesets.content()` gains `ReferenceRules.RULES`, which runs
+`ReferenceClosure` over a new fact of the one read, `ReferenceFacts`. The four paths then call the same rule:
 
 | Path | Calls | On a finding |
 |------|-------|--------------|
-| Load (`PackAssembly.collect`) | `PackClosure.firstUnresolved` | leaves the artifact out, `artifact_schema_error`, cascading (unchanged) |
-| Whole-pack write (`WholePackStore.write`) | `PackClosure.findings(pack)` | `validation_failed`, today's wording (unchanged) |
-| Validate mode (`PackCheck` → `StorageRulesets.verdict` → `content()`) | `ClosureRules.RULES` | error finding at the file, the load's reason |
-| Per-file write (`CommitStorePackWriteStore.commit` and `.remove`) | `PackClosure.findings(after)` | `409 registration_conflict`, the load's reason |
+| Load (`PackAssembly.collect`) | `ReferenceClosure.firstUnresolved` | leaves the artifact out, `artifact_schema_error`, cascading (unchanged) |
+| Whole-pack write (`WholePackStore.write`) | `ReferenceClosure.findings(pack)` | `validation_failed`, today's wording (unchanged) |
+| Validate mode (`PackCheck` → `StorageRulesets.verdict` → `content()`) | `ReferenceRules.RULES` | error finding at the file, the load's reason |
+| Per-file write (`CommitStorePackWriteStore.commit` and `.remove`) | `ReferenceClosure.findings(after)` | `409 registration_conflict`, the load's reason |
 
 `EmbeddedSchemas` stays in infra and implements a new domain port, `ConfigSchemas`, which the rule is given. The
 `Executable` and `Lifecycle` invariants already reach validate mode through #554's shared assembly (store-only
 value-object breaches). The symmetry table pins them on every path; on the two write paths the domain value cannot be
 built, so the table asserts the constructor's refusal there.
 
-#593: the fair-lock case of `MixedReadConcurrencyTest` measures each write's wait per round against a 10 s bound and
+#593: the fair-lock case of `MixedReadConcurrencyTest` measures each write's wait per round against a 4 s bound (under the rig's 5 s registry lock) and
 fails naming the write and the round; the class-level `@Timeout` becomes a loose 120 s hang guard.
 
 ## Technical Context
@@ -83,15 +83,15 @@ service/packs/src/main/java/ai/speckitty/charter/packs/
 ├── domain/PackContents.java                  # + closure fact
 ├── domain/PackCodes.java                     # + ARTIFACT_SCHEMA_ERROR
 ├── domain/Pack.java                          # + without(urns)
-├── domain/rules/PackClosure.java             # new: the rule
-├── domain/rules/ClosureRules.java            # new: Rule<PackContents>
-├── domain/rules/PackRulesets.java            # content() gains ClosureRules
+├── domain/rules/ReferenceClosure.java             # new: the rule
+├── domain/rules/ReferenceRules.java            # new: Rule<PackContents>
+├── domain/rules/PackRulesets.java            # content() gains ReferenceRules
 ├── application/PackRemovalStore.java         # Removal carries the pack after
 ├── application/ArtifactRemovalService.java   # passes it
 └── infra/storage/
     ├── EmbeddedSchemas.java                  # implements ConfigSchemas
-    ├── PackAssembly.java, StoreRead.java     # call PackClosure; build ClosureFacts
-    ├── WholePackStore.java                   # calls PackClosure
+    ├── PackAssembly.java, StoreRead.java     # call ReferenceClosure; build ReferenceFacts
+    ├── WholePackStore.java                   # calls ReferenceClosure
     ├── CommitStorePackWriteStore.java        # per-file judge, 409
     ├── GuardClosure.java, MissionTemplates.java   # deleted
     └── rules/StorageCodes.java               # loses ARTIFACT_SCHEMA_ERROR
@@ -105,7 +105,7 @@ docs/adr/0042-*.md, docs/plans/pack-ecosystem-work-breakdown.md
 
 | Item | Why needed | Simpler alternative rejected because |
 |------|------------|--------------------------------------|
-| `ClosureFacts` on `PackContents` | the rule must see the candidates the load judges, before the load leaves any out | judging the assembled pack misses exactly the dropped artifacts |
+| `ReferenceFacts` on `PackContents` | the rule must see the candidates the load judges, before the load leaves any out | judging the assembled pack misses exactly the dropped artifacts |
 | Moving `artifact_schema_error` to `PackCodes` (bulk edit) | a domain rule cannot name an infra code, and the storage and domain vocabularies are disjoint (`StorageCodesTest`) | a new code would change the load's code and the registration wire |
 
 ## Implementation Concern Map
@@ -114,7 +114,7 @@ docs/adr/0042-*.md, docs/plans/pack-ecosystem-work-breakdown.md
 
 - **Purpose**: one pure rule decides every closure case with the cascade; the load and the whole-pack write call it.
 - **Relevant requirements**: FR-001, FR-002
-- **Affected surfaces**: `domain/rules/PackClosure.java`, `domain/ConfigSchemas.java`, `infra/storage/EmbeddedSchemas.java`, `PackAssembly.java`, `WholePackStore.java`; delete `GuardClosure.java`, `MissionTemplates.java`; move `ARTIFACT_SCHEMA_ERROR`
+- **Affected surfaces**: `domain/rules/ReferenceClosure.java`, `domain/ConfigSchemas.java`, `infra/storage/EmbeddedSchemas.java`, `PackAssembly.java`, `WholePackStore.java`; delete `GuardClosure.java`, `MissionTemplates.java`; move `ARTIFACT_SCHEMA_ERROR`
 - **Sequencing/depends-on**: none
 - **Risks**: the wording and order the load and the write state today must not move; the existing load and round-trip tests are the guard.
 
@@ -122,7 +122,7 @@ docs/adr/0042-*.md, docs/plans/pack-ecosystem-work-breakdown.md
 
 - **Purpose**: `content()` runs the closure over the read's candidates, so validate mode and registration state it from the ruleset, not as a store-only fault.
 - **Relevant requirements**: FR-003, FR-005
-- **Affected surfaces**: `PackContents` (closure fact), `ClosureRules`, `PackRulesets`, `StoreRead`, `AssemblyRules` (closure faults leave the store-only list)
+- **Affected surfaces**: `PackContents` (closure fact), `ReferenceRules`, `PackRulesets`, `StoreRead`, `AssemblyRules` (closure faults leave the store-only list)
 - **Sequencing/depends-on**: IC-01
 - **Risks**: the verdict's order and the golden snapshots (`golden/validate.json`, `surfaces.json`) may move; any diff is listed.
 

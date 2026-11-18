@@ -27,19 +27,19 @@ agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/
 create_intent:
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/ConfigSchemas.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureFacts.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PackClosure.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ClosureRules.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PackClosureTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ClosureRulesTest.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/ReferenceFacts.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ReferenceClosure.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ReferenceRules.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ReferenceClosureTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ReferenceRulesTest.java
 execution_mode: code_change
 owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/ConfigSchemas.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackContents.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCodes.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureFacts.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PackClosure.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ClosureRules.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/ReferenceFacts.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ReferenceClosure.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ReferenceRules.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PackRulesets.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/EmbeddedSchemas.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GuardClosure.java
@@ -54,8 +54,8 @@ owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/LifecycleBinding.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/AssemblyRules.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageCodes.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PackClosureTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ClosureRulesTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ReferenceClosureTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ReferenceRulesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCodesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PackCodesCoverageTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StoreHalfFaultsTest.java
@@ -105,23 +105,23 @@ spec-kitty agent action implement WP01 --agent claude --mission closure-symmetry
 
 ## Objective
 
-One pure domain rule, `PackClosure`, decides the whole closure (asset entry; guard asset, executable block and
+One pure domain rule, `ReferenceClosure`, decides the whole closure (asset entry; guard asset, executable block and
 `config_schema`; lifecycle guard entries and `config`; mission-type output templates; pack-qualified references; the
 cascade). The load (`PackAssembly.collect`) and the whole-pack write (`WholePackStore.write`) call it. `content()`
-runs it as `ClosureRules.RULES` over a new fact of the one read, so validate mode and whole-pack registration state the
+runs it as `ReferenceRules.RULES` over a new fact of the one read, so validate mode and whole-pack registration state the
 closure as a PACK-ruleset finding. `GuardClosure` and `MissionTemplates` are deleted.
 
 ## Subtasks
 
-### T001 Red tests for the rule (`PackClosureTest`, `ClosureRulesTest`)
+### T001 Red tests for the rule (`ReferenceClosureTest`, `ReferenceRulesTest`)
 
-- `PackClosureTest`: build domain values directly (assets with and without `executable`, guards built-in and
+- `ReferenceClosureTest`: build domain values directly (assets with and without `executable`, guards built-in and
   asset-backed, a lifecycle with guard entries and `config`, a mission type naming an own and a top-level template).
   One test per case of data-model.md's invariants 1 to 4, plus the cascade (asset → guard → lifecycle), first-by-id,
   and the pack-qualified references. Assert the exact reason strings the load records today (copy them from
   `GuardClosure`, `MissionTemplates.reason` and `GuardAndLifecycleLoadTest`).
-- `ClosureRulesTest`: `PackContents` with a hand-built `ClosureFacts`; the rule yields one `Reason`
-  (`artifact_schema_error`, the candidate's file, the load's reason) per finding, and nothing for `ClosureFacts.NONE`.
+- `ReferenceRulesTest`: `PackContents` with a hand-built `ReferenceFacts`; the rule yields one `Reason`
+  (`artifact_schema_error`, the candidate's file, the load's reason) per finding, and nothing for `ReferenceFacts.NONE`.
 - Run them red (they do not compile, then fail) before T002.
 
 ### T002 The `ConfigSchemas` port
@@ -130,10 +130,10 @@ closure as a PACK-ruleset finding. `GuardClosure` and `MissionTemplates` are del
 `EmbeddedSchemas` implements it through a public singleton (`EmbeddedSchemas.PORT`), keeping its static helpers private
 to the class or removing them if nothing else calls them.
 
-### T003 `PackClosure`
+### T003 `ReferenceClosure`
 
 Move the logic of `GuardClosure` (constructor maps, `unresolved` overloads, `configProblem`) and of
-`MissionTemplates` (`namable`, `firstUnresolved`, `reason`) into `packs.domain.rules.PackClosure`, unchanged in meaning
+`MissionTemplates` (`namable`, `firstUnresolved`, `reason`) into `packs.domain.rules.ReferenceClosure`, unchanged in meaning
 and wording. API: `of(assets, payloadPaths, guards, templates, schemas)`, `of(Pack, schemas)`,
 `firstUnresolved(CharterArtifact) -> Optional<String>` (mission type first), `findings(List<Placed or artifacts>)`.
 
@@ -144,22 +144,22 @@ Follow `occurrence_map.yaml`. Add `PackCodes.ARTIFACT_SCHEMA_ERROR` to `CONTENT`
 `PackCodesCoverageTest`, `StorageCodesTest` and `VocabularyEqualityTest` stay green (the coverage test needs a firing
 fixture for the code; the closure gives one).
 
-### T005 Load and whole-pack write call `PackClosure`; delete the old classes
+### T005 Load and whole-pack write call `ReferenceClosure`; delete the old classes
 
-`PackAssembly.assembly` builds the candidates once (the entities that build, with their files) and a `PackClosure`
+`PackAssembly.assembly` builds the candidates once (the entities that build, with their files) and a `ReferenceClosure`
 from them; `collect` asks `firstUnresolved`. `WholePackStore.write` keeps today's refusal order and wording: the first
 mission type's `mission_type '<id>' names <reason>`, then the first other finding's reason. Delete `GuardClosure.java`
 and `MissionTemplates.java`; fix the Javadoc links in `GuardBinding`, `LifecycleBinding`.
 
-### T006 `ClosureFacts` on `PackContents`, `ClosureRules` in `content()`
+### T006 `ReferenceFacts` on `PackContents`, `ReferenceRules` in `content()`
 
-A new record component `closure` (`ClosureFacts`, `NONE` from the convenience constructor). `ClosureRules.RULES` is
+A new record component `closure` (`ReferenceFacts`, `NONE` from the convenience constructor). `ReferenceRules.RULES` is
 added to `PackRulesets.CONTENT` before `FragmentRules.ORPHAN`.
 
 ### T007 The store half fills the facts; closure faults leave the store-only list
 
 `StoreRead` passes the candidates, payload paths, namable template ids and `EmbeddedSchemas.PORT` into the contents'
-`ClosureFacts` (where `FileSystemPackInspector` builds `PackContents`). The assembly no longer hands closure faults to
+`ReferenceFacts` (where `FileSystemPackInspector` builds `PackContents`). The assembly no longer hands closure faults to
 `storeOnly` (they are the rule's now); value-object breaches stay there. Update `AssemblyRules.held`'s Javadoc.
 
 ### T008 Validate mode over the example packs and the golden snapshot
@@ -170,7 +170,7 @@ finding.
 
 ## Definition of Done
 
-- `PackClosureTest`, `ClosureRulesTest` green; red-first recorded in the commit history (test commit before the fix).
+- `ReferenceClosureTest`, `ReferenceRulesTest` green; red-first recorded in the commit history (test commit before the fix).
 - `GuardAndLifecycleLoadTest`, `StoreHalfFaultsTest`, the whole-pack round trip and the golden tests green, with no
   expected value changed.
 - `grep -r GuardClosure\|MissionTemplates service/*/src/main` is empty.
@@ -178,4 +178,4 @@ finding.
 ## Risks
 
 - Verdict order in validate mode: rule findings come before the store-only faults; compare the golden snapshot.
-- ArchUnit: `packs.domain` must name nothing in `infra`. `ClosureFacts` holds the port interface only.
+- ArchUnit: `packs.domain` must name nothing in `infra`. `ReferenceFacts` holds the port interface only.
