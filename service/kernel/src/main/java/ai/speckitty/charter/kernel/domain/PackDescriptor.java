@@ -18,7 +18,7 @@ import java.util.Set;
  * @param requiresCore the raw {@code requires_core} text; empty when the file has none
  * @param paths the declared {@code pack_drg} and {@code mutability_policy} paths, grouped
  * @param dependencies the packs this pack declares it depends on; empty when it declares none
- * @param overrides the sibling conflicts this pack settles (any pack of the compose may declare one until #358), each
+ * @param overrides the sibling conflicts this pack settles (only the distribution pack's settle, #358), each
  *     by the conflicting artifact and the member meant to win; empty when it settles none
  * @param schemaVersion the pack's {@code schema_version} as written; empty for an unversioned (legacy) descriptor
  * @param fallbackProfile the profile-id of the pack's declared fallback agent profile ({@code fallback_profile},

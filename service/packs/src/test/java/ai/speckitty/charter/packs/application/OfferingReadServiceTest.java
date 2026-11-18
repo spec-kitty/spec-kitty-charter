@@ -399,8 +399,8 @@ class OfferingReadServiceTest {
         private List<ConfiguredPack> siblingsAnd(ConfiguredPack... more) {
             defined.put("left", List.of("directive:DIRECTIVE_009"));
             defined.put("right", List.of("directive:DIRECTIVE_009"));
-            List<ConfiguredPack> packs = new ArrayList<>(
-                    List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG)));
+            List<ConfiguredPack> packs =
+                    new ArrayList<>(List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG)));
             packs.addAll(List.of(more));
             return packs;
         }
@@ -422,8 +422,8 @@ class OfferingReadServiceTest {
 
         @Test
         void theDistributionPackSettlesTheContest() {
-            List<ConfiguredPack> packs = siblingsAnd(
-                    declared("dist", PackLevel.ORG, distribution("dist", "right", "left", "right")));
+            List<ConfiguredPack> packs =
+                    siblingsAnd(declared("dist", PackLevel.ORG, distribution("dist", "right", "left", "right")));
 
             assertThat(service(packs).composed()).hasSize(3);
             assertThat(service(packs).composed(roots("dist"))).hasSize(3);
@@ -440,7 +440,7 @@ class OfferingReadServiceTest {
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
             assertThat(refused.getMessage())
                     .contains("declared by pack `member pack` (member), which is not the distribution pack");
-            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("right", "left", "member");
+            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("member", "right", "left");
         }
 
         @Test
@@ -465,10 +465,10 @@ class OfferingReadServiceTest {
             CharterRefusal refused = refusalOf(() -> service(packs).offering());
 
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refused.getMessage()).contains("more than one compose root");
-            assertThat(refused.packs()).extracting(RefusalPack::packId).contains("dist", "other");
+            assertThat(refused.getMessage()).contains("more than one distribution pack");
+            assertThat(refused.packs()).extracting(RefusalPack::packId).startsWith("dist", "other");
             assertThat(service(packs).composed(roots("dist")))
-                    .as("the control: one distribution's closure leaves the other root out, and is served")
+                    .as("the control: one distribution's closure leaves the other out, and is served")
                     .hasSize(3);
         }
     }
@@ -486,7 +486,10 @@ class OfferingReadServiceTest {
                     configured("base", PackLevel.BUILT_IN),
                     declared("left", PackLevel.ORG, withDependencies("left", "base")),
                     configured("right", PackLevel.ORG),
-                    declared("distribution", PackLevel.ORG, settling("distribution", "right")),
+                    declared(
+                            "distribution",
+                            PackLevel.ORG,
+                            DistributionPackSettles.distribution("distribution", "right", "left", "right")),
                     declared("top", PackLevel.PROJECT, withDependencies("top", "left")));
             defined.put("left", List.of("directive:DIRECTIVE_009"));
             defined.put("right", List.of("directive:DIRECTIVE_009"));

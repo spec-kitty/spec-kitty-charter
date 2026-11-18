@@ -223,19 +223,11 @@
       } ]
     }
   },
-  "two-roots-naming-different-winners" : {
+  "two-distribution-packs-naming-different-winners" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `done` (01DONE) and `dtwo` (01DTWO), more than one compose root: only the distribution pack, the one root, settles a contest",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `done` (01DONE) and `dtwo` (01DTWO), more than one distribution pack, and only one may settle a contest",
       "packs" : [ {
-        "descriptorPackId" : "01RIGHT",
-        "packId" : "01RIGHT",
-        "name" : "right"
-      }, {
-        "descriptorPackId" : "01LEFT",
-        "packId" : "01LEFT",
-        "name" : "left"
-      }, {
         "descriptorPackId" : "01DONE",
         "packId" : "01DONE",
         "name" : "done"
@@ -243,14 +235,7 @@
         "descriptorPackId" : "01DTWO",
         "packId" : "01DTWO",
         "name" : "dtwo"
-      } ]
-    }
-  },
-  "a14-two-settlements-naming-two-winners" : {
-    "refused" : {
-      "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `distribution` (01DSTR) and `dtwo` (01DTWO), more than one compose root: only the distribution pack, the one root, settles a contest",
-      "packs" : [ {
+      }, {
         "descriptorPackId" : "01RIGHT",
         "packId" : "01RIGHT",
         "name" : "right"
@@ -258,7 +243,14 @@
         "descriptorPackId" : "01LEFT",
         "packId" : "01LEFT",
         "name" : "left"
-      }, {
+      } ]
+    }
+  },
+  "a14-two-settlements-naming-two-winners" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `distribution` (01DSTR) and `dtwo` (01DTWO), more than one distribution pack, and only one may settle a contest",
+      "packs" : [ {
         "descriptorPackId" : "01DSTR",
         "packId" : "01DSTR",
         "name" : "distribution"
@@ -266,6 +258,14 @@
         "descriptorPackId" : "01DTWO",
         "packId" : "01DTWO",
         "name" : "dtwo"
+      }, {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
       } ]
     }
   },
@@ -275,8 +275,12 @@
   "a-member-of-the-distribution-does-not-settle" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack: only the compose root no other pack depends on settles a contest",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
       "packs" : [ {
+        "descriptorPackId" : "01MEMB",
+        "packId" : "01MEMB",
+        "name" : "member"
+      }, {
         "descriptorPackId" : "01RIGHT",
         "packId" : "01RIGHT",
         "name" : "right"
@@ -284,41 +288,67 @@
         "descriptorPackId" : "01LEFT",
         "packId" : "01LEFT",
         "name" : "left"
+      } ]
+    }
+  },
+  "a-pack-that-does-not-depend-on-the-contestants-does-not-settle" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `unrelated` (01UNRL), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
+      "packs" : [ {
+        "descriptorPackId" : "01UNRL",
+        "packId" : "01UNRL",
+        "name" : "unrelated"
       }, {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "a-member-beside-the-distribution-pack-is-refused" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
+      "packs" : [ {
         "descriptorPackId" : "01MEMB",
         "packId" : "01MEMB",
         "name" : "member"
+      }, {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
       } ]
     }
   },
   "a-contestant-does-not-settle-its-own-contest" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `left` (01LEFT), which is not the distribution pack: only the compose root no other pack depends on settles a contest",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `left` (01LEFT), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
       "packs" : [ {
-        "descriptorPackId" : "01RIGHT",
-        "packId" : "01RIGHT",
-        "name" : "right"
-      }, {
         "descriptorPackId" : "01LEFT",
         "packId" : "01LEFT",
         "name" : "left"
+      }, {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
       } ]
     }
   },
-  "two-roots-naming-one-winner" : {
+  "two-distribution-packs-naming-one-winner" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `distribution` (01DSTR) and `dtwo` (01DTWO), more than one compose root: only the distribution pack, the one root, settles a contest",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `distribution` (01DSTR) and `dtwo` (01DTWO), more than one distribution pack, and only one may settle a contest",
       "packs" : [ {
-        "descriptorPackId" : "01RIGHT",
-        "packId" : "01RIGHT",
-        "name" : "right"
-      }, {
-        "descriptorPackId" : "01LEFT",
-        "packId" : "01LEFT",
-        "name" : "left"
-      }, {
         "descriptorPackId" : "01DSTR",
         "packId" : "01DSTR",
         "name" : "distribution"
@@ -326,6 +356,14 @@
         "descriptorPackId" : "01DTWO",
         "packId" : "01DTWO",
         "name" : "dtwo"
+      }, {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
       } ]
     }
   },

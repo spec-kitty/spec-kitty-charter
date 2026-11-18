@@ -5,8 +5,9 @@ import java.util.Objects;
 /**
  * One sibling conflict a pack's {@code pack.yaml} settles: the conflicting artifact and the member pack whose version
  * of it is meant to win (ADR-0048 decision 9, its open question 5 as ruled by ADR-0053 decision 5). Authored, never
- * derived. Until #358 any pack of the compose may declare it, not only the distribution pack; until #357 settling
- * only clears the refusal and the member's version is not yet put in force. The schema is closed, so the record holds
+ * derived. Only the distribution pack's entry settles (#358): the resolver derives which pack that is and refuses an
+ * entry any other pack declares; the member it names has the version in force at that level (#357). The schema is
+ * closed, so the record holds
  * only what the file states; whether the member is part of the compose is the resolver's business, not this value's.
  *
  * @param artifact the conflicting artifact's reference, opaque here (C-005: no URN parsing or re-spelling)

@@ -740,7 +740,7 @@ class CompositionRulesTest {
 
         @ParameterizedTest
         @ValueSource(strings = {"01RIGHT", "01LEFT"})
-        @DisplayName("#358: two compose roots settling one artifact conflict, whether or not they name one winner")
+        @DisplayName("#358: two distribution packs settling one artifact conflict, whether or not they name one winner")
         void twoRootsSettlingOneArtifact(String secondWinner) {
             PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
             PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
@@ -754,17 +754,17 @@ class CompositionRulesTest {
                         assertThat(fault.code()).isEqualTo(SIBLING);
                         assertThat(fault.packs())
                                 .containsExactly(
-                                        refusalPack("01RIGHT", "right"),
-                                        refusalPack("01LEFT", "left"),
                                         refusalPack("01DONE", "done"),
-                                        refusalPack("01DTWO", "dtwo"));
+                                        refusalPack("01DTWO", "dtwo"),
+                                        refusalPack("01RIGHT", "right"),
+                                        refusalPack("01LEFT", "left"));
                         assertThat(fault.detail())
                                 .endsWith("and overrides edges settling it are declared by packs `done` (01DONE) and"
-                                        + " `dtwo` (01DTWO), more than one compose root: only the distribution pack,"
-                                        + " the one root, settles a contest");
+                                        + " `dtwo` (01DTWO), more than one distribution pack, and only one may settle"
+                                        + " a contest");
                     });
             assertThat(CompositionRules.faults(List.of(first, right, left)))
-                    .as("the control: the one root settles it")
+                    .as("the control: the one distribution pack settles it")
                     .isEmpty();
         }
 
@@ -788,14 +788,15 @@ class CompositionRulesTest {
                     .isInstanceOf(IllegalArgumentException.class);
             PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
             PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
-            PackUnderResolution namingLeft = settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT");
+            PackUnderResolution namingLeft =
+                    settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT");
             PackUnderResolution namingRight = settling("01DTWO", "dtwo", DIRECTIVE, "01RIGHT", "01LEFT", "01RIGHT");
 
             assertThat(CompositionRules.faults(List.of(namingLeft, namingRight, left, right)))
                     .singleElement()
                     .satisfies(fault -> {
                         assertThat(fault.code()).isEqualTo(SIBLING);
-                        assertThat(fault.detail()).contains("more than one compose root", "01DSTR", "01DTWO");
+                        assertThat(fault.detail()).contains("more than one distribution pack", "01DSTR", "01DTWO");
                     });
             assertThat(CompositionRules.faults(List.of(namingLeft, left, right)))
                     .isEmpty();
@@ -829,8 +830,11 @@ class CompositionRulesTest {
             PackUnderResolution distribution =
                     settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT");
 
-            assertThat(CompositionRules.faults(List.of(distribution, right, left))).isEmpty();
-            assertThat(CompositionRules.closure().check(List.of(distribution, right, left)).isFailing())
+            assertThat(CompositionRules.faults(List.of(distribution, right, left)))
+                    .isEmpty();
+            assertThat(CompositionRules.closure()
+                            .check(List.of(distribution, right, left))
+                            .isFailing())
                     .isFalse();
         }
 
@@ -855,17 +859,21 @@ class CompositionRulesTest {
                     .satisfies(fault -> {
                         assertThat(fault.code()).isEqualTo(SIBLING);
                         assertThat(fault.packs())
+                                .as("the declaring pack broke the rule, so it is named first")
                                 .containsExactly(
+                                        refusalPack("01MEMB", "member"),
                                         refusalPack("01RIGHT", "right"),
-                                        refusalPack("01LEFT", "left"),
-                                        refusalPack("01MEMB", "member"));
+                                        refusalPack("01LEFT", "left"));
                         assertThat(fault.detail())
                                 .isEqualTo("packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact"
                                         + " `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by"
-                                        + " pack `member` (01MEMB), which is not the distribution pack: only the"
-                                        + " compose root no other pack depends on settles a contest");
+                                        + " pack `member` (01MEMB), which is not the distribution pack, the pack of"
+                                        + " that level that depends on every contestant and that no other pack of that"
+                                        + " level depends on");
                     });
-            assertThat(CompositionRules.closure().check(List.of(distribution, member, right, left)).isFailing())
+            assertThat(CompositionRules.closure()
+                            .check(List.of(distribution, member, right, left))
+                            .isFailing())
                     .as("the ruleset, as every surface runs it")
                     .isTrue();
         }
@@ -878,21 +886,21 @@ class CompositionRulesTest {
             PackUnderResolution flatLeft = refiningAndSettling("01LEFT", "left", DIRECTIVE, "01LEFT");
 
             for (List<PackUnderResolution> compose : List.of(List.of(left, right), List.of(flatLeft, right))) {
-                assertThat(CompositionRules.faults(compose))
-                        .singleElement()
-                        .satisfies(fault -> {
-                            assertThat(fault.code()).isEqualTo(SIBLING);
-                            assertThat(fault.packs()).last().isEqualTo(refusalPack("01LEFT", "left"));
-                            assertThat(fault.detail())
-                                    .endsWith("an overrides edge settling it is declared by pack `left` (01LEFT),"
-                                            + " which is not the distribution pack: only the compose root no other"
-                                            + " pack depends on settles a contest");
-                        });
+                assertThat(CompositionRules.faults(compose)).singleElement().satisfies(fault -> {
+                    assertThat(fault.code()).isEqualTo(SIBLING);
+                    assertThat(fault.packs())
+                            .containsExactly(refusalPack("01LEFT", "left"), refusalPack("01RIGHT", "right"));
+                    assertThat(fault.detail())
+                            .endsWith(
+                                    "an overrides edge settling it is declared by pack `left` (01LEFT),"
+                                            + " which is not the distribution pack"
+                                            + ", the pack of that level that depends on every contestant and that no other pack of that level depends on");
+                });
             }
         }
 
         @Test
-        @DisplayName("#358: a member's edge beside the distribution pack's leaves the distribution pack's settlement")
+        @DisplayName("#358: a member's edge is refused even beside the distribution pack's edge")
         void aMembersEdgeBesideTheDistributionPacks() {
             PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
             PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
@@ -900,7 +908,54 @@ class CompositionRulesTest {
             PackUnderResolution distribution =
                     settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT", "01MEMB");
 
-            assertThat(CompositionRules.faults(List.of(distribution, member, right, left))).isEmpty();
+            assertThat(CompositionRules.faults(List.of(distribution, member, right, left)))
+                    .singleElement()
+                    .satisfies(fault -> {
+                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(fault.packs()).first().isEqualTo(refusalPack("01MEMB", "member"));
+                        assertThat(fault.detail()).contains("declared by pack `member` (01MEMB)");
+                    });
+        }
+
+        @Test
+        @DisplayName("#358: a pack that does not depend on the contestants does not settle their contest")
+        void anUnrelatedPackDoesNotSettle() {
+            PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution unrelated = settling("01UNRL", "unrelated", DIRECTIVE, "01LEFT");
+            PackUnderResolution halfway = settling("01HALF", "halfway", DIRECTIVE, "01LEFT", "01LEFT");
+
+            for (PackUnderResolution settler : List.of(unrelated, halfway)) {
+                assertThat(CompositionRules.faults(List.of(settler, right, left)))
+                        .singleElement()
+                        .satisfies(fault -> {
+                            assertThat(fault.code()).isEqualTo(SIBLING);
+                            assertThat(fault.packs().getFirst().packId())
+                                    .isEqualTo(settler.configured().id().value());
+                            assertThat(fault.detail()).contains("which is not the distribution pack");
+                        });
+            }
+        }
+
+        @Test
+        @DisplayName("#358: a dependent at another level leaves the distribution pack of its own level")
+        void aDependentAtAnotherLevelLeavesTheDistribution() {
+            PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution distribution =
+                    settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT");
+            PackUnderResolution project =
+                    pack("01PROJ", "project", "1.0.0", PackLevel.PROJECT, depends("01DSTR", ">=1.0"));
+            PackUnderResolution orgDependent =
+                    pack("01ORGD", "org-dependent", "1.0.0", PackLevel.ORG, depends("01DSTR", ">=1.0"));
+
+            assertThat(CompositionRules.faults(List.of(project, distribution, right, left)))
+                    .isEmpty();
+            assertThat(CompositionRules.faults(List.of(orgDependent, distribution, right, left)))
+                    .as("the control: a dependent at the contest's level makes the settler a member")
+                    .singleElement()
+                    .satisfies(fault -> assertThat(fault.detail())
+                            .contains("declared by pack `distribution` (01DSTR), which is not the distribution pack"));
         }
 
         @Test

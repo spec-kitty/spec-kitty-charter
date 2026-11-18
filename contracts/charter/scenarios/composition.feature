@@ -855,11 +855,12 @@ Feature: The compose resolves the configured packs' dependency graph
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A member's overrides edge does not settle a contest, and the refusal names the member
-    #358, operator ruling (a): the distribution pack is derived, the compose root that no other pack
-    depends on, and only its overrides edge settles a sibling contest. Here member declares the edge
-    naming left, and the distribution pack dist depends on left, right and member, so member is not a
-    root: the contest stays unsettled, and the refusal names member after the two siblings. The
-    distribution-pack control is the scenario above that settles the contest.
+    #358, operator ruling (a): the distribution pack is derived, the pack of the contest's level that
+    depends on every contestant and that no other pack of that level depends on, and only its
+    overrides edge settles a sibling contest. Here member declares the edge naming left, and the
+    distribution pack dist depends on left, right and member, so member is not the distribution pack:
+    the contest stays unsettled, and the refusal names member first, the pack that broke the rule.
+    The distribution-pack control is the scenario above that settles the contest.
     Given the org pack "left" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -921,16 +922,16 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
-    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `member-pack` (01M4P01D5TWB5FKZGNNQG3943V), which is not the distribution pack: only the compose root no other pack depends on settles a contest"
-    And the field at "/packs/0/packId" is "right"
-    And the field at "/packs/1/packId" is "left"
-    And the field at "/packs/2/packId" is "member"
-    And the field at "/packs/2/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943V"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `member-pack` (01M4P01D5TWB5FKZGNNQG3943V), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on"
+    And the field at "/packs/0/packId" is "member"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943V"
+    And the field at "/packs/1/packId" is "right"
+    And the field at "/packs/2/packId" is "left"
 
   Scenario: A contestant's overrides edge does not settle its own contest
     #358: a contestant cannot decide its own contest, even when nothing depends on it. left declares
     the edge naming itself; with no distribution pack the contest stays unsettled and the refusal
-    names left as the declaring pack (it is already named, as a sibling).
+    names left first, as the declaring pack.
     Given the org pack "left" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -969,14 +970,14 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
-    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `left-pack` (01M4P01D5TWB5FKZGNNQG3943R), which is not the distribution pack: only the compose root no other pack depends on settles a contest"
-    And the field at "/packs/0/packId" is "right"
-    And the field at "/packs/1/packId" is "left"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `left-pack` (01M4P01D5TWB5FKZGNNQG3943R), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on"
+    And the field at "/packs/0/packId" is "left"
+    And the field at "/packs/1/packId" is "right"
 
-  Scenario: Two compose roots settling one artifact refuse the compose
-    #358: two packs that both depend on the siblings and that no pack depends on are two roots, so
-    the compose has no single distribution pack. Both settle directive:SHARE, naming the same winner,
-    and the compose is refused pack_sibling_conflict naming both roots after the siblings.
+  Scenario: Two distribution packs settling one artifact refuse the compose
+    #358: two packs that both depend on the siblings and that no pack depends on are two distribution
+    packs. Both settle directive:SHARE, naming the same winner, and the compose is refused
+    pack_sibling_conflict naming both first.
     Given the org pack "left" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -1044,9 +1045,10 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
-    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and overrides edges settling it are declared by packs `dist-pack` (01M4P01D5TWB5FKZGNNQG3943T) and `other-pack` (01M4P01D5TWB5FKZGNNQG3943W), more than one compose root: only the distribution pack, the one root, settles a contest"
-    And the field at "/packs/2/packId" is "dist"
-    And the field at "/packs/3/packId" is "other"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and overrides edges settling it are declared by packs `dist-pack` (01M4P01D5TWB5FKZGNNQG3943T) and `other-pack` (01M4P01D5TWB5FKZGNNQG3943W), more than one distribution pack, and only one may settle a contest"
+    And the field at "/packs/0/packId" is "dist"
+    And the field at "/packs/1/packId" is "other"
+    And the field at "/packs/2/packId" is "right"
 
   Scenario: An org pack and a project pack defining one artifact compose as a layer override
     The negative control of the duplicate-definition refusal: the same directive held at two

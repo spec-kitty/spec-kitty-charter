@@ -210,15 +210,15 @@ class CompositionGoldenTest {
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, "base::" + DIRECTIVE)),
                 new Case(
-                        "two-roots-naming-different-winners",
-                        settling("01DTWO", "dtwo", "org::" + DIRECTIVE, "01RIGHT"),
-                        settling("01DONE", "done", DIRECTIVE, "01LEFT"),
+                        "two-distribution-packs-naming-different-winners",
+                        settling("01DTWO", "dtwo", "org::" + DIRECTIVE, "01RIGHT", "01LEFT", "01RIGHT"),
+                        settling("01DONE", "done", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "a14-two-settlements-naming-two-winners",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT"),
-                        settling("01DTWO", "dtwo", DIRECTIVE, "01RIGHT"),
+                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
+                        settling("01DTWO", "dtwo", DIRECTIVE, "01RIGHT", "01LEFT", "01RIGHT"),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
@@ -241,11 +241,22 @@ class CompositionGoldenTest {
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
+                        "a-pack-that-does-not-depend-on-the-contestants-does-not-settle",
+                        settling("01UNRL", "unrelated", DIRECTIVE, "01LEFT"),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
+                        "a-member-beside-the-distribution-pack-is-refused",
+                        settling("01MEMB", "member", DIRECTIVE, "01RIGHT"),
+                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT", "01MEMB"),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
                         "a-contestant-does-not-settle-its-own-contest",
                         settlingRefiner("01LEFT", "left", DIRECTIVE, "01LEFT"),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
-                        "two-roots-naming-one-winner",
+                        "two-distribution-packs-naming-one-winner",
                         settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
                         settling("01DTWO", "dtwo", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),

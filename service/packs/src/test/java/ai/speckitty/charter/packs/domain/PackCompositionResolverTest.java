@@ -63,7 +63,10 @@ class PackCompositionResolverTest {
                 List.of(artifact));
     }
 
-    /** A distribution pack that settles one contested artifact by naming the member whose version wins. */
+    /**
+     * A distribution pack that settles one contested artifact by naming the member whose version wins: it depends on
+     * both contestants, {@code 01LEFT} and {@code 01RIGHT}, as a distribution depends on its members (#358).
+     */
     private static PackUnderResolution settling(
             String id, String name, String version, PackLevel level, String artifact, String member) {
         return new PackUnderResolution(
@@ -76,7 +79,7 @@ class PackCompositionResolverTest {
                         Optional.of(level),
                         Optional.empty(),
                         PackPaths.none(),
-                        List.of(),
+                        List.of(new PackDependency("01LEFT", ">=1.0"), new PackDependency("01RIGHT", ">=1.0")),
                         List.of(new PackOverride(artifact, member))));
     }
 
@@ -275,14 +278,15 @@ class PackCompositionResolverTest {
 
     @Test
     void anOverridesEdgeSettlingAMissionTypeAlsoSettlesItsSharedSteps() {
-        // A step is part of its mission type: the distribution pack's edge that settles m leaves no contest over m's steps.
+        // A step is part of its mission type: the distribution pack's edge that settles m leaves no contest over m's
+        // steps.
         PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "mission_type:m", "action:m/implement");
         PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
         PackUnderResolution distribution =
                 settling("01DSTR", "distribution", "1.0.0", PackLevel.ORG, "mission_type:m", "01RIGHT");
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(distribution, right, left))))
-                .containsExactly("01DSTR", "01LEFT", "01RIGHT");
+                .containsExactly("01LEFT", "01RIGHT", "01DSTR");
     }
 
     @Test
@@ -309,7 +313,7 @@ class PackCompositionResolverTest {
                 settling("01DSTR", "distribution", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009", "01RIGHT");
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(distribution, right, left))))
-                .containsExactly("01DSTR", "01LEFT", "01RIGHT");
+                .containsExactly("01LEFT", "01RIGHT", "01DSTR");
     }
 
     @Test
