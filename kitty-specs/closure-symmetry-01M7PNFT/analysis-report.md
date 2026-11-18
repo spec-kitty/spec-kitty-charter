@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: closure-symmetry-01M7PNFT
 mission_id: 01M7PNFTY2WEHNNV3A38K7EQK7
-generated_at: '2026-11-18T07:29:38.250390+00:00'
+generated_at: '2026-11-18T09:18:51.449311+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -21,16 +21,16 @@ input_artifacts:
     sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
 verdict: ready
 issue_counts:
-  critical: 0
-  high: 0
   medium: 2
   low: 3
+  critical: 0
+  high: 0
   info: 0
 findings:
 - id: C1
   severity: medium
   category: coverage
-  summary: NFR-001 (verifyAll green) and NFR-003 (drift test reported) have no task; they are closeout gates outside the WPs.
+  summary: NFR-001 (verifyAll green) and NFR-003 (drift test reported) have no task; they are closeout gates, met and reported in the PR.
 - id: D1
   severity: medium
   category: charter
@@ -51,26 +51,23 @@ findings:
 
 ## Specification Analysis Report
 
-Re-run after the plan review's eleven findings were folded into research.md (dispositions table), plan.md, data-model.md
-and the WP prompts (the shapes as built: `ReferenceClosure`, `ReferenceRules`, `ReferenceFacts` on `Assembled`, the
-store reading the pack it judges on removal, #593's 4 s bound under the 5 s registry lock).
+Re-run after occurrence_map.yaml named WP05's four doc edits as manual_review exceptions (the reviewer's diff-compliance
+finding); no requirement, plan or task changed meaning.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Coverage | MEDIUM | spec.md NFR-001, NFR-003 | Gates with no task | Run both at closeout and report them in the PR body |
+| C1 | Coverage | MEDIUM | spec.md NFR-001, NFR-003 | Gates with no task | Met; reported in the PR body |
 | D1 | Charter | MEDIUM | plan.md Charter Check | One reviewer in place of a squad | Keep the open review item visible in the PR |
-| F1 | Inconsistency | LOW | tasks/WP03 T017; spec FR-002 | Fold vs keep | Keep the load tests unchanged (FR-002); the table adds no per-path closure tests beside them |
+| F1 | Inconsistency | LOW | tasks/WP03 T017; spec FR-002 | Fold vs keep | Keep the load tests unchanged (FR-002) |
 | F2 | Inconsistency | LOW | tasks.md WP01 | Out-of-map one-line rename | Accept as recorded |
 | C2 | Coverage | LOW | spec.md SC-003, SC-004 | Success criteria unmapped | Covered by T021 and the closeout |
 
-**Coverage Summary Table:** FR-001 to FR-008 each have tasks (T001 to T023); NFR-002 has T021; NFR-001 and NFR-003 are
-closeout gates.
+**Coverage Summary Table:** FR-001 to FR-008 each have tasks; NFR-002 has T021; NFR-001 and NFR-003 are closeout gates.
 
 **Charter Alignment Issues:** D1 only.
 
 **Unmapped Tasks:** none.
 
-**Metrics:** 11 requirements; 23 tasks; coverage 82% (the two gaps are closeout gates); ambiguity 0; duplication 0;
-critical 0.
+**Metrics:** 11 requirements; 23 tasks; coverage 82%; ambiguity 0; duplication 0; critical 0.
 
-**Next Actions:** proceed; run NFR-001 and NFR-003 at closeout.
+**Next Actions:** proceed.
