@@ -352,7 +352,8 @@ pack's manifest like any other artifact. It declares its task types, its models 
 cost tier), a routing policy (an objective, weights and per-task-type tier caps) and its sources.
 
 - **Layering.** A catalog layers by its id: an org pack's `default` replaces built-in's `default`, whole. A catalog
-  marked `locked` in the pack's `policy.yaml` cannot be overridden by a lower pack, and an `open` one can.
+  its pack's `policy.yaml` marks `locked` cannot be replaced by a pack at a higher level (an org pack over built-in);
+  one marked `open` can.
 - **One in force.** An activation selects the catalog it uses (`"selected": {"routing_catalog": ["default"]}`), or a
   preset lists it in `activated_routing_catalogs`. The recommendation reads exactly one catalog in force: none is
   `409 routing_catalog_not_in_force`, and two are `409 routing_catalog_conflict`, naming both.
