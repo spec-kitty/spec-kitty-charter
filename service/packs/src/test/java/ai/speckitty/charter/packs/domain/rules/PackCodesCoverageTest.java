@@ -23,10 +23,13 @@ import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -294,8 +297,13 @@ class PackCodesCoverageTest {
         if (clean == null) {
             throw new IllegalStateException("the clean control is not among the plants");
         }
+        Path scratch;
         try {
-            Path scratch = Files.createTempDirectory("pack-codes-coverage");
+            scratch = Files.createTempDirectory("pack-codes-coverage");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        try {
             int n = 0;
             for (Written pack : written()) {
                 Path host = scratch.resolve(Integer.toString(n++));
@@ -322,9 +330,22 @@ class PackCodesCoverageTest {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } finally {
+            // The verdicts are judged; the written packs are not read again.
+            deleteTree(scratch);
         }
         judged.add(assemblyRefused(clean));
         return List.copyOf(judged);
+    }
+
+    private static void deleteTree(Path root) {
+        try (Stream<Path> paths = Files.walk(root)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /** Every code a pack's verdict can state: the domain's content codes, then the storage edge's. */
@@ -334,15 +355,35 @@ class PackCodesCoverageTest {
         return codes;
     }
 
-    @Test
-    @DisplayName("the enumeration is every code PackCodes and StorageCodes build")
-    void theEnumerationIsEveryCode() {
-        Set<ReasonCode> built = new LinkedHashSet<>(PackCodes.ALL);
-        built.addAll(StorageCodes.ALL);
-        Set<ReasonCode> enumerated = new LinkedHashSet<>(packCodes());
-        enumerated.addAll(CLOSURE_FIXTURES.keySet());
+    /** Every {@code public static final ReasonCode} field a class declares, read by reflection. */
+    static Set<ReasonCode> declaredCodes(Class<?> owner) {
+        Set<ReasonCode> codes = new LinkedHashSet<>();
+        for (Field field : owner.getDeclaredFields()) {
+            int modifiers = field.getModifiers();
+            if (Modifier.isPublic(modifiers)
+                    && Modifier.isStatic(modifiers)
+                    && Modifier.isFinal(modifiers)
+                    && field.getType() == ReasonCode.class) {
+                try {
+                    codes.add((ReasonCode) field.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException(field.getName(), e);
+                }
+            }
+        }
+        return codes;
+    }
 
-        assertThat(enumerated).containsExactlyInAnyOrderElementsOf(built);
+    @Test
+    @DisplayName(
+            "the enumeration is every ReasonCode constant PackCodes and StorageCodes declare, and every CLOSURE code")
+    void theEnumerationIsEveryCode() {
+        Set<ReasonCode> declared = new LinkedHashSet<>(declaredCodes(PackCodes.class));
+        declared.addAll(declaredCodes(StorageCodes.class));
+
+        // A constant left out of PackCodes.CONTENT or StorageCodes.ORDERED is never judged here: it fails, named.
+        assertThat(packCodes()).containsExactlyInAnyOrderElementsOf(declared);
+        assertThat(CLOSURE_FIXTURES.keySet()).containsExactlyInAnyOrderElementsOf(PackCodes.CLOSURE);
     }
 
     @ParameterizedTest(name = "{0}")
