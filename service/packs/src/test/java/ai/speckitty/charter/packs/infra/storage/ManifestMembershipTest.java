@@ -292,7 +292,7 @@ class ManifestMembershipTest {
                         new PackIdentifier(PROJECT),
                         null,
                         null,
-                        "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\nnodes: []\nedges: []\n");
+                        "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\ngenerated_by: charter-registration\nnodes: []\nedges: []\n");
 
         assertFreshAndDerived(bare);
     }
