@@ -1,4 +1,19 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-18T09:58:16.391096+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "b8089292b58726b438504576898efcd5339a70d2"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-18T09:58:16.391096+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "b8089292b58726b438504576898efcd5339a70d2",
+  "change_mode": "bulk_edit",
+  "contracts": "none",
+  "contracts_rationale": "No interface changes: 409 registration_conflict is already declared on every per-file write and delete path of contracts/charter (packs_packId_artifacts_*.yaml, packs_packId_relationships.yaml).",
   "create_return_branch": "feat/355-closure-in-pack-ruleset",
   "created_at": "2026-11-18T06:28:45.187489+00:00",
   "flattened": false,
@@ -17,8 +32,5 @@
   "target_branch": "feat/355-closure-in-pack-ruleset",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "explicit",
-  "contracts": "none",
-  "contracts_rationale": "No interface changes: 409 registration_conflict is already declared on every per-file write and delete path of contracts/charter (packs_packId_artifacts_*.yaml, packs_packId_relationships.yaml).",
-  "change_mode": "bulk_edit"
+  "topology_source": "explicit"
 }
