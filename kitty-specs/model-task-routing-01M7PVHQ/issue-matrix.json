@@ -13,15 +13,15 @@
       "wp": "WP10"
     },
     "#151": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Follow-up: refiled in spec-kitty-open-packs by the orchestrator once the kind's schema is on main (ADR-0080 decision 14); closed here then",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "Scheduled model-discipline currency pipeline",
+      "verdict": "deferred-with-followup",
       "wp": null
     },
     "#355": {
