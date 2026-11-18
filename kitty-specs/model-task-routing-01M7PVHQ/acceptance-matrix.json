@@ -118,11 +118,11 @@
       "criterion_id": "FR-012",
       "description": "Verify FR-012 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (every 400 and 404, the order outline, the 500's place, rows 8 to 10); errors.feature pins",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:44.665083+00:00",
+      "notes": "The refusals of ADR-0080 decision 9 in order, with routing_catalog_not_in_force, routing_catalog_conflict and task_type_not_found."
     },
     {
       "criterion_id": "FR-013",
