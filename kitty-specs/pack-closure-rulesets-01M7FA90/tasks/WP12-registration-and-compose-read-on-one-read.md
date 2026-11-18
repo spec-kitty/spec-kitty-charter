@@ -235,7 +235,7 @@ This work package edits two files of done or earlier work packages out-of-map, e
   refused; the compose read keeps serving a stored one (S4).
 - **The golden:** regenerate; every new registration row cites S2, and the compose read's repeated-artifact-id row
   cites S5.
-- **The open-packs draft:** hand the S2 codes to the orchestrator for `TBD-unmodelled-not-held` (planning pass).
+- **The open-packs draft:** hand the S2 codes to the orchestrator for open-packs#309 (planning pass).
 
 ## Definition of Done
 
