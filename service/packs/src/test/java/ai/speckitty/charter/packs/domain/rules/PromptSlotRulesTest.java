@@ -66,6 +66,7 @@ class PromptSlotRulesTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(prompts),
+                List.of(),
                 List.of());
     }
 

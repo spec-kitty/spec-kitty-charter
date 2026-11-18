@@ -50,6 +50,7 @@ class PackFileKindTest {
             Map.entry("core/assets/a.asset.yaml", "asset"),
             Map.entry("core/glossaries/a.glossary.yaml", "glossary"),
             Map.entry("core/skills/a.skill.yaml", "skill"),
+            Map.entry("core/routing_catalogs/default.routing-catalog.yaml", "routing-catalog"),
             Map.entry("core/presets/minimal.yaml", "preset"),
             Map.entry("core/pack-manifest.yaml", "pack-manifest"),
             Map.entry("core/policy.yaml", "policy"),
@@ -351,8 +352,9 @@ class PackFileKindTest {
     @Test
     void theVocabularyListsAreExposed() {
         assertThat(KINDS.nodeKinds())
-                .hasSize(18)
+                .hasSize(19)
                 .contains(
+                        "routing_catalog",
                         "directive",
                         "mission_type",
                         "action",
@@ -367,7 +369,7 @@ class PackFileKindTest {
                 .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(25);
+        assertThat(KINDS.fileRules()).hasSize(26);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
                         + " README.md's (#260, #451)")

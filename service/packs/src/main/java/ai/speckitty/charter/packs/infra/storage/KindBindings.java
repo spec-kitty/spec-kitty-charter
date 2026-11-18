@@ -30,7 +30,8 @@ final class KindBindings {
             MissionTypeBinding.INSTANCE,
             GuardBinding.INSTANCE,
             LifecycleBinding.INSTANCE,
-            StepEnhancementBinding.INSTANCE);
+            StepEnhancementBinding.INSTANCE,
+            RoutingCatalogBinding.INSTANCE);
 
     /**
      * The structure schemas a bound kind's Markdown companion is validated with (ADR-0039 as amended, #194), derived

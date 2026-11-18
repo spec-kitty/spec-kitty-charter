@@ -157,6 +157,14 @@
             }
           ],
           "description": "The step_enhancement ids. Absent means no exclusion of the kind. A step enhancement a pack requires or locks cannot be denied (409), as any kind."
+        },
+        "routing_catalog": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The routing_catalog ids. Absent means no exclusion of the kind. A catalog a pack requires or locks cannot be denied (409), as any kind."
         }
       }
     },
@@ -303,6 +311,14 @@
             }
           ],
           "description": "The step_enhancement ids. Absent means none of the kind; [] means none; a list means exactly those. Selecting one puts its additions, prompt fragments included, in force (ADR-0066)."
+        },
+        "routing_catalog": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The routing_catalog ids: the catalogs the activation selects (ADR-0080). The model recommendation reads the one catalog in force. Absent means none of the kind; [] means none; a list means exactly those."
         }
       }
     },
