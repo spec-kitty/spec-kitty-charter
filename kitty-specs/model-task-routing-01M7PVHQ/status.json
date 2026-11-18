@@ -1,7 +1,7 @@
 {
-  "event_count": 60,
-  "last_event_id": "01M7R2YFNJM4BB64BM36YH6HY7",
-  "materialized_at": "2026-11-18T19:43:10.514068+00:00",
+  "event_count": 62,
+  "last_event_id": "01M7R2ZSK60WZC03JVGA2G2WXD",
+  "materialized_at": "2026-11-18T19:43:53.412348+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -289,14 +289,22 @@
       }
     },
     "WP09": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7PXW6VRG4DRQ1VMP13GMDR5",
-      "last_transition_at": "2026-11-18T08:55:18.648254+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M7R2ZSK60WZC03JVGA2G2WXD",
+      "last_transition_at": "2026-11-18T19:43:53.412348+00:00",
+      "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T12:03:01Z – unknown – From WP01's review (non-blocking): WP09 creates :routing-edge and wires it, which WP01 deferred because an empty module fails Javadoc. These are recorded edits outside WP09's owned_files: settings.gradle.kts ('routing-edge' in the module list, with its comment), service/routing-edge/build.gradle.kts (as service/profiles-edge, minus infra.packs), service/deployable/build.gradle.kts (implementation(project(':routing-edge'))), service/charter-reports/build.gradle.kts ('routing-edge' to its application and infra packages), .github/workflows/sonar.yml (routing-edge main/test sources and binaries in all five lists) and .github/workflows/mutation-testing.yml (the module-list comment). HexagonalArchitectureTest also gains the ROUTING over ACTIVATIONS rules, with their known-bad controls and an every-ring-on-the-classpath check, modelled on PROFILES_OVER_PACKS_AND_ACTIVATIONS."
-      ]
+      ],
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 199,
+      "shell_pid_created_at": "1795031013.44"
     },
     "WP10": {
       "actor": "finalize-tasks",
