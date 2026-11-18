@@ -2356,12 +2356,12 @@
   rationale: >-
     The catalog is offering content, so it takes the offering's composition rules; the pack schema versions the shape.
   ruling: ADR-0080 decisions 1, 3, 5 and 6 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/loader.py (default_catalog_path)"
     - "core: offering/model_task_routing/models.py (ModelToTaskType)"
-    - "charter: docs/adr/0080-the-routing-catalog-kind-and-the-model-recommendation.md"
+    - "charter: routing-catalogs.feature; effective-routing-catalogs.feature; RoutingCatalogBindingTest"
 - id: DIV-702
   surface: "The routing catalog's override_policy"
   core: >-
@@ -2371,11 +2371,12 @@
   rationale: >-
     Modes that were never exercised have no meaning to keep, and enforcement is the client's.
   ruling: ADR-0080 decision 4 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/models.py (OverridePolicy)"
     - "core: offering/model_task_routing/evaluator.py (evaluate)"
+    - "charter: RoutingCatalogPolicy.yaml (closed: no override_policy); model-recommendation.feature (rows 4 to 6: no candidate filtered)"
 - id: DIV-703
   surface: "Catalog freshness"
   core: >-
@@ -2385,10 +2386,11 @@
   rationale: >-
     A clock-dependent answer would break the source fingerprint and the ETag; freshness is upkeep of pack content.
   ruling: ADR-0080 decision 14 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/loader.py (_is_stale)"
+    - "charter: RoutingCatalog.yaml (closed: no freshness_policy); model-recommendation.feature (two identical requests answer the same body and tag); ModelRecommendationServiceTest (100 identical calls)"
 - id: DIV-704
   surface: "tier_constraints and the step's model tier against the catalog's candidates"
   core: >-
@@ -2398,11 +2400,12 @@
   rationale: >-
     A tier is a recommendation the client may override, so a model outside it stays visible, flagged; a client that honors the tiers still needs no ranking of its own.
   ruling: ADR-0080 decision 12 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/evaluator.py (_tier_allowed, _resolve_model_tier)"
     - "core: offering/missions/step_offer_seam.py (resolve_model_tier_offer)"
+    - "charter: model-recommendation.feature (rows 4 to 6); RankerTest"
 - id: DIV-705
   surface: "Ties between catalog models"
   core: >-
@@ -2412,10 +2415,11 @@
   rationale: >-
     Which of equal models to use is the client's choice, and list order in a file carries no meaning (ADR-0036).
   ruling: ADR-0080 decision 11 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/evaluator.py (_best_catalog_candidate)"
+    - "charter: model-recommendation.feature (row 2); RankerTest"
 - id: DIV-706
   surface: "The profile's pick"
   core: >-
@@ -2425,10 +2429,11 @@
   rationale: >-
     The activation decides which profile content is in force.
   ruling: ADR-0080 decisions 9 and 13 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/evaluator.py (_profile_candidate)"
+    - "charter: model-recommendation.feature (row 1; a held profile out of force; a profile no pack holds)"
 - id: DIV-707
   surface: "An unknown task type, no catalog, and two catalogs"
   core: >-
@@ -2438,8 +2443,9 @@
   rationale: >-
     A misspelled task type or a missing catalog must not look like a valid answer.
   ruling: ADR-0080 decision 9 (operator, 2026-11-18)
-  status: proposed
+  status: open
   since: 2026-11-18
   evidence:
     - "core: offering/model_task_routing/loader.py (load)"
     - "core: offering/model_task_routing/evaluator.py (evaluate)"
+    - "charter: model-recommendation.feature (rows 7 to 10; the 404 and order outlines)"

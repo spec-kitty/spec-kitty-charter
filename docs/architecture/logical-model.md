@@ -302,6 +302,7 @@ facts; it does not restate them.
 | `template` | `template` | no | no | no | no | all |
 | `mission_type` (service only, DIV-501) | `mission-type` | yes | yes | no | no | all |
 | `step_enhancement` (service only) | `step-enhancement` | no | yes | no | no | none |
+| `routing_catalog` (service only, DIV-701) | `routing-catalog` | no | yes | no | no | none |
 
 In the service, the kind `glossary` (a glossary context, `glossaries/<id>.glossary.yaml`) replaced `glossary_pack`
 outright ([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)); the `glossary_pack` row is core's.
@@ -336,6 +337,14 @@ outright ([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)); 
   Core's org charter has no `required_step_enhancements`; in the service a governing preset may mark one must-have. The schema holds
   only prompt fragments so far, and the service does not store the kind yet; the guard and emit
   additions and the store binding are [#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428).
+- `routing_catalog`: the routing catalog of model-task routing
+  ([ADR-0080](/adr/0080-the-routing-catalog-kind-and-the-model-recommendation/), #108), a pack's
+  `routing_catalogs/<id>.routing-catalog.yaml`: task types, models with their fits and costs, a routing policy and
+  sources. It layers by its id and takes the mutability policy like any activatable kind; an activation selects it in
+  `selected.routing_catalog`, denies it in `deactivated.routing_catalog`, and a preset lists it in
+  `activated_routing_catalogs`, which a governing preset may mark must-have. `none` means no catalog is in force when
+  the key is absent. It is a `NodeKind` but no graph node and no edge endpoint. Exactly one catalog in force answers
+  `getModelRecommendation`; none or two are refused `409`.
 
 ### Accepted kinds and kind changes (epic #142, not built yet)
 
