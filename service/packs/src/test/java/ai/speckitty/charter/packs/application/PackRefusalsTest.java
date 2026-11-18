@@ -117,7 +117,9 @@ class PackRefusalsTest {
     @DisplayName(
             "every warning the PACK ruleset can emit is a diagnostic code, so an accepted upload never answers 500")
     void everyWarningTheRulesetCanEmitIsADiagnosticCode() {
-        // What the registration can emit; PackCodesCoverageTest holds every emitted code to these two lists.
+        // What the registration can emit. PackCodesCoverageTest#theEnumerationIsEveryCode holds every public
+        // ReasonCode constant of PackCodes and StorageCodes to these two lists, and the ArchUnit rule
+        // PACK_CODES_HAVE_ONE_OWNER keeps every pack token in those classes.
         List<ReasonCode> warnings = Stream.concat(PackCodes.CONTENT.stream(), StorageCodes.ORDERED.stream())
                 .filter(code -> code.severity() == Severity.WARNING)
                 .toList();

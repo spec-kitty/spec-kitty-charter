@@ -143,9 +143,16 @@ pack check in pack-validation", decision 4's pipeline and the 2026-11-13 amendme
   not held, and the read faults). The storage rules and their tokens (`StorageCodes`) live in
   `packs.infra.storage.rules`, which nothing outside `packs.infra.storage` and `deployable` names. The registration's
   second read and its fail-closed guard are gone: `PackAssembly` builds the aggregate from the same read, judging
-  nothing. The compose read runs only the store half of that reader (`StoreRead`, S7). It may skip the consistency
-  rules because a stored pack is immutable after registration: the registration judged its full read before storing it,
-  and only a new registration replaces it.
+  nothing. The compose read runs only the store half of that reader (`StoreRead`, S7), not `content()`. The store half
+  states some content rules itself, in their own codes and words, so that the composing read refuses a pack that breaks
+  them: among them the relationship endpoints, `duplicate_artifact_id`, the step enhancements, `duplicate_step_id`, the
+  prompt slots, the step links and the substep delegations, and, since #355, the reference closure, which the load
+  judges by calling `ReferenceClosure` and which leaves out an artifact that does not close. `StoreRead.assembly`,
+  `FilesystemPackStore.read` and `PackAssembly` hold the full list. It does not run the rest of `content()`. A
+  whole-pack registration judged its full read with `content()` before storing it, but nothing else that changes a
+  stored pack runs `content()`: a per-file write is judged on the aggregate's invariants, the reference closure and
+  the closures the pack joins (#355); a removal on its inbound references, the closures the pack joins and the
+  reference closure; and a pack placed in a configured directory was never registered.
 - **The compositions.** Each surface runs a named composition, with no surface profile and no mode flag:
   - `PackRulesets.content()`, a `ModularRuleset<PackContents>`, and `PackRulesets.closure()`;
   - `StorageRulesets.registration() = holding().must(content().on(TreeRead::contents))`;
