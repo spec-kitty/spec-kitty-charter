@@ -1,7 +1,7 @@
 {
-  "event_count": 63,
-  "last_event_id": "01M7R87PMM2JW9E9D6MN5HZ3V2",
-  "materialized_at": "2026-11-18T21:15:35.444091+00:00",
+  "event_count": 64,
+  "last_event_id": "01M7R8D4DCAJVCK5GB4SBCM2WZ",
+  "materialized_at": "2026-11-18T21:18:33.388100+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -289,14 +289,14 @@
       }
     },
     "WP09": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M7R87PMM2JW9E9D6MN5HZ3V2",
-      "last_transition_at": "2026-11-18T21:15:35.444091+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7R8D4DCAJVCK5GB4SBCM2WZ",
+      "last_transition_at": "2026-11-18T21:18:33.388100+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T12:03:01Z – unknown – From WP01's review (non-blocking): WP09 creates :routing-edge and wires it, which WP01 deferred because an empty module fails Javadoc. These are recorded edits outside WP09's owned_files: settings.gradle.kts ('routing-edge' in the module list, with its comment), service/routing-edge/build.gradle.kts (as service/profiles-edge, minus infra.packs), service/deployable/build.gradle.kts (implementation(project(':routing-edge'))), service/charter-reports/build.gradle.kts ('routing-edge' to its application and infra packages), .github/workflows/sonar.yml (routing-edge main/test sources and binaries in all five lists) and .github/workflows/mutation-testing.yml (the module-list comment). HexagonalArchitectureTest also gains the ROUTING over ACTIVATIONS rules, with their known-bad controls and an every-ring-on-the-classpath check, modelled on PROFILES_OVER_PACKS_AND_ACTIVATIONS.",
@@ -304,9 +304,9 @@
         "WP09 ready for review at lane-i e6b07f301"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 199,
-      "shell_pid_created_at": "1795031013.44",
+      "role": "reviewer",
+      "shell_pid": 729,
+      "shell_pid_created_at": "1795036706.47",
       "subtasks": {
         "T032": "done",
         "T033": "done",
