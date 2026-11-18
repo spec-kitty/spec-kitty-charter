@@ -1,7 +1,7 @@
 {
-  "event_count": 33,
-  "last_event_id": "01M7QF208R2MRANRD2DMP6ZST6",
-  "materialized_at": "2026-11-18T13:55:34.296203+00:00",
+  "event_count": 34,
+  "last_event_id": "01M7QF7AHDH224RJ86ZST2RSGN",
+  "materialized_at": "2026-11-18T13:58:28.653630+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 5
   },
   "work_packages": {
@@ -147,14 +147,14 @@
       }
     },
     "WP05": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M7QF208R2MRANRD2DMP6ZST6",
-      "last_transition_at": "2026-11-18T13:55:34.296203+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7QF7AHDH224RJ86ZST2RSGN",
+      "last_transition_at": "2026-11-18T13:58:28.653630+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T12:03:04Z – unknown – From WP01's review (non-blocking): add the EntrypointReachesRouting known-bad, which WP01 deferred. Create service/deployable/src/test/java/ai/speckitty/charter/packs/infra/api/badfixture/EntrypointReachesRouting.java holding a RoutingCatalog field, and assert it in theEntrypointSliceRuleFailsOnAnEntrypointThatNamesAnotherSlicesDomain beside EntrypointReachesProfiles (a recorded edit to HexagonalArchitectureTest). RoutingObjective already exists (made in WP01); keep it, and build the other domain types beside it. Also, once :packs depends on :routing, drop :deployable's direct implementation(project(':routing')) only if the transitive path keeps the routing classes on the gated classpath; otherwise keep it.",
@@ -162,9 +162,9 @@
         "Ready for review at lane-e 8f07ca802; ExamplePackCoverageTest (4) red by design until WP06"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 1294,
-      "shell_pid_created_at": "1795005383.67",
+      "role": "reviewer",
+      "shell_pid": 478,
+      "shell_pid_created_at": "1795010291.0",
       "subtasks": {
         "T016": "done",
         "T017": "done",
