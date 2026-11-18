@@ -342,7 +342,8 @@ public record EffectiveTag(String token) {
         private String normalized() {
             return "taskType=" + taskType
                     + "\nprofile=" + profileId
-                    + "\nmissionType=" + step.map(each -> "+" + each.missionType()).orElse("-")
+                    + "\nmissionType="
+                    + step.map(each -> "+" + each.missionType()).orElse("-")
                     + "\nstep=" + step.map(each -> "+" + each.step()).orElse("-")
                     + "\ntier=" + tier.map(each -> "+" + each.token()).orElse("-");
         }

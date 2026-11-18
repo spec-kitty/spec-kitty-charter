@@ -775,8 +775,8 @@ public class EffectiveReadService {
             offer = stepOffer(session, query.step().get());
         }
         EffectiveHeldWinner winner = catalogInForce(id, session, inForce);
-        CharterArtifact catalog = winnerOf(session, winner.ref(), inForce, "The model recommendation under activation "
-                        + id.value())
+        CharterArtifact catalog = winnerOf(
+                        session, winner.ref(), inForce, "The model recommendation under activation " + id.value())
                 .artifact();
         ModelBearer bearer = profile instanceof ModelBearer each ? each : NO_MODEL;
         return new RecommendationRead(
@@ -817,7 +817,9 @@ public class EffectiveReadService {
             throw new CharterRefusal(
                     RefusalCode.ROUTING_CATALOG_CONFLICT,
                     "The activation " + id.value() + " puts the routing catalogs "
-                            + inForceCatalogs.stream().map(each -> each.ref().id()).collect(Collectors.joining(", "))
+                            + inForceCatalogs.stream()
+                                    .map(each -> each.ref().id())
+                                    .collect(Collectors.joining(", "))
                             + " in force; deselect all but one.");
         }
         return inForceCatalogs.getFirst();

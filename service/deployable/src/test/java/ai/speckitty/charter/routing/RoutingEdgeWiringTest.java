@@ -30,8 +30,10 @@ class RoutingEdgeWiringTest {
 
     @Test
     void eachOfTheThreeRoutingEdgeRingsContributesItsConfiguration() {
-        assertThat(context.getBeansOfType(RoutingApplicationConfiguration.class)).hasSize(1);
+        assertThat(context.getBeansOfType(RoutingApplicationConfiguration.class))
+                .hasSize(1);
         assertThat(context.getBeansOfType(RoutingApiConfiguration.class)).hasSize(1);
-        assertThat(context.getBeansOfType(RoutingActivationsConfiguration.class)).hasSize(1);
+        assertThat(context.getBeansOfType(RoutingActivationsConfiguration.class))
+                .hasSize(1);
     }
 }

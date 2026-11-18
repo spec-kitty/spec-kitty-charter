@@ -92,6 +92,7 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveStepPrompt            | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
       | selectAgentProfile                | GET    | /activations/01ARWG13C000000000000000AC/roles/reviewer/profile-selection                      |
       | selectAgentProfileForStep         | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/review/profile-selection |
+      | getModelRecommendation            | GET    | /activations/01ARWG13C000000000000000AC/task-types/design/model-recommendation?agentProfile=java-jenny |
 
   Scenario Outline: <operation> with an Origin header is a 403 even with the right token
     When I <method> "<path>" with the header "Origin": "https://evil.example"
@@ -177,3 +178,4 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveStepPrompt            | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
       | selectAgentProfile                | GET    | /activations/01ARWG13C000000000000000AC/roles/reviewer/profile-selection                      |
       | selectAgentProfileForStep         | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/review/profile-selection |
+      | getModelRecommendation            | GET    | /activations/01ARWG13C000000000000000AC/task-types/design/model-recommendation?agentProfile=java-jenny |

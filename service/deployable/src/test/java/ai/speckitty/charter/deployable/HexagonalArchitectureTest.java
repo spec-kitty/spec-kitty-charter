@@ -1464,13 +1464,17 @@ class HexagonalArchitectureTest {
     }
 
     // ---- The routing slice over the activations slice (ADR-0080; ADR-0037, amendment of 2026-11-18) ------------
-    // The routing slice follows the profiles pattern: its domain stays in :routing, which packs.infra.storage binds, and
-    // its edge rings live in :routing-edge. The edge asks the activations slice from one adapter package of its own, and
-    // only its application and domain rings; it never names the packs slice; and neither slice names the routing edge back.
+    // The routing slice follows the profiles pattern: its domain stays in :routing, which packs.infra.storage binds,
+    // and
+    // its edge rings live in :routing-edge. The edge asks the activations slice from one adapter package of its own,
+    // and
+    // only its application and domain rings; it never names the packs slice; and neither slice names the routing edge
+    // back.
 
     private static final String ROUTING = ROOT + ".routing..";
     /** The one routing package that may name the activations slice. */
     private static final String ROUTING_ACTIVATIONS_ADAPTER = ROOT + ".routing.infra.activations..";
+
     private static final String ROUTING_APPLICATION = ROOT + ".routing.application..";
     private static final String ROUTING_INFRA = ROOT + ".routing.infra..";
 
