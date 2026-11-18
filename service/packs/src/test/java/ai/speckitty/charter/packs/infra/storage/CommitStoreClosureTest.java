@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -11,6 +12,9 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRemovalStore;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.domain.Directive;
+import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guard;
 import ai.speckitty.charter.packs.domain.GuardImplementation;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -116,6 +120,50 @@ class CommitStoreClosureTest {
         store.commit(PACK_ID, revision, PackWriteStore.Change.artifact(loaded.with(closing), closing));
 
         assertThat(traceability(load()).implementation().spelling()).isEqualTo("asset:carrier-lint");
+    }
+
+    @Test
+    @DisplayName("a relationship-only change is not judged by the closure: it changes no artifact")
+    void aRelationshipOnlyChangeIsNotRefused() throws IOException {
+        PackFixtures.copyOf(PACK, host);
+        Pack loaded = load();
+        // The aggregate carries a guard that does not close; a change that writes only relationships is not judged on
+        // it.
+        Pack dangling = loaded.with(implementedBy(traceability(loaded), "asset:missing-lint"));
+        CommitStorePackWriteStore store = store();
+        String revision = store.currentRevision(PACK_ID).token();
+
+        assertThatCode(() -> store.commit(
+                        PACK_ID,
+                        revision,
+                        PackWriteStore.Change.relationships(dangling, store.registeredRelationships(PACK_ID))))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("a write of a kind the closure does not judge, a directive, passes unjudged")
+    void aDirectiveWriteIsNotJudged() throws IOException {
+        PackFixtures.copyOf(PACK, host);
+        Pack loaded = load();
+        Directive directive = Directive.builder()
+                .id(new DirectiveIdentifier("PLAIN"))
+                .packId(PACK_ID)
+                .schemaVersion("1.0")
+                .title("Plain")
+                .intent("A directive the closure does not judge.")
+                .enforcement(Enforcement.REQUIRED)
+                .build();
+        // The same aggregate with a guard that does not close: the directive write is not judged on it.
+        Pack after = loaded.with(implementedBy(traceability(loaded), "asset:missing-lint"))
+                .with(directive);
+        CommitStorePackWriteStore store = store();
+        String revision = store.currentRevision(PACK_ID).token();
+
+        store.commit(PACK_ID, revision, PackWriteStore.Change.artifact(after, directive));
+
+        assertThat(load().artifacts(ArtifactKind.DIRECTIVE))
+                .extracting(artifact -> artifact.localId())
+                .contains("PLAIN");
     }
 
     @Test
