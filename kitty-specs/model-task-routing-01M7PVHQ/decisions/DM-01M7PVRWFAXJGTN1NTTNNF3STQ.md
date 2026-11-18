@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.catalog-pack`
 - **Input key:** `catalog_pack`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:32.554433+00:00`
+- **Resolved:** `2026-11-18T08:33:23.416694+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,7 +23,7 @@ ADR-0080 d3: which open-packs pack holds the routing catalog?
 
 ## Final answer
 
-_(none)_
+foundation, as routing_catalogs/default.routing-catalog.yaml, policy open (recommended)
 
 ## Rationale
 
@@ -31,3 +32,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:32.554433+00:00` - opened
+- `2026-11-18T08:33:23.416694+00:00` - resolved (final_answer="foundation, as routing_catalogs/default.routing-catalog.yaml, policy open (recommended)")

@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.objective`
 - **Input key:** `objective`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:48.067475+00:00`
+- **Resolved:** `2026-11-18T08:33:39.161287+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ ADR-0080 d10: objective is quality_first or weighted (core balanced and cost_fir
 
 ## Final answer
 
-_(none)_
+Keep quality_first | balanced | cost_first
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:48.067475+00:00` - opened
+- `2026-11-18T08:33:39.161287+00:00` - resolved (final_answer="Keep quality_first | balanced | cost_first")

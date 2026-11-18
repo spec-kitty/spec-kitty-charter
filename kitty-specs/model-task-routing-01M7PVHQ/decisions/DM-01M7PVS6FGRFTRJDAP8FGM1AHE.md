@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.read-path`
 - **Input key:** `recommendation_path`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:42.800441+00:00`
+- **Resolved:** `2026-11-18T08:33:33.970362+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -20,7 +21,7 @@ ADR-0080 d7-8: GET /activations/{id}/task-types/{taskType}/model-recommendation?
 
 ## Final answer
 
-_(none)_
+As proposed (recommended)
 
 ## Rationale
 
@@ -29,3 +30,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:42.800441+00:00` - opened
+- `2026-11-18T08:33:33.970362+00:00` - resolved (final_answer="As proposed (recommended)")

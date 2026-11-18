@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.refusals`
 - **Input key:** `recommendation_refusals`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:45.344270+00:00`
+- **Resolved:** `2026-11-18T08:33:36.522438+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,7 +23,7 @@ ADR-0080 d9: refusals in order 400, activation_not_found, artifact_not_found, mi
 
 ## Final answer
 
-_(none)_
+As proposed (recommended)
 
 ## Rationale
 
@@ -31,3 +32,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:45.344270+00:00` - opened
+- `2026-11-18T08:33:36.522438+00:00` - resolved (final_answer="As proposed (recommended)")

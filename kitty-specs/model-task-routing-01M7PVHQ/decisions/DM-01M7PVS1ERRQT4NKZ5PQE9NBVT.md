@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.kind-schema`
 - **Input key:** `kind_schema`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:37.656885+00:00`
+- **Resolved:** `2026-11-18T08:33:28.604910+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -20,7 +21,7 @@ ADR-0080 d5: kind token routing_catalog (file *.routing-catalog.yaml), schema as
 
 ## Final answer
 
-_(none)_
+As proposed (recommended)
 
 ## Rationale
 
@@ -29,3 +30,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:37.656885+00:00` - opened
+- `2026-11-18T08:33:28.604910+00:00` - resolved (final_answer="As proposed (recommended)")
