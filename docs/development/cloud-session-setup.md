@@ -98,6 +98,11 @@ The script was run end to end in a cloud session on 2026-10-27 with the domains 
 
 ### Optional: resolve Maven Central through a mirror
 
+Since 2026-11-18 this repository's build does this itself: its settings put Google's mirror first
+([ADR-0079](/adr/0079-dependencies-resolve-through-a-maven-central-mirror/)), so a checkout of this
+repository needs no init script. Keep the script for the sibling repositories a session builds, and
+for a checkout older than that change.
+
 Maven Central rate-limits by address (HTTP 429), and the sessions of one environment share an
 address. Every fresh checkout (a lane worktree included) downloads the build-logic, Spotless and
 Checkstyle tooling again, so builds stall. Add this to the setup script to resolve Maven Central
