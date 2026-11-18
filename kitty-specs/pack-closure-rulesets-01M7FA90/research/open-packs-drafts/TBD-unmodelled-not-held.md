@@ -1,7 +1,7 @@
-# open-packs#TBD-unmodelled-not-held: a file no rule models is warned about, then ignored
+# open-packs#309: a file no rule models is warned about, then ignored
 
 > Draft for `spec-kitty/spec-kitty-open-packs`, written by charter mission `pack-closure-rulesets-01M7FA90` (WP02).
-> The orchestrator files it and replaces `TBD-unmodelled-not-held` with the issue number.
+> Filed as [spec-kitty-open-packs#309](https://github.com/spec-kitty/spec-kitty-open-packs/issues/309) on 2026-11-18, with an addendum for #355.
 
 ## Title
 

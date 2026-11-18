@@ -28,7 +28,7 @@ done):
 | T008 | Rewrite the `unmodelled` scenarios, and fix the titles and comments | WP02 | [P] |
 | T009 | Contract records: the `### Breaking` fragment, the 2026-11-11 fragment, `DiagnosticCode.yaml`, `packs_packId.yaml` | WP02 | [P] |
 | T010 | Packs contract wording (`file-kinds.yaml`, `README.md`, `classifier-cases.yaml`, the packs CHANGELOG) | WP02 | [P] |
-| T011 | Open-packs draft `open-packs#TBD-unmodelled-not-held`; update the golden snapshot for Q1 | WP02 | |
+| T011 | Open-packs draft `open-packs#309`; update the golden snapshot for Q1 | WP02 | |
 | T012 | `rules/GraphBinding`: the graph build (`registeredGraph`, `build`, `joinsItself`, `TENSION`, endpoint constants) | WP03 | |
 | T013 | `rules/Paths`: `bodyPathEscape` and `assetPathEscape`, as plain functions | WP03 | [P] |
 | T014 | `rules/DescriptorChecks`: descriptor well-formedness as one pure function, for the reader's precheck, the offering and the resolver | WP03 | [P] |

@@ -146,7 +146,7 @@ WP04, WP05 and WP08 see it.
      findings at those files are gone (row 33, V). The packs contract followed in the same change: the
      `**/charter.yaml` rule is removed and the graph-shard rule narrowed to `*/*.graph.yaml`, with their classifier
      cases (`core/graph/a.graph.yaml` and `project/charter.yaml` are `unmodelled`) and a packs `### Breaking` line;
-     the open-packs draft (`TBD-unmodelled-not-held`) carries the same reclassification. A not-held file carries an
+     the open-packs draft (filed as open-packs#309) carries the same reclassification. A not-held file carries an
      explicit kind (`EXCLUDED` or `UNMODELLED`), a retired file is no longer also listed as not held, and
      `HeldSetAgreementTest` pins validate mode's not-held files to the store's until WP05's one census. Validate mode
      warns for every not-held file, an excluded one too, since holding is what counts and not the reason (WP11 review,

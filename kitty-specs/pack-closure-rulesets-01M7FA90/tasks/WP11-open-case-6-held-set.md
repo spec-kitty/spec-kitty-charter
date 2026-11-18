@@ -147,7 +147,7 @@ makes the one census; here the two derivations are made to agree and an agreemen
   duplicate warning (T065, NFR-002's "WP02 review L2" entry), or one of the two excluded-file validate warnings
   (`example-packs/built-in`, `example-packs/org-base`; validate mode warns for EXCLUDED and UNMODELLED files alike,
   NFR-002's excluded-files entry, review cycle 1). Record the counts.
-- **The open-packs draft** `TBD-unmodelled-not-held`: hand the reclassification (the narrowed globs and cases) to the
+- **The open-packs draft** (open-packs#309): hand the reclassification (the narrowed globs and cases) to the
   orchestrator, who writes it in the planning pass.
 - **The note** `docs/development/notes/pack-code-unification.md` (WP01's file; out-of-map): open case 6's "Validate
   mode (WP05 and WP08, open)" becomes "settled by WP11", and open case 8 (the clean control's missing
