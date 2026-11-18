@@ -29,8 +29,8 @@
   'role' does not match its pattern`); its code and its choice of fault are unchanged.
 - Core's seam: a client that matched `schema`, `domain`, `reference`, `template` or `invalid` reads the codes above; a
   client that read the pack's descriptor fault at pointer `pack` reads it at `pack.yaml`.
-- Scenarios rewritten (9): `registration/whole-pack-registration.feature` (the retired `active_charter` key: pointer
-  `pack.yaml`, `unknown key 'active_charter'`), `prompt-fragment-refusals.feature` (three step enhancements that break
+- Scenarios rewritten (10): `registration/whole-pack-registration.feature` (the retired `active_charter` key: pointer
+  `pack.yaml`, `unknown key 'active_charter'`), `prompt-fragment-refusals.feature` (four step enhancements that break
   their schema or stem: `artifact_schema_error`), `offering.feature` (an agent profile's role pattern, in the composing
   read's detail) and `pack-id-length.feature` (four over-long values, in the composing read's detail: `'/id' breaks
   schema keyword 'maxLength'`, the fixed fallback of a keyword the vocabulary has no row for).

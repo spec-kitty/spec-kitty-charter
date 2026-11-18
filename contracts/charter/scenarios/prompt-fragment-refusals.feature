@@ -280,7 +280,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
-    And the field at "/problem/violations/0/code" is "schema"
+    And the field at "/problem/violations/0/code" is "artifact_schema_error"
     And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
     When I PUT "/packs/enhancer" with the archive "enhancer"
     And I poll the registration until it ends
