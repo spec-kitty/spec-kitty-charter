@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: closure-symmetry-01M7PNFT
 mission_id: 01M7PNFTY2WEHNNV3A38K7EQK7
-generated_at: '2026-11-18T06:35:45.050485+00:00'
+generated_at: '2026-11-18T07:29:38.250390+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -12,19 +12,19 @@ input_artifacts:
     sha256: 5879440eaa8d7de0825d17349bb08e26cc43253e06c30043d7b3a80ebe4ae81b
   plan.md:
     path: kitty-specs/closure-symmetry-01M7PNFT/plan.md
-    sha256: 76f201a95af05c361a6057557fe3bc3848dbd3d13234a353cdbc06290d3c646c
+    sha256: 23833d323ba394d19ddc85fce58c2c7d4d20560d4910626f6f92165aadab8ff7
   tasks.md:
     path: kitty-specs/closure-symmetry-01M7PNFT/tasks.md
-    sha256: 8ea3d233c065b171f2a3125c90f3133729e0c5de0ce5ca785339ee1cbdb3539f
+    sha256: a24ec4ddc57f5102218f3fa1b6c050d82aea05dda91114cc9eac950b3b3381a0
   charter:
     path: .kittify/charter/charter.yaml
     sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
 verdict: ready
 issue_counts:
-  medium: 2
-  low: 4
-  high: 0
   critical: 0
+  high: 0
+  medium: 2
+  low: 3
   info: 0
 findings:
 - id: C1
@@ -34,56 +34,43 @@ findings:
 - id: D1
   severity: medium
   category: charter
-  summary: The charter asks for an adversarial squad at the plan point and before merge; the plan uses one independent reviewer per point and logs that as an open review item.
+  summary: The charter asks for an adversarial squad at the plan point and before merge; one independent reviewer runs at each point, logged as an open review item.
 - id: F1
   severity: low
   category: inconsistency
-  summary: plan.md IC-04 says the table is written red first, before IC-01 to IC-03; tasks.md orders WP03 after WP01 and WP02, with red-first held by each WP's own unit tests.
+  summary: WP03 T017 asked to fold GuardAndLifecycleLoadTest's refusal cases into the table; FR-002 keeps the existing load tests unchanged, so they stay as the load's ratchet.
 - id: F2
   severity: low
   category: inconsistency
-  summary: WP01's bulk rename edits GuardAndLifecycleLoadTest, which WP03 owns; recorded as an out-of-map edit in tasks.md.
+  summary: WP01's bulk rename edits GuardAndLifecycleLoadTest, which WP03 owns; recorded as an out-of-map edit.
 - id: C2
   severity: low
   category: coverage
   summary: SC-003 and SC-004 are not mapped to a WP; SC-003 is met by WP04 T021, SC-004 by the PR closeout.
-- id: B1
-  severity: low
-  category: ambiguity
-  summary: 'The parent epic is #142 in the issue and #549 in the dispatch brief; the closeout ticks both.'
 ---
 
 ## Specification Analysis Report
 
+Re-run after the plan review's eleven findings were folded into research.md (dispositions table), plan.md, data-model.md
+and the WP prompts (the shapes as built: `ReferenceClosure`, `ReferenceRules`, `ReferenceFacts` on `Assembled`, the
+store reading the pack it judges on removal, #593's 4 s bound under the 5 s registry lock).
+
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Coverage | MEDIUM | spec.md NFR-001, NFR-003; tasks.md | Gates with no task | Run both at closeout and report them in the PR body |
-| D1 | Charter | MEDIUM | plan.md Charter Check | One reviewer in place of a squad | Keep the open review item visible in the PR for the operator |
-| F1 | Inconsistency | LOW | plan.md IC-04; tasks.md WP03 | Table order vs red-first | Red-first evidence comes from WP01's and WP02's unit tests, committed before their fixes |
-| F2 | Inconsistency | LOW | tasks.md WP01 risks | Out-of-map one-line rename | Accept as recorded |
+| C1 | Coverage | MEDIUM | spec.md NFR-001, NFR-003 | Gates with no task | Run both at closeout and report them in the PR body |
+| D1 | Charter | MEDIUM | plan.md Charter Check | One reviewer in place of a squad | Keep the open review item visible in the PR |
+| F1 | Inconsistency | LOW | tasks/WP03 T017; spec FR-002 | Fold vs keep | Keep the load tests unchanged (FR-002); the table adds no per-path closure tests beside them |
+| F2 | Inconsistency | LOW | tasks.md WP01 | Out-of-map one-line rename | Accept as recorded |
 | C2 | Coverage | LOW | spec.md SC-003, SC-004 | Success criteria unmapped | Covered by T021 and the closeout |
-| B1 | Ambiguity | LOW | spec.md input | Two epics named | Tick both at closeout |
 
-**Coverage Summary Table:**
+**Coverage Summary Table:** FR-001 to FR-008 each have tasks (T001 to T023); NFR-002 has T021; NFR-001 and NFR-003 are
+closeout gates.
 
-| Requirement Key | Has Task? | Task IDs | Notes |
-|-----------------|-----------|----------|-------|
-| FR-001 | yes | T001-T005 | |
-| FR-002 | yes | T005, T008 | |
-| FR-003 | yes | T006-T008 | |
-| FR-004 | yes | T009-T012 | |
-| FR-005 | yes | T008 | |
-| FR-006 | yes | T013-T017 | |
-| FR-007 | yes | T022-T023 | |
-| FR-008 | yes | T018-T021 | |
-| NFR-001 | no | - | closeout gate |
-| NFR-002 | yes | T021 | |
-| NFR-003 | no | - | closeout gate |
-
-**Charter Alignment Issues:** D1 (logged open review item). No conflict with the model rules: no alias, no legacy reader.
+**Charter Alignment Issues:** D1 only.
 
 **Unmapped Tasks:** none.
 
-**Metrics:** 11 requirements; 23 tasks; coverage 82% (9 of 11, the two gaps are closeout gates); ambiguity 1; duplication 0; critical 0.
+**Metrics:** 11 requirements; 23 tasks; coverage 82% (the two gaps are closeout gates); ambiguity 0; duplication 0;
+critical 0.
 
-**Next Actions:** proceed to implementation; run NFR-001 and NFR-003 at closeout.
+**Next Actions:** proceed; run NFR-001 and NFR-003 at closeout.
