@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Pack schemas
 description: "One page per charter pack JSON Schema, each with a rendered diagram and property list generated from the schema file."
 doc_status: draft
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-18T00:00:00Z
 type: Architecture
 kind: Hub
 audience:
@@ -39,6 +39,7 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 - [Preset](/architecture/pack-schemas/preset/) — an activation preset that selects artifacts and mission types.
 - [Procedure](/architecture/pack-schemas/procedure/) — a reusable workflow with entry and exit conditions.
 - [Prompt fragment](/architecture/pack-schemas/prompt-fragment/) — the parsed Markdown structure of a step enhancement's prompt fragment companion.
+- [Routing catalog](/architecture/pack-schemas/routing-catalog/) — the task types, models, routing policy and sources a model recommendation ranks.
 - [Pack skill](/architecture/pack-schemas/skill/) — a thin skill with parameters distributed in a pack.
 - [Step enhancement](/architecture/pack-schemas/step-enhancement/) — the prompt fragments a pack contributes to a mission step.
 - [Styleguide](/architecture/pack-schemas/styleguide/) — the conventions, anti-patterns and quality tests of one scope.
