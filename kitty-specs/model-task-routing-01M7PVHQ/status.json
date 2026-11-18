@@ -1,7 +1,7 @@
 {
-  "event_count": 28,
-  "last_event_id": "01M7QADXJVZMX3G2GCG643ARZZ",
-  "materialized_at": "2026-11-18T12:34:41.883577+00:00",
+  "event_count": 29,
+  "last_event_id": "01M7QAJ4Q6TA2PR06A2SW14KAF",
+  "materialized_at": "2026-11-18T12:37:00.262626+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 6
   },
   "work_packages": {
@@ -118,15 +118,15 @@
       }
     },
     "WP04": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M7QADXJVZMX3G2GCG643ARZZ",
-      "last_transition_at": "2026-11-18T12:34:41.883577+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7QAJ4Q6TA2PR06A2SW14KAF",
+      "last_transition_at": "2026-11-18T12:37:00.262626+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T12:34:27Z – claude – shell_pid=27381 – Green: :missions:test, :missions-edge:test, :packs:test --tests '*MissionType*' (MissionTypeBindingTest 37/0 incl. the new tier round trip, the schema refusal row 'unknown model tier'), :contracts:check, and compileTestJava over every module. MissionStepSummary lists no step fields, so it is unchanged. The generator inlines CostTier as MissionStep.ModelTierEnum (the repo's convention for shared enums); WireTokenParityTest pins that copy against the kernel (a recorded edit to a packs test; the class as a whole stays red until WP05 for the kind's own pairs). Recorded edits outside the map: the tests whose MissionStep constructor calls gained Optional.empty() (ClosureViewTest, StepDocumentRulesTest in packs; HeldCandidatesTest, MissionTypeReadServiceTest, EffectiveMissionTypeReadServiceTest, ActivationsMissionTypesTest, PacksMissionTypesTest in missions-edge), and WireTokenParityTest. The packs CHANGELOG line is under 'Changed', at the end of the section, to avoid WP03's lines. The step-read scenario asserting modelTier on an example step lands in WP06, which gives an example step a tier.",
@@ -134,9 +134,9 @@
         "- 2026-11-18T12:34:57Z – claude – shell_pid=27381 – Complete list of recorded edits outside WP04's owned_files (the guard's warnings): contracts/charter/schemas/_index.yaml (registers CostTier.yaml); contracts/packs/CHANGELOG.md (the model_tier line); service/packs/.../MissionTypeYaml.java (reads and writes model_tier; the DSO's YAML codec, a planning omission); and the tests MissionTypeBindingTest, MissionTypeSchemaTest, ClosureViewTest, StepDocumentRulesTest and WireTokenParityTest. Each change is the minimum the field needs."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 27381,
-      "shell_pid_created_at": "1795003991.42",
+      "role": "reviewer",
+      "shell_pid": 280,
+      "shell_pid_created_at": "1795005414.31",
       "subtasks": {
         "T013": "done",
         "T014": "done",
