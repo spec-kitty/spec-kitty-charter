@@ -165,7 +165,11 @@ public final class PackCompositionResolver {
         NAME_CONFLICT(RefusalCode.PACK_NAME_CONFLICT),
         /** Two configured packs declare the same {@code pack_id}. */
         DUPLICATE_ID(RefusalCode.PACK_DUPLICATE_ID),
-        /** Two siblings at one level change or define one artifact and no pack of the compose settles it with an {@code overrides} edge. */
+        /**
+         * Two siblings at one level change or define one artifact and the distribution pack does not settle it with an
+         * {@code overrides} edge: no root declares one, a pack that is not the distribution pack does, or more than one
+         * root does (#358).
+         */
         SIBLING_CONFLICT(RefusalCode.PACK_SIBLING_CONFLICT),
         /** A bare reference resolves only in another pack of the compose; the refusal names the holding pack. */
         REFERENCE_UNQUALIFIED(RefusalCode.PACK_REFERENCE_UNQUALIFIED),
@@ -369,7 +373,7 @@ public final class PackCompositionResolver {
                 .filter(pack -> seen.add(pack.descriptor().packId()))
                 .toList();
         // A twin pack_id is read as its first holder here too, so one cause is reported once.
-        faults.addAll(siblingContests(distinct));
+        faults.addAll(siblingContests(distinct, composeRoots(distinct)));
         Ordering ordering = topologicalOrder(distinct, byId, edges);
         faults.addAll(ordering.cycles());
         return new Composition(List.copyOf(faults), ordering.order(), List.copyOf(ordered));
@@ -734,26 +738,62 @@ public final class PackCompositionResolver {
 
     /**
      * Every set of two or more packs of one configured level that contest an artifact, one refusal per artifact and
-     * level, unless a pack of the compose declares an {@code overrides} edge settling it (FR-012; ADR-0048 decision 9,
-     * ADR-0053 decision 5): a conflict must be a decision, not load order. Two packs contest an artifact when both
+     * level, unless the distribution pack declares an {@code overrides} edge settling it (FR-012; ADR-0048 decision 9,
+     * ADR-0053 decision 5): a conflict must be a decision, not load order. The distribution pack is derived (#358,
+     * operator ruling (a) of 2026-11-17): it is a {@linkplain #composeRoots root} of the compose that is not itself a
+     * contestant. An edge any other pack declares settles nothing, and the refusal names that pack; two roots settling
+     * one contest conflict, whether or not they name one winner, and the refusal names both. Two packs contest an artifact when both
      * change it (an
      * {@code overrides} relation on it) or when both define it (each holds an artifact with that id); a definer and an
      * enhancer, or two enhancers, contest nothing (A14, decision {@code DM-01M6RA92BS6GGCYTRCFQDYYY5S}, rule C14), and
      * a settlement names exactly one winner (rule C15). An edge settles
      * a contest only when its {@code member} is one of the packs contesting that artifact at that level; an edge
-     * naming any other member settles nothing and the refusal says so. The edges of the whole compose are read
-     * together, so a contest is settled only when they agree on one winner: two packs naming different winners leave
-     * the winner to load order, and the refusal says so. Packs at different levels are no siblings —
+     * naming any other member settles nothing and the refusal says so. Packs at different levels are no siblings —
      * the layer merge across levels composes them (ADR-0053 decision 6) — and the pack named is the second contestant
      * in the stable order, so the refusal is deterministic.
      *
      * <p>Artifacts are compared by their bare URN: a {@code <pack>::} qualifier on a reference or an
      * {@code overrides.artifact} names where it is read, not which artifact it is.
      */
-    private static List<Refusal> siblingContests(List<PackUnderResolution> ordered) {
-        List<Refusal> faults = new ArrayList<>(contests(ordered, PackUnderResolution::changedArtifacts, "change"));
-        faults.addAll(contests(ordered, PackCompositionResolver::contestableDefinitions, "define"));
+    private static List<Refusal> siblingContests(List<PackUnderResolution> ordered, Set<String> roots) {
+        List<Refusal> faults =
+                new ArrayList<>(contests(ordered, roots, PackUnderResolution::changedArtifacts, "change"));
+        faults.addAll(contests(ordered, roots, PackCompositionResolver::contestableDefinitions, "define"));
         return faults;
+    }
+
+    /**
+     * The roots of a compose (#358, operator ruling (a) of 2026-11-17): the {@code pack_id}s of the packs that no other
+     * pack of the compose depends on, by {@code depends_on} or {@code parent_pack} (ADR-0048 decisions 8 and 12: the
+     * distribution depends on its members). The distribution pack is derived, never declared: only a root that is not
+     * a contestant settles a sibling contest, and two roots that settle one contest conflict. The compose and the layer
+     * merge both read the roots here, so they agree on which {@code overrides} edges settle.
+     *
+     * @param packs the packs of the compose
+     * @return the {@code pack_id}s of the roots, each once, in the order given; an edge to a pack outside the set, or to
+     *     the pack itself, makes no other pack a member
+     */
+    public static Set<String> composeRoots(List<PackUnderResolution> packs) {
+        Objects.requireNonNull(packs, "packs");
+        Set<String> present = new HashSet<>();
+        packs.forEach(pack -> present.add(pack.descriptor().packId()));
+        Set<String> dependedOn = new HashSet<>();
+        for (PackUnderResolution pack : packs) {
+            String own = pack.descriptor().packId();
+            List<String> targets = new ArrayList<>();
+            pack.descriptor().dependencies().forEach(dependency -> targets.add(dependency.packId()));
+            pack.descriptor().parentPack().ifPresent(targets::add);
+            targets.stream()
+                    .filter(target -> !target.equals(own) && present.contains(target))
+                    .forEach(dependedOn::add);
+        }
+        Set<String> roots = new LinkedHashSet<>();
+        for (PackUnderResolution pack : packs) {
+            if (!dependedOn.contains(pack.descriptor().packId())) {
+                roots.add(pack.descriptor().packId());
+            }
+        }
+        return roots;
     }
 
     /**
@@ -770,7 +810,10 @@ public final class PackCompositionResolver {
     }
 
     private static List<Refusal> contests(
-            List<PackUnderResolution> ordered, Function<PackUnderResolution, List<String>> artifactsOf, String verb) {
+            List<PackUnderResolution> ordered,
+            Set<String> roots,
+            Function<PackUnderResolution, List<String>> artifactsOf,
+            String verb) {
         List<Refusal> faults = new ArrayList<>();
         Map<String, List<PackUnderResolution>> contestants = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
@@ -796,30 +839,49 @@ public final class PackCompositionResolver {
                         .map(pack -> pack.descriptor().packId())
                         .toList();
                 Set<String> staleMembers = new LinkedHashSet<>();
-                Set<String> winners = new LinkedHashSet<>();
+                List<PackUnderResolution> settlers = new ArrayList<>();
+                List<PackUnderResolution> notDistribution = new ArrayList<>();
                 for (PackUnderResolution pack : ordered) {
                     for (PackOverride override : pack.descriptor().overrides()) {
                         if (!bare(override.artifact()).equals(artifact)) {
                             continue;
                         }
-                        if (ids.contains(override.member())) {
-                            winners.add(override.member());
-                        } else {
+                        if (!ids.contains(override.member())) {
                             staleMembers.add(override.member());
+                        } else if (isDistribution(pack, roots, ids)) {
+                            addOnce(settlers, pack);
+                        } else {
+                            addOnce(notDistribution, pack);
                         }
                     }
                 }
-                if (winners.size() == 1) {
+                if (settlers.size() == 1) {
                     continue;
                 }
-                String reason = winners.size() > 1
-                        ? "overrides edges settling it name different winners, " + String.join(", ", winners)
-                        : staleMembers.isEmpty()
-                                ? "no pack of the compose declares an overrides edge settling it"
-                                : "an overrides edge settling it names " + String.join(", ", staleMembers)
-                                        + ", which is not a contestant";
+                String reason;
+                List<PackUnderResolution> declarers = List.of();
+                if (settlers.size() > 1) {
+                    declarers = settlers;
+                    reason = "overrides edges settling it are declared by " + labels(settlers)
+                            + ", more than one compose root: only the distribution pack, the one root, settles a"
+                            + " contest";
+                } else if (!notDistribution.isEmpty()) {
+                    declarers = notDistribution;
+                    reason = (notDistribution.size() == 1
+                                    ? "an overrides edge settling it is declared by " + label(notDistribution.getFirst())
+                                            + ", which is not the distribution pack"
+                                    : "overrides edges settling it are declared by " + labels(notDistribution)
+                                            + ", which are not the distribution pack")
+                            + ": only the compose root no other pack depends on settles a contest";
+                } else if (staleMembers.isEmpty()) {
+                    reason = "no pack of the compose declares an overrides edge settling it";
+                } else {
+                    reason = "an overrides edge settling it names " + String.join(", ", staleMembers)
+                            + ", which is not a contestant";
+                }
                 List<PackUnderResolution> named = new ArrayList<>(siblings);
                 named.addFirst(named.remove(1));
+                declarers.stream().filter(pack -> !named.contains(pack)).forEach(named::add);
                 faults.add(new Refusal(
                         Failure.SIBLING_CONFLICT,
                         named(named.toArray(PackUnderResolution[]::new)),
@@ -829,6 +891,21 @@ public final class PackCompositionResolver {
             }
         }
         return faults;
+    }
+
+    /**
+     * Whether a pack's {@code overrides} edge may settle a contest (#358): it is a root of the compose, and it is not one
+     * of the contestants, which cannot decide their own contest.
+     */
+    private static void addOnce(List<PackUnderResolution> packs, PackUnderResolution pack) {
+        if (!packs.contains(pack)) {
+            packs.add(pack);
+        }
+    }
+
+    private static boolean isDistribution(PackUnderResolution pack, Set<String> roots, List<String> contestants) {
+        String packId = pack.descriptor().packId();
+        return roots.contains(packId) && !contestants.contains(packId);
     }
 
     /**

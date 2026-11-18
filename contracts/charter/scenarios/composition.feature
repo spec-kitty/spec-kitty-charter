@@ -718,8 +718,9 @@ Feature: The compose resolves the configured packs' dependency graph
 
   Scenario: An overrides edge settling the contest serves the compose
     The negative control of the sibling refusal (User Story 2, scenario 7): the same two siblings
-    and the same two graphs, with a third pack of the compose declaring the overrides edge that
-    names the winning member. The compose is served, all three packs in the stable order.
+    and the same two graphs, with the distribution pack, which depends on both and which no pack
+    depends on (#358), declaring the overrides edge that names the winning member. The compose is
+    served, the members before the distribution pack.
     Given the org pack "left" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -791,6 +792,11 @@ Feature: The compose resolves the configured packs' dependency graph
       parent_pack: null
       name: settler-pack
       pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '>=1.0'
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
       overrides:
       - artifact: directive:software-dev/test-first
         member: 01M4P01D5TWB5FKZGNNQG3943R
@@ -847,6 +853,200 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "left"
     And the field at "/packs/1/name" is "left-pack"
     And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A member's overrides edge does not settle a contest, and the refusal names the member
+    #358, operator ruling (a): the distribution pack is derived, the compose root that no other pack
+    depends on, and only its overrides edge settles a sibling contest. Here member declares the edge
+    naming left, and the distribution pack dist depends on left, right and member, so member is not a
+    root: the contest stays unsettled, and the refusal names member after the two siblings. The
+    distribution-pack control is the scenario above that settles the contest.
+    Given the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      """
+    And the org pack "left" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      """
+    And the org pack "right" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "member" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943V
+      pack_version: 1.0.0
+      parent_pack: null
+      name: member-pack
+      pack_level: org
+      overrides:
+      - artifact: directive:SHARE
+        member: 01M4P01D5TWB5FKZGNNQG3943R
+      """
+    And the org pack "dist" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: dist-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '>=1.0'
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943V
+        range: '>=1.0'
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_sibling_conflict"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `member-pack` (01M4P01D5TWB5FKZGNNQG3943V), which is not the distribution pack: only the compose root no other pack depends on settles a contest"
+    And the field at "/packs/0/packId" is "right"
+    And the field at "/packs/1/packId" is "left"
+    And the field at "/packs/2/packId" is "member"
+    And the field at "/packs/2/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943V"
+
+  Scenario: A contestant's overrides edge does not settle its own contest
+    #358: a contestant cannot decide its own contest, even when nothing depends on it. left declares
+    the edge naming itself; with no distribution pack the contest stays unsettled and the refusal
+    names left as the declaring pack (it is already named, as a sibling).
+    Given the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      overrides:
+      - artifact: directive:SHARE
+        member: 01M4P01D5TWB5FKZGNNQG3943R
+      """
+    And the org pack "left" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      """
+    And the org pack "right" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_sibling_conflict"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `left-pack` (01M4P01D5TWB5FKZGNNQG3943R), which is not the distribution pack: only the compose root no other pack depends on settles a contest"
+    And the field at "/packs/0/packId" is "right"
+    And the field at "/packs/1/packId" is "left"
+
+  Scenario: Two compose roots settling one artifact refuse the compose
+    #358: two packs that both depend on the siblings and that no pack depends on are two roots, so
+    the compose has no single distribution pack. Both settle directive:SHARE, naming the same winner,
+    and the compose is refused pack_sibling_conflict naming both roots after the siblings.
+    Given the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      """
+    And the org pack "left" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      """
+    And the org pack "right" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "dist" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: dist-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '>=1.0'
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
+      overrides:
+      - artifact: directive:SHARE
+        member: 01M4P01D5TWB5FKZGNNQG3943R
+      """
+    And the org pack "other" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943W
+      pack_version: 1.0.0
+      parent_pack: null
+      name: other-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '>=1.0'
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
+      overrides:
+      - artifact: directive:SHARE
+        member: 01M4P01D5TWB5FKZGNNQG3943R
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_sibling_conflict"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and overrides edges settling it are declared by packs `dist-pack` (01M4P01D5TWB5FKZGNNQG3943T) and `other-pack` (01M4P01D5TWB5FKZGNNQG3943W), more than one compose root: only the distribution pack, the one root, settles a contest"
+    And the field at "/packs/2/packId" is "dist"
+    And the field at "/packs/3/packId" is "other"
 
   Scenario: An org pack and a project pack defining one artifact compose as a layer override
     The negative control of the duplicate-definition refusal: the same directive held at two

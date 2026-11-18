@@ -236,16 +236,18 @@ and two enhancers do not.
 *Source:* ADR-0048 d9; ADR-0053 d5 (amended 2026-11-03), d21; A14, decision `DM-01M6RA92BS6GGCYTRCFQDYYY5S`.
 **Built (PR A0):** `changedArtifacts` no longer counts `enhances`, so two sibling enhancers compose, and a settlement names exactly one winner.
 
-**C15 Sibling settlement.** Let `Win(u, S) = {m ∈ {pid(s) | s ∈ S} | ∃p ∈ C. {artifact: u, member: m} ∈ ovr(p)}`. A
-conflict on `u` among siblings `S` is settled iff `|Win(u, S)| = 1`; then that `m`'s version of `u` is the one in force
-at level `ℓ`. No entry, an entry naming a non-contestant only, or entries naming two different winners leave it
-refused.
+**C15 Sibling settlement.** Let `R(C) = {p ∈ C | ¬∃q ∈ C, q ≠ p. pid(p) ∈ deps(q) ∪ parent(q)}`, the roots of the
+compose, and `D(u, S) = {p ∈ R(C) \ S | ∃m ∈ {pid(s) | s ∈ S}. {artifact: u, member: m} ∈ ovr(p)}`, the distribution
+packs that settle `u`. A conflict on `u` among siblings `S` is settled iff `|D(u, S)| = 1`; then the `m` that pack names
+has the version of `u` in force at level `ℓ`. No entry, an entry naming a non-contestant only, an entry of a pack that
+is not a root or is a contestant (it names the declaring pack), or entries of two roots (whether or not they name one
+winner) leave it refused.
 The compose names exactly one winning sibling; there is no "last loaded wins".
 *Source:* ADR-0048 d9; ADR-0053 d5; spec FR-012 of the layer-merge mission;
-`PackCompositionResolver.contests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. Until #358 any pack of `C` may settle, with no level check (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
-> ⚠ **Unclear:** ADR-0053 d5 says the conflict is settled by "the distribution pack's own `overrides` edge". The
-> built resolver and the layer-merge spec use a descriptor `overrides` entry `{artifact, member}` in `pack.yaml`, from
-> any pack of the compose. The two are not the same mechanism.
+`PackCompositionResolver.contests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. **Built (#358):** only the distribution pack settles, derived as the one root of `C` that is not a contestant (operator ruling (a), 2026-11-17); the compose and the layer merge read the same roots (`PackCompositionResolver.composeRoots`), and the settlement is not gated by mutability (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
+> **Resolved (#358):** ADR-0053 d5 says the conflict is settled by "the distribution pack's own `overrides` edge". The
+> edge is the descriptor `overrides` entry `{artifact, member}` in `pack.yaml`, and only the distribution pack's counts:
+> the root of the compose that no other pack depends on.
 
 **C16 Artifact identity per level.** `∀ℓ: |{p ∈ C | lv(p) = ℓ ∧ defines(p, u)}| ≤ 1` after C15.
 An artifact id is unique within a level; across levels the same id is a layer override, not a conflict.
@@ -1453,7 +1455,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C12 Qualified reference | ADR-0053 d7; `dependsOnClosure` | Built |
 | C13 Bare reference | ADR-0053 d7 | Built |
 | C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21; A14 | Built (PR A0) |
-| C15 Sibling settlement | ADR-0053 d5; spec FR-012; A14 | Built (PR B), except that #358 still lets any pack of `C` settle |
+| C15 Sibling settlement | ADR-0053 d5; spec FR-012; A14; #358 | Built (PR B; the distribution pack only, #358) |
 | C16 Artifact identity per level | ADR-0053 d6 | Built |
 | C17 Layer winner | ADR-0053 d6; ADR-0059 D3 | Built (PR B) |
 | C18 Whole replacement | ADR-0059 D3 | Built (PR B) |
