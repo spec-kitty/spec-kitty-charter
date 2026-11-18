@@ -963,6 +963,7 @@ class HexagonalArchitectureTest {
                     ROOT + ".activations..",
                     ROOT + ".profiles..",
                     ROOT + ".missions..",
+                    ROOT + ".routing..",
                     ROOT + ".artifacts..");
 
     @Test
@@ -1511,6 +1512,18 @@ class HexagonalArchitectureTest {
             .dependOnClassesThat()
             .resideInAPackage(PACKS);
 
+    /**
+     * The routing domain is named only where the catalog is stored and adapted (ADR-0037, amendment of 2026-11-18): the
+     * routing slice itself, {@code packs.infra.storage}, which binds the catalog, and {@code artifacts.infra.packs}, which
+     * copies it into the catalog reads' view.
+     */
+    private static final ArchRule ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER = noClasses()
+            .that()
+            .resideOutsideOfPackages(ROUTING, ROOT + ".packs.infra.storage..", ROOT + ".artifacts.infra.packs..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ROUTING_DOMAIN);
+
     /** THE EDGE IS NOT NAMED BACK: the packs and activations slices never name the routing edge rings. */
     private static final ArchRule NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE = noClasses()
             .that()
@@ -1525,6 +1538,7 @@ class HexagonalArchitectureTest {
         ROUTING_NAMES_ACTIVATIONS_ONLY_FROM_ADAPTER.check(classes);
         ROUTING_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION.check(classes);
         ROUTING_NAMES_NO_PACKS.check(classes);
+        ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER.check(classes);
         NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE.check(classes);
     }
 
@@ -1552,6 +1566,10 @@ class HexagonalArchitectureTest {
                 "RoutingActivationsAdapterNamesActivationsApi",
                 "ActivationController");
         assertBites(ROUTING_NAMES_NO_PACKS, ROOT + ".routing.domain.badfixture", "RoutingDomainReachesPacks");
+        assertBites(
+                ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesRoutingDomain");
         assertBites(
                 NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_ROUTING_EDGE,
                 ROOT + ".activations.application.badfixture",

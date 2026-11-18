@@ -289,10 +289,12 @@ and tiers that filter the catalog's pick. Those proposals are kept under
 
 ## Divergences from core
 
-Recorded in the [divergence register](/conformance/divergence-register/) as DIV-701 to DIV-707, `proposed` until the
-reads are built: the catalog is pack content; there is no enforcement mode; no answer is stale; the tiers flag and
-never filter; every tied model is answered; the step's tier and the request's override relate to the candidates; and
-an unknown task type, no catalog and two catalogs are refusals.
+Recorded in the [divergence register](/conformance/divergence-register/) as DIV-701 to DIV-707, `open` since the reads
+are built: the catalog is pack content; there is no enforcement mode; no answer is stale; the tiers flag and never
+filter, and the step's `recommended_model_tier` is renamed `model_tier` and narrowed to a cost tier; every tied model
+is answered, and the scores are exact decimals where core's are binary floats; the step's tier and the request's
+override relate to the candidates; and an unknown task type, no catalog and two catalogs are refusals, while a catalog
+core tolerates (an undeclared task type reference, a duplicate) is refused at registration.
 
 ## References
 

@@ -326,6 +326,29 @@ class RankerTest {
     }
 
     @Test
+    @DisplayName("every tie inside the tiers is answered, below a higher model outside them")
+    void tiesInsideTheTiersBelowAHigherModelOutside() {
+        RoutingCatalog catalog = catalog(
+                "inside-tie",
+                RoutingObjective.BALANCED,
+                weights("1", "0"),
+                List.of(new TierConstraint("review", CostTier.MEDIUM)),
+                List.of(taskType("review")),
+                List.of(
+                        model("model-z", CostTier.MEDIUM, fit("review", "0.6")),
+                        model("model-x", CostTier.PREMIUM, fit("review", "0.9")),
+                        model("model-w", CostTier.LOW, fit("review", "0.5")),
+                        model("model-y", CostTier.MEDIUM, fit("review", "0.6"))));
+
+        assertThat(rows(Ranker.recommend(catalog, "review", NO_TIER)))
+                .as("top(inside) keeps both tied models, not only one")
+                .containsExactly(
+                        tuple("model-x", "0.9", "0.9", CostTier.PREMIUM, false, Optional.empty()),
+                        tuple("model-y", "0.6", "0.6", CostTier.MEDIUM, true, Optional.empty()),
+                        tuple("model-z", "0.6", "0.6", CostTier.MEDIUM, true, Optional.empty()));
+    }
+
+    @Test
     @DisplayName("an empty inside contributes nothing: the top of all is answered alone, flagged")
     void anEmptyInsideContributesNothing() {
         RoutingCatalog catalog = catalog(
@@ -351,6 +374,29 @@ class RankerTest {
                     assertThat(refusal.catalogId()).isEqualTo("default");
                 })
                 .hasMessage("the routing catalog default declares no task type deploy");
+    }
+
+    @Test
+    @DisplayName("ids beyond the basic multilingual plane tie-break by code point, not by UTF-16 unit")
+    void supplementaryIdsOrderByCodePoint() {
+        String privateUse = "model-\uE000";
+        String supplementary = "model-" + new String(Character.toChars(0x1F600));
+        RoutingCatalog catalog = catalog(
+                "plane",
+                RoutingObjective.BALANCED,
+                weights("1", "0"),
+                List.of(),
+                List.of(taskType("design")),
+                List.of(
+                        model(supplementary, CostTier.LOW, fit("design", "0.5")),
+                        model(privateUse, CostTier.LOW, fit("design", "0.5"))));
+
+        assertThat(supplementary.compareTo(privateUse))
+                .as("the control: UTF-16 order puts the supplementary id first")
+                .isNegative();
+        assertThat(Ranker.recommend(catalog, "design", NO_TIER).candidates())
+                .extracting(CatalogCandidate::modelId)
+                .containsExactly(privateUse, supplementary);
     }
 
     @Test

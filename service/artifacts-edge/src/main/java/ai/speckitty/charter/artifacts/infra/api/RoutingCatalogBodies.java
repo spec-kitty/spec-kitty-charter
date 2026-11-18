@@ -1,5 +1,6 @@
 package ai.speckitty.charter.artifacts.infra.api;
 
+import ai.speckitty.charter.web.DecimalJson;
 import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.EffectiveRoutingCatalogRead;
 import ai.speckitty.charter.api.model.Link;
@@ -18,7 +19,6 @@ import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.EffectiveRoutingCatalogReads;
 import ai.speckitty.charter.artifacts.application.RoutingCatalogView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -178,11 +178,6 @@ public class RoutingCatalogBodies {
         return wire;
     }
 
-    /** A number on the wire: the exact decimal, its trailing zeros stripped, so {@code 0.30} answers {@code 0.3}. */
-    static BigDecimal number(BigDecimal decimal) {
-        BigDecimal stripped = decimal.stripTrailingZeros();
-        return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
-    }
 
     private RoutingCatalogSummary summary(RoutingCatalogView view, Map<String, Link> links) {
         RoutingCatalogSummary summary = new RoutingCatalogSummary(
@@ -224,7 +219,7 @@ public class RoutingCatalogBodies {
     }
 
     private static RoutingCatalogTaskFit fit(RoutingCatalogView.FitView fit) {
-        RoutingCatalogTaskFit wire = new RoutingCatalogTaskFit(fit.taskType(), number(fit.score()));
+        RoutingCatalogTaskFit wire = new RoutingCatalogTaskFit(fit.taskType(), DecimalJson.wire(fit.score()));
         wire.setConfidence(fit.confidence()
                 .map(RoutingCatalogTaskFit.ConfidenceEnum::fromValue)
                 .orElse(null));
@@ -235,9 +230,9 @@ public class RoutingCatalogBodies {
     private static RoutingCatalogCost cost(RoutingCatalogView.CostView cost) {
         RoutingCatalogCost wire = new RoutingCatalogCost(RoutingCatalogCost.TierEnum.fromValue(cost.tier()));
         wire.setInputPer1mUsd(
-                cost.inputPer1mUsd().map(RoutingCatalogBodies::number).orElse(null));
+                cost.inputPer1mUsd().map(DecimalJson::wire).orElse(null));
         wire.setOutputPer1mUsd(
-                cost.outputPer1mUsd().map(RoutingCatalogBodies::number).orElse(null));
+                cost.outputPer1mUsd().map(DecimalJson::wire).orElse(null));
         wire.setCurrency(cost.currency().orElse(null));
         wire.setPricingSourceUrl(cost.pricingSourceUrl().orElse(null));
         return wire;
@@ -247,10 +242,10 @@ public class RoutingCatalogBodies {
         return new RoutingCatalogPolicy(
                 RoutingCatalogPolicy.ObjectiveEnum.fromValue(policy.objective()),
                 new RoutingCatalogWeights(
-                        number(policy.quality()),
-                        number(policy.cost()),
-                        number(policy.risk()),
-                        number(policy.latency())),
+                        DecimalJson.wire(policy.quality()),
+                        DecimalJson.wire(policy.cost()),
+                        DecimalJson.wire(policy.risk()),
+                        DecimalJson.wire(policy.latency())),
                 policy.tierConstraints().stream()
                         .map(constraint -> new RoutingCatalogTierConstraint(
                                 constraint.taskType(),

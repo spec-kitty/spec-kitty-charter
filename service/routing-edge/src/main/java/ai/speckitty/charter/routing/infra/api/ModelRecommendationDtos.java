@@ -1,5 +1,6 @@
 package ai.speckitty.charter.routing.infra.api;
 
+import ai.speckitty.charter.web.DecimalJson;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.ModelRecommendation;
 import ai.speckitty.charter.api.model.ModelRecommendationCandidate;
@@ -9,7 +10,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.routing.application.ModelRecommendationQuery;
 import ai.speckitty.charter.routing.application.ModelRecommendationRead;
 import ai.speckitty.charter.routing.domain.ranking.CatalogCandidate;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,8 +89,8 @@ public class ModelRecommendationDtos {
         switch (each) {
             case ai.speckitty.charter.routing.application.ModelRecommendationCandidate.FromCatalog catalog -> {
                 CatalogCandidate ranked = catalog.candidate();
-                wire.setScore(number(ranked.score()));
-                wire.setFitScore(number(ranked.fitScore()));
+                wire.setScore(DecimalJson.wire(ranked.score()));
+                wire.setFitScore(DecimalJson.wire(ranked.fitScore()));
                 wire.setRationale(ranked.rationale().orElse(null));
                 wire.setCostTier(ModelRecommendationCandidate.CostTierEnum.fromValue(
                         ranked.costTier().token()));
@@ -103,11 +103,6 @@ public class ModelRecommendationDtos {
         return wire;
     }
 
-    /** A number on the wire: the exact decimal, its trailing zeros stripped, so {@code 0.30} answers {@code 0.3}. */
-    static BigDecimal number(BigDecimal decimal) {
-        BigDecimal stripped = decimal.stripTrailingZeros();
-        return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
-    }
 
     private Map<String, Link> links(ModelRecommendationRead read) {
         String activation = read.activationId();

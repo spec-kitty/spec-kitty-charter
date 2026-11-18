@@ -9,6 +9,7 @@ import ai.speckitty.charter.routing.domain.RoutingWeights;
 import ai.speckitty.charter.routing.domain.TaskFit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,10 +71,19 @@ public final class Ranker {
         top(fitting, byRank)
                 .forEach(ranked -> answered.putIfAbsent(ranked.model().id(), ranked));
         List<CatalogCandidate> candidates = answered.values().stream()
-                .sorted(byRank.reversed().thenComparing(ranked -> ranked.model().id()))
+                .sorted(byRank.reversed().thenComparing(ranked -> ranked.model().id(), Ranker::byCodePoint))
                 .map(ranked -> candidate(ranked, tiers))
                 .toList();
         return new Recommendation(taskType, objective, tiers.tierConstraint(), candidates);
+    }
+
+    /**
+     * Two ids in code-point order (rule 6), which {@link String#compareTo} is not for a character outside the basic
+     * multilingual plane: it compares UTF-16 code units, so a supplementary character would sort before U+E000 to
+     * U+FFFF.
+     */
+    static int byCodePoint(String left, String right) {
+        return Arrays.compare(left.codePoints().toArray(), right.codePoints().toArray());
     }
 
     /**

@@ -2367,7 +2367,7 @@
   core: >-
     Reads routing_policy.override_policy (advisory, gated, required, require_reason); only advisory is exercised.
   service: >-
-    There is no override_policy and no enforcement mode. The recommendation is advisory only: it neither picks one candidate nor filters any out.
+    There is no override_policy and no enforcement mode, and the recommendation carries no override_mode. The recommendation is advisory only: it neither picks one candidate nor filters any out.
   rationale: >-
     Modes that were never exercised have no meaning to keep, and enforcement is the client's.
   ruling: ADR-0080 decision 4 (operator, 2026-11-18)
@@ -2394,9 +2394,9 @@
 - id: DIV-704
   surface: "tier_constraints and the step's model tier against the catalog's candidates"
   core: >-
-    Drops a model whose cost tier exceeds the task type's tier_constraints cap before scoring. The step's recommended_model_tier and a runtime override resolve with the override winning, and the result is only reported beside the candidates.
+    Drops a model whose cost tier exceeds the task type's tier_constraints cap before scoring. The step's recommended_model_tier, a free string, and a runtime override resolve with the override winning, reported as effective, source (offer or override) and offer, beside the candidates.
   service: >-
-    No model is filtered. A step's model_tier (a cost tier) or the request's modelTier, which wins, is the effective tier; with the task type's cap these are the tiers in play. The catalog candidates are the top-ranked models inside every tier in play and, when different, the top-ranked overall, each flagged withinTierConstraint and withinModelTier.
+    No model is filtered. The step's field is model_tier (modelTier on the wire), renamed from recommended_model_tier and narrowed to a cost tier (low, medium, high, premium). It or the request's modelTier, which wins, is the effective tier, reported as effective, source (step or request, in place of offer and override) and offer; with the task type's cap these are the tiers in play. The catalog candidates are the top-ranked models inside every tier in play and, when different, the top-ranked overall, each flagged withinTierConstraint and withinModelTier.
   rationale: >-
     A tier is a recommendation the client may override, so a model outside it stays visible, flagged; a client that honors the tiers still needs no ranking of its own.
   ruling: ADR-0080 decision 12 (operator, 2026-11-18)
@@ -2409,9 +2409,9 @@
 - id: DIV-705
   surface: "Ties between catalog models"
   core: >-
-    Answers one catalog candidate; a tie goes to the model listed first (max keeps the first maximum).
+    Answers one catalog candidate; a tie goes to the model listed first (max keeps the first maximum). Scores are binary floats, so two models whose decimal scores are equal can differ by rounding noise, and the noise then picks one.
   service: >-
-    Every model tied at the top rank is a catalog candidate. Candidates are listed in rank order, then by model id, and the order is not a preference.
+    Every model tied at the top rank is a catalog candidate. Scores, fits, weights and prices are exact decimals, read from the file's text and never through a binary float, so a decimal tie is a tie. Candidates are listed in rank order, then by model id in code-point order, and the order is not a preference.
   rationale: >-
     Which of equal models to use is the client's choice, and list order in a file carries no meaning (ADR-0036).
   ruling: ADR-0080 decision 11 (operator, 2026-11-18)
@@ -2437,9 +2437,9 @@
 - id: DIV-707
   surface: "An unknown task type, no catalog, and two catalogs"
   core: >-
-    An unknown task type yields no catalog candidate; a missing or unreadable catalog yields None.
+    Never checks a task type against task_types: it answers a candidate whenever a model has a task_fit for the string, and none when no model fits, so an undeclared task type with no fit yields no catalog candidate. A missing or unreadable catalog yields None. It accepts a fit or a tier constraint naming an undeclared task type, duplicate ids, duplicate fits and duplicate constraints (the first wins), any non-empty generated_at, and task type ids matching ^[a-z][a-z0-9-]*$.
   service: >-
-    An unknown task type is 404 task_type_not_found; no catalog in force is 409 routing_catalog_not_in_force; more than one in force is 409 routing_catalog_conflict, naming them. A declared task type no model fits is 200 with no catalog candidate.
+    An unknown task type is 404 task_type_not_found; no catalog in force is 409 routing_catalog_not_in_force; more than one in force is 409 routing_catalog_conflict, naming them. A declared task type no model fits is 200 with no catalog candidate. A catalog core tolerates is refused at registration: a fit or a constraint naming an undeclared task type, a duplicate task type or model id, two fits for one task type in a model, two constraints for one task type, a generated_at that is not an ISO-8601 date-time with an offset, a task type id that is not a kebab-case token of at most 64 characters, and a blank text.
   rationale: >-
     A misspelled task type or a missing catalog must not look like a valid answer.
   ruling: ADR-0080 decision 9 (operator, 2026-11-18)

@@ -228,8 +228,15 @@ follows the rule of the amendment of 2026-11-09.
 - **The dependency direction.** `:kernel`, then `:profiles`, `:missions` and `:routing`, then `:packs`, then
   `:activations`, then the edges, then `:deployable`.
 - **The gate.** `ROUTING_DOMAIN_IS_PURE` and the per-slice rules over `SLICES`, with known-bad controls, in the
-  architecture test. `ENTRYPOINT_STAYS_IN_ITS_SLICE` keeps `packs.infra.api` from naming `routing.domain`; only
-  `packs.infra.storage` names it.
+  architecture test. `ENTRYPOINT_STAYS_IN_ITS_SLICE` keeps `packs.infra.api` from naming `routing.domain`. Two packages
+  name it: `packs.infra.storage`, which binds the catalog, and `artifacts.infra.packs`, which adapts the stored catalog
+  to the catalog reads' own view (below); `ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER` holds that, with a known-bad
+  control.
+- **Where the catalog reads live.** The four catalog reads (`listPackRoutingCatalogs`, `getPackRoutingCatalog` and their
+  activation twins) are in `:artifacts-edge`, beside the skill reads they mirror, and copy the catalog into the
+  application ring's own `RoutingCatalogView`, as the skill reads copy a skill. `:routing-edge` does not hold them: it
+  names `activations` and never `packs` (`ROUTING_NAMES_NO_PACKS`), and the pack-scoped reads need the packs slice.
+  `PacksRoutingCatalogsTest` holds the view to the domain record field by field, so the copy cannot drift.
 - **Why not hold the catalog in `packs.domain`, as `Skill` is.** The ranker reads the catalog's types. In `packs.domain`
   they would make the ranker depend on `:packs`, and the recommendation is not the pack store's concern.
 

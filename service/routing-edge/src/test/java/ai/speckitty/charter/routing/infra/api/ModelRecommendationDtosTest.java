@@ -93,17 +93,4 @@ class ModelRecommendationDtosTest {
         assertThat(wire.getModelTier()).isNull();
         assertThat(wire.getCandidates().get(0).getWithinModelTier()).isNull();
     }
-
-    @Test
-    void aNumberLosesItsTrailingZerosAndKeepsPlainNotation() {
-        assertThat(ModelRecommendationDtos.number(new BigDecimal("0.300")).toString())
-                .isEqualTo("0.3");
-        assertThat(ModelRecommendationDtos.number(new BigDecimal("1.00")).toString())
-                .isEqualTo("1");
-        assertThat(ModelRecommendationDtos.number(new BigDecimal("1E+1")).toString())
-                .isEqualTo("10");
-        assertThat(ModelRecommendationDtos.number(new BigDecimal("0.12345678901234567890123"))
-                        .toString())
-                .isEqualTo("0.12345678901234567890123");
-    }
 }

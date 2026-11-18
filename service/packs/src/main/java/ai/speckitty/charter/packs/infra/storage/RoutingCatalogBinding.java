@@ -23,9 +23,10 @@ import java.util.function.Function;
 /**
  * Binds the {@link ArtifactKind#ROUTING_CATALOG} kind (ADR-0080 decision 5): one file per catalog at
  * {@code routing_catalogs/<id>.routing-catalog.yaml}, whose stem is its id. A number the file holds becomes an exact
- * decimal ({@link BigDecimal#valueOf(double)} for a YAML float, which gives back the authored decimal for any value of up
- * to fifteen significant digits); the ranking then never leaves decimal arithmetic. The way back writes an integral value
- * as an integer and any other as a float, so a file round-trips as it was read.
+ * decimal: the shared YAML loader reads a finite float from its text as a {@link BigDecimal}, never through
+ * {@code double}, and this binding refuses any other number but an integer, so every authored digit is kept; the ranking
+ * then never leaves decimal arithmetic. The way back writes an integral value as an integer and any other as a float in
+ * plain notation, so a file round-trips as it was read.
  */
 enum RoutingCatalogBinding implements KindBinding<RoutingCatalogDso, RoutingCatalog> {
     INSTANCE;

@@ -288,7 +288,7 @@ Feature: A task type's model is recommended under an activation, beside a profil
     Then the response status is 404
     And the problem code is "activation_not_found"
 
-  Scenario: A matching If-None-Match is 304, another tag is 200, and the tag changes with the asked tier
+  Scenario: A matching If-None-Match is 304, another tag is 200, and the tag changes with the tier, the profile and the task type
     When I GET "/activations/p/task-types/review/model-recommendation?agentProfile=java-jenny"
     Then the response status is 200
     When I remember the header "ETag"
@@ -304,13 +304,27 @@ Feature: A task type's model is recommended under an activation, beside a profil
     When I GET "/activations/p/task-types/review/model-recommendation?agentProfile=java-jenny&modelTier=premium" with If-None-Match the remembered header "ETag"
     Then the response status is 200
     And the response header "ETag" differs from the remembered header
+    When I GET "/activations/p/task-types/review/model-recommendation?agentProfile=generic-agent" with If-None-Match the remembered header "ETag"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+    When I GET "/activations/p/task-types/design/model-recommendation?agentProfile=java-jenny" with If-None-Match the remembered header "ETag"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
 
   Scenario: Every refusal comes before the 304
-    When I GET "/activations/p/task-types/design/model-recommendation?agentProfile=java-jenny"
-    And I remember the header "ETag"
-    And I GET "/activations/p/task-types/deploy/model-recommendation?agentProfile=java-jenny" with the header "If-None-Match": "*"
+    Given the activation "n" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "project"}]}
+      """
+    When I GET "/activations/p/task-types/deploy/model-recommendation?agentProfile=java-jenny" with the header "If-None-Match": "*"
     Then the response status is 404
     And the problem code is "task_type_not_found"
+    When I GET "/activations/n/task-types/design/model-recommendation?agentProfile=java-jenny" with the header "If-None-Match": "*"
+    Then the response status is 409
+    And the problem code is "routing_catalog_not_in_force"
+    When I GET "/activations/p/task-types/design/model-recommendation?agentProfile=nobody" with the header "If-None-Match": "*"
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
 
   Scenario: Two identical requests answer the same body and the same tag
     When I GET "/activations/p/task-types/review/model-recommendation?agentProfile=java-jenny&missionType=software-dev&step=review"
