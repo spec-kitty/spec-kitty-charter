@@ -1,0 +1,37 @@
+# Bulk edit: the code artifact_schema_error moves from StorageCodes to PackCodes (research.md D2).
+target:
+  term: StorageCodes.ARTIFACT_SCHEMA_ERROR
+  replacement: PackCodes.ARTIFACT_SCHEMA_ERROR
+  operation: rename
+categories:
+  code_symbols:
+    action: rename
+    note: every Java reference to StorageCodes.ARTIFACT_SCHEMA_ERROR, main and test, in :packs and :pack-validation
+  import_paths:
+    action: rename
+    note: add the PackCodes import where it is missing; drop a StorageCodes import left unused
+  filesystem_paths:
+    action: do_not_change
+    note: no file is renamed
+  serialized_keys:
+    action: do_not_change
+    note: the wire token artifact_schema_error is unchanged
+  cli_commands:
+    action: do_not_change
+    note: none
+  user_facing_strings:
+    action: do_not_change
+    note: the wire token and every reason text are unchanged
+  tests_fixtures:
+    action: rename
+    note: test references to the constant only; no assertion's expected value changes
+  logs_telemetry:
+    action: do_not_change
+    note: none
+exceptions:
+  - path: "kitty-specs/**"
+    action: do_not_change
+    note: mission records of earlier missions quote the old name as history
+  - path: "docs/**"
+    action: do_not_change
+    note: docs quote the wire token, not the constant
