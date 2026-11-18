@@ -1,0 +1,33 @@
+summary: >-
+  R7 row 2: under the project closure org-base's balanced default catalog is in force, and model-a and model-b tie on
+  design at exactly 0.3, so both are answered, by model id; java-jenny's model-x follows as the profile candidate.
+value:
+  taskType: design
+  catalog:
+    id: default
+    packId: org-base
+    level: org
+  objective: balanced
+  candidates:
+  - source: catalog
+    modelId: model-a
+    score: 0.3
+    fitScore: 0.3
+    costTier: premium
+    withinTierConstraint: true
+  - source: catalog
+    modelId: model-b
+    score: 0.3
+    fitScore: 0.1
+    costTier: low
+    withinTierConstraint: true
+  - source: profile
+    modelId: model-x
+    effort: high
+  _links:
+    self:
+      href: /api/v1/activations/a-1/task-types/design/model-recommendation?agentProfile=java-jenny
+    catalog:
+      href: /api/v1/activations/a-1/artifacts/routing_catalog/default
+    agent-profile:
+      href: /api/v1/activations/a-1/artifacts/agent_profile/java-jenny

@@ -1,0 +1,42 @@
+summary: >-
+  R7 row 6: the review step offers low, the request asks for premium, and the task type's medium cap still holds, so
+  model-d is the best inside every tier in play and model-c, the best overall, is answered flagged outside the cap.
+value:
+  taskType: review
+  catalog:
+    id: default
+    packId: org-base
+    level: org
+  objective: balanced
+  tierConstraint: medium
+  modelTier:
+    effective: premium
+    source: request
+    offer: low
+  candidates:
+  - source: catalog
+    modelId: model-c
+    score: 0.9
+    fitScore: 0.9
+    costTier: premium
+    withinTierConstraint: false
+    withinModelTier: true
+  - source: catalog
+    modelId: model-d
+    score: 0.732
+    fitScore: 0.6
+    costTier: medium
+    withinTierConstraint: true
+    withinModelTier: true
+  - source: profile
+    modelId: model-x
+    effort: high
+  _links:
+    self:
+      href: /api/v1/activations/a-1/task-types/review/model-recommendation?agentProfile=java-jenny&missionType=software-dev&step=review&modelTier=premium
+    catalog:
+      href: /api/v1/activations/a-1/artifacts/routing_catalog/default
+    agent-profile:
+      href: /api/v1/activations/a-1/artifacts/agent_profile/java-jenny
+    step:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/review

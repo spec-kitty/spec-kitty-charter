@@ -82,3 +82,8 @@ files:
   - EffectiveStepPrompt.empty-slot.yaml
   - EffectiveStepPrompt.legacy-slot.yaml
   - CharterRefusal.mission-type-not-in-force.yaml
+  - ModelRecommendation.balanced-tie.yaml
+  - ModelRecommendation.request-tier.yaml
+  - CharterRefusal.routing-catalog-not-in-force.yaml
+  - CharterRefusal.routing-catalog-conflict.yaml
+  - CharterRefusal.task-type-not-found.yaml

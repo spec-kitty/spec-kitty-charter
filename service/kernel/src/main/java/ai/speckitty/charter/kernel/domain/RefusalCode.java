@@ -269,7 +269,24 @@ public enum RefusalCode {
      * names the enhancing pack first and the field. Answered as 500 on a read, since the stored packs are at fault, and
      * as 422 by the operations that judge a write over the closures its pack joins.
      */
-    PROFILE_ENHANCEMENT_DROPS_FIELD("profile_enhancement_drops_field");
+    PROFILE_ENHANCEMENT_DROPS_FIELD("profile_enhancement_drops_field"),
+    /**
+     * A model recommendation was asked under an activation that puts no routing catalog in force (ADR-0080 decision 9).
+     * Answered as 409 by {@code getModelRecommendation}, after the not-found codes of the profile and the step and after
+     * the {@code 500} of a closure that does not compose.
+     */
+    ROUTING_CATALOG_NOT_IN_FORCE("routing_catalog_not_in_force"),
+    /**
+     * A model recommendation was asked under an activation that puts more than one routing catalog in force (ADR-0080
+     * decision 9). Answered as 409 by {@code getModelRecommendation}, naming the ids in force, until the activation
+     * deselects all but one.
+     */
+    ROUTING_CATALOG_CONFLICT("routing_catalog_conflict"),
+    /**
+     * A model recommendation was asked for a task type the routing catalog in force does not declare (ADR-0080 decision
+     * 9). Answered as 404 by {@code getModelRecommendation}, after the two 409s of the catalog.
+     */
+    TASK_TYPE_NOT_FOUND("task_type_not_found");
 
     /** The codes about what was asked rather than about the offering; {@link #notFound()} answers from it. */
     private static final Set<RefusalCode> NOT_FOUND = EnumSet.of(
@@ -288,7 +305,8 @@ public enum RefusalCode {
             PRESET_NOT_FOUND,
             RELATIONSHIP_NOT_FOUND,
             REGISTRATION_NOT_FOUND,
-            SKELETON_NOT_FOUND);
+            SKELETON_NOT_FOUND,
+            TASK_TYPE_NOT_FOUND);
 
     private final String token;
 

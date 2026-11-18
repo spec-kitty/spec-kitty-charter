@@ -23,3 +23,8 @@ files:
   - MissionTypeId.yaml
   - SkeletonName.yaml
   - StepId.yaml
+  - TaskType.yaml
+  - ModelRecommendationQueryAgentProfile.yaml
+  - ModelRecommendationQueryMissionType.yaml
+  - ModelRecommendationQueryStep.yaml
+  - ModelRecommendationQueryModelTier.yaml
