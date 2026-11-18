@@ -31,7 +31,7 @@
   "mission_base_sha": "210d3881abbf61d76f907ff0b575f84856f7bdc4",
   "mission_branch": "kitty/mission-closure-symmetry-01M7PNFT",
   "mission_id": "01M7PNFTY2WEHNNV3A38K7EQK7",
-  "mission_number": null,
+  "mission_number": 26,
   "mission_slug": "closure-symmetry-01M7PNFT",
   "mission_type": "software-dev",
   "pr_bound": true,
