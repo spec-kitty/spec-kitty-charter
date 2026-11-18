@@ -1,0 +1,12 @@
+# Example org pack (ADR-0070, ADR-0080, #108): an org that mandates its routing catalog. Its preset requires the
+# catalog (must_have), so under ADR-0031 decision 3 every activation over this pack holds it in force. No other example
+# pack depends on it, so the required catalog stays out of the closures the routing scenarios read (research R7).
+schema_version: "1.0"
+pack_id: 01M7QM0000000000000000RC4D
+pack_version: 1.0.0
+parent_pack: null
+name: org-mandate
+pack_level: org
+depends_on:
+  - pack_id: 01ARWG13C000000000000000FG
+    range: ">=1.0,<2"
