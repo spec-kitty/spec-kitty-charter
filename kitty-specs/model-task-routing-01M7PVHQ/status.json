@@ -1,18 +1,18 @@
 {
-  "event_count": 75,
-  "last_event_id": "01M7RA97T734AXP74EEFJ6FWHR",
-  "materialized_at": "2026-11-18T21:51:22.952043+00:00",
+  "event_count": 76,
+  "last_event_id": "01M7RCDMYJT2WJ9X9CSFTW73ZJ",
+  "materialized_at": "2026-11-18T22:28:44.626139+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 10,
+    "approved": 9,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
     "planned": 0
   },
@@ -323,14 +323,14 @@
       }
     },
     "WP10": {
-      "actor": "claude-reviewer",
+      "actor": "user",
       "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 1,
-      "lane": "approved",
-      "last_event_id": "01M7RA97T734AXP74EEFJ6FWHR",
-      "last_transition_at": "2026-11-18T21:51:22.952043+00:00",
+      "force_count": 2,
+      "lane": "in_progress",
+      "last_event_id": "01M7RCDMYJT2WJ9X9CSFTW73ZJ",
+      "last_transition_at": "2026-11-18T22:28:44.626139+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T16:14:57Z – claude – From WP06: contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md (T037's file) already exists. It holds one ### Breaking block whose first entry is NodeKind gaining routing_catalog. Extend that block with the rest of T037's list rather than creating the file.",
