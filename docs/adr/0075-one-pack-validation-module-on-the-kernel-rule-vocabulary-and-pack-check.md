@@ -143,7 +143,9 @@ pack check in pack-validation", decision 4's pipeline and the 2026-11-13 amendme
   not held, and the read faults). The storage rules and their tokens (`StorageCodes`) live in
   `packs.infra.storage.rules`, which nothing outside `packs.infra.storage` and `deployable` names. The registration's
   second read and its fail-closed guard are gone: `PackAssembly` builds the aggregate from the same read, judging
-  nothing. The compose read runs only the store half of that reader (`StoreRead`, S7).
+  nothing. The compose read runs only the store half of that reader (`StoreRead`, S7). It may skip the consistency
+  rules because a stored pack is immutable after registration: the registration judged its full read before storing it,
+  and only a new registration replaces it.
 - **The compositions.** Each surface runs a named composition, with no surface profile and no mode flag:
   - `PackRulesets.content()`, a `ModularRuleset<PackContents>`, and `PackRulesets.closure()`;
   - `StorageRulesets.registration() = holding().must(content().on(TreeRead::contents))`;

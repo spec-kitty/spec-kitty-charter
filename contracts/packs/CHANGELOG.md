@@ -16,8 +16,10 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 
 ## 0.1.0-SNAPSHOT
 
-The work toward the next candidate (`0.1.0-rc.2`) or the final `0.1.0`, after the release candidate
-`0.1.0-rc.1`.
+The work toward the next packs release, after the release candidate `0.1.0-rc.1`. That release is
+`0.1.0-rc.2` or the final `0.1.0`. The changes below break `0.1.0-rc.1`: a consumer pinned to
+`contract-packs-v0.1.0-rc.1` breaks when it moves its pin to that release, and must apply the
+`### Breaking` entries below in the same change.
 
 ### Breaking
 

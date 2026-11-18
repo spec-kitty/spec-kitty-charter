@@ -12,7 +12,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:14.625915+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): Each pack file kind with consistency checks (graph, artifact, asset, step, prompt slot, fragment, mission type) has one ruleset in packs.domain.rules, and each of today's checks is a rule of exactly one of them; the descriptor and format checks are the one reader's prechecks, and the glossary and the asset escape have no domain rule."
     },
     {
       "criterion_id": "FR-002",
@@ -22,7 +22,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:19.988570+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): PackRulesets.content(), StorageRulesets.holding() and StorageRulesets.registration() = holding().must(content().on(TreeRead::contents)) exist as named ModularRulesets with no surface profile or mode flag; manifest membership runs only when the read faults and registration() found no violation; verdict() returns one Rationale in registration's wire order, so registration's findings are a subset of validate mode's."
     },
     {
       "criterion_id": "FR-003",
@@ -32,7 +32,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:25.164918+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): PackRulesets.closure() over the composition facts of a set of packs with levels reports every duplicate-id, dependency (cycle, unknown, out of range), parent, level and conflict fault with today's codes, and a valid set on the same fixture reports nothing; the offering still refuses with its first fault in today's order and its pack list."
     },
     {
       "criterion_id": "FR-004",
@@ -42,7 +42,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:30.021513+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): Classification, ordering and precedence, and the manifest set difference are plain functions that rules call, not rules or compositions of their own; FR-001's and FR-002's tests cover them."
     },
     {
       "criterion_id": "FR-005",
@@ -52,7 +52,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:35.091616+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): PackCheck in pack-validation runs the one read through the PackReading port its caller supplies and returns read.rationale().and(placement().check(placement)); a load-only fault that validate mode missed before is found; PackCheck names only packs.domain and the kernel, and the service runs no pack-validation main code."
     },
     {
       "criterion_id": "FR-006",
@@ -62,7 +62,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:39.979904+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): A registration reads the staged tree once through PackReading and refuses through PackRefusals when the readout's Rationale fails, before PackAssembly builds the aggregate; a reader-only fault is refused before assembly with one read, and packs.application names no storage type."
     },
     {
       "criterion_id": "FR-007",
@@ -72,7 +72,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:44.709699+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): The converters between PackFinding, PackElementViolation and RefusalViolation are deleted with no shim or per-surface code table: a search for the converter methods returns nothing."
     },
     {
       "criterion_id": "FR-008",
@@ -82,7 +82,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:49.941085+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): Two mappers exist, each at its edge: PackRefusals (packs.application) maps the verdict to the API problem and its diagnostics, PackVerdicts (pack-validation) to the validate-mode verdict; each keeps its surface's order, and neither lives in packs.domain."
     },
     {
       "criterion_id": "FR-009",
@@ -92,7 +92,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:54.849435+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): Every code is a typed ReasonCode that owns its severity and wording; one fault answers one code on every surface (R2 table), the specific code wins over a catch-all, and validate mode answers the specific code registration already answers."
     },
     {
       "criterion_id": "FR-010",
@@ -102,7 +102,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T01:59:59.949696+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): A pack with a file no pack file kind models is accepted with one file_not_held warning naming the file, and neither the stored pack nor the round trip carries it; the unmodelled violation code is gone; validate mode reports the same warning and judges nothing in the file; a nested *.graph.yaml and a charter.yaml are unmodelled under the packs contract's ### Breaking line."
     },
     {
       "criterion_id": "FR-011",
@@ -112,7 +112,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T02:00:05.061155+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): The graph rule calls slice F's endpoint bridge, and #515's check answers relationship_endpoint_not_allowed, unchanged, from PACK."
     },
     {
       "criterion_id": "FR-012",
@@ -122,7 +122,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T02:00:10.128733+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): There is one test class per rule and one per mapper, plus a PACK composition test for each gate, suppression or precedence interaction; the order and wording functions keep their whole tests; each test lives in its subject's module."
     },
     {
       "criterion_id": "FR-013",
@@ -132,7 +132,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T02:00:15.194239+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): The records say what the service does: the ### Breaking fragments for Q1, for registration's and validate mode's R2 changes and for S2's gains; the packs ### Breaking line for the narrowed globs; the rewritten scenarios; the ADR-0075 amendment; the ADR-0062 and ADR-0065 annotations; and #554's and #478's issue texts amended."
     },
     {
       "criterion_id": "FR-014",
@@ -142,7 +142,7 @@
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-18T02:00:20.298941+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Acceptance criterion (from spec.md): The Mission research holds the open-packs draft research/open-packs-drafts/TBD-unmodelled-not-held.md covering the unmodelled-to-file_not_held change, the narrowed charter.yaml and nested-shard classification, and the R2, S2 and S8 code changes, ready for the orchestrator to file."
     },
     {
       "criterion_id": "FR-015",
