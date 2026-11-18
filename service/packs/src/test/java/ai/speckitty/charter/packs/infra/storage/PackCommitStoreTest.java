@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import com.google.common.jimfs.Configuration;
@@ -42,6 +43,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -171,6 +173,52 @@ class PackCommitStoreTest {
         before.forEach((file, content) ->
                 assertThat(after.get(file)).as("%s is byte-unchanged", file).isEqualTo(content));
         assertThat(after.get(RelationshipShard.SHARD_PATH)).isEqualTo(SHARD);
+        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+    }
+
+    /** A stamped shard whose one edge names a relation no edge may carry: a graph fault at the shard. */
+    private static final String SHARD_WITH_A_FAULT = """
+            schema_version: '1.0'
+            generated_at: '2026-01-01T00:00:00Z'
+            generated_by: charter-registration
+            nodes: []
+            edges:
+            - source: tactic:alpha-tactic
+              target: tactic:beta-tactic
+              relation: frobs
+            """;
+
+    @Test
+    @DisplayName(
+            "a commit into a pack that already holds a fault is judged only on what it adds (#605): a write that adds"
+                    + " none lands, and its twin that adds a graph fault is refused validation_failed naming only that fault")
+    void aHeldFaultDoesNotBlockAWriteAndANewFaultIsRefused(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
+        assertThat(new FileSystemPackInspector(strategy)
+                        .read(new PackRoot("pack-a", Optional.empty(), packDir.toString()))
+                        .rationale()
+                        .violations())
+                .as("the fixture holds a fault: its deliberately unreadable tactic")
+                .extracting(reason -> reason.location().file())
+                .contains("broken-tactic.tactic.yaml");
+
+        store.commit(PACK, null, toolguide("ripgrep"), SHARD);
+        Map<String, String> before = snapshot(packDir);
+
+        assertThatThrownBy(() -> store.commit(PACK, null, toolguide("fd"), SHARD_WITH_A_FAULT))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .as("only the fault the write adds, not the one the pack held")
+                            .singleElement()
+                            .satisfies(violation -> {
+                                assertThat(violation.pointer()).isEqualTo(RelationshipShard.SHARD_PATH);
+                                assertThat(violation.code()).isEqualTo("drg_schema_error");
+                            });
+                });
+        assertThat(snapshot(packDir)).as("nothing is written").isEqualTo(before);
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
     }
 

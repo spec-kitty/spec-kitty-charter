@@ -32,14 +32,14 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -418,19 +418,21 @@ public final class PackCommitStore implements WholePackWriteStore {
      * Refuses a per-file write or removal whose edited copy holds a violation the live pack does not (#605, operator
      * ruling of 2026-11-18): the one reader judges the staged copy with the registration's full read, so no per-file
      * path can store a pack that a whole-pack registration of it would refuse. The live pack is read only when the copy
-     * has a violation, so that a fault the pack already held does not block every write to it. The refusal is {@code
-     * validation_failed}, one violation per new fault at its file, as a registration states them; nothing is swapped.
+     * has a violation, so that a fault the pack already held does not block every write to it. A fault of the copy is
+     * held when the live pack has one with the same code at the same file: first in the same words, then in any words,
+     * one for one, so a write that changes a held fault's wording (a count it names) is not refused for it, and a write
+     * that adds a second fault of that code at that file is. The refusal is {@code validation_failed}, one violation per
+     * new fault at its file, as a registration states them; nothing is swapped.
      */
     private void requireNoNewViolation(String name, Path liveDir, Path staging) {
         List<Reason> after = violationsOf(name, staging);
         if (after.isEmpty()) {
             return;
         }
-        Set<List<String>> before = violationsOf(name, liveDir).stream()
-                .map(PackCommitStore::identity)
-                .collect(Collectors.toSet());
-        List<RefusalViolation> added = after.stream()
-                .filter(reason -> !before.contains(identity(reason)))
+        List<Reason> before = violationsOf(name, liveDir);
+        List<Reason> unmatched = withoutHeld(after, before, PackCommitStore::wording);
+        List<Reason> unmatchedBefore = withoutHeld(before, after, PackCommitStore::wording);
+        List<RefusalViolation> added = withoutHeld(unmatched, unmatchedBefore, PackCommitStore::place).stream()
                 .map(reason -> new RefusalViolation(
                         reason.location().file(),
                         reason.code().value(),
@@ -445,6 +447,23 @@ public final class PackCommitStore implements WholePackWriteStore {
         }
     }
 
+    /** The reasons of {@code reasons}, in order, but for one matched by each reason of {@code held} under {@code key}. */
+    private static List<Reason> withoutHeld(
+            List<Reason> reasons, List<Reason> held, Function<Reason, List<String>> key) {
+        Map<List<String>, Integer> left = new HashMap<>();
+        held.forEach(reason -> left.merge(key.apply(reason), 1, Integer::sum));
+        List<Reason> unmatched = new ArrayList<>();
+        for (Reason reason : reasons) {
+            List<String> at = key.apply(reason);
+            if (left.getOrDefault(at, 0) > 0) {
+                left.merge(at, -1, Integer::sum);
+            } else {
+                unmatched.add(reason);
+            }
+        }
+        return unmatched;
+    }
+
     private List<Reason> violationsOf(String name, Path directory) {
         return new FileSystemPackInspector(strategy)
                 .read(new PackRoot(name, Optional.empty(), directory.toString()))
@@ -452,8 +471,12 @@ public final class PackCommitStore implements WholePackWriteStore {
                 .violations();
     }
 
-    private static List<String> identity(Reason reason) {
+    private static List<String> wording(Reason reason) {
         return List.of(reason.code().value(), reason.location().file(), reason.detail());
+    }
+
+    private static List<String> place(Reason reason) {
+        return List.of(reason.code().value(), reason.location().file());
     }
 
     // ---- whole-pack registration (ADR-0065) ------------------------------------------------------------------------
