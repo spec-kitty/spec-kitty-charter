@@ -8,11 +8,11 @@
       "criterion_id": "FR-001",
       "description": "Verify FR-001 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RoutingCatalogBindingTest; routing-catalog.schema.json; SchemaKeywordCoverageTest; PackDigestBaselineTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:25:51.492656+00:00",
+      "notes": "The routing_catalog kind with its pack schema and file rule, bound and judged at registration."
     },
     {
       "criterion_id": "FR-002",
