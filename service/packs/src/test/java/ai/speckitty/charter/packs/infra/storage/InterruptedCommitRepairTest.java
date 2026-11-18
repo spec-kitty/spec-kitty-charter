@@ -49,7 +49,7 @@ class InterruptedCommitRepairTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private static final String SHARD =
-            "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\nnodes: []\nedges: []\n";
+            "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\ngenerated_by: charter-registration\nnodes: []\nedges: []\n";
     private static final String CRASHED = ".pack-old-crashed";
 
     /** The first rename of the swap, then the process dies: the state a crash between the two renames leaves. */
