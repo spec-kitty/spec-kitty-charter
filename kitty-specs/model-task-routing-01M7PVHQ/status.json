@@ -148,7 +148,7 @@
     },
     "WP05": {
       "actor": "claude-reviewer",
-      "agent": "claude-reviewer",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -159,9 +159,11 @@
       "notes": [
         "- 2026-11-18T12:03:04Z – unknown – From WP01's review (non-blocking): add the EntrypointReachesRouting known-bad, which WP01 deferred. Create service/deployable/src/test/java/ai/speckitty/charter/packs/infra/api/badfixture/EntrypointReachesRouting.java holding a RoutingCatalog field, and assert it in theEntrypointSliceRuleFailsOnAnEntrypointThatNamesAnotherSlicesDomain beside EntrypointReachesProfiles (a recorded edit to HexagonalArchitectureTest). RoutingObjective already exists (made in WP01); keep it, and build the other domain types beside it. Also, once :packs depends on :routing, drop :deployable's direct implementation(project(':routing')) only if the transitive path keeps the routing classes on the gated classpath; otherwise keep it.",
         "- 2026-11-18T13:55:15Z – claude – shell_pid=1294 – WP05 implemented (T016–T019).\n\nDelivered:\n- routing/domain: RoutingCatalog (a CharterArtifact of kind routing_catalog), TaskType, ModelEntry, TaskFit, ModelCost, RoutingPolicy, RoutingWeights, TierConstraint and CatalogSource, plus Grade, AccessMethod and the package-private Checks. Scores and weights are exact BigDecimal values in [0,1], prices are never negative, ids follow the letter-first slug grammar, and lists are never empty where the schema says minItems 1.\n- packs storage: RoutingCatalogDso, RoutingCatalogYaml and RoutingCatalogBinding at routing_catalogs/<id>.routing-catalog.yaml (the id is the file stem, and the file is placed at its file name). They are appended last to KindBindings and YamlFormats.\n- packs content rules: RoutingCatalogRules (CONSISTENT) reports artifact_schema_error for a duplicate task type or model, for a fit or tier constraint that names an undeclared task type, and for a duplicate fit or constraint. RoutingCatalogFacts is gathered by FileSystemPackInspector.\n- reads: ArtifactReadService lists routing_catalog after mission_type (literal reads; absent means artifact_not_found).\n\nDeviations:\n- Research R3: the YAML loader hands numbers over as Double, so the DSO keeps the loader's Number and the binding converts it with BigDecimal.valueOf. That recovers the authored decimal for up to 15 significant digits, and writing back puts the Number back as it was read (byte for byte, as the round-trip test shows).\n- Absent and [] are treated alike for tools, strengths, weaknesses and tier_constraints (WP03 reviewer note 1). Absent reads as [], and [] writes as absent.\n- Contract NodeKind: routing_catalog is REMOVED from contracts/charter/schemas/NodeKind.yaml, which plan.md listed among the enums. The contract's NodeKind lists only the kinds a graph declares or an edge names. NodeKind.ROUTING_CATALOG is (declarable=false, edgeTarget=false), like guard and lifecycle, so WireTokenParityTest and ProfileDtosTest require it out. The description now says so. Not a wire break against main: it was never released.\n- routing-catalog.schema.json (WP03): generated_at loses format: date-time. No pack schema uses format, SchemaKeywordCoverageTest has no wording row for it, and it is not asserted. It takes minLength 1 instead, matching the domain.\n\nRecorded edits outside owned_files, each needed for the WP to compile or for its parity tests to pass:\n- routing/domain Checks.java, Grade.java, AccessMethod.java (same package as the owned types).\n- PackContents: the routingCatalogs component. Its 17 constructor call sites in main and test are updated, and so is FileSystemPackInspector (routingCatalogFactsOf, valuesOf).\n- Test fixtures: roundtrip-fixtures/routing-catalog/** (PackFixtures.copyOf needs that layout, not routing-catalog-fixtures/**). Also digest-baseline/fixture/routing_catalogs/mu.routing-catalog.yaml, with PackDigestFixtureTest recaptured as that test's doc prescribes for a newly bound kind.\n- Parity tests updated for the new kind: KindBindingsTest, ArtifactReadServiceTest, PackFileKindTest, PackSchemasTest (26 schemas), VocabularyEqualityTest, ActivationConfigSchemaParityTest, WireTokenParityTest, GeneratedPackTree and PackFileSetExactnessTest.\n- HexagonalArchitectureTest: the EntrypointReachesRouting known-bad in packs.infra.api.badfixture, asserted by the ENTRYPOINT_STAYS_IN_ITS_SLICE bite (moved here from WP01).\n- KindRefTest: a direct KindRef.routingCatalog test (WP02 reviewer note).\n\nVerification: `./gradlew verifyAll --continue` at lane-e 8f07ca802 — every module green except the four below; `:packs:check` 6735 tests, 4 failed.\n\nKnown red, owned by WP06: ExamplePackCoverageTest (4 tests). The example packs need a routing catalog covering every schema property, and a preset with activated_routing_catalogs. WP06 owns the example packs and that test. This is recorded in WP06's history.",
-        "Ready for review at lane-e 8f07ca802; ExamplePackCoverageTest (4) red by design until WP06"
+        "Ready for review at lane-e 8f07ca802; ExamplePackCoverageTest (4) red by design until WP06",
+        "Changes requested: generated_at date-time restored; no double step for numbers; a ruling on the ExamplePackCoverageTest green point. See review-cycle-1."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/model-task-routing-01M7PVHQ-coord/kitty-specs/model-task-routing-01M7PVHQ/tasks/WP05-catalog-domain-binding-rules/review-cycle-1.md",
         "reference": "review-cycle://model-task-routing-01M7PVHQ/WP05-catalog-domain-binding-rules/review-cycle-1.md",
@@ -169,13 +171,13 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 478,
-      "shell_pid_created_at": "1795010291.0",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T016": "done",
-        "T017": "done",
-        "T018": "done",
-        "T019": "done"
+        "T016": "planned",
+        "T017": "planned",
+        "T018": "planned",
+        "T019": "planned"
       }
     },
     "WP06": {
