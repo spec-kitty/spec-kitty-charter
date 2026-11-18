@@ -1,6 +1,8 @@
 {
+  "accept_commit": "afa9989ff89e7ed9917d7459dfaaac93d342bbf4",
   "acceptance_history": [
     {
+      "accept_commit": "afa9989ff89e7ed9917d7459dfaaac93d342bbf4",
       "acceptance_mode": "pr",
       "accepted_at": "2026-11-18T09:58:16.391096+00:00",
       "accepted_by": "system",
@@ -29,6 +31,7 @@
   "purpose_context": "A pack author's validation run and a per-file write must not pass a guard, lifecycle or mission type that the service then drops at load. The closure moves into the PACK ruleset as one domain rule, every path calls it, and one symmetry table proves it; a flaky concurrency test on the same write locks is made to report starvation precisely (#355, #593).",
   "purpose_tldr": "Every path that judges a pack (load, whole-pack write, validate mode, per-file write) applies the same guard, lifecycle and mission-template closure rule.",
   "slug": "closure-symmetry-01M7PNFT",
+  "status_phase": "1",
   "target_branch": "feat/355-closure-in-pack-ruleset",
   "topology": "single_branch",
   "topology_settled": false,
