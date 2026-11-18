@@ -203,12 +203,14 @@ byte-equal.
   rules, kills 3846 of 4240 (90.7 %), margin 242. The `infra.storage`
   shard, without them, kills 3134 of 3439 (91.1 %), margin 210. Both floors stay 85. The narrowed run of this mission's `:packs` classes
   (`packs.domain.rules`, `packs.infra.storage.rules`, `PackRefusals`, `StoreRead`, `Wording`, `CensusEntries`,
-  `WholePackCensus`, `CompositionFactsBuilder`) kills 716 of 732 (97.8 %), against 698 of 733 (95.2 %) before WP10:
+  `WholePackCensus`, `CompositionFactsBuilder`) kills 717 of 732 (98.0 %), against 698 of 733 (95.2 %) before WP10:
   `AssemblyRulesTest` gained the companion mappings' cases, `CompositionFactsTest` pins WP05's moved code (a type's own
   step link is no reference, the nodes of a kind with no file are defined, the typed edges' order, the graph refused
-  before the descriptor), and `FileSystemPackInspectorTest` the manifest's and the named policy's trailing order.
+  before the descriptor), and `FileSystemPackInspectorTest` the manifest's and the named policy's trailing order,
+  read unsorted as the registration answers it (WP10 review cycle 1), which kills `StorageRulesets.verdict`'s adding
+  of the named policy to the trailing files.
   `Wording` and `GraphBinding`, WP03's, now kill every mutant. ADR-0062 has the amendment of 2026-11-17.
-- **The 16 mutants left, named.**
+- **The 15 mutants left, named.**
   - *Equivalent.* `Precedence.withoutLeadingZeros` (a boundary: stripping every zero leaves an empty string, which
     still sorts before every non-zero index and equals every other zero); `Precedence.keyOrder`'s fragment-edge
     conditional (`FRAGMENT_EDGE_KEYS` is `SHARD_EDGE_KEYS`).
@@ -218,10 +220,12 @@ byte-equal.
   - *No difference a read can show.* `CompositionFactsBuilder.ownStepLinkTargets`' three filters: every step a held
     type declares must be linked by that type, and a link that names no step of its type refuses the pack
     (`mission_step_unlinked`), so a target the filters would keep or drop is dropped by an own link anyway, or the
-    pack never composes. `StorageRulesets.verdict` adding the named policy to the trailing files, and
-    `StoreRead.namedPolicyFaults`' filter: the test of the manifest's and the policy's trailing order and of each
-    stated once holds with either mutant, and no read was found that tells them apart. Not proven equivalent; left
-    named.
+    pack never composes.
+  - *Equivalent (WP10 review cycle 1).* `StoreRead.namedPolicyFaults`' filter forced to true: the extra store-only
+    faults it admits are the manifest's (parse, schema, not UTF-8, a misplaced preset entry), and the reader states
+    each of them in the same words (`FileSystemPackInspector.misplacedPresetEntries` for the last), so
+    `AssemblyRules.sameFault` removes the duplicate; probes over eight manifest and policy fixtures showed no
+    difference.
   - *Uncovered.* `StoreRead.of`'s aggregate breach and `CompositionFactsBuilder.heldFacts`' missing facts are
     fail-safes no read reaches (row 26); `WholePackCensus.contentFormOf` is exercised only by `:pack-validation`'s
     round trip (`RoundTripControls`), outside `:packs`' PIT scope.

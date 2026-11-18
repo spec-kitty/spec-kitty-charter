@@ -387,9 +387,9 @@ margins documented here be re-set from a measurement.
   against 120.
 - **The narrowed run of #554's code** (not a floor measurement): `packs.domain.rules`, `packs.infra.storage.rules`,
   `PackRefusals`, `StoreRead`, `Wording`, `CensusEntries`, `WholePackCensus` and `CompositionFactsBuilder` against the
-  `domain`, `infra.storage` and `application` tests kill 716 of 732 mutants (97.8 %), against 698 of 733 (95.2 %)
-  before WP10's triage (one uncovered mutant went with the dead method it mutated). The 16 left are named in the R2
-  note (`docs/development/notes/pack-code-unification.md`, "Outcomes of WP10"): 12 equivalent or with no difference a
+  `domain`, `infra.storage` and `application` tests kill 717 of 732 mutants (98.0 %), against 698 of 733 (95.2 %)
+  before WP10's triage (one uncovered mutant went with the dead method it mutated). The 15 left are named in the R2
+  note (`docs/development/notes/pack-code-unification.md`, "Outcomes of WP10"): 11 equivalent or with no difference a
   read can show, and 4 uncovered, of which two are fail-safes no read reaches and two are exercised only from
   `:pack-validation`.
 

@@ -8,10 +8,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,9 +58,25 @@ class PlacementCodesCoverageTest {
     }
 
     @Test
-    @DisplayName("every code PlacementCodes builds has a fixture")
+    @DisplayName("every ReasonCode constant PlacementCodes declares has a fixture, and is in PlacementCodes.ALL")
     void everyCodeHasAFixture() {
-        assertThat(FIXTURES.keySet()).containsExactlyInAnyOrderElementsOf(PlacementCodes.ALL);
+        Set<ReasonCode> declared = new LinkedHashSet<>();
+        for (Field field : PlacementCodes.class.getDeclaredFields()) {
+            int modifiers = field.getModifiers();
+            if (Modifier.isPublic(modifiers)
+                    && Modifier.isStatic(modifiers)
+                    && Modifier.isFinal(modifiers)
+                    && field.getType() == ReasonCode.class) {
+                try {
+                    declared.add((ReasonCode) field.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException(field.getName(), e);
+                }
+            }
+        }
+
+        assertThat(FIXTURES.keySet()).containsExactlyInAnyOrderElementsOf(declared);
+        assertThat(PlacementCodes.ALL).containsExactlyInAnyOrderElementsOf(declared);
     }
 
     @ParameterizedTest(name = "{0}")

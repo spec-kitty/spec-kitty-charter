@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.rules.Precedence;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import ai.speckitty.charter.packvalidation.PackCheck;
@@ -172,6 +173,7 @@ class FileSystemPackInspectorTest {
                 .filteredOn(fault -> fault.location().file().equals("b.graph.yaml"))
                 .as("a schema breach is one fault per violation")
                 .isNotEmpty()
+                .doesNotHaveDuplicates()
                 .allSatisfy(fault -> assertThat(fault.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR));
         assertThat(unreadable(contents.descriptor()).parse()).isNotNull();
         assertThat(unreadable(contents.shards().get(0)).file()).isEqualTo("a.graph.yaml");
@@ -1771,8 +1773,9 @@ class FileSystemPackInspectorTest {
         write(dir, "tactics/t.tactic.yaml", "id: t\nschema_version: '1.0'\nname: T\nsteps:\n- title: Do\n");
 
         // WP07 review MINOR-3 and R2 row 32: the read faults at the manifest and the store's fault at the named policy
-        // file follow the pack's other faults, the manifest's first, and each is stated once.
-        assertThat(verdict(dir))
+        // file follow the pack's other faults, the manifest's first, and each is stated once. Read unsorted, in the
+        // order the registration answers it: the helper verdict() sorts by place, which would hide the order.
+        assertThat(StorageRulesets.verdict(full(dir)).details())
                 .extracting(finding -> finding.location().file())
                 .filteredOn(file -> file.equals("pack-manifest.yaml") || file.equals("policy.yaml"))
                 .containsExactly("pack-manifest.yaml", "policy.yaml");
