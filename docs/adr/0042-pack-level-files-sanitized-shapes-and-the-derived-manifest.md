@@ -200,6 +200,27 @@ The calls the Op made beyond the rulings, open to review:
   manifest, and the service generates one. [open-packs #250](https://github.com/spec-kitty/spec-kitty-open-packs/issues/250) tracks the regeneration. A pack the service registered before this rule gets a one-time `409` on its
   first unchanged re-registration: send a new `pack_version`.
 
+### Amendment 2026-11-18 (#355): the domain gap is closed for the reference closure
+
+Made by [#355](https://github.com/spec-kitty/spec-kitty-charter/issues/355), on the operator's rulings of 2026-11-17
+recorded there, after [ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/)
+(#554) made validate mode, the load and registration judge one read with one ruleset. Decision 7 carries a note where it
+changes.
+
+- **One rule decides the reference closure.** An executable asset's entry, a guard's asset and `config_schema`, a
+  lifecycle's guard entries and their `config`, and a mission type's output templates close or do not, with the cascade
+  (an asset that does not close backs no guard, and a guard that does not close is named by no lifecycle), in one pure
+  rule of the PACK ruleset, `ReferenceClosure`, which `PackRulesets.content()` runs as `ReferenceRules`. The load, the
+  whole-pack write, validate mode and a per-file write all call it.
+- **Validate mode reports what the load drops, as an error.** Each artifact the load leaves out for the closure, and
+  each `Executable` or `Lifecycle` invariant the domain refuses at load, is an `artifact_schema_error` error at its
+  file, in the load's words. Validate mode never reads greener than the load (operator ruling).
+- **A per-file write is judged on the pack it leaves.** The commit store refuses a write or a removal whose pack would
+  not close with `409 registration_conflict` and the load's reason (operator ruling). A delete of an asset a guard names
+  is refused, not cascaded (operator ruling).
+- **One standing test holds the paths together**: `ClosureSymmetryTest`, a table of broken packs, each row with a
+  repaired control.
+
 ## Context
 
 Issue #195 asks the whole-pack round trip to cover the four files that describe a pack as a whole:
@@ -440,9 +461,13 @@ Main found none. *(Since [ADR-0040](/adr/0040-content-form-and-payload-kinds/)'s
 six built-in sidecars whose payload the pack does not hold, 303 on nine files.)* No operation serves validate mode (`PackValidation` has no controller), so nothing
 changes on the wire.
 
-**A known gap.** A break that only the domain sees passes validate mode while the load refuses it.
+~~**A known gap.** A break that only the domain sees passes validate mode while the load refuses it.
 An item id listed twice in one list is one: the schema cannot say "unique by `id`", and validate
-mode does not build the domain value. This record covers schema breaks and the stem rule only.
+mode does not build the domain value. This record covers schema breaks and the stem rule only.~~
+*(Amended 2026-11-18, #355: the gap is closed. Since ADR-0075 (#554), validate mode judges the read the load
+assembles, so a value the domain refuses is a finding there too; and the reference closure is one rule of the PACK
+ruleset that every path calls. Validate mode reports each artifact the load leaves out as an error, at its file, in the
+load's words.)*
 
 **A divergence from core.** Core's `validate_pack` checks presets in its own shape, resolves their
 ids and checks their kind gate, and does not check the manifest. The service holds both to these
