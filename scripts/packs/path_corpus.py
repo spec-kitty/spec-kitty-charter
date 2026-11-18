@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Generate the two path corpora that PackPolicy's asset and artifact rules are checked against.
+"""Generate the two path corpora that the pack-relative path rules are checked against.
+
+asset-escape.tsv is read by PackRelativePathsTest (the asset escape verdict) and artifact-order.txt by
+ArtifactRulesTest (the order artifacts are judged in).
 
 Run with the venv core pins, isolated, from the repository root:
 

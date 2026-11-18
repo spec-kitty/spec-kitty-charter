@@ -30,7 +30,9 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The one composition-facts builder (#554, T027, FR-015): the pack under resolution {@code CLOSURE} judges, read from a
  * pack directory without the service through the one reader's {@code StoreRead} half, carries the facts recorded for
- * each example pack in {@code facts/example-packs.json}: the facts the golden composition answers were built from.
+ * each example pack in {@code facts/example-packs.json}. That file is a snapshot taken from the new reader itself
+ * (e74ec3092), not from a reader that predates #554, so it pins the facts against change and is no independent oracle:
+ * no pre-mission record of these facts exists.
  */
 @DisplayName("CompositionFactsBuilder builds a pack's composition facts without the service (#554, T027)")
 class CompositionFactsBuilderTest {
