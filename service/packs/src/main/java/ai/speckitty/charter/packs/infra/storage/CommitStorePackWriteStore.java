@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -17,12 +18,14 @@ import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.WriteFacts;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -56,10 +59,23 @@ import org.springframework.stereotype.Service;
  * <p>{@link #commit} is the one choke point every per-artifact write goes through, so it is where the write is judged
  * over every closure the pack joins as it will be after the write, under both locks and just before the swap (IC-15,
  * operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW): no registration service can leave the check out, and a closure that
- * would no longer compose refuses the write with its code before anything is staged.
+ * would no longer compose refuses the write with its code before anything is staged. Before that, a write or a removal
+ * of a kind the reference closure judges is refused with {@code registration_conflict} when the pack it leaves would not
+ * close (#355, {@link #requireReferencesClose}).
  */
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore, PackRemovalStore {
+
+    /**
+     * The kinds a write of which can change whether the pack closes over its references (#355): an asset, a guard, a
+     * lifecycle, a mission type, a template. A write of any other kind leaves the closure as the load found it.
+     */
+    private static final Set<ArtifactKind> REFERENCE_KINDS = EnumSet.of(
+            ArtifactKind.ASSET,
+            ArtifactKind.GUARD,
+            ArtifactKind.LIFECYCLE,
+            ArtifactKind.MISSION_TYPE,
+            ArtifactKind.TEMPLATE);
 
     private final Locations locations;
     private final SerializationStrategy strategy;
@@ -254,8 +270,24 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         @Nullable String shard = change.relationships().map(RelationshipShard::write).orElse(null);
         @Nullable CharterArtifact artifact = change.artifact().orElse(null);
         return exclusivelyAt(pack, location -> {
+            change.artifact()
+                    .filter(written -> REFERENCE_KINDS.contains(written.kind()))
+                    .ifPresent(written -> requireReferencesClose(change.revalidated()));
             requireClosuresCompose(pack, change);
             return generation.bracket(location.name(), () -> commitStore.commit(pack, ifMatch, artifact, shard));
+        });
+    }
+
+    /**
+     * Refuses a per-file write whose pack would not close over its references (#355, operator rulings of 2026-11-17):
+     * {@code 409 registration_conflict}, with the reason the load would record when it left the artifact out. It runs
+     * under the registry lock and the pack's own, before the impact check and before anything is staged. The pack it
+     * judges is the aggregate as it will be after the write; a loaded aggregate leaves out what does not close, so
+     * only what the write changes can fail.
+     */
+    private static void requireReferencesClose(Pack after) {
+        ReferenceSubjects.firstRefusal(after).ifPresent(finding -> {
+            throw new CharterRefusal(RefusalCode.REGISTRATION_CONFLICT, finding.refusal());
         });
     }
 
@@ -351,6 +383,15 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     @Override
     public PackRevision remove(PackIdentifier pack, Removal removal) {
         return exclusivelyAt(pack, location -> {
+            if (removal.artifacts().stream()
+                    .anyMatch(urn -> urn.kind()
+                            .artifactKind()
+                            .filter(REFERENCE_KINDS::contains)
+                            .isPresent())) {
+                requireReferencesClose(new DomainRepositoryService(locations, strategy)
+                        .load(pack)
+                        .without(removal.artifacts()));
+            }
             Path directory = resolve(pack);
             List<String> files = removal.artifacts().isEmpty()
                     ? List.of()

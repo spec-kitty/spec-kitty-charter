@@ -4,9 +4,11 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -192,6 +194,22 @@ public final class Pack {
         Builder builder = toBuilder();
         builder.remove(artifact.kind(), artifact.localId());
         return builder.artifact(artifact).build();
+    }
+
+    /**
+     * This pack without the given artifacts, every other part as it is: the aggregate a removal of them leaves (#355). A
+     * URN of a kind that is no artifact, or of an artifact the pack does not hold, removes nothing.
+     *
+     * @param removed the artifacts to leave out
+     * @return the pack without them
+     */
+    public Pack without(Collection<Urn> removed) {
+        Objects.requireNonNull(removed, "removed");
+        Builder builder = toBuilder();
+        for (Urn urn : removed) {
+            urn.kind().artifactKind().ifPresent(kind -> builder.remove(kind, urn.id()));
+        }
+        return builder.build();
     }
 
     /**
