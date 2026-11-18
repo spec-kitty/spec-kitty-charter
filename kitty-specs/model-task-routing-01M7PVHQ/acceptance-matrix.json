@@ -58,11 +58,11 @@
       "criterion_id": "FR-006",
       "description": "Verify FR-006 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (rows 1 to 10); ModelRecommendationServiceTest; ModelRecommendationsControllerTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:15.179450+00:00",
+      "notes": "getModelRecommendation takes a task type, a profile and optionally a step and a tier."
     },
     {
       "criterion_id": "FR-007",
