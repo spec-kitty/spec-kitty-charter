@@ -98,11 +98,11 @@
       "criterion_id": "FR-010",
       "description": "Verify FR-010 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: mission-types.feature (modelTier); ModelRecommendationTierTest; model-recommendation.feature rows 5 and 6",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:34.627021+00:00",
+      "notes": "A step offers model_tier; the request's modelTier wins; both reported."
     },
     {
       "criterion_id": "FR-011",
