@@ -5,4 +5,4 @@ value:
   status: 404
   code: task_type_not_found
   detail: >-
-    The routing catalog default in force under the activation a-1 declares no task type deploy.
+    The routing catalog default in force declares no task type deploy.

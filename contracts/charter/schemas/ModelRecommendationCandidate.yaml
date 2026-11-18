@@ -2,24 +2,14 @@ title: ModelRecommendationCandidate
 description: >-
   One model a recommendation answers. source says where it comes from: catalog, a model the catalog in force ranks,
   with its score, fit, cost tier and flags; or profile, the effective profile's model, with its effort and no score
-  (ADR-0080 decision 13). The oneOf below states the members of each; the service fills the members of its source.
+  (ADR-0080 decision 13). A catalog candidate always carries score, fitScore, costTier and withinTierConstraint, and
+  never effort; a profile candidate carries none of the catalog members. The members of each source are stated here and
+  on each member rather than as a oneOf, which the generated clients cannot model as one closed object.
 type: object
 additionalProperties: false
 required:
 - source
 - modelId
-oneOf:
-- properties:
-    source:
-      const: catalog
-  required:
-  - score
-  - fitScore
-  - costTier
-  - withinTierConstraint
-- properties:
-    source:
-      const: profile
 properties:
   source:
     type: string

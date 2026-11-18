@@ -34,7 +34,8 @@ class RelationSetParityTest {
 
     private static final List<String> MAPPER_ROOTS = List.of(
             "../activations/src/main/java/ai/speckitty/charter/activations/infra/api",
-            "../profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api");
+            "../profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api",
+            "../routing-edge/src/main/java/ai/speckitty/charter/routing/infra/api");
 
     @Test
     void everyRelationTheServiceBuildsIsInTheGuidesTable() {
