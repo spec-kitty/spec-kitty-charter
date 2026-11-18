@@ -2,157 +2,157 @@
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
       "description": "Verify FR-001 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RoutingCatalogBindingTest; routing-catalog.schema.json; SchemaKeywordCoverageTest; PackDigestBaselineTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:25:51.492656+00:00",
+      "notes": "The routing_catalog kind with its pack schema and file rule, bound and judged at registration."
     },
     {
       "criterion_id": "FR-002",
       "description": "Verify FR-002 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RoutingCatalogRulesTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:25:56.483865+00:00",
+      "notes": "Undeclared task types in fits and constraints, duplicate ids and fits, and two constraints for one task type are refused at registration."
     },
     {
       "criterion_id": "FR-003",
       "description": "Verify FR-003 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: routing-catalogs.feature; RoutingCatalogBodiesTest; PacksRoutingCatalogsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:01.234112+00:00",
+      "notes": "listPackRoutingCatalogs, getPackRoutingCatalog and ?kind=routing_catalog on listPackArtifacts."
     },
     {
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: effective-routing-catalogs.feature; EffectiveRoutingCatalogReadsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:05.973016+00:00",
+      "notes": "listEffectiveRoutingCatalogs, getEffectiveRoutingCatalog and ?kind=routing_catalog under an activation, with state, reason, policy and required."
     },
     {
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: effective-routing-catalogs.feature (selected, deactivated, required through org-mandate); routing-catalogs.feature (a locked same-id override refused, the open control)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:10.608814+00:00",
+      "notes": "A catalog is selected, denied and required, and an org pack replaces an open catalog and not a locked one."
     },
     {
       "criterion_id": "FR-006",
       "description": "Verify FR-006 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (rows 1 to 10); ModelRecommendationServiceTest; ModelRecommendationsControllerTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:15.179450+00:00",
+      "notes": "getModelRecommendation takes a task type, a profile and optionally a step and a tier."
     },
     {
       "criterion_id": "FR-007",
       "description": "Verify FR-007 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RankerTest (rows 1 to 3); ScoreTest; model-recommendation.feature rows 1 to 3",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:19.794389+00:00",
+      "notes": "quality_first ranks by fit then score; balanced and cost_first by score."
     },
     {
       "criterion_id": "FR-008",
       "description": "Verify FR-008 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RankerTest (ties, tiesInsideTheTiersBelowAHigherModelOutside); model-recommendation.feature row 2",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:24.388476+00:00",
+      "notes": "Every model tied at the top rank is answered, inside the tiers and overall."
     },
     {
       "criterion_id": "FR-009",
       "description": "Verify FR-009 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RankerTest; TiersInPlayTest; model-recommendation.feature rows 4 to 6",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:29.581600+00:00",
+      "notes": "The top inside every tier in play and the top overall, flagged withinTierConstraint and withinModelTier, never filtered."
     },
     {
       "criterion_id": "FR-010",
       "description": "Verify FR-010 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: mission-types.feature (modelTier); ModelRecommendationTierTest; model-recommendation.feature rows 5 and 6",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:34.627021+00:00",
+      "notes": "A step offers model_tier; the request's modelTier wins; both reported."
     },
     {
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (rows 1, 2, 6; the held profile out of force); ModelRecommendationServiceTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:39.612401+00:00",
+      "notes": "The effective profile's model and effort, listed last, whatever the profile's state."
     },
     {
       "criterion_id": "FR-012",
       "description": "Verify FR-012 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (every 400 and 404, the order outline, the 500's place, rows 8 to 10); errors.feature pins",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:44.665083+00:00",
+      "notes": "The refusals of ADR-0080 decision 9 in order, with routing_catalog_not_in_force, routing_catalog_conflict and task_type_not_found."
     },
     {
       "criterion_id": "FR-013",
       "description": "Verify FR-013 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: model-recommendation.feature (caching, every refusal before the 304); EffectiveTagTest (recommendation)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:49.646776+00:00",
+      "notes": "Charter-Source-Fingerprint and an ETag that moves with every input; a matching If-None-Match is 304."
     },
     {
       "criterion_id": "FR-014",
       "description": "Verify FR-014 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: switch-gate.yaml (the five operations ready); SwitchGateTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:54.626993+00:00",
+      "notes": "Every new operation is ready in the switch-gate register."
     },
     {
       "criterion_id": "FR-015",
       "description": "Verify FR-015 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: docs/api/service-contract.md (R14 row); docs/conformance/divergences.yaml and divergence-register.md (DIV-701 to DIV-707 open); contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md; DivergenceRegisterTest; ChangelogFragmentsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:59.737359+00:00",
+      "notes": "The R14 row, the divergences open with evidence and the changelog fragment."
     }
   ],
   "negative_invariants": []

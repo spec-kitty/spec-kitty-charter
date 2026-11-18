@@ -1,0 +1,23 @@
+summary: >-
+  The two routing catalogs of the org-base example pack of the charter (ADR-0070, ADR-0080), in id order: cost-led,
+  which no preset selects, and default, which replaces built-in's by the same id.
+value:
+  items:
+  - id: cost-led
+    description: A cost-led catalog for the example packs.
+    objective: cost_first
+    taskTypeCount: 1
+    modelCount: 2
+    _links:
+      self:
+        href: /api/v1/packs/org-base/artifacts/routing_catalog/cost-led
+  - id: default
+    objective: balanced
+    taskTypeCount: 3
+    modelCount: 5
+    _links:
+      self:
+        href: /api/v1/packs/org-base/artifacts/routing_catalog/default
+  _links:
+    self:
+      href: /api/v1/packs/org-base/artifacts/routing_catalog

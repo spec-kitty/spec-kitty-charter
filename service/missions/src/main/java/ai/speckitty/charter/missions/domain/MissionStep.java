@@ -1,5 +1,6 @@
 package ai.speckitty.charter.missions.domain;
 
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
@@ -20,6 +21,8 @@ import java.util.Set;
  * @param description the step's human-facing summary, when it has one: at most {@value #DESCRIPTION_MAX_LENGTH}
  *     characters; a longer text is the prompt's {@linkplain StepDocument#description() detailed description}
  * @param role the role that acts; empty when any role may act
+ * @param modelTier the cost tier of model the step advises, a recommendation the client may override (ADR-0080
+ *     decision 12); empty when the step advises none
  * @param prompt the prompt the step's agent is given, when it has one
  * @param guidelines the step's working notes, when it has them; never with a detailed description
  * @param expectedInputArtifacts the step's preconditions, in authored order
@@ -32,6 +35,7 @@ public record MissionStep(
         String title,
         Optional<String> description,
         Optional<String> role,
+        Optional<CostTier> modelTier,
         Optional<StepDocument> prompt,
         Optional<StepDocument> guidelines,
         List<ExpectedInput> expectedInputArtifacts,
@@ -82,6 +86,7 @@ public record MissionStep(
      * @param title the title
      * @param description the description, possibly empty
      * @param role the role, possibly empty
+     * @param modelTier the model tier the step advises, possibly empty (ADR-0080 decision 12)
      * @param prompt the prompt, possibly empty
      * @param guidelines the guidelines, possibly empty
      * @param expectedInputArtifacts the preconditions
@@ -99,6 +104,7 @@ public record MissionStep(
             DESCRIPTION_RULES.guard(text);
         });
         Objects.requireNonNull(role, "role").ifPresent(ROLE_RULES::guard);
+        Objects.requireNonNull(modelTier, "modelTier");
         Objects.requireNonNull(prompt, "prompt");
         Objects.requireNonNull(guidelines, "guidelines").ifPresent(GUIDELINES_RULES::guard);
         expectedInputArtifacts = List.copyOf(expectedInputArtifacts);

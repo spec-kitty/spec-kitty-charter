@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -85,6 +86,13 @@ public record EffectiveTag(String token) {
          * tag with the generic read of the same skill.
          */
         SKILL,
+        /** {@code listEffectiveRoutingCatalogs}: the routing catalog winners of the closure, each with its summary. */
+        ROUTING_CATALOGS,
+        /**
+         * {@code getEffectiveRoutingCatalog}: the winner of one routing catalog, with the catalog as its pack stores it,
+         * so it never shares a tag with the generic read of the same catalog (ADR-0080 decision 6).
+         */
+        ROUTING_CATALOG,
         /** {@code listEffectiveAssets}: the asset winners of the closure, each with its summary. */
         ASSETS,
         /** {@code getEffectiveAsset}: the winner of one asset, with its descriptor and no state. */
@@ -126,7 +134,13 @@ public record EffectiveTag(String token) {
          * step's role is read from the closure, whose fingerprint digests the mission types that declare it, so the query
          * names the step and the context, and the tag never matches the role-keyed read's.
          */
-        STEP_SELECTION
+        STEP_SELECTION,
+        /**
+         * {@code getModelRecommendation}: the models the routing catalog in force recommends for one task type, beside
+         * one profile's model (ADR-0080 decisions 7 to 13). The closure fingerprint digests the catalog, the profile and
+         * the step that offers a tier, so the query names the task type, the profile, the step and the asked tier.
+         */
+        RECOMMENDATION
     }
 
     /**
@@ -298,6 +312,64 @@ public record EffectiveTag(String token) {
     }
 
     /**
+     * The query of {@code getModelRecommendation}, as it selects a representation: the task type, the profile, the step
+     * and the asked tier, an absent part the same representation however the request spelled its absence.
+     *
+     * @param taskType the task type of the path
+     * @param profileId the asked agent profile's id, exactly as the request names it
+     * @param step the asked step, if the request sent one
+     * @param tier the asked model tier, if the request sent one
+     */
+    public record RecommendationQuery(
+            String taskType, String profileId, Optional<StepRef> step, Optional<CostTier> tier) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param taskType the task type
+         * @param profileId the profile's id
+         * @param step the asked step
+         * @param tier the asked tier
+         */
+        public RecommendationQuery {
+            Objects.requireNonNull(taskType, "taskType");
+            Objects.requireNonNull(profileId, "profileId");
+            Objects.requireNonNull(step, "step");
+            Objects.requireNonNull(tier, "tier");
+        }
+
+        /** The query as one unambiguous line: an absent part is {@code -}, a present one is marked {@code +}. */
+        private String normalized() {
+            return "taskType=" + taskType
+                    + "\nprofile=" + profileId
+                    + "\nmissionType="
+                    + step.map(each -> "+" + each.missionType()).orElse("-")
+                    + "\nstep=" + step.map(each -> "+" + each.step()).orElse("-")
+                    + "\ntier=" + tier.map(each -> "+" + each.token()).orElse("-");
+        }
+    }
+
+    /**
+     * A step a request names by its mission type and its id.
+     *
+     * @param missionType the mission type's id
+     * @param step the step's id
+     */
+    public record StepRef(String missionType, String step) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param missionType the mission type
+         * @param step the step
+         */
+        public StepRef {
+            Objects.requireNonNull(missionType, "missionType");
+            Objects.requireNonNull(step, "step");
+        }
+    }
+
+    /**
      * The query of {@code listEffectiveArtifacts}, as it selects a representation: a filter that is absent is the same
      * representation however the request spelled its absence.
      *
@@ -441,6 +513,19 @@ public record EffectiveTag(String token) {
     }
 
     /**
+     * The tag of one model recommendation: the task type, the profile, the step and the asked tier, over the revision
+     * (what is in force) and the closure's fingerprint (the catalog, the profile and the step of the closure's packs).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the task type, the profile, the step and the tier
+     * @return the tag
+     */
+    public static EffectiveTag recommendation(Revision revision, ClosureSnapshot closure, RecommendationQuery query) {
+        return of(Read.RECOMMENDATION, revision, closure, query.normalized());
+    }
+
+    /**
      * The tag of the generic read of one artifact: its kind, id and depth.
      *
      * @param revision the activation's revision
@@ -466,9 +551,10 @@ public record EffectiveTag(String token) {
 
     /**
      * The tag of the list of the winners of one kind ({@code listEffectiveSkills}, {@code listEffectiveAssets},
-     * {@code listEffectiveGlossaryContexts}): its read names the kind, and the query repeats it.
+     * {@code listEffectiveGlossaryContexts}, {@code listEffectiveRoutingCatalogs}): its read names the kind, and the query
+     * repeats it.
      *
-     * @param read {@link Read#SKILLS}, {@link Read#ASSETS} or {@link Read#GLOSSARIES}
+     * @param read {@link Read#SKILLS}, {@link Read#ASSETS}, {@link Read#GLOSSARIES} or {@link Read#ROUTING_CATALOGS}
      * @param kind the kind listed
      * @param revision the activation's revision
      * @param closure the closure the answer was computed from
@@ -477,7 +563,7 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag winners(Read read, ArtifactKind kind, Revision revision, ClosureSnapshot closure) {
         Objects.requireNonNull(kind, "kind");
-        if (read != Read.SKILLS && read != Read.ASSETS && read != Read.GLOSSARIES) {
+        if (read != Read.SKILLS && read != Read.ASSETS && read != Read.GLOSSARIES && read != Read.ROUTING_CATALOGS) {
             throw new IllegalArgumentException("The read " + read + " lists no winners of one kind.");
         }
         return of(read, revision, closure, "kind=" + kind.token());
@@ -485,10 +571,11 @@ public record EffectiveTag(String token) {
 
     /**
      * The tag of the read of one winner at a literal path of its kind ({@code getEffectiveSkill},
-     * {@code getEffectiveGlossaryContext}, {@code getEffectiveAsset}, {@code getEffectiveAssetPayload}): its kind, id and
-     * depth.
+     * {@code getEffectiveGlossaryContext}, {@code getEffectiveAsset}, {@code getEffectiveAssetPayload},
+     * {@code getEffectiveRoutingCatalog}): its kind, id and depth.
      *
-     * @param read {@link Read#SKILL}, {@link Read#GLOSSARY}, {@link Read#ASSET} or {@link Read#ASSET_PAYLOAD}
+     * @param read {@link Read#SKILL}, {@link Read#GLOSSARY}, {@link Read#ASSET}, {@link Read#ASSET_PAYLOAD} or
+     *     {@link Read#ROUTING_CATALOG}
      * @param revision the activation's revision
      * @param closure the closure the answer was computed from
      * @param query the kind, the id and the depth
@@ -496,7 +583,11 @@ public record EffectiveTag(String token) {
      * @throws IllegalArgumentException when {@code read} is not the read of one winner at a literal path
      */
     public static EffectiveTag winner(Read read, Revision revision, ClosureSnapshot closure, ArtifactQuery query) {
-        if (read != Read.SKILL && read != Read.GLOSSARY && read != Read.ASSET && read != Read.ASSET_PAYLOAD) {
+        if (read != Read.SKILL
+                && read != Read.GLOSSARY
+                && read != Read.ASSET
+                && read != Read.ASSET_PAYLOAD
+                && read != Read.ROUTING_CATALOG) {
             throw new IllegalArgumentException("The read " + read + " is no read of one winner at a literal path.");
         }
         return of(read, revision, closure, query.normalized());

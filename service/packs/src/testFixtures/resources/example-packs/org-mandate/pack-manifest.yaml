@@ -1,0 +1,12 @@
+# The org-mandate pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
+schema_version: '1.0'
+manifest_hash: c1cf3c9567bcf8db0c0963bbef0925656cf29dd2ae9762a27e4c10145c62a664
+constituents:
+- kind: routing_catalog
+  id: mandated
+  path: routing_catalogs/mandated.routing-catalog.yaml
+  content_hash: ceb6162ab4c1c8de2cdfc3ff27b585aee27b3d24b73ff979d86ff49b9dbf80ce
+presets:
+- id: mandate
+  path: presets/mandate.yaml
+  content_hash: 231ce52597857f15bab78920b718b7797747795b5fb6760543391dc53013e861

@@ -85,7 +85,13 @@ class CompositionFactsBuilderTest {
         assertThat(builtIn.definedArtifacts()).contains("mission_type:software-dev");
         assertThat(builtIn.descriptor().packId()).isEqualTo("01ARWG13C000000000000000FG");
         assertThat(org.descriptor().packId()).isEqualTo("01M6Y9ACNAAD96XPNQS0XWP2FF");
-        assertThat(org.definedArtifacts()).isNotEmpty().doesNotContainAnyElementsOf(builtIn.definedArtifacts());
+        // Org-base holds nothing built-in holds but the routing catalog it overrides by the same id (ADR-0080, R7).
+        assertThat(org.definedArtifacts())
+                .isNotEmpty()
+                .filteredOn(urn -> !urn.equals("routing_catalog:default"))
+                .doesNotContainAnyElementsOf(builtIn.definedArtifacts());
+        assertThat(org.definedArtifacts()).contains("routing_catalog:default", "routing_catalog:cost-led");
+        assertThat(builtIn.definedArtifacts()).contains("routing_catalog:default");
     }
 
     @Test

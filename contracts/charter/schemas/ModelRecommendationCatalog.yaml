@@ -1,0 +1,37 @@
+title: ModelRecommendationCatalog
+description: >-
+  The routing catalog in force that answered a recommendation: the winner of the layer merge that the activation
+  selects or a governing preset requires, with the pack and level that hold it.
+type: object
+additionalProperties: false
+required:
+- id
+- packId
+- level
+properties:
+  id:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The catalog's id.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCatalog.java
+      symbol: ModelRecommendationCatalog.id
+  packId:
+    type: string
+    minLength: 1
+    description: The configured identifier of the pack that holds the catalog in force.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCatalog.java
+      symbol: ModelRecommendationCatalog.packId
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of that pack (built-in, org or project).
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCatalog.java
+      symbol: ModelRecommendationCatalog.level
+x-source:
+  path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationCatalog.java
+  symbol: ModelRecommendationCatalog

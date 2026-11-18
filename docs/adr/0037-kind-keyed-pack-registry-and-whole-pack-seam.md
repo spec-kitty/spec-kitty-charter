@@ -2,12 +2,13 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-18T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and the #190 amendment (2026-10-27) by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:
+  - adr/0080-the-routing-catalog-kind-and-the-model-recommendation
   - adr/0006-onion-vertical-slices-archunit
   - adr/0024-doctrine-artifact-family-contract
   - adr/0026-write-surface-is-functional-registration
@@ -211,6 +212,33 @@ classification all stay in `packs`, and so does the packs domain model (ADR-0075
 - **The gate.** `PACK_VALIDATION_IS_FRAMEWORK_FREE` in the architecture test, direct and transitive,
   with known-bad controls, and a dependency allowlist in each module's build (amendment of ADR-0006,
   2026-11-13).
+
+### Amendment 2026-11-18 (ADR-0080, #108): the routing slice
+
+Made by the model-task routing mission (`model-task-routing-01M7PVHQ`). It changes no decision of this record and
+follows the rule of the amendment of 2026-11-09.
+
+- **The slice.** The routing catalog is an artifact kind, `routing_catalog`
+  ([ADR-0080](/adr/0080-the-routing-catalog-kind-and-the-model-recommendation/)), and `packs.infra.storage` binds it. So
+  the catalog's types and the ranker live in their own domain module, `:routing`, under `ai.speckitty.charter.routing.domain`,
+  and `:packs` depends on `:routing`, as it does on `:profiles` and `:missions`.
+- **Its edge.** The recommendation read, the use case and the inbound adapter, lives in `:routing-edge`, under the
+  slice's own package names. That module names `activations` only from `routing.infra.activations`, and no `packs` or
+  `activations` class names it back.
+- **The dependency direction.** `:kernel`, then `:profiles`, `:missions` and `:routing`, then `:packs`, then
+  `:activations`, then the edges, then `:deployable`.
+- **The gate.** `ROUTING_DOMAIN_IS_PURE` and the per-slice rules over `SLICES`, with known-bad controls, in the
+  architecture test. `ENTRYPOINT_STAYS_IN_ITS_SLICE` keeps `packs.infra.api` from naming `routing.domain`. Two packages
+  name it: `packs.infra.storage`, which binds the catalog, and `artifacts.infra.packs`, which adapts the stored catalog
+  to the catalog reads' own view (below); `ROUTING_DOMAIN_NAMED_ONLY_BY_STORAGE_AND_ADAPTER` holds that, with a known-bad
+  control.
+- **Where the catalog reads live.** The four catalog reads (`listPackRoutingCatalogs`, `getPackRoutingCatalog` and their
+  activation twins) are in `:artifacts-edge`, beside the skill reads they mirror, and copy the catalog into the
+  application ring's own `RoutingCatalogView`, as the skill reads copy a skill. `:routing-edge` does not hold them: it
+  names `activations` and never `packs` (`ROUTING_NAMES_NO_PACKS`), and the pack-scoped reads need the packs slice.
+  `PacksRoutingCatalogsTest` holds the view to the domain record field by field, so the copy cannot drift.
+- **Why not hold the catalog in `packs.domain`, as `Skill` is.** The ranker reads the catalog's types. In `packs.domain`
+  they would make the ranker depend on `:packs`, and the recommendation is not the pack store's concern.
 
 ## Context
 

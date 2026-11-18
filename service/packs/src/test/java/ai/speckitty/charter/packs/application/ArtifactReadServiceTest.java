@@ -575,14 +575,15 @@ class ArtifactReadServiceTest {
     // ---- the listed kinds: the served ones, then mission_type (#99) ------------------------------------------
 
     @Test
-    void theListedKindsAreTheServedOnesThenTheMissionType() {
+    void theListedKindsAreTheServedOnesThenTheMissionTypeAndTheRoutingCatalog() {
         assertThat(ArtifactReadService.LISTED)
-                .as("the served kinds first, in their order, so a kind appended to them stays before the mission type")
+                .as("the served kinds first, in their order, so a kind appended to them stays before the literal kinds")
                 .startsWith(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new))
-                .endsWith(ArtifactKind.MISSION_TYPE)
-                .hasSize(ArtifactReadService.SERVED.size() + 1)
+                .endsWith(ArtifactKind.MISSION_TYPE, ArtifactKind.ROUTING_CATALOG)
+                .hasSize(ArtifactReadService.SERVED.size() + 2)
                 .doesNotHaveDuplicates();
         assertThat(ArtifactReadService.listedKind("mission_type")).contains(ArtifactKind.MISSION_TYPE);
+        assertThat(ArtifactReadService.listedKind("routing_catalog")).contains(ArtifactKind.ROUTING_CATALOG);
         assertThat(ArtifactReadService.listedKind("toolguide")).contains(ArtifactKind.TOOLGUIDE);
         assertThat(ArtifactReadService.listedKind("template")).isEmpty();
         assertThat(ArtifactReadService.listedKind("mission-type")).isEmpty();
@@ -619,7 +620,8 @@ class ArtifactReadServiceTest {
     @Test
     void eachListedKindHasItsNotFoundCode() {
         // The five older kinds and the mission type keep their own codes; the kinds served after them, the agent
-        // profile, the procedure, the asset, the skill and the glossary, answer artifact_not_found (procedures.feature
+        // profile, the procedure, the asset, the skill, the glossary and the routing catalog, answer artifact_not_found
+        // (procedures.feature
         // pins it end to end).
         Map<ArtifactKind, RefusalCode> expected = Map.ofEntries(
                 Map.entry(ArtifactKind.TACTIC, RefusalCode.TACTIC_NOT_FOUND),
@@ -632,7 +634,8 @@ class ArtifactReadServiceTest {
                 Map.entry(ArtifactKind.PROCEDURE, RefusalCode.ARTIFACT_NOT_FOUND),
                 Map.entry(ArtifactKind.ASSET, RefusalCode.ARTIFACT_NOT_FOUND),
                 Map.entry(ArtifactKind.SKILL, RefusalCode.ARTIFACT_NOT_FOUND),
-                Map.entry(ArtifactKind.GLOSSARY, RefusalCode.ARTIFACT_NOT_FOUND));
+                Map.entry(ArtifactKind.GLOSSARY, RefusalCode.ARTIFACT_NOT_FOUND),
+                Map.entry(ArtifactKind.ROUTING_CATALOG, RefusalCode.ARTIFACT_NOT_FOUND));
 
         assertThat(expected.keySet())
                 .as("the map names every listed kind, so a newly listed kind needs its row")

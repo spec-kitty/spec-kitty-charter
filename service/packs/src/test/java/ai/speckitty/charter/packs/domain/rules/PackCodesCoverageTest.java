@@ -257,6 +257,7 @@ class PackCodesCoverageTest {
                 contents.stepEnhancements(),
                 contents.promptSlots(),
                 contents.missionTypes(),
+                List.of(),
                 new PackContents.Assembly.Refused(List.of(), RefusalCode.VALIDATION_FAILED, "two tactics", false));
         return new Judged(
                 "facts/validation_failed",

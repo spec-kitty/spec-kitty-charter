@@ -142,9 +142,11 @@ versions, the HTML and XML reports and PIT's default mutators:
 | kernel | `kernel` | the whole module | 75 % |
 | missions | `missions` | the whole module | 70 % |
 | profiles | `profiles` | the whole module | 90 % |
+| routing | `routing` | the whole module | 90 % |
 | activations | `activations` | the whole module | 85 % |
 | profiles-edge | `profiles-edge` | `profiles.application` and `profiles.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
 | missions-edge | `missions-edge` | `missions.application` and `missions.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
+| routing-edge | `routing-edge` | `routing.application` and `routing.infra`, without its three `*.config` packages (Spring wiring) | 85 % |
 | artifacts-edge | `artifacts-edge` | `artifacts.application` and `artifacts.infra`, without its four `*.config` packages (Spring wiring) | 85 % |
 | pack-validation | `pack-validation` | the whole module (`packvalidation`) | 85 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |

@@ -52,11 +52,11 @@ public record NodeRef(NodeKind kind, String id) implements Comparable<NodeRef> {
     }
 
     /**
-     * Whether a node reference may name the kind: a node a graph declares or an edge names, so every kind the contract's
-     * {@code NodeKind} lists. A guard and a lifecycle are neither (#156).
+     * Whether a node reference may name the kind: every kind the contract's {@code NodeKind} lists, a node a graph
+     * declares or an edge names or an activatable artifact (ADR-0080). A guard and a lifecycle are none (#156).
      */
     private static boolean named(NodeKind kind) {
-        return kind.declarableInGraphs() || kind.edgeTarget();
+        return kind.named();
     }
 
     /**

@@ -94,7 +94,8 @@ class ProfileCorpusTest {
         Map<String, Map<String, Object>> profiles = new LinkedHashMap<>();
         Path directory = CORPUS.resolve(pack).resolve("agent_profiles");
         if (!Files.isDirectory(directory)) {
-            return profiles; // org-alt holds no profile
+            // A pack that holds no profile (org-alt, #358; org-mandate, ADR-0080) serves none.
+            return profiles;
         }
         try (Stream<Path> files = Files.list(directory)) {
             for (Path file : files.filter(f -> f.getFileName().toString().endsWith(".agent.yaml"))
@@ -323,7 +324,10 @@ class ProfileCorpusTest {
     void everyProfileFileOfEachExamplePackIsServedAndNothingElse() throws Exception {
         for (String pack : PACKS) {
             Set<String> onDisk = profilesOf(pack).keySet();
-            if (!ExamplePacks.ORG_ALT.equals(pack)) {
+            // Every pack holds profiles but org-alt and org-mandate, which hold none and are served none.
+            if (ExamplePacks.ORG_ALT.equals(pack) || ExamplePacks.ORG_MANDATE.equals(pack)) {
+                assertThat(onDisk).as("%s profile files", pack).isEmpty();
+            } else {
                 assertThat(onDisk).as("%s profile files", pack).isNotEmpty();
             }
             assertThat(servedProfileIds(pack))

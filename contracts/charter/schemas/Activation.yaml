@@ -20,7 +20,8 @@ description: >-
   getEffectiveActionContext); assets, the assets its closure holds (listEffectiveAssets); asset, one of them as a
   template (/api/v1/activations/{activationId}/artifacts/asset/{artifactId}, templated true; getEffectiveAsset), which a
   guard runner (asset:<id>) expands with the asset's id; skills, the skills its closure holds
-  (listEffectiveSkills); glossaries, the glossary contexts its closure holds (listEffectiveGlossaryContexts); and its
+  (listEffectiveSkills); routing-catalogs, the routing catalogs its closure holds (listEffectiveRoutingCatalogs);
+  glossaries, the glossary contexts its closure holds (listEffectiveGlossaryContexts); and its
   vocabulary (ADR-0076 decision 9): vocabulary-terms, the terms in force (listActivationVocabularyTerms),
   vocabulary-contextive, their Contextive definitions file (getActivationVocabularyContextive), and vocabulary-taboos,
   the words to avoid (listActivationVocabularyTaboos).

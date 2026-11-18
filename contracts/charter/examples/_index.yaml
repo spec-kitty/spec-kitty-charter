@@ -67,6 +67,10 @@ files:
   - EffectiveAssetRead.asset.yaml
   - SkillList.activation.yaml
   - EffectiveSkillRead.skill.yaml
+  - RoutingCatalog.org-base-default.yaml
+  - RoutingCatalogList.org-base.yaml
+  - RoutingCatalogList.activation.yaml
+  - EffectiveRoutingCatalogRead.default.yaml
   - EffectiveGlossaryContextList.activation.yaml
   - EffectiveGlossaryContextRead.spec-kitty-core.yaml
   - EffectiveGlossaryTermRead.mission.yaml
@@ -78,3 +82,8 @@ files:
   - EffectiveStepPrompt.empty-slot.yaml
   - EffectiveStepPrompt.legacy-slot.yaml
   - CharterRefusal.mission-type-not-in-force.yaml
+  - ModelRecommendation.balanced-tie.yaml
+  - ModelRecommendation.request-tier.yaml
+  - CharterRefusal.routing-catalog-not-in-force.yaml
+  - CharterRefusal.routing-catalog-conflict.yaml
+  - CharterRefusal.task-type-not-found.yaml

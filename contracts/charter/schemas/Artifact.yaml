@@ -8,8 +8,8 @@ description: >-
   member missionType by its own read, getPackMissionType, whose literal path the service prefers over the generic
   one. It carries the pack revision as its ETag, like every pack read of one artifact; the kind has no
   write, so it is a concurrency token for a DELETE, not a cache validator. An asset is answered in member asset, a
-  skill in member skill and a glossary context in member glossary, each by its own literal read; the templated item
-  read never answers any of them.
+  skill in member skill, a glossary context in member glossary and a routing catalog in member routingCatalog, each by
+  its own literal read; the templated item read never answers any of them.
 type: object
 additionalProperties: false
 required:
@@ -40,6 +40,8 @@ oneOf:
       - agentProfile
   - required:
       - missionType
+  - required:
+      - routingCatalog
 properties:
   kind:
     type: string
@@ -47,10 +49,11 @@ properties:
     maxLength: 64
     description: >-
       The kind token; this version serves tactic, directive, styleguide, paradigm, toolguide,
-      procedure, asset, skill, glossary, agent_profile and mission_type; a client tolerates a kind it does not know
-      (skips the item). It names the one member that holds the artifact: agent_profile names agentProfile and the
-      member of mission_type is missionType. asset, skill and glossary are answered by their own literal reads, in
-      members asset, skill and glossary (a glossary context).
+      procedure, asset, skill, glossary, agent_profile, mission_type and routing_catalog; a client tolerates a kind it
+      does not know (skips the item). It names the one member that holds the artifact: agent_profile names
+      agentProfile, the member of mission_type is missionType and that of routing_catalog is routingCatalog. asset,
+      skill, glossary and routing_catalog are answered by their own literal reads, in members asset, skill, glossary (a
+      glossary context) and routingCatalog.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.token
@@ -90,6 +93,8 @@ properties:
     $ref: AgentProfile.yaml
   missionType:
     $ref: MissionType.yaml
+  routingCatalog:
+    $ref: RoutingCatalog.yaml
   governance:
     type: array
     description: >-

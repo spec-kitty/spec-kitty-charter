@@ -44,7 +44,7 @@ Entries are grouped by block, one block per mission, so that two missions never 
 - **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is after the pack-level files block.
 - **Mission types (DIV-501..599, ADR-0044)** is after the procedures block.
 - **Registration (DIV-601..699, ADR-0065)** is after the mission types block.
-- **Model-task routing (DIV-701..799, ADR-0080)** is last. Its entries are `proposed` until the reads are built.
+- **Model-task routing (DIV-701..799, ADR-0080)** is last. Its entries are `open`: the reads are built.
 
 The register has two forms of one list. This page is for readers. The file
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
@@ -969,8 +969,8 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 ## Model-task routing (DIV-701..799, ADR-0080)
 
 The block of Mission `model-task-routing-01M7PVHQ` (#108): the routing catalog as an artifact kind and the advisory
-model recommendation an activation answers. The entries are `proposed`: the reads are not built yet, and the
-scenarios that pin each entry are named when they are.
+model recommendation an activation answers. The entries are `open` since the reads are built, and each names the
+scenarios that pin it.
 
 ### DIV-701: The model-task routing catalog's home and identity
 
@@ -978,22 +978,23 @@ scenarios that pin each entry are named when they are.
 - **Service:** The catalog is the routing_catalog artifact kind, held in a pack (foundation in open-packs) as routing_catalogs/<id>.routing-catalog.yaml, with an id and an optional description, and no schema_version or source_snapshot. It layers, takes the mutability policy and is selected by an activation like any activatable kind, and is read through the pack and effective reads of the kind.
 - **Rationale:** The catalog is offering content, so it takes the offering's composition rules; the pack schema versions the shape.
 - **Ruling:** ADR-0080 decisions 1, 3, 5 and 6 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/loader.py` (default_catalog_path)
   - Core: `offering/model_task_routing/models.py` (ModelToTaskType)
-  - Charter: `docs/adr/0080-the-routing-catalog-kind-and-the-model-recommendation.md`
+  - Charter: `routing-catalogs.feature`; `effective-routing-catalogs.feature`; `RoutingCatalogBindingTest`
 
 ### DIV-702: The routing catalog's override_policy
 
 - **Core:** Reads routing_policy.override_policy (advisory, gated, required, require_reason); only advisory is exercised.
-- **Service:** There is no override_policy and no enforcement mode. The recommendation is advisory only: it neither picks one candidate nor filters any out.
+- **Service:** There is no override_policy and no enforcement mode, and the recommendation carries no override_mode. The recommendation is advisory only: it neither picks one candidate nor filters any out.
 - **Rationale:** Modes that were never exercised have no meaning to keep, and enforcement is the client's.
 - **Ruling:** ADR-0080 decision 4 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/models.py` (OverridePolicy)
   - Core: `offering/model_task_routing/evaluator.py` (evaluate)
+  - Charter: `RoutingCatalogPolicy.yaml` (closed: no override_policy); `model-recommendation.feature` (rows 4 to 6: no candidate filtered)
 
 ### DIV-703: Catalog freshness
 
@@ -1001,30 +1002,33 @@ scenarios that pin each entry are named when they are.
 - **Service:** There is no freshness_policy and no stale flag. The answer never depends on the clock; the currency pipeline (refiled in open-packs from #151) keeps the content current.
 - **Rationale:** A clock-dependent answer would break the source fingerprint and the ETag; freshness is upkeep of pack content.
 - **Ruling:** ADR-0080 decision 14 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/loader.py` (_is_stale)
+  - Charter: `RoutingCatalog.yaml` (closed: no freshness_policy); `model-recommendation.feature` (two identical requests answer the same body and tag); `ModelRecommendationServiceTest` (100 identical calls)
 
 ### DIV-704: tier_constraints and the step's model tier against the catalog's candidates
 
-- **Core:** Drops a model whose cost tier exceeds the task type's tier_constraints cap before scoring. The step's recommended_model_tier and a runtime override resolve with the override winning, and the result is only reported beside the candidates.
-- **Service:** No model is filtered. A step's model_tier (a cost tier) or the request's modelTier, which wins, is the effective tier; with the task type's cap these are the tiers in play. The catalog candidates are the top-ranked models inside every tier in play and, when different, the top-ranked overall, each flagged withinTierConstraint and withinModelTier.
+- **Core:** Drops a model whose cost tier exceeds the task type's tier_constraints cap before scoring. The step's recommended_model_tier, a free string, and a runtime override resolve with the override winning, reported as effective, source (offer or override) and offer, beside the candidates.
+- **Service:** No model is filtered. The step's field is model_tier (modelTier on the wire), renamed from recommended_model_tier and narrowed to a cost tier (low, medium, high, premium). It or the request's modelTier, which wins, is the effective tier, reported as effective, source (step or request, in place of offer and override) and offer; with the task type's cap these are the tiers in play. The catalog candidates are the top-ranked models inside every tier in play and, when different, the top-ranked overall, each flagged withinTierConstraint and withinModelTier.
 - **Rationale:** A tier is a recommendation the client may override, so a model outside it stays visible, flagged; a client that honors the tiers still needs no ranking of its own.
 - **Ruling:** ADR-0080 decision 12 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/evaluator.py` (_tier_allowed, _resolve_model_tier)
   - Core: `offering/missions/step_offer_seam.py` (resolve_model_tier_offer)
+  - Charter: `model-recommendation.feature` (rows 4 to 6); `RankerTest`
 
 ### DIV-705: Ties between catalog models
 
-- **Core:** Answers one catalog candidate; a tie goes to the model listed first (max keeps the first maximum).
-- **Service:** Every model tied at the top rank is a catalog candidate. Candidates are listed in rank order, then by model id, and the order is not a preference.
+- **Core:** Answers one catalog candidate; a tie goes to the model listed first (max keeps the first maximum). Scores are binary floats, so two models whose decimal scores are equal can differ by rounding noise, and the noise then picks one.
+- **Service:** Every model tied at the top rank is a catalog candidate. Scores, fits, weights and prices are exact decimals, read from the file's text and never through a binary float, so a decimal tie is a tie. Candidates are listed in rank order, then by model id in code-point order, and the order is not a preference.
 - **Rationale:** Which of equal models to use is the client's choice, and list order in a file carries no meaning (ADR-0036).
 - **Ruling:** ADR-0080 decision 11 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/evaluator.py` (_best_catalog_candidate)
+  - Charter: `model-recommendation.feature` (row 2); `RankerTest`
 
 ### DIV-706: The profile's pick
 
@@ -1032,17 +1036,19 @@ scenarios that pin each entry are named when they are.
 - **Service:** Takes the model and effort of the effective profile under the activation (enhancers merged and the specializes_from chain folded, ADR-0078), named by id; a profile no pack of the closure holds is 404 artifact_not_found.
 - **Rationale:** The activation decides which profile content is in force.
 - **Ruling:** ADR-0080 decisions 9 and 13 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/evaluator.py` (_profile_candidate)
+  - Charter: `model-recommendation.feature` (row 1; a held profile out of force; a profile no pack holds)
 
 ### DIV-707: An unknown task type, no catalog, and two catalogs
 
-- **Core:** An unknown task type yields no catalog candidate; a missing or unreadable catalog yields None.
-- **Service:** An unknown task type is 404 task_type_not_found; no catalog in force is 409 routing_catalog_not_in_force; more than one in force is 409 routing_catalog_conflict, naming them. A declared task type no model fits is 200 with no catalog candidate.
+- **Core:** Never checks a task type against task_types: it answers a candidate whenever a model has a task_fit for the string, and none when no model fits, so an undeclared task type with no fit yields no catalog candidate. A missing or unreadable catalog yields None. It accepts a fit or a tier constraint naming an undeclared task type, duplicate ids, duplicate fits and duplicate constraints (the first wins), any non-empty generated_at, and task type ids matching ^[a-z][a-z0-9-]*$.
+- **Service:** An unknown task type is 404 task_type_not_found; no catalog in force is 409 routing_catalog_not_in_force; more than one in force is 409 routing_catalog_conflict, naming them. A declared task type no model fits is 200 with no catalog candidate. A catalog core tolerates is refused at registration: a fit or a constraint naming an undeclared task type, a duplicate task type or model id, two fits for one task type in a model, two constraints for one task type, a generated_at that is not an ISO-8601 date-time with an offset, a task type id that is not a kebab-case token of at most 64 characters, and a blank text.
 - **Rationale:** A misspelled task type or a missing catalog must not look like a valid answer.
 - **Ruling:** ADR-0080 decision 9 (operator, 2026-11-18)
-- **Status:** proposed, since 2026-11-18
+- **Status:** open, since 2026-11-18
 - **Evidence:**
   - Core: `offering/model_task_routing/loader.py` (load)
   - Core: `offering/model_task_routing/evaluator.py` (evaluate)
+  - Charter: `model-recommendation.feature` (rows 7 to 10; the 404 and order outlines)

@@ -47,6 +47,15 @@ properties:
     x-source:
       path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
       symbol: MissionStep.role
+  modelTier:
+    allOf:
+      - $ref: CostTier.yaml
+    description: >-
+      The cost tier of model the step advises (ADR-0080 decision 12): a recommendation the client may override, which
+      the model recommendation reports and flags its catalog candidates against. Absent when the step declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.modelTier
   onDemand:
     type: boolean
     description: True for a step of the type's on_demand_steps, false for one of its steps.

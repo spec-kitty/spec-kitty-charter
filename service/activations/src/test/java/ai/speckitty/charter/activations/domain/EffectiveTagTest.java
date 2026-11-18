@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.activations.domain.EffectiveTag.Query;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
@@ -184,7 +185,7 @@ class EffectiveTagTest {
     @ParameterizedTest
     @EnumSource(
             value = EffectiveTag.Read.class,
-            names = {"SKILL", "GLOSSARY", "ASSET", "ASSET_PAYLOAD"},
+            names = {"SKILL", "GLOSSARY", "ASSET", "ASSET_PAYLOAD", "ROUTING_CATALOG"},
             mode = EnumSource.Mode.EXCLUDE)
     void noOtherReadIsTheReadOfOneWinnerAtALiteralPath(EffectiveTag.Read read) {
         EffectiveTag.ArtifactQuery query = new EffectiveTag.ArtifactQuery(ArtifactKind.GLOSSARY, "core", 0);
@@ -197,7 +198,7 @@ class EffectiveTagTest {
     @ParameterizedTest
     @EnumSource(
             value = EffectiveTag.Read.class,
-            names = {"SKILLS", "ASSETS", "GLOSSARIES"},
+            names = {"SKILLS", "ASSETS", "GLOSSARIES", "ROUTING_CATALOGS"},
             mode = EnumSource.Mode.EXCLUDE)
     void noOtherReadListsTheWinnersOfOneKind(EffectiveTag.Read read) {
         assertThatThrownBy(() -> EffectiveTag.winners(read, ArtifactKind.GLOSSARY, REVISION, closure("sha256:one")))
@@ -391,6 +392,57 @@ class EffectiveTagTest {
                 .as("the control: the v3 recipe over the same inputs is the tag")
                 .isEqualTo(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one"))
                         .token());
+    }
+
+    @Test
+    void eachInputOfTheRecommendationHasItsOwnTagAndAnAbsentPartIsStable() {
+        ClosureSnapshot closure = closure("sha256:one");
+        Optional<EffectiveTag.StepRef> step = Optional.of(new EffectiveTag.StepRef("software-dev", "review"));
+        EffectiveTag.RecommendationQuery base =
+                new EffectiveTag.RecommendationQuery("review", "java-jenny", step, Optional.of(CostTier.LOW));
+        List<EffectiveTag.RecommendationQuery> variants = List.of(
+                base,
+                new EffectiveTag.RecommendationQuery("design", "java-jenny", step, Optional.of(CostTier.LOW)),
+                new EffectiveTag.RecommendationQuery("review", "generic-agent", step, Optional.of(CostTier.LOW)),
+                new EffectiveTag.RecommendationQuery(
+                        "review",
+                        "java-jenny",
+                        Optional.of(new EffectiveTag.StepRef("research", "review")),
+                        Optional.of(CostTier.LOW)),
+                new EffectiveTag.RecommendationQuery(
+                        "review",
+                        "java-jenny",
+                        Optional.of(new EffectiveTag.StepRef("software-dev", "implement")),
+                        Optional.of(CostTier.LOW)),
+                new EffectiveTag.RecommendationQuery("review", "java-jenny", step, Optional.of(CostTier.PREMIUM)),
+                new EffectiveTag.RecommendationQuery(
+                        "review", "java-jenny", Optional.empty(), Optional.of(CostTier.LOW)),
+                new EffectiveTag.RecommendationQuery("review", "java-jenny", step, Optional.empty()));
+        Set<EffectiveTag> tags = new HashSet<>();
+        variants.forEach(query -> tags.add(EffectiveTag.recommendation(REVISION, closure, query)));
+
+        assertThat(tags)
+                .as("the task type, profile, mission type, step and tier each move the tag")
+                .hasSize(variants.size());
+        assertThat(EffectiveTag.recommendation(
+                        REVISION,
+                        closure,
+                        new EffectiveTag.RecommendationQuery(
+                                "review", "java-jenny", Optional.empty(), Optional.empty())))
+                .isEqualTo(EffectiveTag.recommendation(
+                        REVISION,
+                        closure,
+                        new EffectiveTag.RecommendationQuery(
+                                "review", "java-jenny", Optional.empty(), Optional.empty())));
+        assertThat(EffectiveTag.recommendation(REVISION, closure("sha256:two"), base))
+                .isNotEqualTo(EffectiveTag.recommendation(REVISION, closure, base));
+        assertThat(EffectiveTag.recommendation(REVISION, closure, base))
+                .as("the recommendation's tag is not the step selection's")
+                .isNotEqualTo(EffectiveTag.stepSelection(
+                        REVISION,
+                        closure,
+                        new EffectiveTag.StepSelectionQuery(
+                                "software-dev", "review", Optional.empty(), Optional.empty())));
     }
 
     private static String sha256(String preimage) {

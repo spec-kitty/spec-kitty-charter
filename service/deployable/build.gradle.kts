@@ -12,6 +12,10 @@ dependencies {
     // The profiles slice's edge rings. The slice rules allow an empty selection, so a module missing from this classpath
     // would leave its rings unchecked; HexagonalArchitectureTest fails on that instead.
     implementation(project(":profiles-edge"))
+    // The routing slice's domain (ADR-0080), on the same terms: its purity rules need its classes on this classpath.
+    implementation(project(":routing"))
+    // The routing slice's edge rings, on the same terms.
+    implementation(project(":routing-edge"))
     // The missions slice's edge rings, on the same terms.
     implementation(project(":missions-edge"))
     // The asset, skill and references reads' edge rings, on the same terms.

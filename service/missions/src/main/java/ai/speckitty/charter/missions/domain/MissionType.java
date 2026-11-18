@@ -2,6 +2,7 @@ package ai.speckitty.charter.missions.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.StepRoles;
 import ai.speckitty.charter.kernel.validation.Constraints;
@@ -218,6 +219,11 @@ public final class MissionType implements CharterArtifact, StepRoles {
     @Override
     public Optional<String> stepRole(String stepId) {
         return step(stepId).flatMap(MissionStep::role);
+    }
+
+    @Override
+    public Optional<CostTier> stepModelTier(String stepId) {
+        return step(stepId).flatMap(MissionStep::modelTier);
     }
 
     /**

@@ -1,0 +1,34 @@
+title: RoutingCatalogList
+description: >-
+  The routing catalogs of one of two trees, in id order and unpaged, deliberately, because a pack holds few catalogs
+  (paging it later would be an additive change); a tree with none answers an empty list. In a pack
+  (listPackRoutingCatalogs): every catalog the pack holds, and _links holds self. Under an activation
+  (listEffectiveRoutingCatalogs): the catalog winners of the activation's closure, the copy of each id the layer merge
+  keeps across the levels (project over org over built-in), and _links holds self and up (the activation).
+type: object
+additionalProperties: false
+required:
+  - items
+  - _links
+properties:
+  items:
+    type: array
+    description: The pack's catalogs, or the closure's catalog winners, in id order.
+    items:
+      $ref: RoutingCatalogSummary.yaml
+    x-derived:
+      rule: >-
+        In a pack, the catalogs of the pack; under an activation, the layer-merge winner of each catalog id the packs of
+        the closure hold. Sorted by id.
+      inputs:
+        - the catalog files under the routing_catalogs/ directory of the pack
+        - under an activation, the activation's closure (listActivationPacks) and its layer merge
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: >-
+    In a pack, the catalogs the service holds for the pack; under an activation, the catalog winners of the closure.
+    Read inside one verified read.
+  inputs:
+    - the catalog files under the routing_catalogs/ directory of the pack
+    - under an activation, the activation's closure (listActivationPacks) and its layer merge

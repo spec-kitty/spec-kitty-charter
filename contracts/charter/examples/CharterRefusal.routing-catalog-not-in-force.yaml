@@ -1,0 +1,8 @@
+summary: >-
+  The activation puts no routing catalog in force, so no catalog answers the recommendation.
+value:
+  title: Routing catalog not in force
+  status: 409
+  code: routing_catalog_not_in_force
+  detail: >-
+    The activation a-1 puts no routing catalog in force; select one.

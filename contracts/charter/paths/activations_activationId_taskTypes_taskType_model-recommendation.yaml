@@ -1,0 +1,117 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/TaskType.yaml
+get:
+  operationId: getModelRecommendation
+  summary: Recommend models for a task type under an activation, beside the model of an agent profile.
+  description: >-
+    Which models the routing catalog in force recommends for the task type {taskType} under the activation, and which
+    model the asked agent profile declares (ADR-0080 decisions 7 to 13). The recommendation is advisory: the service
+    ranks the catalog's models, flags each against the tiers in play and answers; the client chooses, and nothing is
+    enforced.
+
+    The catalog in force is the routing_catalog winner of the activation's merged closure that the activation selects
+    or a governing preset requires; exactly one must be in force. Its objective sets the rank: quality_first ranks by
+    fit, then score; balanced and cost_first rank by score, the weighted sum of the fit, cost, risk and latency
+    desirabilities, computed in exact decimal. The tiers in play are the task type's max_tier (tierConstraint) and the
+    effective tier, the request's modelTier, else the asked step's model_tier. The catalog candidates are the
+    top-ranked models inside every tier in play and, when they differ, the top-ranked models overall, each with every
+    tie, so no model is hidden by a tier: each is flagged withinTierConstraint and, with an effective tier,
+    withinModelTier. The profile candidate is the agent profile's model and effort, resolved as
+    getEffectiveAgentProfile resolves the profile (ADR-0078), whatever its state, and is absent when the profile
+    declares no model. A declared task type no model fits answers 200 with no catalog candidate.
+
+    The refusals come in this order. A malformed parameter, or missionType without step or the reverse, is a 400 Problem
+    without a code. An unknown activation is 404 activation_not_found; a profile no pack of the closure holds is 404
+    artifact_not_found; with a step, a mission type the merged closure does not hold is 404 mission_type_not_found, then
+    a step it does not hold is 404 action_not_found, a held step being offered whether or not its mission type is in
+    force. A closure that cannot compose or merge answers its 500. Then no catalog in force is 409
+    routing_catalog_not_in_force, and more than one is 409 routing_catalog_conflict, naming the ids. Then a task type the
+    catalog in force does not declare is 404 task_type_not_found. Every refusal comes before the ETag is compared, so
+    none is a 304.
+
+    The ETag names the read and the normalized query (task type, profile, mission type, step and tier), and changes
+    with the activation's revision and with any file of a pack of its closure; a matching If-None-Match is a 304
+    without a body. The answer is deterministic: the same activation, packs and query answer the same body and tag.
+  tags:
+  - ModelRecommendations
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  - $ref: ../parameters/ModelRecommendationQueryAgentProfile.yaml
+  - $ref: ../parameters/ModelRecommendationQueryMissionType.yaml
+  - $ref: ../parameters/ModelRecommendationQueryStep.yaml
+  - $ref: ../parameters/ModelRecommendationQueryModelTier.yaml
+  responses:
+    '200':
+      description: The catalog's candidates for the task type, then the profile's model.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ModelRecommendation.yaml
+          examples:
+            balanced-tie:
+              $ref: ../examples/ModelRecommendation.balanced-tie.yaml
+            request-tier:
+              $ref: ../examples/ModelRecommendation.request-tier.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        Refused with 404, in this order (data-model "Refusal order"): the activation (activation_not_found, also for an
+        activation this client may not see, so ids do not leak); the agent profile no pack of the closure holds
+        (artifact_not_found); with a step, the mission type (mission_type_not_found), then the step
+        (action_not_found). task_type_not_found, a task type the catalog in force does not declare, follows the 500 of a
+        closure that cannot compose and the two 409 codes.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            activation-not-found:
+              $ref: ../examples/CharterRefusal.activation-not-found.yaml
+            task-type-not-found:
+              $ref: ../examples/CharterRefusal.task-type-not-found.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '409':
+      description: >-
+        The activation does not put exactly one routing catalog in force, judged after the 404 codes of the activation,
+        the profile and the step and after the 500 of a closure that cannot compose, and before task_type_not_found: no
+        catalog in force is routing_catalog_not_in_force, more than one is routing_catalog_conflict, whose detail names
+        the ids in force. The client resolves either by changing the activation.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            routing-catalog-not-in-force:
+              $ref: ../examples/CharterRefusal.routing-catalog-not-in-force.yaml
+            routing-catalog-conflict:
+              $ref: ../examples/CharterRefusal.routing-catalog-conflict.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

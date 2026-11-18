@@ -1,0 +1,27 @@
+# A mandated routing catalog (ADR-0080): org-mandate's preset requires it. balanced: review has model-c fit 0.8,
+# medium (0.8 + 0.2 x 0.66 = 0.932).
+id: mandated
+generated_at: '2026-11-18T00:00:00Z'
+task_types:
+- id: review
+  title: Review
+models:
+- id: model-c
+  provider: example
+  task_fit:
+  - task_type: review
+    score: 0.8
+  cost:
+    tier: medium
+routing_policy:
+  objective: balanced
+  weights:
+    quality: 1
+    cost: 0.2
+    risk: 0
+    latency: 0
+sources:
+- name: example
+  url: https://example.invalid/catalog
+  access_method: manual
+  snapshot_at: '2026-11-18T00:00:00Z'

@@ -5,9 +5,9 @@ description: >-
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
   kind_not_found, activation_not_found, artifact_not_found, preset_not_found,
-  skeleton_not_found and pack_document_not_found are 404; validation_failed and
+  skeleton_not_found, pack_document_not_found and task_type_not_found are 404; validation_failed and
   activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required,
-  artifact_locked and mission_type_not_in_force are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
+  artifact_locked, mission_type_not_in_force, routing_catalog_not_in_force and routing_catalog_conflict are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
   artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm,
@@ -308,6 +308,9 @@ enum:
   - role_pin_conflict
   - specialization_cycle
   - profile_enhancement_drops_field
+  - routing_catalog_not_in_force
+  - routing_catalog_conflict
+  - task_type_not_found
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -1037,6 +1040,30 @@ x-refusal:
       fields are the enhancer's own and never merged. The detail names the enhancing pack first and the field. A write
       judged over the closures its pack joins answers 422; a read of content stored before the rule answers 500, the
       stored packs being at fault
+  routing_catalog_not_in_force:
+    status: 409
+    retryable: false
+    raised: true
+    description: >-
+      the activation puts no routing catalog in force: no catalog winner of its merged closure is selected or required
+      (ADR-0080 decision 9); raised by getModelRecommendation alone, after its 404 codes for the activation, the
+      profile, the mission type and the step, and after the 500 of a closure that cannot compose, before
+      task_type_not_found and any 304
+  routing_catalog_conflict:
+    status: 409
+    retryable: false
+    raised: true
+    description: >-
+      the activation puts more than one routing catalog in force, so no one catalog answers (ADR-0080 decision 9); the
+      detail names the ids in force, in code-point order. Raised by getModelRecommendation alone, at the place of
+      routing_catalog_not_in_force
+  task_type_not_found:
+    status: 404
+    retryable: false
+    raised: true
+    description: >-
+      the routing catalog in force declares no task type of that name (ADR-0080 decision 9); raised by
+      getModelRecommendation alone, after the two routing catalog 409 codes and before any 304
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

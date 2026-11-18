@@ -1,0 +1,37 @@
+title: ModelRecommendationTier
+description: >-
+  The effective model tier of a recommendation (ADR-0080 decision 12), present when the request asks for a tier or the
+  asked step offers one: the request's modelTier (source request), else the step's model_tier (source step). It
+  combines with the task type's tierConstraint and replaces neither.
+type: object
+additionalProperties: false
+required:
+- effective
+- source
+properties:
+  effective:
+    allOf:
+    - $ref: CostTier.yaml
+    description: The effective tier.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationTier.java
+      symbol: ModelRecommendationTier.effective
+  source:
+    type: string
+    enum:
+    - step
+    - request
+    description: Where the effective tier comes from, the request's modelTier or the step's model_tier.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationTier.java
+      symbol: ModelRecommendationTier.source
+  offer:
+    allOf:
+    - $ref: CostTier.yaml
+    description: The asked step's model_tier, when the step declares one; absent otherwise, and when no step is asked.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationTier.java
+      symbol: ModelRecommendationTier.offer
+x-source:
+  path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationTier.java
+  symbol: ModelRecommendationTier

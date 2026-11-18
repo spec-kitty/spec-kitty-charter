@@ -37,6 +37,8 @@ Feature: The worktree guard answers in front of every operation
       | getPackAssetPayload               | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
       | listPackSkills                    | GET    | /packs/qa/artifacts/skill                                                                     |
       | getPackSkill                      | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
+      | listPackRoutingCatalogs           | GET    | /packs/qa/artifacts/routing_catalog                                                           |
+      | getPackRoutingCatalog             | GET    | /packs/qa/artifacts/routing_catalog/default                                                   |
       | listPackGlossaryContexts          | GET    | /packs/qa/artifacts/glossary                                                                  |
       | getPackGlossaryContext            | GET    | /packs/qa/artifacts/glossary/spec-kitty-core                                                  |
       | getPackGlossaryTerm               | GET    | /packs/qa/artifacts/glossary/spec-kitty-core/terms/mission                                    |
@@ -71,6 +73,8 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveAssetPayload          | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
       | listEffectiveSkills               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
       | getEffectiveSkill                 | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
+      | listEffectiveRoutingCatalogs      | GET    | /activations/01ARWG13C000000000000000AC/artifacts/routing_catalog                             |
+      | getEffectiveRoutingCatalog        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/routing_catalog/default                     |
       | listEffectiveGlossaryContexts     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary                                    |
       | getEffectiveGlossaryContext       | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core                    |
       | getEffectiveGlossaryTerm          | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core/terms/mission      |
@@ -88,6 +92,7 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveStepPrompt            | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
       | selectAgentProfile                | GET    | /activations/01ARWG13C000000000000000AC/roles/reviewer/profile-selection                      |
       | selectAgentProfileForStep         | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/review/profile-selection |
+      | getModelRecommendation            | GET    | /activations/01ARWG13C000000000000000AC/task-types/design/model-recommendation?agentProfile=java-jenny |
 
   Scenario Outline: <operation> with an Origin header is a 403 even with the right token
     When I <method> "<path>" with the header "Origin": "https://evil.example"
@@ -118,6 +123,8 @@ Feature: The worktree guard answers in front of every operation
       | getPackAssetPayload               | GET    | /packs/qa/artifacts/asset/logo/payload                                                        |
       | listPackSkills                    | GET    | /packs/qa/artifacts/skill                                                                     |
       | getPackSkill                      | GET    | /packs/qa/artifacts/skill/land-pr                                                             |
+      | listPackRoutingCatalogs           | GET    | /packs/qa/artifacts/routing_catalog                                                           |
+      | getPackRoutingCatalog             | GET    | /packs/qa/artifacts/routing_catalog/default                                                   |
       | listPackGlossaryContexts          | GET    | /packs/qa/artifacts/glossary                                                                  |
       | getPackGlossaryContext            | GET    | /packs/qa/artifacts/glossary/spec-kitty-core                                                  |
       | getPackGlossaryTerm               | GET    | /packs/qa/artifacts/glossary/spec-kitty-core/terms/mission                                    |
@@ -152,6 +159,8 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveAssetPayload          | GET    | /activations/01ARWG13C000000000000000AC/artifacts/asset/logo/payload                          |
       | listEffectiveSkills               | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill                                       |
       | getEffectiveSkill                 | GET    | /activations/01ARWG13C000000000000000AC/artifacts/skill/land-pr                               |
+      | listEffectiveRoutingCatalogs      | GET    | /activations/01ARWG13C000000000000000AC/artifacts/routing_catalog                             |
+      | getEffectiveRoutingCatalog        | GET    | /activations/01ARWG13C000000000000000AC/artifacts/routing_catalog/default                     |
       | listEffectiveGlossaryContexts     | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary                                    |
       | getEffectiveGlossaryContext       | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core                    |
       | getEffectiveGlossaryTerm          | GET    | /activations/01ARWG13C000000000000000AC/artifacts/glossary/spec-kitty-core/terms/mission      |
@@ -169,3 +178,4 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveStepPrompt            | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/implement/prompt   |
       | selectAgentProfile                | GET    | /activations/01ARWG13C000000000000000AC/roles/reviewer/profile-selection                      |
       | selectAgentProfileForStep         | GET    | /activations/01ARWG13C000000000000000AC/mission-types/software-dev/actions/review/profile-selection |
+      | getModelRecommendation            | GET    | /activations/01ARWG13C000000000000000AC/task-types/design/model-recommendation?agentProfile=java-jenny |

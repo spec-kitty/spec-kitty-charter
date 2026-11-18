@@ -1,0 +1,35 @@
+title: RoutingCatalogPolicy
+description: >-
+  How a routing catalog ranks (ADR-0080 decisions 10 and 12), as RoutingPolicy holds it.
+type: object
+additionalProperties: false
+required:
+  - objective
+  - weights
+  - tierConstraints
+properties:
+  objective:
+    type: string
+    enum:
+      - quality_first
+      - balanced
+      - cost_first
+    description: >-
+      quality_first ranks by fit, then score; balanced and cost_first rank by score. The two compute alike today and differ in meaning.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingObjective.java
+      symbol: RoutingObjective.token
+  weights:
+    $ref: RoutingCatalogWeights.yaml
+  tierConstraints:
+    type: array
+    items:
+      $ref: RoutingCatalogTierConstraint.yaml
+    description: >-
+      The tier constraints, possibly none.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingPolicy.java
+      symbol: RoutingPolicy.tierConstraints
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingPolicy.java
+  symbol: RoutingPolicy

@@ -43,7 +43,7 @@ class ExamplePacksTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT, ExamplePacks.ORG_MANDATE})
     void everyExamplePackValidatesWithOnlyFileNotHeldWarnings(String name) {
         // A file the pack does not hold (an orientation README, an author's note) is a file_not_held warning, one for
         // each file the store's load lists not held, and nothing else is found (#554, open case 6).
@@ -57,7 +57,7 @@ class ExamplePacksTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT})
+    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT, ExamplePacks.ORG_MANDATE})
     void aPackWithoutItsDescriptorIsCaught(String name, @TempDir Path dir) throws Exception {
         Path copy = ExamplePacks.copyOf(name, dir);
         Files.delete(copy.resolve("pack.yaml"));
@@ -75,8 +75,8 @@ class ExamplePacksTest {
     }
 
     /**
-     * The four packs compose through the production store and the offering read: org-base and org-alt on built-in,
-     * project on both org packs, settling their contest (#358).
+     * The five packs compose through the production store and the offering read: org-base, org-alt and org-mandate on
+     * built-in, and project on both of the first two org packs, settling their contest (#358).
      */
     @Test
     void theExamplePacksComposeThroughTheOfferingRead() {
@@ -92,7 +92,14 @@ class ExamplePacksTest {
 
     /** Every artifact file of every pack loads into the domain through the whole-pack load, with no violation. */
     @ParameterizedTest
-    @ValueSource(strings = {ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.ORG_ALT, ExamplePacks.PROJECT})
+    @ValueSource(
+            strings = {
+                ExamplePacks.BUILT_IN,
+                ExamplePacks.ORG,
+                ExamplePacks.ORG_ALT,
+                ExamplePacks.PROJECT,
+                ExamplePacks.ORG_MANDATE
+            })
     void everyPackLoadsWholeWithNoViolation(String name) {
         WholePackStore.LoadedPack loaded =
                 new WholePackStore(new YamlSerializationStrategy()).load(ExamplePacks.pack(name));

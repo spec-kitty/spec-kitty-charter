@@ -1,6 +1,7 @@
 files:
   - ArtifactId.yaml
   - AssetOrSkillId.yaml
+  - RoutingCatalogId.yaml
   - ContextId.yaml
   - TermId.yaml
   - ArtifactKind.yaml
@@ -22,3 +23,8 @@ files:
   - MissionTypeId.yaml
   - SkeletonName.yaml
   - StepId.yaml
+  - TaskType.yaml
+  - ModelRecommendationQueryAgentProfile.yaml
+  - ModelRecommendationQueryMissionType.yaml
+  - ModelRecommendationQueryStep.yaml
+  - ModelRecommendationQueryModelTier.yaml

@@ -7,8 +7,9 @@ import java.util.Map;
 
 /**
  * The charter-owned example packs every pack-reading test reads (ADR-0070): {@code built-in}; the org packs
- * {@code org-base} and {@code org-alt} that depend on it, siblings that contest one styleguide; and the project pack
- * {@code project} that depends on both and settles that contest as their distribution pack (#358). They carry only
+ * {@code org-base} and {@code org-alt} that depend on it, siblings that contest one styleguide; the project pack
+ * {@code project} that depends on both and settles that contest as their distribution pack (#358); and the org pack
+ * {@code org-mandate}, which depends on {@code built-in} and on which no pack depends (ADR-0080, #108). They carry only
  * canonical shapes; an invalid shape belongs to an error-handling fixture, never here.
  *
  * <p>The packs ship as classpath resources, inside a jar when another module reads them. On first use the tree is
@@ -32,9 +33,19 @@ public final class ExamplePacks {
     /** The project example pack; it depends on {@link #ORG} and {@link #ORG_ALT}, and is their distribution pack. */
     public static final String PROJECT = "project";
 
+    /**
+     * The third org example pack; it depends on {@link #BUILT_IN}, requires its routing catalog by a governing preset,
+     * and is in no other example pack's closure (operator ruling of 2026-11-18 on #108, ADR-0080).
+     */
+    public static final String ORG_MANDATE = "org-mandate";
+
     private static final String RESOURCE = "/example-packs";
     private static final Map<String, PackLevel> LEVELS = Map.of(
-            BUILT_IN, PackLevel.BUILT_IN, ORG, PackLevel.ORG, ORG_ALT, PackLevel.ORG, PROJECT, PackLevel.PROJECT);
+            BUILT_IN, PackLevel.BUILT_IN,
+            ORG, PackLevel.ORG,
+            ORG_ALT, PackLevel.ORG,
+            PROJECT, PackLevel.PROJECT,
+            ORG_MANDATE, PackLevel.ORG);
 
     private static volatile Path copied;
 
@@ -62,7 +73,7 @@ public final class ExamplePacks {
     /**
      * One example pack's directory.
      *
-     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT} or {@link #PROJECT}
+     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT}, {@link #PROJECT} or {@link #ORG_MANDATE}
      * @return its directory
      */
     public static Path pack(String name) {
@@ -73,18 +84,19 @@ public final class ExamplePacks {
     }
 
     /**
-     * The four pack names in the compose's stable order, built-in first, as the store configures them.
+     * The five pack names in the compose's stable order (by level, then by name), built-in first, as the store
+     * configures them.
      *
-     * @return {@link #BUILT_IN}, {@link #ORG_ALT}, {@link #ORG}, {@link #PROJECT}
+     * @return {@link #BUILT_IN}, {@link #ORG_ALT}, {@link #ORG}, {@link #ORG_MANDATE}, {@link #PROJECT}
      */
     public static List<String> names() {
-        return List.of(BUILT_IN, ORG_ALT, ORG, PROJECT);
+        return List.of(BUILT_IN, ORG_ALT, ORG, ORG_MANDATE, PROJECT);
     }
 
     /**
      * The level one example pack is configured at.
      *
-     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT} or {@link #PROJECT}
+     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT}, {@link #PROJECT} or {@link #ORG_MANDATE}
      * @return its level
      */
     public static PackLevel level(String name) {

@@ -20,6 +20,9 @@
       "detail" : "docs/authoring-notes.md: not held (Author aid: Markdown that no files rule models (#451). Not pack content: not held, not served, not refused.)"
     } ]
   },
+  "example-packs/org-mandate" : {
+    "findings" : [ ]
+  },
   "example-packs/project" : {
     "findings" : [ ]
   },

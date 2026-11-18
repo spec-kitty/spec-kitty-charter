@@ -1,0 +1,72 @@
+title: ModelRecommendation
+description: >-
+  The models the routing catalog in force recommends for one task type under an activation, beside the model of the
+  asked agent profile (getModelRecommendation; ADR-0080 decisions 7 to 13). The recommendation is advisory: the service
+  ranks, flags and answers, and the client chooses. It is deterministic: the same activation, packs and query answer
+  the same body and the same ETag.
+
+  _links holds self (this request, with its query), catalog (the catalog's read under the activation,
+  getEffectiveRoutingCatalog), agent-profile (the profile's read under the activation, getEffectiveAgentProfile) and,
+  when a step was asked, step (the step's read under the activation, getEffectiveMissionStep).
+type: object
+additionalProperties: false
+required:
+- taskType
+- catalog
+- objective
+- candidates
+- _links
+properties:
+  taskType:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: The task type asked, a task type the catalog in force declares.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/Recommendation.java
+      symbol: Recommendation.taskType
+  catalog:
+    $ref: ModelRecommendationCatalog.yaml
+  objective:
+    type: string
+    enum:
+    - quality_first
+    - balanced
+    - cost_first
+    description: >-
+      The objective the catalog in force ranks by: quality_first ranks by fit, then score; balanced and cost_first rank
+      by score. balanced and cost_first compute alike today and differ in meaning: the weights a catalog gives each say
+      what it trades.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/Recommendation.java
+      symbol: Recommendation.objective
+  tierConstraint:
+    allOf:
+    - $ref: CostTier.yaml
+    description: >-
+      The task type's max_tier, the highest cost tier the catalog advises for it, when the catalog declares one; absent
+      otherwise. It flags, never filters (ADR-0080 decision 12).
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/Recommendation.java
+      symbol: Recommendation.tierConstraint
+  modelTier:
+    $ref: ModelRecommendationTier.yaml
+  candidates:
+    type: array
+    items:
+      $ref: ModelRecommendationCandidate.yaml
+    description: >-
+      The catalog candidates, in rank order descending, then by model id in code-point order, then the profile
+      candidate, last. The order is presentation, not preference, and never depends on the order of the catalog's
+      models. The catalog candidates are the top-ranked models inside every tier in play and, when they differ, the
+      top-ranked models overall, each with every tie; none when no model fits the task type. The profile candidate is
+      present when the effective profile declares a model, even when a catalog candidate names the same model.
+    x-source:
+      path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationRead.java
+      symbol: ModelRecommendationRead.candidates
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendationRead.java
+  symbol: ModelRecommendationRead

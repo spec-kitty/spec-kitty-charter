@@ -3464,7 +3464,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/detail" is "<detail>"
 
     Examples:
-      | query           | detail                                                                                                                                                                                                                  |
-      | kind=template   | The query parameter kind is \"template\", which is not one of directive, tactic, styleguide, toolguide, paradigm, procedure, agent_profile, glossary, skill, anti_pattern, mission_type or step_enhancement. |
-      | state=retired   | The query parameter state is \"retired\", which is not one of active, inactive or excluded.                                                                                                                             |
-      | pageCursor=YQ   | The query parameter pageCursor is \"YQ\", which is not a cursor this list gave.                                                                                                                                         |
+      | query         | detail                                                                                                                                                                                                                        |
+      | kind=template | The query parameter kind is \"template\", which is not one of directive, tactic, styleguide, toolguide, paradigm, procedure, agent_profile, glossary, skill, anti_pattern, mission_type, step_enhancement or routing_catalog. |
+      | state=retired | The query parameter state is \"retired\", which is not one of active, inactive or excluded.                                                                                                                                   |
+      | pageCursor=YQ | The query parameter pageCursor is \"YQ\", which is not a cursor this list gave.                                                                                                                                               |
