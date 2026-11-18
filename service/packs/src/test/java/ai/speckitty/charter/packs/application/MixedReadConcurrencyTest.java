@@ -22,18 +22,24 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -93,6 +99,11 @@ class MixedReadConcurrencyTest {
     private final AtomicInteger overlapped = new AtomicInteger();
     private final AtomicLong versionsSeen = new AtomicLong();
 
+    /** The slowest write of the fair-lock case, worded with its wait and round (#593: the evidence the bound rests on). */
+    private final AtomicReference<String> slowestWrite = new AtomicReference<>("none");
+
+    private final AtomicLong slowestWaitNanos = new AtomicLong();
+
     /** The markers each verified fingerprint stands for, {@code "<D marker>/<E marker>"}; filled by {@link Rig#prime}. */
     private final Map<String, String> markersOf = new ConcurrentHashMap<>();
 
@@ -136,6 +147,8 @@ class MixedReadConcurrencyTest {
             rig.sixteenPutsAndAReplace(run, WAIT_BOUND);
         }
 
+        System.out.println(
+                "fair-lock case: the slowest write was " + slowestWrite.get() + " (bound " + WAIT_BOUND + ")");
         assertThat(failures).as("a write that starved or failed").isEmpty();
     }
 
@@ -148,7 +161,7 @@ class MixedReadConcurrencyTest {
     void aWriteHeldBehindASlowSwapIsNamedWithItsRound(@TempDir Path host) throws Exception {
         Rig rig = rig(host);
         rig.prime();
-        java.util.concurrent.atomic.AtomicBoolean held = new java.util.concurrent.atomic.AtomicBoolean();
+        AtomicBoolean held = new AtomicBoolean();
         midSwap = () -> {
             if (held.compareAndSet(false, true)) {
                 pause(600);
@@ -172,12 +185,12 @@ class MixedReadConcurrencyTest {
     }
 
     /** The breach of {@code bound} by one write's wait, worded; empty when the write kept within it. */
-    static java.util.Optional<String> waitBreach(String write, int round, Duration waited, Duration bound) {
+    static Optional<String> waitBreach(String write, int round, Duration waited, Duration bound) {
         if (waited.compareTo(bound) <= 0) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
-        return java.util.Optional.of(String.format(
-                java.util.Locale.ROOT,
+        return Optional.of(String.format(
+                Locale.ROOT,
                 "write %s waited %.1f s in round %d (bound %.1f s)",
                 write,
                 waited.toMillis() / 1000.0,
@@ -352,9 +365,9 @@ class MixedReadConcurrencyTest {
                 for (int i = 0; i < done.size(); i++) {
                     try {
                         done.get(i).get();
-                    } catch (java.util.concurrent.CancellationException cancelled) {
+                    } catch (CancellationException cancelled) {
                         failures.add("write " + names.get(i) + " was still running at the deadline of round " + run);
-                    } catch (java.util.concurrent.ExecutionException failed) {
+                    } catch (ExecutionException failed) {
                         failures.add("write " + names.get(i) + " failed in round " + run + ": " + failed.getCause());
                     }
                 }
@@ -374,8 +387,12 @@ class MixedReadConcurrencyTest {
                     failures.add("write " + name + " gave up on the registry lock in round " + run);
                     return null;
                 }
-                waitBreach(name, run, Duration.ofNanos(System.nanoTime() - from), bound)
-                        .ifPresent(failures::add);
+                long waited = System.nanoTime() - from;
+                if (waited > slowestWaitNanos.getAndAccumulate(waited, Math::max)) {
+                    slowestWrite.set(
+                            String.format(Locale.ROOT, "%s, %.3f s in round %d", name, waited / 1_000_000_000.0, run));
+                }
+                waitBreach(name, run, Duration.ofNanos(waited), bound).ifPresent(failures::add);
                 return null;
             };
         }
@@ -459,7 +476,7 @@ class MixedReadConcurrencyTest {
                 for (Future<Void> done : pool.invokeAll(tasks, 30, TimeUnit.SECONDS)) {
                     try {
                         done.get();
-                    } catch (java.util.concurrent.ExecutionException failed) {
+                    } catch (ExecutionException failed) {
                         failures.add("a task failed: " + failed.getCause());
                     }
                 }

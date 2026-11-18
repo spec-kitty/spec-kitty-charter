@@ -6,12 +6,14 @@ import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.missions.domain.LifecycleTransition;
 import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.packs.domain.Asset;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Guard;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.ReferenceFacts;
 import ai.speckitty.charter.packs.domain.rules.ReferenceClosure;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * What the reference closure ({@link ReferenceClosure}) judges of an artifact, as the packs domain can name it (#355): a
@@ -60,9 +62,7 @@ final class ReferenceSubjects {
     static ReferenceClosure closure(Pack pack) {
         return ReferenceClosure.of(
                 of(pack),
-                pack.assetFiles().stream()
-                        .map(ai.speckitty.charter.packs.domain.AssetFile::path)
-                        .collect(java.util.stream.Collectors.toSet()),
+                pack.assetFiles().stream().map(AssetFile::path).collect(Collectors.toSet()),
                 ReferenceClosure.namable(pack.templates()),
                 EmbeddedSchemas.PORT);
     }
