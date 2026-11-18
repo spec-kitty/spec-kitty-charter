@@ -28,11 +28,11 @@
       "criterion_id": "FR-003",
       "description": "Verify FR-003 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: routing-catalogs.feature; RoutingCatalogBodiesTest; PacksRoutingCatalogsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:01.234112+00:00",
+      "notes": "listPackRoutingCatalogs, getPackRoutingCatalog and ?kind=routing_catalog on listPackArtifacts."
     },
     {
       "criterion_id": "FR-004",
