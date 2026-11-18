@@ -7,13 +7,12 @@ requirement_refs:
 - NFR-002
 planning_base_branch: feat/355-closure-in-pack-ruleset
 merge_target_branch: feat/355-closure-in-pack-ruleset
-branch_strategy: Planning artifacts for this mission were generated on feat/355-closure-in-pack-ruleset. During implementation this WP may branch from a dependency-specific base, but completed changes must merge back into feat/355-closure-in-pack-ruleset unless the human explicitly redirects the landing branch.
+branch_strategy: Planning artifacts for this mission were generated on feat/355-closure-in-pack-ruleset. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/355-closure-in-pack-ruleset unless the human explicitly redirects the landing branch.
 subtasks:
 - T018
 - T019
 - T020
 - T021
-agent: claude
 history:
 - at: '2026-11-18T07:00:00Z'
   actor: java-jenny
