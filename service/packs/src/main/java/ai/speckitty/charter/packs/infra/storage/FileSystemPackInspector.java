@@ -257,6 +257,26 @@ public final class FileSystemPackInspector implements PackReading {
      * @return the contents, the census and the read faults; a root that cannot be read is one read fault
      */
     TreeRead readTree(PackRoot root) {
+        return readWithStore(root).tree();
+    }
+
+    /**
+     * The one read of a pack tree and the store half it ran over the same walk (#554, S3): what the store's strict load
+     * answers from, so that its files not held are the census's ({@link TreeCensus#notHeld()}) and "held" has one
+     * owner.
+     *
+     * @param tree the one read
+     * @param store the store half of it ({@link StoreRead}), the DSO read the census shares a walk with
+     */
+    record OneRead(TreeRead tree, StoreRead store) {}
+
+    /**
+     * The one read of a pack tree with its store half ({@link #readTree}).
+     *
+     * @param root the pack to read; its {@code locator} is the directory
+     * @return the read and its store half; a root that cannot be read is one read fault and a refused store half
+     */
+    OneRead readWithStore(PackRoot root) {
         // #319: normalize, not toRealPath: a linked root keeps its configured name (#284).
         Path directory = Path.of(root.locator()).toAbsolutePath().normalize();
         String name = root.name();
@@ -290,7 +310,7 @@ public final class FileSystemPackInspector implements PackReading {
     }
 
     /** The read of a root that cannot be read: no fact, an empty census, and the one fault at {@value #ROOT}. */
-    private static TreeRead unreadableRoot(PackRoot root, String detail, StoreRead store) {
+    private static OneRead unreadableRoot(PackRoot root, String detail, StoreRead store) {
         PackContents nothing = new PackContents(
                 root,
                 new FileRead.Absent<>(PackFileSet.PACK_YAML),
@@ -302,13 +322,15 @@ public final class FileSystemPackInspector implements PackReading {
                 List.of(),
                 List.of(),
                 store.assembly());
-        return new TreeRead(
-                nothing,
-                TreeCensus.empty(),
-                List.of(Findings.at(StorageCodes.PACK_UNREADABLE, ROOT, List.of(), detail)));
+        return new OneRead(
+                new TreeRead(
+                        nothing,
+                        TreeCensus.empty(),
+                        List.of(Findings.at(StorageCodes.PACK_UNREADABLE, ROOT, List.of(), detail))),
+                store);
     }
 
-    private TreeRead readDirectory(PackRoot root, Path directory, String name) {
+    private OneRead readDirectory(PackRoot root, Path directory, String name) {
         FileRead<PackDescriptor> descriptor = new FileRead.Absent<>(PackFileSet.PACK_YAML);
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (Files.isRegularFile(packYaml)) {
@@ -350,7 +372,7 @@ public final class FileSystemPackInspector implements PackReading {
                 reservedShard(directory),
                 CensusEntries.of(packDirectoryName(directory), walk, table, companions),
                 List.copyOf(companions.values()));
-        return new TreeRead(contents, census, readFaults(name, descriptor, shards, fragment, full));
+        return new OneRead(new TreeRead(contents, census, readFaults(name, descriptor, shards, fragment, full)), store);
     }
 
     /**
@@ -368,7 +390,7 @@ public final class FileSystemPackInspector implements PackReading {
      * @param descriptor the pack's descriptor
      * @return true when its {@code mutability_policy} names no {@code policy.yaml}
      */
-    static boolean unnamedPolicy(PackDescriptor descriptor) {
+    private static boolean unnamedPolicy(PackDescriptor descriptor) {
         return !descriptor
                 .paths()
                 .mutabilityPolicy()
@@ -493,18 +515,18 @@ public final class FileSystemPackInspector implements PackReading {
      * itself a link, in {@link String} order, that the table excludes or no rule models, unless a held artifact claims
      * it as a companion (a skill body); a {@code policy.yaml} the descriptor does not name; and a file a rule maps that
      * nothing names, a companion no artifact names, but not an orphan prompt fragment, which is refused (open case 9). A retired
-     * file is refused by name, never listed (WP02 review L2). The store's load lists what it does not hold through here,
-     * so "held" has one owner (#554, S3).
+     * file is refused by name, never listed (WP02 review L2). The census lists what the store does not hold through
+     * here, and the store's load takes the census's list ({@code WholePackStore#load}), so "held" has one owner (#554,
+     * S3).
      *
      * @param directory the pack directory
-     * @param packName the pack's name, which a refusal to list it names
      * @param walk the pack's walk: its files that are not themselves links are listed, and its listing is digested
      * @param table the file-kinds table
      * @param unnamedPolicy whether {@code policy.yaml} is a file the descriptor does not name
      * @return the files not held, each with its kind and reason
      */
-    static List<NotHeldFile> notHeld(
-            Path directory, String packName, PackFileSet.Walk walk, PackFileKind table, boolean unnamedPolicy) {
+    private static List<NotHeldFile> notHeld(
+            Path directory, PackFileSet.Walk walk, PackFileKind table, boolean unnamedPolicy) {
         Path last = directory.toAbsolutePath().normalize().getFileName();
         String prefix = (last == null ? "pack" : last.toString()) + "/";
         Set<String> held = Set.copyOf(PackFileSet.digested(directory, table, walk));
@@ -721,7 +743,7 @@ public final class FileSystemPackInspector implements PackReading {
             listing.retired()
                     .forEach((file, reason) -> unreadable.add(new FileRead.Unreadable<>(
                             file, ParseFailure.refused(file, reason, StorageCodes.RETIRED), List.of())));
-            notHeld.addAll(FileSystemPackInspector.notHeld(directory, name, walk, table, unnamedPolicy));
+            notHeld.addAll(FileSystemPackInspector.notHeld(directory, walk, table, unnamedPolicy));
             // An unnamed file, a policy file or a companion nothing names though a rule maps it, is listed once, as not
             // held, never also as classified (open case 9, WP05 review); an excluded file is listed with its rule both
             // ways, as validate mode shows it.
