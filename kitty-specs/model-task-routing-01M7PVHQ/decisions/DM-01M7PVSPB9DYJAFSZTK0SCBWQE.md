@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.pipeline-151`
 - **Input key:** `pipeline_151`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:59.049142+00:00`
+- **Resolved:** `2026-11-18T08:33:49.430657+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ ADR-0080 d14: #151 closed here and refiled in open-packs; the pipeline opens hum
 
 ## Final answer
 
-_(none)_
+As proposed (recommended)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:59.049142+00:00` - opened
+- `2026-11-18T08:33:49.430657+00:00` - resolved (final_answer="As proposed (recommended)")

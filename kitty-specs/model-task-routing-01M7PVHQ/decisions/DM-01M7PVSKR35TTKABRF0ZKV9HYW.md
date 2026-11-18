@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.adr.profile-pick`
 - **Input key:** `profile_pick`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-18T08:18:56.387611+00:00`
+- **Resolved:** `2026-11-18T08:33:46.885823+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ ADR-0080 d13: the profile candidate is the effective profile model and effort (A
 
 ## Final answer
 
-_(none)_
+As proposed (recommended)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-18T08:18:56.387611+00:00` - opened
+- `2026-11-18T08:33:46.885823+00:00` - resolved (final_answer="As proposed (recommended)")
