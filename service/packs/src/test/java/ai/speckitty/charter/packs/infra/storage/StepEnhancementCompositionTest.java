@@ -108,13 +108,16 @@ class StepEnhancementCompositionTest {
         return new PackLocation(name, level, dir);
     }
 
+    /** The distribution pack of the two enhancers (#358): it depends on both and settles their contest. */
     private PackLocation settler(String name, String packId, String member) throws IOException {
         Path dir = Files.createDirectories(host.resolve(name));
         write(
                 dir,
                 "pack.yaml",
                 "pack_id: " + packId + "\npack_version: 1.0.0\nparent_pack: null\nname: " + name
-                        + "\npack_level: org\noverrides:\n- artifact: " + URN + "\n  member: " + member + "\n");
+                        + "\npack_level: org\ndepends_on:\n- pack_id: 01M6ZRYK0000000000000000E1\n  range: '>=1.0'\n"
+                        + "- pack_id: 01M6ZRYK0000000000000000E2\n  range: '>=1.0'\n"
+                        + "overrides:\n- artifact: " + URN + "\n  member: " + member + "\n");
         return new PackLocation(name, PackLevel.ORG, dir);
     }
 

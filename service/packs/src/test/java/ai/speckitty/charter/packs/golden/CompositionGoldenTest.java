@@ -117,6 +117,7 @@ class CompositionGoldenTest {
         List<Case> cases = new ArrayList<>(cyclesPresetsAndMentions());
         cases.addAll(dependencyRefusals());
         cases.addAll(siblingContests());
+        cases.addAll(distributionSettlements());
         cases.addAll(referencesAndRootedComposes());
         cases.addAll(levelViolations());
         return cases;
@@ -222,6 +223,21 @@ class CompositionGoldenTest {
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
+                        "overrides-naming-a-member-outside-the-compose",
+                        settling("01DSTR", "distribution", DIRECTIVE, "01GHOST"),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
+                        "overrides-naming-a-member-that-is-not-a-contestant",
+                        settling("01DSTR", "distribution", DIRECTIVE, "01DSTR"),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)));
+    }
+
+    /** Who settles a sibling contest (#358): the distribution pack only. */
+    private static List<Case> distributionSettlements() {
+        return List.of(
+                new Case(
                         "the-distribution-pack-settles",
                         settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
@@ -259,16 +275,6 @@ class CompositionGoldenTest {
                         "two-distribution-packs-naming-one-winner",
                         settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
                         settling("01DTWO", "dtwo", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
-                new Case(
-                        "overrides-naming-a-member-outside-the-compose",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01GHOST"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
-                new Case(
-                        "overrides-naming-a-member-that-is-not-a-contestant",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01DSTR"),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)));
     }
