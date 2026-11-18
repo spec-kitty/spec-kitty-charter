@@ -1,7 +1,7 @@
 {
-  "event_count": 43,
-  "last_event_id": "01M7QQ2A4K26EKGTKPJDN2CTYF",
-  "materialized_at": "2026-11-18T16:15:33.011365+00:00",
+  "event_count": 44,
+  "last_event_id": "01M7QQ73YTCTXBBAH888RSY560",
+  "materialized_at": "2026-11-18T16:18:10.522089+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 4
   },
   "work_packages": {
@@ -185,14 +185,14 @@
       }
     },
     "WP06": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M7QQ2A4K26EKGTKPJDN2CTYF",
-      "last_transition_at": "2026-11-18T16:15:33.011365+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7QQ73YTCTXBBAH888RSY560",
+      "last_transition_at": "2026-11-18T16:18:10.522089+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T13:21:35Z – claude – Carried from the WP04 review: the step-read scenario asserts modelTier on the effective (activation) step read too, not only the pack step read. Carried from WP05: ExamplePackCoverageTest (4 tests) is red until this WP adds a routing catalog covering every schema property and a preset with activated_routing_catalogs to the example packs.",
@@ -201,9 +201,9 @@
         "Ready for review at lane-f (content at 5ed91fa58)"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 254,
-      "shell_pid_created_at": "1795014414.44",
+      "role": "reviewer",
+      "shell_pid": 342,
+      "shell_pid_created_at": "1795018676.57",
       "subtasks": {
         "T020": "done",
         "T021": "done",
