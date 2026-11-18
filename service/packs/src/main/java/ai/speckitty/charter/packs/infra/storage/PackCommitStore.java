@@ -419,7 +419,8 @@ public final class PackCommitStore implements WholePackWriteStore {
      * ruling of 2026-11-18): the one reader judges the staged copy with the registration's full read, so no per-file
      * path can store a pack that a whole-pack registration of it would refuse. The live pack is read only when the copy
      * has a violation, so that a fault the pack already held does not block every write to it. A fault of the copy is
-     * held when the live pack has one with the same code at the same file: first in the same words, then in any words,
+     * held when the live pack has one with the same code at the same file: first at the same pointer in the same words,
+     * then in any words,
      * one for one, so a write that changes a held fault's wording (a count it names) is not refused for it, and a write
      * that adds a second fault of that code at that file is. The refusal is {@code validation_failed}, one violation per
      * new fault at its file, as a registration states them; nothing is swapped.
@@ -472,7 +473,11 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     private static List<String> wording(Reason reason) {
-        return List.of(reason.code().value(), reason.location().file(), reason.detail());
+        return List.of(
+                reason.code().value(),
+                reason.location().file(),
+                reason.location().pointer(),
+                reason.detail());
     }
 
     private static List<String> place(Reason reason) {
