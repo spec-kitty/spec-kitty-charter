@@ -17,5 +17,8 @@
   "target_branch": "feat/355-closure-in-pack-ruleset",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "default"
+  "topology_source": "default",
+  "contracts": "none",
+  "contracts_rationale": "No interface changes: 409 registration_conflict is already declared on every per-file write and delete path of contracts/charter (packs_packId_artifacts_*.yaml, packs_packId_relationships.yaml).",
+  "change_mode": "bulk_edit"
 }
