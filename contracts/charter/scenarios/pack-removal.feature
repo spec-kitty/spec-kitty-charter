@@ -840,6 +840,116 @@ Feature: One artifact or one registered relationship is removed from a pack
     When I DELETE "/packs/qa/relationships?from=action:rx/a&to=directive:D2" with the header "If-Match": "*"
     Then the response status is 204
 
+  # #605 (operator ruling of 2026-11-18): a removal is judged on the whole pack it leaves, with the registration's full
+  # read. A step enhancement needs exactly one enhances edge, so deleting its only one, held in registered.graph.yaml, is
+  # refused at the enhancement's file and nothing is written. The control removes a registered edge no rule needs, on
+  # the same fixture.
+  Scenario: Removing a step enhancement's only enhances edge is refused at its file, and an edge no rule needs is removed
+    Given the org pack "base" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000BS
+      pack_version: 1.0.0
+      parent_pack: null
+      name: base
+      pack_level: org
+      """
+    And the org pack "base" with the file "missions/software-dev/software-dev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: software-dev
+      title: Software development
+      description: Build software
+      steps:
+        - id: plan
+          title: Plan
+          role: planner
+          prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "base" with the file "missions/software-dev/steps/plan.prompt.md":
+      """
+      # Plan
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "base" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/plan
+        kind: action
+        label: plan
+      edges:
+      - source: mission_type:software-dev
+        target: action:software-dev/plan
+        relation: requires
+      """
+    And the org pack "enhancer" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000E1
+      pack_version: 1.0.0
+      parent_pack: null
+      name: enhancer
+      pack_level: org
+      depends_on:
+      - pack_id: 01M6ZRYK0000000000000000BS
+        range: '>=1.0'
+      """
+    And the org pack "enhancer" with the file "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd-plan
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: spdd-plan.prompt-fragment.md
+      """
+    And the org pack "enhancer" with the file "missions/software-dev/enhancements/spdd-plan.prompt-fragment.md":
+      """
+      Fill or update the REASONS canvas while composing the plan.
+      """
+    And the org pack "enhancer" with the file "directives/D1.directive.yaml":
+      """
+      schema_version: "1.0"
+      id: D1
+      title: D1
+      intent: Intent of D1
+      enforcement: required
+      """
+    And the org pack "enhancer" with the file "directives/D2.directive.yaml":
+      """
+      schema_version: "1.0"
+      id: D2
+      title: D2
+      intent: Intent of D2
+      enforcement: required
+      """
+    And the org pack "enhancer" with the file "registered.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      generated_by: charter-registration
+      nodes: []
+      edges:
+      - source: step_enhancement:spdd-plan
+        target: base::action:software-dev/plan
+        relation: enhances
+      - source: directive:D1
+        target: directive:D2
+        relation: requires
+      """
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    And I DELETE "/packs/enhancer/relationships?from=step_enhancement:spdd-plan&to=base::action:software-dev/plan" with the header "If-Match": "*"
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field at "/violations" holds exactly 1 item(s)
+    And the field at "/violations/0/code" is "prompt_fragment_invalid"
+    And the field at "/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
+    When I DELETE "/packs/enhancer/relationships?from=directive:D1&to=directive:D2" with the header "If-Match": "*"
+    Then the response status is 204
+
   # bound by: the landing fix pass of slice F (operator ruling DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6)
   Scenario: A mission type whose substeps delegate is removed with its step links and its scope edges
     Operator rulings DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6: the type's own requires edges
