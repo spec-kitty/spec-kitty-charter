@@ -1,16 +1,23 @@
 // The charter service: a hexagonal Java service built against contracts/charter/openapi.yaml.
 // Module roles and the dependency rule: docs/architecture/hexagonal-service.md.
+// Repositories (ADR-0079). Maven Central rate-limits by address (HTTP 429), and the CI runners share addresses, so
+// Google's mirror of Central comes first everywhere; it serves Central's bytes, and the strict SHA-256 dependency
+// verification (gradle/verification-metadata.xml) checks every artifact whichever repository served it. Gradle moves to
+// the next repository only on a 404, never on an error. Plugins: the mirror, then the plugin portal, for the markers and
+// plugins only it hosts (the portal hands anything else to Central). Libraries: the mirror, then Central, for an
+// artifact the mirror does not hold yet. build-logic/settings.gradle.kts declares the same orders.
 pluginManagement {
     includeBuild("build-logic")
     repositories {
+        maven("https://maven-central.storage-download.googleapis.com/maven2/") { name = "MavenCentralMirror" }
         gradlePluginPortal()
-        mavenCentral()
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
+        maven("https://maven-central.storage-download.googleapis.com/maven2/") { name = "MavenCentralMirror" }
         mavenCentral()
     }
 }

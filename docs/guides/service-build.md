@@ -688,6 +688,11 @@ so a new or changed artifact needs its checksum recorded:
 ./gradlew --write-verification-metadata sha256 verifyAll
 ```
 
+The build resolves from Google's Maven Central mirror first, plugins then from the plugin portal and
+libraries from Maven Central, and retries a transient download error five times
+([ADR-0079](/adr/0079-dependencies-resolve-through-a-maven-central-mirror/)). Add no repository
+ahead of the mirror: Central answers HTTP 429 to the shared CI runners.
+
 Review the diff of `gradle/verification-metadata.xml`; never edit it by hand, except to empty
 `<components>` when pruning ([below](#pruning-stale-entries)). The vacuum and
 oasdiff binaries are not Gradle dependencies: their versions and SHA-256 checksums are pinned
