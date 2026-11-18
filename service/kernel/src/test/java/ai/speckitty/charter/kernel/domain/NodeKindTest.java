@@ -39,13 +39,8 @@ class NodeKindTest {
                 row(NodeKind.MISSION_TYPE, "mission_type", "mission_type", "mission_types", true, true),
                 row(NodeKind.GUARD, "guard", "guard", "guards", false, false),
                 row(NodeKind.LIFECYCLE, "lifecycle", "lifecycle", "lifecycles", false, false),
-                row(
-                        NodeKind.STEP_ENHANCEMENT,
-                        "step_enhancement",
-                        "step_enhancement",
-                        "step_enhancements",
-                        true,
-                        true));
+                row(NodeKind.STEP_ENHANCEMENT, "step_enhancement", "step_enhancement", "step_enhancements", true, true),
+                row(NodeKind.ROUTING_CATALOG, "routing_catalog", "routing_catalog", "routing_catalogs", false, false));
     }
 
     private static Arguments row(
