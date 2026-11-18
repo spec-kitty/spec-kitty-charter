@@ -157,7 +157,7 @@ is above the tiers.
 | C-001 | Code after #355 | No serving or evaluation code before #355 (PR #599) has merged; the code is built on that main. | Technical | High | Open |
 | C-002 | Charter's own packs | Tests read only charter's example packs (ADR-0070), in the canonical shape only, but for tests of invalid content. | Technical | High | Open |
 | C-003 | No core change | Core is not touched; core aligns later through the generated client. Differences go in the divergence register. | Business | High | Open |
-| C-004 | No open-packs change here | The catalog's move into `foundation` is filed in open-packs by the orchestrator once the kind's schema is on main. | Business | High | Open |
+| C-004 | No open-packs change here | The orchestrator files the open-packs follow-up once the kind's schema is on main. It covers moving the catalog into `foundation`, steps adopting `model_tier`, profiles declaring `model`, and refiling #151. Until it lands, a real closure answers `409 routing_catalog_not_in_force`. | Business | High | Open |
 | C-005 | Advisory only | No enforcement mode, no tie-break and no tier filter (ADR-0080 decisions 4, 11 and 12). | Business | High | Open |
 
 ### Key Entities
