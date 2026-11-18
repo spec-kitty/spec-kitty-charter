@@ -30,6 +30,8 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.TemplateIdentifier;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
@@ -163,7 +165,8 @@ class ClosureSymmetryTest {
 
     static Stream<Row> rows() {
         return Stream.of(
-                // row01 to row11: the reference closure; row12 to row17: the Executable and Lifecycle invariants
+                // row01 to row11 and row18: the reference closure; row12 to row17: the Executable and Lifecycle
+                // invariants
                 row01(),
                 row02(),
                 row03(),
@@ -180,7 +183,8 @@ class ClosureSymmetryTest {
                 row14(),
                 row15(),
                 row16(),
-                row17());
+                row17(),
+                row18());
     }
 
     /** The row: an executable entry that is no payload of the pack, with its cascade. */
@@ -339,11 +343,34 @@ class ClosureSymmetryTest {
         return new Row(
                 "a mission type naming a template the pack does not hold (a delete of that template)",
                 tree -> Files.delete(tree.resolve(TEMPLATE)),
-                // The read's own check of a named file states it first, on validate mode and the load alike;
-                // the two write
-                // paths, which carry no file, refuse it through the closure.
+                // The read's own check of a named file states it first, on validate mode and the load alike; the
+                // two write paths, which carry no file, refuse it through the closure.
                 List.of(Expected.exactly(MISSION_TYPE, "templates/plan-template.md (named by step 'plan'): missing")),
                 new Remove(List.of(new Urn(NodeKind.TEMPLATE, "software-dev/plan-template.md"))),
+                "mission_type 'software-dev' names templates/plan-template.md (named by step 'plan'): is not a template of the"
+                        + " type");
+    }
+
+    /**
+     * The row: a mission type whose output template is filed under the pack's top-level {@code templates/}, not its own.
+     * On disk the read's named-file check states it first, as in {@link #row10()}; on the write paths the closure refuses
+     * a top-level template that carries the type's id, the spec's "top-level template" edge case.
+     */
+    private static Row row18() {
+        return new Row(
+                "a mission type's output template filed under the pack's top-level templates/",
+                tree -> {
+                    Path topLevel = tree.resolve("templates/software-dev/plan-template.md");
+                    Files.createDirectories(topLevel.getParent());
+                    Files.move(tree.resolve(TEMPLATE), topLevel);
+                },
+                List.of(Expected.exactly(MISSION_TYPE, "templates/plan-template.md (named by step 'plan'): missing")),
+                new Commit(pack -> Template.builder()
+                        .id(new TemplateIdentifier("software-dev/plan-template.md"))
+                        .packId(pack.id())
+                        .content(ownTemplate(pack).content())
+                        .missionType(null)
+                        .build()),
                 "mission_type 'software-dev' names templates/plan-template.md (named by step 'plan'): is not a template of the"
                         + " type");
     }
@@ -667,6 +694,13 @@ class ClosureSymmetryTest {
     }
 
     // ---- the domain values -----------------------------------------------------------------------------------------
+
+    private static Template ownTemplate(Pack pack) {
+        return pack.templates().stream()
+                .filter(template -> template.id().value().equals("software-dev/plan-template.md"))
+                .findFirst()
+                .orElseThrow();
+    }
 
     private static Asset asset(Pack pack) {
         return pack.assets().stream()
