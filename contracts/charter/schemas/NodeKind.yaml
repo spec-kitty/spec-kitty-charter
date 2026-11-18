@@ -25,6 +25,7 @@ enum:
   - action
   - mission_type
   - step_enhancement
+  - routing_catalog
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
   symbol: NodeKind
