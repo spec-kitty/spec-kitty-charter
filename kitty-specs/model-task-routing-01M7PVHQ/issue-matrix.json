@@ -49,16 +49,16 @@
       "wp": null
     },
     "#94": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP10 ticks R14 and checks the done-when, incl. the decided-reads table",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Epic: Cutover read inventory",
+      "verdict": "in-mission",
+      "wp": "WP10"
     }
   },
   "schema_version": 1
