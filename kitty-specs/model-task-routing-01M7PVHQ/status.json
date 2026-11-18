@@ -54,10 +54,19 @@
       "last_event_id": "01M7Q7BWGVAQX0X2MSBDDN3AWG",
       "last_transition_at": "2026-11-18T11:41:09.479083+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-11-18T11:58:51Z – claude – shell_pid=16157 – Scope of green (tasks.md): :kernel:check passes (CostTierTest, RoutingCatalogEndpointTest, ArtifactKindTest and NodeKindTest updated); EndpointTableAdrTest passes; compileTestJava passes for every module. Known red until WP03 and WP05: the packs and deployable parity tests that iterate the kind enums (WireTokenParityTest, KindBindingsTest and the like). T006: the diagonals use 'activatable and edge target' (every kind they admitted before is an edge target); ADR-0077 rows name routing_catalog among the exclusions, because the ADR parser reads exclusions literally. T007: CascadeRules and selection run off activatable() and the graph; a catalog has no edges, so no change. Recorded edits outside the map: contracts/charter/schemas/Preset.yaml (activatedRoutingCatalogs, WP03's file) and PresetMapper (case ROUTING_CATALOG, WP05's file), because PresetMapper's exhaustive switch otherwise breaks :packs compilation."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 16157,
-      "shell_pid_created_at": "1795002061.38"
+      "shell_pid_created_at": "1795002061.38",
+      "subtasks": {
+        "T004": "done",
+        "T005": "done",
+        "T006": "done",
+        "T007": "done"
+      }
     },
     "WP03": {
       "actor": "finalize-tasks",
