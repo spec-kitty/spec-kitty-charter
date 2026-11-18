@@ -417,6 +417,7 @@
     - "core: offering/packs/pack_validator.py:845 (_DRG_GRAPH_GLOB)"
     - "charter: planted plant c3-root-shard-urn-malformed (core verdict in planted/core-verdicts.json: ok, no findings)"
     - "charter: planted plants c4-shard-urn-prefix-differs-from-kind and c16-shard-edge-provenance, whose shard moved to the pack root in #554 WP11 (their core verdicts await a run of scripts/packs/core_verdicts.py against the pinned core)"
+    - "charter: planted plants c3-root-shard-edge-bare-endpoint, c7-root-shard-relation-extends and r15-glossary-urn-in-a-root-shard, the root twins of three open-case-6 plants added at the #554 landing (their core verdicts await a run of scripts/packs/core_verdicts.py against the pinned core)"
 
 - id: DIV-024
   surface: pack_level_missing on a bare path with no configured level

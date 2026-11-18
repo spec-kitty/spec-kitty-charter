@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-17T00:00:00Z
+updated: 2026-11-18T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -407,6 +407,7 @@ ruling, its status and the evidence.
   - Core: `offering/packs/pack_validator.py:845` (_DRG_GRAPH_GLOB)
   - Charter: `service/packs/src/testFixtures/resources/planted/c3-root-shard-urn-malformed` (core verdict in planted/core-verdicts.json: ok, no findings)
   - Charter: planted plants `c4-shard-urn-prefix-differs-from-kind` and `c16-shard-edge-provenance`, whose shard moved to the pack root in #554 WP11 (their core verdicts await a run of `scripts/packs/core_verdicts.py` against the pinned core)
+  - Charter: planted plants `c3-root-shard-edge-bare-endpoint`, `c7-root-shard-relation-extends` and `r15-glossary-urn-in-a-root-shard`, the root twins of three open-case-6 plants added at the #554 landing (their core verdicts await a run of `scripts/packs/core_verdicts.py` against the pinned core)
 
 ### DIV-024: pack_level_missing on a bare path with no configured level
 

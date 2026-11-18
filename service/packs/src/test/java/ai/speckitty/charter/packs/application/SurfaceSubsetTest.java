@@ -45,7 +45,9 @@ import tools.jackson.databind.json.JsonMapper;
  *   <li><b>Reverse:</b> the registration answers what it answered before #554 apart from NFR-002's diff list, which
  *       WP12 adds to only with S2 (rows 14, 15 and 38: the format prechecks and a repeated asset id) and S8 (rows 22 to
  *       24: a pack whose {@code pack.yaml} is missing or unreadable answers every fault). The rows each touches are
- *       named here, so a registration row that changes for any other reason fails.
+ *       named here, so a registration row that changes for any other reason fails. The landing's fixture fixes
+ *       (the R2 note's "Landing fixes") are named here too: W1's fixed payload path, and R1's root twins, which the
+ *       baseline predates.
  * </ul>
  */
 @DisplayName("the registration's faults are a subset of validate mode's, and change only where NFR-002 lists (#554)")
@@ -85,6 +87,30 @@ class SurfaceSubsetTest {
             "planted/control-retired-pack-key-is-a-warning",
             "planted/control-unknown-pack-key-is-a-warning",
             "planted/pack-yaml-tilde-is-null");
+
+    /**
+     * The root twins of three open-case-6 plants, added at the landing (R1, the R2 note's "Landing fixes"): new subjects
+     * the frozen baseline predates. The bare ones are S8 rows.
+     */
+    private static final Set<String> ROOT_TWINS = Set.of(
+            "planted/c3-root-shard-edge-bare-endpoint",
+            "planted/c3-root-shard-edge-bare-endpoint+pack.yaml",
+            "planted/c7-root-shard-relation-extends",
+            "planted/c7-root-shard-relation-extends+pack.yaml",
+            "planted/r15-glossary-urn-in-a-root-shard",
+            "planted/r15-glossary-urn-in-a-root-shard+pack.yaml");
+
+    /**
+     * The row of the plant whose sidecar's payload path the landing fixed (W1, a fixed fixture defect) that names the
+     * payload before the landing: the plant with a descriptor. The bare plant answered its descriptor's refusal alone.
+     */
+    private static final String FIXED_PAYLOAD_ROW =
+            "planted/asset-path-inside-through-a-symlink-is-contained" + GoldenSubjects.WITH_DESCRIPTOR;
+
+    /** W1's fix: the sidecar's payload path before the landing, and after it. */
+    private static final String PAYLOAD_BEFORE = "assets/in/x.txt";
+
+    private static final String PAYLOAD_AFTER = "assets/in/keep.txt";
 
     private static JsonNode classpath(String resource) {
         try (InputStream in = Objects.requireNonNull(SurfaceSubsetTest.class.getResourceAsStream(resource), resource)) {
@@ -190,7 +216,13 @@ class SurfaceSubsetTest {
         assertThat(descriptor)
                 .as("%s answers the descriptor's refusal, among every fault, exactly on an S8 row", key)
                 .isEqualTo(s8);
-        JsonNode before = BEFORE.get(key);
+        if (ROOT_TWINS.contains(key)) {
+            assertThat(BEFORE.has(key))
+                    .as("%s is a landing twin, which the baseline predates", key)
+                    .isFalse();
+            return;
+        }
+        JsonNode before = FIXED_PAYLOAD_ROW.equals(key) ? fixedPayload(BEFORE.get(key)) : BEFORE.get(key);
         List<Fault> was = faults(before);
         if (s8) {
             assertThat(was)
@@ -211,6 +243,18 @@ class SurfaceSubsetTest {
         }
     }
 
+    /**
+     * The baseline answer of W1's plant with its payload path fixed as the landing fixed the fixture: the one change
+     * its rows may carry (the R2 note's "Landing fixes").
+     */
+    private static JsonNode fixedPayload(JsonNode before) {
+        String text = JSON.writeValueAsString(before);
+        assertThat(text)
+                .as("the baseline names the payload path the landing fixed")
+                .contains(PAYLOAD_BEFORE);
+        return JSON.readTree(text.replace(PAYLOAD_BEFORE, PAYLOAD_AFTER));
+    }
+
     private static List<Fault> faults(JsonNode registration) {
         List<Fault> faults = new ArrayList<>();
         JsonNode refused = registration.get("refused");
@@ -225,7 +269,9 @@ class SurfaceSubsetTest {
     }
 
     @Test
-    @DisplayName("S8 and S2 together touch the 43 registration rows NFR-002 lists for WP12")
+    @DisplayName(
+            "S8 and S2 together touch the 43 registration rows NFR-002 lists for WP12, and the landing's three bare"
+                    + " root twins")
     void theListedRowsAreTheFortyThree() {
         long s8 = subjects().stream()
                 .map(Subject::key)
@@ -237,8 +283,15 @@ class SurfaceSubsetTest {
                         .noneMatch(fault -> "pack.yaml".equals(fault.file()) && "pack_unreadable".equals(fault.code())))
                 .count();
 
-        assertThat(s8).as("the S8 rows (R2 rows 22 to 24)").isEqualTo(38);
-        assertThat(s8 + s2Only).isEqualTo(43);
+        long bareTwins = ROOT_TWINS.stream()
+                .filter(key -> !key.endsWith(GoldenSubjects.WITH_DESCRIPTOR))
+                .count();
+
+        assertThat(bareTwins).isEqualTo(3);
+        assertThat(s8)
+                .as("the S8 rows (R2 rows 22 to 24): WP12's 38 and the landing's bare twins")
+                .isEqualTo(38 + bareTwins);
+        assertThat(s8 - bareTwins + s2Only).isEqualTo(43);
     }
 
     @Test

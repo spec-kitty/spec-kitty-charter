@@ -63,6 +63,10 @@ REGISTER_IDS: dict[str, str] = {
     "r15-glossary-urn-in-a-shard": "DIV-027",
     "c4-shard-urn-prefix-differs-from-kind": "DIV-023",
     "c16-shard-edge-provenance": "DIV-023",
+    # The #554 landing's root twins of three open-case-6 plants keep a plant of their rules at the root (DIV-023).
+    "c3-root-shard-edge-bare-endpoint": "DIV-023",
+    "c7-root-shard-relation-extends": "DIV-023",
+    "r15-glossary-urn-in-a-root-shard": "DIV-023",
     # Proposed, not in the register yet; PlantedFilesTest names them (PROPOSED) until the orchestrator registers them.
     "c5-fragment-node-id-unsafe": "DIV-020",
     "org-fragment-missing": "DIV-022",
