@@ -32,6 +32,8 @@ The release workflows build without the Gradle cache, so a tag push faced the sa
   The wrapper retries its distribution download three times.
 - **Unchanged:** strict SHA-256 dependency verification checks every artifact from any repository,
   and the release workflows still build without the cache.
+- **More time for a cold native build.** The native job's timeout rises from 45 to 60 minutes: with the
+  cache off, as a release builds, `macos-arm64` took 35 minutes on 2026-11-18.
 - **Rehearse the cold path.** A manual run of `service` or `service-native` takes `cache-disabled`,
   so a branch can build the way a release does.
 

@@ -77,6 +77,8 @@ What the evidence shows:
    from whichever repository it came.
 6. **The release's cold path can be rehearsed on any branch:** a manual run of `service.yml` or
    `service-native.yml` takes `cache-disabled`, as the release passes it.
+7. **A native build has 60 minutes, not 45.** With the cache off, `macos-arm64` took 35 minutes
+   (run 44249066154), against 26.5 minutes warm, too close to 45 for a release's tag push.
 
 A cold build (`-Pcharter.native=true help` with an empty Gradle User Home) made 472 requests to the
 mirror, 14 to the plugin portal and none to Maven Central.
