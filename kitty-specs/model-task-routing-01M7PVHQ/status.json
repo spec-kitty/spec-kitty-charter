@@ -186,7 +186,7 @@
     },
     "WP06": {
       "actor": "claude-reviewer",
-      "agent": "claude-reviewer",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -198,9 +198,11 @@
         "- 2026-11-18T13:21:35Z – claude – Carried from the WP04 review: the step-read scenario asserts modelTier on the effective (activation) step read too, not only the pack step read. Carried from WP05: ExamplePackCoverageTest (4 tests) is red until this WP adds a routing catalog covering every schema property and a preset with activated_routing_catalogs to the example packs.",
         "- 2026-11-18T14:25:28Z – claude – Definition of Done addition (WP05 review cycle 1, item 3): this WP is the full-verifyAll green point for the kind. Its DoD includes ExamplePackCoverageTest passing in full, all 4 tests: everyArtifactKindWithAFileKindHasAnExample, aKindWithNoExampleFileIsNamed, everySchemaPropertyHasAnExample, anExampleFieldRemovedFromACopyIsNamed. That means an example routing catalog covering every routing-catalog schema property, including the optional ones, and a preset with activated_routing_catalogs.",
         "- 2026-11-18T16:14:55Z – claude – shell_pid=254 – WP06 implemented (T020–T022), lane-f 4432bc4da (content at 5ed91fa58).\n\nDelivered (research R7):\n- built-in/routing_catalogs/default: quality_first; weights 1/0.2/0/0; design with model-a (0.3, premium) and model-b (0.1, low).\n- org-base/routing_catalogs/default: balanced; same weights; it overrides built-in's by the same id. design as built-in, with model-b listed before model-a (D12). review has max_tier medium, with model-c (0.9, premium), model-d (0.6, medium) and model-e (0.5, low). triage is declared with no fit.\n- org-base/routing_catalogs/cost-led: cost_first; weights 0.5/0.5/0/0; design with model-a and model-b.\n- Each file opens with its arithmetic: 0.732, 0.7, the exact 0.3 tie, 0.15 and 0.55.\n- Profile, steps, presets and policy:\n  - java-jenny: model model-x (was claude-opus), effort high. generic-agent has no model.\n  - software-dev review step: model_tier low. The on-demand charter step: model_tier high.\n  - built-in default preset: activated_routing_catalogs [default, must_have], so built-in alone has its catalog in force (row 1).\n  - built-in policy: kind_defaults routing_catalog open.\n- Manifests: built-in and org-base restamped with PackManifests.recompute, as the parity test's doc prescribes (throwaway test). Existing entries keep their order; new entries are appended.\n- Coverage: ExamplePackCoverageTest gains theRoutingContentIsHeldAtTwoLevelsWithAProfileModelAndAStepTier. All 4 previously red cases pass.\n- Step read: @contract scenarios on the example packs. In mission-types.feature (pack read): review is low, charter is high, plan omits it. In effective-mission-types.feature (effective read, the WP04 reviewer note): review is low, plan omits it.\n\nDeviations from R7 or the prompt:\n- cost-led carries every optional schema member: description, task-type description and sensitivities, family, tools, strengths, weaknesses, confidence, rationale, prices, currency, pricing_source_url, latency_tier and license_notes. The coverage DoD requires every property. R7 says \"no confidence or latency tier\"; both are inert here because the risk and latency weights are 0. No R7 score changes.\n- The org-base preset is a new presets/model-routing.yaml (activated_routing_catalogs [default]). Org-base held only spdd, and a routing selection does not belong in SPDD. The R7 scenarios select in the activation document.\n- The on-demand step tier (charter: high) is needed for the property coverage of on_demand_steps/*/model_tier.\n\nUnplanned gaps found and fixed (the orchestrator agreed on 2026-11-18):\n1. CompositionFactsBuilder held only kinds a graph declares, so a routing catalog was never held. A governing preset's must_have catalog was reported requiredNotHeld (Journey 12 failed), and no catalog could ever be in force (WP08/WP09). Now an activatable artifact is held too. The recorded facts (facts/example-packs.json) gain the catalogs. CompositionFactsBuilderTest allows org-base's same-id override.\n2. NodeRef rejected routing_catalog, so the override report of a held catalog would throw. New kernel NodeKind.named(): declared in graphs, named by an edge, or activatable. NodeRef, WireTokenParityTest and ProfileDtosTest use it, and NodeKindTest pins it. contracts/charter NodeKind lists routing_catalog again.\n   - This REVERSES WP05's approved deviation 1.\n   - It is recorded as an ADR-0080 decision 5 amendment, and as the first ### Breaking entry of contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md (the T037 file, which WP10 completes).\n\nRecorded edits outside owned_files:\n- Contract examples: Artifact.agent_profile.yaml and EffectiveAgentProfileRead.java-jenny.yaml (model-x).\n- Contract scenarios: mission-types.feature and effective-mission-types.feature.\n- Code: NodeKind (and NodeKindTest), NodeRef, CompositionFactsBuilder (and its test and the facts JSON), WireTokenParityTest, ProfileDtosTest.\n- Contract schema: contracts/charter/schemas/NodeKind.yaml.\n- Docs: the ADR-0080 amendment and the change fragment.\n\nVerification:\n- `./gradlew verifyAll --continue` at 48602de39: BUILD SUCCESSFUL, no exception.\n- After the ADR and fragment commit: :contracts:check, checkContractChangelogFragments, check_docs (frontmatter, related, links, terms, adr, changelog, orphans) and markdownlint, all clean.",
-        "Ready for review at lane-f (content at 5ed91fa58)"
+        "Ready for review at lane-f (content at 5ed91fa58)",
+        "Changes requested: drop must_have from built-in preset's routing_catalog default (it makes R7 rows 3 and 9 impossible). See review-cycle-1."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/model-task-routing-01M7PVHQ-coord/kitty-specs/model-task-routing-01M7PVHQ/tasks/WP06-example-packs/review-cycle-1.md",
         "reference": "review-cycle://model-task-routing-01M7PVHQ/WP06-example-packs/review-cycle-1.md",
@@ -208,12 +210,12 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 342,
-      "shell_pid_created_at": "1795018676.57",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T020": "done",
-        "T021": "done",
-        "T022": "done"
+        "T020": "planned",
+        "T021": "planned",
+        "T022": "planned"
       }
     },
     "WP07": {
