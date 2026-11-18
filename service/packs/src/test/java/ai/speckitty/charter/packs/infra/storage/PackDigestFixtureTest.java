@@ -41,6 +41,10 @@ import org.junit.jupiter.api.Test;
  * <p>Recaptures: the mission step contract kind retired (slice F, 2026-11-14). Its fixture file
  * {@code mission_step_contracts/m-first.step-contract.yaml} left the pack with its binding, so the digested list lost
  * that one entry, the others keeping their order, and the fingerprint moved.
+ *
+ * <p>Recaptures: the routing catalog kind bound (ADR-0080, #108, 2026-11-18). The fixture gained
+ * {@code routing_catalogs/mu.routing-catalog.yaml}, digested after the step enhancement's files as the binding is
+ * appended last; the others keep their order, and the fingerprint moved.
  */
 @DisplayName("A fixed pack keeps its fingerprint and its digested file order (NFR-001)")
 class PackDigestFixtureTest {
@@ -69,6 +73,7 @@ class PackDigestFixtureTest {
             "lifecycles/kappa.lifecycle.yaml",
             "missions/m/enhancements/first-lambda.step-enhancement.yaml",
             "missions/m/enhancements/first-lambda.prompt-fragment.md",
+            "routing_catalogs/mu.routing-catalog.yaml",
             "tactic.graph.yaml",
             "assets/data.txt",
             "missions/m/templates/note-template.md",
@@ -78,7 +83,7 @@ class PackDigestFixtureTest {
             "pack-manifest.yaml",
             "policy.yaml");
 
-    private static final String FINGERPRINT = "sha256:a54fdc073920125440785ebd43247b05c563577a1c2720885b29e55eac31d335";
+    private static final String FINGERPRINT = "sha256:ea6720efd13d3270d4b564a0b7de3a2a9cb360ce3a5ba1e9ec639aa43dcdc7ca";
 
     @Test
     void theFixedPackKeepsItsDigestedFilesAndItsFingerprint() throws URISyntaxException {
