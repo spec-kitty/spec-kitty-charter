@@ -18,11 +18,11 @@
       "criterion_id": "FR-002",
       "description": "Verify FR-002 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RoutingCatalogRulesTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:25:56.483865+00:00",
+      "notes": "Undeclared task types in fits and constraints, duplicate ids and fits, and two constraints for one task type are refused at registration."
     },
     {
       "criterion_id": "FR-003",
