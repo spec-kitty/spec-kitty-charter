@@ -8,6 +8,7 @@ decision_date: '2026-11-18'
 type: ADR
 kind: ADR
 related:
+  - plans/engineering-notes/ci-dependency-resolution-research-2026-11-18
   - adr/0046-service-release-line-and-native-packaging
   - adr/0060-native-build-runs-nightly-and-per-release
   - guides/service-build
@@ -139,6 +140,8 @@ It would also re-run real failures until they pass. Not considered further.
 
 ## References
 
+- [CI dependency resolution research, 2026-11-18](/plans/engineering-notes/ci-dependency-resolution-research-2026-11-18/):
+  the two weeks of failures and each remedy's cost; the prebuilt build image is #596.
 - Run 44229565459 (nightly `service-native`, 2026-11-18) and run 44232304892 (PR #594, first attempt).
 - [Cloud session setup: resolve Maven Central through a mirror](/development/cloud-session-setup/).
 - [Service build: change a dependency](/guides/service-build/#change-a-dependency).
