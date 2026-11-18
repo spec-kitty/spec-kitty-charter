@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -70,6 +71,17 @@ class MixedReadConcurrencyTest {
     private static final int READERS = 8;
     private static final int READS_PER_READER = 6;
     private static final List<String> VERSIONS = List.of("A", "B", "C");
+
+    /**
+     * How long one write of the fair-lock case may wait, from the round's start to the end of its own write (#593): under
+     * the registry lock's 5 s, so a write that starves fails here, named, before the lock gives up on it. A round's
+     * 17 writes on a loaded runner take a few hundred milliseconds together, so a breach is a write that waited, not a
+     * slow runner.
+     */
+    private static final Duration WAIT_BOUND = Duration.ofSeconds(4);
+
+    /** How long a round of the fair-lock case may run before its writes still running are named and cancelled. */
+    private static final Duration ROUND_DEADLINE = Duration.ofSeconds(15);
 
     /** What the slow rename does inside the window where the live directory is missing; tests set it. */
     private volatile Runnable midSwap = () -> {};
@@ -110,17 +122,67 @@ class MixedReadConcurrencyTest {
                 .isLessThanOrEqualTo(snapshots.get() / 10);
     }
 
+    /**
+     * No write starves under the fair lock (#593): each write of each round is held to {@link #WAIT_BOUND}, and a breach
+     * names the write and the round. The timeout only catches a hang; the bound is what judges starvation.
+     */
     @Test
-    @Timeout(30)
+    @Timeout(120)
     void sixteenPutsAndOneReplaceAllCompleteUnderTheFairLock(@TempDir Path host) throws Exception {
         Rig rig = rig(host);
         rig.prime();
 
         for (int run = 0; run < RUNS; run++) {
-            rig.sixteenPutsAndAReplace(run);
+            rig.sixteenPutsAndAReplace(run, WAIT_BOUND);
         }
 
         assertThat(failures).as("a write that starved or failed").isEmpty();
+    }
+
+    /**
+     * The bound bites, and says which write waited (#593): one round whose first swap is held past a short bound fails,
+     * naming each write that waited behind it and the round, and no write is reported as anonymous.
+     */
+    @Test
+    @Timeout(120)
+    void aWriteHeldBehindASlowSwapIsNamedWithItsRound(@TempDir Path host) throws Exception {
+        Rig rig = rig(host);
+        rig.prime();
+        java.util.concurrent.atomic.AtomicBoolean held = new java.util.concurrent.atomic.AtomicBoolean();
+        midSwap = () -> {
+            if (held.compareAndSet(false, true)) {
+                pause(600);
+            }
+        };
+
+        rig.sixteenPutsAndAReplace(0, Duration.ofMillis(300));
+
+        assertThat(failures)
+                .isNotEmpty()
+                .allSatisfy(failure -> assertThat(failure)
+                        .matches("write (P\\d+|R) waited \\d+\\.\\d s in round 0 \\(bound 0\\.3 s\\)"));
+    }
+
+    @Test
+    @DisplayName("a wait within the bound passes; one past it is worded with the write, the seconds and the round")
+    void theBoundIsWordedWithTheWriteAndTheRound() {
+        assertThat(waitBreach("P3", 7, Duration.ofMillis(3_999), WAIT_BOUND)).isEmpty();
+        assertThat(waitBreach("P7", 63, Duration.ofMillis(4_210), WAIT_BOUND))
+                .contains("write P7 waited 4.2 s in round 63 (bound 4.0 s)");
+    }
+
+    /** The breach of {@code bound} by one write's wait, worded; empty when the write kept within it. */
+    static java.util.Optional<String> waitBreach(String write, int round, Duration waited, Duration bound) {
+        if (waited.compareTo(bound) <= 0) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of(String.format(
+                java.util.Locale.ROOT,
+                "write %s waited %.1f s in round %d (bound %.1f s)",
+                write,
+                waited.toMillis() / 1000.0,
+                round,
+                bound.toMillis() / 1000.0));
     }
 
     @Test
@@ -268,23 +330,54 @@ class MixedReadConcurrencyTest {
             invokeAll(tasks);
         }
 
-        void sixteenPutsAndAReplace(int run) throws Exception {
+        /**
+         * One round of the fair-lock case: 16 puts ({@code P0} to {@code P15}) and one replace ({@code R}) start from one
+         * barrier, and each write's wait, from the barrier's release to the end of its write, is held to {@code bound}.
+         * A write the registry lock gave up on, or one still running at the round's deadline, is named too.
+         */
+        void sixteenPutsAndAReplace(int run, Duration bound) throws Exception {
             CyclicBarrier start = new CyclicBarrier(17);
+            List<String> names = new ArrayList<>();
             List<Callable<Void>> tasks = new ArrayList<>();
             for (int put = 0; put < 16; put++) {
                 String id = "P" + put;
-                tasks.add(() -> {
-                    start.await(30, TimeUnit.SECONDS);
-                    write(id, VERSIONS.get(run % VERSIONS.size()));
-                    return null;
-                });
+                names.add(id);
+                tasks.add(timed(start, id, run, bound, () -> write(id, VERSIONS.get(run % VERSIONS.size()))));
             }
-            tasks.add(() -> {
+            names.add("R");
+            tasks.add(timed(start, "R", run, bound, () -> write("D", VERSIONS.get((run + 1) % VERSIONS.size()))));
+            ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
+            try {
+                List<Future<Void>> done = pool.invokeAll(tasks, ROUND_DEADLINE.toMillis(), TimeUnit.MILLISECONDS);
+                for (int i = 0; i < done.size(); i++) {
+                    try {
+                        done.get(i).get();
+                    } catch (java.util.concurrent.CancellationException cancelled) {
+                        failures.add("write " + names.get(i) + " was still running at the deadline of round " + run);
+                    } catch (java.util.concurrent.ExecutionException failed) {
+                        failures.add("write " + names.get(i) + " failed in round " + run + ": " + failed.getCause());
+                    }
+                }
+            } finally {
+                pool.shutdownNow();
+            }
+        }
+
+        /** A write that waits for the barrier, then records a breach of {@code bound} or the lock's refusal, named. */
+        private Callable<Void> timed(CyclicBarrier start, String name, int run, Duration bound, Runnable write) {
+            return () -> {
                 start.await(30, TimeUnit.SECONDS);
-                write("D", VERSIONS.get((run + 1) % VERSIONS.size()));
+                long from = System.nanoTime();
+                try {
+                    write.run();
+                } catch (RegistryWriteLock.RegistryBusyException busy) {
+                    failures.add("write " + name + " gave up on the registry lock in round " + run);
+                    return null;
+                }
+                waitBreach(name, run, Duration.ofNanos(System.nanoTime() - from), bound)
+                        .ifPresent(failures::add);
                 return null;
-            });
-            invokeAll(tasks);
+            };
         }
 
         void snapshotInsideASwap(int run) throws Exception {
