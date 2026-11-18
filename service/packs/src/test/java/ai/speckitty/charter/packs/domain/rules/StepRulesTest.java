@@ -98,6 +98,20 @@ class StepRulesTest {
     }
 
     @Test
+    @DisplayName("substep ids are compared exactly: case and trailing space make different ids")
+    void substepIdsAreComparedExactly() {
+        assertThat(judge(new MissionTypeFacts(
+                        FILE,
+                        "rx",
+                        List.of("a"),
+                        List.of(
+                                substep("steps", 0, "a", 0, "run"),
+                                substep("steps", 0, "a", 1, "Run"),
+                                substep("steps", 0, "a", 2, "run ")))))
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("the holder's ruleset is its rules")
     void theRulesetIsItsRules() {
         MissionTypeFacts repeats = new MissionTypeFacts(
