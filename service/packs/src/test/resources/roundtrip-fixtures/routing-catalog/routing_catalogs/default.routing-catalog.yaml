@@ -39,14 +39,14 @@ models:
   - task_type: design
     score: 0.12345678901234567890123
   - task_type: review
-    score: 0.50
+    score: 0.12345678901234567890124
   cost:
     tier: low
 routing_policy:
   objective: quality_first
   weights:
     quality: 1
-    cost: 0.2
+    cost: 0.20
     risk: 0
     latency: 0.05
   tier_constraints:

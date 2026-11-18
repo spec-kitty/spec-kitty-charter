@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.routing.domain.Grade;
 import ai.speckitty.charter.routing.domain.ModelEntry;
 import ai.speckitty.charter.routing.domain.RoutingCatalog;
@@ -75,7 +76,15 @@ class RoutingCatalogBindingTest {
         assertThat(catalog.models().get(1).taskFit())
                 .as("a float keeps every digit and its scale: no double step (ADR-0080 decision 10, R3)")
                 .extracting(TaskFit::score)
-                .containsExactly(new BigDecimal("0.12345678901234567890123"), new BigDecimal("0.50"));
+                .containsExactly(
+                        new BigDecimal("0.12345678901234567890123"), new BigDecimal("0.12345678901234567890124"));
+        BigDecimal design = catalog.models().get(1).taskFit().get(0).score();
+        BigDecimal review = catalog.models().get(1).taskFit().get(1).score();
+        assertThat(design.doubleValue()).as("a double would tie the two").isEqualTo(review.doubleValue());
+        assertThat(design).as("the exact decimals do not tie").isLessThan(review);
+        assertThat(catalog.policy().weights().cost())
+                .as("a trailing zero keeps its scale")
+                .isEqualTo(new BigDecimal("0.20"));
         assertThat(catalog.policy().objective()).isEqualTo(RoutingObjective.QUALITY_FIRST);
         assertThat(catalog.policy().weights().latency()).isEqualTo(new BigDecimal("0.05"));
         assertThat(catalog.policy().maxTierFor("review")).contains(CostTier.MEDIUM);
@@ -105,7 +114,8 @@ class RoutingCatalogBindingTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"yesterday", "2026-11-18", "2026-11-18T00:00:00", "2026-11-18 00:00:00Z"})
-    @DisplayName("a generated_at that is not an ISO 8601 date-time with its offset is refused by the schema")
+    @DisplayName("a generated_at that is not an ISO 8601 date-time with its offset is refused at load, the catalog not"
+            + " held (the schema's format is an annotation; the domain checks it)")
     void aGeneratedAtThatIsNoDateTimeIsRefused(String generatedAt) throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         Path file = pack.resolve(FILE);
@@ -117,9 +127,11 @@ class RoutingCatalogBindingTest {
         Pack loaded = new DomainRepositoryService(() -> List.of(new PackLocation(PACK, PackLevel.ORG, pack)), strategy)
                 .load(PACK_ID);
 
-        assertThat(loaded.violations())
-                .as(generatedAt)
-                .anySatisfy(violation -> assertThat(violation.file()).isEqualTo(FILE));
+        assertThat(loaded.violations()).as(generatedAt).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(FILE);
+            assertThat(violation.kind()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(violation.reason()).contains("ISO 8601 date-time");
+        });
         assertThat(loaded.artifacts()).noneMatch(RoutingCatalog.class::isInstance);
     }
 
