@@ -184,7 +184,7 @@ class EffectiveTagTest {
     @ParameterizedTest
     @EnumSource(
             value = EffectiveTag.Read.class,
-            names = {"SKILL", "GLOSSARY", "ASSET", "ASSET_PAYLOAD"},
+            names = {"SKILL", "GLOSSARY", "ASSET", "ASSET_PAYLOAD", "ROUTING_CATALOG"},
             mode = EnumSource.Mode.EXCLUDE)
     void noOtherReadIsTheReadOfOneWinnerAtALiteralPath(EffectiveTag.Read read) {
         EffectiveTag.ArtifactQuery query = new EffectiveTag.ArtifactQuery(ArtifactKind.GLOSSARY, "core", 0);
@@ -197,7 +197,7 @@ class EffectiveTagTest {
     @ParameterizedTest
     @EnumSource(
             value = EffectiveTag.Read.class,
-            names = {"SKILLS", "ASSETS", "GLOSSARIES"},
+            names = {"SKILLS", "ASSETS", "GLOSSARIES", "ROUTING_CATALOGS"},
             mode = EnumSource.Mode.EXCLUDE)
     void noOtherReadListsTheWinnersOfOneKind(EffectiveTag.Read read) {
         assertThatThrownBy(() -> EffectiveTag.winners(read, ArtifactKind.GLOSSARY, REVISION, closure("sha256:one")))

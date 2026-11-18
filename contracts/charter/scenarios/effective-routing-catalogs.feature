@@ -9,8 +9,8 @@ Feature: An activation's routing catalogs are listed and read with their state, 
   A routing catalog layers by its id, as every activatable kind does: org-base's default replaces built-in's. Under an
   activation the list answers each winner, whatever its state, linked to its read under the activation and to the
   winning copy's pack read; the item read answers the winner's pack, level, state, reason, policy and required, and the
-  catalog. A catalog is in force when the document selects it or a governing preset requires it, and out of force when
-  the document denies it or does not select it.
+  catalog. A catalog is in force when the document selects it or a governing preset requires it; it is excluded when
+  the document denies it, and inactive when the document does not select it.
 
   Background:
     Given the example pack "built-in" of the charter
@@ -57,7 +57,8 @@ Feature: An activation's routing catalogs are listed and read with their state, 
       }
       """
     And following the link "effective-artifact" of every element of "items" answers 200
-    And following the link "artifact" of every element of "items" answers 200
+    When I GET "/activations/a-1/artifacts/routing_catalog"
+    Then following the link "artifact" of every element of "items" answers 200
     When I GET "/activations/a-1/artifacts/routing_catalog/default"
     Then the response status is 200
     And the field at "/kind" is "routing_catalog"
@@ -109,7 +110,7 @@ Feature: An activation's routing catalogs are listed and read with their state, 
       """
     When I GET "/activations/a-3/artifacts/routing_catalog/default"
     Then the response status is 200
-    And the field at "/state" is "inactive"
+    And the field at "/state" is "excluded"
     And the field at "/reason" is "deactivated"
     Given the activation "a-4" holds:
       """

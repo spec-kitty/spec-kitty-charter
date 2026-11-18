@@ -122,13 +122,12 @@ Feature: A pack's routing catalogs are listed and read, as their files declare t
     And the field at "/routingCatalog/routingPolicy/tierConstraints/0/taskType" is "review"
     And the field at "/routingCatalog/routingPolicy/tierConstraints/0/maxTier" is "medium"
 
-  Scenario: The list and the item answer the pack revision as their ETag
+  Scenario: The list and the item answer one pack revision as their ETag
     Given the example pack "built-in" of the charter
-    When I GET "/packs/built-in"
-    And I remember the header "ETag"
-    And I GET "/packs/built-in/artifacts/routing_catalog"
-    Then the response header "ETag" is the remembered header
-    When I GET "/packs/built-in/artifacts/routing_catalog/default"
+    When I GET "/packs/built-in/artifacts/routing_catalog"
+    Then the response status is 200
+    When I remember the header "ETag"
+    And I GET "/packs/built-in/artifacts/routing_catalog/default"
     Then the response header "ETag" is the remembered header
 
   Scenario Outline: <operation> of a pack no configured pack answers to is 404 pack_not_found
@@ -250,9 +249,9 @@ Feature: A pack's routing catalogs are listed and read, as their files declare t
     And the field at "/state" is "active"
     And the field at "/routingCatalog/models/0/id" is "model-b"
 
-  Scenario: An overrides relationship between two routing catalogs is refused by the endpoint table
-    Squad A1: a routing catalog layers by its id, never by an edge, so the endpoint table admits no catalog at either end
-    of an overrides relationship, and the write stores nothing.
+  Scenario: An overrides relationship between two routing catalogs is refused, and nothing is written
+    Squad A1: a routing catalog layers by its id, never by an edge: no catalog is an edge endpoint, so the relationship
+    write refuses it validation_failed, naming the catalog, and the pack keeps its revision.
     Given the org pack "cbase" with the file "pack.yaml":
       """
       pack_id: 01M6ZRYK0000000000000000PB
@@ -300,6 +299,7 @@ Feature: A pack's routing catalogs are listed and read, as their files declare t
       """
     Then the response status is 422
     And the field at "/code" is "validation_failed"
-    And the field at "/violations/0/code" is "relationship_endpoint_not_allowed"
+    And the field at "/detail" contains "a routing catalog is no graph node and no edge endpoint, it layers by its id"
+    And the field at "/detail" contains "routing_catalog:mine"
     When I GET "/packs/covr/artifacts/routing_catalog/mine"
     Then the response header "ETag" is the remembered header

@@ -7,7 +7,12 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ForeignArtifactRead;
+import ai.speckitty.charter.routing.domain.Grade;
+import ai.speckitty.charter.routing.domain.ModelCost;
+import ai.speckitty.charter.routing.domain.ModelEntry;
 import ai.speckitty.charter.routing.domain.RoutingCatalog;
+import ai.speckitty.charter.routing.domain.RoutingPolicy;
+import ai.speckitty.charter.routing.domain.RoutingWeights;
 import java.util.Comparator;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +77,62 @@ public final class PacksRoutingCatalogs implements RoutingCatalogReads {
     }
 
     static RoutingCatalogView viewOf(RoutingCatalog catalog) {
-        return new RoutingCatalogView(catalog.packId(), catalog);
+        RoutingPolicy policy = catalog.policy();
+        RoutingWeights weights = policy.weights();
+        return new RoutingCatalogView(
+                catalog.id(),
+                catalog.packId(),
+                catalog.description(),
+                catalog.generatedAt(),
+                catalog.taskTypes().stream()
+                        .map(type -> new RoutingCatalogView.TaskTypeView(
+                                type.id(),
+                                type.title(),
+                                type.description(),
+                                type.qualitySensitivity().map(Grade::token),
+                                type.costSensitivity().map(Grade::token)))
+                        .toList(),
+                catalog.models().stream().map(PacksRoutingCatalogs::model).toList(),
+                new RoutingCatalogView.PolicyView(
+                        policy.objective().token(),
+                        weights.quality(),
+                        weights.cost(),
+                        weights.risk(),
+                        weights.latency(),
+                        policy.tierConstraints().stream()
+                                .map(constraint -> new RoutingCatalogView.ConstraintView(
+                                        constraint.taskType(),
+                                        constraint.maxTier().token()))
+                                .toList()),
+                catalog.sources().stream()
+                        .map(source -> new RoutingCatalogView.SourceView(
+                                source.name(),
+                                source.url(),
+                                source.accessMethod().token(),
+                                source.snapshotAt(),
+                                source.licenseNotes()))
+                        .toList());
+    }
+
+    private static RoutingCatalogView.ModelView model(ModelEntry model) {
+        ModelCost cost = model.cost();
+        return new RoutingCatalogView.ModelView(
+                model.id(),
+                model.provider(),
+                model.family(),
+                model.tools(),
+                model.strengths(),
+                model.weaknesses(),
+                model.taskFit().stream()
+                        .map(fit -> new RoutingCatalogView.FitView(
+                                fit.taskType(), fit.score(), fit.confidence().map(Grade::token), fit.rationale()))
+                        .toList(),
+                new RoutingCatalogView.CostView(
+                        cost.tier().token(),
+                        cost.inputPer1mUsd(),
+                        cost.outputPer1mUsd(),
+                        cost.currency(),
+                        cost.pricingSourceUrl()),
+                model.latencyTier().map(Grade::token));
     }
 }

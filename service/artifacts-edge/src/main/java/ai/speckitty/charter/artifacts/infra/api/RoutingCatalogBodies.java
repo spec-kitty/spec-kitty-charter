@@ -18,14 +18,6 @@ import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.EffectiveRoutingCatalogReads;
 import ai.speckitty.charter.artifacts.application.RoutingCatalogView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.routing.domain.CatalogSource;
-import ai.speckitty.charter.routing.domain.ModelCost;
-import ai.speckitty.charter.routing.domain.ModelEntry;
-import ai.speckitty.charter.routing.domain.RoutingPolicy;
-import ai.speckitty.charter.routing.domain.RoutingWeights;
-import ai.speckitty.charter.routing.domain.TaskFit;
-import ai.speckitty.charter.routing.domain.TaskType;
-import ai.speckitty.charter.routing.domain.TierConstraint;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -91,7 +83,7 @@ public class RoutingCatalogBodies {
         links.put("self", new Link(item(pack, view.id())));
         links.put("collection", new Link(collection(pack)));
         Artifact envelope = new Artifact(KIND, view.id(), pack, links);
-        envelope.setRoutingCatalog(catalog(view.catalog()));
+        envelope.setRoutingCatalog(catalog(view));
         return envelope;
     }
 
@@ -158,7 +150,7 @@ public class RoutingCatalogBodies {
                 facts.required(),
                 EffectiveRoutingCatalogRead.PolicyEnum.fromValue(winner.policy()),
                 EffectiveRoutingCatalogRead.ReasonEnum.fromValue(facts.reason()),
-                catalog(read.catalog().catalog()),
+                catalog(read.catalog()),
                 links);
         if (!facts.satisfiedBy().isEmpty()) {
             wire.setSatisfiedBy(
@@ -171,18 +163,18 @@ public class RoutingCatalogBodies {
     /**
      * The catalog as its pack declares it, in camel case.
      *
-     * @param catalog the catalog
+     * @param view the catalog
      * @return the {@code RoutingCatalog}
      */
-    static RoutingCatalog catalog(ai.speckitty.charter.routing.domain.RoutingCatalog catalog) {
+    static RoutingCatalog catalog(RoutingCatalogView view) {
         RoutingCatalog wire = new RoutingCatalog(
-                catalog.id(),
-                OffsetDateTime.parse(catalog.generatedAt()),
-                catalog.taskTypes().stream().map(RoutingCatalogBodies::taskType).toList(),
-                catalog.models().stream().map(RoutingCatalogBodies::model).toList(),
-                policy(catalog.policy()),
-                catalog.sources().stream().map(RoutingCatalogBodies::source).toList());
-        wire.setDescription(catalog.description().orElse(null));
+                view.id(),
+                OffsetDateTime.parse(view.generatedAt()),
+                view.taskTypes().stream().map(RoutingCatalogBodies::taskType).toList(),
+                view.models().stream().map(RoutingCatalogBodies::model).toList(),
+                policy(view.policy()),
+                view.sources().stream().map(RoutingCatalogBodies::source).toList());
+        wire.setDescription(view.description().orElse(null));
         return wire;
     }
 
@@ -193,31 +185,29 @@ public class RoutingCatalogBodies {
     }
 
     private RoutingCatalogSummary summary(RoutingCatalogView view, Map<String, Link> links) {
-        ai.speckitty.charter.routing.domain.RoutingCatalog catalog = view.catalog();
         RoutingCatalogSummary summary = new RoutingCatalogSummary(
-                catalog.id(),
-                RoutingCatalogSummary.ObjectiveEnum.fromValue(
-                        catalog.policy().objective().token()),
-                catalog.taskTypes().size(),
-                catalog.models().size(),
+                view.id(),
+                RoutingCatalogSummary.ObjectiveEnum.fromValue(view.policy().objective()),
+                view.taskTypes().size(),
+                view.models().size(),
                 links);
-        summary.setDescription(catalog.description().orElse(null));
+        summary.setDescription(view.description().orElse(null));
         return summary;
     }
 
-    private static RoutingCatalogTaskType taskType(TaskType type) {
+    private static RoutingCatalogTaskType taskType(RoutingCatalogView.TaskTypeView type) {
         RoutingCatalogTaskType wire = new RoutingCatalogTaskType(type.id(), type.title());
         wire.setDescription(type.description().orElse(null));
         wire.setQualitySensitivity(type.qualitySensitivity()
-                .map(grade -> RoutingCatalogTaskType.QualitySensitivityEnum.fromValue(grade.token()))
+                .map(RoutingCatalogTaskType.QualitySensitivityEnum::fromValue)
                 .orElse(null));
         wire.setCostSensitivity(type.costSensitivity()
-                .map(grade -> RoutingCatalogTaskType.CostSensitivityEnum.fromValue(grade.token()))
+                .map(RoutingCatalogTaskType.CostSensitivityEnum::fromValue)
                 .orElse(null));
         return wire;
     }
 
-    private static RoutingCatalogModel model(ModelEntry model) {
+    private static RoutingCatalogModel model(RoutingCatalogView.ModelView model) {
         RoutingCatalogModel wire = new RoutingCatalogModel(
                 model.id(),
                 model.provider(),
@@ -228,23 +218,22 @@ public class RoutingCatalogBodies {
                 cost(model.cost()));
         wire.setFamily(model.family().orElse(null));
         wire.setLatencyTier(model.latencyTier()
-                .map(grade -> RoutingCatalogModel.LatencyTierEnum.fromValue(grade.token()))
+                .map(RoutingCatalogModel.LatencyTierEnum::fromValue)
                 .orElse(null));
         return wire;
     }
 
-    private static RoutingCatalogTaskFit fit(TaskFit fit) {
+    private static RoutingCatalogTaskFit fit(RoutingCatalogView.FitView fit) {
         RoutingCatalogTaskFit wire = new RoutingCatalogTaskFit(fit.taskType(), number(fit.score()));
         wire.setConfidence(fit.confidence()
-                .map(grade -> RoutingCatalogTaskFit.ConfidenceEnum.fromValue(grade.token()))
+                .map(RoutingCatalogTaskFit.ConfidenceEnum::fromValue)
                 .orElse(null));
         wire.setRationale(fit.rationale().orElse(null));
         return wire;
     }
 
-    private static RoutingCatalogCost cost(ModelCost cost) {
-        RoutingCatalogCost wire = new RoutingCatalogCost(
-                RoutingCatalogCost.TierEnum.fromValue(cost.tier().token()));
+    private static RoutingCatalogCost cost(RoutingCatalogView.CostView cost) {
+        RoutingCatalogCost wire = new RoutingCatalogCost(RoutingCatalogCost.TierEnum.fromValue(cost.tier()));
         wire.setInputPer1mUsd(
                 cost.inputPer1mUsd().map(RoutingCatalogBodies::number).orElse(null));
         wire.setOutputPer1mUsd(
@@ -254,33 +243,26 @@ public class RoutingCatalogBodies {
         return wire;
     }
 
-    private static RoutingCatalogPolicy policy(RoutingPolicy policy) {
-        RoutingWeights weights = policy.weights();
+    private static RoutingCatalogPolicy policy(RoutingCatalogView.PolicyView policy) {
         return new RoutingCatalogPolicy(
-                RoutingCatalogPolicy.ObjectiveEnum.fromValue(policy.objective().token()),
+                RoutingCatalogPolicy.ObjectiveEnum.fromValue(policy.objective()),
                 new RoutingCatalogWeights(
-                        number(weights.quality()),
-                        number(weights.cost()),
-                        number(weights.risk()),
-                        number(weights.latency())),
+                        number(policy.quality()),
+                        number(policy.cost()),
+                        number(policy.risk()),
+                        number(policy.latency())),
                 policy.tierConstraints().stream()
-                        .map(RoutingCatalogBodies::constraint)
+                        .map(constraint -> new RoutingCatalogTierConstraint(
+                                constraint.taskType(),
+                                RoutingCatalogTierConstraint.MaxTierEnum.fromValue(constraint.maxTier())))
                         .toList());
     }
 
-    private static RoutingCatalogTierConstraint constraint(TierConstraint constraint) {
-        return new RoutingCatalogTierConstraint(
-                constraint.taskType(),
-                RoutingCatalogTierConstraint.MaxTierEnum.fromValue(
-                        constraint.maxTier().token()));
-    }
-
-    private static RoutingCatalogSource source(CatalogSource source) {
+    private static RoutingCatalogSource source(RoutingCatalogView.SourceView source) {
         RoutingCatalogSource wire = new RoutingCatalogSource(
                 source.name(),
                 source.url(),
-                RoutingCatalogSource.AccessMethodEnum.fromValue(
-                        source.accessMethod().token()),
+                RoutingCatalogSource.AccessMethodEnum.fromValue(source.accessMethod()),
                 source.snapshotAt());
         wire.setLicenseNotes(source.licenseNotes().orElse(null));
         return wire;

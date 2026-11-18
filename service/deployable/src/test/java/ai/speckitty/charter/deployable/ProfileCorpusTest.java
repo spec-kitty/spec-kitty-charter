@@ -322,19 +322,18 @@ class ProfileCorpusTest {
 
     @Test
     void everyProfileFileOfEachExamplePackIsServedAndNothingElse() throws Exception {
-        int files = 0;
         for (String pack : PACKS) {
             Set<String> onDisk = profilesOf(pack).keySet();
-            files += onDisk.size();
-            // A pack with no profile file (org-mandate) is served none; the corpus as a whole holds some.
+            // Every pack holds profiles but org-mandate, which holds none and is served none (ADR-0080).
+            if (ExamplePacks.ORG_MANDATE.equals(pack)) {
+                assertThat(onDisk).as("%s profile files", pack).isEmpty();
+            } else {
+                assertThat(onDisk).as("%s profile files", pack).isNotEmpty();
+            }
             assertThat(servedProfileIds(pack))
                     .as("%s profiles served", pack)
                     .containsExactlyInAnyOrderElementsOf(onDisk);
         }
-        assertThat(files).as("the corpus's profile files").isPositive();
-        assertThat(profilesOf(ExamplePacks.BUILT_IN))
-                .as("built-in's profile files")
-                .isNotEmpty();
     }
 
     /** The ids of the agent_profile artifacts the service lists for a pack, over every page. */
