@@ -110,6 +110,8 @@ class MissionTypeSchemaTest {
                         + " | additionalProperties /steps/1 sequence_index",
                 "uppercase role           | 'role: researcher' >> 'role: Researcher'" + " | pattern /steps/0/role -",
                 "reserved generic role    | 'role: researcher' >> 'role: generic'" + " | not /steps/0/role -",
+                "unknown model tier       | 'role: researcher' >> 'role: researcher\\n  model_tier: cheap'"
+                        + " | enum /steps/0/model_tier -",
                 "role too long            | 'role: researcher' >> 'role: "
                         + "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr'"
                         + " | maxLength /steps/0/role -",

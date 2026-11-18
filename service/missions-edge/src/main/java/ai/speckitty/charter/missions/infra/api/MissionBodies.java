@@ -148,6 +148,9 @@ final class MissionBodies {
                         MissionLinks.wire(own))
                 .description(step.description().orElse(null))
                 .role(step.role().orElse(null))
+                .modelTier(step.modelTier()
+                        .map(tier -> ai.speckitty.charter.api.model.MissionStep.ModelTierEnum.fromValue(tier.token()))
+                        .orElse(null))
                 .prompt(view.prompt().orElse(null))
                 .guidelines(view.guidelines().orElse(null));
     }

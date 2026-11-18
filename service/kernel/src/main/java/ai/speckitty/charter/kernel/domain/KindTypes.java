@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.kinds.Lifecycle;
 import ai.speckitty.charter.kernel.domain.kinds.MissionType;
 import ai.speckitty.charter.kernel.domain.kinds.Paradigm;
 import ai.speckitty.charter.kernel.domain.kinds.Procedure;
+import ai.speckitty.charter.kernel.domain.kinds.RoutingCatalog;
 import ai.speckitty.charter.kernel.domain.kinds.Skill;
 import ai.speckitty.charter.kernel.domain.kinds.StepEnhancement;
 import ai.speckitty.charter.kernel.domain.kinds.Styleguide;
@@ -43,7 +44,8 @@ final class KindTypes {
             Map.entry(MissionType.class, NodeKind.MISSION_TYPE),
             Map.entry(Guard.class, NodeKind.GUARD),
             Map.entry(Lifecycle.class, NodeKind.LIFECYCLE),
-            Map.entry(StepEnhancement.class, NodeKind.STEP_ENHANCEMENT));
+            Map.entry(StepEnhancement.class, NodeKind.STEP_ENHANCEMENT),
+            Map.entry(RoutingCatalog.class, NodeKind.ROUTING_CATALOG));
 
     private KindTypes() {}
 
