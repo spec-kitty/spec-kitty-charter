@@ -114,7 +114,7 @@ Feature: A task type's model is recommended under an activation, beside a profil
   Scenario: Row 4 - the tier constraint flags the best model overall and never filters it
     When I GET "/activations/p/task-types/review/model-recommendation?agentProfile=generic-agent"
     Then the response status is 200
-    And the response body, apart from "/_links", is:
+    And the response body, apart from "_links", is:
       """
       {
         "taskType": "review",
@@ -161,7 +161,7 @@ Feature: A task type's model is recommended under an activation, beside a profil
   Scenario: Row 6 - the request's tier overrides the step's, and the medium cap still holds against premium
     When I GET "/activations/p/task-types/review/model-recommendation?agentProfile=java-jenny&missionType=software-dev&step=review&modelTier=premium"
     Then the response status is 200
-    And the response body, apart from "/_links", is:
+    And the response body, apart from "_links", is:
       """
       {
         "taskType": "review",

@@ -296,7 +296,8 @@ Feature: Failures outside the charter's refusals
     the activation writes refuse an enhancement in force whose slot the prompt in force does not declare. The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
-    preset_not_found. The effective prompt read adds mission_type_not_in_force (OD-5).
+    preset_not_found. The effective prompt read adds mission_type_not_in_force (OD-5). The model recommendation adds
+    routing_catalog_not_in_force, routing_catalog_conflict and task_type_not_found (ADR-0080 decision 9).
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable             |
       | internal_error              |
@@ -363,3 +364,6 @@ Feature: Failures outside the charter's refusals
       | profile_enhancement_drops_field |
       | fallback_profile_conflict   |
       | no_profile_matched          |
+      | routing_catalog_not_in_force |
+      | routing_catalog_conflict    |
+      | task_type_not_found         |
