@@ -1,0 +1,150 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-15T10:06:34.238458Z",
+      "decision_id": "01M7FARH7YMGS2X0BRV1HKH47B",
+      "final_answer": "Warning (operator, 2026-11-15): an unmodelled file is a file_not_held WARNING. Pack authors may add docs and reference files that do not affect the service: warn, then ignore. The file is not held and not round-tripped. Registration no longer refuses it (wire change: the 'unmodelled' violation goes).",
+      "input_key": "unmodelled_file_code",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a) keep unmodelled as a violation and file_not_held as the excluded-file warning, both typed; wire unchanged",
+        "(b) unmodelled file becomes file_not_held WARNING and is accepted; breaking",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": true,
+      "question": "Decision 5 says an unmodelled file is file_not_held at WARNING, but today registration refuses it with violation 'unmodelled' (pinned in scenarios) and #554 says wire codes do not change. Keep both typed codes with the wire unchanged (a), or apply decision 5 literally: an unmodelled file becomes a file_not_held warning and is accepted (b, breaking)?",
+      "rationale": null,
+      "resolved_at": "2026-11-15T11:21:34.164459Z",
+      "resolved_by": null,
+      "slot_key": "specify.wire.unmodelled-file",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-15T11:28:09.854840Z",
+      "decision_id": "01M7FFDY3YP3VA3EA5VGRZF28V",
+      "final_answer": "(a) Registration's PACK run judges the inspector's PackContents of the staged tree. The inspector gains the facts it lacks (domain value-object breaches, reference faults). The store's reader only builds the aggregate; a fault it finds that PACK missed fails closed as validation_failed, pinned by a test. (operator, 2026-11-15)",
+      "input_key": "registration_judged_contents",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a) inspector contents of the staged tree; inspector gains the missing facts",
+        "(b) adapter from the store read",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Which contents does registration's PACK run judge? (a) the inspector's PackContents of the staged tree, with the inspector gaining the facts it lacks (domain value-object breaches, reference faults); the store's reader then only builds the aggregate, and a fault it finds that PACK missed fails closed. (b) PackContents built by an adapter from the store's own read: no second read, but two derivations of PackContents kept equal by hand.",
+      "rationale": null,
+      "resolved_at": "2026-11-15T18:10:40.932064Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.registration-contents",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-15T18:22:03.595220Z",
+      "decision_id": "01M7G73STB9TJ62R73EB3NMYJR",
+      "final_answer": "(a) One PACK with a surface profile: registration and the compose read report the faults they report today; validate mode gains the load-only checks; wire unchanged apart from Q1 (operator, 2026-11-16).",
+      "input_key": "surface_check_profile",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a)",
+        "(b)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Which checks does each surface run? (a) one PACK with a surface profile: each surface reports the faults it reports today, registration and the compose read gain no new refusals, validate mode gains the load-only checks; wire unchanged apart from Q1. (b) full convergence: every surface runs every rule, ~15 features rewritten, Breaking fragment, open-packs org packs without a fragment refused.",
+      "rationale": null,
+      "resolved_at": "2026-11-16T05:09:45.378007Z",
+      "resolved_by": null,
+      "slot_key": "plan.squad.surface-profile",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-15T18:22:05.732323Z",
+      "decision_id": "01M7G73VX4WDJ7B03FDS8NSAYD",
+      "final_answer": "(b) Unify codes and wording: one fault answers one code and wording on every surface; the surface that changes gets a ### Breaking fragment (operator, 2026-11-16).",
+      "input_key": "surface_code_wording",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a)",
+        "(b)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How do codes and wording that differ per surface stay? (a) PackRefusals and PackVerdicts are explicit per-surface code/pointer/wording tables, each tested; FR-007 reworded (the old-type converters go). (b) unify codes on both surfaces with a Breaking fragment on one.",
+      "rationale": null,
+      "resolved_at": "2026-11-16T05:09:47.948222Z",
+      "resolved_by": null,
+      "slot_key": "plan.squad.surface-wording",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-15T18:22:07.803261Z",
+      "decision_id": "01M7G73XXVE0W5AGMZTWDNPTEJ",
+      "final_answer": "Design per research/design-r3.md with its challenge folds (operator, 2026-11-16): rules, PACK with surface profiles, CLOSURE, PackCodes and the mappers live in packs.domain; no judging port; registration judged in packs.application on the inspector's contents; pack-validation is the Spring-free check library pack-check runs (PackLoad, round-trip verdict, from #478 the set check); ADR-0075 amended. R3-b: (i) the margin criterion is met by the nightly measurement of #578's code, re-setting ADR-0062's documented margin.",
+      "input_key": "packs_tests_rules",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a)",
+        "(b)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How do :packs tests and the whole-pack gate get real rules? (a) a test-only testImplementation(project(':pack-validation')) in :packs. (b) move the judging tests, the gate and planted/ to pack-validation or deployable tests.",
+      "rationale": null,
+      "resolved_at": "2026-11-16T05:26:32.098858Z",
+      "resolved_by": null,
+      "slot_key": "plan.squad.packs-test-rules",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-15T18:22:10.674832Z",
+      "decision_id": "01M7G740QJPSFSE7HNQY1FK998",
+      "final_answer": "(b) One pull request; the work packages stay ordered and green (operator, 2026-11-16).",
+      "input_key": "pr_split",
+      "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+      "mission_slug": "pack-closure-rulesets-01M7FA90",
+      "opened_by": "cli",
+      "options": [
+        "(a)",
+        "(b)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "One pull request or four? (a) four green PRs: golden+Q1; residue+codes+inspector facts+mappers; CLOSURE functions; the switch. (b) one PR.",
+      "rationale": null,
+      "resolved_at": "2026-11-16T05:09:50.558051Z",
+      "resolved_by": null,
+      "slot_key": "plan.squad.pr-split",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+  "version": 1
+}

@@ -1,0 +1,159 @@
+{
+  "mission_slug": "pack-closure-rulesets-01M7FA90",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "One consistency ruleset per pack file kind in packs.domain.rules (graph, artifact, asset, step, prompt slot, fragment, mission type); descriptor/format are reader prechecks; glossary and asset escape are edge checks (S2, WP06 D1/D2).",
+      "proof_type": "automated_test",
+      "evidence": "GraphRulesTest#thePlantsExpectedFindingsAreTheOracle:189, AssetRulesTest, StepRulesTest, MissionTypeRulesTest, FragmentRulesTest, PromptSlotRulesTest, DescriptorChecksTest; PackRulesets.java:14-28",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:14.625915+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Rules composed under names with no surface profile: content(), holding(), registration()=holding().must(content()); membership is a plain gate; verdict() is one Rationale in registration's wire order.",
+      "proof_type": "automated_test",
+      "evidence": "StorageRulesets.java:28-35,85,104-150; StorageRulesetsTest$Compositions#registrationIsHoldingThenContent:300, $Gate#aReadFaultSwitchesItOff:338; PackCompositionTest#contentIsASubsetOfRegistration:284",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:19.988570+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "CLOSURE (CompositionRules.closure()) reports every composition fault with today's codes; the offering keeps its first refusal in today's order with its pack list.",
+      "proof_type": "automated_test",
+      "evidence": "CompositionRulesTest#aSetWithSeveralFaultsReportsEveryOne:1012; CompositionGoldenTest#eachComposeAnswersAsRecorded:394, #theMultiFaultSetsAreThere:421; CompositionRules.java:97",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:25.164918+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Classification, precedence/ordering, path checks and manifest membership stay plain functions rules call.",
+      "proof_type": "automated_test",
+      "evidence": "Precedence, Paths, DescriptorChecks in domain.rules; StorageRulesets.manifestMembership:85; PrecedenceTest, PathsTest, StorageRulesetsTest$Gate",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:30.021513+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Validate mode is PackCheck in pack-validation: one PackReading read, read.rationale().and(placement), mapped by PackVerdicts; names only packs.domain and the kernel.",
+      "proof_type": "automated_test",
+      "evidence": "PackCheck.java:58-61; PackCheckTest#aCheckReadsTheRootOnce:106; ValidateGoldenTest#validateModeAnswersAsRecorded:68; ArchUnit PACK_VALIDATION_IS_FRAMEWORK_FREE",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:35.091616+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Registration reads the staged tree once through PackReading and refuses via PackRefusals before assembly; loadStaged(readout) assembles with no second read.",
+      "proof_type": "automated_test",
+      "evidence": "PackRegistrationService.java:320-333; OneReadRegistrationTest#anAcceptedRegistrationReadsOnce:32, #aRefusedRegistrationReadsOnce:54; OneReadTest#theRegistrationLoadReadsOnce:34",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:39.979904+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "PackFinding/PackElementViolation/RefusalViolation converters deleted: no shim, no Surface table; PackElementViolation stays as the aggregate's record (WP13 ruling).",
+      "proof_type": "inspection",
+      "evidence": "git grep over service for PackPolicy|PackFindingCode|PackFindingb|enum Surface|violationOf|findingOf|violationKind|toRefusal|toDiagnostic finds none; PackPolicy*/PackFinding tests deleted",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:44.709699+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Two edge mappers keep each surface's order: PackRefusals (packs.application) and PackVerdicts (pack-validation); neither in packs.domain.",
+      "proof_type": "automated_test",
+      "evidence": "PackRefusals.java:42-79; PackRefusalsTest#theVerdictAnswersAsTheRegistrationRecorded:173; PackVerdictsTest#theFindingsOfOneFileAreInPlaceOrder:61",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:49.941085+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Every code is a typed ReasonCode owning its severity, built once in PackCodes/StorageCodes/PlacementCodes; the specific code wins over a catch-all per the R2 table.",
+      "proof_type": "automated_test",
+      "evidence": "PackElementViolation.java:13; PackCodesTest:38,76; VocabularyEqualityTest; PackCodesCoverageTest (reflective); HexagonalArchitectureTest PACK_CODES_HAVE_ONE_OWNER:1968-1990",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:54.849435+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "An unmodelled file, nested shard or charter.yaml is a file_not_held warning: not held, not round-tripped, not judged by validate mode; globs narrowed under a ### Breaking line.",
+      "proof_type": "automated_test",
+      "evidence": "PackRegistrationServiceTest:361; NotHeldValidateTest:58; HeldSetAgreementTest:117,174; contracts/packs/CHANGELOG.md:21-23",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T01:59:59.949696+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "The graph rule calls slice F's RelationshipEndpointRule bridge; relationship_endpoint_not_allowed unchanged.",
+      "proof_type": "automated_test",
+      "evidence": "GraphRules.java:45,61-77; GraphRulesTest#theSourceRefusalsComeBeforeTheTables:110; EdgeEndpointPlantsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T02:00:05.061155+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "One test class per rule and per mapper plus PACK composition tests, each in its subject's module; parity-by-hand tests gone.",
+      "proof_type": "automated_test",
+      "evidence": "13 classes under packs/src/test/.../domain/rules; storage rules tests; PackCompositionTest:113-284; PackRefusalsTest; PackVerdictsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T02:00:10.128733+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Records follow the code: ### Breaking fragments (Q1, R2, S2, S8), packs CHANGELOG, rewritten scenarios, ADR-0075/0062/0065 amendments, #554 and #478 texts.",
+      "proof_type": "inspection",
+      "evidence": "contracts/charter/changes/2026-11-16-*.md, 2026-11-17-*.md; ADR-0075:126; ADR-0065:66; ADR-0062:365; research/issue-drafts/554.md, 478.md (posted at closeout)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T02:00:15.194239+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "A draft open-packs issue covers unmodelled->file_not_held, the narrowed charter.yaml/nested-shard classification, and the R2/S2 code changes.",
+      "proof_type": "inspection",
+      "evidence": "kitty-specs/.../research/open-packs-drafts/TBD-unmodelled-not-held.md:1-82 (Q1, open case 6), :84+ (R2, S2 tables)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T02:00:20.298941+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "A Spring-free function builds each pack's composition facts from the one read, for CLOSURE outside the service.",
+      "proof_type": "automated_test",
+      "evidence": "CompositionFactsBuilder.java:69; CompositionFactsBuilderTest#theFactsAreTheRecordedFacts:47; OneReadTest#thePackUnderResolutionReadsOnce:108",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-18T02:00:25.472417+00:00",
+      "notes": "Oracle caveat (MEDIUM, acceptance verifier): the test pins facts/example-packs.json, snapshotted from the new reader (e74ec3092); golden/composition.json holds no example-pack facts, so no pre-mission oracle exists. Javadoc claim corrected and #478 builder visibility noted in the landing fixes."
+    }
+  ],
+  "negative_invariants": []
+}
