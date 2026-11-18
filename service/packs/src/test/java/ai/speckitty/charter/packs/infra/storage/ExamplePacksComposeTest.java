@@ -35,8 +35,11 @@ class ExamplePacksComposeTest {
     private static final String RANGE = ">=1.0,<2";
     private static final String BUILT_IN_DEPENDENCY =
             "depends_on:\n  - pack_id: " + BUILT_IN_PACK_ID + "\n    range: \"" + RANGE + "\"\n";
-    private static final String ORG_DEPENDENCY =
-            "depends_on:\n  - pack_id: " + ORG_PACK_ID + "\n    range: \"" + RANGE + "\"\n";
+    private static final String ORG_ALT_PACK_ID = "01M74H0000000000000000RG2A";
+    /** The project's depends_on: org-base and org-alt, whose contest it settles as their distribution pack (#358). */
+    private static final String ORG_DEPENDENCY = "depends_on:\n  - pack_id: " + ORG_PACK_ID + "\n    range: \"" + RANGE
+            + "\"\n  - pack_id: " + ORG_ALT_PACK_ID + "\n    range: \"" + RANGE + "\"\n";
+
     private static final String ORG_EDGE_TO_BUILT_IN = "target: built-in::action:software-dev/specify";
     private static final String SUGGESTS_EDGE = """
             - source: directive:PROJECT_001
@@ -101,7 +104,7 @@ class ExamplePacksComposeTest {
     }
 
     @Test
-    @DisplayName("the served packs are exactly the three examples, each serving its dependency")
+    @DisplayName("the served packs are exactly the four examples, each serving its dependency")
     void everyExamplePackTogether() {
         List<OfferingEntry> served = offering(
                 ExamplePacks.names().stream().map(ExamplePacksComposeTest::real).toArray(PackLocation[]::new));
@@ -109,7 +112,10 @@ class ExamplePacksComposeTest {
         assertThat(served).extracting(OfferingEntry::name).containsExactlyElementsOf(ExamplePacks.names());
         assertThat(served.get(0).dependencies()).isEmpty();
         assertServesItsDependency(served.get(1), BUILT_IN_PACK_ID);
-        assertServesItsDependency(served.get(2), ORG_PACK_ID);
+        assertServesItsDependency(served.get(2), BUILT_IN_PACK_ID);
+        assertThat(served.get(3).dependencies())
+                .extracting(ResolvedEdge::to, ResolvedEdge::range)
+                .containsExactly(tuple(ORG_PACK_ID, RANGE), tuple(ORG_ALT_PACK_ID, RANGE));
     }
 
     @Test
@@ -135,6 +141,7 @@ class ExamplePacksComposeTest {
                 "project",
                 real(ExamplePacks.BUILT_IN),
                 real(ExamplePacks.ORG),
+                real(ExamplePacks.ORG_ALT),
                 bare);
     }
 
@@ -213,9 +220,12 @@ class ExamplePacksComposeTest {
                 SUGGESTS_EDGE + OVERRIDES_EDGE,
                 "");
 
+        // org-alt stays out: without the project, its contest with org-base has no distribution pack.
         List<OfferingEntry> served = offering(real(ExamplePacks.BUILT_IN), real(ExamplePacks.ORG), independent);
 
-        assertThat(served).extracting(OfferingEntry::name).containsExactlyElementsOf(ExamplePacks.names());
+        assertThat(served)
+                .extracting(OfferingEntry::name)
+                .containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
         assertThat(served.get(2).dependencies()).isEmpty();
     }
 }

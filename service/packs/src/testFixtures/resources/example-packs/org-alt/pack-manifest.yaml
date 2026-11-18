@@ -1,0 +1,8 @@
+# The org-alt pack's generated manifest (ADR-0042, #110): its constituents, each with its content hash.
+schema_version: '1.0'
+manifest_hash: 5bb65a22503c92ca6b929e1794caa9fdb7f831ea57e6fa514b3359af4ed5a1ff
+constituents:
+- kind: styleguide
+  id: reasons-canvas-writing
+  path: styleguides/reasons-canvas-writing.styleguide.yaml
+  content_hash: c4b95e9f931b2790a933e37a780cfdc395a46e28a6be453fb3b842b9251c9065

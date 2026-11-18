@@ -305,7 +305,7 @@
   "a-member-of-the-distribution-does-not-settle" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01MEMB",
         "packId" : "01MEMB",
@@ -324,7 +324,7 @@
   "a-pack-that-does-not-depend-on-the-contestants-does-not-settle" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `unrelated` (01UNRL), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `unrelated` (01UNRL), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01UNRL",
         "packId" : "01UNRL",
@@ -343,7 +343,7 @@
   "a-member-beside-the-distribution-pack-is-refused" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01MEMB",
         "packId" : "01MEMB",
@@ -362,7 +362,7 @@
   "a-contestant-does-not-settle-its-own-contest" : {
     "refused" : {
       "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `left` (01LEFT), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `left` (01LEFT), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01LEFT",
         "packId" : "01LEFT",

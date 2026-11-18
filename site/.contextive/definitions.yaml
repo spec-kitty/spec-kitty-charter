@@ -106,7 +106,7 @@ contexts:
       - name: "Directive"
         definition: "A constraint-oriented governance rule that applies across flows or phases. Directives encode required or advisory expectations and can reference lower-level tactics for execution."
       - name: "Distribution pack"
-        definition: "A pack that holds no artifacts of its own and aggregates the packs it depends on. `built-in` becomes one, over a slimmed foundation pack (ADR-0048). It is derived, never declared: for a sibling contest, the pack of the contest's level that depends on every contestant by `depends_on` or `parent_pack`, is not one of them, and that no other pack of that level depends on. Only its overrides edge settles the contest (#358)."
+        definition: "A pack that holds no artifacts of its own and aggregates the packs it depends on. `built-in` becomes one, over a slimmed foundation pack (ADR-0048). It is derived, never declared: for a sibling contest, the pack that depends on every contestant by `depends_on` or `parent_pack`, is not one of them, and that no pack of the contest's level depends on. Only its overrides edge settles the contest (#358)."
         meta:
           status: "canonical"
       - name: "Charter Domain"
@@ -356,7 +356,7 @@ contexts:
         meta:
           status: "deprecated"
       - name: "Sibling conflict"
-        definition: "Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless the distribution pack (the pack of that level that depends on every contestant and that no other pack of that level depends on) settles it with an overrides edge naming a contesting member (ADR-0048 decision 9, ADR-0053 decision 5, #358); an edge naming a contestant from any other pack, or from two distribution packs, is refused. Across levels the same id is a legitimate layer override, not a conflict."
+        definition: "Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless the distribution pack (the pack that depends on every contestant and that no pack of the contest's level depends on) settles it with an overrides edge naming a contesting member (ADR-0048 decision 9, ADR-0053 decision 5, #358); an edge naming a contestant from any other pack, or from two distribution packs, is refused. Across levels the same id is a legitimate layer override, not a conflict."
         meta:
           status: "canonical"
       - name: "Tension — `in_tension_with` (CRG Relation)"

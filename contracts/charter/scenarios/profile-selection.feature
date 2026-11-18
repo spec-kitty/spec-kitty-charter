@@ -165,6 +165,7 @@ Feature: The profile that fills a role is selected under an activation
     remain; project-reviewer and reviewer-rita take reviewer as their primary role too, and the org-base tie is gone.
     Given the example pack "built-in" of the charter
     And the example pack "org-base" of the charter
+    And the example pack "org-alt" of the charter
     And the example pack "project" of the charter
     And the activation "p" holds:
       """
@@ -183,6 +184,7 @@ Feature: The profile that fills a role is selected under an activation
     primary one.
     Given the example pack "built-in" of the charter
     And the example pack "org-base" of the charter
+    And the example pack "org-alt" of the charter
     And the example pack "project" of the charter
     And the activation "p" holds:
       """
@@ -200,6 +202,7 @@ Feature: The profile that fills a role is selected under an activation
     answered marked alt; the fallback answers only when no candidate is left.
     Given the example pack "built-in" of the charter
     And the example pack "org-base" of the charter
+    And the example pack "org-alt" of the charter
     And the example pack "project" of the charter
     And the activation "p" holds:
       """

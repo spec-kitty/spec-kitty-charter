@@ -101,6 +101,12 @@ class SurfaceSubsetTest {
             "planted/r15-glossary-urn-in-a-root-shard+pack.yaml");
 
     /**
+     * Example packs added after the frozen baseline (#358: org-alt, the sibling whose contest the project pack settles).
+     * The baseline predates them, so the registration has nothing to answer as before: it must refuse nothing.
+     */
+    private static final Set<String> NEWER_EXAMPLES = Set.of("example-packs/org-alt");
+
+    /**
      * The row of the plant whose sidecar's payload path the landing fixed (W1, a fixed fixture defect) that names the
      * payload before the landing: the plant with a descriptor. The bare plant answered its descriptor's refusal alone.
      */
@@ -216,6 +222,11 @@ class SurfaceSubsetTest {
         assertThat(descriptor)
                 .as("%s answers the descriptor's refusal, among every fault, exactly on an S8 row", key)
                 .isEqualTo(s8);
+        if (NEWER_EXAMPLES.contains(key)) {
+            assertThat(BEFORE.has(key)).as("%s is newer than the baseline", key).isFalse();
+            assertThat(faults).as("%s is a canonical example pack", key).isEmpty();
+            return;
+        }
         if (ROOT_TWINS.contains(key)) {
             assertThat(BEFORE.has(key))
                     .as("%s is a landing twin, which the baseline predates", key)

@@ -137,7 +137,8 @@ class WholePackRoundTripTest {
         examplePacks().forEach(name -> censusByPack.put(name, PackRoundTrip.census(ExamplePacks.pack(name))));
         WholePackExpectation expectation = WholePackExpectation.fromClasspath();
 
-        assertThat(censusByPack.keySet()).containsExactly(BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
+        assertThat(censusByPack.keySet())
+                .containsExactly(BUILT_IN, ExamplePacks.ORG_ALT, ExamplePacks.ORG, ExamplePacks.PROJECT);
         try (Stream<Path> dirs = Files.list(ExamplePacks.packsDirectory())) {
             assertThat(dirs.filter(Files::isDirectory).map(dir -> String.valueOf(dir.getFileName())))
                     .as("every directory under the example packs is a gated example pack")

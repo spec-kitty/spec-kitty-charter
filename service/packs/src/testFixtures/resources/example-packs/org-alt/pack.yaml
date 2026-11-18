@@ -1,0 +1,13 @@
+# Example org pack (ADR-0070, #358): a sibling of org-base. Both define styleguide:reasons-canvas-writing at org, so
+# they contest it; the project pack, which depends on both and on which no org pack depends, is their distribution
+# pack and settles the contest with its overrides entry (ADR-0048 decision 9 as amended 2026-11-18).
+schema_version: "1.0"
+pack_id: 01M74H0000000000000000RG2A
+pack_version: 1.0.0
+parent_pack: null
+name: org-alt
+pack_level: org
+pack_drg: drg/fragment.yaml
+depends_on:
+  - pack_id: 01ARWG13C000000000000000FG
+    range: ">=1.0,<2"

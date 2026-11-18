@@ -8,6 +8,9 @@
       "detail" : "missions/software-dev/templates/README.md: not held (Orientation notes beside the mission templates they describe. Not pack content and not templates.)"
     } ]
   },
+  "example-packs/org-alt" : {
+    "findings" : [ ]
+  },
   "example-packs/org-base" : {
     "findings" : [ {
       "code" : "file_not_held",

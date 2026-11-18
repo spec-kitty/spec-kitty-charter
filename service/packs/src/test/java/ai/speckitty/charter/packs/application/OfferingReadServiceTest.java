@@ -389,8 +389,8 @@ class OfferingReadServiceTest {
     }
 
     /**
-     * #358 on the load: the offering composes through the CLOSURE check, so only the distribution pack (the pack of the
-     * contest's level that depends on every contestant and that no other pack of that level depends on) settles a
+     * #358 on the load: the offering composes through the CLOSURE check, so only the distribution pack (the pack that
+     * depends on every contestant and that no pack of the contest's level depends on) settles a
      * sibling contest; a member's or a contestant's edge is refused, naming it first, and two distribution packs that
      * settle one artifact are refused.
      */

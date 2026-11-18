@@ -855,8 +855,8 @@ Feature: The compose resolves the configured packs' dependency graph
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A member's overrides edge does not settle a contest, and the refusal names the member
-    #358, operator ruling (a): the distribution pack is derived, the pack of the contest's level that
-    depends on every contestant and that no other pack of that level depends on, and only its
+    #358, operator ruling (a) as refined on 2026-11-18: the distribution pack is derived, the pack that
+    depends on every contestant and that no pack of the contest's level depends on, and only its
     overrides edge settles a sibling contest. Here member declares the edge naming left, and the
     distribution pack dist depends on left, right and member, so member is not the distribution pack:
     the contest stays unsettled, and the refusal names member first, the pack that broke the rule.
@@ -922,7 +922,7 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
-    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `member-pack` (01M4P01D5TWB5FKZGNNQG3943V), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `member-pack` (01M4P01D5TWB5FKZGNNQG3943V), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on"
     And the field at "/packs/0/packId" is "member"
     And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943V"
     And the field at "/packs/1/packId" is "right"
@@ -970,7 +970,7 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
-    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `left-pack` (01M4P01D5TWB5FKZGNNQG3943R), which is not the distribution pack, the pack of that level that depends on every contestant and that no other pack of that level depends on"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and an overrides edge settling it is declared by pack `left-pack` (01M4P01D5TWB5FKZGNNQG3943R), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on"
     And the field at "/packs/0/packId" is "left"
     And the field at "/packs/1/packId" is "right"
 
@@ -1049,6 +1049,35 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/packId" is "dist"
     And the field at "/packs/1/packId" is "other"
     And the field at "/packs/2/packId" is "right"
+
+  Scenario: On charter's example packs, the project settles the org contest as the distribution pack
+    #358, ADR-0070, the canonical settlement: org-base and org-alt both define styleguide:reasons-canvas-writing
+    at org, so they contest it. The project pack depends on both, and no org pack depends on it, so it is their
+    distribution pack, and its overrides entry names org-base. The compose is served, the members before the
+    distribution pack. The control is the next scenario, the same org packs with no distribution pack.
+    Given the example pack "built-in" of the charter
+    And the example pack "org-base" of the charter
+    And the example pack "org-alt" of the charter
+    And the example pack "project" of the charter
+    When I GET "/offering"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "built-in"
+    And the field at "/packs/1/packId" is "org-alt"
+    And the field at "/packs/2/packId" is "org-base"
+    And the field at "/packs/3/packId" is "project"
+
+  Scenario: On charter's example packs, the org contest without its distribution pack refuses the compose
+    #358: the control of the scenario above. Without the project pack, nothing settles the contest of org-base and
+    org-alt over styleguide:reasons-canvas-writing, and the compose is refused, naming both.
+    Given the example pack "built-in" of the charter
+    And the example pack "org-base" of the charter
+    And the example pack "org-alt" of the charter
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_sibling_conflict"
+    And the field "detail" of the response body is "packs `org-alt` (01M74H0000000000000000RG2A) and `org-base` (01M6Y9ACNAAD96XPNQS0XWP2FF) at org both define the artifact `styleguide:reasons-canvas-writing`, and no pack of the compose declares an overrides edge settling it"
+    And the field at "/packs/0/packId" is "org-base"
+    And the field at "/packs/1/packId" is "org-alt"
 
   Scenario: An org pack and a project pack defining one artifact compose as a layer override
     The negative control of the duplicate-definition refusal: the same directive held at two
