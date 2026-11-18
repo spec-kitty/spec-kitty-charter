@@ -48,6 +48,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#601": {
+      "evidence_ref": "Cited for context in research R1; no WP touches the commit store",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Pre-lock judge race in CommitStorePackWriteStore.commit",
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#94": {
       "evidence_ref": "WP10 ticks R14 and checks the done-when, incl. the decided-reads table",
       "fr": null,
