@@ -28,6 +28,7 @@ import ai.speckitty.charter.api.model.SelectedArtifacts;
 import ai.speckitty.charter.api.model.SharedSkip;
 import ai.speckitty.charter.api.model.SkippedDeactivated;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -197,6 +198,14 @@ class WireTokenParityTest {
                         WIRE_NODE_KINDS,
                         values(NodeReference.KindEnum.values(), NodeReference.KindEnum::getValue),
                         NodeReference.KindEnum::fromValue),
+                // MissionStep.modelTier is a copy of CostTier the generator inlines (ADR-0080 decision 12).
+                new Pair(
+                        "MissionStep.modelTier (CostTier)",
+                        tokens(CostTier.values(), CostTier::token),
+                        values(
+                                ai.speckitty.charter.api.model.MissionStep.ModelTierEnum.values(),
+                                ai.speckitty.charter.api.model.MissionStep.ModelTierEnum::getValue),
+                        ai.speckitty.charter.api.model.MissionStep.ModelTierEnum::fromValue),
                 new Pair(
                         "SelectedArtifacts members",
                         ACTIVATABLE,

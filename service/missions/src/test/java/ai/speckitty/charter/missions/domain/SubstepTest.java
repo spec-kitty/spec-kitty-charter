@@ -41,6 +41,7 @@ class SubstepTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 List.of(),
                 List.of(),
                 substeps);

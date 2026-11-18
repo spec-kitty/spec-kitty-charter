@@ -26,6 +26,7 @@ public sealed interface Kind
                 Lifecycle,
                 Term,
                 StepEnhancement,
+                RoutingCatalog,
                 Guidance,
                 Advisor,
                 RequiresTarget,

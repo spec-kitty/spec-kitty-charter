@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -116,6 +117,28 @@ class MissionTypeBindingTest {
         assertThat(loaded.artifacts())
                 .flatExtracting(CharterArtifact::derivedRelationships)
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a step's model_tier reads to the kernel's cost tier and writes back; a step without one has none")
+    void aStepsModelTierReadsAndWritesBack() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Path file = pack.resolve(FILE);
+        String text = Files.readString(file);
+        assertThat(text).contains("role: researcher\n");
+        Files.writeString(file, text.replaceFirst("role: researcher\n", "role: researcher\n  model_tier: low\n"));
+
+        Pack loaded = load(pack);
+
+        assertThat(loaded.violations()).isEmpty();
+        MissionType type = missionType(loaded);
+        assertThat(type.steps().getFirst().modelTier()).contains(CostTier.LOW);
+        assertThat(type.steps().get(1).modelTier()).isEmpty();
+        MissionTypeDso dso = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
+        assertThat(dso.steps().getFirst().modelTier()).contains("low");
+        assertThat(MissionTypeBinding.INSTANCE.toDso(MissionTypeBinding.INSTANCE.toEntity(PACK_ID, dso)))
+                .as("the tier survives the domain and back")
+                .isEqualTo(dso);
     }
 
     @Test
@@ -726,6 +749,7 @@ class MissionTypeBindingTest {
                                     first.title(),
                                     first.description(),
                                     first.role(),
+                                    Optional.empty(),
                                     Optional.of(new StepDocument(
                                             prompt.title(), prompt.description(), prompt.preamble(), sections)),
                                     first.guidelines(),
@@ -778,6 +802,7 @@ class MissionTypeBindingTest {
                 title,
                 step.description(),
                 step.role(),
+                Optional.empty(),
                 step.prompt(),
                 step.guidelines(),
                 step.expectedInputArtifacts(),

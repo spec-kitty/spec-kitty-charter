@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.kinds.Lifecycle;
 import ai.speckitty.charter.kernel.domain.kinds.MissionType;
 import ai.speckitty.charter.kernel.domain.kinds.Paradigm;
 import ai.speckitty.charter.kernel.domain.kinds.Procedure;
+import ai.speckitty.charter.kernel.domain.kinds.RoutingCatalog;
 import ai.speckitty.charter.kernel.domain.kinds.Skill;
 import ai.speckitty.charter.kernel.domain.kinds.StepEnhancement;
 import ai.speckitty.charter.kernel.domain.kinds.Styleguide;
@@ -250,6 +251,17 @@ public final class KindRef<K extends Kind> {
      */
     public static KindRef<StepEnhancement> stepEnhancement(String id) {
         return new KindRef<>(new Urn(NodeKind.STEP_ENHANCEMENT, id), Optional.empty());
+    }
+
+    /**
+     * A reference to a {@code routing_catalog} node (ADR-0080). No relation admits it, so the reference names a catalog
+     * for a read or a refusal, never for an edge.
+     *
+     * @param id the node's id
+     * @return the typed reference, in this pack
+     */
+    public static KindRef<RoutingCatalog> routingCatalog(String id) {
+        return new KindRef<>(new Urn(NodeKind.ROUTING_CATALOG, id), Optional.empty());
     }
 
     @Override

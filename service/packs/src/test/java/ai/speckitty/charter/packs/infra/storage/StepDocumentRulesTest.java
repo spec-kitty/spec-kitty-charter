@@ -189,6 +189,7 @@ class StepDocumentRulesTest {
                         first.title(),
                         first.description(),
                         first.role(),
+                        Optional.empty(),
                         Optional.of(prompt),
                         first.guidelines(),
                         first.expectedInputArtifacts(),
