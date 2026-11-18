@@ -1,7 +1,7 @@
 {
-  "event_count": 55,
-  "last_event_id": "01M7QY9BHZ177W79MKAPMVXPY5",
-  "materialized_at": "2026-11-18T18:21:43.871425+00:00",
+  "event_count": 57,
+  "last_event_id": "01M7QYA4MBJK64MZHTFTHFJ81J",
+  "materialized_at": "2026-11-18T18:22:09.514270+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -254,15 +254,23 @@
       }
     },
     "WP08": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7PXW57RCXAAF4ENEF81PRZ7",
-      "last_transition_at": "2026-11-18T08:55:16.984297+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M7QYA4MBJK64MZHTFTHFJ81J",
+      "last_transition_at": "2026-11-18T18:22:09.514270+00:00",
+      "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T13:21:39Z – claude – Folded in from the WP03 review: T008's prose edit to contracts/charter/parameters/ArtifactKind.yaml (list routing_catalog) was not made and disagrees with ArtifactKindToken.yaml; make it here as a recorded edit.",
         "- 2026-11-18T18:19:53Z – claude – Carried from the WP06 review (not blocking), made here because lane-h holds WP06 and lane-g does not: restore ProfileCorpusTest's per-pack 'profile files isNotEmpty' check for every example pack that holds profiles (built-in, org-base, project). Only org-mandate is exempt: assert it holds none. Record it as an edit outside the map."
-      ]
+      ],
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 17969,
+      "shell_pid_created_at": "1795026117.08"
     },
     "WP09": {
       "actor": "finalize-tasks",
