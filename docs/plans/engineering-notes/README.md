@@ -40,3 +40,6 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Mutation testing no-report research, 2026-11-13](/plans/engineering-notes/mutation-testing-no-report-research-2026-11-13/) —
   why each red mutation run since 2026-11-10 left a module with no report, what main already fixes,
   and the failure class still open: a `test` system property PIT's minion never receives (#461).
+- [CI dependency resolution research, 2026-11-18](/plans/engineering-notes/ci-dependency-resolution-research-2026-11-18/) —
+  why CI builds failed on Maven Central HTTP 429, why the Gradle cache did not prevent it, what each remedy costs
+  (ADR-0079), and the prebuilt Linux build image tracked in #596.
