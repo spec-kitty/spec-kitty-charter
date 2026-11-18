@@ -3,7 +3,7 @@ title: "ADR-0079: Dependencies resolve through a Maven Central mirror first, wit
 description: "Google's Maven Central mirror is asked first, plugins then from the portal, with five tries on a transient error, so a Central HTTP 429 fails no build."
 doc_status: active
 updated: 2026-11-18T00:00:00Z
-decision_status: Proposed
+decision_status: Accepted
 decision_date: '2026-11-18'
 type: ADR
 kind: ADR
@@ -24,8 +24,11 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-18, for the operator's ruling with the pull request that lands it (branch
-`ci-central-429-hardening`). The operator asked for the CI hardening on 2026-11-18.
+**Accepted**, 2026-11-18. Decider: Stijn Dejongh (operator). The operator asked for the CI
+hardening on 2026-11-18 and accepted the decision the same day, through the orchestrator: Google's
+Maven Central mirror is asked first, with strict dependency verification kept on. No CI-visible proof
+of the mirror is needed beyond the local `--info` run recorded below. PR #595 (branch
+`ci-central-429-hardening`) lands it.
 
 ## Context
 
