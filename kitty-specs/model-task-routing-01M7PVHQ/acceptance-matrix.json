@@ -78,11 +78,11 @@
       "criterion_id": "FR-008",
       "description": "Verify FR-008 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RankerTest (ties, tiesInsideTheTiersBelowAHigherModelOutside); model-recommendation.feature row 2",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:24.388476+00:00",
+      "notes": "Every model tied at the top rank is answered, inside the tiers and overall."
     },
     {
       "criterion_id": "FR-009",
