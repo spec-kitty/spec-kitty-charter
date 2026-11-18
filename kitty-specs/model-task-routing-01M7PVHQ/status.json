@@ -88,7 +88,10 @@
       "force_count": 0,
       "lane": "planned",
       "last_event_id": "01M7PXW082D9J9269M429S6NJ2",
-      "last_transition_at": "2026-11-18T08:55:11.874735+00:00"
+      "last_transition_at": "2026-11-18T08:55:11.874735+00:00",
+      "notes": [
+        "- 2026-11-18T12:03:04Z – unknown – From WP01's review (non-blocking): add the EntrypointReachesRouting known-bad, which WP01 deferred. Create service/deployable/src/test/java/ai/speckitty/charter/packs/infra/api/badfixture/EntrypointReachesRouting.java holding a RoutingCatalog field, and assert it in theEntrypointSliceRuleFailsOnAnEntrypointThatNamesAnotherSlicesDomain beside EntrypointReachesProfiles (a recorded edit to HexagonalArchitectureTest). RoutingObjective already exists (made in WP01); keep it, and build the other domain types beside it. Also, once :packs depends on :routing, drop :deployable's direct implementation(project(':routing')) only if the transitive path keeps the routing classes on the gated classpath; otherwise keep it."
+      ]
     },
     "WP06": {
       "actor": "finalize-tasks",
@@ -116,7 +119,10 @@
       "force_count": 0,
       "lane": "planned",
       "last_event_id": "01M7PXW6VRG4DRQ1VMP13GMDR5",
-      "last_transition_at": "2026-11-18T08:55:18.648254+00:00"
+      "last_transition_at": "2026-11-18T08:55:18.648254+00:00",
+      "notes": [
+        "- 2026-11-18T12:03:01Z – unknown – From WP01's review (non-blocking): WP09 creates :routing-edge and wires it, which WP01 deferred because an empty module fails Javadoc. These are recorded edits outside WP09's owned_files: settings.gradle.kts ('routing-edge' in the module list, with its comment), service/routing-edge/build.gradle.kts (as service/profiles-edge, minus infra.packs), service/deployable/build.gradle.kts (implementation(project(':routing-edge'))), service/charter-reports/build.gradle.kts ('routing-edge' to its application and infra packages), .github/workflows/sonar.yml (routing-edge main/test sources and binaries in all five lists) and .github/workflows/mutation-testing.yml (the module-list comment). HexagonalArchitectureTest also gains the ROUTING over ACTIVATIONS rules, with their known-bad controls and an every-ring-on-the-classpath check, modelled on PROFILES_OVER_PACKS_AND_ACTIVATIONS."
+      ]
     },
     "WP10": {
       "actor": "finalize-tasks",
