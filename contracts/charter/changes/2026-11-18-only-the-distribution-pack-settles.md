@@ -16,9 +16,10 @@
     whole-pack registration (`PUT /packs`) or a per-file write judges. The layer merge settles through the same rule,
     so a step contest whose entry comes from a pack that is not the distribution pack is refused at read, naming that
     pack.
-  - A step `action:<M>/<step>` at a level where two or more packs hold `M` is settled by `M`'s settlement: it is in
-    force only from the pack whose `M` won, and a level where that pack does not hold the step holds no copy of it.
-    Before, the merge refused such a step contest although the compose served it.
+  - A step `action:<M>/<step>` that two or more packs of a level hold, where two or more packs of that level hold `M`,
+    is settled by `M`'s settlement: it is in force only from the pack whose `M` won. When that pack does not hold the
+    step, the level holds no copy of it, and a copy at another level, if any, wins. Before, the merge refused such a
+    step contest although the compose served it. A step only one pack of the level holds keeps its place (DIV-243).
   - No refusal code, field or status is added.
 - Core's seam: a set of packs that settled a contest from a member, a contestant or an unrelated pack is now refused.
   So is one where two packs settle the same contest. Move the `overrides` entry to the one pack that depends on both

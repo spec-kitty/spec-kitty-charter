@@ -971,11 +971,11 @@ public final class PackCompositionResolver {
         }
         Map<String, PackUnderResolution> byId = new HashMap<>();
         compose.forEach(member -> byId.putIfAbsent(member.descriptor().packId(), member));
-        boolean dependedOnAtItsLevel = compose.stream()
+        boolean dependedOnAtTheContestsLevel = compose.stream()
                 .filter(other -> other.configured().level() == level)
                 .filter(other -> !other.descriptor().packId().equals(packId))
                 .anyMatch(other -> targetsOf(other).contains(packId));
-        return !dependedOnAtItsLevel && reach(pack, byId).containsAll(contestants);
+        return !dependedOnAtTheContestsLevel && reach(pack, byId).containsAll(contestants);
     }
 
     /** The {@code pack_id}s a pack names by {@code depends_on} and {@code parent_pack}. */

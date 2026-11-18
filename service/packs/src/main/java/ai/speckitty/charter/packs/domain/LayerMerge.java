@@ -321,10 +321,12 @@ public final class LayerMerge {
 
     /**
      * The copy in force at one level (C15, #358), settled as the compose settles a contest
-     * ({@link PackCompositionResolver#settle}). A lone holder is in force, except a step of a mission type that lost its
-     * contest. A step ({@code action:<M>/<step>}) is part of {@code M}: when two or more packs of the level hold
-     * {@code M}, the step is settled by {@code M}'s settlement over all of them, and is in force only from the pack whose
-     * {@code M} won, so a level where the winner does not hold the step holds no copy of it. Otherwise a contest is
+     * ({@link PackCompositionResolver#settle}). A lone holder is in force, a step of a replaced mission type included
+     * (A7, DIV-243: a winning {@code M} keeps the unique steps of the versions it replaced). A step
+     * ({@code action:<M>/<step>}) is part of {@code M}: when two or more packs of the level hold the step and two or more
+     * hold {@code M}, the step contest is settled by {@code M}'s settlement over all of {@code M}'s holders (Q5), and the
+     * step is in force only from the pack whose {@code M} won; when that pack does not hold the step, the level holds no
+     * copy of it, and a copy at another level, if any, wins across levels. Otherwise a contest is
      * settled over its own holders, keyed by {@code M} for a step: the compose leaves a step out of the sibling contest,
      * so an unsettled step contest is refused here, never decided by load order. An entry of a pack that is not the
      * distribution pack, or entries of two distribution packs, refuse it as the compose does, naming the declaring packs.
@@ -334,7 +336,7 @@ public final class LayerMerge {
         return siblings -> {
             PackLevel level = siblings.getFirst().configured().level();
             Optional<Urn> missionType = StepHolding.missionTypeOf(urn);
-            if (missionType.isPresent()) {
+            if (missionType.isPresent() && siblings.size() > 1) {
                 List<PackUnderResolution> typeHolders = holdersByUrn.getOrDefault(missionType.get(), List.of()).stream()
                         .filter(pack -> pack.configured().level() == level)
                         .toList();
