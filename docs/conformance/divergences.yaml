@@ -2437,7 +2437,7 @@
 - id: DIV-707
   surface: "An unknown task type, no catalog, and two catalogs"
   core: >-
-    Never checks a task type against task_types: it answers a candidate whenever a model has a task_fit for the string, and none when no model fits, so an undeclared task type with no fit yields no catalog candidate. A missing or unreadable catalog yields None. It accepts a fit or a tier constraint naming an undeclared task type, duplicate ids, duplicate fits and duplicate constraints (the first wins), any non-empty generated_at, and task type ids matching ^[a-z][a-z0-9-]*$.
+    Never checks a task type against task_types: it answers a candidate whenever a model has a task_fit for the string, and none when no model fits, so an undeclared task type with no fit yields no catalog candidate. A missing or unreadable catalog yields None. It accepts a fit or a tier constraint naming an undeclared task type, duplicate ids, duplicate fits and duplicate constraints (the first wins), any non-empty generated_at, and task type ids matching `^[a-z][a-z0-9-]*$`.
   service: >-
     An unknown task type is 404 task_type_not_found; no catalog in force is 409 routing_catalog_not_in_force; more than one in force is 409 routing_catalog_conflict, naming them. A declared task type no model fits is 200 with no catalog candidate. A catalog core tolerates is refused at registration: a fit or a constraint naming an undeclared task type, a duplicate task type or model id, two fits for one task type in a model, two constraints for one task type, a generated_at that is not an ISO-8601 date-time with an offset, a task type id that is not a kebab-case token of at most 64 characters, and a blank text.
   rationale: >-
