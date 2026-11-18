@@ -68,11 +68,11 @@
       "criterion_id": "FR-007",
       "description": "Verify FR-007 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RankerTest (rows 1 to 3); ScoreTest; model-recommendation.feature rows 1 to 3",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:19.794389+00:00",
+      "notes": "quality_first ranks by fit then score; balanced and cost_first by score."
     },
     {
       "criterion_id": "FR-008",
