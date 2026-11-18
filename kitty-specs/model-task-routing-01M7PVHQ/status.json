@@ -1,7 +1,7 @@
 {
-  "event_count": 50,
-  "last_event_id": "01M7QX3ZGC8NA6T7Q77HPTRTD7",
-  "materialized_at": "2026-11-18T18:01:19.116257+00:00",
+  "event_count": 52,
+  "last_event_id": "01M7QX58S07HWCG2R499YFK193",
+  "materialized_at": "2026-11-18T18:02:01.339552+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -222,11 +222,19 @@
       }
     },
     "WP07": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7PXW3JCG61JBDQE9N274YPJ",
-      "last_transition_at": "2026-11-18T08:55:15.276738+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01M7QX58S07HWCG2R499YFK193",
+      "last_transition_at": "2026-11-18T18:02:01.339552+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 197,
+      "shell_pid_created_at": "1795024906.55"
     },
     "WP08": {
       "actor": "finalize-tasks",
