@@ -1,0 +1,57 @@
+{
+  "event_count": 5,
+  "last_event_id": "01M7PNVGMD9XD19SMQ7DF4P03E",
+  "materialized_at": "2026-11-18T06:35:07.277514+00:00",
+  "mission_number": "",
+  "mission_slug": "closure-symmetry-01M7PNFT",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 5
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7PNV381RPAN677JXW200J25",
+      "last_transition_at": "2026-11-18T06:34:53.569307+00:00"
+    },
+    "WP02": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7PNV6FMD6289HVHW5JC1B04",
+      "last_transition_at": "2026-11-18T06:34:56.884770+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7PNVA53M014F9ARYQ346FH8",
+      "last_transition_at": "2026-11-18T06:35:00.643247+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7PNVDR3WCKWAQZFRPM9XCY6",
+      "last_transition_at": "2026-11-18T06:35:04.323898+00:00"
+    },
+    "WP05": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7PNVGMD9XD19SMQ7DF4P03E",
+      "last_transition_at": "2026-11-18T06:35:07.277514+00:00"
+    }
+  }
+}
