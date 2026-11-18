@@ -389,6 +389,91 @@ class OfferingReadServiceTest {
     }
 
     /**
+     * #358 on the load: the offering composes through the CLOSURE check, so only the distribution pack, the compose root
+     * that is not a contestant, settles a sibling contest; a member's or a contestant's edge is refused, naming it, and
+     * two roots that settle one artifact are refused.
+     */
+    @Nested
+    class DistributionPackSettles {
+
+        private List<ConfiguredPack> siblingsAnd(ConfiguredPack... more) {
+            defined.put("left", List.of("directive:DIRECTIVE_009"));
+            defined.put("right", List.of("directive:DIRECTIVE_009"));
+            List<ConfiguredPack> packs = new ArrayList<>(
+                    List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG)));
+            packs.addAll(List.of(more));
+            return packs;
+        }
+
+        private static PackDescriptor distribution(String packId, String member, String... members) {
+            return new PackDescriptor(
+                    packId,
+                    "1.0.0",
+                    Optional.empty(),
+                    packId + " pack",
+                    Optional.empty(),
+                    Optional.empty(),
+                    PackPaths.none(),
+                    Arrays.stream(members)
+                            .map(target -> new PackDependency(target, ">=1.0"))
+                            .toList(),
+                    member == null ? List.of() : List.of(new PackOverride("directive:DIRECTIVE_009", member)));
+        }
+
+        @Test
+        void theDistributionPackSettlesTheContest() {
+            List<ConfiguredPack> packs = siblingsAnd(
+                    declared("dist", PackLevel.ORG, distribution("dist", "right", "left", "right")));
+
+            assertThat(service(packs).composed()).hasSize(3);
+            assertThat(service(packs).composed(roots("dist"))).hasSize(3);
+        }
+
+        @Test
+        void aMembersEdgeDoesNotSettleTheContestAndTheRefusalNamesIt() {
+            List<ConfiguredPack> packs = siblingsAnd(
+                    declared("member", PackLevel.ORG, settling("member", "right")),
+                    declared("dist", PackLevel.ORG, distribution("dist", null, "left", "right", "member")));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refused.getMessage())
+                    .contains("declared by pack `member pack` (member), which is not the distribution pack");
+            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("right", "left", "member");
+        }
+
+        @Test
+        void aContestantsEdgeDoesNotSettleItsOwnContest() {
+            defined.put("left", List.of("directive:DIRECTIVE_009"));
+            defined.put("right", List.of("directive:DIRECTIVE_009"));
+            List<ConfiguredPack> packs = List.of(
+                    declared("left", PackLevel.ORG, settling("left", "left")), configured("right", PackLevel.ORG));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refused.getMessage()).contains("(left), which is not the distribution pack");
+        }
+
+        @Test
+        void twoRootsSettlingOneArtifactAreRefused() {
+            List<ConfiguredPack> packs = siblingsAnd(
+                    declared("dist", PackLevel.ORG, distribution("dist", "right", "left", "right")),
+                    declared("other", PackLevel.ORG, distribution("other", "right", "left", "right")));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refused.getMessage()).contains("more than one compose root");
+            assertThat(refused.packs()).extracting(RefusalPack::packId).contains("dist", "other");
+            assertThat(service(packs).composed(roots("dist")))
+                    .as("the control: one distribution's closure leaves the other root out, and is served")
+                    .hasSize(3);
+        }
+    }
+
+    /**
      * The offering ratchet (FR-020, SC-004): the whole compose is the compose rooted at every configured pack, and each
      * composition refusal reached through the offering is the one the unrooted resolve gives over every pack.
      */

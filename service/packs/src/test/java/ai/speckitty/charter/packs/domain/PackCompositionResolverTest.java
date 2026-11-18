@@ -275,24 +275,14 @@ class PackCompositionResolverTest {
 
     @Test
     void anOverridesEdgeSettlingAMissionTypeAlsoSettlesItsSharedSteps() {
-        // A step is part of its mission type: the edge that settles m leaves no contest over m's steps.
-        PackUnderResolution left = new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),
-                new PackDescriptor(
-                        "01LEFT",
-                        "1.0.4",
-                        Optional.empty(),
-                        "left",
-                        Optional.of(PackLevel.ORG),
-                        Optional.empty(),
-                        PackPaths.none(),
-                        List.of(),
-                        List.of(new PackOverride("mission_type:m", "01RIGHT"))),
-                List.of(),
-                List.of("mission_type:m", "action:m/implement"));
+        // A step is part of its mission type: the distribution pack's edge that settles m leaves no contest over m's steps.
+        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "mission_type:m", "action:m/implement");
         PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
+        PackUnderResolution distribution =
+                settling("01DSTR", "distribution", "1.0.0", PackLevel.ORG, "mission_type:m", "01RIGHT");
 
-        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+        assertThat(ids(PackCompositionResolver.resolve(List.of(distribution, right, left))))
+                .containsExactly("01DSTR", "01LEFT", "01RIGHT");
     }
 
     @Test
@@ -323,7 +313,8 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void aContestantMayDeclareTheOverridesEdgeThatSettlesItsOwnContest() {
+    void aContestantDoesNotSettleItsOwnContest() {
+        // #358: only the distribution pack settles a contest; a contestant's own edge is refused, naming it.
         PackUnderResolution left = new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),
                 new PackDescriptor(
@@ -339,7 +330,12 @@ class PackCompositionResolverTest {
                 List.of("directive:DIRECTIVE_009"));
         PackUnderResolution right = refining("01RIGHT", "right", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
 
-        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(right, left)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(PackCompositionResolver.Failure.SIBLING_CONFLICT);
+                    assertThat(refusal.detail())
+                            .contains("declared by pack `left` (01LEFT), which is not the distribution pack");
+                });
     }
 
     @Test

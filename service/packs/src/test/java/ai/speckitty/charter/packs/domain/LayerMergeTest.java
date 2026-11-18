@@ -199,6 +199,10 @@ class LayerMergeTest {
                         LayerMergeTest::c15StepSettledByOneEntry),
                 new Row(
                         "C15",
+                        "#358: a sibling's own entry settles no step contest, as the compose reads only the distribution's",
+                        LayerMergeTest::c15StepSettledByASiblingIsUnsettled),
+                new Row(
+                        "C15",
                         "an action that names no step (action:M/) shares no contest with its mission type",
                         LayerMergeTest::c15ActionWithoutAStepNameIsNoStep),
                 new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder));
@@ -307,7 +311,8 @@ class LayerMergeTest {
     private static void c15BelowALayerWinner() {
         MergedClosure merged = new Fixture()
                 .pack("org-a", PackLevel.ORG, "directive:D")
-                .pack("org-b", PackLevel.ORG, List.of(new PackOverride("directive:D", packId("org-b"))), "directive:D")
+                .pack("org-b", PackLevel.ORG, "directive:D")
+                .pack("org-x", PackLevel.ORG, List.of(new PackOverride("directive:D", packId("org-b"))))
                 .pack("project", PackLevel.PROJECT, "directive:D")
                 .merge();
 
@@ -358,14 +363,21 @@ class LayerMergeTest {
         });
     }
 
+    /**
+     * Two org packs that define {@code urn}, settled by the distribution packs (#358): one root naming {@code xNames}
+     * and, when it names another sibling, a second root naming {@code yNames}. The definers settle nothing.
+     */
     private static Fixture twoDefiners(String urn, String key, String xNames, String yNames, boolean xFirst) {
-        PackOverride byX = new PackOverride(key, packId(xNames));
-        PackOverride byY = new PackOverride(key, packId(yNames));
         Fixture fixture = new Fixture();
-        if (xFirst) {
-            fixture.pack("org-x", PackLevel.ORG, List.of(byX), urn).pack("org-y", PackLevel.ORG, List.of(byY), urn);
-        } else {
-            fixture.pack("org-y", PackLevel.ORG, List.of(byY), urn).pack("org-x", PackLevel.ORG, List.of(byX), urn);
+        List<String> order = xFirst ? List.of("x", "y") : List.of("y", "x");
+        for (String side : order) {
+            fixture.pack("org-" + side, PackLevel.ORG, urn);
+        }
+        for (String side : order) {
+            String names = side.equals("x") ? xNames : yNames;
+            if (side.equals("x") || !yNames.equals(xNames)) {
+                fixture.pack("dist-" + side, PackLevel.ORG, List.of(new PackOverride(key, packId(names))));
+            }
         }
         return fixture;
     }
@@ -373,11 +385,13 @@ class LayerMergeTest {
     private static void refusesAsConflict(Fixture fixture, String urn) {
         assertThat(fixture.closure())
                 .as("the compose leaves an action out of the sibling contest")
-                .hasSize(2);
+                .hasSize(4);
         assertThatThrownBy(fixture::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refusal.getMessage()).contains(urn, "org-x", "org-y", "different winners");
-            assertThat(refusal.packs()).extracting(RefusalPack::name).containsExactlyInAnyOrder("org-x", "org-y");
+            assertThat(refusal.getMessage()).contains(urn, "org-x", "org-y", "dist-x", "dist-y", "more than one compose root");
+            assertThat(refusal.packs())
+                    .extracting(RefusalPack::name)
+                    .containsExactlyInAnyOrder("org-x", "org-y", "dist-x", "dist-y");
         });
     }
 
@@ -401,6 +415,18 @@ class LayerMergeTest {
                     .as("the named sibling is in force whatever the closure order")
                     .isEqualTo(configured("org-y"));
         }
+    }
+
+    private static void c15StepSettledByASiblingIsUnsettled() {
+        Fixture contested = new Fixture()
+                .pack("org-x", PackLevel.ORG, List.of(new PackOverride("mission_type:M", packId("org-x"))), "action:M/s")
+                .pack("org-y", PackLevel.ORG, "action:M/s");
+
+        assertThat(contested.closure()).as("the compose leaves a step out of the sibling contest").hasSize(2);
+        assertThatThrownBy(contested::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refusal.getMessage()).contains("action:M/s", "no overrides entry names");
+        });
     }
 
     private static void c15ActionWithoutAStepNameIsNoStep() {

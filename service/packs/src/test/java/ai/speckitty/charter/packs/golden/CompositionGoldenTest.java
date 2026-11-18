@@ -210,7 +210,7 @@ class CompositionGoldenTest {
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, "base::" + DIRECTIVE)),
                 new Case(
-                        "two-packs-naming-different-winners",
+                        "two-roots-naming-different-winners",
                         settling("01DTWO", "dtwo", "org::" + DIRECTIVE, "01RIGHT"),
                         settling("01DONE", "done", DIRECTIVE, "01LEFT"),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE),
@@ -219,6 +219,35 @@ class CompositionGoldenTest {
                         "a14-two-settlements-naming-two-winners",
                         settling("01DSTR", "distribution", DIRECTIVE, "01LEFT"),
                         settling("01DTWO", "dtwo", DIRECTIVE, "01RIGHT"),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
+                        "the-distribution-pack-settles",
+                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
+                        "a-member-of-the-distribution-does-not-settle",
+                        settling("01MEMB", "member", DIRECTIVE, "01LEFT"),
+                        pack(
+                                "01DSTR",
+                                "distribution",
+                                "1.0.0",
+                                PackLevel.ORG,
+                                List.of(
+                                        new PackDependency("01LEFT", ">=1.0"),
+                                        new PackDependency("01RIGHT", ">=1.0"),
+                                        new PackDependency("01MEMB", ">=1.0"))),
+                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
+                        "a-contestant-does-not-settle-its-own-contest",
+                        settlingRefiner("01LEFT", "left", DIRECTIVE, "01LEFT"),
+                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                new Case(
+                        "two-roots-naming-one-winner",
+                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
+                        settling("01DTWO", "dtwo", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
                         refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
                         refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
@@ -513,7 +542,8 @@ class CompositionGoldenTest {
                 List.of(artifact));
     }
 
-    private static PackUnderResolution settling(String id, String name, String artifact, String member) {
+    private static PackUnderResolution settling(
+            String id, String name, String artifact, String member, String... members) {
         return new PackUnderResolution(
                 configured(id, PackLevel.ORG),
                 new PackDescriptor(
@@ -524,8 +554,16 @@ class CompositionGoldenTest {
                         Optional.of(PackLevel.ORG),
                         Optional.empty(),
                         PackPaths.none(),
-                        List.of(),
+                        Arrays.stream(members)
+                                .map(target -> new PackDependency(target, ">=1.0"))
+                                .toList(),
                         List.of(new PackOverride(artifact, member))));
+    }
+
+    /** A sibling that changes {@code artifact} and declares an edge settling it. */
+    private static PackUnderResolution settlingRefiner(String id, String name, String artifact, String member) {
+        PackUnderResolution settler = settling(id, name, artifact, member);
+        return new PackUnderResolution(settler.configured(), settler.descriptor(), List.of(artifact));
     }
 
     private static PackUnderResolution extending(String id, String name, PackLevel level, String parent) {
