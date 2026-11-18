@@ -172,6 +172,10 @@ In `service/routing/src/main/java/ai/speckitty/charter/routing/domain/`:
     load, the whole-pack write, validate mode, the per-file write and `pack-check` all run it.
   - **#599 rewrites `PackContents` and `PackRulesets`.** Build on the merged shape, and follow how #599's
     `ReferenceClosure` registers itself.
+- **The record component.** On main after #599, `PackContents` is a record whose hand-written-facts constructor takes
+  the lists positionally. Add `List<RoutingCatalogFacts> routingCatalogs` after `missionTypes`, in both the canonical
+  and the test constructor. Update every call site; do not add an overload that hides the new list. Register the rules
+  in `content()` before `ReferenceRules`. #601 (the commit store's pre-lock race) is not in this WP's map.
 - **What is refused**, each as invalid content with a rule id and a message naming the catalog, the field and the
   value (match the existing rules' violation shape):
   1. a `task_fit.task_type` or `tier_constraints.task_type` that the catalog does not declare;
