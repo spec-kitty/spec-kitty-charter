@@ -1,7 +1,7 @@
 {
-  "event_count": 8,
-  "last_event_id": "01M7PRXDZNGNME927772TBKE0K",
-  "materialized_at": "2026-11-18T07:28:35.829311+00:00",
+  "event_count": 11,
+  "last_event_id": "01M7PRZWB7PC7TM1KRZDMNSBER",
+  "materialized_at": "2026-11-18T07:29:56.071991+00:00",
   "mission_number": "",
   "mission_slug": "closure-symmetry-01M7PNFT",
   "mission_type": "software-dev",
@@ -12,10 +12,10 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 2,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -62,11 +62,23 @@
       "last_transition_at": "2026-11-18T06:35:00.643247+00:00"
     },
     "WP04": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7PNVDR3WCKWAQZFRPM9XCY6",
-      "last_transition_at": "2026-11-18T06:35:04.323898+00:00",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "for_review",
+      "last_event_id": "01M7PRZWB7PC7TM1KRZDMNSBER",
+      "last_transition_at": "2026-11-18T07:29:56.071991+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation landed before the claim, in c23fbdf (test(packs): the fair-lock case bounds each write's wait per round, #593); forced past the since-claim commit check for that reason"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 22922,
+      "shell_pid_created_at": "1794986988.92",
       "subtasks": {
         "T018": "done",
         "T019": "done",
