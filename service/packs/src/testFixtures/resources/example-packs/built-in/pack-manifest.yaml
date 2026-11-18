@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: d7a75cc5f901d06f4aa07c8c2632db9e753d0a8b1a7a42ea1bfcb641f9e5f7b6
+manifest_hash: 62ba3787d52e4c4352b0a19dec72d31bed9b7ea096a5e23d3c32183234b3fc6d
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -224,7 +224,7 @@ constituents:
 presets:
 - id: default
   path: presets/default.yaml
-  content_hash: 474d4b7b3834db2dfda108a66fdc7aec29f45fd4018be5a7f426349da1426329
+  content_hash: 4a7bf116de312791dcd3199f3823f702cf8ad192d6f4779a145e4c20605cceea
 - id: minimal
   path: presets/minimal.yaml
   content_hash: a954e556493d039775a923fd81e7026340fe26287d97a90012f397830540b444
