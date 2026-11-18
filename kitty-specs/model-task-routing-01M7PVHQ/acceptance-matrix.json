@@ -48,11 +48,11 @@
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: effective-routing-catalogs.feature (selected, deactivated, required through org-mandate); routing-catalogs.feature (a locked same-id override refused, the open control)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:10.608814+00:00",
+      "notes": "A catalog is selected, denied and required, and an org pack replaces an open catalog and not a locked one."
     },
     {
       "criterion_id": "FR-006",
