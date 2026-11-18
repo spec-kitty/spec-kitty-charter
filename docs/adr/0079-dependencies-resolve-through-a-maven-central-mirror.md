@@ -74,6 +74,8 @@ What the evidence shows:
    distribution download three times, 2 s apart (`gradle/wrapper/gradle-wrapper.properties`).
 5. **Dependency verification is unchanged:** strict SHA-256 for every artifact and its metadata,
    from whichever repository it came.
+6. **The release's cold path can be rehearsed on any branch:** a manual run of `service.yml` or
+   `service-native.yml` takes `cache-disabled`, as the release passes it.
 
 A cold build (`-Pcharter.native=true help` with an empty Gradle User Home) made 472 requests to the
 mirror, 14 to the plugin portal and none to Maven Central.
@@ -85,7 +87,7 @@ mirror, 14 to the plugin portal and none to Maven Central.
 - A Central 429 can no longer fail a pull request, a nightly or a release: no build step asks Central
   for an artifact the mirror holds.
 - The release workflows stay reproducible: they still build without the cache, every artifact is
-  checked against `gradle/verification-metadata.xml`, and no workflow changes.
+  checked against `gradle/verification-metadata.xml`, and the release workflows do not change.
 - Contributors and cloud sessions get the same resolution as CI; the cloud init script is no longer
   needed for this repository.
 

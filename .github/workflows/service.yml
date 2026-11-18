@@ -52,6 +52,12 @@ on:
         type: boolean
         default: false
   workflow_dispatch:
+    # A manual run with the cache off resolves every dependency from the network, as a release does (ADR-0079).
+    inputs:
+      cache-disabled:
+        description: "Build without the Gradle cache, as a release does."
+        type: boolean
+        default: false
 
 permissions:
   contents: read

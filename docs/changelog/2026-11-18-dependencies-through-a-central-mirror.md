@@ -31,7 +31,9 @@ The release workflows build without the Gradle cache, so a tag push faced the sa
   times, 2 s to 16 s apart, instead of three times within 3 s. A 404, 401 or 403 is never retried.
   The wrapper retries its distribution download three times.
 - **Unchanged:** strict SHA-256 dependency verification checks every artifact from any repository,
-  the release workflows still build without the cache, and no workflow changed.
+  and the release workflows still build without the cache.
+- **Rehearse the cold path.** A manual run of `service` or `service-native` takes `cache-disabled`,
+  so a branch can build the way a release does.
 
 The decision and the alternatives weighed are in
 [ADR-0079](/adr/0079-dependencies-resolve-through-a-maven-central-mirror/).
