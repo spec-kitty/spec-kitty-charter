@@ -112,16 +112,19 @@ public final class ArtifactReadService {
             SERVED.stream().filter(kind -> !LITERAL_ITEM_KINDS.contains(kind)).toList();
 
     /**
-     * The listed kinds, in the list order: the {@link #SERVED} kinds, then the mission type. They are the kinds of the list and its {@code ?kind=} filter and of the references read; the removal
+     * The listed kinds, in the list order: the {@link #SERVED} kinds, then the mission type, then the routing catalog
+     * (ADR-0080 decision 6). The last two are rendered at their own literal paths, never by the templated item read.
+     * They are the kinds of the list and its {@code ?kind=} filter and of the references read; the removal
      * gates on its own set, {@link ArtifactRemovalService#REMOVABLE}.
      */
-    public static final List<ArtifactKind> LISTED = afterTheServed(ArtifactKind.MISSION_TYPE);
+    public static final List<ArtifactKind> LISTED =
+            afterTheServed(ArtifactKind.MISSION_TYPE, ArtifactKind.ROUTING_CATALOG);
 
     /**
      * The kinds a client can list and follow from a list: the list, its {@code ?kind=} filter, the positions of a page
      * and a reference's {@code artifact} link. Every gate on the listable kinds reads this
      * accessor and not {@link #SERVED}, so that a kind can later be served without being listed, or the other way round.
-     * It is {@link #LISTED}: the served kinds, then the mission type.
+     * It is {@link #LISTED}: the served kinds, then the mission type, then the routing catalog.
      *
      * @return the listed kinds, in the list order
      */
@@ -147,7 +150,9 @@ public final class ArtifactReadService {
             Map.entry(ArtifactKind.SKILL, RefusalCode.ARTIFACT_NOT_FOUND),
             // a glossary context too, with a detail that names the context (#106, ruling DM-01M7B1Q4BPQB95EVQBRWN4Q4F8)
             Map.entry(ArtifactKind.GLOSSARY, RefusalCode.ARTIFACT_NOT_FOUND),
-            Map.entry(ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND));
+            Map.entry(ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND),
+            // a routing catalog answers artifact_not_found, as the kinds listed after the agent profile do (ADR-0080)
+            Map.entry(ArtifactKind.ROUTING_CATALOG, RefusalCode.ARTIFACT_NOT_FOUND));
 
     /**
      * The code a request for an artifact of a listed kind that the pack does not hold is refused with.

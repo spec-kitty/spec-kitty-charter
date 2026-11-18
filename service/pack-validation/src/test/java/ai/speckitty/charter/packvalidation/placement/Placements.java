@@ -49,6 +49,7 @@ final class Placements {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
+                List.of(),
                 List.of());
         return new Placement(new PackReadout(contents, List.of(), List.of(), new Rationale(List.of())), configured);
     }

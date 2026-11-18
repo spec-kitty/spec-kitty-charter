@@ -18,6 +18,8 @@ dependencies {
     api(project(":kernel"))
     // The profiles slice's domain: the pack store binds the agent-profile kind (ADR-0037, amendment of 2026-10-27).
     api(project(":profiles"))
+    // packs.infra.storage binds the routing catalog (ADR-0080; ADR-0037, amendment of 2026-11-18).
+    api(project(":routing"))
     // The missions slice's domain: the pack store binds the mission-type kind (ADR-0044).
     api(project(":missions"))
 

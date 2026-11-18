@@ -1,0 +1,60 @@
+id: default
+description: A routing catalog with every optional member, for the binding's round trip.
+generated_at: '2026-11-18T00:00:00Z'
+task_types:
+- id: design
+  title: Design
+  description: Weighing designs against each other.
+  quality_sensitivity: high
+  cost_sensitivity: low
+- id: review
+  title: Review
+models:
+- id: model-a
+  provider: example
+  family: example-large
+  tools:
+  - code
+  strengths:
+  - judgment
+  weaknesses:
+  - cost
+  task_fit:
+  - task_type: design
+    score: 0.66
+    confidence: high
+    rationale: Strong at trade-offs.
+  - task_type: review
+    score: 1
+  cost:
+    tier: premium
+    input_per_1m_usd: 15
+    output_per_1m_usd: 75.5
+    currency: USD
+    pricing_source_url: https://example.invalid/pricing
+  latency_tier: high
+- id: model-b
+  provider: example
+  task_fit:
+  - task_type: design
+    score: 0.12345678901234567890123
+  - task_type: review
+    score: 0.12345678901234567890124
+  cost:
+    tier: low
+routing_policy:
+  objective: quality_first
+  weights:
+    quality: 1
+    cost: 0.20
+    risk: 0
+    latency: 0.05
+  tier_constraints:
+  - task_type: review
+    max_tier: medium
+sources:
+- name: example
+  url: https://example.invalid/catalog
+  access_method: manual
+  snapshot_at: '2026-11-18T00:00:00Z'
+  license_notes: Example content.

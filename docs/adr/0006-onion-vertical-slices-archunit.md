@@ -2,7 +2,7 @@
 title: "ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit"
 description: The service is onion-layered and cut into vertical concern slices, one Gradle module per slice with layers as packages; ArchUnit enforces inward dependencies and a pure domain.
 doc_status: draft
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-18T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-21'
 type: ADR
@@ -121,6 +121,15 @@ constructs the file-system inspector. Today that is `deployable`, as `ONION_DEPE
 the main, name the inspector in `ONION_DEPENDS_INWARD` and in the direct half of the rule, with a
 known-good control. Until then `pack-check` holds only its `package-info`, so both halves pass over it
 on that alone.
+
+### Amendment 2026-11-18 — the routing slice
+
+The service gains a fifth slice, `routing`
+([ADR-0080](/adr/0080-the-routing-catalog-kind-and-the-model-recommendation/)). The pack store binds the routing
+catalog, so the slice spans `:routing` (the domain: the catalog and the ranker) and `:routing-edge` (its `application`
+and `infra` rings), as the amendment of 2026-11-09 sets out. `SLICES` lists it, so every per-slice rule holds it, and
+its domain has a purity rule with a known-bad control. The reason and the rules are in
+[ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-11-18.
 
 ## Context
 

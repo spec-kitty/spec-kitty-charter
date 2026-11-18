@@ -17,6 +17,7 @@ enum:
 - anti_pattern
 - mission_type
 - step_enhancement
+- routing_catalog
 - all
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java

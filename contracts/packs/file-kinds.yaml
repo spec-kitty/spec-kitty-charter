@@ -100,6 +100,7 @@ node_kinds:
   - guard
   - lifecycle
   - step_enhancement
+  - routing_catalog
 
 artifact_kinds:
   - directive
@@ -118,6 +119,7 @@ artifact_kinds:
   - guard
   - lifecycle
   - step_enhancement
+  - routing_catalog
 
 fragment_kinds:
   directives: directive
@@ -167,6 +169,10 @@ files:
     schema: glossary
   - match: "**/*.skill.yaml"
     schema: skill
+  # Routing catalogs (ADR-0080 decision 5): one file per catalog, routing_catalogs/<id>.routing-catalog.yaml. Not a graph
+  # kind, so no fragment_kinds plural: nothing relates to a catalog.
+  - match: "**/*.routing-catalog.yaml"
+    schema: routing-catalog
   # Pack-level files (#195, ADR-0042): activation presets and the pack manifest, in their sanitized shapes.
   - match: "*/presets/*.yaml"
     schema: preset
