@@ -10,6 +10,7 @@ import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveAssetsController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveGlossariesController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveReferencesController;
+import ai.speckitty.charter.artifacts.infra.api.EffectiveRoutingCatalogsController;
 import ai.speckitty.charter.artifacts.infra.api.EffectiveSkillsController;
 import ai.speckitty.charter.profiles.infra.api.EffectiveAgentProfilesController;
 import java.io.IOException;
@@ -115,7 +116,10 @@ class ActivationRoutingTest {
             {"asset/run", EffectiveAssetsController.class.getName(), "getEffectiveAsset"},
             {"asset/run/payload", EffectiveAssetsController.class.getName(), "getEffectiveAssetPayload"},
             {"skill", EffectiveSkillsController.class.getName(), "listEffectiveSkills"},
-            {"skill/land-pr", EffectiveSkillsController.class.getName(), "getEffectiveSkill"}
+            {"skill/land-pr", EffectiveSkillsController.class.getName(), "getEffectiveSkill"},
+            {"routing_catalog", EffectiveRoutingCatalogsController.class.getName(), "listEffectiveRoutingCatalogs"},
+            {"routing_catalog/default", EffectiveRoutingCatalogsController.class.getName(), "getEffectiveRoutingCatalog"
+            }
         };
         for (String[] route : routes) {
             HandlerMethod routed = handler("GET", READ + route[0]);

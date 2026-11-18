@@ -1,0 +1,57 @@
+title: RoutingCatalogSource
+description: >-
+  Where a routing catalog content comes from (ADR-0080 decision 5): provenance only, as CatalogSource holds it.
+type: object
+additionalProperties: false
+required:
+  - name
+  - url
+  - accessMethod
+  - snapshotAt
+properties:
+  name:
+    type: string
+    minLength: 1
+    description: >-
+      The source name.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/CatalogSource.java
+      symbol: CatalogSource.name
+  url:
+    type: string
+    minLength: 1
+    description: >-
+      Where the source is.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/CatalogSource.java
+      symbol: CatalogSource.url
+  accessMethod:
+    type: string
+    enum:
+      - api
+      - dataset
+      - manual
+    description: >-
+      How the content was taken from the source.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/AccessMethod.java
+      symbol: AccessMethod.token
+  snapshotAt:
+    type: string
+    minLength: 1
+    description: >-
+      When the source was read, as written.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/CatalogSource.java
+      symbol: CatalogSource.snapshotAt
+  licenseNotes:
+    type: string
+    minLength: 1
+    description: >-
+      The source licence notes, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/CatalogSource.java
+      symbol: CatalogSource.licenseNotes
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/CatalogSource.java
+  symbol: CatalogSource

@@ -1,0 +1,50 @@
+title: RoutingCatalogTaskFit
+description: >-
+  How well a model fits one task type (ADR-0080 decision 5), as TaskFit holds it.
+type: object
+additionalProperties: false
+required:
+  - taskType
+  - score
+properties:
+  taskType:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      A task type the catalog declares.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskFit.java
+      symbol: TaskFit.taskType
+  score:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: >-
+      The fit, from 0 to 1, the exact decimal the file writes, in plain notation and unrounded.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskFit.java
+      symbol: TaskFit.score
+  confidence:
+    type: string
+    enum:
+      - low
+      - medium
+      - high
+    description: >-
+      The confidence in the fit, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskFit.java
+      symbol: TaskFit.confidence
+  rationale:
+    type: string
+    minLength: 1
+    description: >-
+      Why the model fits, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskFit.java
+      symbol: TaskFit.rationale
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskFit.java
+  symbol: TaskFit

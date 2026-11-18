@@ -131,6 +131,7 @@ class ActivationMapperTest {
                         "assets",
                         "asset",
                         "skills",
+                        "routing-catalogs",
                         "glossaries",
                         "vocabulary-terms",
                         "vocabulary-contextive",

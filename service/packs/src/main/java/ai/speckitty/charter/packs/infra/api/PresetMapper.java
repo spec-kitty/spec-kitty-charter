@@ -103,6 +103,7 @@ final class PresetMapper {
             case ANTI_PATTERN -> ai.speckitty.charter.api.model.Preset::setActivatedAntiPatterns;
             case MISSION_TYPE -> ai.speckitty.charter.api.model.Preset::setActivatedMissionTypes;
             case STEP_ENHANCEMENT -> ai.speckitty.charter.api.model.Preset::setActivatedStepEnhancements;
+            case ROUTING_CATALOG -> ai.speckitty.charter.api.model.Preset::setActivatedRoutingCatalogs;
             case ASSET, TEMPLATE, GUARD, LIFECYCLE ->
                 throw new IllegalStateException("a preset carries no list of " + kind.plural());
         };

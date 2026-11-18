@@ -138,6 +138,16 @@ class GraphBindingTest {
                 .isEqualTo("a term is an edge endpoint only as the target of a vocabulary edge: ");
     }
 
+    @Test
+    void aRoutingCatalogIsRefusedInItsOwnWordsAndAGuardOrALifecycleInTheirs() {
+        // ADR-0080 decision 5, squad A1: a catalog layers by its id; the guard's and lifecycle's wording waits on #156.
+        assertThat(GraphBinding.NOT_A_GRAPH_KIND)
+                .isEqualTo("a routing catalog is no graph node and no edge endpoint, it layers by its id: ");
+        assertThat(GraphBinding.notAuthored(NodeKind.ROUTING_CATALOG)).isEqualTo(GraphBinding.NOT_A_GRAPH_KIND);
+        assertThat(GraphBinding.notAuthored(NodeKind.GUARD)).isEqualTo(GraphBinding.NOT_AUTHORED);
+        assertThat(GraphBinding.notAuthored(NodeKind.LIFECYCLE)).isEqualTo(GraphBinding.NOT_AUTHORED);
+    }
+
     // ---- a self-loop --------------------------------------------------------------------------------
 
     @Test

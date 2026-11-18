@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.artifacts.infra.api.AssetsController;
 import ai.speckitty.charter.artifacts.infra.api.GlossariesController;
+import ai.speckitty.charter.artifacts.infra.api.RoutingCatalogsController;
 import ai.speckitty.charter.artifacts.infra.api.SkillsController;
 import ai.speckitty.charter.packs.infra.api.ArtifactController;
 import ai.speckitty.charter.packs.infra.api.PackRegistrationController;
@@ -87,7 +88,10 @@ class PackArtifactRoutingTest {
                         new Route("asset/run", AssetsController.class, "getPackAsset"),
                         new Route("asset/run/payload", AssetsController.class, "getPackAssetPayload"),
                         new Route("skill", SkillsController.class, "listPackSkills"),
-                        new Route("skill/land-pr", SkillsController.class, "getPackSkill")));
+                        new Route("skill/land-pr", SkillsController.class, "getPackSkill"),
+                        new Route("routing_catalog", RoutingCatalogsController.class, "listPackRoutingCatalogs"),
+                        new Route(
+                                "routing_catalog/default", RoutingCatalogsController.class, "getPackRoutingCatalog")));
     }
 
     @Test

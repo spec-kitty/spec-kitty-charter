@@ -198,7 +198,8 @@ final class PlantedFixtures {
                 assets,
                 StepEnhancementFacts.none(),
                 List.of(),
-                types);
+                types,
+                List.of());
     }
 
     private static List<Planted> readAll() {

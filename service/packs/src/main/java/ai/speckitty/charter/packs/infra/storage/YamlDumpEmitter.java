@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,6 +10,8 @@ import org.jspecify.annotations.Nullable;
 import org.snakeyaml.engine.v2.api.Dump;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
+import org.snakeyaml.engine.v2.nodes.Tag;
+import org.snakeyaml.engine.v2.representer.StandardRepresenter;
 
 /**
  * The one serialization primitive of the pack writers: a value built as an ordered map is dumped as block-style YAML
@@ -96,6 +99,20 @@ final class YamlDumpEmitter {
                 .setWidth(4096)
                 .setSchema(Yaml.dumpSchema())
                 .build();
-        return new Dump(settings).dumpToString(root);
+        return new Dump(settings, new ExactDecimals(settings)).dumpToString(root);
+    }
+
+    /**
+     * The standard representer, writing a {@link BigDecimal} as the text the loader read it from: plain when its scale
+     * is not negative ({@code 0.66}, {@code 1.50}, {@code 0.0000001}), in exponent form otherwise, so it stays a float.
+     */
+    private static final class ExactDecimals extends StandardRepresenter {
+        ExactDecimals(DumpSettings settings) {
+            super(settings);
+            representers.put(BigDecimal.class, data -> {
+                BigDecimal decimal = (BigDecimal) data;
+                return representScalar(Tag.FLOAT, decimal.scale() < 0 ? decimal.toString() : decimal.toPlainString());
+            });
+        }
     }
 }

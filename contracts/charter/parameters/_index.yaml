@@ -1,6 +1,7 @@
 files:
   - ArtifactId.yaml
   - AssetOrSkillId.yaml
+  - RoutingCatalogId.yaml
   - ContextId.yaml
   - TermId.yaml
   - ArtifactKind.yaml

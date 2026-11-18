@@ -16,7 +16,7 @@ properties:
     maxLength: 64
     description: >-
       The kind token; this version lists tactic, directive, styleguide, paradigm, toolguide, procedure, asset,
-      skill, glossary, agent_profile and mission_type; a client tolerates a kind it does not know
+      skill, glossary, agent_profile, mission_type and routing_catalog; a client tolerates a kind it does not know
       (skips the item).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java

@@ -1,0 +1,35 @@
+# The built-in routing catalog (ADR-0080; research R7 row 1). quality_first ranks by fit alone, then by score:
+# design: model-a fit 0.3, premium (cost 0): 1 x 0.3 + 0.2 x 0 = 0.3; model-b fit 0.1, low (cost 1):
+# 1 x 0.1 + 0.2 x 1 = 0.3. The scores tie; model-a's higher fit makes it the unique top.
+id: default
+generated_at: '2026-11-18T00:00:00Z'
+task_types:
+- id: design
+  title: Design
+models:
+- id: model-a
+  provider: example
+  task_fit:
+  - task_type: design
+    score: 0.3
+  cost:
+    tier: premium
+- id: model-b
+  provider: example
+  task_fit:
+  - task_type: design
+    score: 0.1
+  cost:
+    tier: low
+routing_policy:
+  objective: quality_first
+  weights:
+    quality: 1
+    cost: 0.2
+    risk: 0
+    latency: 0
+sources:
+- name: example
+  url: https://example.invalid/catalog
+  access_method: manual
+  snapshot_at: '2026-11-18T00:00:00Z'

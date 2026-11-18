@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.ExpectedArtifact;
@@ -243,6 +244,7 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 step.title(),
                 step.description(),
                 step.role(),
+                step.modelTier().map(MissionTypeBinding::costTier),
                 document(typeId, step, step.promptPath(), promptPathOf(step.id()), step.prompt(), true),
                 document(typeId, step, step.guidelinesPath(), guidelinesPathOf(step.id()), step.guidelines(), false),
                 step.expectedInputArtifacts().stream()
@@ -369,12 +371,26 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
                 Optional.ofNullable(written.get("data")));
     }
 
+    /**
+     * A step's {@code model_tier} as the kernel's tier. The schema admits only the four tier tokens and refuses any
+     * other at load, so an unknown token here is a defect, not content.
+     *
+     * @param token the {@code model_tier} as written
+     * @return the tier
+     */
+    private static CostTier costTier(String token) {
+        return CostTier.ofToken(token)
+                .orElseThrow(() -> new IllegalStateException(
+                        "a mission step's model_tier \"" + token + "\" passed the schema but names no cost tier"));
+    }
+
     private static MissionTypeDso.Step stepDso(MissionStep step) {
         return new MissionTypeDso.Step(
                 step.id(),
                 step.title(),
                 step.description(),
                 step.role(),
+                step.modelTier().map(CostTier::token),
                 step.prompt().map(p -> promptPathOf(step.id())),
                 step.guidelines().map(g -> guidelinesPathOf(step.id())),
                 step.expectedInputArtifacts().stream()

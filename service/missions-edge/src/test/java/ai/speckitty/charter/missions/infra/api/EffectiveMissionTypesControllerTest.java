@@ -145,6 +145,7 @@ class EffectiveMissionTypesControllerTest {
                 .andExpect(header().string(HeaderNames.SOURCE_FINGERPRINT, FINGERPRINT))
                 .andExpect(header().doesNotExist("ETag"))
                 .andExpect(jsonPath("$.prompt").value("# Specify\n"))
+                .andExpect(jsonPath("$.modelTier").doesNotExist()) // the step advises no tier, so the key is absent
                 .andExpect(jsonPath("$._links.self.href")
                         .value("/api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/specify"))
                 .andExpect(jsonPath("$._links.mission-type.href")
@@ -242,6 +243,7 @@ class EffectiveMissionTypesControllerTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         List.of(),
                         List.of(new ExpectedArtifact(
                                 "input.spec.main",
@@ -272,6 +274,7 @@ class EffectiveMissionTypesControllerTest {
                 .step(new MissionStep(
                         "review",
                         "Review at main",
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),

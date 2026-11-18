@@ -1,0 +1,60 @@
+title: RoutingCatalogTaskType
+description: >-
+  One task type a routing catalog declares (ADR-0080 decision 5), as TaskType holds it.
+type: object
+additionalProperties: false
+required:
+  - id
+  - title
+properties:
+  id:
+    type: string
+    minLength: 1
+    maxLength: 64
+    pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    description: >-
+      The task type id, unique in the catalog.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java
+      symbol: TaskType.id
+  title:
+    type: string
+    minLength: 1
+    description: >-
+      The task type title.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java
+      symbol: TaskType.title
+  description:
+    type: string
+    minLength: 1
+    description: >-
+      What the task type covers, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java
+      symbol: TaskType.description
+  qualitySensitivity:
+    type: string
+    enum:
+      - low
+      - medium
+      - high
+    description: >-
+      How much quality matters for the task type, when declared; absent otherwise. Provenance only.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java
+      symbol: TaskType.qualitySensitivity
+  costSensitivity:
+    type: string
+    enum:
+      - low
+      - medium
+      - high
+    description: >-
+      How much cost matters for the task type, when declared; absent otherwise. Provenance only.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java
+      symbol: TaskType.costSensitivity
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java
+  symbol: TaskType

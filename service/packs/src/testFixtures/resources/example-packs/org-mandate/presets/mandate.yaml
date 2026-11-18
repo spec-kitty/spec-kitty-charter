@@ -1,0 +1,8 @@
+# Org-mandate's governing preset: it requires the mandated routing catalog, so no activation over this pack can
+# deselect it (ADR-0031 decision 3).
+schema_version: "1.0"
+id: mandate
+description: Require org-mandate's routing catalog in every activation over this pack.
+activated_routing_catalogs:
+  - id: mandated
+    must_have: true

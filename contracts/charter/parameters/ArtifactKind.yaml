@@ -3,10 +3,11 @@ in: path
 required: true
 description: >-
   The kind of the artifact, as its token: tactic, directive, styleguide, paradigm, toolguide,
-  procedure, asset, skill, glossary, agent_profile or mission_type. For agent_profile the
-  templated item read is not the one that answers: the literal operation getPackAgentProfile does. An asset, a skill
-  and a glossary context are answered by their own literal reads too (getPackAsset, getPackSkill and
-  getPackGlossaryContext); the templated item read refuses them 404 kind_not_found and names the literal path. A
+  procedure, asset, skill, glossary, agent_profile, mission_type or routing_catalog. For agent_profile the
+  templated item read is not the one that answers: the literal operation getPackAgentProfile does. An asset, a skill,
+  a glossary context and a routing catalog are answered by their own literal reads too (getPackAsset, getPackSkill,
+  getPackGlossaryContext and getPackRoutingCatalog); the templated item read refuses them 404 kind_not_found and names
+  the literal path. A
   removal (deletePackArtifact) does not remove an asset, a skill or a glossary context: it refuses them 404
   kind_not_found, as a kind it does not remove. The item of a mission_type is answered by getPackMissionType, whose
   literal path the service prefers, and its references read and its removal (deletePackArtifact, which

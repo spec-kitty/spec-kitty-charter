@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -8,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import org.snakeyaml.engine.v2.api.ConstructNode;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.snakeyaml.engine.v2.constructor.json.ConstructYamlJsonFloat;
 import org.snakeyaml.engine.v2.nodes.Tag;
 import org.snakeyaml.engine.v2.resolver.JsonScalarResolver;
 import org.snakeyaml.engine.v2.resolver.ScalarResolver;
@@ -21,7 +24,10 @@ final class Yaml {
 
     /**
      * The JSON schema, plus the plain null forms {@code ~}, {@code Null} and {@code NULL} that core's parser reads as
-     * null (R18). Booleans, integers and floats stay as the JSON schema has them: only null changes.
+     * null (R18), and a finite float read as the exact {@link BigDecimal} its text writes (ADR-0080 decision 10, R3):
+     * no binary double step, so {@code 0.1} is 0.1 and a value of any precision keeps every digit. A non-finite float
+     * ({@code .inf}, {@code .nan}) has no decimal and stays a {@code Double}. Booleans and integers stay as the JSON
+     * schema has them.
      */
     private static final class NullFormsSchema implements Schema {
         private final Schema json = new JsonSchema();
@@ -35,7 +41,21 @@ final class Yaml {
 
         @Override
         public Map<Tag, ConstructNode> getSchemaTagConstructors() {
-            return json.getSchemaTagConstructors();
+            Map<Tag, ConstructNode> constructors = new HashMap<>(json.getSchemaTagConstructors());
+            constructors.put(Tag.FLOAT, new ExactFloat());
+            return constructors;
+        }
+    }
+
+    /**
+     * A float scalar as the exact decimal its text writes. One that is non-finite as a double ({@code .inf},
+     * {@code .nan}, or {@code 1e400}, which core's reader reads as infinity) stays the JSON schema's {@code Double}.
+     */
+    private static final class ExactFloat extends ConstructYamlJsonFloat {
+        @Override
+        protected Object constructFromString(String value) {
+            Object read = super.constructFromString(value);
+            return read instanceof Double d && Double.isFinite(d) ? new BigDecimal(value) : read;
         }
     }
 

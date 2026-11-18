@@ -1,6 +1,6 @@
 # The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
 schema_version: '1.0'
-manifest_hash: 5f3603e9240057401afddac7c3f735064bd503daa6b98d67bdcaa6c9cd6f3874
+manifest_hash: 07b8b1d71309071720f1326aab9f1aa3a9cbf2539a102a6346f6584feda04561
 constituents:
 - kind: agent_profile
   id: human-operator
@@ -58,7 +58,18 @@ constituents:
   id: reasons-canvas-writing
   path: styleguides/reasons-canvas-writing.styleguide.yaml
   content_hash: 5b1a9539562f6d64c615d7f7acb078087437e064333964885a6e76f8e31710a0
+- kind: routing_catalog
+  id: cost-led
+  path: routing_catalogs/cost-led.routing-catalog.yaml
+  content_hash: 0b43e0735b47bdd62a45c259a4060fc021f4e1aa3f03d309459a826b30ac7f1a
+- kind: routing_catalog
+  id: default
+  path: routing_catalogs/default.routing-catalog.yaml
+  content_hash: dc80cdb76b7feb64b8aed500d85cd5aef9f3a37ccd623bb5721fbda2fae89bdd
 presets:
 - id: spdd
   path: presets/spdd.yaml
   content_hash: 33de626cc7f4690f1481b199f41370de12c655a74fa6cac0a79bf9b0bb54e524
+- id: model-routing
+  path: presets/model-routing.yaml
+  content_hash: fcf1ad0b61f7e18fc544ba3c3920982dc3d4794098c11863fba2c20893bce4c8

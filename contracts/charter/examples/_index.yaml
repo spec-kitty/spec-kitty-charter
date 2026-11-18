@@ -67,6 +67,10 @@ files:
   - EffectiveAssetRead.asset.yaml
   - SkillList.activation.yaml
   - EffectiveSkillRead.skill.yaml
+  - RoutingCatalog.org-base-default.yaml
+  - RoutingCatalogList.org-base.yaml
+  - RoutingCatalogList.activation.yaml
+  - EffectiveRoutingCatalogRead.default.yaml
   - EffectiveGlossaryContextList.activation.yaml
   - EffectiveGlossaryContextRead.spec-kitty-core.yaml
   - EffectiveGlossaryTermRead.mission.yaml

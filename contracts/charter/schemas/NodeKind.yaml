@@ -5,7 +5,8 @@ description: >-
   (term:<context-id>/<term-id>) is an edge target, never a declared node. Core's retiring glossary node kind is not
   part of this contract. It lists the authored kinds only: a guard and a lifecycle are
   nodes of the graph that no read of this contract names, so no schema typed by NodeKind (EffectiveGraphNode,
-  NodeReference) can carry one. Adding guard or lifecycle later is a Breaking change for EffectiveGraphNode,
+  NodeReference) can carry one. A routing catalog (ADR-0080) is listed though no graph declares it and no edge names
+  it: it is an activatable artifact, which an activation layers, overrides and reports. Adding guard or lifecycle later is a Breaking change for EffectiveGraphNode,
   NodeReference and every SkippedReport carrier.
 type: string
 enum:
@@ -25,6 +26,7 @@ enum:
   - action
   - mission_type
   - step_enhancement
+  - routing_catalog
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
   symbol: NodeKind

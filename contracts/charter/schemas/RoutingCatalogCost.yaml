@@ -1,0 +1,51 @@
+title: RoutingCatalogCost
+description: >-
+  A model cost (ADR-0080 decision 5), as ModelCost holds it.
+type: object
+additionalProperties: false
+required:
+  - tier
+properties:
+  tier:
+    allOf:
+      - $ref: CostTier.yaml
+    description: >-
+      The cost tier.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java
+      symbol: ModelCost.tier
+  inputPer1mUsd:
+    type: number
+    minimum: 0
+    description: >-
+      The price of a million input tokens, when declared; absent otherwise. Provenance only.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java
+      symbol: ModelCost.inputPer1mUsd
+  outputPer1mUsd:
+    type: number
+    minimum: 0
+    description: >-
+      The price of a million output tokens, when declared; absent otherwise. Provenance only.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java
+      symbol: ModelCost.outputPer1mUsd
+  currency:
+    type: string
+    minLength: 1
+    description: >-
+      The currency of the prices, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java
+      symbol: ModelCost.currency
+  pricingSourceUrl:
+    type: string
+    minLength: 1
+    description: >-
+      Where the prices come from, when declared; absent otherwise.
+    x-source:
+      path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java
+      symbol: ModelCost.pricingSourceUrl
+x-source:
+  path: service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java
+  symbol: ModelCost
