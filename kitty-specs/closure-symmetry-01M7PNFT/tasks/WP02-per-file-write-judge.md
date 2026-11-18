@@ -54,7 +54,7 @@ spec-kitty agent action implement WP02 --agent claude --mission closure-symmetry
 ## Objective
 
 Every per-file write (`CommitStorePackWriteStore.commit`) and every artifact removal (`.remove`) is judged with
-`PackClosure` on the pack as it will be after the write, under the registry lock and `PackWriteLocks`, before the
+`ReferenceClosure` on the pack as it will be after the write, under the registry lock and `PackWriteLocks`, before the
 impact check and before anything is staged. A finding refuses with `CharterRefusal(REGISTRATION_CONFLICT, <the load's
 reason>)` (409). A delete of an asset a guard names is refused, not cascaded (operator ruling, 2026-11-17).
 
@@ -74,15 +74,15 @@ Over a copy of the `guard-lifecycle` fixture, through a real `CommitStorePackWri
 
 In `commit`, inside `exclusivelyAt`, before `requireClosuresCompose`: `requireCloses(change.revalidated())`.
 
-### T011 `Pack.without` and `Removal.after`
+### T011 `Pack.without`, and the store reads the pack it judges
 
 `Pack.without(Collection<Urn>)` (domain; keeps id, descriptor, the other artifacts, asset files, presets, document,
-violations). `PackRemovalStore.Removal` gains `Optional<Pack> after`; `ofArtifacts` takes it; `ofRelationship` has
-none. `ArtifactRemovalService` passes `current.without(removed)`.
+violations). The commit store reads the pack under the lock and takes the removed artifacts out itself, so no caller can
+leave the check out (plan review finding 5); `PackRemovalStore.Removal` is unchanged.
 
 ### T012 The remove judge
 
-In `remove`, inside `exclusivelyAt`, first thing: `removal.after().ifPresent(this::requireCloses)`.
+In `remove`, inside `exclusivelyAt`, first thing: judge the pack the store reads, without the removed artifacts, when one of them is of a closure kind.
 
 ## Definition of Done
 
