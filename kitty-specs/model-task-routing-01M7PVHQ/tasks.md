@@ -13,6 +13,27 @@ recorded edit outside its map, after the owner merged (its dependency):
   `unexpected-failure.feature` and `read-refusals.feature` belong to WP08;
 - `schemas/CharterRefusalCode.yaml` and `errors.feature` belong to WP09.
 
+## The kind lands across WP02, WP03 and WP05
+
+Adding a kind is one atomic change for the test suite: 22 test files iterate the kind enums. `WireTokenParityTest`
+compares the kernel with the contract enums, and `KindBindingsTest` requires a binding and a schema for every kind and
+every `file-kinds.yaml` schema. So:
+
+- WP02 is done when `:kernel:check` and `EndpointTableAdrTest` pass;
+- WP03 is done when `:contracts:check` passes;
+- WP05 is the first WP whose Definition of Done is the full `./gradlew verifyAll`.
+
+Between WP02 and WP05 the mission branch is knowingly red in the packs and deployable parity tests, and only there.
+WP03 fixes every scenario that enumerates kinds (`offering.feature`, the `?kind=` 400 details in `artifacts.feature`
+and `effective-reads.feature`). WP05 confirms them green. PR #600 stays a draft throughout.
+
+## Gates after WP10
+
+- An independent reviewer session has reviewed every WP.
+- A pre-merge adversarial squad has reviewed the whole diff, with every finding dispositioned in `research.md`.
+- Every check is green across every page.
+- Then the operator approves, and only then is the PR marked ready.
+
 ## Subtask Index
 
 | ID | Description | WP | Parallel |

@@ -35,9 +35,12 @@ Supply chain: no dependency is added, upgraded or removed, so DIRECTIVE_051 has 
   or invalid shape appears only in invalid-content tests (FR-002). No field is excluded from the round trip. Pass.
 - **BDD, scenarios first**: each FR gets `@contract` scenarios before its implementation; the switch-gate register
   gets an entry per operation. Pass.
-- **Adversarial review squad at the plan point and before merge** (contract, architecture and domain change): the
-  plan-point squad runs on this plan; findings and dispositions go in `research.md`. Before merge, an independent
-  reviewer session reviews the WPs (never self-review).
+- **Adversarial review squad at the plan point and before merge** (contract, architecture and domain change):
+  - At the plan point, the squad ran on this plan; its findings and dispositions are in `research.md`.
+  - Before merge there are two gates. An independent reviewer session reviews each WP (never self-review). After
+    WP10, a pre-merge adversarial squad (domain, contract and architecture lenses, profile-loaded) reviews the whole
+    diff, and its findings are dispositioned in `research.md`.
+  - Then the operator approves. The PR stays a draft until all of this is recorded (standing rule, 2026-11-18).
 - **Gates before merge**: `verifyAll` on Java 25, the style gates, the whole-pack round trip, the docs checks. Pass by
   design; verified at implementation.
 - **Issues stay small**: no issue filed from here; the open-packs move is filed by the orchestrator (C-004).
@@ -191,7 +194,7 @@ below; their dispositions are in `research.md`.
 - **Affected surfaces**: the `service/routing` domain:
   - the score in `BigDecimal`, read from the YAML text with no `double` step;
   - the rank key per objective;
-  - the tiers in play, and `top(inside) ∪ top(all)` with all ties;
+  - the tiers in play, and `top(inside) ∪ top(fitting)` with all ties;
   - the flags;
   - the order: rank descending, then model id by code point, with the profile candidate last.
 

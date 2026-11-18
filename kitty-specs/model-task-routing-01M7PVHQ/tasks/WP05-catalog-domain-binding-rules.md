@@ -200,8 +200,9 @@ In `service/routing/src/main/java/ai/speckitty/charter/routing/domain/`:
 - **Removal.** Like a skill, the catalog is not removable through `DELETE …/artifacts/{kind}/{id}` (ADR-0074
   amendment, research R14 there). Check `ArtifactRemovalService`, and record in the history whether its kind set needs
   a change. Removing a catalog is out of scope.
-- **Scenarios this breaks.** Fix the scenarios whose `?kind=` 400 detail lists every kind (`artifacts.feature` line 433,
-  `effective-reads.feature` near line 3468) as recorded edits outside the map.
+- **The full suite.** WP03 updated the scenarios whose `?kind=` 400 detail lists every kind. This WP is the first whose
+  Definition of Done is the full `./gradlew verifyAll` (tasks.md, "The kind lands across WP02, WP03 and WP05"). Every
+  parity test that was red since WP02 must be green here.
 
 ## Definition of Done
 

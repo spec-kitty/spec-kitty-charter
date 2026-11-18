@@ -52,6 +52,8 @@ owned_files:
 - docs/development/hypermedia-hateoas.md
 - contracts/charter/examples/KindTaxonomy.model.yaml
 - contracts/charter/scenarios/offering.feature
+- contracts/charter/scenarios/artifacts.feature
+- contracts/charter/scenarios/effective-reads.feature
 role: implementer
 tags: []
 task_type: implement
@@ -189,7 +191,10 @@ and do not duplicate it. Describe each relation as the table does.
 
 - Every enum of kinds lists `routing_catalog` last. The pack schema and the file rule exist. The four link relations
   are registered.
-- `./gradlew :contracts:check` passes, including the parity and corpus tests.
+- `./gradlew :contracts:check` passes, including the parity and corpus tests. This is this WP's scope of green, and
+  it overrides the generic line below. `KindBindingsTest` stays red until WP05's binding exists.
+- Every scenario that enumerates kinds is updated here (I2): `offering.feature`, and the `?kind=` 400 details in
+  `artifacts.feature` (line 433) and `effective-reads.feature` (near line 3468). WP05 confirms them green.
 - `./gradlew verifyAll` passes on Java 25 for the modules this WP touches, with no new style-gate finding.
 - Every subtask's status is recorded with `spec-kitty agent tasks mark-status`.
 - Nothing outside `owned_files` changed, except a recorded edit outside the map, named in the WP history with its

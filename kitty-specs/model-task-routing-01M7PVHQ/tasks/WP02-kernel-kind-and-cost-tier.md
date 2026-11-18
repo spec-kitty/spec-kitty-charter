@@ -166,6 +166,10 @@ endpoint through any relation (ADR-0080 decision 5; plan IC-01; squad findings A
 - `ROUTING_CATALOG` is the last constant of both enums, activatable, not declarable and not an edge target.
 - `CostTier` exists, with its order and its tests.
 - No relation admits a catalog, and ADR-0077 decision 5 says so.
+- **Scope of green for this WP** (it overrides the generic line below): `./gradlew :kernel:check` and
+  `EndpointTableAdrTest` pass. The packs and deployable parity tests (`WireTokenParityTest`, `KindBindingsTest` and
+  the other tests that iterate the kind enums) stay red until WP03 and WP05 land the contract enums, the schema and
+  the binding (tasks.md, "The kind lands across WP02, WP03 and WP05"). List the red tests in the WP history.
 - `./gradlew verifyAll` passes on Java 25 for the modules this WP touches, with no new style-gate finding.
 - Every subtask's status is recorded with `spec-kitty agent tasks mark-status`.
 - Nothing outside `owned_files` changed, except a recorded edit outside the map, named in the WP history with its

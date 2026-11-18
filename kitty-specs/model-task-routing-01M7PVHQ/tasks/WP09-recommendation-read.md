@@ -225,7 +225,10 @@ fingerprint and the tag. It does no ranking; ranking is `routing-edge`'s, with W
 - **The order is asserted** by sending a request that breaks two rules at once, and expecting the earlier refusal.
 - **Caching:** a `304` with a matching `If-None-Match`, and `200` with another tag. The ETag changes with
   `modelTier`.
-- **Determinism (NFR-001):** two identical requests answer equal bodies and tags.
+- **Determinism (NFR-001, analysis G1):** a unit test of `ModelRecommendationService` makes 100 identical calls and
+  gets 100 equal bodies and tags. The scenario sends two and compares them.
+- **A held profile that is not in force (analysis G3):** deselect the profile with a model, and the read still answers
+  its profile candidate, as the effective profile read does (ADR-0080 decision 13).
 
 ### T036 – Shared files and the switch gate
 
