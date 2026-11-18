@@ -29,24 +29,10 @@ import java.util.Optional;
  */
 public final class Ranker {
 
-    /** The desirability of a cost tier (rule 1): a cheaper model is the more desirable. */
-    private static final Map<CostTier, BigDecimal> COST = Map.of(
-            CostTier.LOW, new BigDecimal("1"),
-            CostTier.MEDIUM, new BigDecimal("0.66"),
-            CostTier.HIGH, new BigDecimal("0.33"),
-            CostTier.PREMIUM, new BigDecimal("0"));
-
-    /** The desirability of a fit's confidence (rule 1): a surer fit is the more desirable. */
-    private static final Map<Grade, BigDecimal> RISK = Map.of(
-            Grade.HIGH, new BigDecimal("1"),
-            Grade.MEDIUM, new BigDecimal("0.66"),
-            Grade.LOW, new BigDecimal("0.33"));
-
-    /** The desirability of a latency tier (rule 1): a faster model is the more desirable. */
-    private static final Map<Grade, BigDecimal> LATENCY = Map.of(
-            Grade.LOW, new BigDecimal("1"),
-            Grade.MEDIUM, new BigDecimal("0.66"),
-            Grade.HIGH, new BigDecimal("0.33"));
+    private static final BigDecimal ONE = new BigDecimal("1");
+    private static final BigDecimal TWO_THIRDS = new BigDecimal("0.66");
+    private static final BigDecimal ONE_THIRD = new BigDecimal("0.33");
+    private static final BigDecimal NONE = new BigDecimal("0");
 
     /** The desirability of an absent confidence or latency tier (rule 1). */
     private static final BigDecimal ABSENT = new BigDecimal("0.5");
@@ -99,13 +85,42 @@ public final class Ranker {
      * @return the exact, unrounded score
      */
     static BigDecimal score(ModelEntry model, TaskFit fit, RoutingWeights weights) {
-        BigDecimal risk = fit.confidence().map(RISK::get).orElse(ABSENT);
-        BigDecimal latency = model.latencyTier().map(LATENCY::get).orElse(ABSENT);
         return weights.quality()
                 .multiply(fit.score())
-                .add(weights.cost().multiply(COST.get(model.cost().tier())))
-                .add(weights.risk().multiply(risk))
-                .add(weights.latency().multiply(latency));
+                .add(weights.cost().multiply(cost(model.cost().tier())))
+                .add(weights.risk().multiply(risk(fit.confidence())))
+                .add(weights.latency().multiply(latency(model.latencyTier())));
+    }
+
+    /** The desirability of a cost tier (rule 1): a cheaper model is the more desirable. */
+    static BigDecimal cost(CostTier tier) {
+        return switch (tier) {
+            case LOW -> ONE;
+            case MEDIUM -> TWO_THIRDS;
+            case HIGH -> ONE_THIRD;
+            case PREMIUM -> NONE;
+        };
+    }
+
+    /** The desirability of a fit's confidence (rule 1): a surer fit is the more desirable; absent is 0.5. */
+    static BigDecimal risk(Optional<Grade> confidence) {
+        return confidence
+                .map(grade -> switch (grade) {
+                    case HIGH -> ONE;
+                    case MEDIUM -> TWO_THIRDS;
+                    case LOW -> ONE_THIRD;
+                })
+                .orElse(ABSENT);
+    }
+
+    /** The desirability of a latency tier (rule 1): a faster model is the more desirable; absent is 0.5. */
+    static BigDecimal latency(Optional<Grade> latency) {
+        return latency.map(grade -> switch (grade) {
+                    case LOW -> ONE;
+                    case MEDIUM -> TWO_THIRDS;
+                    case HIGH -> ONE_THIRD;
+                })
+                .orElse(ABSENT);
     }
 
     /** The rank key of an objective (rule 2), compared with {@code compareTo}, so {@code 0.30} ranks as {@code 0.3}. */
