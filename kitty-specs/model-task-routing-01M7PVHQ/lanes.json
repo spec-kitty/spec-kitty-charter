@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "mission_slug": "model-task-routing-01M7PVHQ",
+  "mission_id": "01M7PVHQF72SKVY48WB787M7GM",
+  "mission_branch": "kitty/mission-model-task-routing-01M7PVHQ",
+  "target_branch": "feat/108-model-task-routing",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        ".github/workflows/mutation-testing.yml",
+        ".github/workflows/sonar.yml",
+        "docs/adr/0006-onion-vertical-slices-archunit.md",
+        "docs/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam.md",
+        "service/charter-reports/build.gradle.kts",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java",
+        "service/routing-edge/build.gradle.kts",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/package-info.java",
+        "service/routing/build.gradle.kts",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/package-info.java",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "docs/adr/0077-kind-taxonomy-and-step-authority.md",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CostTier.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointTable.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/KindRef.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/KindTypes.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/kinds/Kind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/kinds/RoutingCatalog.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/EndpointTableAdrTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/KindTaxonomy.model.yaml",
+        "contracts/charter/parameters/ArtifactKind.yaml",
+        "contracts/charter/scenarios/offering.feature",
+        "contracts/charter/schemas/ActivatableKind.yaml",
+        "contracts/charter/schemas/ArtifactKindToken.yaml",
+        "contracts/charter/schemas/CascadeKind.yaml",
+        "contracts/charter/schemas/DeactivatedArtifacts.yaml",
+        "contracts/charter/schemas/NodeKind.yaml",
+        "contracts/charter/schemas/Preset.yaml",
+        "contracts/charter/schemas/SelectedArtifacts.yaml",
+        "contracts/charter/schemas/TaxonomyKind.yaml",
+        "contracts/lint/ruleset.yaml",
+        "contracts/offering/corpus/ActivationConfig/valid/**",
+        "contracts/offering/schemas/ActivationConfig.schema.json",
+        "contracts/packs/CHANGELOG.md",
+        "contracts/packs/conformance/classifier-cases.yaml",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/charter.schema.json",
+        "contracts/packs/schemas/graph-shard.schema.json",
+        "contracts/packs/schemas/org-fragment.schema.json",
+        "contracts/packs/schemas/pack-manifest.schema.json",
+        "contracts/packs/schemas/policy.schema.json",
+        "contracts/packs/schemas/preset.schema.json",
+        "contracts/packs/schemas/routing-catalog.schema.json",
+        "docs/development/hypermedia-hateoas.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/schemas/CostTier.yaml",
+        "contracts/charter/schemas/MissionStep.yaml",
+        "contracts/charter/schemas/MissionStepSummary.yaml",
+        "contracts/packs/schemas/mission-type.schema.json",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapper.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/application/StepView.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/infra/api/MissionBodies.java",
+        "service/missions-edge/src/main/java/ai/speckitty/charter/missions/infra/api/MissionJson.java",
+        "service/missions-edge/src/test/java/**",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java",
+        "service/missions/src/test/java/ai/speckitty/charter/missions/domain/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionTypeBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionTypeDso.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/build.gradle.kts",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackContents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/RoutingCatalogFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PackRulesets.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/RoutingCatalogRules.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PresetMapper.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RoutingCatalogBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RoutingCatalogDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RoutingCatalogYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/**/RoutingCatalog*Test.java",
+        "service/packs/src/test/resources/routing-catalog-fixtures/**",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/CatalogSource.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelCost.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/ModelEntry.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingCatalog.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingObjective.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingPolicy.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/RoutingWeights.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskFit.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/TaskType.java",
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/TierConstraint.java",
+        "service/routing/src/test/java/ai/speckitty/charter/routing/domain/*Test.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/examples/ExamplePackCoverageTest.java",
+        "service/packs/src/testFixtures/resources/example-packs/**",
+        "service/packs/src/testFixtures/resources/whole-pack/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-e"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "service/routing/src/main/java/ai/speckitty/charter/routing/domain/ranking/**",
+        "service/routing/src/test/java/ai/speckitty/charter/routing/domain/ranking/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/*RoutingCatalog*.yaml",
+        "contracts/charter/examples/Activation.*.yaml",
+        "contracts/charter/examples/_index.yaml",
+        "contracts/charter/headers/EffectiveETag.yaml",
+        "contracts/charter/headers/PackRevisionETag.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/parameters/RoutingCatalogId.yaml",
+        "contracts/charter/parameters/_index.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_routing_catalog.yaml",
+        "contracts/charter/paths/activations_activationId_artifacts_routing_catalog_artifactId.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_routing_catalog.yaml",
+        "contracts/charter/paths/packs_packId_artifacts_routing_catalog_artifactId.yaml",
+        "contracts/charter/scenarios/activation-links.feature",
+        "contracts/charter/scenarios/effective-routing-catalogs.feature",
+        "contracts/charter/scenarios/every-operation.feature",
+        "contracts/charter/scenarios/read-refusals.feature",
+        "contracts/charter/scenarios/routing-catalogs.feature",
+        "contracts/charter/scenarios/switch-gate.yaml",
+        "contracts/charter/scenarios/unexpected-failure.feature",
+        "contracts/charter/schemas/Activation.yaml",
+        "contracts/charter/schemas/Artifact.yaml",
+        "contracts/charter/schemas/ArtifactSummary.yaml",
+        "contracts/charter/schemas/EffectiveRoutingCatalogRead.yaml",
+        "contracts/charter/schemas/RoutingCatalog*.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveReadService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/ActivationArtifacts.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/EffectiveRoutingCatalogReads.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/application/RoutingCatalog*.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/activations/ActivationsArtifacts.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveBodies.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveJson.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/EffectiveRoutingCatalogsController.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/RoutingCatalogBodies.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/api/RoutingCatalogsController.java",
+        "service/artifacts-edge/src/main/java/ai/speckitty/charter/artifacts/infra/packs/PacksRoutingCatalogs.java",
+        "service/artifacts-edge/src/test/java/**/*RoutingCatalog*Test.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactJson.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-f"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/CharterRefusal.routing-catalog-*.yaml",
+        "contracts/charter/examples/CharterRefusal.task-type-not-found.yaml",
+        "contracts/charter/examples/ModelRecommendation.*.yaml",
+        "contracts/charter/parameters/ModelRecommendationQuery*.yaml",
+        "contracts/charter/parameters/TaskType.yaml",
+        "contracts/charter/paths/activations_activationId_taskTypes_taskType_model-recommendation.yaml",
+        "contracts/charter/scenarios/errors.feature",
+        "contracts/charter/scenarios/model-recommendation.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "contracts/charter/schemas/ModelRecommendation*.yaml",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/ModelRecommendation*.java",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/RecommendationInputs.java",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/application/config/**",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/infra/activations/**",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/infra/api/**",
+        "service/routing-edge/src/main/java/ai/speckitty/charter/routing/infra/config/**",
+        "service/routing-edge/src/test/java/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-g",
+        "lane-h"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-18-routing-catalog-and-model-recommendation.md",
+        "docs/api/service-contract.md",
+        "docs/architecture/logical-model.md",
+        "docs/conformance/divergence-register.md",
+        "docs/conformance/divergences.yaml",
+        "docs/guides/compose-packs.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-h",
+        "lane-i"
+      ],
+      "parallel_group": 6
+    }
+  ],
+  "computed_at": "2026-11-18T08:55:21.039119+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "c0f53fb0fca7968a688a4298847916a12768e702"
+}
