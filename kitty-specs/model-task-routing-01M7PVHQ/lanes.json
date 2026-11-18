@@ -65,6 +65,8 @@
       "write_scope": [
         "contracts/charter/examples/KindTaxonomy.model.yaml",
         "contracts/charter/parameters/ArtifactKind.yaml",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/scenarios/effective-reads.feature",
         "contracts/charter/scenarios/offering.feature",
         "contracts/charter/schemas/ActivatableKind.yaml",
         "contracts/charter/schemas/ArtifactKindToken.yaml",
@@ -325,8 +327,8 @@
       "parallel_group": 6
     }
   ],
-  "computed_at": "2026-11-18T08:55:21.039119+00:00",
+  "computed_at": "2026-11-18T11:11:36.942725+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "c0f53fb0fca7968a688a4298847916a12768e702"
+  "planning_commit_sha": "b02ca8a4ff3d386670042fb036a6f3f9c1f4bd15"
 }
