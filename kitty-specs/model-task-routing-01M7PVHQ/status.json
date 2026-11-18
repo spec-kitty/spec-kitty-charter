@@ -1,18 +1,18 @@
 {
-  "event_count": 76,
-  "last_event_id": "01M7RCDMYJT2WJ9X9CSFTW73ZJ",
-  "materialized_at": "2026-11-18T22:28:44.626139+00:00",
+  "event_count": 77,
+  "last_event_id": "01M7RCDXSN425WQVAKBW7PA22Q",
+  "materialized_at": "2026-11-18T22:28:53.685225+00:00",
   "mission_number": "",
   "mission_slug": "model-task-routing-01M7PVHQ",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 9,
+    "approved": 8,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 2,
     "in_review": 0,
     "planned": 0
   },
@@ -49,14 +49,14 @@
       }
     },
     "WP02": {
-      "actor": "claude-reviewer",
+      "actor": "user",
       "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01M7Q8WHP8WT5V6J5691S0FP3E",
-      "last_transition_at": "2026-11-18T12:07:44.072303+00:00",
+      "force_count": 1,
+      "lane": "in_progress",
+      "last_event_id": "01M7RCDXSN425WQVAKBW7PA22Q",
+      "last_transition_at": "2026-11-18T22:28:53.685225+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-18T11:58:51Z – claude – shell_pid=16157 – Scope of green (tasks.md): :kernel:check passes (CostTierTest, RoutingCatalogEndpointTest, ArtifactKindTest and NodeKindTest updated); EndpointTableAdrTest passes; compileTestJava passes for every module. Known red until WP03 and WP05: the packs and deployable parity tests that iterate the kind enums (WireTokenParityTest, KindBindingsTest and the like). T006: the diagonals use 'activatable and edge target' (every kind they admitted before is an edge target); ADR-0077 rows name routing_catalog among the exclusions, because the ADR parser reads exclusions literally. T007: CascadeRules and selection run off activatable() and the graph; a catalog has no edges, so no change. Recorded edits outside the map: contracts/charter/schemas/Preset.yaml (activatedRoutingCatalogs, WP03's file) and PresetMapper (case ROUTING_CATALOG, WP05's file), because PresetMapper's exhaustive switch otherwise breaks :packs compilation.",
