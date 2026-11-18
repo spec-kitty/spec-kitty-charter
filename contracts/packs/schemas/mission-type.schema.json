@@ -34,6 +34,16 @@
           },
           "description": "An open role token of at most 64 characters, for example operator; absent when any role may act. Never the reserved 'generic', which marks a fallback profile and fits no role a step asks for (ADR-0068 decision 4)."
         },
+        "model_tier": {
+          "title": "Model tier",
+          "description": "The cost tier of model this step advises (ADR-0080 decision 12): a recommendation the client may override, which the model recommendation reports and flags its catalog candidates against. One of the kernel's cost tiers, cheapest first.",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "premium"
+          ]
+        },
         "prompt_path": {
           "title": "Prompt Path",
           "type": "string",

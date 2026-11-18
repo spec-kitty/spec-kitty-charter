@@ -29,6 +29,15 @@ The work toward the next candidate (`0.1.0-rc.2`) or the final `0.1.0`, after th
   place's payload. The classifier cases `core/graph/a.graph.yaml` and `project/charter.yaml` move from `mapped` to
   `unmodelled`, and `core/a.graph.yaml` is the `graph-shard` case. `schemas/charter.schema.json` stays the schema of a
   project's `charter.yaml`, outside any pack.
+- The `routing_catalog` kind (ADR-0080, #108) joins the closed lists of kinds: `file-kinds.yaml` `node_kinds` and
+  `artifact_kinds`, the `pack-manifest` constituent kind enum, `policy.schema.json` (`kind_defaults` and the
+  per-artifact key pattern) and `preset.schema.json` (`activated_routing_catalogs`). A reader with a closed list of
+  kinds must add it. It is no graph kind: `fragment_kinds` and the graph and fragment URN patterns do not list it.
+
+### Added
+
+- The routing catalog (ADR-0080 decision 5): `schemas/routing-catalog.schema.json`, closed at every level, and the
+  `files` rule `**/*.routing-catalog.yaml` that maps a catalog to it, with its classifier case.
 
 ### Changed
 
@@ -36,6 +45,8 @@ The work toward the next candidate (`0.1.0-rc.2`) or the final `0.1.0`, after th
   classifier cases' `unmodelled` outcome say it is warned as `file_not_held` and not held, as an excluded file is; they
   said it is refused as `unmodelled`. The outcome stays `unmodelled`, a classification and not a verdict, and no case
   changes.
+- A mission step may advise a model tier (ADR-0080 decision 12, #108): `mission-type.schema.json`'s step gains an
+  optional `model_tier`, one of `low`, `medium`, `high` and `premium`. A step without it is valid as before.
 
 ## 0.1.0-rc.1
 

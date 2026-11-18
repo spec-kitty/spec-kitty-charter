@@ -101,7 +101,7 @@ class ExamplePacksComposeTest {
     }
 
     @Test
-    @DisplayName("the served packs are exactly the three examples, each serving its dependency")
+    @DisplayName("the served packs are exactly the four examples, each serving its dependency")
     void everyExamplePackTogether() {
         List<OfferingEntry> served = offering(
                 ExamplePacks.names().stream().map(ExamplePacksComposeTest::real).toArray(PackLocation[]::new));
@@ -109,7 +109,8 @@ class ExamplePacksComposeTest {
         assertThat(served).extracting(OfferingEntry::name).containsExactlyElementsOf(ExamplePacks.names());
         assertThat(served.get(0).dependencies()).isEmpty();
         assertServesItsDependency(served.get(1), BUILT_IN_PACK_ID);
-        assertServesItsDependency(served.get(2), ORG_PACK_ID);
+        assertServesItsDependency(served.get(2), BUILT_IN_PACK_ID);
+        assertServesItsDependency(served.get(3), ORG_PACK_ID);
     }
 
     @Test
@@ -215,7 +216,9 @@ class ExamplePacksComposeTest {
 
         List<OfferingEntry> served = offering(real(ExamplePacks.BUILT_IN), real(ExamplePacks.ORG), independent);
 
-        assertThat(served).extracting(OfferingEntry::name).containsExactlyElementsOf(ExamplePacks.names());
+        assertThat(served)
+                .extracting(OfferingEntry::name)
+                .containsExactly(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT);
         assertThat(served.get(2).dependencies()).isEmpty();
     }
 }

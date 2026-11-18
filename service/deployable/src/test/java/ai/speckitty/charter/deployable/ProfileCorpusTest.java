@@ -92,7 +92,12 @@ class ProfileCorpusTest {
     /** The profile files of a pack of the corpus, by profile id, in file-name order. */
     private static Map<String, Map<String, Object>> profilesOf(String pack) throws IOException {
         Map<String, Map<String, Object>> profiles = new LinkedHashMap<>();
-        try (Stream<Path> files = Files.list(CORPUS.resolve(pack).resolve("agent_profiles"))) {
+        Path directory = CORPUS.resolve(pack).resolve("agent_profiles");
+        if (!Files.isDirectory(directory)) {
+            // A pack that holds no profile (org-mandate, ADR-0080) serves none.
+            return profiles;
+        }
+        try (Stream<Path> files = Files.list(directory)) {
             for (Path file : files.filter(f -> f.getFileName().toString().endsWith(".agent.yaml"))
                     .sorted()
                     .toList()) {
@@ -317,13 +322,19 @@ class ProfileCorpusTest {
 
     @Test
     void everyProfileFileOfEachExamplePackIsServedAndNothingElse() throws Exception {
+        int files = 0;
         for (String pack : PACKS) {
             Set<String> onDisk = profilesOf(pack).keySet();
-            assertThat(onDisk).as("%s profile files", pack).isNotEmpty();
+            files += onDisk.size();
+            // A pack with no profile file (org-mandate) is served none; the corpus as a whole holds some.
             assertThat(servedProfileIds(pack))
                     .as("%s profiles served", pack)
                     .containsExactlyInAnyOrderElementsOf(onDisk);
         }
+        assertThat(files).as("the corpus's profile files").isPositive();
+        assertThat(profilesOf(ExamplePacks.BUILT_IN))
+                .as("built-in's profile files")
+                .isNotEmpty();
     }
 
     /** The ids of the agent_profile artifacts the service lists for a pack, over every page. */

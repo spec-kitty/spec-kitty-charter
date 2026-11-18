@@ -33,6 +33,8 @@ import org.jspecify.annotations.Nullable;
  * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
  *     full read only. A prompt the codec refuses is a read fault instead and has no parse (A5).
  * @param missionTypes the id and step ids of each mission type the read could parse; filled by a full read only
+ * @param routingCatalogs the task types, fits and tier constraints of each routing catalog the read could parse
+ *     (ADR-0080); filled by a full read only
  * @param assembly the whole input of the aggregate's assembly, read from the same tree: the held artifacts and the
  *     faults the load meets, as domain values ({@code PackAssembly} builds the aggregate from it alone); {@link
  *     Assembly.None} for facts a test writes by hand
@@ -47,6 +49,7 @@ public record PackContents(
         StepEnhancementFacts stepEnhancements,
         List<PromptSlotFacts> promptSlots,
         List<MissionTypeFacts> missionTypes,
+        List<RoutingCatalogFacts> routingCatalogs,
         Assembly assembly) {
     /**
      * Checks the fields and copies the lists.
@@ -60,6 +63,7 @@ public record PackContents(
      * @param stepEnhancements the step enhancement facts
      * @param promptSlots the slot parse of each step prompt
      * @param missionTypes the mission type facts
+     * @param routingCatalogs the routing catalog facts
      * @param assembly the assembly input
      */
     public PackContents {
@@ -72,6 +76,7 @@ public record PackContents(
         Objects.requireNonNull(stepEnhancements, "stepEnhancements");
         promptSlots = List.copyOf(promptSlots);
         missionTypes = List.copyOf(missionTypes);
+        routingCatalogs = List.copyOf(routingCatalogs);
         Objects.requireNonNull(assembly, "assembly");
     }
 
@@ -87,6 +92,7 @@ public record PackContents(
      * @param stepEnhancements the step enhancement facts
      * @param promptSlots the slot parse of each step prompt
      * @param missionTypes the mission type facts
+     * @param routingCatalogs the routing catalog facts
      */
     public PackContents(
             PackRoot root,
@@ -97,7 +103,8 @@ public record PackContents(
             List<AssetFacts> assets,
             StepEnhancementFacts stepEnhancements,
             List<PromptSlotFacts> promptSlots,
-            List<MissionTypeFacts> missionTypes) {
+            List<MissionTypeFacts> missionTypes,
+            List<RoutingCatalogFacts> routingCatalogs) {
         this(
                 root,
                 descriptor,
@@ -108,6 +115,7 @@ public record PackContents(
                 stepEnhancements,
                 promptSlots,
                 missionTypes,
+                routingCatalogs,
                 new Assembly.None());
     }
 

@@ -1,0 +1,7 @@
+# Org-base's routing preset: puts org-base's default routing catalog in force (ADR-0080, research R7). cost-led is
+# in no preset, so selecting it as well gives the two-catalog conflict.
+schema_version: "1.0"
+id: model-routing
+description: Put org-base's default routing catalog in force.
+activated_routing_catalogs:
+  - id: default

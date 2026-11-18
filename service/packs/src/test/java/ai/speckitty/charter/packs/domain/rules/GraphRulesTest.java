@@ -70,6 +70,7 @@ class GraphRulesTest {
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 
@@ -150,6 +151,7 @@ class GraphRulesTest {
                         Set.of(),
                         Set.of(),
                         List.of()),
+                List.of(),
                 List.of(),
                 List.of());
 

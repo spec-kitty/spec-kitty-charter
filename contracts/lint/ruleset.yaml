@@ -322,6 +322,12 @@ rules:
               - mission-type
               - skeleton
               - enhances
+              # The routing reads (ADR-0080 decisions 6 and 8): the activation's catalogs, and the recommendation's
+              # catalog, profile and step.
+              - routing-catalogs
+              - catalog
+              - agent-profile
+              - step
 
   # R-03 (revised): the relation-key rule reads examples, so every 2xx JSON response carries one, and every example
   # it carries has _links at its top level; the key check is then never vacuous.

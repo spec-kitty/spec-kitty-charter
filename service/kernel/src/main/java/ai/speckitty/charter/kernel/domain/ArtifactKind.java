@@ -64,7 +64,14 @@ public enum ArtifactKind {
      * The step-enhancement schema holds only prompt fragments so far; the pack store holds the kind and its fragment
      * companions (#428), and the guard and emit additions wait for #434.
      */
-    STEP_ENHANCEMENT("step_enhancement", "step_enhancements", true);
+    STEP_ENHANCEMENT("step_enhancement", "step_enhancements", true),
+    /**
+     * A model-task routing catalog: task types, models with their fit per task type, cost and latency, and a routing
+     * policy (ADR-0080). It is activatable: an activation selects the one catalog in force, which the model
+     * recommendation reads, and an org pack replaces a catalog by its id. Nothing relates to a catalog, so no relation
+     * admits it at either end ({@link NodeKind#ROUTING_CATALOG}).
+     */
+    ROUTING_CATALOG("routing_catalog", "routing_catalogs", true);
 
     private final String token;
     private final String plural;

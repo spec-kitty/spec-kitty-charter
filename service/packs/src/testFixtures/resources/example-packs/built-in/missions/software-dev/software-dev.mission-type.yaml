@@ -283,6 +283,7 @@ steps:
   title: Code Review
   description: Review and validate
   role: reviewer
+  model_tier: low
   prompt_path: steps/review.prompt.md
   guidelines_path: steps/review.guidelines.md
   expected_input_artifacts:
@@ -347,6 +348,7 @@ on_demand_steps:
 - id: charter
   title: Charter
   description: Interview the operator and compile the project charter that governs every mission.
+  model_tier: high
   prompt_path: steps/charter.prompt.md
   guidelines_path: steps/charter.guidelines.md
 - id: tasks-finalize

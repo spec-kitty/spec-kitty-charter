@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
@@ -172,6 +173,7 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
                 || scalar instanceof Integer
                 || scalar instanceof Long
                 || scalar instanceof BigInteger
+                || scalar instanceof BigDecimal
                 || scalar instanceof Double
                 || scalar instanceof Boolean;
     }

@@ -33,6 +33,7 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 List.of(),
                 List.of(),
                 List.of());
@@ -50,6 +51,7 @@ class MissionTypeTest {
         return new MissionStep(
                 "plan",
                 "Plan",
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -128,6 +130,7 @@ class MissionTypeTest {
         return new MissionStep(
                 id,
                 "Step " + id,
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
@@ -267,6 +270,7 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         List.of(),
                         List.of(),
                         List.of()))
@@ -278,6 +282,7 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
                         List.of(),
                         List.of(),
                         List.of()))
@@ -286,6 +291,7 @@ class MissionTypeTest {
                         "plan",
                         "Plan",
                         Optional.of("Plan it."),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),

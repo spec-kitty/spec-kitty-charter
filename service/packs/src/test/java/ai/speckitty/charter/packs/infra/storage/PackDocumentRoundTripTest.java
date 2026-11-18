@@ -90,7 +90,15 @@ class PackDocumentRoundTripTest {
         assertThat(loaded.notHeld()).extracting(NotHeldFile::path).doesNotContain(PackDocumentMarkdown.FILE);
         PackDocument document = loaded.pack().document().orElseThrow();
         assertThat(document.frontmatter())
-                .contains(Map.of("audience", "pack authors", "weight", 1.5, "count", 1, "tags", List.of("baseline")));
+                .contains(Map.of(
+                        "audience",
+                        "pack authors",
+                        "weight",
+                        new java.math.BigDecimal("1.5"),
+                        "count",
+                        1,
+                        "tags",
+                        List.of("baseline")));
         assertThat(document.title()).contains("A Documented Pack");
         assertThat(document.preamble()).isEqualTo("What the pack is for.");
         assertThat(document.sections())

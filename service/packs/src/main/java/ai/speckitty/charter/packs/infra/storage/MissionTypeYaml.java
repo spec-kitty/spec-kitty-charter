@@ -64,6 +64,7 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                     required(s, "title"),
                     optional(s, "description"),
                     optional(s, "role"),
+                    optional(s, "model_tier"),
                     optional(s, "prompt_path"),
                     optional(s, "guidelines_path"),
                     artifacts(s, "expected_input_artifacts"),
@@ -138,6 +139,7 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
             out.put("title", step.title());
             YamlDumpEmitter.scalarInto(out, "description", step.description());
             YamlDumpEmitter.scalarInto(out, "role", step.role());
+            YamlDumpEmitter.scalarInto(out, "model_tier", step.modelTier());
             YamlDumpEmitter.scalarInto(out, "prompt_path", step.promptPath());
             YamlDumpEmitter.scalarInto(out, "guidelines_path", step.guidelinesPath());
             YamlDumpEmitter.mappingsInto(

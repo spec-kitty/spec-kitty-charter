@@ -95,6 +95,15 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/DeactivatedArtifacts/properties/step_enhancement'
+  routing_catalog:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: >-
+      The routing_catalog ids. Absent means no exclusion of the kind. A catalog a pack requires or locks cannot be
+      denied (409), as any kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/routing_catalog'
 x-source:
   path: contracts/offering/schemas/ActivationConfig.schema.json
   symbol: '#/$defs/DeactivatedArtifacts'

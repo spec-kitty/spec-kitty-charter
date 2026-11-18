@@ -39,13 +39,8 @@ class NodeKindTest {
                 row(NodeKind.MISSION_TYPE, "mission_type", "mission_type", "mission_types", true, true),
                 row(NodeKind.GUARD, "guard", "guard", "guards", false, false),
                 row(NodeKind.LIFECYCLE, "lifecycle", "lifecycle", "lifecycles", false, false),
-                row(
-                        NodeKind.STEP_ENHANCEMENT,
-                        "step_enhancement",
-                        "step_enhancement",
-                        "step_enhancements",
-                        true,
-                        true));
+                row(NodeKind.STEP_ENHANCEMENT, "step_enhancement", "step_enhancement", "step_enhancements", true, true),
+                row(NodeKind.ROUTING_CATALOG, "routing_catalog", "routing_catalog", "routing_catalogs", false, false));
     }
 
     private static Arguments row(
@@ -81,6 +76,17 @@ class NodeKindTest {
                         .hasMessage("the node kind " + token + " has no fragment plural"));
         assertThat(kind.declarableInGraphs()).as("declarable in graphs").isEqualTo(declarable);
         assertThat(kind.edgeTarget()).as("edge target").isEqualTo(edgeTarget);
+    }
+
+    @Test
+    void aKindIsNamedByTheContractWhenAGraphDeclaresItAnEdgeNamesItOrItIsActivatable() {
+        // ADR-0080: the routing catalog is no graph kind, yet a read names it; a guard and a lifecycle are not (#156).
+        assertThat(java.util.Arrays.stream(NodeKind.values()).filter(kind -> !kind.named()))
+                .containsExactlyInAnyOrder(NodeKind.GUARD, NodeKind.LIFECYCLE);
+        assertThat(NodeKind.ROUTING_CATALOG.named()).isTrue();
+        assertThat(NodeKind.ROUTING_CATALOG.declarableInGraphs()).isFalse();
+        assertThat(NodeKind.ROUTING_CATALOG.edgeTarget()).isFalse();
+        assertThat(NodeKind.TERM.named()).as("an edge target only").isTrue();
     }
 
     @Test
