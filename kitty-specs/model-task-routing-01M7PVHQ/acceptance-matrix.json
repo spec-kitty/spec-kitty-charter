@@ -138,11 +138,11 @@
       "criterion_id": "FR-014",
       "description": "Verify FR-014 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: switch-gate.yaml (the five operations ready); SwitchGateTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:54.626993+00:00",
+      "notes": "Every new operation is ready in the switch-gate register."
     },
     {
       "criterion_id": "FR-015",
