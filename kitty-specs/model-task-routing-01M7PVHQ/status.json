@@ -93,7 +93,8 @@
       "notes": [
         "- 2026-11-18T12:12:33Z – claude – shell_pid=22588 – Scope of green: ./gradlew :contracts:check passes (lint, planted fixtures, bundle, the breaking-change check against the released tags, changelog fragments, the packs CHANGELOG rules). Known red until WP05, by plan: KindBindingsTest and the inspector-kind parity (a files rule maps routing-catalog with no binding yet), and the service-run scenarios that list served kinds. Choices: charter.schema.json unchanged (core's imported charter.yaml shape; it never listed step_enhancement); graph-shard and org-fragment unchanged (their URN alternations are the declarable and edge-target sets, per VocabularyEqualityTest); the KindTaxonomy example and offering.feature give the catalog row its artifacts link, which the taxonomy read renders once WP05 serves the kind. Preset.yaml's activatedRoutingCatalogs landed in WP02.",
         "Ready for review: contract and pack enums, routing-catalog schema, file rule, link relations",
-        "Approved by independent reviewer (session_019C2Tk2EBfnVS3Cj2pGMmxF) at lane-c 5dbad90d, merge base 253f744. Verified: ./gradlew :contracts:check BUILD SUCCESSFUL (lint, oasdiff, vacuum, tests, bundle, changelog rules; checkContractCompatibility reports no released baseline, because the charter CHANGELOG records no final release). routing_catalog is last in every kind enum; routing-catalog.schema.json is closed at every level and matches ADR-0080 decision 5 (enums, 0-1 bounds, no schema_version/source_snapshot/override_policy/freshness_policy, cross-references delegated to content rules); file rule, classifier case, CHANGELOG Breaking+Added, 4 link relations in the lint enum and the hypermedia table, taxonomy example and scenarios updated. The choices are accepted: charter.schema.json, graph-shard and org-fragment are unchanged, and fragment_kinds is left out. Notes, not blocking: (1) tools[], strengths[], weaknesses[] and tier_constraints[] are optional in the schema. ADR-0080 decision 5 marks them without '?', but 'kept' from core, where they default to []. The reading is defensible; record it in the history, and WP05/WP08 must treat absent and [] alike in round-trip parity. (2) T008 asked for routing_catalog in the prose of contracts/charter/parameters/ArtifactKind.yaml. It was not added, and no WP owns that file now, so it disagrees with ArtifactKindToken.yaml. Fold it into WP08, which builds the literal read."
+        "Approved by independent reviewer (session_019C2Tk2EBfnVS3Cj2pGMmxF) at lane-c 5dbad90d, merge base 253f744. Verified: ./gradlew :contracts:check BUILD SUCCESSFUL (lint, oasdiff, vacuum, tests, bundle, changelog rules; checkContractCompatibility reports no released baseline, because the charter CHANGELOG records no final release). routing_catalog is last in every kind enum; routing-catalog.schema.json is closed at every level and matches ADR-0080 decision 5 (enums, 0-1 bounds, no schema_version/source_snapshot/override_policy/freshness_policy, cross-references delegated to content rules); file rule, classifier case, CHANGELOG Breaking+Added, 4 link relations in the lint enum and the hypermedia table, taxonomy example and scenarios updated. The choices are accepted: charter.schema.json, graph-shard and org-fragment are unchanged, and fragment_kinds is left out. Notes, not blocking: (1) tools[], strengths[], weaknesses[] and tier_constraints[] are optional in the schema. ADR-0080 decision 5 marks them without '?', but 'kept' from core, where they default to []. The reading is defensible; record it in the history, and WP05/WP08 must treat absent and [] alike in round-trip parity. (2) T008 asked for routing_catalog in the prose of contracts/charter/parameters/ArtifactKind.yaml. It was not added, and no WP owns that file now, so it disagrees with ArtifactKindToken.yaml. Fold it into WP08, which builds the literal read.",
+        "- 2026-11-18T13:21:32Z – claude – shell_pid=445 – Reviewer note 1 (2026-11-18), recorded: the schema leaves tools[], strengths[], weaknesses[] and tier_constraints[] optional. ADR-0080 decision 5 keeps them from core, where each defaults to []; the reading is that absent and [] are the same value. WP05's binding reads absent as [] and writes [] as absent, so round-trip parity treats them alike. WP05 also removed format: date-time from generated_at (no pack schema uses format, and the keyword-coverage test has no row for it); it is minLength 1 now, matching the domain."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -168,7 +169,10 @@
       "force_count": 0,
       "lane": "planned",
       "last_event_id": "01M7PXW1X2Y859FEJBTHV6ME36",
-      "last_transition_at": "2026-11-18T08:55:13.570770+00:00"
+      "last_transition_at": "2026-11-18T08:55:13.570770+00:00",
+      "notes": [
+        "- 2026-11-18T13:21:35Z – claude – Carried from the WP04 review: the step-read scenario asserts modelTier on the effective (activation) step read too, not only the pack step read. Carried from WP05: ExamplePackCoverageTest (4 tests) is red until this WP adds a routing catalog covering every schema property and a preset with activated_routing_catalogs to the example packs."
+      ]
     },
     "WP07": {
       "actor": "finalize-tasks",
@@ -182,7 +186,10 @@
       "force_count": 0,
       "lane": "planned",
       "last_event_id": "01M7PXW57RCXAAF4ENEF81PRZ7",
-      "last_transition_at": "2026-11-18T08:55:16.984297+00:00"
+      "last_transition_at": "2026-11-18T08:55:16.984297+00:00",
+      "notes": [
+        "- 2026-11-18T13:21:39Z – claude – Folded in from the WP03 review: T008's prose edit to contracts/charter/parameters/ArtifactKind.yaml (list routing_catalog) was not made and disagrees with ArtifactKindToken.yaml; make it here as a recorded edit."
+      ]
     },
     "WP09": {
       "actor": "finalize-tasks",
