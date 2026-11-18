@@ -346,7 +346,8 @@ Feature: The layer merge decides which version of an artifact the effective read
     And the field at "/items/0/reason" is "not_selected"
 
   Scenario: US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)
-    US6 AS1, #357, ADR-0053 d5: the org packs a and b both define D, and the distribution pack x declares
+    US6 AS1, #357, ADR-0053 d5: the org packs a and b both define D, and the distribution pack x, which depends on
+    both and on which no pack depends (#358), declares
     overrides: [{artifact: directive:D, member: <b>}]. The settlement is applied before the levels merge, so b's D
     is in force and no pack_sibling_conflict is raised. A1, which only a holds, is the control: it keeps a's
     provenance in the same answer.
@@ -397,6 +398,11 @@ Feature: The layer merge decides which version of an artifact the effective read
       parent_pack: null
       name: x-pack
       pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '>=1.0'
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
       overrides:
       - artifact: directive:D
         member: 01M4P01D5TWB5FKZGNNQG3943S
