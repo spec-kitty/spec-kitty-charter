@@ -769,7 +769,11 @@ class HexagonalArchitectureTest {
 
     @Test
     void theEntrypointSliceRuleFailsOnAnEntrypointThatNamesAnotherSlicesDomain() {
-        assertBites(ENTRYPOINT_STAYS_IN_ITS_SLICE, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesProfiles");
+        assertBites(
+                ENTRYPOINT_STAYS_IN_ITS_SLICE,
+                ROOT + ".packs.infra.api.badfixture",
+                "EntrypointReachesProfiles",
+                "EntrypointReachesRouting");
     }
 
     @Test

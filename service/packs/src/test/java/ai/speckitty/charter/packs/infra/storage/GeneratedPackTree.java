@@ -122,6 +122,7 @@ final class GeneratedPackTree {
         GUARD("guard", "g-"),
         LIFECYCLE("lifecycle", "lc-"),
         STEP_ENHANCEMENT("step-enhancement", "se-"),
+        ROUTING_CATALOG("routing-catalog", "rc-"),
         // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
         ASSET("asset", "a-");
 
@@ -534,6 +535,7 @@ final class GeneratedPackTree {
             case LIFECYCLE -> "lifecycles/" + stem + ".lifecycle.yaml";
             case GLOSSARY -> "glossaries/" + stem + ".glossary.yaml";
             case STEP_ENHANCEMENT -> "missions/t" + n + "/enhancements/" + stem + ".step-enhancement.yaml";
+            case ROUTING_CATALOG -> "routing_catalogs/" + stem + ".routing-catalog.yaml";
             default -> loadedPath(shape, stem, kind);
         };
         boolean valid =
@@ -561,12 +563,14 @@ final class GeneratedPackTree {
         // and a lifecycle at lifecycles/<id>.lifecycle.yaml (ADR-0054, ADR-0050): each is planted there in the plain
         // shape, and a tactic stands in for it in every other shape.
         // A step enhancement sits at missions/<type>/enhancements/<id>.step-enhancement.yaml (ADR-0066), its fragment
-        // beside it, and a glossary context at glossaries/<id>.glossary.yaml (ADR-0049).
+        // beside it, a glossary context at glossaries/<id>.glossary.yaml (ADR-0049) and a routing catalog at
+        // routing_catalogs/<id>.routing-catalog.yaml (ADR-0080).
         boolean placed = wanted == Kind.MISSION_TYPE
                 || wanted == Kind.GUARD
                 || wanted == Kind.LIFECYCLE
                 || wanted == Kind.STEP_ENHANCEMENT
-                || wanted == Kind.GLOSSARY;
+                || wanted == Kind.GLOSSARY
+                || wanted == Kind.ROUTING_CATALOG;
         return (wanted == Kind.PROCEDURE && dottedStem) || (placed && shape != Shape.LOADED_PLAIN)
                 ? Kind.TACTIC
                 : wanted;
@@ -578,7 +582,8 @@ final class GeneratedPackTree {
                 || kind == Kind.GUARD
                 || kind == Kind.LIFECYCLE
                 || kind == Kind.STEP_ENHANCEMENT
-                || kind == Kind.GLOSSARY;
+                || kind == Kind.GLOSSARY
+                || kind == Kind.ROUTING_CATALOG;
     }
 
     /** A valid file's content; an asset's sidecar names the payload planted with it. */
@@ -869,6 +874,12 @@ final class GeneratedPackTree {
             case TACTIC, DIRECTIVE, STYLEGUIDE, TOOLGUIDE, PARADIGM, AGENT_PROFILE, GLOSSARY, SKILL ->
                 doctrineContentOf(kind, id);
             case PROCEDURE, MISSION_TYPE, GUARD, LIFECYCLE, STEP_ENHANCEMENT -> missionContentOf(kind, id);
+            case ROUTING_CATALOG ->
+                "id: " + id + "\ngenerated_at: G\ntask_types:\n  - id: t\n    title: T\nmodels:\n  - id: m\n"
+                        + "    provider: P\n    task_fit:\n      - task_type: t\n        score: 1\n    cost:\n"
+                        + "      tier: low\nrouting_policy:\n  objective: balanced\n  weights: {quality: 1, cost: 0,"
+                        + " risk: 0, latency: 0}\nsources:\n  - name: N\n    url: U\n    access_method: manual\n"
+                        + "    snapshot_at: S\n";
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }

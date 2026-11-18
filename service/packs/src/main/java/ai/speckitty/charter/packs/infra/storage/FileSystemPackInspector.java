@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRelativePaths;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.RoutingCatalogFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
@@ -321,6 +322,7 @@ public final class FileSystemPackInspector implements PackReading {
                 StepEnhancementFacts.none(),
                 List.of(),
                 List.of(),
+                List.of(),
                 store.assembly());
         return new OneRead(
                 new TreeRead(
@@ -362,6 +364,7 @@ public final class FileSystemPackInspector implements PackReading {
                 full.stepEnhancementFacts(edgesOf(shards, fragment, ownName(descriptor, name))),
                 full.promptSlots,
                 full.missionTypes,
+                full.routingCatalogs,
                 store.assembly());
         SortedMap<String, TreeCensus.Companion> companions =
                 CensusEntries.companions(directory, full.listing(), bindings, companionRules, strategy);
@@ -689,6 +692,7 @@ public final class FileSystemPackInspector implements PackReading {
         final List<ClassifiedFile> files = new ArrayList<>();
         final List<FileRead.Unreadable<?>> unreadable = new ArrayList<>();
         final List<MissionTypeFacts> missionTypes = new ArrayList<>();
+        final List<RoutingCatalogFacts> routingCatalogs = new ArrayList<>();
         final List<ArtifactFacts> artifacts = new ArrayList<>();
         final List<AssetFacts> assets = new ArrayList<>();
         private final List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
@@ -919,6 +923,7 @@ public final class FileSystemPackInspector implements PackReading {
                     if (refused.isEmpty()) {
                         missionTypeFactsOf(file, kind, good.value());
                     }
+                    routingCatalogFactsOf(file, kind, good.value());
                 }
                 case FileRead.Absent<Object> absent -> {}
             }
@@ -1046,6 +1051,42 @@ public final class FileSystemPackInspector implements PackReading {
             String path = String.valueOf(manifest.get("path"));
             String mime = String.valueOf(manifest.get("mime"));
             return new AssetFacts(file, id, path, mime, containedInAssetsRoot(directory.resolve("assets"), path));
+        }
+
+        /**
+         * The facts of a routing catalog that passed its schema (ADR-0080): its task type ids, the task type of each
+         * model's fits and of each tier constraint, as written. {@code RoutingCatalogRules} judges them.
+         */
+        private void routingCatalogFactsOf(String file, String kind, Object document) {
+            if ("routing-catalog".equals(kind)
+                    && document instanceof Map<?, ?> map
+                    && map.get("id") instanceof String id) {
+                List<RoutingCatalogFacts.ModelFacts> models = new ArrayList<>();
+                for (Object model : map.get("models") instanceof List<?> written ? written : List.of()) {
+                    if (model instanceof Map<?, ?> m && m.get("id") instanceof String modelId) {
+                        models.add(
+                                new RoutingCatalogFacts.ModelFacts(modelId, valuesOf(m.get("task_fit"), "task_type")));
+                    }
+                }
+                List<String> constraints = map.get("routing_policy") instanceof Map<?, ?> policy
+                        ? valuesOf(policy.get("tier_constraints"), "task_type")
+                        : List.of();
+                routingCatalogs.add(
+                        new RoutingCatalogFacts(file, id, idsOf(map.get("task_types")), models, constraints));
+            }
+        }
+
+        /** The string a key holds in each mapping of a list, as written; an item without it is skipped. */
+        private static List<String> valuesOf(@Nullable Object list, String key) {
+            List<String> values = new ArrayList<>();
+            if (list instanceof List<?> items) {
+                for (Object item : items) {
+                    if (item instanceof Map<?, ?> m && m.get(key) instanceof String value) {
+                        values.add(value);
+                    }
+                }
+            }
+            return values;
         }
 
         /** The {@code id} of each map of a list, in order; none for anything that is not a list. */

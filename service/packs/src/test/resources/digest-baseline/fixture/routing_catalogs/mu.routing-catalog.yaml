@@ -1,0 +1,25 @@
+id: mu
+generated_at: '2026-11-18T00:00:00Z'
+task_types:
+- id: review
+  title: Review
+models:
+- id: model-a
+  provider: example
+  task_fit:
+  - task_type: review
+    score: 0.5
+  cost:
+    tier: low
+routing_policy:
+  objective: balanced
+  weights:
+    quality: 0.5
+    cost: 0.5
+    risk: 0
+    latency: 0
+sources:
+- name: example
+  url: https://example.invalid/catalog
+  access_method: manual
+  snapshot_at: '2026-11-18T00:00:00Z'
