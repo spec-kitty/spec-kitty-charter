@@ -29,6 +29,7 @@
   "purpose_context": "Cutover read R14 (#108). The catalog moves from core into a pack as an artifact kind with layering, policy and activation, and the service answers an advisory recommendation for a task type, agent profile and optional mission step under an activation, per the operator rulings of 2026-11-18. A build ADR decides the shape first.",
   "purpose_tldr": "Serve the model-task routing catalog as a pack artifact kind and recommend a model for a task under an activation.",
   "slug": "model-task-routing-01M7PVHQ",
+  "status_phase": "1",
   "target_branch": "feat/108-model-task-routing",
   "topology": "lanes_with_coord",
   "topology_decision": {
