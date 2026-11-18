@@ -16,5 +16,11 @@
     "changed" : [ "org-base::skill:issue-triage" ],
     "defined" : [ "directive:PROJECT_001", "styleguide:reasons-canvas-writing", "agent_profile:project-reviewer", "skill:project-triage" ],
     "heldTerms" : [ ]
+  },
+  "org-mandate" : {
+    "packId" : "01M7QM0000000000000000RC4D",
+    "changed" : [ ],
+    "defined" : [ "routing_catalog:mandated" ],
+    "heldTerms" : [ ]
   }
 }

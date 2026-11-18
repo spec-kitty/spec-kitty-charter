@@ -7,6 +7,7 @@ pack_version: 1.0.0
 parent_pack: null
 name: org-mandate
 pack_level: org
+pack_drg: drg/fragment.yaml
 depends_on:
   - pack_id: 01ARWG13C000000000000000FG
     range: ">=1.0,<2"

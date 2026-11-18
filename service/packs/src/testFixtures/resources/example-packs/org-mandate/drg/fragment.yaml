@@ -1,0 +1,4 @@
+# The org-mandate pack's only DRG document (ADR-0064). The pack holds no graph node: a routing catalog is no graph
+# kind (ADR-0080), so the fragment declares none and no edge.
+nodes: []
+edges: []

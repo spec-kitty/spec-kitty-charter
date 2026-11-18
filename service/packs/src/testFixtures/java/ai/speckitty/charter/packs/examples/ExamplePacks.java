@@ -41,7 +41,7 @@ public final class ExamplePacks {
     private ExamplePacks() {}
 
     /**
-     * The directory that holds the three packs, one sub-directory each.
+     * The directory that holds the four packs, one sub-directory each.
      *
      * @return a real directory
      */
@@ -73,12 +73,13 @@ public final class ExamplePacks {
     }
 
     /**
-     * The four pack names, built-in first, as the store configures them.
+     * The four pack names in the compose's stable order (by level, then by name), built-in first, as the store
+     * configures them.
      *
-     * @return {@link #BUILT_IN}, {@link #ORG}, {@link #PROJECT}, {@link #ORG_MANDATE}
+     * @return {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_MANDATE}, {@link #PROJECT}
      */
     public static List<String> names() {
-        return List.of(BUILT_IN, ORG, PROJECT, ORG_MANDATE);
+        return List.of(BUILT_IN, ORG, ORG_MANDATE, PROJECT);
     }
 
     /**

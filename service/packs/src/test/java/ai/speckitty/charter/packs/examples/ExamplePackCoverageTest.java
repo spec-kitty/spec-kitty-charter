@@ -106,7 +106,7 @@ class ExamplePackCoverageTest {
     @Test
     void anExampleFieldRemovedFromACopyIsNamed(@TempDir Path dir) throws IOException {
         Path packs = dir.resolve("packs");
-        for (String name : List.of(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT)) {
+        for (String name : ExamplePacks.names()) {
             ExamplePacks.copyOf(name, packs);
         }
         Path policy = packs.resolve(ExamplePacks.BUILT_IN).resolve("policy.yaml");
@@ -158,7 +158,7 @@ class ExamplePackCoverageTest {
         try {
             Path scratch = Files.createTempDirectory("coverage-unmodelled");
             try {
-                for (String name : List.of(ExamplePacks.BUILT_IN, ExamplePacks.ORG, ExamplePacks.PROJECT)) {
+                for (String name : ExamplePacks.names()) {
                     Path copy = ExamplePacks.copyOf(name, scratch.resolve(name));
                     String relative = samplePath(rule.match());
                     Path sample = copy.resolve(relative);

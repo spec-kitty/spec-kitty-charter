@@ -92,7 +92,12 @@ class ProfileCorpusTest {
     /** The profile files of a pack of the corpus, by profile id, in file-name order. */
     private static Map<String, Map<String, Object>> profilesOf(String pack) throws IOException {
         Map<String, Map<String, Object>> profiles = new LinkedHashMap<>();
-        try (Stream<Path> files = Files.list(CORPUS.resolve(pack).resolve("agent_profiles"))) {
+        Path directory = CORPUS.resolve(pack).resolve("agent_profiles");
+        if (!Files.isDirectory(directory)) {
+            // A pack that holds no profile (org-mandate, ADR-0080) serves none.
+            return profiles;
+        }
+        try (Stream<Path> files = Files.list(directory)) {
             for (Path file : files.filter(f -> f.getFileName().toString().endsWith(".agent.yaml"))
                     .sorted()
                     .toList()) {
