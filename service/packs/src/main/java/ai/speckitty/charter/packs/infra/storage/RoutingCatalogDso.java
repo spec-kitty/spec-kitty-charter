@@ -6,8 +6,8 @@ import java.util.Optional;
 
 /**
  * The persistence shape of a routing catalog, {@code routing_catalogs/<id>.routing-catalog.yaml} (ADR-0080 decision 5),
- * as the file writes it. A number keeps the {@link Number} the YAML loader gave it (an {@code Integer}, a {@code Long} or
- * a {@code Double}), so the file writes back as it was read; the binding turns it into an exact decimal.
+ * as the file writes it. A number keeps the {@link Number} the YAML loader gave it (an {@code Integer}, a {@code Long}, a
+ * {@code BigInteger} or the exact {@code BigDecimal} of a float), so the file writes back as it was read; the binding turns it into an exact decimal.
  *
  * @param id the {@code id}
  * @param description the {@code description}, when present

@@ -44,11 +44,15 @@ class RoutingCatalogTest {
     }
 
     private static RoutingCatalog catalog(List<TaskType> taskTypes, List<ModelEntry> models) {
+        return catalog("2026-11-18T00:00:00Z", taskTypes, models);
+    }
+
+    private static RoutingCatalog catalog(String generatedAt, List<TaskType> taskTypes, List<ModelEntry> models) {
         return new RoutingCatalog(
                 "default",
                 new PackIdentifier("org-base"),
                 Optional.empty(),
-                "2026-11-18T00:00:00Z",
+                generatedAt,
                 taskTypes,
                 models,
                 new RoutingPolicy(
@@ -85,6 +89,19 @@ class RoutingCatalogTest {
         assertThatThrownBy(() -> catalog(List.of(), List.of(model))).isInstanceOf(ConstraintBreachException.class);
         assertThatThrownBy(() -> catalog(List.of(DESIGN), List.of())).isInstanceOf(ConstraintBreachException.class);
         assertThatThrownBy(() -> model("model-a")).isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"G", "2026-11-18", "2026-11-18T00:00:00", "2026-13-01T00:00:00Z", "2026-11-18T25:00:00Z"})
+    @DisplayName("a generation time that is not an ISO 8601 date-time with its offset is refused")
+    void aGeneratedAtThatIsNoDateTimeIsRefused(String generatedAt) {
+        List<ModelEntry> models = List.of(model("model-a", fit("design", "1")));
+
+        assertThatThrownBy(() -> catalog(generatedAt, List.of(DESIGN), models))
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThat(catalog("2026-11-18T09:30:00.5+01:00", List.of(DESIGN), models)
+                        .generatedAt())
+                .isEqualTo("2026-11-18T09:30:00.5+01:00");
     }
 
     @ParameterizedTest

@@ -210,15 +210,19 @@ enum RoutingCatalogBinding implements KindBinding<RoutingCatalogDso, RoutingCata
             case Long l -> BigDecimal.valueOf(l);
             case BigInteger b -> new BigDecimal(b);
             case BigDecimal d -> d;
-            default -> BigDecimal.valueOf(number.doubleValue());
+            default ->
+                throw new IllegalStateException("the loader reads a finite number as an integer or a"
+                        + " BigDecimal, not as a " + number.getClass().getSimpleName());
         };
     }
 
-    /** A decimal as the loader would read it back: an integral value as an integer, any other as a float. */
+    /**
+     * A decimal as the loader would read it back: one without a fraction ({@code 1}) as an integer, one written with
+     * a fraction ({@code 1.0}, {@code 0.66}) as itself, so the file writes back with the digits it was read with.
+     */
     static Number number(BigDecimal decimal) {
-        BigDecimal plain = decimal.stripTrailingZeros();
-        if (plain.scale() <= 0) {
-            BigInteger integral = plain.toBigIntegerExact();
+        if (decimal.scale() <= 0) {
+            BigInteger integral = decimal.toBigIntegerExact();
             if (integral.bitLength() < Integer.SIZE) {
                 return integral.intValue();
             }
@@ -227,6 +231,6 @@ enum RoutingCatalogBinding implements KindBinding<RoutingCatalogDso, RoutingCata
             }
             return integral;
         }
-        return decimal.doubleValue();
+        return decimal;
     }
 }

@@ -20,6 +20,8 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The routing catalog's binding (ADR-0080 decision 5, #108): the fixture carries every optional member, reads into the
@@ -70,6 +72,10 @@ class RoutingCatalogBindingTest {
         assertThat(first.cost().outputPer1mUsd()).contains(new BigDecimal("75.5"));
         assertThat(first.latencyTier()).contains(Grade.HIGH);
         assertThat(catalog.models().get(1).family()).isEmpty();
+        assertThat(catalog.models().get(1).taskFit())
+                .as("a float keeps every digit and its scale: no double step (ADR-0080 decision 10, R3)")
+                .extracting(TaskFit::score)
+                .containsExactly(new BigDecimal("0.12345678901234567890123"), new BigDecimal("0.50"));
         assertThat(catalog.policy().objective()).isEqualTo(RoutingObjective.QUALITY_FIRST);
         assertThat(catalog.policy().weights().latency()).isEqualTo(new BigDecimal("0.05"));
         assertThat(catalog.policy().maxTierFor("review")).contains(CostTier.MEDIUM);
@@ -95,6 +101,26 @@ class RoutingCatalogBindingTest {
                 .write(PACK_ID, RoutingCatalogBinding.INSTANCE, RoutingCatalogBinding.INSTANCE.toDso(catalog));
 
         assertThat(pack.resolve(FILE)).hasContent(source);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yesterday", "2026-11-18", "2026-11-18T00:00:00", "2026-11-18 00:00:00Z"})
+    @DisplayName("a generated_at that is not an ISO 8601 date-time with its offset is refused by the schema")
+    void aGeneratedAtThatIsNoDateTimeIsRefused(String generatedAt) throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Path file = pack.resolve(FILE);
+        Files.writeString(
+                file,
+                Files.readString(file)
+                        .replace("generated_at: '2026-11-18T00:00:00Z'", "generated_at: '" + generatedAt + "'"));
+
+        Pack loaded = new DomainRepositoryService(() -> List.of(new PackLocation(PACK, PackLevel.ORG, pack)), strategy)
+                .load(PACK_ID);
+
+        assertThat(loaded.violations())
+                .as(generatedAt)
+                .anySatisfy(violation -> assertThat(violation.file()).isEqualTo(FILE));
+        assertThat(loaded.artifacts()).noneMatch(RoutingCatalog.class::isInstance);
     }
 
     @Test

@@ -875,7 +875,8 @@ final class GeneratedPackTree {
                 doctrineContentOf(kind, id);
             case PROCEDURE, MISSION_TYPE, GUARD, LIFECYCLE, STEP_ENHANCEMENT -> missionContentOf(kind, id);
             case ROUTING_CATALOG ->
-                "id: " + id + "\ngenerated_at: G\ntask_types:\n  - id: t\n    title: T\nmodels:\n  - id: m\n"
+                "id: " + id
+                        + "\ngenerated_at: '2026-11-18T00:00:00Z'\ntask_types:\n  - id: t\n    title: T\nmodels:\n  - id: m\n"
                         + "    provider: P\n    task_fit:\n      - task_type: t\n        score: 1\n    cost:\n"
                         + "      tier: low\nrouting_policy:\n  objective: balanced\n  weights: {quality: 1, cost: 0,"
                         + " risk: 0, latency: 0}\nsources:\n  - name: N\n    url: U\n    access_method: manual\n"

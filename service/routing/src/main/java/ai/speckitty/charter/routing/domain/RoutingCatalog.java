@@ -49,7 +49,7 @@ public record RoutingCatalog(
         Checks.id(Objects.requireNonNull(id, "id"));
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(description, "description").ifPresent(Checks::text);
-        Checks.text(Objects.requireNonNull(generatedAt, "generatedAt"));
+        Checks.dateTime(Objects.requireNonNull(generatedAt, "generatedAt"));
         taskTypes = Checks.notEmpty(taskTypes);
         models = Checks.notEmpty(models);
         Objects.requireNonNull(policy, "policy");

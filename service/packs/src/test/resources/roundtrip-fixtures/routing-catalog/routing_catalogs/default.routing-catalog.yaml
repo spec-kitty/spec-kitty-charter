@@ -37,7 +37,9 @@ models:
   provider: example
   task_fit:
   - task_type: design
-    score: 0.1
+    score: 0.12345678901234567890123
+  - task_type: review
+    score: 0.50
   cost:
     tier: low
 routing_policy:
