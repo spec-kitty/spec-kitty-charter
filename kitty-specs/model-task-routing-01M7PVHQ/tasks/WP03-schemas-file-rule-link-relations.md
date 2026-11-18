@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/108-model-task-routing
 merge_target_branch: feat/108-model-task-routing
 branch_strategy: Planning artifacts for this mission were generated on feat/108-model-task-routing. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/108-model-task-routing unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-model-task-routing-01M7PVHQ
+base_commit: 21f10b50f8933784a43f3456c5f0033c59d9afb2
+created_at: '2026-11-18T12:08:36.192570+00:00'
 subtasks:
 - T008
 - T009
