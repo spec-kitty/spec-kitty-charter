@@ -415,20 +415,25 @@ class EffectiveTagTest {
                         Optional.of(new EffectiveTag.StepRef("software-dev", "implement")),
                         Optional.of(CostTier.LOW)),
                 new EffectiveTag.RecommendationQuery("review", "java-jenny", step, Optional.of(CostTier.PREMIUM)),
-                new EffectiveTag.RecommendationQuery("review", "java-jenny", Optional.empty(), Optional.of(CostTier.LOW)),
+                new EffectiveTag.RecommendationQuery(
+                        "review", "java-jenny", Optional.empty(), Optional.of(CostTier.LOW)),
                 new EffectiveTag.RecommendationQuery("review", "java-jenny", step, Optional.empty()));
         Set<EffectiveTag> tags = new HashSet<>();
         variants.forEach(query -> tags.add(EffectiveTag.recommendation(REVISION, closure, query)));
 
-        assertThat(tags).as("the task type, profile, mission type, step and tier each move the tag").hasSize(variants.size());
+        assertThat(tags)
+                .as("the task type, profile, mission type, step and tier each move the tag")
+                .hasSize(variants.size());
         assertThat(EffectiveTag.recommendation(
                         REVISION,
                         closure,
-                        new EffectiveTag.RecommendationQuery("review", "java-jenny", Optional.empty(), Optional.empty())))
+                        new EffectiveTag.RecommendationQuery(
+                                "review", "java-jenny", Optional.empty(), Optional.empty())))
                 .isEqualTo(EffectiveTag.recommendation(
                         REVISION,
                         closure,
-                        new EffectiveTag.RecommendationQuery("review", "java-jenny", Optional.empty(), Optional.empty())));
+                        new EffectiveTag.RecommendationQuery(
+                                "review", "java-jenny", Optional.empty(), Optional.empty())));
         assertThat(EffectiveTag.recommendation(REVISION, closure("sha256:two"), base))
                 .isNotEqualTo(EffectiveTag.recommendation(REVISION, closure, base));
         assertThat(EffectiveTag.recommendation(REVISION, closure, base))
@@ -436,7 +441,8 @@ class EffectiveTagTest {
                 .isNotEqualTo(EffectiveTag.stepSelection(
                         REVISION,
                         closure,
-                        new EffectiveTag.StepSelectionQuery("software-dev", "review", Optional.empty(), Optional.empty())));
+                        new EffectiveTag.StepSelectionQuery(
+                                "software-dev", "review", Optional.empty(), Optional.empty())));
     }
 
     private static String sha256(String preimage) {

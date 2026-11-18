@@ -1,6 +1,5 @@
 package ai.speckitty.charter.artifacts.infra.api;
 
-import ai.speckitty.charter.web.DecimalJson;
 import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.EffectiveRoutingCatalogRead;
 import ai.speckitty.charter.api.model.Link;
@@ -19,6 +18,7 @@ import ai.speckitty.charter.artifacts.application.ActivationArtifacts;
 import ai.speckitty.charter.artifacts.application.EffectiveRoutingCatalogReads;
 import ai.speckitty.charter.artifacts.application.RoutingCatalogView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.web.DecimalJson;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -178,7 +178,6 @@ public class RoutingCatalogBodies {
         return wire;
     }
 
-
     private RoutingCatalogSummary summary(RoutingCatalogView view, Map<String, Link> links) {
         RoutingCatalogSummary summary = new RoutingCatalogSummary(
                 view.id(),
@@ -229,10 +228,8 @@ public class RoutingCatalogBodies {
 
     private static RoutingCatalogCost cost(RoutingCatalogView.CostView cost) {
         RoutingCatalogCost wire = new RoutingCatalogCost(RoutingCatalogCost.TierEnum.fromValue(cost.tier()));
-        wire.setInputPer1mUsd(
-                cost.inputPer1mUsd().map(DecimalJson::wire).orElse(null));
-        wire.setOutputPer1mUsd(
-                cost.outputPer1mUsd().map(DecimalJson::wire).orElse(null));
+        wire.setInputPer1mUsd(cost.inputPer1mUsd().map(DecimalJson::wire).orElse(null));
+        wire.setOutputPer1mUsd(cost.outputPer1mUsd().map(DecimalJson::wire).orElse(null));
         wire.setCurrency(cost.currency().orElse(null));
         wire.setPricingSourceUrl(cost.pricingSourceUrl().orElse(null));
         return wire;

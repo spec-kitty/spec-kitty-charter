@@ -1,6 +1,5 @@
 package ai.speckitty.charter.routing.infra.api;
 
-import ai.speckitty.charter.web.DecimalJson;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.ModelRecommendation;
 import ai.speckitty.charter.api.model.ModelRecommendationCandidate;
@@ -10,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.routing.application.ModelRecommendationQuery;
 import ai.speckitty.charter.routing.application.ModelRecommendationRead;
 import ai.speckitty.charter.routing.domain.ranking.CatalogCandidate;
+import ai.speckitty.charter.web.DecimalJson;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,7 +102,6 @@ public class ModelRecommendationDtos {
         }
         return wire;
     }
-
 
     private Map<String, Link> links(ModelRecommendationRead read) {
         String activation = read.activationId();
