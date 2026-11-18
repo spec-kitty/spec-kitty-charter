@@ -194,6 +194,82 @@ class RegistrationImpactTest {
                 .isEqualTo(Outcome.CREATED);
     }
 
+    // ---- #358: only the distribution pack settles a sibling contest, on the whole-pack write ---------------------
+
+    private static final String DIST_ID = PackRegistrationServiceTest.ulid('Q');
+    private static final String DIST_TWO_ID = PackRegistrationServiceTest.ulid('R');
+    private static final String MEMBER_ID = PackRegistrationServiceTest.ulid('S');
+
+    private static String settles(String member) {
+        return "overrides:\n  - artifact: directive:SHARED_ONE\n    member: " + member + "\n";
+    }
+
+    /** The two siblings installed, contesting {@code directive:SHARED_ONE}, and one activation over {@code roots}. */
+    private static Rig contested(Path host, String... roots) {
+        Rig rig = new Rig(host);
+        rig.install("sib-a", sibling(SIBLING_A, "sib-a", "Mine"));
+        rig.install("sib-b", sibling(SIBLING_B, "sib-b", "Yours"));
+        rig.activations.add(Optional.of(List.of(roots)));
+        return rig;
+    }
+
+    @Test
+    void theDistributionPackThatDependsOnBothSiblingsSettlesTheContestOnWrite(@TempDir Path host) {
+        Rig rig = contested(host, "dist");
+
+        assertThat(rig.register(
+                                "dist",
+                                rig.stage(org(DIST_ID, "dist", "1.0.0", dependsOn(SIBLING_A, SIBLING_B) + settles(SIBLING_A))),
+                                Preconditions.none())
+                        .outcome())
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aSiblingDoesNotSettleItsOwnContestOnWrite(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("sib-a", sibling(SIBLING_A, "sib-a", "Mine"));
+        rig.activations.add(Optional.of(List.of("sib-a", "sib-b")));
+
+        CharterRefusal refused = refusal(() -> rig.register(
+                "sib-b",
+                rig.stage(org(SIBLING_B, "sib-b", "1.0.0", settles(SIBLING_B)).directive("SHARED_ONE", "Yours")),
+                Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+        assertThat(refused.getMessage()).contains("declared by pack `sib-b`", "which is not the distribution pack");
+        assertThat(rig.packs.resolve("sib-b")).as("nothing was created").doesNotExist();
+    }
+
+    @Test
+    void aMemberOfTheDistributionDoesNotSettleTheContestOnWrite(@TempDir Path host) {
+        Rig rig = contested(host, "dist");
+        rig.install("dist", org(DIST_ID, "dist", "1.0.0", dependsOn(SIBLING_A, SIBLING_B, MEMBER_ID)));
+
+        CharterRefusal refused = refusal(() -> rig.register(
+                "member", rig.stage(org(MEMBER_ID, "member", "1.0.0", settles(SIBLING_A))), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+        assertThat(refused.getMessage()).contains("declared by pack `member`", "which is not the distribution pack");
+        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("member");
+        assertThat(rig.packs.resolve("member")).as("nothing was created").doesNotExist();
+    }
+
+    @Test
+    void twoRootsSettlingOneArtifactAreRefusedOnWrite(@TempDir Path host) {
+        Rig rig = contested(host, "dist", "dist-two");
+        rig.install("dist", org(DIST_ID, "dist", "1.0.0", dependsOn(SIBLING_A, SIBLING_B) + settles(SIBLING_A)));
+
+        CharterRefusal refused = refusal(() -> rig.register(
+                "dist-two",
+                rig.stage(org(DIST_TWO_ID, "dist-two", "1.0.0", dependsOn(SIBLING_A, SIBLING_B) + settles(SIBLING_A))),
+                Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+        assertThat(refused.getMessage()).contains("more than one compose root");
+        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("dist", "dist-two");
+    }
+
     @Test
     void anActivationThatListsNoPacksRootsAtEveryConfiguredPack(@TempDir Path host) {
         Rig rig = new Rig(host);
