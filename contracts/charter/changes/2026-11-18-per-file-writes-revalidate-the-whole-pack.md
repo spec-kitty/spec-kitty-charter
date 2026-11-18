@@ -8,8 +8,10 @@
     violation the stored pack does not already hold is refused `422 validation_failed`, one violation per new fault at
     its file, in the registration's words, and nothing is written. Each of these routes already declares `422
     validation_failed` for a write that breaks a pack invariant or schema, or whose resulting pack does not revalidate.
-  - A fault the stored pack already held does not block a write: a fault of the same code at the same file is held,
-    whatever its words, one for one, so only a fault the write adds is refused.
+  - A fault the stored pack already held does not block a write. A fault of the copy is taken as held when the stored
+    pack has one of the same code at the same file, one for one, first in the same words and then in any words. So a
+    write that adds a fault is refused. A write that removes one fault and adds another of the same code at the same
+    file is not: the pack holds no more faults there than it did.
   - `deletePackRelationship`'s description no longer says that removing a step enhancement's only registered
     `enhances` edge answers `500 pack_unreadable`: it is the `422` above, at the enhancement's file. A violation's
     `pointer` (`RefusalViolation`, `Problem.violations`) is a pack file on this refusal, as on a registration.
