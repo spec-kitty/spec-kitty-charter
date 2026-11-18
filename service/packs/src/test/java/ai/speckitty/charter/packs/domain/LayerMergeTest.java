@@ -229,6 +229,14 @@ class LayerMergeTest {
                         LayerMergeTest::c15StepSettlesFromItsMissionType),
                 new Row(
                         "C15",
+                        "A7: a lone step of a replaced mission type stays in force; Q5 settles only a step contest",
+                        LayerMergeTest::c15LoneStepOfAReplacedMissionTypeStays),
+                new Row(
+                        "C15",
+                        "#358 Q5: a level whose M winner lacks the contested step yields to another level's copy",
+                        LayerMergeTest::c15DroppedStepYieldsToAnotherLevel),
+                new Row(
+                        "C15",
                         "an action that names no step (action:M/) shares no contest with its mission type",
                         LayerMergeTest::c15ActionWithoutAStepNameIsNoStep),
                 new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder));
@@ -504,6 +512,45 @@ class LayerMergeTest {
                         .isEqualTo(configured("org-a"));
             }
         }
+    }
+
+    private static void c15LoneStepOfAReplacedMissionTypeStays() {
+        MergedClosure merged = new Fixture()
+                .pack("org-a", PackLevel.ORG, "mission_type:M", "action:M/s")
+                .pack("org-b", PackLevel.ORG, "mission_type:M")
+                .distribution(
+                        "org-dist",
+                        PackLevel.ORG,
+                        List.of(new PackOverride("mission_type:M", packId("org-b"))),
+                        "org-a",
+                        "org-b")
+                .merge();
+
+        assertThat(winner(merged, urn("mission_type:M")).packId()).isEqualTo(configured("org-b"));
+        assertThat(winner(merged, urn("action:M/s")).packId())
+                .as("the winning M keeps the unique steps of the version it replaced (A7, DIV-243)")
+                .isEqualTo(configured("org-a"));
+    }
+
+    private static void c15DroppedStepYieldsToAnotherLevel() {
+        MergedClosure merged = new Fixture()
+                .pack("base", PackLevel.BUILT_IN, "mission_type:M", "action:M/s")
+                .pack("org-a", PackLevel.ORG, "mission_type:M", "action:M/s")
+                .pack("org-b", PackLevel.ORG, "mission_type:M", "action:M/s")
+                .pack("org-c", PackLevel.ORG, "mission_type:M")
+                .distribution(
+                        "org-dist",
+                        PackLevel.ORG,
+                        List.of(new PackOverride("mission_type:M", packId("org-c"))),
+                        "org-a",
+                        "org-b",
+                        "org-c")
+                .merge();
+
+        assertThat(winner(merged, urn("mission_type:M")).packId()).isEqualTo(configured("org-c"));
+        assertThat(winner(merged, urn("action:M/s")).packId())
+                .as("org holds no copy of the contested step, so built-in's copy is the one in force")
+                .isEqualTo(configured("base"));
     }
 
     private static void c15ActionWithoutAStepNameIsNoStep() {
