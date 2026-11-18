@@ -88,11 +88,11 @@
       "criterion_id": "FR-009",
       "description": "Verify FR-009 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-j 7bcf2d86c, verifyAll green: RankerTest; TiersInPlayTest; model-recommendation.feature rows 4 to 6",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-18T22:26:29.581600+00:00",
+      "notes": "The top inside every tier in play and the top overall, flagged withinTierConstraint and withinModelTier, never filtered."
     },
     {
       "criterion_id": "FR-010",
