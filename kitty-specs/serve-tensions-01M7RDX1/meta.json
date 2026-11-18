@@ -17,5 +17,8 @@
   "target_branch": "feat/602-tensions",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "default"
+  "topology_source": "default",
+  "change_mode": "bulk_edit",
+  "vcs": "git",
+  "source_description": "Issue #602 and ADR-0045 as accepted 2026-11-18"
 }
