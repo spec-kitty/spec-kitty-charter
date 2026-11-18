@@ -86,33 +86,87 @@ docs/                               service-contract.md R14 row, divergence regi
 
 ## Implementation Concern Map
 
+All concerns start after #355 (PR #599) merges (C-001, research R1). The plan-point squad's findings are folded in
+below; their dispositions are in `research.md`.
+
+### IC-00 — The routing slice and its governance
+
+- **Purpose**: register the two new modules as a slice that the architecture gates check.
+- **Relevant requirements**: NFR-003
+- **Affected surfaces**: `settings.gradle.kts`; `service/routing` and `service/routing-edge` build files (as `profiles`,
+  `profiles-edge`); `service/deployable` dependencies; `charter-reports` `serviceModules`; `.github/workflows/sonar.yml`
+  and `mutation-testing.yml` module lists; `HexagonalArchitectureTest`: `SLICES`, `DOMAIN_RINGS`, a
+  `ROUTING_DOMAIN_IS_PURE` rule with its bite control, `ENTRYPOINT_STAYS_IN_ITS_SLICE` and `OUTSIDE_THE_DOMAIN` gaining
+  `routing.domain`; an amendment to ADR-0037 (and the ADR-0006 slice list) for `packs.infra.storage` binding
+  `routing.domain`.
+- **Sequencing/depends-on**: none.
+- **Risks**: `SLICE_COVERAGE` fails loudly if a module is left out, which is the intent.
+
 ### IC-01 — The routing_catalog kind
 
 - **Purpose**: make the catalog a stored, validated, layered, activatable artifact kind.
 - **Relevant requirements**: FR-001, FR-002, FR-005, SC-003
-- **Affected surfaces**: kernel kinds (`ArtifactKind`, `NodeKind` with `declarable=false`, `edgeTarget=false`, the
-  `kinds/RoutingCatalog` marker and the sealed `permits` lists it belongs to, `KindTypes`, `KindRef`); every contract and
-  pack schema enum of kinds (`ActivatableKind`, `ArtifactKindToken`, `NodeKind`, `TaxonomyKind`, `CascadeKind`,
-  `SelectedArtifacts`, `DeactivatedArtifacts`, `Preset.activatedRoutingCatalogs`, `ActivationConfig.schema.json`,
-  `preset`, `policy`, `pack-manifest`, `charter`, `graph-shard`, `org-fragment`, lint ruleset); `file-kinds.yaml`;
-  `routing-catalog.schema.json`; the `routing` domain module; the storage binding; the content rules of FR-002 as a
-  pack ruleset; `KindTaxonomy.model.yaml`; example packs (built-in catalog, org-base catalog of the same id and a
-  second id, policy entries, presets); whole-pack fixtures.
-- **Sequencing/depends-on**: none (first, after #355).
-- **Risks**: #355 reshapes the rulesets, `PackFileKind` and the kind table; recheck the surfaces on the merged main
-  (research R1). The parity tests that pin enum order fail loudly; keep `ArtifactKind`'s declaration order the
-  contract's order.
+- **Affected surfaces**:
+  - **Kernel.** `ArtifactKind.ROUTING_CATALOG` and `NodeKind.ROUTING_CATALOG`, appended last so the contract order and
+    the taxonomy indexes of the earlier kinds hold (`offering.feature` pins them). `declarable=false` and
+    `edgeTarget=false`. The `kinds/RoutingCatalog` marker joins only the `Kind` permits list, plus `KindTypes` and
+    `KindRef`.
+  - **Cost tier.** `CostTier` (`low` < `medium` < `high` < `premium`) in the kernel, with its order. It is the one tier
+    vocabulary for the catalog, the step (IC-03) and the ranker (IC-04).
+  - **Endpoint table.** `EndpointTable`: `ENHANCES` and `OVERRIDES` exclude `ROUTING_CATALOG`, since their diagonals
+    otherwise follow `activatable()`. A layer override needs no edge (composition rules: the same id across levels).
+    The ADR-0077 decision 5 rows are amended in the same change so `EndpointTableAdrTest` keeps the record and the code
+    equal. Check `CascadeRules` (l.419, 465) and `CascadeKind` for the same assumption that an activatable kind is
+    reachable by an edge.
+  - **Contract and pack schemas.** Every enum of kinds: `ActivatableKind`, `ArtifactKindToken`, `NodeKind`,
+    `TaxonomyKind`, `CascadeKind`, `SelectedArtifacts`, `DeactivatedArtifacts`, `Preset.activatedRoutingCatalogs`,
+    `ActivationConfig.schema.json` and its corpus, and the `preset`, `policy`, `pack-manifest`, `charter`,
+    `graph-shard` and `org-fragment` schemas, plus the lint ruleset.
+  - **Pack files and schema.** `file-kinds.yaml`; `contracts/packs/conformance/classifier-cases.yaml` (a
+    `**/*.routing-catalog.yaml` case); `routing-catalog.schema.json`.
+  - **Storage and domain.** The `routing` domain types; `RoutingCatalogBinding`, `RoutingCatalogDso` and
+    `RoutingCatalogYaml` in `KindBindings` and `YamlFormats`.
+  - **The FR-002 content rules.** A packs-owned `RoutingCatalogFacts` view in `PackContents`, with the rules in
+    `PackRulesets.content()` (ADR-0075), so `pack-check` inherits them. Write them against #599's `PackContents`. A
+    catalog has no outward references, so `ReferenceFacts` needs no new subject; state this in the WP.
+  - **Example packs and fixtures.**
+    - `KindTaxonomy.model.yaml`.
+    - Example packs per the research R7 matrix: catalogs, policy entries, presets, a profile `model`, a step
+      `model_tier`.
+    - Regenerate the manifests and recheck the count-asserting preset, effective and skipped-report scenarios.
+    - The whole-pack fixtures.
+  - **Records.** `contracts/packs/CHANGELOG.md`.
+- **Sequencing/depends-on**: IC-00.
+- **Risks**: `PackContents` is the record #599 rewrites, so the facts view lands on its merged shape. The parity tests
+  pin the enum order.
 
 ### IC-02 — The catalog reads
 
 - **Purpose**: serve the catalog in a pack and in force under an activation.
 - **Relevant requirements**: FR-003, FR-004, FR-014
-- **Affected surfaces**: `openapi.yaml` paths and tags `RoutingCatalogs`, `EffectiveRoutingCatalogs`; path files for
-  the four operations; schemas `RoutingCatalog`, `RoutingCatalogSummary`, `RoutingCatalogList`,
-  `EffectiveRoutingCatalogRead` and their parts; examples; `ArtifactReadService`; `artifacts-edge` ports, adapters,
-  controllers; `EffectiveReadService` and `EffectiveTag` read constants; `ActivationMapper` link; scenarios
-  `routing-catalogs.feature`, `effective-routing-catalogs.feature` and the rows in `every-operation`,
-  `unexpected-failure`, `read-refusals`, `effective-reads` (the `?kind=` 400 detail); `switch-gate.yaml`.
+- **Affected surfaces**:
+  - **Contract.**
+    - `openapi.yaml`: the paths and the tags `RoutingCatalogs` and `EffectiveRoutingCatalogs`.
+    - Path files with the full status and header sets of the skill precedent: the pack reads carry `PackRevisionETag`;
+      the twins take `IfNoneMatch` and answer `304`, `400`, `401`, `403`, `404` and `500`, with
+      `Charter-Source-Fingerprint`, `EffectiveETag` and `Charter-Worktree`.
+    - A `RoutingCatalogId` parameter (not the asset/skill one).
+    - Schemas `RoutingCatalog`, `RoutingCatalogSummary`, `RoutingCatalogList` and `EffectiveRoutingCatalogRead`, with
+      `x-source` on every property.
+    - The examples.
+    - The activation link relation `routing-catalogs`: the lint ruleset `link-relations-are-known`, the table in
+      `docs/development/hypermedia-hateoas.md`, `Activation.yaml` and its examples, and `activation-links.feature`.
+  - **Service.**
+    - `ArtifactReadService`.
+    - `artifacts-edge`: ports, adapters and controllers.
+    - `EffectiveReadService`, the `EffectiveTag` read constants and `ActivationMapper`.
+    - `ArtifactJson` and `EffectiveJson` mix-ins, with `RuntimeHints` (`NullOmissionTest`).
+  - **Scenarios.**
+    - New: `routing-catalogs.feature` and `effective-routing-catalogs.feature`, with 304 outlines as
+      `effective-assets-and-skills.feature` has them.
+    - Rows in `every-operation`, `unexpected-failure` and `read-refusals`.
+    - The `?kind=` 400 details in `effective-reads.feature` and `artifacts.feature` (l.433).
+    - `switch-gate.yaml`.
 - **Sequencing/depends-on**: IC-01.
 - **Risks**: the literal path must win over the templated read (`PackArtifactRoutingTest`, `ActivationRoutingTest`).
 
@@ -120,43 +174,73 @@ docs/                               service-contract.md R14 row, divergence regi
 
 - **Purpose**: let a step offer a model tier.
 - **Relevant requirements**: FR-010
-- **Affected surfaces**: `mission-type.schema.json` `$defs.Step.model_tier`; `MissionTypeDso.Step`; `MissionStep`
-  domain; `MissionStep.yaml` and `MissionStepSummary.yaml` if it lists step fields; `StepView`, `MissionBodies`,
-  `EffectiveReadMapper`; an example step with a tier; round trip.
-- **Sequencing/depends-on**: none; independent of IC-01.
-- **Risks**: open-packs steps gain an optional field only, so existing packs stay valid.
+- **Affected surfaces**:
+  - `mission-type.schema.json`: `$defs.Step.model_tier`, the kernel `CostTier` values.
+  - `MissionTypeDso.Step` and the `MissionStep` domain record (`Optional<CostTier>`).
+  - `MissionStep.yaml`, as `modelTier` on the shared `CostTier` schema, and `MissionStepSummary.yaml` if it lists
+    step fields.
+  - `StepView`, `MissionBodies` and `EffectiveReadMapper`, with the `MissionJson` mix-in.
+  - The example step of R7, and the round trip.
+- **Sequencing/depends-on**: IC-01 (`CostTier`).
+- **Risks**: the field is optional, so existing packs stay valid.
 
 ### IC-04 — The ranker
 
-- **Purpose**: the pure rules of ADR-0080 decisions 10 to 12.
+- **Purpose**: the pure rules of ADR-0080 decisions 10 to 12, as `data-model.md` states them.
 - **Relevant requirements**: FR-007, FR-008, FR-009, NFR-001, NFR-002
-- **Affected surfaces**: `service/routing` domain: score in `BigDecimal`, the rank key per objective, the tiers in
-  play, the two top-ranked sets with all ties, the flags, the presentation order (rank, then model id).
-- **Sequencing/depends-on**: IC-01 (the catalog value types).
-- **Risks**: decimal scale and equality: compare with `compareTo`, never `equals`; the desirability constants are
-  exact decimals (0.66, 0.33, 0.5).
+- **Affected surfaces**: the `service/routing` domain:
+  - the score in `BigDecimal`, read from the YAML text with no `double` step;
+  - the rank key per objective;
+  - the tiers in play, and `top(inside) ∪ top(all)` with all ties;
+  - the flags;
+  - the order: rank descending, then model id by code point, with the profile candidate last.
+
+  Unit tests cover every row of the R7 matrix, plus the all-zero-weights case.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: compare with `compareTo`, never `equals`; the wire form of a score is fixed in `data-model.md`.
 
 ### IC-05 — The recommendation read
 
 - **Purpose**: `getModelRecommendation` under an activation.
 - **Relevant requirements**: FR-006, FR-011, FR-012, FR-013, FR-014
-- **Affected surfaces**: path file, `ModelRecommendation` and `ModelRecommendationCandidate` schemas, examples;
-  `CharterRefusalCode` (`routing_catalog_not_in_force` 409, `routing_catalog_conflict` 409, `task_type_not_found`
-  404) and their refusal examples; `routing-edge` use case and controller; `EffectiveReadService.modelRecommendation`
-  (one session: catalog winners in force, effective profile resolution, step place); `EffectiveTag` read
-  `RECOMMENDATION` over the normalized query; scenarios `model-recommendation.feature` with one scenario per rule
-  and per refusal; rows in `every-operation`, `unexpected-failure`, `errors`; `switch-gate.yaml`.
-- **Sequencing/depends-on**: IC-01, IC-03, IC-04 (IC-02 for the `catalog` link).
-- **Risks**: the refusal order must hold before the 304; the effective profile is the ADR-0078 resolution
-  (`PacksSession.profileResolution`), not the selection's declared fields.
+- **Affected surfaces**:
+  - **Contract.**
+    - The path file under a new tag, `ModelRecommendations`, which `routing-edge` implements.
+    - Parameters with patterns: `taskType` (kebab-case), `agentProfile` (spelled as `ArtifactId` is for
+      `getEffectiveAgentProfile`), `missionType`, `step`, and `modelTier` (on the `CostTier` schema).
+    - Schemas `ModelRecommendation`, `ModelRecommendationCandidate` and `CostTier`, with `x-source` pointing at
+      `service/routing`.
+    - Link relations `catalog`, `agent-profile` and `step` in the lint ruleset and the hypermedia table.
+    - The examples.
+    - `CharterRefusalCode`: three codes, each with an `x-refusal` entry (`raised: true`, naming
+      `getModelRecommendation` and its place in the order). Update the schema's prose lists of codes by status.
+    - The 404 description states that the 404s and 409s interleave.
+  - **Service.**
+    - The `routing-edge` use case and controller.
+    - `EffectiveReadService.modelRecommendation`: one session over the catalog winners in force, the effective profile
+      resolution and the step place.
+    - An `EffectiveTag` read, `RECOMMENDATION`.
+    - A `RoutingJson` mix-in, with hints.
+  - **Scenarios.**
+    - `model-recommendation.feature`: one scenario per R7 row and per refusal, each asserting the exact ordered
+      candidate list with its flags, never containment. One scenario asserts the 500's place in the order.
+    - Rows in `every-operation`, `unexpected-failure` and `errors`.
+    - `switch-gate.yaml`.
+- **Sequencing/depends-on**: IC-01, IC-02 (the `catalog` link), IC-03, IC-04.
+- **Risks**: refusals are judged before the 304. The profile candidate comes from the ADR-0078 resolution, not the
+  selection's declared fields.
 
 ### IC-06 — Records
 
 - **Purpose**: make the decision visible where clients look, and close out.
 - **Relevant requirements**: FR-015, SC-004
-- **Affected surfaces**: `contracts/charter/changes/2026-11-…-routing-catalog-and-model-recommendation.md`;
-  `docs/api/service-contract.md` (R14 row, operation rows, the decided-reads table of #94); the divergence register
-  (DIV-701 to DIV-707 to `open`, with scenario evidence); `docs/architecture/logical-model.md` kind row; a guide note
-  for pack authors.
+- **Affected surfaces**:
+  - **Contract changelog.** A fragment under `contracts/charter/changes/`, filed as `### Breaking`. Closed enums gain
+    `routing_catalog`, `CharterRefusalCode` gains three codes, and `MissionStep` gains `modelTier`. It names core's
+    seam: regenerate the DTOs and handle the new kind and codes.
+  - **Service contract.** `docs/api/service-contract.md`: the R14 row, the operation rows and #94's decided-reads
+    table.
+  - **Divergence register.** DIV-701 to DIV-707 move to `open`, with scenario evidence.
+  - **Docs.** The kind row in `docs/architecture/logical-model.md`, and a guide note for pack authors.
 - **Sequencing/depends-on**: IC-02, IC-05.
-- **Risks**: none beyond keeping the register's two forms in step (`DivergenceRegisterTest`).
+- **Risks**: the register's two forms must stay in step (`DivergenceRegisterTest`).

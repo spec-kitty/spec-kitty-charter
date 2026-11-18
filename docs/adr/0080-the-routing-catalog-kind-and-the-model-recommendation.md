@@ -161,8 +161,9 @@ and tiers that filter the catalog's pick. Those proposals are kept under
      effective tier, `withinModelTier`. A profile candidate adds `effort`. There are zero or more catalog candidates
      (decisions 11 and 12) and at most one profile candidate. They are listed in rank order, then by model id; the
      order is presentation, not a preference.
-   - Links: `self`, `catalog` (the effective catalog read), `agentProfile` (the effective profile read) and, with a
-     step, `step`.
+   - Links: `self`, `catalog` (the effective catalog read), `agent-profile` (the effective profile read) and, with a
+     step, `step`. These are kebab-case link relations, as every relation of the contract is, and the lint's closed
+     list of relations gains them; the activation gains `routing-catalogs`.
 
    It carries the source fingerprint and an `ETag`, and answers `If-None-Match` with `304`, as the selection reads do.
 9. **Its refusals, in this order:**
