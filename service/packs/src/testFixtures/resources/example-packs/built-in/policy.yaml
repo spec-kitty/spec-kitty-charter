@@ -17,6 +17,7 @@ kind_defaults:
   guard: open
   lifecycle: open
   step_enhancement: open
+  routing_catalog: open
 artifacts:
   agent_profile:generic-agent: locked
   directive:DIRECTIVE_001: locked

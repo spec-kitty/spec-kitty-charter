@@ -61,6 +61,37 @@ class ExamplePackCoverageTest {
                 .isEmpty();
     }
 
+    /**
+     * ADR-0080, ADR-0070 decision 2 (#108): the routing content the recommendation's scenarios read is required. A
+     * routing catalog sits at two levels (built-in's {@code default} and org-base's same-id override), a profile
+     * declares a {@code model} and a step a {@code model_tier}.
+     */
+    @Test
+    void theRoutingContentIsHeldAtTwoLevelsWithAProfileModelAndAStepTier() throws IOException {
+        Path packs = ExamplePacks.packsDirectory();
+        List<String> files = ExampleCoverage.files(packs);
+
+        assertThat(files)
+                .as("a routing catalog at two levels")
+                .contains(
+                        "built-in/routing_catalogs/default.routing-catalog.yaml",
+                        "org-base/routing_catalogs/default.routing-catalog.yaml");
+        assertThat(lines(packs, files, ".agent.yaml")).as("a profile's model").contains("model: model-x");
+        assertThat(lines(packs, files, ".mission-type.yaml"))
+                .as("a step's tier")
+                .contains("  model_tier: low");
+    }
+
+    private static List<String> lines(Path packs, List<String> files, String suffix) throws IOException {
+        List<String> lines = new ArrayList<>();
+        for (String file : files) {
+            if (file.endsWith(suffix)) {
+                lines.addAll(Files.readAllLines(packs.resolve(file)));
+            }
+        }
+        return lines;
+    }
+
     /** T011 control: without its guard files, the guard kind is named. */
     @Test
     void aKindWithNoExampleFileIsNamed() {

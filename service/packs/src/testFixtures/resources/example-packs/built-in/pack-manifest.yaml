@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: a78e18d1351b14f60b95690fc967dc311ab5ea87c03d756dde8237cac77f1b20
+manifest_hash: d7a75cc5f901d06f4aa07c8c2632db9e753d0a8b1a7a42ea1bfcb641f9e5f7b6
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -12,7 +12,7 @@ constituents:
 - kind: agent_profile
   id: java-jenny
   path: agent_profiles/java-jenny.agent.yaml
-  content_hash: 0ddda9d8299d4c16a76e4fdc542c57a1ffec1200f59300d651b1fe94dd928a01
+  content_hash: 70ce7bc07bba060af5380d008e149776ef1d5163df124c842d0635ceeaa064bc
 - kind: agent_profile
   id: python-pedro
   path: agent_profiles/python-pedro.agent.yaml
@@ -84,7 +84,7 @@ constituents:
 - kind: mission_type
   id: software-dev
   path: missions/software-dev/software-dev.mission-type.yaml
-  content_hash: 36fcaa2cf21e5365427e870900ca494ecc0ed60b70b30533c1f767655386b4d0
+  content_hash: 7b609488266130ae5fceff022b72d29e9a38ccaf9c3ee34d70e64ed14be61d09
 - kind: template
   id: software-dev/plan-template.md
   path: missions/software-dev/templates/plan-template.md
@@ -217,10 +217,14 @@ constituents:
   id: execution-lanes
   path: toolguides/execution-lanes.toolguide.yaml
   content_hash: 9732e16dcd12c422c432bfc86d3a54b4e90ff725404083356102873391aa2749
+- kind: routing_catalog
+  id: default
+  path: routing_catalogs/default.routing-catalog.yaml
+  content_hash: 415b761f9c072b18da4e2cb4dec62420339e0b9d55dbd9501515ea72eb12022a
 presets:
 - id: default
   path: presets/default.yaml
-  content_hash: 5e5e8ce2c9d15f9f748620d5c221271350f38df85ef761bbdbe8c62c9383d05b
+  content_hash: 474d4b7b3834db2dfda108a66fdc7aec29f45fd4018be5a7f426349da1426329
 - id: minimal
   path: presets/minimal.yaml
   content_hash: a954e556493d039775a923fd81e7026340fe26287d97a90012f397830540b444

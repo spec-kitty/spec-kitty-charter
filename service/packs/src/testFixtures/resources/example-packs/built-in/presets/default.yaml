@@ -40,3 +40,6 @@ activated_glossaries:
 activated_anti_patterns:
 - id: indirection-for-repetition
   must_have: true
+activated_routing_catalogs:
+- id: default
+  must_have: true
