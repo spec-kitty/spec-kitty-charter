@@ -57,8 +57,14 @@ import org.junit.jupiter.api.io.TempDir;
 class PackCommitStoreTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
-    private static final String SHARD =
-            "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\nnodes: []\nedges: []\n";
+    /** A registered shard as a registration writes it: stamped, so the reserved-shard rule takes it (#605). */
+    private static final String SHARD = """
+            schema_version: '1.0'
+            generated_at: '2026-01-01T00:00:00Z'
+            generated_by: charter-registration
+            nodes: []
+            edges: []
+            """;
 
     private static Locations locations(Path packDir) {
         return () -> List.of(new PackLocation("pack-a", PackLevel.ORG, packDir));

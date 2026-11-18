@@ -5,14 +5,18 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackVersionHistory;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
@@ -32,8 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -394,6 +400,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             edit.apply(staging, parent);
             // #110: every commit restamps the manifest over the edited copy, and generates it when the pack held none.
             ManifestMembership.stamp(staging, wholePack::derivedManifest, strategy);
+            requireNoNewViolation(resolved.name, liveDir, staging);
             PackRevision revision = revisionOf(staging, pack);
             rename.swap(staging, liveDir, () -> generation.moved(resolved.name));
             staging = null; // swapped into place; there is nothing left to clean up
@@ -405,6 +412,48 @@ public final class PackCommitStore implements WholePackWriteStore {
             deleteTree(staging);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot commit pack " + pack.value(), failure);
         }
+    }
+
+    /**
+     * Refuses a per-file write or removal whose edited copy holds a violation the live pack does not (#605, operator
+     * ruling of 2026-11-18): the one reader judges the staged copy with the registration's full read, so no per-file
+     * path can store a pack that a whole-pack registration of it would refuse. The live pack is read only when the copy
+     * has a violation, so that a fault the pack already held does not block every write to it. The refusal is {@code
+     * validation_failed}, one violation per new fault at its file, as a registration states them; nothing is swapped.
+     */
+    private void requireNoNewViolation(String name, Path liveDir, Path staging) {
+        List<Reason> after = violationsOf(name, staging);
+        if (after.isEmpty()) {
+            return;
+        }
+        Set<List<String>> before = violationsOf(name, liveDir).stream()
+                .map(PackCommitStore::identity)
+                .collect(Collectors.toSet());
+        List<RefusalViolation> added = after.stream()
+                .filter(reason -> !before.contains(identity(reason)))
+                .map(reason -> new RefusalViolation(
+                        reason.location().file(),
+                        reason.code().value(),
+                        PackCodes.detail(reason.location().file(), reason.detail())))
+                .toList();
+        if (!added.isEmpty()) {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The write is refused: the pack it would leave does not revalidate, " + added.size()
+                            + " fault(s), the first at " + added.getFirst().pointer() + ".",
+                    added);
+        }
+    }
+
+    private List<Reason> violationsOf(String name, Path directory) {
+        return new FileSystemPackInspector(strategy)
+                .read(new PackRoot(name, Optional.empty(), directory.toString()))
+                .rationale()
+                .violations();
+    }
+
+    private static List<String> identity(Reason reason) {
+        return List.of(reason.code().value(), reason.location().file(), reason.detail());
     }
 
     // ---- whole-pack registration (ADR-0065) ------------------------------------------------------------------------

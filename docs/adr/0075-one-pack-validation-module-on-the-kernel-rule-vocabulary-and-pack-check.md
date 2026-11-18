@@ -148,11 +148,12 @@ pack check in pack-validation", decision 4's pipeline and the 2026-11-13 amendme
   them: among them the relationship endpoints, `duplicate_artifact_id`, the step enhancements, `duplicate_step_id`, the
   prompt slots, the step links and the substep delegations, and, since #355, the reference closure, which the load
   judges by calling `ReferenceClosure` and which leaves out an artifact that does not close. `StoreRead.assembly`,
-  `FilesystemPackStore.read` and `PackAssembly` hold the full list. It does not run the rest of `content()`. A
-  whole-pack registration judged its full read with `content()` before storing it, but nothing else that changes a
-  stored pack runs `content()`: a per-file write is judged on the aggregate's invariants, the reference closure and
-  the closures the pack joins (#355); a removal on its inbound references, the closures the pack joins and the
-  reference closure; and a pack placed in a configured directory was never registered.
+  `FilesystemPackStore.read` and `PackAssembly` hold the full list. It does not run the rest of `content()`, because
+  every path that stores a pack judges it with the full read: a whole-pack registration before it stores the pack, and
+  the commit store before it swaps in a per-file write or removal, which it refuses `validation_failed` when the pack it
+  would leave holds a violation the stored pack did not (#605). The routes' own checks (the aggregate's invariants, the
+  reference closure, the inbound references and the closures the pack joins) still run first. A pack placed in a
+  configured directory was never registered, so the store half is all that judges it.
 - **The compositions.** Each surface runs a named composition, with no surface profile and no mode flag:
   - `PackRulesets.content()`, a `ModularRuleset<PackContents>`, and `PackRulesets.closure()`;
   - `StorageRulesets.registration() = holding().must(content().on(TreeRead::contents))`;
