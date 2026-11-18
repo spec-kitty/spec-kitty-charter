@@ -219,7 +219,11 @@ class RegistrationImpactTest {
 
         assertThat(rig.register(
                                 "dist",
-                                rig.stage(org(DIST_ID, "dist", "1.0.0", dependsOn(SIBLING_A, SIBLING_B) + settles(SIBLING_A))),
+                                rig.stage(org(
+                                        DIST_ID,
+                                        "dist",
+                                        "1.0.0",
+                                        dependsOn(SIBLING_A, SIBLING_B) + settles(SIBLING_A))),
                                 Preconditions.none())
                         .outcome())
                 .isEqualTo(Outcome.CREATED);
@@ -266,7 +270,7 @@ class RegistrationImpactTest {
                 Preconditions.none()));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-        assertThat(refused.getMessage()).contains("more than one compose root");
+        assertThat(refused.getMessage()).contains("more than one distribution pack");
         assertThat(refused.packs()).extracting(RefusalPack::packId).contains("dist", "dist-two");
     }
 

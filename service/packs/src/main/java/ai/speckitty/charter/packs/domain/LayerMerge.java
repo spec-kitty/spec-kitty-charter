@@ -4,8 +4,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.PackOverride;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -30,7 +28,8 @@ import java.util.stream.Collectors;
  *
  * <ol>
  *   <li><strong>Per level</strong> (C15, #357). The packs of one level that hold the id contest it. The compose has
- *       refused the contest unless the distribution pack's {@code overrides} entry settles it (#358), and the member it names holds
+ *       refused the contest unless the distribution pack's {@code overrides} entry settles it (#358,
+ *       {@link PackCompositionResolver#settle}), and the member it names holds
  *       the version in force at that level. The step of a mission type ({@code action:<M>/<step>}) is part of {@code M},
  *       so the entry that settles {@code M} settles its steps. The compose refuses an unsettled contest of every
  *       artifact but a step, so a step contest no entry settles can reach this function: it is refused here with
@@ -61,12 +60,10 @@ public final class LayerMerge {
         Objects.requireNonNull(policy, "policy");
         List<String> closurePackIds =
                 closure.stream().map(pack -> pack.descriptor().packId()).toList();
-        Map<String, List<Settlement>> settlements = settlements(closure);
         Map<Urn, MergedClosure.Winner> winners = new LinkedHashMap<>();
         List<LayerOverride> overrides = new ArrayList<>();
         holdersByUrn(closure).forEach((urn, holders) -> {
-            List<PackUnderResolution> byLevel =
-                    levelWinners(holders, settledBy(urn, settlements.getOrDefault(settlementKey(urn), List.of())));
+            List<PackUnderResolution> byLevel = levelWinners(holders, settledBy(urn, closure));
             PackUnderResolution winner = byLevel.getLast();
             winners.put(urn, winnerOf(winner, urn, policy.levelIn(closurePackIds, urn)));
             for (PackUnderResolution loser : byLevel.subList(0, byLevel.size() - 1)) {
@@ -315,54 +312,22 @@ public final class LayerMerge {
     }
 
     /**
-     * The sibling the distribution pack's {@code overrides} entry names, as a one-element list (C15, #358). Only an
-     * entry of a root of the closure that is not one of the siblings settles, as the compose judges it
-     * ({@link PackCompositionResolver#composeRoots}). A contest no such entry settles is refused, never decided by load
-     * order: the compose leaves a step ({@code action:<M>/<step>}) out of the sibling contest, so two packs that both
-     * declare one can reach this point. Entries of two roots refuse too, as in the compose.
+     * The sibling the distribution pack's {@code overrides} entry names, as a one-element list (C15, #358), settled as the
+     * compose settles it ({@link PackCompositionResolver#settle}). A contest it does not settle is refused, never
+     * decided by load order: the compose leaves a step ({@code action:<M>/<step>}) out of the sibling contest, so two
+     * packs that both declare one can reach this point. An entry of a pack that is not the distribution pack, or entries
+     * of two distribution packs, refuse it as the compose does, naming the declaring packs.
      */
-    private static UnaryOperator<List<PackUnderResolution>> settledBy(Urn urn, List<Settlement> settlements) {
-        return siblings -> {
-            Set<String> siblingIds = siblings.stream()
-                    .map(pack -> pack.descriptor().packId())
-                    .collect(Collectors.toSet());
-            List<Settlement> settling = settlements.stream()
-                    .filter(entry -> !siblingIds.contains(entry.declarer().descriptor().packId()))
-                    .filter(entry -> siblingIds.contains(entry.member()))
-                    .toList();
-            List<PackUnderResolution> declarers =
-                    settling.stream().map(Settlement::declarer).distinct().toList();
-            if (declarers.size() > 1) {
-                throw settledByTwoRoots(urn, siblings, declarers);
-            }
-            Set<String> members = settling.stream().map(Settlement::member).collect(Collectors.toSet());
-            List<PackUnderResolution> named = siblings.stream()
-                    .filter(pack -> members.contains(pack.descriptor().packId()))
-                    .toList();
-            if (named.isEmpty()) {
-                throw unsettled(urn, siblings);
-            }
-            return named;
+    private static UnaryOperator<List<PackUnderResolution>> settledBy(Urn urn, List<PackUnderResolution> closure) {
+        return siblings -> switch (PackCompositionResolver.settle(closure, settlementKey(urn), siblings)) {
+            case PackCompositionResolver.Settlement.Settled settled -> List.of(settled.winner());
+            case PackCompositionResolver.Settlement.Unsettled unsettled -> throw refused(urn, siblings, unsettled);
         };
     }
 
     /** The preset copy of the sibling last in closure order: a child merges after the parent it extends (C29, C34). */
     private static List<PackUnderResolution> lastHolder(List<PackUnderResolution> siblings) {
         return List.of(siblings.getLast());
-    }
-
-    /** Entries of two roots leave the contest to closure order, so it is refused, as the compose does (C15, #358). */
-    private static CharterRefusal settledByTwoRoots(
-            Urn urn, List<PackUnderResolution> siblings, List<PackUnderResolution> declarers) {
-        List<RefusalPack> named = new ArrayList<>(siblings.stream().map(LayerMerge::refusalPack).toList());
-        declarers.stream().map(LayerMerge::refusalPack).forEach(named::add);
-        return new CharterRefusal(
-                RefusalCode.PACK_SIBLING_CONFLICT,
-                "packs " + describe(siblings) + " at "
-                        + siblings.getFirst().configured().level().token() + " both hold `" + urn
-                        + "`, and overrides entries settling it are declared by " + describe(declarers)
-                        + ", more than one compose root: only the distribution pack, the one root, settles a contest",
-                named);
     }
 
     private static String describe(List<PackUnderResolution> packs) {
@@ -372,35 +337,25 @@ public final class LayerMerge {
                 .collect(Collectors.joining(" and "));
     }
 
-    private static CharterRefusal unsettled(Urn urn, List<PackUnderResolution> siblings) {
+    /**
+     * The refusal of a contest the distribution pack does not settle. With no entry naming a sibling it says no entry
+     * names the version in force; otherwise it gives the compose's reason, naming the declaring packs first.
+     */
+    private static CharterRefusal refused(
+            Urn urn, List<PackUnderResolution> siblings, PackCompositionResolver.Settlement.Unsettled unsettled) {
+        String clause = switch (unsettled.kind()) {
+            case NO_EDGE, NOT_A_CONTESTANT -> "no overrides entry names the one whose version is in force";
+            case NOT_THE_DISTRIBUTION, TWO_DISTRIBUTIONS -> unsettled.reason();
+        };
+        List<PackUnderResolution> named = switch (unsettled.kind()) {
+            case NO_EDGE, NOT_A_CONTESTANT -> siblings;
+            case NOT_THE_DISTRIBUTION, TWO_DISTRIBUTIONS -> unsettled.named();
+        };
         return new CharterRefusal(
                 RefusalCode.PACK_SIBLING_CONFLICT,
                 "packs " + describe(siblings) + " at "
-                        + siblings.getFirst().configured().level().token() + " both hold `" + urn
-                        + "`, and no overrides entry names the one whose version is in force",
-                siblings.stream().map(LayerMerge::refusalPack).toList());
-    }
-
-    /** One {@code overrides} entry of a root of the closure: the member it names and the pack that declares it. */
-    private record Settlement(String member, PackUnderResolution declarer) {}
-
-    /**
-     * The entries of the closure's roots ({@link PackCompositionResolver#composeRoots}), by bare artifact URN text: only
-     * the distribution pack settles a contest (#358), so an entry of a member is not read.
-     */
-    private static Map<String, List<Settlement>> settlements(List<PackUnderResolution> closure) {
-        Set<String> roots = PackCompositionResolver.composeRoots(closure);
-        Map<String, List<Settlement>> entries = new LinkedHashMap<>();
-        for (PackUnderResolution pack : closure) {
-            if (!roots.contains(pack.descriptor().packId())) {
-                continue;
-            }
-            for (PackOverride override : pack.descriptor().overrides()) {
-                entries.computeIfAbsent(bare(override.artifact()), key -> new ArrayList<>())
-                        .add(new Settlement(override.member(), pack));
-            }
-        }
-        return entries;
+                        + siblings.getFirst().configured().level().token() + " both hold `" + urn + "`, and " + clause,
+                named.stream().map(LayerMerge::refusalPack).toList());
     }
 
     /**
@@ -409,15 +364,5 @@ public final class LayerMerge {
      */
     private static String settlementKey(Urn urn) {
         return StepHolding.missionTypeOf(urn).orElse(urn).toString();
-    }
-
-    /** The bare URN an {@code overrides.artifact} names: a {@code <pack>::} qualifier says where it is read, not which. */
-    private static String bare(String reference) {
-        try {
-            PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
-            return parsed.asUrn().map(Urn::toString).orElse(parsed.urn());
-        } catch (IllegalArgumentException malformed) {
-            return reference;
-        }
     }
 }

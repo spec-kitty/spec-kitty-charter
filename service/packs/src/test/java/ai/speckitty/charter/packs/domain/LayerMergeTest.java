@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -57,6 +58,27 @@ class LayerMergeTest {
                     overrides);
             packs.add(new PackUnderResolution(
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), Arrays.asList(held)));
+            return this;
+        }
+
+        /**
+         * A distribution pack of the level (#358): it depends on {@code members} and declares {@code overrides}, and it
+         * holds nothing.
+         */
+        Fixture distribution(String name, PackLevel level, List<PackOverride> overrides, String... members) {
+            PackDescriptor descriptor = new PackDescriptor(
+                    packId(name),
+                    "1.0.0",
+                    Optional.empty(),
+                    name,
+                    Optional.empty(),
+                    Optional.empty(),
+                    PackPaths.none(),
+                    Arrays.stream(members)
+                            .map(member -> new PackDependency(packId(member), ">=1.0"))
+                            .toList(),
+                    overrides);
+            packs.add(new PackUnderResolution(new ConfiguredPack(new PackIdentifier(name), level), descriptor));
             return this;
         }
 
@@ -199,7 +221,7 @@ class LayerMergeTest {
                         LayerMergeTest::c15StepSettledByOneEntry),
                 new Row(
                         "C15",
-                        "#358: a sibling's own entry settles no step contest, as the compose reads only the distribution's",
+                        "#358: a sibling's own entry settles no step contest; the merge names it, as the compose does",
                         LayerMergeTest::c15StepSettledByASiblingIsUnsettled),
                 new Row(
                         "C15",
@@ -296,7 +318,14 @@ class LayerMergeTest {
         MergedClosure merged = new Fixture()
                 .pack("org-a", PackLevel.ORG, "directive:D")
                 .pack("org-b", PackLevel.ORG, "directive:D")
-                .pack("org-c", PackLevel.ORG, List.of(new PackOverride("directive:D", packId("org-a"))), "directive:C")
+                .pack("org-c", PackLevel.ORG, "directive:C")
+                .distribution(
+                        "org-dist",
+                        PackLevel.ORG,
+                        List.of(new PackOverride("directive:D", packId("org-a"))),
+                        "org-a",
+                        "org-b",
+                        "org-c")
                 .merge();
 
         MergedClosure.Winner winner = winner(merged, urn("directive:D"));
@@ -312,7 +341,12 @@ class LayerMergeTest {
         MergedClosure merged = new Fixture()
                 .pack("org-a", PackLevel.ORG, "directive:D")
                 .pack("org-b", PackLevel.ORG, "directive:D")
-                .pack("org-x", PackLevel.ORG, List.of(new PackOverride("directive:D", packId("org-b"))))
+                .distribution(
+                        "org-x",
+                        PackLevel.ORG,
+                        List.of(new PackOverride("directive:D", packId("org-b"))),
+                        "org-a",
+                        "org-b")
                 .pack("project", PackLevel.PROJECT, "directive:D")
                 .merge();
 
@@ -376,7 +410,8 @@ class LayerMergeTest {
         for (String side : order) {
             String names = side.equals("x") ? xNames : yNames;
             if (side.equals("x") || !yNames.equals(xNames)) {
-                fixture.pack("dist-" + side, PackLevel.ORG, List.of(new PackOverride(key, packId(names))));
+                fixture.distribution(
+                        "dist-" + side, PackLevel.ORG, List.of(new PackOverride(key, packId(names))), "org-x", "org-y");
             }
         }
         return fixture;
@@ -388,7 +423,8 @@ class LayerMergeTest {
                 .hasSize(4);
         assertThatThrownBy(fixture::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refusal.getMessage()).contains(urn, "org-x", "org-y", "dist-x", "dist-y", "more than one compose root");
+            assertThat(refusal.getMessage())
+                    .contains(urn, "org-x", "org-y", "dist-x", "dist-y", "more than one distribution pack");
             assertThat(refusal.packs())
                     .extracting(RefusalPack::name)
                     .containsExactlyInAnyOrder("org-x", "org-y", "dist-x", "dist-y");
@@ -419,13 +455,21 @@ class LayerMergeTest {
 
     private static void c15StepSettledByASiblingIsUnsettled() {
         Fixture contested = new Fixture()
-                .pack("org-x", PackLevel.ORG, List.of(new PackOverride("mission_type:M", packId("org-x"))), "action:M/s")
+                .pack(
+                        "org-x",
+                        PackLevel.ORG,
+                        List.of(new PackOverride("mission_type:M", packId("org-x"))),
+                        "action:M/s")
                 .pack("org-y", PackLevel.ORG, "action:M/s");
 
-        assertThat(contested.closure()).as("the compose leaves a step out of the sibling contest").hasSize(2);
+        assertThat(contested.closure())
+                .as("the compose leaves a step out of the sibling contest")
+                .hasSize(2);
         assertThatThrownBy(contested::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refusal.getMessage()).contains("action:M/s", "no overrides entry names");
+            assertThat(refusal.getMessage())
+                    .contains("action:M/s", "declared by pack `org-x` (id-org-x), which is not the distribution pack");
+            assertThat(refusal.packs()).extracting(RefusalPack::name).containsExactly("org-x", "org-y");
         });
     }
 
