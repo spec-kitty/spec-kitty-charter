@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -184,7 +183,7 @@ class SubstepDelegationPlantsTest {
         rewriteType(pack, "      kind: tactic\n", "      kind: template\n");
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.location().pointer()).isEqualTo("/steps/0/substeps/0/delegates_to/kind");
         });
@@ -198,7 +197,7 @@ class SubstepDelegationPlantsTest {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail()).contains("unknown key 'gate'");
         });
@@ -219,7 +218,7 @@ class SubstepDelegationPlantsTest {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(TYPE);
             assertThat(finding.detail()).contains("agent_profile");
         });

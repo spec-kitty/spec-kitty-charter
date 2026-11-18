@@ -42,17 +42,17 @@ class AssemblyRulesTest {
                 new PackElementViolation("toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: missing");
 
         assertThat(AssemblyRules.sameFault(
-                        broken, stated("toolguides/a.guide.md", StorageCodes.ARTIFACT_SCHEMA_ERROR, "bad")))
+                        broken, stated("toolguides/a.guide.md", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad")))
                 .isTrue();
         assertThat(AssemblyRules.sameFault(
-                        broken, stated("toolguides/a.toolguide.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "other")))
+                        broken, stated("toolguides/a.toolguide.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "other")))
                 .as("another fault of the artifact")
                 .isFalse();
         assertThat(AssemblyRules.sameFault(
                         missing,
                         stated(
                                 "toolguides/a.toolguide.yaml",
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "toolguides/a.toolguide.yaml: names a.guide.md: missing")))
                 .isTrue();
         assertThat(AssemblyRules.sameFault(
@@ -63,7 +63,7 @@ class AssemblyRulesTest {
                         missing,
                         stated(
                                 "toolguides/a.toolguide.yaml",
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "toolguides/a.toolguide.yaml: the companion a.guide.md does not exist")))
                 .as("the reader's 'does not exist', naming the companion as the artifact declares it")
                 .isTrue();
@@ -71,7 +71,7 @@ class AssemblyRulesTest {
                         missing,
                         stated(
                                 "toolguides/a.toolguide.yaml",
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "toolguides/a.toolguide.yaml: names b.guide.md: missing")))
                 .as("another companion missing is another fault")
                 .isFalse();
@@ -79,7 +79,7 @@ class AssemblyRulesTest {
                         missing,
                         stated(
                                 "toolguides/b.toolguide.yaml",
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "toolguides/b.toolguide.yaml: names a.guide.md: missing")))
                 .as("the same companion missing at another artifact is another fault")
                 .isFalse();
@@ -89,17 +89,17 @@ class AssemblyRulesTest {
     @DisplayName("any other store fault is the same fault only at its file, with its code, in words that end with its")
     void anyOtherFaultIsTheSameFaultByFileCodeAndWords() {
         PackElementViolation breach = new PackElementViolation(
-                "presets/dup.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: twice");
+                "presets/dup.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: twice");
 
         assertThat(AssemblyRules.sameFault(
                         breach,
                         stated(
                                 "presets/dup.yaml",
-                                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "presets/dup.yaml: Constraint breached: twice")))
                 .isTrue();
         assertThat(AssemblyRules.sameFault(
-                        breach, stated("presets/dup.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "id is not the stem")))
+                        breach, stated("presets/dup.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "id is not the stem")))
                 .as("another fault of the same file")
                 .isFalse();
         assertThat(AssemblyRules.sameFault(
@@ -144,17 +144,17 @@ class AssemblyRulesTest {
                 "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: structure: const violated");
         String type = "missions/x/x.mission-type.yaml";
         PackElementViolation stepTwice = new PackElementViolation(
-                type, StorageCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: " + AssemblyRules.STEP_STANDS_ONCE);
+                type, PackCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: " + AssemblyRules.STEP_STANDS_ONCE);
         PackElementViolation keyTwice = new PackElementViolation(
                 type,
-                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                PackCodes.ARTIFACT_SCHEMA_ERROR,
                 "Constraint breached: An artifact key stands once in a mission type's expected outputs.");
         Reason step = stated(
                 type,
-                StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                PackCodes.ARTIFACT_SCHEMA_ERROR,
                 type + ": step 'a' stands twice across steps and on_demand_steps");
         Reason names = stated(
-                type, StorageCodes.ARTIFACT_SCHEMA_ERROR, type + ": names templates/t.md (named by the type): missing");
+                type, PackCodes.ARTIFACT_SCHEMA_ERROR, type + ": names templates/t.md (named by the type): missing");
 
         assertThat(AssemblyRules.sameFault(broken, stated("toolguides/a.guide.md", StorageCodes.RETIRED, "retired")))
                 .isFalse();

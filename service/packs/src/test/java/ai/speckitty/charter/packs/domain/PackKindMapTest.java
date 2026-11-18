@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -123,7 +122,7 @@ class PackKindMapTest {
     void withAddsAndKeepsEverythingElse() {
         Procedure procedure = new Procedure(ID, "landing");
         var violation =
-                new PackElementViolation("broken.tactic.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
+                new PackElementViolation("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
         Pack current = Pack.builder()
                 .id(ID)
                 .descriptor(DESCRIPTOR)
@@ -173,7 +172,7 @@ class PackKindMapTest {
                 .descriptor(DESCRIPTOR)
                 .artifact(new Procedure(ID, "landing"))
                 .violation(new PackElementViolation(
-                        "broken.tactic.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "missing steps"))
+                        "broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps"))
                 .build();
 
         Pack copy = current.toBuilder().build();

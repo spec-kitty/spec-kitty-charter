@@ -24,6 +24,13 @@ import java.util.Set;
  */
 public final class PackCodes {
 
+    /**
+     * An artifact file breaks its schema, a rule of its kind that the schema cannot state, or the reference closure
+     * ({@code ReferenceClosure}, #355): the code the one reader, the assembly and the PACK ruleset state such a file
+     * with, at the file.
+     */
+    public static final ReasonCode ARTIFACT_SCHEMA_ERROR = violation("artifact_schema_error");
+
     /** A graph document breaks the DRG schema or a graph rule. */
     public static final ReasonCode DRG_SCHEMA_ERROR = violation(RefusalCode.DRG_SCHEMA_ERROR.token());
 
@@ -85,6 +92,7 @@ public final class PackCodes {
     /** The codes of the content rules, in this class's order. */
     public static final List<ReasonCode> CONTENT = List.of(
             DRG_SCHEMA_ERROR,
+            ARTIFACT_SCHEMA_ERROR,
             RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
             OVERRIDES_SOURCE_NOT_ACTIVATABLE,
             DUPLICATE_STEP_ID,

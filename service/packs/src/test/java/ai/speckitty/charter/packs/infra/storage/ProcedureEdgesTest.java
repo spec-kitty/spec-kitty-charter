@@ -7,11 +7,11 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Procedure;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -71,7 +71,7 @@ class ProcedureEdgesTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         "ship-it.procedure.yaml",
-                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                        PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "procedure id 'land-it' is not its file stem 'ship-it'"));
 
         TreeRead validated = new FileSystemPackInspector()

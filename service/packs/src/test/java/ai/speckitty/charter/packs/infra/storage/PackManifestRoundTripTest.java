@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Toolguide;
@@ -16,7 +17,6 @@ import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -332,7 +332,7 @@ class PackManifestRoundTripTest {
 
         assertThat(validateFindings(clean)).isEmpty();
         assertThat(validateFindings(misplaced)).singleElement().satisfies(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.detail())
                     .endsWith(
                             ": preset entry 'convenience' names presets/governing.yaml, not presets/convenience.yaml");

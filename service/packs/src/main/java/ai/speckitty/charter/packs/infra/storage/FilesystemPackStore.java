@@ -444,7 +444,7 @@ final class FilesystemPackStore {
                 } catch (ConstraintBreachException breach) {
                     storeOnly(
                             new PackElementViolation(
-                                    file, StorageCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())),
+                                    file, PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())),
                             violations,
                             storeOnly);
                 }
@@ -562,8 +562,7 @@ final class FilesystemPackStore {
                     Optional<String> mismatch =
                             PresetFiles.stemMismatch(file, good.value().id());
                     if (mismatch.isPresent()) {
-                        violations.add(
-                                new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, mismatch.get()));
+                        violations.add(new PackElementViolation(file, PackCodes.ARTIFACT_SCHEMA_ERROR, mismatch.get()));
                         // A preset left out for its stem still answers its own value-object breach (WP12 review
                         // MAJOR-1): two faults of one file are two violations.
                         try {
@@ -571,9 +570,7 @@ final class FilesystemPackStore {
                         } catch (ConstraintBreachException breach) {
                             storeOnly(
                                     new PackElementViolation(
-                                            file,
-                                            StorageCodes.ARTIFACT_SCHEMA_ERROR,
-                                            String.valueOf(breach.getMessage())),
+                                            file, PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())),
                                     violations,
                                     storeOnly);
                         }
@@ -893,15 +890,13 @@ final class FilesystemPackStore {
                     // The stem rule validate mode applies too (FileStems): a misnamed file is refused, not loaded.
                     Optional<String> misnamed = FileStems.mismatch(kind, file, kind.idOf(good.value()));
                     if (misnamed.isPresent()) {
-                        violations.add(
-                                new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, misnamed.get()));
+                        violations.add(new PackElementViolation(file, PackCodes.ARTIFACT_SCHEMA_ERROR, misnamed.get()));
                         continue;
                     }
                     Optional<String> unnamed =
                             missingNamedFile(directory, file, kind.namedFiles(good.value()), companionRules.table());
                     if (unnamed.isPresent()) {
-                        violations.add(
-                                new PackElementViolation(file, StorageCodes.ARTIFACT_SCHEMA_ERROR, unnamed.get()));
+                        violations.add(new PackElementViolation(file, PackCodes.ARTIFACT_SCHEMA_ERROR, unnamed.get()));
                         continue;
                     }
                     withCompanions(companionRules, directory, file, kind, good.value(), violations, storeOnly, claimed)

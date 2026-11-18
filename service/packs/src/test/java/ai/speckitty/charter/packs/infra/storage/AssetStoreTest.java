@@ -333,7 +333,7 @@ class AssetStoreTest {
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("a/kept.bin");
         assertThat(read.violations())
                 .extracting(PackElementViolation::file, PackElementViolation::kind)
-                .containsExactly(tuple("assets/   ", StorageCodes.ARTIFACT_SCHEMA_ERROR));
+                .containsExactly(tuple("assets/   ", PackCodes.ARTIFACT_SCHEMA_ERROR));
     }
 
     /**

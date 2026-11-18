@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -92,7 +92,7 @@ class PackRootSpellingTest {
         assertThat(violations)
                 .containsExactly(new PackElementViolation(
                         FILE,
-                        StorageCodes.ARTIFACT_SCHEMA_ERROR,
+                        PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "templates/spec-template.md (named by step 'scoping'): missing"));
     }
 

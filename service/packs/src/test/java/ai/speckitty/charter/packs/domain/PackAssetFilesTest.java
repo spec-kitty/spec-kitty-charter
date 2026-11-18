@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -136,7 +135,7 @@ class PackAssetFilesTest {
     @DisplayName("with(directive) keeps the asset, its file and the violations, and stays valid (P3)")
     void withKeepsAssetFiles() {
         PackElementViolation violation =
-                new PackElementViolation("broken.directive.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR, "bad");
+                new PackElementViolation("broken.directive.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad");
         Pack pack = bare().assetFile(LOGO)
                 .assetFile(CONFIG)
                 .artifact(asset("logo", LOGO.path()))

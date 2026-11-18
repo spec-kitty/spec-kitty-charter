@@ -16,7 +16,7 @@ import java.util.Optional;
  * The {@link KindBinding} of the lifecycle (ADR-0050 decision 17): {@link LifecycleDso} to {@link Lifecycle} and back.
  * A lifecycle lives at {@code lifecycles/<id>.lifecycle.yaml}; a file anywhere else is refused by placement. Whether
  * its guard entries resolve, and their {@code config} fits, is checked when the pack is assembled
- * ({@link GuardClosure}), where the pack's guards are known.
+ * ({@link ReferenceSubjects}, judged by {@code ReferenceClosure}), where the pack's guards are known.
  */
 enum LifecycleBinding implements KindBinding<LifecycleDso, Lifecycle> {
     /** The binding. */

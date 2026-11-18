@@ -397,7 +397,7 @@ class FileSystemPackInspectorTest {
         assertThat(contents.readFaults())
                 .filteredOn(fault -> fault.location().file().equals("tactics/short.tactic.yaml"))
                 .isNotEmpty()
-                .allSatisfy(fault -> assertThat(fault.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR));
+                .allSatisfy(fault -> assertThat(fault.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR));
         // No rule maps a charter.yaml: it is not held and never read, however it breaks the charter schema (#554).
         assertThat(contents.census().notHeld()).containsExactly(NotHeldFile.unmodelled("project/charter.yaml"));
     }
@@ -456,7 +456,7 @@ class FileSystemPackInspectorTest {
         assertThat(read.readFaults())
                 .filteredOn(fault -> fault.location().file().equals("toolguides/preamble.guide.md"))
                 .singleElement()
-                .satisfies(fault -> assertThat(fault.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR));
+                .satisfies(fault -> assertThat(fault.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR));
         assertThat(faultsAt(read, "toolguides/no-overview.guide.md"))
                 .containsExactly("toolguides/no-overview.guide.md: the guide has no ## Overview");
         assertThat(faultsAt(read, "toolguides/no-h1.guide.md"))
@@ -655,7 +655,7 @@ class FileSystemPackInspectorTest {
         assertThat(contents.readFaults()).singleElement().satisfies(fault -> {
             assertThat(fault.location().file()).isEqualTo("procedures/misnamed.procedure.yaml");
             assertThat(fault.location().pointer()).isEqualTo("/id");
-            assertThat(fault.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(fault.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
         });
         assertThat(contents.contents().artifacts())
                 .extracting(PackContents.ArtifactFacts::id)
@@ -1193,7 +1193,7 @@ class FileSystemPackInspectorTest {
                 .filteredOn(finding -> finding.location().file().startsWith(PresetFiles.PRESETS))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
                     assertThat(finding.location().file()).isEqualTo("presets/other.yaml");
                     assertThat(finding.detail())
                             .endsWith("presets/other.yaml: preset id 'minimal' is not its file stem 'other'");
@@ -1328,7 +1328,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(promptFragmentFindings(dir)).isEmpty();
         assertThat(verdict(dir)).anySatisfy(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
         });
     }
@@ -1482,7 +1482,7 @@ class FileSystemPackInspectorTest {
                 .filteredOn(finding -> finding.location().file().equals(yaml("spdd-specify")))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
                     assertThat(finding.location().pointer()).isEqualTo("/id");
                 });
     }
@@ -1495,7 +1495,7 @@ class FileSystemPackInspectorTest {
         write(dir, yaml("spdd-specify"), "schema_version: '1.0'\nid: spdd-specify\nprompt_fragments: []\n");
         assertThat(promptFragmentFindings(dir)).isEmpty();
         assertThat(verdict(dir)).anySatisfy(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
         });
 
@@ -1514,7 +1514,7 @@ class FileSystemPackInspectorTest {
         write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT + "  - slot: Bad:Id\n    path: second.prompt-fragment.md\n");
         assertThat(promptFragmentFindings(dir)).isEmpty();
         assertThat(verdict(dir)).anySatisfy(finding -> {
-            assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(yaml("spdd-specify"));
         });
 
@@ -1876,7 +1876,7 @@ class FileSystemPackInspectorTest {
 
         assertThat(assembled(builtIn(pack)).violations()).singleElement().satisfies(fault -> {
             assertThat(fault.file()).isEqualTo("presets/dup.yaml");
-            assertThat(fault.kind()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+            assertThat(fault.kind()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(fault.reason()).startsWith("Constraint breached: Preset 'dup'");
         });
     }
@@ -1888,8 +1888,8 @@ class FileSystemPackInspectorTest {
 
         assertThat(assembled(builtIn(pack)).violations())
                 .extracting(PackElementViolation::file, PackElementViolation::kind)
-                .contains(tuple(
-                        "missions/software-dev/software-dev.mission-type.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR));
+                .contains(
+                        tuple("missions/software-dev/software-dev.mission-type.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR));
     }
 
     @Test

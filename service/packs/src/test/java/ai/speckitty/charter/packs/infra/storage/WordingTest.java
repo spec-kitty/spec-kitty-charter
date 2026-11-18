@@ -59,7 +59,7 @@ class WordingTest {
         assertThat(code(PACK_YAML)).isEqualTo(StorageCodes.PACK_UNREADABLE);
         assertThat(code(SHARD)).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
         assertThat(code(FRAGMENT)).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
-        assertThat(code("tactics/x.tactic.yaml")).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+        assertThat(code("tactics/x.tactic.yaml")).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
     }
 
     private static ReasonCode code(String file) {
@@ -117,7 +117,7 @@ class WordingTest {
                 new ParseFailure(artifact, "names x.md: missing", Optional.of("names x.md: missing"), Optional.empty());
         assertThat(Wording.unreadable("qa", new FileRead.Unreadable<>(artifact, refused, List.of())))
                 .containsExactly(Findings.at(
-                        StorageCodes.ARTIFACT_SCHEMA_ERROR, artifact, List.of(), artifact + ": names x.md: missing"));
+                        PackCodes.ARTIFACT_SCHEMA_ERROR, artifact, List.of(), artifact + ": names x.md: missing"));
     }
 
     @Test

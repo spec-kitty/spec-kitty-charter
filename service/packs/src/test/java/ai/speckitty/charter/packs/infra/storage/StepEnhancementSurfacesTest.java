@@ -16,7 +16,6 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -502,7 +501,7 @@ class StepEnhancementSurfacesTest {
                 .containsExactly(tuple("artifact_schema_error", pack.yamlOf(TYPE, "brief")));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
-                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR));
+                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR));
 
         pack.file(pack.yamlOf(TYPE, "brief"), "schema_version: '1.0'\nid: brief\n");
         assertThat(pack.staged()).singleElement().satisfies(violation -> {
@@ -558,7 +557,7 @@ class StepEnhancementSurfacesTest {
                 .filteredOn(finding -> finding.location().file().equals(yaml))
                 .singleElement()
                 .satisfies(finding -> {
-                    assertThat(finding.code()).isEqualTo(StorageCodes.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
                     assertThat(finding.location().pointer()).isEqualTo("/id");
                 });
 

@@ -32,9 +32,6 @@ public final class StorageCodes {
     /** A file's bytes cannot be read, are not UTF-8, or do not parse; or the manifest is not a regular file. */
     public static final ReasonCode UNREADABLE = violation("unreadable");
 
-    /** An artifact file breaks its schema, or a rule of its kind that the schema cannot state. */
-    public static final ReasonCode ARTIFACT_SCHEMA_ERROR = violation("artifact_schema_error");
-
     /** A file the file-kinds table retires: refused by name, never read (ADR-0044 decision 6). */
     public static final ReasonCode RETIRED = violation("retired");
 
@@ -68,7 +65,6 @@ public final class StorageCodes {
             PACK_UNREADABLE,
             ASSEMBLY_REFUSED,
             UNREADABLE,
-            ARTIFACT_SCHEMA_ERROR,
             RETIRED,
             COMPANION,
             REQUIRES_CORE_INVALID,

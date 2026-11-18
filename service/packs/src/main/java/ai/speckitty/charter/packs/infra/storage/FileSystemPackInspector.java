@@ -914,7 +914,7 @@ public final class FileSystemPackInspector implements PackReading {
                     factsOf(file, kind, good.value());
                     Optional<String> refused = MissionTypeChecks.refusal(directory, file, kind, good.value(), table);
                     refused.ifPresent(refusal -> unreadable.add(new FileRead.Unreadable<>(
-                            file, ParseFailure.refused(file, refusal, StorageCodes.ARTIFACT_SCHEMA_ERROR), List.of())));
+                            file, ParseFailure.refused(file, refusal, PackCodes.ARTIFACT_SCHEMA_ERROR), List.of())));
                     // The load holds no mission type its checks refuse, so neither do the step-link facts.
                     if (refused.isEmpty()) {
                         missionTypeFactsOf(file, kind, good.value());

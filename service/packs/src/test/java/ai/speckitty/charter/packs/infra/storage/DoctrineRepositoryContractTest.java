@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -20,7 +21,6 @@ import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguidePattern;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -180,6 +180,6 @@ class DoctrineRepositoryContractTest {
         assertThat(pack.directives()).containsExactly(valid);
         assertThat(pack.violations())
                 .extracting(PackElementViolation::file, PackElementViolation::kind)
-                .contains(tuple("DIRECTIVE_902.directive.yaml", StorageCodes.ARTIFACT_SCHEMA_ERROR));
+                .contains(tuple("DIRECTIVE_902.directive.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR));
     }
 }

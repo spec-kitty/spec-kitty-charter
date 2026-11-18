@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ConfigValue;
+import ai.speckitty.charter.packs.domain.ConfigSchemas;
 import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaLocation;
@@ -25,6 +26,19 @@ import tools.jackson.databind.JsonNode;
  * facts ({@code <keyword> at <location>}); the validator's localized message text is never read.
  */
 final class EmbeddedSchemas {
+
+    /** The closure rule's port (#355): {@link #schemaProblems} and {@link #valueProblems}, as the rule is given them. */
+    static final ConfigSchemas PORT = new ConfigSchemas() {
+        @Override
+        public List<String> schemaProblems(ConfigValue schema) {
+            return EmbeddedSchemas.schemaProblems(schema);
+        }
+
+        @Override
+        public List<String> valueProblems(ConfigValue schema, Optional<ConfigValue> value) {
+            return EmbeddedSchemas.valueProblems(schema, value);
+        }
+    };
 
     private static final String DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
     private static final String METASCHEMA_BASE = "https://json-schema.org/draft/2020-12/";

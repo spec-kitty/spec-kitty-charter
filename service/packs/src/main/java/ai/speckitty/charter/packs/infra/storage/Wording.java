@@ -190,7 +190,7 @@ public final class Wording {
         if (file.endsWith(".graph.yaml") || isFragment(file)) {
             return PackCodes.DRG_SCHEMA_ERROR;
         }
-        return StorageCodes.ARTIFACT_SCHEMA_ERROR;
+        return PackCodes.ARTIFACT_SCHEMA_ERROR;
     }
 
     /**
@@ -199,7 +199,7 @@ public final class Wording {
      */
     private static ReasonCode parseCodeFor(String file) {
         ReasonCode code = codeFor(file);
-        return code.equals(StorageCodes.ARTIFACT_SCHEMA_ERROR) ? StorageCodes.UNREADABLE : code;
+        return code.equals(PackCodes.ARTIFACT_SCHEMA_ERROR) ? StorageCodes.UNREADABLE : code;
     }
 
     /** A step enhancement's companion: a fault of its own read (a codec refusal, a structure breach) is its code. */
