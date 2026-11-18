@@ -32,6 +32,18 @@ exceptions:
   - path: "kitty-specs/**"
     action: do_not_change
     note: mission records of earlier missions quote the old name as history
+  - path: "docs/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest.md"
+    action: manual_review
+    note: edited by WP05 for #355 (amendment or status-table row); it names the wire token, never the renamed constant
+  - path: "docs/adr/0044-mission-types-consolidated-into-one-sanitized-shape.md"
+    action: manual_review
+    note: edited by WP05 for #355 (amendment or status-table row); it names the wire token, never the renamed constant
+  - path: "docs/development/http-status-codes.md"
+    action: manual_review
+    note: edited by WP05 for #355 (amendment or status-table row); it names the wire token, never the renamed constant
+  - path: "docs/plans/pack-ecosystem-work-breakdown.md"
+    action: manual_review
+    note: edited by WP05 for #355 (amendment or status-table row); it names the wire token, never the renamed constant
   - path: "docs/**"
     action: do_not_change
-    note: docs quote the wire token, not the constant
+    note: every other doc quotes the wire token, not the constant
