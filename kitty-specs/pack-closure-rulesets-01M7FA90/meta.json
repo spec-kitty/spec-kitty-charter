@@ -1,0 +1,49 @@
+{
+  "accept_commit": "cdab58538a4f008afd3bc674deb30b8b1bebe27b",
+  "acceptance_history": [
+    {
+      "accept_commit": "cdab58538a4f008afd3bc674deb30b8b1bebe27b",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-18T02:00:36.179360+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "216e8a6802413bc8b0ee2e18c2caaf1584f254c7"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-18T02:00:36.179360+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "216e8a6802413bc8b0ee2e18c2caaf1584f254c7",
+  "contracts": "none",
+  "contracts_rationale": "No new interface. The contract changes are behavioural: Q1 (an unmodelled file becomes a file_not_held diagnostic) and R2 (one code and wording per fault across surfaces), each recorded as a ### Breaking change fragment under contracts/charter/changes/ with rewritten scenarios; no schema shape changes.",
+  "coordination_branch": "kitty/mission-pack-closure-rulesets-01M7FA90",
+  "create_return_branch": "slice-5-554-pack-closure-rulesets",
+  "created_at": "2026-11-15T09:58:06.259120+00:00",
+  "flattened": false,
+  "friendly_name": "ADR-0075 slice 5: PACK and CLOSURE rulesets, one pipeline",
+  "mid8": "01M7FA90",
+  "mission_base_sha": "5decda0d6579bbead7548434a9e4691956eccb79",
+  "mission_branch": "kitty/mission-pack-closure-rulesets-01M7FA90",
+  "mission_id": "01M7FA90KRH3ZKEHYJE41CAVB6",
+  "mission_number": null,
+  "mission_slug": "pack-closure-rulesets-01M7FA90",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "#554, slice 5 of epic #549 (ADR-0075 decisions 3, 4, 5, 7 as amended 2026-11-13). Validate mode and the registration load judge a pack by two pipelines kept equal by hand through converters. This mission puts every check on the kernel rule vocabulary over the packs domain objects, so one rule exists once and both paths agree; the packs domain stays canonical (operator ruling 1, 2026-11-15).",
+  "purpose_tldr": "Express every pack check as a kernel ruleset (PACK per pack, CLOSURE over a set's descriptors) and run validate mode and the load through the same rulesets, deleting the PackFinding/PackElementViolation/RefusalViolation converters.",
+  "slug": "pack-closure-rulesets-01M7FA90",
+  "status_phase": "1",
+  "target_branch": "slice-5-554-pack-closure-rulesets",
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 10,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 10
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-16T05:46:04.210280+00:00"
+}
