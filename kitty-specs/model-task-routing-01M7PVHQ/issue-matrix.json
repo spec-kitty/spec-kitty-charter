@@ -1,16 +1,16 @@
 {
   "rows": {
     "#108": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "PR #600 closes it; WP10 updates the R14 row (ADR-0080)",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Cutover read R14: the model-task routing catalog as pack content, served through the contract",
+      "verdict": "in-mission",
+      "wp": "WP10"
     },
     "#151": {
       "evidence_ref": "<link or commit>",
