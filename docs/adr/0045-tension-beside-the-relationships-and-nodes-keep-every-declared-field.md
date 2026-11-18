@@ -78,12 +78,14 @@ the relationship appear[s] in the domain, the pack files and the contract").
   structural relationship per pair. Beside it, at most one tension per pair (ADR-0028 decision 3).
   `Relationship.samePair` stays the pair test; a new `sameSlot` (pair and class) is the identity
   `RelationshipMerge` upserts on, so a tension never replaces a `requires` on the same pair, nor the reverse.
-- **Canonical orientation.** A tension is written with the lexicographically smaller URN as its `from` (ADR-0036
-  decision 4).
+- **Canonical orientation.** A tension is written with the lexicographically smaller **bare** URN as its `from`
+  (ADR-0036 decision 4). The pack qualifier is provenance and does not take part in the comparison, so a shard may
+  write a pack-qualified `source` when the smaller side belongs to another pack.
   - In a pack file, the other orientation refuses the pack (decision 6).
   - On a registration write (`putPackRelationship` with `type: tension`), the service stores the canonical
-    orientation of the pair it is given, and answers it. *Open review item:* the pair is unordered in meaning, so
-    the write normalizes rather than refuses.
+    orientation of the pair it is given, and answers it. The wire keeps its rule that `from` is in the pack and only
+    `to` may be qualified; when the canonical `from` is the qualified side, it is stored qualified. *Open review
+    item:* the pair is unordered in meaning, so the write normalizes rather than refuses.
 - **The contract.** `Relation.yaml` gains `tension`. `TaxonomyRelation` and the `getKindTaxonomy` row rename
   `in_tension_with` to `tension`; the row keeps `heldAs: tension`, which now names the pair class.
 
