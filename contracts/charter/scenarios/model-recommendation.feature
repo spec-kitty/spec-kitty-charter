@@ -7,7 +7,8 @@
 #
 # built-in's default is quality_first (design: model-a fit 0.3 premium, model-b fit 0.1 low). org-base's default
 # replaces it: balanced, weights 1 and 0.2, design as built-in's, review capped at medium (model-c 0.9 premium, model-d
-# 0.6 medium, model-e 0.5 low), triage with no fit. org-base's cost-led is cost_first, weights 0.5 and 0.5. java-jenny
+# 0.6 medium, model-e 0.5 low), triage with no fit. project depends on org-base and org-alt (#358); org-alt holds no
+# routing catalog and no profile, so the project closure's catalog in force is org-base's default. org-base's cost-led is cost_first, weights 0.5 and 0.5. java-jenny
 # declares model-x with effort high; generic-agent declares no model. software-dev's review step offers low.
 
 @contract @activations
@@ -20,6 +21,7 @@ Feature: A task type's model is recommended under an activation, beside a profil
   Background:
     Given the example pack "built-in" of the charter
     And the example pack "org-base" of the charter
+    And the example pack "org-alt" of the charter
     And the example pack "project" of the charter
     And the activation "b" holds:
       """
