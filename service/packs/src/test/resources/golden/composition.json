@@ -269,6 +269,36 @@
       } ]
     }
   },
+  "overrides-naming-a-member-outside-the-compose" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01GHOST, which is not a contestant",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
+  "overrides-naming-a-member-that-is-not-a-contestant" : {
+    "refused" : {
+      "code" : "pack_sibling_conflict",
+      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01DSTR, which is not a contestant",
+      "packs" : [ {
+        "descriptorPackId" : "01RIGHT",
+        "packId" : "01RIGHT",
+        "name" : "right"
+      }, {
+        "descriptorPackId" : "01LEFT",
+        "packId" : "01LEFT",
+        "name" : "left"
+      } ]
+    }
+  },
   "the-distribution-pack-settles" : {
     "composed" : [ "01LEFT", "01RIGHT", "01DSTR" ]
   },
@@ -357,36 +387,6 @@
         "packId" : "01DTWO",
         "name" : "dtwo"
       }, {
-        "descriptorPackId" : "01RIGHT",
-        "packId" : "01RIGHT",
-        "name" : "right"
-      }, {
-        "descriptorPackId" : "01LEFT",
-        "packId" : "01LEFT",
-        "name" : "left"
-      } ]
-    }
-  },
-  "overrides-naming-a-member-outside-the-compose" : {
-    "refused" : {
-      "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01GHOST, which is not a contestant",
-      "packs" : [ {
-        "descriptorPackId" : "01RIGHT",
-        "packId" : "01RIGHT",
-        "name" : "right"
-      }, {
-        "descriptorPackId" : "01LEFT",
-        "packId" : "01LEFT",
-        "name" : "left"
-      } ]
-    }
-  },
-  "overrides-naming-a-member-that-is-not-a-contestant" : {
-    "refused" : {
-      "code" : "pack_sibling_conflict",
-      "detail" : "packs `left` (01LEFT) and `right` (01RIGHT) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01DSTR, which is not a contestant",
-      "packs" : [ {
         "descriptorPackId" : "01RIGHT",
         "packId" : "01RIGHT",
         "name" : "right"

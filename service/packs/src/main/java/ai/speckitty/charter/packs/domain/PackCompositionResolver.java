@@ -870,7 +870,7 @@ public final class PackCompositionResolver {
      *
      * @param compose the packs of the compose, each {@code pack_id} once
      * @param artifact the bare URN of the contested artifact, or for a step the mission type whose contest it shares
-     * @param siblings the contestants, two or more packs of one level, in the stable order
+     * @param siblings the contestants, two or more packs of one level, in any order
      * @return the settlement
      */
     public static Settlement settle(
@@ -898,7 +898,27 @@ public final class PackCompositionResolver {
                 }
             }
         }
+        if (settlers.size() == 1 && notDistribution.isEmpty()) {
+            String member = settlers.values().iterator().next();
+            return new Settlement.Settled(siblings.stream()
+                    .filter(pack -> pack.descriptor().packId().equals(member))
+                    .findFirst()
+                    .orElseThrow());
+        }
+        return unsettled(siblings, notDistribution, List.copyOf(settlers.keySet()), staleMembers);
+    }
+
+    /**
+     * Why a contest is not settled, with the packs a refusal names: the declaring packs first, then the contestants in
+     * the stable order with the second first, whatever order the caller gave them in.
+     */
+    private static Settlement.Unsettled unsettled(
+            List<PackUnderResolution> siblings,
+            List<PackUnderResolution> notDistribution,
+            List<PackUnderResolution> settlers,
+            Set<String> staleMembers) {
         List<PackUnderResolution> contestants = new ArrayList<>(siblings);
+        contestants.sort(STABLE_ORDER);
         contestants.addFirst(contestants.remove(1));
         if (!notDistribution.isEmpty()) {
             return new Settlement.Unsettled(
@@ -912,19 +932,11 @@ public final class PackCompositionResolver {
                     declarersFirst(notDistribution, contestants));
         }
         if (settlers.size() > 1) {
-            List<PackUnderResolution> declarers = List.copyOf(settlers.keySet());
             return new Settlement.Unsettled(
                     Settlement.Kind.TWO_DISTRIBUTIONS,
-                    "overrides edges settling it are declared by " + labels(declarers)
+                    "overrides edges settling it are declared by " + labels(settlers)
                             + ", more than one distribution pack, and only one may settle a contest",
-                    declarersFirst(declarers, contestants));
-        }
-        if (settlers.size() == 1) {
-            String member = settlers.values().iterator().next();
-            return new Settlement.Settled(siblings.stream()
-                    .filter(pack -> pack.descriptor().packId().equals(member))
-                    .findFirst()
-                    .orElseThrow());
+                    declarersFirst(settlers, contestants));
         }
         return staleMembers.isEmpty()
                 ? new Settlement.Unsettled(

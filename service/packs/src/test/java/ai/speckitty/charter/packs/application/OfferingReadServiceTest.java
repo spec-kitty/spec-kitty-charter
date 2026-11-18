@@ -389,9 +389,10 @@ class OfferingReadServiceTest {
     }
 
     /**
-     * #358 on the load: the offering composes through the CLOSURE check, so only the distribution pack, the compose root
-     * that is not a contestant, settles a sibling contest; a member's or a contestant's edge is refused, naming it, and
-     * two roots that settle one artifact are refused.
+     * #358 on the load: the offering composes through the CLOSURE check, so only the distribution pack (the pack of the
+     * contest's level that depends on every contestant and that no other pack of that level depends on) settles a
+     * sibling contest; a member's or a contestant's edge is refused, naming it first, and two distribution packs that
+     * settle one artifact are refused.
      */
     @Nested
     class DistributionPackSettles {

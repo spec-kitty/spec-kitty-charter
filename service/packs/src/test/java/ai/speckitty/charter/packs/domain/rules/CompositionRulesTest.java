@@ -820,10 +820,12 @@ class CompositionRulesTest {
                     });
         }
 
-        // #358 (operator ruling (a), 2026-11-17): the distribution pack is derived, the compose root no other pack of
-        // the compose depends on (ADR-0048 decisions 8, 9 and 12). Only its overrides edge settles a contest.
+        // #358 (operator ruling (a), 2026-11-17): the distribution pack is derived, the pack of the contest's level
+        // that
+        // depends on every contestant and that no other pack of that level depends on (ADR-0048 decisions 8, 9 and 12).
+        // Only its overrides edge settles a contest.
         @Test
-        @DisplayName("#358: the distribution pack, the root that depends on both contestants, settles the contest")
+        @DisplayName("#358: the distribution pack, which depends on both contestants, settles the contest")
         void theDistributionPackSettles() {
             PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
             PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
@@ -879,7 +881,7 @@ class CompositionRulesTest {
         }
 
         @Test
-        @DisplayName("#358: a contestant does not settle its own contest, even as a root")
+        @DisplayName("#358: a contestant does not settle its own contest, even when nothing depends on it")
         void aContestantDoesNotSettleItsOwnContest() {
             PackUnderResolution left = refiningAndSettling("01LEFT", "left", DIRECTIVE, "01LEFT", "01RIGHT");
             PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
@@ -956,6 +958,37 @@ class CompositionRulesTest {
                     .singleElement()
                     .satisfies(fault -> assertThat(fault.detail())
                             .contains("declared by pack `distribution` (01DSTR), which is not the distribution pack"));
+        }
+
+        @Test
+        @DisplayName("#358: parent_pack counts as depends_on, for the reach and for who depends on the distribution")
+        void parentPackCountsAsADependency() {
+            PackUnderResolution left = refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution right = refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE);
+            PackUnderResolution extendingLeft = new PackUnderResolution(
+                    configured("01DSTR", PackLevel.ORG),
+                    new PackDescriptor(
+                            "01DSTR",
+                            "1.0.0",
+                            Optional.of("01LEFT"),
+                            "distribution",
+                            Optional.of(PackLevel.ORG),
+                            Optional.empty(),
+                            PackPaths.none(),
+                            depends("01RIGHT", ">=1.0"),
+                            List.of(new PackOverride(DIRECTIVE, "01RIGHT"))));
+            PackUnderResolution distribution =
+                    settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT");
+            PackUnderResolution child = extending("01CHLD", "child", PackLevel.ORG, "01DSTR");
+
+            assertThat(CompositionRules.faults(List.of(extendingLeft, right, left)))
+                    .as("the distribution reaches left through its parent_pack")
+                    .isEmpty();
+            assertThat(CompositionRules.faults(List.of(child, distribution, right, left)))
+                    .as("a child of the distribution at its level makes it a member, so its edge is refused")
+                    .singleElement()
+                    .satisfies(fault ->
+                            assertThat(fault.packs().getFirst()).isEqualTo(refusalPack("01DSTR", "distribution")));
         }
 
         @Test

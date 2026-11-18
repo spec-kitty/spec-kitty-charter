@@ -12,7 +12,8 @@ depends_on:
 mutability_policy: policy.yaml
 fallback_profile: generic-agent
 requires_core: ">=4.0,<5"
-# Settles a contest over org-base's styleguide in favour of org-base (ADR-0048 decision 9).
+# Declares a settlement of org-base's styleguide (ADR-0048 decision 9). No sibling contest arises among the example
+# packs, so it settles nothing: only the distribution pack of the contest's level settles one (#358).
 overrides:
   - artifact: styleguide:reasons-canvas-writing
     member: 01M6Y9ACNAAD96XPNQS0XWP2FF
