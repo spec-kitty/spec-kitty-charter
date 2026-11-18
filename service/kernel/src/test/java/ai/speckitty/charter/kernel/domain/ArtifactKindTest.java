@@ -31,7 +31,8 @@ class ArtifactKindTest {
                         "skill",
                         "anti_pattern",
                         "mission_type",
-                        "step_enhancement");
+                        "step_enhancement",
+                        "routing_catalog");
     }
 
     @Test

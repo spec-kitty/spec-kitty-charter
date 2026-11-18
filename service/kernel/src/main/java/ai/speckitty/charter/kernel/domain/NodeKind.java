@@ -67,7 +67,13 @@ public enum NodeKind {
      */
     LIFECYCLE("lifecycle", ArtifactKind.LIFECYCLE, "lifecycles", false, false),
     /** A node of the artifact kind {@link ArtifactKind#STEP_ENHANCEMENT}. */
-    STEP_ENHANCEMENT("step_enhancement", ArtifactKind.STEP_ENHANCEMENT, "step_enhancements", true, true);
+    STEP_ENHANCEMENT("step_enhancement", ArtifactKind.STEP_ENHANCEMENT, "step_enhancements", true, true),
+    /**
+     * A node of the artifact kind {@link ArtifactKind#ROUTING_CATALOG}, for example {@code routing_catalog:default}.
+     * Neither declared in a graph nor an edge endpoint (ADR-0080 decision 5): nothing relates to a catalog, and an org
+     * pack replaces one by the same id, with no edge.
+     */
+    ROUTING_CATALOG("routing_catalog", ArtifactKind.ROUTING_CATALOG, "routing_catalogs", false, false);
 
     /**
      * The node kind of each artifact kind, built once and checked then: it is total and one to one, so
