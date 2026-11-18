@@ -101,7 +101,9 @@ jobs:
             exe: ".exe"
             prebuilt-bundle: true
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    # A release builds with the cache off: macos-arm64 took 35 min cold on 2026-11-18 (26.5 min warm), so 45 left too
+    # little margin for a tag push (ADR-0079).
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
