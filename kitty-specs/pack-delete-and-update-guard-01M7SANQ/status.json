@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Contract, ADR-0081 and records; contracts:check and check_docs green",
-        "Review cycle 1 rejected by the independent reviewer agent: 2 HIGH, 4 MEDIUM, 5 LOW, all folded (research/implementation-notes.md, WP01 review dispositions); the contract lands with the controller (I5)."
+        "Review cycle 1 rejected by the independent reviewer agent: 2 HIGH, 4 MEDIUM, 5 LOW, all folded (research/implementation-notes.md, WP01 review dispositions); the contract lands with the controller (I5).",
+        "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25"
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
