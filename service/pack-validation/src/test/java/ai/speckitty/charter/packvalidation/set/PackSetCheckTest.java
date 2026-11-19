@@ -10,14 +10,17 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
@@ -27,6 +30,7 @@ import ai.speckitty.charter.packs.examples.PlantedPacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packs.infra.storage.RoundTripControls;
+import ai.speckitty.charter.packvalidation.PackCheck;
 import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
@@ -517,6 +521,51 @@ class PackSetCheckTest {
             assertThat(result.roundTrip())
                     .as("the round trip's red at the link, kind other:symlink, is the same cause")
                     .isEmpty();
+        }
+
+        @Test
+        @DisplayName(
+                "only a violation at a file drops the round trip's reason there: a warning, or a violation of no file, does"
+                        + " not")
+        void onlyAViolationAtAFileDropsTheReasonThere() {
+            PackCheck.Checked real = new PackCheck(new FileSystemPackInspector())
+                    .check(example(ExamplePacks.BUILT_IN).root());
+            Reason warning = new Reason(
+                    "test",
+                    Evaluation.FAIL,
+                    new ReasonCode("file_not_held", Severity.WARNING),
+                    Location.in("notes.md"),
+                    "w");
+            Reason violation = new Reason(
+                    "test",
+                    Evaluation.FAIL,
+                    new ReasonCode("pack_entry_linked", Severity.VIOLATION),
+                    Location.in("tactics/linked.tactic.yaml"),
+                    "linked");
+            Reason unplaced = new Reason(
+                    "test",
+                    Evaluation.FAIL,
+                    new ReasonCode("pack_unreadable", Severity.VIOLATION),
+                    Location.NOWHERE,
+                    "u");
+            PackCheck.Checked checked = new PackCheck.Checked(
+                    real.readout(), new PackVerdict(List.of(), List.of(warning, violation, unplaced)));
+            Reason atTheWarning = red("notes.md");
+            Reason atTheViolation = red("tactics/linked.tactic.yaml");
+            Reason ofTheRun = new Reason(
+                    "round-trip", Evaluation.FAIL, WholePackRoundTripRule.RED, Location.NOWHERE, "STALE_BASELINE x");
+
+            assertThat(PackSetCheck.notReported(checked, List.of(atTheWarning, atTheViolation, ofTheRun)))
+                    .containsExactly(atTheWarning, ofTheRun);
+        }
+
+        private static Reason red(String file) {
+            return new Reason(
+                    "round-trip",
+                    Evaluation.FAIL,
+                    WholePackRoundTripRule.RED,
+                    Location.in(file),
+                    "UNEXPECTED_RED " + file);
         }
 
         @Test
