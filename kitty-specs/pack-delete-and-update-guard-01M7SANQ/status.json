@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "reviewer-claude",
-      "agent": "claude",
+      "agent": "reviewer-claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
@@ -32,7 +32,8 @@
       "notes": [
         "Contract, ADR-0081 and records; contracts:check and check_docs green",
         "Review cycle 1 rejected by the independent reviewer agent: 2 HIGH, 4 MEDIUM, 5 LOW, all folded (research/implementation-notes.md, WP01 review dispositions); the contract lands with the controller (I5).",
-        "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25"
+        "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25",
+        "Independent review cycle 2 @ a548857: verifyAll green (reviewer run). Cycle-1 findings folded and verified."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
