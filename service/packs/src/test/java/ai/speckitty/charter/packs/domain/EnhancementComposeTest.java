@@ -9,12 +9,13 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +44,7 @@ class EnhancementComposeTest {
 
     private static PackUnderResolution pack(String name, PackLevel level, List<String> dependsOn, String... held) {
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -51,7 +52,7 @@ class EnhancementComposeTest {
                 Optional.empty(),
                 PackPaths.none(),
                 dependsOn.stream()
-                        .map(other -> new PackDependency("id-" + other, ">=0"))
+                        .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                         .toList());
         return new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), Arrays.asList(held));
@@ -101,7 +102,9 @@ class EnhancementComposeTest {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
                 assertThat(found.enhancement()).isEqualTo(u("step_enhancement:x"));
                 assertThat(found.target()).isEqualTo(u("action:M/nosuch"));
-                assertThat(found.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "base");
+                assertThat(found.packs())
+                        .extracting(pack -> pack.packId().value())
+                        .containsExactly("enhancer", "base");
                 assertThat(found.detail())
                         .contains("step_enhancement:x")
                         .contains("action:M/nosuch")
@@ -134,7 +137,9 @@ class EnhancementComposeTest {
 
             assertThat(violation).hasValueSatisfying(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-                assertThat(found.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "other");
+                assertThat(found.packs())
+                        .extracting(pack -> pack.packId().value())
+                        .containsExactly("enhancer", "other");
             });
         }
 
@@ -161,7 +166,9 @@ class EnhancementComposeTest {
 
             assertThat(violation).hasValueSatisfying(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-                assertThat(found.packs()).extracting(RefusalPack::packId).containsExactly("enhancer");
+                assertThat(found.packs())
+                        .extracting(pack -> pack.packId().value())
+                        .containsExactly("enhancer");
             });
         }
 
@@ -186,7 +193,9 @@ class EnhancementComposeTest {
 
             assertThat(violation).hasValueSatisfying(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
-                assertThat(found.packs()).extracting(RefusalPack::packId).containsExactly("enhancer");
+                assertThat(found.packs())
+                        .extracting(pack -> pack.packId().value())
+                        .containsExactly("enhancer");
             });
         }
 
@@ -262,7 +271,7 @@ class EnhancementComposeTest {
     @Nested
     class InheritedLock {
 
-        private static PerPackPolicy policy(String packId, String urn, MutabilityLevel level) {
+        private static PerPackPolicy policy(PackUlid packId, String urn, MutabilityLevel level) {
             return new PerPackPolicy(Map.of(
                     packId,
                     MutabilityPolicySource.builder().entry(u(urn), level).build()));
@@ -282,13 +291,15 @@ class EnhancementComposeTest {
             List<EnhancementCompose.LockedEnhancement> locked = EnhancementCompose.lockedTargets(
                     List.of(base, enhancer),
                     EnhancementComposeTest.InheritedLock::edgesOf,
-                    policy("id-base", "mission_type:M", MutabilityLevel.LOCKED));
+                    policy(FixtureUlids.ulid("base"), "mission_type:M", MutabilityLevel.LOCKED));
 
             assertThat(locked).singleElement().satisfies(found -> {
                 assertThat(found.enhancement()).isEqualTo(u("step_enhancement:x"));
                 assertThat(found.target()).isEqualTo(u("action:M/s"));
                 assertThat(found.missionType()).isEqualTo(u("mission_type:M"));
-                assertThat(found.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "base");
+                assertThat(found.packs())
+                        .extracting(pack -> pack.packId().value())
+                        .containsExactly("enhancer", "base");
                 assertThat(found.detail())
                         .contains("step_enhancement:x")
                         .contains("mission_type:M")
@@ -304,7 +315,7 @@ class EnhancementComposeTest {
             assertThat(EnhancementCompose.lockedTargets(
                             List.of(base, enhancer),
                             EnhancementComposeTest.InheritedLock::edgesOf,
-                            policy("id-base", "mission_type:M", MutabilityLevel.EXTENDABLE)))
+                            policy(FixtureUlids.ulid("base"), "mission_type:M", MutabilityLevel.EXTENDABLE)))
                     .isEmpty();
         }
 
@@ -316,7 +327,7 @@ class EnhancementComposeTest {
             assertThat(EnhancementCompose.lockedTargets(
                             List.of(base, enhancer),
                             EnhancementComposeTest.InheritedLock::edgesOf,
-                            policy("id-enhancer", "mission_type:M", MutabilityLevel.LOCKED)))
+                            policy(FixtureUlids.ulid("enhancer"), "mission_type:M", MutabilityLevel.LOCKED)))
                     .isEmpty();
         }
 
@@ -328,7 +339,7 @@ class EnhancementComposeTest {
             assertThat(EnhancementCompose.lockedTargets(
                             List.of(base, enhancer),
                             EnhancementComposeTest.InheritedLock::edgesOf,
-                            policy("id-base", "action:M/s", MutabilityLevel.EXTENDABLE)))
+                            policy(FixtureUlids.ulid("base"), "action:M/s", MutabilityLevel.EXTENDABLE)))
                     .isEmpty();
         }
     }

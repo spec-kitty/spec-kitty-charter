@@ -17,6 +17,7 @@ import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.ClosureQueries;
@@ -205,20 +206,23 @@ public class PacksAvailability implements AvailablePacks {
             OfferingEntry entry, ClosureView view, Map<String, String> configuredIdOf) {
         return new ClosureSnapshot.PackEntry(
                 entry.id().value(),
-                entry.descriptorPackId(),
+                entry.descriptorPackId().value(),
                 entry.level().token(),
                 entry.name(),
                 entry.version(),
                 entry.dependencies().stream()
                         .map(edge -> new ClosureSnapshot.Dependency(edge.to(), edge.range(), edge.version()))
                         .toList(),
-                view.parentOf(entry.descriptorPackId()).map(parent -> configuredIdOf.getOrDefault(parent, parent)));
+                view.parentOf(entry.descriptorPackId())
+                        .map(PackUlid::value)
+                        .map(parent -> configuredIdOf.getOrDefault(parent, parent)));
     }
 
     /** Each closure pack's descriptor {@code pack_id} with the id it is configured under, the first in closure order. */
     private static Map<String, String> configuredIds(List<OfferingEntry> packs) {
         Map<String, String> ids = new HashMap<>();
-        packs.forEach(pack -> ids.putIfAbsent(pack.descriptorPackId(), pack.id().value()));
+        packs.forEach(pack ->
+                ids.putIfAbsent(pack.descriptorPackId().value(), pack.id().value()));
         return ids;
     }
 
@@ -242,6 +246,7 @@ public class PacksAvailability implements AvailablePacks {
             if (view.isLocked(urn)) {
                 view.lockOf(urn)
                         .setBy()
+                        .map(PackUlid::value)
                         .ifPresent(pack -> lockedBy.put(urn.toString(), configuredIdOf.getOrDefault(pack, pack)));
             }
         }

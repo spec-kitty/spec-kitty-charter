@@ -21,6 +21,8 @@ dependencies {
     implementation(catalog.lib("jackson-databind"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
+    // The fixture values the packs tests build from: a descriptor pack_id is a real ULID (#583).
+    testImplementation(testFixtures(project(":packs")))
     // The standalone MockMvc tests of infra.api validate the generated interface's constraints, as the service does.
     testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))

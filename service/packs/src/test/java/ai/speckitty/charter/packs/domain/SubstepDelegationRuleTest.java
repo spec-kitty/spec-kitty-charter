@@ -138,11 +138,14 @@ class SubstepDelegationRuleTest {
     @Test
     @DisplayName("a candidate the named pack of the closure does not hold refuses the compose, by its own code")
     void aCandidateTheNamedPackDoesNotHoldIsRefused() {
-        PackUnderResolution base = pack("01BASE", "base", List.of(), "tactic:other");
-        PackUnderResolution top = pack("01TOP", "top", List.of(new PackDependency("01BASE", ">=1.0")));
+        PackUnderResolution base = pack("01BASE00000000000000000000", "base", List.of(), "tactic:other");
+        PackUnderResolution top = pack(
+                "01TNZP00000000000000000000",
+                "top",
+                List.of(new PackDependency("01BASE00000000000000000000", ">=1.0")));
 
         assertThatThrownBy(() -> PackCompositionResolver.refuseUnresolvedDelegations(
-                        List.of(base, top), "01TOP", candidates("base::tdd")))
+                        List.of(base, top), "01TNZP00000000000000000000", candidates("base::tdd")))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refusal.getMessage())
@@ -160,19 +163,22 @@ class SubstepDelegationRuleTest {
     @DisplayName(
             "control: the candidate the named pack holds passes, and a pack outside the closure is the reference's")
     void aHeldCandidateAndAPackOutsideTheClosureAreNotRefusedHere() {
-        PackUnderResolution base = pack("01BASE", "base", List.of(), "tactic:tdd");
-        PackUnderResolution top = pack("01TOP", "top", List.of(new PackDependency("01BASE", ">=1.0")));
-        PackUnderResolution loose = pack("01LOOSE", "top", List.of());
-        PackUnderResolution other = pack("01OTHER", "other", List.of());
+        PackUnderResolution base = pack("01BASE00000000000000000000", "base", List.of(), "tactic:tdd");
+        PackUnderResolution top = pack(
+                "01TNZP00000000000000000000",
+                "top",
+                List.of(new PackDependency("01BASE00000000000000000000", ">=1.0")));
+        PackUnderResolution loose = pack("01KZNZNZSE0000000000000000", "top", List.of());
+        PackUnderResolution other = pack("01NZTHER000000000000000000", "other", List.of());
 
         assertThatCode(() -> PackCompositionResolver.refuseUnresolvedDelegations(
-                        List.of(base, top), "01TOP", candidates("base::tdd")))
+                        List.of(base, top), "01TNZP00000000000000000000", candidates("base::tdd")))
                 .doesNotThrowAnyException();
         assertThatCode(() -> PackCompositionResolver.refuseUnresolvedDelegations(
-                        List.of(other, loose), "01LOOSE", candidates("other::tdd")))
+                        List.of(other, loose), "01KZNZNZSE0000000000000000", candidates("other::tdd")))
                 .doesNotThrowAnyException();
         assertThatCode(() -> PackCompositionResolver.refuseUnresolvedDelegations(
-                        List.of(loose), "01LOOSE", candidates("nowhere::tdd")))
+                        List.of(loose), "01KZNZNZSE0000000000000000", candidates("nowhere::tdd")))
                 .doesNotThrowAnyException();
     }
 }

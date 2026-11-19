@@ -12,6 +12,7 @@ import static ai.speckitty.charter.profiles.domain.resolution.Profiles.reviewer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.Collaboration;
 import ai.speckitty.charter.profiles.domain.Exclusion;
@@ -39,14 +40,14 @@ class ProfileEnhancementMergeTest {
         return ProfileEnhancementMerge.merge(
                 BASE,
                 java.util.Arrays.stream(enhancers)
-                        .map(profile -> new Enhancer(profile, profile.packId().value()))
+                        .map(profile -> new Enhancer(profile, profile.packId()))
                         .toList());
     }
 
     private static void assertRefused(AgentProfile enhancing, String field) {
         assertThatThrownBy(() -> merge(enhancing))
                 .isInstanceOfSatisfying(ProfileEnhancementDropsField.class, refused -> {
-                    assertThat(refused.pack()).isEqualTo("org-base");
+                    assertThat(refused.pack()).isEqualTo(new PackIdentifier("org-base"));
                     assertThat(refused.field()).isEqualTo(field);
                 })
                 .hasMessageContaining("org-base")
@@ -246,7 +247,7 @@ class ProfileEnhancementMergeTest {
 
         assertThatThrownBy(() -> merge(org, project))
                 .isInstanceOfSatisfying(ProfileEnhancementDropsField.class, refused -> {
-                    assertThat(refused.pack()).isEqualTo("project");
+                    assertThat(refused.pack()).isEqualTo(new PackIdentifier("project"));
                     assertThat(refused.field()).isEqualTo("directive-references");
                 });
         assertThat(merge(project, org).directiveReferences()).containsExactly(D001, D030, D038);

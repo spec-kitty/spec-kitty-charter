@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -521,6 +522,24 @@ public final class PackCommitStore implements WholePackWriteStore {
         } catch (IOException unresolved) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot resolve the pack directory " + packId, unresolved);
+        }
+    }
+
+    @Override
+    public Optional<String> caseTwinOf(String packId) {
+        String folded = packId.toLowerCase(Locale.ROOT);
+        Path root = writableRoot();
+        if (!Files.isDirectory(root)) {
+            return Optional.empty(); // no pack is stored yet: the first create makes the domain
+        }
+        try (Stream<Path> entries = Files.list(root)) {
+            return entries.map(entry -> entry.getFileName().toString())
+                    .filter(name -> !name.equals(packId)
+                            && name.toLowerCase(Locale.ROOT).equals(folded))
+                    .sorted()
+                    .findFirst();
+        } catch (IOException unlisted) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot list the pack domain", unlisted);
         }
     }
 

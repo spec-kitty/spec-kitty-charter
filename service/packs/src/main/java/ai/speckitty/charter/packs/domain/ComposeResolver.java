@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import java.util.Optional;
 
 /**
@@ -22,18 +23,28 @@ public interface ComposeResolver {
      * The pack that holds what a qualified reference names, judged by the compose's closure rule.
      *
      * @param reference the reference as the artifact writes it
-     * @param referringPack the pack whose artifact writes it
-     * @return the holding pack's identity; empty when the compose holds none
+     * @param referringPack the descriptor identity of the pack whose artifact writes it
+     * @return the holding pack's descriptor identity; empty when the compose holds none, and when the referring pack is
+     *     no pack of the compose
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal when the compose's reference rule refuses the
      *     reference, for example a qualifier naming a pack outside the referring pack's {@code depends_on} closure
      */
-    Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referringPack);
+    Optional<PackUlid> holdingPack(PackQualifiedReference reference, PackUlid referringPack);
 
     /**
      * The resolver of one pack's own artifacts.
      *
-     * @param pack the pack whose read paths the resolver uses
+     * @param pack the descriptor identity of the pack whose read paths the resolver uses
      * @return a resolver that reads a bare URN from {@code pack}
      */
-    ComponentResolver inPack(PackIdentifier pack);
+    ComponentResolver inPack(PackUlid pack);
+
+    /**
+     * The descriptor identity of the pack the compose configures under a registered id: the configured packs map one
+     * identity to the other.
+     *
+     * @param pack the registered id, as an artifact of the compose carries it
+     * @return the pack's descriptor identity; empty when no pack of the compose is registered under {@code pack}
+     */
+    Optional<PackUlid> descriptorIdOf(PackIdentifier pack);
 }

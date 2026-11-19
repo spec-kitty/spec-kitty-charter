@@ -537,7 +537,7 @@ final class ClosureViewSession implements PacksSession {
                 .forEach((urn, winner) -> activatable(urn)
                         .filter(held::contains)
                         .ifPresent(source -> merged.edges()
-                                .inPack(new PackIdentifier(winner.descriptorPackId()))
+                                .inPack(winner.descriptorPackId())
                                 .resolve(urn)
                                 .ifPresent(node -> node.derivedRelationships()
                                         .forEach(edge ->

@@ -269,8 +269,7 @@ public final class ArtifactRemovalService {
         PackCompositionFacts after = without(view.artifacts().compositionFacts(configured), removed, outgoing);
         List<InboundReferences.Referrer> referrers = inbound.scanRemoval(
                 view,
-                new InboundReferences.StagedTree(
-                        Optional.of(configured), Optional.of(descriptor.name()), descriptor, after),
+                new InboundReferences.StagedTree(configured, Optional.of(descriptor.name()), descriptor, after),
                 Set.copyOf(removed));
         if (!referrers.isEmpty()) {
             throw InboundReferences.refusal(

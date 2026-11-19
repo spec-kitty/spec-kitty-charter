@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain.rules;
 
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.ordered;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
@@ -438,43 +439,45 @@ class PackCodesCoverageTest {
     private static final Map<ReasonCode, ClosureFixture> CLOSURE_FIXTURES = closureFixtures();
 
     private static Map<ReasonCode, ClosureFixture> closureFixtures() {
-        PackUnderResolution base = pack("01BASE", "base", PackLevel.BUILT_IN, List.of());
-        PackUnderResolution org = pack("01ORG", "org", PackLevel.ORG, List.of());
+        PackUnderResolution base = pack(ordered("BASE"), "base", PackLevel.BUILT_IN, List.of());
+        PackUnderResolution org = pack(ordered("ORG"), "org", PackLevel.ORG, List.of());
         Map<ReasonCode, ClosureFixture> fixtures = new LinkedHashMap<>();
         fixtures.put(
                 code(RefusalCode.PACK_DEPENDENCY_CYCLE),
                 new ClosureFixture(
                         List.of(
-                                pack("01AAA", "a", PackLevel.ORG, depends("01BBB", ">=1.0")),
-                                pack("01BBB", "b", PackLevel.ORG, depends("01AAA", ">=1.0"))),
+                                pack(ordered("AAA"), "a", PackLevel.ORG, depends(ordered("BBB"), ">=1.0")),
+                                pack(ordered("BBB"), "b", PackLevel.ORG, depends(ordered("AAA"), ">=1.0"))),
                         List.of(
-                                pack("01AAA", "a", PackLevel.ORG, depends("01BBB", ">=1.0")),
-                                pack("01BBB", "b", PackLevel.ORG, List.of()))));
+                                pack(ordered("AAA"), "a", PackLevel.ORG, depends(ordered("BBB"), ">=1.0")),
+                                pack(ordered("BBB"), "b", PackLevel.ORG, List.of()))));
         fixtures.put(
                 code(RefusalCode.PACK_DEPENDENCY_UNKNOWN),
                 new ClosureFixture(
-                        List.of(pack("01DEP", "dep", PackLevel.ORG, depends("01GONE", ">=1.0"))),
-                        List.of(pack("01DEP", "dep", PackLevel.ORG, depends("01BASE", ">=1.0")), base)));
+                        List.of(pack(ordered("DEP"), "dep", PackLevel.ORG, depends(ordered("GONE"), ">=1.0"))),
+                        List.of(pack(ordered("DEP"), "dep", PackLevel.ORG, depends(ordered("BASE"), ">=1.0")), base)));
         fixtures.put(
                 code(RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE),
                 new ClosureFixture(
-                        List.of(pack("01DEP", "dep", PackLevel.ORG, depends("01BASE", ">=2.0")), base),
-                        List.of(pack("01DEP", "dep", PackLevel.ORG, depends("01BASE", ">=1.0")), base)));
+                        List.of(pack(ordered("DEP"), "dep", PackLevel.ORG, depends(ordered("BASE"), ">=2.0")), base),
+                        List.of(pack(ordered("DEP"), "dep", PackLevel.ORG, depends(ordered("BASE"), ">=1.0")), base)));
         fixtures.put(
                 code(RefusalCode.PACK_PARENT_UNRESOLVED),
                 new ClosureFixture(
-                        List.of(extending("01KID", "kid", PackLevel.ORG, "01GONE")),
-                        List.of(extending("01KID", "kid", PackLevel.ORG, "01BASE"), base)));
+                        List.of(extending(ordered("KID"), "kid", PackLevel.ORG, ordered("GONE"))),
+                        List.of(extending(ordered("KID"), "kid", PackLevel.ORG, ordered("BASE")), base)));
         fixtures.put(
                 code(RefusalCode.PACK_LEVEL_VIOLATION),
                 new ClosureFixture(
-                        List.of(pack("01DEP", "dep", PackLevel.BUILT_IN, depends("01ORG", ">=1.0")), org),
-                        List.of(pack("01DEP", "dep", PackLevel.PROJECT, depends("01ORG", ">=1.0")), org)));
+                        List.of(pack(ordered("DEP"), "dep", PackLevel.BUILT_IN, depends(ordered("ORG"), ">=1.0")), org),
+                        List.of(
+                                pack(ordered("DEP"), "dep", PackLevel.PROJECT, depends(ordered("ORG"), ">=1.0")),
+                                org)));
         fixtures.put(
                 code(RefusalCode.PACK_NAME_CONFLICT),
                 new ClosureFixture(
-                        List.of(org, pack("01TWO", "org", PackLevel.ORG, List.of())),
-                        List.of(org, pack("01TWO", "two", PackLevel.ORG, List.of()))));
+                        List.of(org, pack(ordered("TWO"), "org", PackLevel.ORG, List.of())),
+                        List.of(org, pack(ordered("TWO"), "two", PackLevel.ORG, List.of()))));
         fixtures.put(
                 code(RefusalCode.PACK_DUPLICATE_ID),
                 new ClosureFixture(
@@ -482,15 +485,17 @@ class PackCodesCoverageTest {
                                 org,
                                 new PackUnderResolution(
                                         configured("twin", PackLevel.ORG),
-                                        descriptor("01ORG", "twin", PackLevel.ORG, List.of()))),
+                                        descriptor(ordered("ORG"), "twin", PackLevel.ORG, List.of()))),
                         List.of(org)));
         fixtures.put(
                 code(RefusalCode.PACK_SIBLING_CONFLICT),
                 new ClosureFixture(
-                        List.of(refining("01LEFT", "left", PackLevel.ORG), refining("01RIGHT", "right", PackLevel.ORG)),
                         List.of(
-                                refining("01LEFT", "left", PackLevel.ORG),
-                                refining("01RIGHT", "right", PackLevel.PROJECT))));
+                                refining(ordered("LEFT"), "left", PackLevel.ORG),
+                                refining(ordered("RIGHT"), "right", PackLevel.ORG)),
+                        List.of(
+                                refining(ordered("LEFT"), "left", PackLevel.ORG),
+                                refining(ordered("RIGHT"), "right", PackLevel.PROJECT))));
         return fixtures;
     }
 

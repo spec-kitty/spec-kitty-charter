@@ -11,10 +11,12 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,7 +41,7 @@ class LayerMergeTest {
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, List<Preset>> presets = new HashMap<>();
         private final Map<String, Map<String, List<String>>> languages = new HashMap<>();
-        private final Map<String, MutabilityPolicySource> policies = new HashMap<>();
+        private final Map<PackUlid, MutabilityPolicySource> policies = new HashMap<>();
 
         Fixture pack(String name, PackLevel level, String... held) {
             return pack(name, level, List.of(), held);
@@ -93,7 +95,7 @@ class LayerMergeTest {
         }
 
         Fixture policy(String name, MutabilityPolicySource policy) {
-            policies.put(packId(name), policy);
+            policies.put(FixtureUlids.ulid(name), policy);
             return this;
         }
 
@@ -130,7 +132,7 @@ class LayerMergeTest {
     }
 
     static String packId(String name) {
-        return "id-" + name;
+        return FixtureUlids.of(name);
     }
 
     static Urn urn(String text) {
@@ -286,7 +288,7 @@ class LayerMergeTest {
 
         MergedClosure.Winner winner = winner(merged, urn("directive:D"));
         assertThat(winner.packId()).isEqualTo(configured("project"));
-        assertThat(winner.descriptorPackId()).isEqualTo(packId("project"));
+        assertThat(winner.descriptorPackId()).isEqualTo(FixtureUlids.ulid("project"));
         assertThat(winner.level()).isEqualTo(PackLevel.PROJECT);
         assertThat(winner(merged, urn("directive:O")).level()).isEqualTo(PackLevel.ORG);
         assertThat(winner(merged, urn("directive:B")).level()).isEqualTo(PackLevel.BUILT_IN);
@@ -480,7 +482,10 @@ class LayerMergeTest {
         assertThatThrownBy(contested::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
             assertThat(refusal.getMessage())
-                    .contains("action:M/s", "declared by pack `org-x` (id-org-x), which is not the distribution pack");
+                    .contains(
+                            "action:M/s",
+                            "declared by pack `org-x` (" + FixtureUlids.of("org-x")
+                                    + "), which is not the distribution pack");
             assertThat(refusal.packs()).extracting(RefusalPack::name).containsExactly("org-x", "org-y");
         });
     }
@@ -658,7 +663,7 @@ class LayerMergeTest {
                         .policy("org-guard", level("directive:D", MutabilityLevel.LOCKED)),
                 "directive:D",
                 "locked",
-                "org-guard");
+                "set by pack " + FixtureUlids.of("org-guard"));
     }
 
     private static void c22() {
@@ -669,7 +674,7 @@ class LayerMergeTest {
                 .merge();
 
         assertThat(winner(merged, urn("directive:E")).policy())
-                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(packId("builtin"))));
+                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(FixtureUlids.ulid("builtin"))));
         assertThat(winner(merged, urn("directive:D")).policy()).isEqualTo(PerPackPolicy.Level.OPEN);
     }
 
@@ -695,7 +700,7 @@ class LayerMergeTest {
                 .merge();
 
         assertThat(merged.presets()).containsOnlyKeys("team");
-        assertThat(merged.presets().get("team").descriptorPackId()).isEqualTo(packId("project"));
+        assertThat(merged.presets().get("team").descriptorPackId()).isEqualTo(FixtureUlids.ulid("project"));
         assertThat(merged.presets().get("team").preset()).isEqualTo(preset("team", "B"));
     }
 

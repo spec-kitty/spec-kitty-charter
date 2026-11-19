@@ -30,26 +30,54 @@ class ResolverDeterminismTest {
         // Eight packs over three levels with a diamond (BBB and CCC share AAA; DDD depends on both) and a sibling
         // pair sharing AAA, configured in an order nothing like the resolved one.
         List<PackUnderResolution> fixture = List.of(
-                pack("01AAA", "aaa", PackLevel.BUILT_IN),
-                pack("01FFF", "fff", PackLevel.BUILT_IN),
-                pack("01BBB", "bbb", PackLevel.ORG, new PackDependency("01AAA", ">=1.0")),
-                pack("01CCC", "ccc", PackLevel.ORG, new PackDependency("01AAA", "<2.0")),
+                pack("01AAA000000000000000000000", "aaa", PackLevel.BUILT_IN),
+                pack("01FFF000000000000000000000", "fff", PackLevel.BUILT_IN),
                 pack(
-                        "01DDD",
+                        "01BBB000000000000000000000",
+                        "bbb",
+                        PackLevel.ORG,
+                        new PackDependency("01AAA000000000000000000000", ">=1.0")),
+                pack(
+                        "01CCC000000000000000000000",
+                        "ccc",
+                        PackLevel.ORG,
+                        new PackDependency("01AAA000000000000000000000", "<2.0")),
+                pack(
+                        "01DDD000000000000000000000",
                         "ddd",
                         PackLevel.ORG,
-                        new PackDependency("01BBB", ">=1.0"),
-                        new PackDependency("01CCC", ">=1.0")),
-                pack("01EEE", "eee", PackLevel.ORG, new PackDependency("01AAA", ">=1.0")),
-                pack("01GGG", "ggg", PackLevel.PROJECT, new PackDependency("01DDD", ">=1.0")),
-                pack("01HHH", "hhh", PackLevel.PROJECT, new PackDependency("01EEE", ">=1.0")));
+                        new PackDependency("01BBB000000000000000000000", ">=1.0"),
+                        new PackDependency("01CCC000000000000000000000", ">=1.0")),
+                pack(
+                        "01EEE000000000000000000000",
+                        "eee",
+                        PackLevel.ORG,
+                        new PackDependency("01AAA000000000000000000000", ">=1.0")),
+                pack(
+                        "01GGG000000000000000000000",
+                        "ggg",
+                        PackLevel.PROJECT,
+                        new PackDependency("01DDD000000000000000000000", ">=1.0")),
+                pack(
+                        "01HHH000000000000000000000",
+                        "hhh",
+                        PackLevel.PROJECT,
+                        new PackDependency("01EEE000000000000000000000", ">=1.0")));
 
         for (int run = 0; run < RUNS; run++) {
             List<PackUnderResolution> shuffled = new ArrayList<>(fixture);
             Collections.shuffle(shuffled, new Random(0x5EED_0000L + run));
             assertThat(idsOf(PackCompositionResolver.resolve(shuffled)))
                     .as("run %d", run)
-                    .containsExactly("01AAA", "01FFF", "01BBB", "01CCC", "01DDD", "01EEE", "01GGG", "01HHH");
+                    .containsExactly(
+                            "01AAA000000000000000000000",
+                            "01FFF000000000000000000000",
+                            "01BBB000000000000000000000",
+                            "01CCC000000000000000000000",
+                            "01DDD000000000000000000000",
+                            "01EEE000000000000000000000",
+                            "01GGG000000000000000000000",
+                            "01HHH000000000000000000000");
         }
     }
 
@@ -77,11 +105,17 @@ class ResolverDeterminismTest {
     void aLevelStaysContiguousWhenItsDependencyIsMetLate() {
         // B2 (built-in) needs B1 (built-in); O1 (org) needs nothing. FIFO would answer B1, O1, B2.
         List<PackUnderResolution> fixture = List.of(
-                pack("01O1", "o1", PackLevel.ORG),
-                pack("01B2", "b2", PackLevel.BUILT_IN, new PackDependency("01B1", ">=1.0")),
-                pack("01B1", "b1", PackLevel.BUILT_IN));
+                pack("01NZ1000000000000000000000", "o1", PackLevel.ORG),
+                pack(
+                        "01B20000000000000000000000",
+                        "b2",
+                        PackLevel.BUILT_IN,
+                        new PackDependency("01B10000000000000000000000", ">=1.0")),
+                pack("01B10000000000000000000000", "b1", PackLevel.BUILT_IN));
 
-        assertThat(idsOf(PackCompositionResolver.resolve(fixture))).containsExactly("01B1", "01B2", "01O1");
+        assertThat(idsOf(PackCompositionResolver.resolve(fixture)))
+                .containsExactly(
+                        "01B10000000000000000000000", "01B20000000000000000000000", "01NZ1000000000000000000000");
     }
 
     private static List<String> idsOf(List<PackUnderResolution> resolved) {

@@ -22,6 +22,7 @@ import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -217,17 +218,18 @@ class PackMutabilityPolicyTest {
         PackIdentifier q = new PackIdentifier("q");
         Map<String, PackDescriptor> descriptors = Map.of(
                 "q",
-                new PackDescriptor("Q", "1.0.0", Optional.empty(), "q", Optional.empty(), Optional.empty()),
+                new PackDescriptor(
+                        FixtureUlids.of("Q"), "1.0.0", Optional.empty(), "q", Optional.empty(), Optional.empty()),
                 PACK.value(),
                 new PackDescriptor(
-                        PACK.value(),
+                        FixtureUlids.of(PACK.value()),
                         "1.0.0",
                         Optional.empty(),
                         PACK.value(),
                         Optional.empty(),
                         Optional.empty(),
                         PackPaths.none(),
-                        List.of(new PackDependency("Q", ">=1.0"))));
+                        List.of(new PackDependency(FixtureUlids.of("Q"), ">=1.0"))));
         Map<String, PackCompositionFacts> facts = Map.of(
                 "q",
                 new PackCompositionFacts(
@@ -318,7 +320,12 @@ class PackMutabilityPolicyTest {
         Pack unconfigured = Pack.builder()
                 .id(ghost)
                 .descriptor(new PackDescriptor(
-                        "GHOST", "1.0.0", Optional.empty(), "ghost", Optional.empty(), Optional.empty()))
+                        FixtureUlids.of("GHOST"),
+                        "1.0.0",
+                        Optional.empty(),
+                        "ghost",
+                        Optional.empty(),
+                        Optional.empty()))
                 .build();
 
         assertThatThrownBy(() -> gate.authorize(unconfigured, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
@@ -350,7 +357,12 @@ class PackMutabilityPolicyTest {
 
     private static PackDescriptor descriptor() {
         return new PackDescriptor(
-                PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty());
+                FixtureUlids.of(PACK.value()),
+                "1.0.0",
+                Optional.empty(),
+                PACK.value(),
+                Optional.empty(),
+                Optional.empty());
     }
 
     private static Directive directive(String id) {

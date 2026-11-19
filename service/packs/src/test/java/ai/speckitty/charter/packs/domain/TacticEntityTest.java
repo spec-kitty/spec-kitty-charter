@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Tactic entity")
 class TacticEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     private static Tactic.Builder valid(String id) {
         return Tactic.builder()

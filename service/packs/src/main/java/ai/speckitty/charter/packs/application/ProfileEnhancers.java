@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ final class ProfileEnhancers {
      * @param closurePackIds the closure's descriptor {@code pack_id}s, dependencies first
      * @return each enhanced profile, in URN order, with the winners that enhance it, in merge order
      */
-    static Map<Urn, List<MergedClosure.Winner>> of(ClosureView.MergedView merged, List<String> closurePackIds) {
+    static Map<Urn, List<MergedClosure.Winner>> of(ClosureView.MergedView merged, List<PackUlid> closurePackIds) {
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(closurePackIds, "closurePackIds");
         Map<Urn, MergedClosure.Winner> winners = merged.closure().winners();

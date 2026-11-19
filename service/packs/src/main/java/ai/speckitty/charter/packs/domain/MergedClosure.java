@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -46,7 +47,7 @@ public record MergedClosure(
      * @param mustHave the must-have items of the copy of the id in force at each level, each once, in closure order; items no
      *     pack holds included (the floor reports those)
      */
-    public record MergedPreset(Preset preset, String descriptorPackId, List<Urn> mustHave) {
+    public record MergedPreset(Preset preset, PackUlid descriptorPackId, List<Urn> mustHave) {
 
         /**
          * Checks and copies the fields.
@@ -66,14 +67,14 @@ public record MergedClosure(
      * The version of an artifact in force.
      *
      * @param urn the artifact
-     * @param packId the configured identifier of the pack that holds the version in force
+     * @param packId the registered id of the pack that holds the version in force
      * @param descriptorPackId the {@code pack_id} that pack's descriptor declares
      * @param level the level that pack is configured at
      * @param policy the artifact's mutability level along the closure, and the pack that set it
      *     ({@link PerPackPolicy#levelIn})
      */
     public record Winner(
-            Urn urn, PackIdentifier packId, String descriptorPackId, PackLevel level, PerPackPolicy.Level policy) {
+            Urn urn, PackIdentifier packId, PackUlid descriptorPackId, PackLevel level, PerPackPolicy.Level policy) {
 
         /**
          * Checks the fields.

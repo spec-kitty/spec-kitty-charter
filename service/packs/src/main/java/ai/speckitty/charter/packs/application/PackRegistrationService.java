@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -370,7 +369,7 @@ public final class PackRegistrationService {
                     "A built-in pack is read-only; only org and project packs are registered.");
         }
         List<ConfiguredPack> configured = view.catalog().configured();
-        requireNoCaseTwin(upload.packId(), configured);
+        requireNoCaseTwin(upload.packId());
         Optional<ConfiguredPack> named = configured.stream()
                 .filter(candidate -> candidate.id().value().equals(upload.packId()))
                 .findFirst();
@@ -388,20 +387,18 @@ public final class PackRegistrationService {
         return Optional.of(replaced);
     }
 
-    /** An id that folds to another stored id would be one directory on a file system that folds case. */
-    private static void requireNoCaseTwin(String packId, List<ConfiguredPack> configured) {
-        String folded = packId.toLowerCase(Locale.ROOT);
-        configured.stream()
-                .map(candidate -> candidate.id().value())
-                .filter(name ->
-                        !name.equals(packId) && name.toLowerCase(Locale.ROOT).equals(folded))
-                .findFirst()
-                .ifPresent(twin -> {
-                    throw new CharterRefusal(
-                            RefusalCode.REGISTRATION_CONFLICT,
-                            "The pack id " + packId + " is the same as the stored pack " + twin
-                                    + " once case is folded.");
-                });
+    /**
+     * An id that folds to the name of a directory of the pack domain would be one directory on a file system that folds
+     * case. The directory need not be a stored pack: a hand-seeded {@code Legacy}, which the listing does not serve, still
+     * takes the entry a new {@code legacy} would be created at.
+     */
+    private void requireNoCaseTwin(String packId) {
+        store.caseTwinOf(packId).ifPresent(twin -> {
+            throw new CharterRefusal(
+                    RefusalCode.REGISTRATION_CONFLICT,
+                    "The pack id " + packId + " is the same as the directory " + twin + " of the pack domain"
+                            + " once case is folded.");
+        });
     }
 
     private static void requireSameIdentity(Upload upload, Stored stored) {
@@ -651,7 +648,7 @@ public final class PackRegistrationService {
         List<InboundReferences.Referrer> referrers = inbound.scan(
                 view,
                 new InboundReferences.StagedTree(
-                        Optional.of(stored.get().configured().id()),
+                        new PackIdentifier(upload.packId()),
                         Optional.of(stored.get().descriptor().name()),
                         upload.descriptor(),
                         upload.contents().facts()),

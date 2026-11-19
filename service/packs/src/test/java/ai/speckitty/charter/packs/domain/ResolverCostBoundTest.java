@@ -137,6 +137,6 @@ class ResolverCostBoundTest {
 
     private static String id(int index) {
         // Twenty-six characters, zero-padded, so the code-point order matches the index order.
-        return String.format("01COST%020d", index);
+        return String.format("01CNZST0000000000000000000%020d", index);
     }
 }

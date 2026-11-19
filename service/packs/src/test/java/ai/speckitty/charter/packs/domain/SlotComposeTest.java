@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -74,7 +75,7 @@ class SlotComposeTest {
 
     private static PackUnderResolution pack(String name, PackLevel level, String... held) {
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,

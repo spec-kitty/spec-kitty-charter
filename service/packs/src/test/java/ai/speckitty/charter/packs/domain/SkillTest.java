@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Skill entity")
 class SkillTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     private static Skill.Builder prompt(String id) {
         return Skill.builder()

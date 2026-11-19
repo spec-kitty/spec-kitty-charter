@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -40,8 +41,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * The typed edges of one composed closure, indexed by (holding pack, source URN), as a {@link ComposeResolver}:
  * a {@link GraphWalk} over it reaches every graph-authored kind from the {@link PackCompositionFacts#edges() facts} the
- * compose already read, with no read of its own (NFR-007). A pack is named by its descriptor {@code pack_id}, the
- * identity the {@link ClosureView} uses; a {@code <pack>::} reference resolves by the compose's one rule
+ * compose already read, with no read of its own (NFR-007). A pack is keyed by its descriptor identity, the
+ * {@link PackUlid} the {@link ClosureView} orders by; a node it answers carries the id its pack is registered under, as
+ * every artifact does. A {@code <pack>::} reference resolves by the compose's one rule
  * ({@link PackCompositionResolver#holderOf}).
  *
  * <p>The index is built once and never changes. Each edge it holds is its own instance, so the pack that holds an edge's
@@ -53,10 +55,10 @@ public final class EdgeIndex implements ComposeResolver {
     /**
      * Where an artifact sits in the closure: the pack that holds it and its bare URN.
      *
-     * @param pack the descriptor {@code pack_id} of the holding pack
+     * @param pack the descriptor identity of the holding pack
      * @param urn the bare URN
      */
-    public record Place(PackIdentifier pack, Urn urn) {
+    public record Place(PackUlid pack, Urn urn) {
 
         /**
          * Checks the fields.
@@ -74,7 +76,7 @@ public final class EdgeIndex implements ComposeResolver {
      * A held artifact as the walk sees it: its place and the indexed edges from it. {@link GraphWalk} follows a
      * component's {@link CharterArtifact#derivedRelationships()}, so this node answers its indexed graph-document edges
      * there: it is a walk node, not a stored artifact, and nothing else reads it (ADR-0064; #397 retires or rebases the
-     * walk).
+     * walk). It carries the id its pack is registered under, as every artifact does.
      */
     private record EdgeNode(PackIdentifier packId, Urn urn, List<Relationship> edges) implements CharterArtifact {
 
@@ -127,7 +129,7 @@ public final class EdgeIndex implements ComposeResolver {
 
     private final List<PackUnderResolution> closure;
     private final Visits visits;
-    private final Map<PackIdentifier, PackUnderResolution> byPack = new LinkedHashMap<>();
+    private final Map<PackUlid, PackUnderResolution> byPack = new LinkedHashMap<>();
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
     /** The edges a pack writes at another pack's source ({@code <pack>::} source), by identity. */
@@ -213,9 +215,7 @@ public final class EdgeIndex implements ComposeResolver {
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(visits, "visits");
         Map<Urn, Place> placesInForce = new LinkedHashMap<>();
-        merged.winners()
-                .forEach((urn, winner) ->
-                        placesInForce.put(urn, new Place(new PackIdentifier(winner.descriptorPackId()), urn)));
+        merged.winners().forEach((urn, winner) -> placesInForce.put(urn, new Place(winner.descriptorPackId(), urn)));
         EdgeIndex view = new EdgeIndex(closure, placesInForce, visits);
         outgoing.forEach((place, edges) -> {
             if (view.wins(place)) {
@@ -278,10 +278,7 @@ public final class EdgeIndex implements ComposeResolver {
                             "pack `" + writer.descriptor().name() + "` writes the overrides edge `" + edge.from()
                                     + "` -> `" + edge.toReference()
                                     + "`, which resolves to its own source in the merged closure (self_override)",
-                            List.of(new RefusalPack(
-                                    writer.descriptor().packId(),
-                                    writer.configured().id().value(),
-                                    writer.descriptor().name())));
+                            List.of(refusalPack(writer)));
                 }
             }
         }
@@ -332,10 +329,7 @@ public final class EdgeIndex implements ComposeResolver {
                                     + holder.descriptor().name()
                                     + "` is required to `" + edge.to() + "` by another pack's edge, which names no"
                                     + " step of the type (" + MissionStepLinkRule.CODE + ")",
-                            List.of(new RefusalPack(
-                                    holder.descriptor().packId(),
-                                    holder.configured().id().value(),
-                                    holder.descriptor().name())));
+                            List.of(refusalPack(holder)));
                 }
             }
         });
@@ -346,16 +340,27 @@ public final class EdgeIndex implements ComposeResolver {
     }
 
     @Override
-    public Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referringPack) {
-        PackIdentifier referring = Optional.ofNullable(byPack.get(referringPack))
-                .map(pack -> pack.configured().id())
-                .orElse(referringPack);
-        return PackCompositionResolver.holderOf(closure, referring, reference).map(EdgeIndex::idOf);
+    public Optional<PackUlid> holdingPack(PackQualifiedReference reference, PackUlid referringPack) {
+        Objects.requireNonNull(reference, "reference");
+        return Optional.ofNullable(byPack.get(referringPack))
+                .flatMap(referring -> PackCompositionResolver.holderOf(
+                        closure, referring.configured().id(), reference))
+                .map(EdgeIndex::idOf);
     }
 
     @Override
-    public ComponentResolver inPack(PackIdentifier pack) {
+    public ComponentResolver inPack(PackUlid pack) {
+        Objects.requireNonNull(pack, "pack");
         return urn -> node(new Place(pack, urn), outgoing.getOrDefault(new Place(pack, urn), List.of()));
+    }
+
+    @Override
+    public Optional<PackUlid> descriptorIdOf(PackIdentifier pack) {
+        Objects.requireNonNull(pack, "pack");
+        return closure.stream()
+                .filter(held -> held.configured().id().equals(pack))
+                .map(EdgeIndex::idOf)
+                .findFirst();
     }
 
     /** Every place of the closure that holds the URN, in closure order. */
@@ -599,7 +604,9 @@ public final class EdgeIndex implements ComposeResolver {
     }
 
     private Optional<CharterArtifact> node(Place place, List<Relationship> edges) {
-        return holds(place) ? Optional.of(new EdgeNode(place.pack(), place.urn(), edges)) : Optional.empty();
+        return holds(place)
+                ? Optional.of(new EdgeNode(packOf(place).configured().id(), place.urn(), edges))
+                : Optional.empty();
     }
 
     /** Refuses, as the compose does, a qualified endpoint outside the writer's {@code depends_on} closure. */
@@ -619,7 +626,7 @@ public final class EdgeIndex implements ComposeResolver {
     }
 
     private void add(PackUnderResolution writer, Relationship edge) {
-        PackIdentifier writerId = idOf(writer);
+        PackUlid writerId = idOf(writer);
         Optional<Place> source = edge.fromPack().isEmpty()
                 ? Optional.of(new Place(writerId, edge.from()))
                 : holdingPack(edge.fromReference(), writerId).map(pack -> new Place(pack, edge.from()));
@@ -645,7 +652,12 @@ public final class EdgeIndex implements ComposeResolver {
         sources.put(edge, source);
     }
 
-    private static PackIdentifier idOf(PackUnderResolution pack) {
-        return new PackIdentifier(pack.descriptor().packId());
+    private static PackUlid idOf(PackUnderResolution pack) {
+        return pack.descriptorId();
+    }
+
+    private static RefusalPack refusalPack(PackUnderResolution pack) {
+        return new RefusalPack(
+                pack.descriptorId(), pack.configured().id(), pack.descriptor().name());
     }
 }

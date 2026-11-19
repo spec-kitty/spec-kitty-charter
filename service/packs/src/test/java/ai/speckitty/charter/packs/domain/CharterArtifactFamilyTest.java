@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("CharterArtifact family")
 class CharterArtifactFamilyTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01FAMILYPACK");
+    private static final PackIdentifier PACK = new PackIdentifier("familypack");
 
     private static final Directive DIRECTIVE = Directive.builder()
             .id(new DirectiveIdentifier("DIRECTIVE_700"))
