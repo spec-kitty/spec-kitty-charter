@@ -4,8 +4,10 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.scope.parity`
 - **Input key:** `parity_test`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T20:50:18.259354+00:00`
+- **Resolved:** `2026-11-19T21:10:46.459913+00:00`
+- **Resolved by:** `operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)`
 - **Opened by:** `claude::java-jenny`
 - **Other answer:** `false`
 
@@ -21,7 +23,7 @@ D6: The parity test, given ADR-0070 (charter tests read no open-packs content) a
 
 ## Final answer
 
-_(none)_
+(c) Operator 2026-11-19: drop the parity test; open-packs' charter_service_check.py already delivers it. Note this in the spec and on the issue.
 
 ## Rationale
 
@@ -30,3 +32,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T20:50:18.259354+00:00` - opened
+- `2026-11-19T21:10:46.459913+00:00` - resolved (final_answer="(c) Operator 2026-11-19: drop the parity test; open-packs' charter_service_check.py already delivers it. Note this in the spec and on the issue.")

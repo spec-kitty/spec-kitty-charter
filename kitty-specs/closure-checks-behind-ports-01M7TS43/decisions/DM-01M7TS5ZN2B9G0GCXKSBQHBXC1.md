@@ -4,8 +4,10 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.design.notices`
 - **Input key:** `impact_notices`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T20:50:13.794157+00:00`
+- **Resolved:** `2026-11-19T21:10:41.994165+00:00`
+- **Resolved by:** `operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)`
 - **Opened by:** `claude::java-jenny`
 - **Other answer:** `false`
 
@@ -20,7 +22,7 @@ D4: ImpactCheck is a kernel Rule, but the impact also yields notices (floor/lock
 
 ## Final answer
 
-_(none)_
+(a) Operator 2026-11-19: one pass; the port returns the verdict and the notices and exposes the kernel Rule view.
 
 ## Rationale
 
@@ -29,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T20:50:13.794157+00:00` - opened
+- `2026-11-19T21:10:41.994165+00:00` - resolved (final_answer="(a) Operator 2026-11-19: one pass; the port returns the verdict and the notices and exposes the kernel Rule view.")

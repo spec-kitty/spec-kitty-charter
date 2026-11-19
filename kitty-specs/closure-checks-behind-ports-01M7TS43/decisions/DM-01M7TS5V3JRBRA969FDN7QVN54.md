@@ -4,8 +4,10 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.scope.collect-all`
 - **Input key:** `collect_scope`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T20:50:09.138246+00:00`
+- **Resolved:** `2026-11-19T21:10:37.417033+00:00`
+- **Resolved by:** `operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)`
 - **Opened by:** `claude::java-jenny`
 - **Other answer:** `false`
 
@@ -20,7 +22,7 @@ D2: How far does collect-all reach?
 
 ## Final answer
 
-_(none)_
+(b) Operator 2026-11-19: everything related: every closure a write joins, role pins, profile enhancement, specialization cycle, every refused write of a registration, and the qualified-reference checks.
 
 ## Rationale
 
@@ -29,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T20:50:09.138246+00:00` - opened
+- `2026-11-19T21:10:37.417033+00:00` - resolved (final_answer="(b) Operator 2026-11-19: everything related: every closure a write joins, role pins, profile enhancement, specialization cycle, every refused write of a registration, and the qualified-reference checks.")

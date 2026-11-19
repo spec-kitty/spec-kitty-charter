@@ -4,8 +4,10 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.scope.dependents-seam`
 - **Input key:** `dependents_seam`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T20:50:11.601664+00:00`
+- **Resolved:** `2026-11-19T21:10:39.639210+00:00`
+- **Resolved by:** `operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)`
 - **Opened by:** `claude::java-jenny`
 - **Other answer:** `false`
 
@@ -20,7 +22,7 @@ D3: Does ImpactCheck absorb #517 PackDependents?
 
 ## Final answer
 
-_(none)_
+(a) Operator 2026-11-19: ImpactCheck absorbs PackDependents; PackDependents and ClosurePackDependents are deleted; 409 pack_has_dependents stays its own code.
 
 ## Rationale
 
@@ -29,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T20:50:11.601664+00:00` - opened
+- `2026-11-19T21:10:39.639210+00:00` - resolved (final_answer="(a) Operator 2026-11-19: ImpactCheck absorbs PackDependents; PackDependents and ClosurePackDependents are deleted; 409 pack_has_dependents stays its own code.")
