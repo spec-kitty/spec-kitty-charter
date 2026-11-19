@@ -54,7 +54,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude::java-jenny",
       "agent_profile": "java-jenny",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -64,7 +64,8 @@
       "last_transition_at": "2026-11-19T12:35:04.693947+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: facts on the one read, closure(presetIdsOf), PackRefusalMapping; verifyAll green"
+        "Ready for review: facts on the one read, closure(presetIdsOf), PackRefusalMapping; verifyAll green",
+        "Cycle 1 fixed: F1 readoutFacts unit tests (other codes, Assembly.None; hardcode mutant killed), F2 planted readouts from the one reader; noAssembly is one factory; verifyAll green"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
