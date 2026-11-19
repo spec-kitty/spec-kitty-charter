@@ -104,7 +104,11 @@ artifacts of other packs that refer to one of its artifacts. The refusal has the
 `packs` member naming the dependent packs, and violations naming every dependent (`depends_on`, `parent_pack`,
 `activation`, `artifact_reference`), at most 100, the detail counting the rest. A configured pack whose descriptor cannot
 be read cannot be judged and refuses the delete `500 pack_unreadable`: a dependent that cannot be read never lets a
-delete through.
+delete through. The removed pack's own `pack.yaml` need not be readable: such a pack can still be deleted, and is judged
+by its configured name, the name an activation and a qualified reference name it by. Its `pack_id` is unknown, so a
+pack whose `depends_on` or `parent_pack` names it is not found; that pack's closure already holds a pack that cannot be
+read, so the delete takes nothing from a closure that composed. The dry run's `PackImpact` then has no `version`. A
+delete is how an operator clears a pack that no longer reads.
 
 ### 8. The removal (amends ADR-0065 D4)
 

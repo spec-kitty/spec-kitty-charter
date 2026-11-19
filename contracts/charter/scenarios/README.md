@@ -486,6 +486,9 @@ vocabulary above.
   extraction, the check that the pack's name is the target) runs for real.
 - `When I DELETE "<path>" with the remembered ETag`: a `DELETE` whose `If-Match` is the `ETag` last remembered with `When I
   remember the ETag`, from `getPack` or from a write's answer.
+- `When I DELETE "<path>" without If-Match`: a `DELETE` with no `If-Match` field, which a revision write answers `428`.
+- `Given the stored pack "<pack>" has the file "<path>":` (a doc string): overwrites a file of a pack a registration
+  stored, under the scenario's `packs` domain, behind the service's back, as an operator's hand or a failing disk would.
 
 ## Tags
 

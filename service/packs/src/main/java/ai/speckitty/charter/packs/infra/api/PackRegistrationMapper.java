@@ -237,9 +237,9 @@ final class PackRegistrationMapper {
                 outcome.pack().value(),
                 PackImpact.OperationEnum.DELETE,
                 outcome.refused().isPresent() ? PackImpact.OutcomeEnum.REFUSED : PackImpact.OutcomeEnum.DELETED,
-                outcome.version(),
                 outcome.revision().token(),
                 Map.of());
+        outcome.version().ifPresent(body::setVersion);
         outcome.refused()
                 .ifPresentOrElse(
                         refused -> body.setProblem(impactProblem(refusals.registrationProblem(refused))),
