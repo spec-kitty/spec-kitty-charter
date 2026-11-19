@@ -41,6 +41,18 @@ public final class PackCodes {
     public static final ReasonCode OVERRIDES_SOURCE_NOT_ACTIVATABLE =
             violation(EndpointRule.OVERRIDES_SOURCE_NOT_ACTIVATABLE);
 
+    /** A pack writes a second tension on an unordered pair it already joins by a tension (ADR-0045 decision 6). */
+    public static final ReasonCode TENSION_DUPLICATED = violation("tension_duplicated");
+
+    /**
+     * A tension written in the wrong orientation (ADR-0045 decisions 1 and 6): the pack owns one side and the other is
+     * the source, or the pack owns both sides, or neither, and the source is not the smaller bare URN.
+     */
+    public static final ReasonCode TENSION_ORIENTATION = violation("tension_orientation");
+
+    /** A tension whose two sides have the same bare URN, two versions of one artifact (ADR-0045 decision 1). */
+    public static final ReasonCode TENSION_SELF = violation("tension_self");
+
     /** A step of a mission type declares a substep id twice (FR-004). */
     public static final ReasonCode DUPLICATE_STEP_ID = violation("duplicate_step_id");
 
@@ -95,6 +107,9 @@ public final class PackCodes {
             ARTIFACT_SCHEMA_ERROR,
             RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
             OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+            TENSION_DUPLICATED,
+            TENSION_ORIENTATION,
+            TENSION_SELF,
             DUPLICATE_STEP_ID,
             DUPLICATE_ARTIFACT_ID,
             ASSET,

@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
@@ -53,6 +54,12 @@ class GraphRulesTest {
 
     /** Facts of the pack {@code qa}, whose descriptor names it {@code declared}, with the graph documents given. */
     private static PackContents graphs(List<FileRead<RawGraph>> shards, FileRead<RawGraph> fragment) {
+        return holding(List.of(), shards, fragment);
+    }
+
+    /** As {@link #graphs}, with the artifacts the pack holds, each {@code kind:id}. */
+    private static PackContents holding(
+            List<String> held, List<FileRead<RawGraph>> shards, FileRead<RawGraph> fragment) {
         return new PackContents(
                 new PackRoot("qa", Optional.of(PackLevel.ORG), "loc"),
                 new FileRead.Read<>(
@@ -66,7 +73,12 @@ class GraphRulesTest {
                                 Optional.empty())),
                 shards,
                 fragment,
-                List.of(),
+                held.stream()
+                        .map(urn -> new ArtifactFacts(
+                                urn.substring(0, urn.indexOf(':')) + "s/" + urn + ".yaml",
+                                urn.substring(0, urn.indexOf(':')),
+                                urn.substring(urn.indexOf(':') + 1)))
+                        .toList(),
                 List.of(),
                 StepEnhancementFacts.none(),
                 List.of(),
@@ -197,5 +209,114 @@ class GraphRulesTest {
         assertThat(GraphRules.RULES.apply(planted.contents()))
                 .extracting(Expected::of)
                 .containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    // ---- tension consistency (ADR-0045 decisions 1 and 6) --------------------------------------------------------
+
+    private static final List<String> OWNS_AB = List.of("directive:A", "directive:B");
+
+    private static List<Reason> tensions(List<String> held, RawEdge... edges) {
+        return GraphRules.TENSION_CONSISTENCY.apply(
+                holding(held, List.of(shard(List.of(), edges)), new FileRead.Absent<>(FRAGMENT)));
+    }
+
+    @Test
+    @DisplayName("a canonical tension beside a requires on the same pair is consistent")
+    void aCanonicalTensionBesideARequiresIsConsistent() {
+        assertThat(tensions(
+                        OWNS_AB,
+                        edge("directive:A", "directive:B", "tension"),
+                        edge("directive:B", "directive:A", "requires")))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "a second tension on the same unordered pair, in another document, is tension_duplicated at the second")
+    void aSecondTensionOnThePairIsDuplicated() {
+        PackContents contents = holding(
+                OWNS_AB,
+                List.of(shard(List.of(), edge("directive:A", "directive:B", "tension"))),
+                fragment(edge("directive:A", "directive:B", "tension")));
+
+        assertThat(GraphRules.TENSION_CONSISTENCY.apply(contents))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackCodes.TENSION_DUPLICATED);
+                    assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
+                    assertThat(finding.location())
+                            .isEqualTo(Location.in(FRAGMENT).at("/edges/0"));
+                    assertThat(finding.detail())
+                            .contains("directive:A and directive:B")
+                            .contains(SHARD + " /edges/0");
+                });
+        // Positive control: the same two documents with tensions on two different pairs.
+        assertThat(GraphRules.TENSION_CONSISTENCY.apply(holding(
+                        List.of("directive:A", "directive:B", "directive:C"),
+                        List.of(shard(List.of(), edge("directive:A", "directive:B", "tension"))),
+                        fragment(edge("directive:A", "directive:C", "tension")))))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("two owned sides written larger first is tension_orientation, naming the expected source")
+    void twoOwnedSidesLargerFirstIsReversed() {
+        assertThat(tensions(OWNS_AB, edge("directive:B", "directive:A", "tension")))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackCodes.TENSION_ORIENTATION);
+                    assertThat(finding.location()).isEqualTo(Location.in(SHARD).at("/edges/0"));
+                    assertThat(finding.detail()).contains("its source is directive:A, the smaller of the two");
+                });
+    }
+
+    @Test
+    @DisplayName("an owned side that is the target is tension_orientation, whatever the order of the URNs")
+    void theOwnedSideIsTheSource() {
+        // The pack owns B only; A is another pack's, so B is the source although A is the smaller.
+        assertThat(tensions(List.of("directive:B"), edge("base::directive:A", "directive:B", "tension")))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackCodes.TENSION_ORIENTATION);
+                    assertThat(finding.detail()).contains("its source is directive:B, the side the pack holds");
+                });
+        assertThat(tensions(List.of("directive:B"), edge("directive:B", "base::directive:A", "tension")))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a reference qualified with the pack's own name is owned; a bare one to an artifact it lacks is not")
+    void ownershipIsTheHeldArtifactUnderABareOrOwnName() {
+        assertThat(tensions(List.of("directive:B"), edge("declared::directive:B", "base::directive:A", "tension")))
+                .isEmpty();
+        // directive:A is bare but not held: two foreign sides, so the smaller first is canonical, and the other way is
+        // not.
+        assertThat(tensions(List.of(), edge("directive:A", "base::directive:B", "tension")))
+                .isEmpty();
+        assertThat(tensions(List.of(), edge("base::directive:B", "directive:A", "tension")))
+                .extracting(Reason::code)
+                .containsExactly(PackCodes.TENSION_ORIENTATION);
+    }
+
+    @Test
+    @DisplayName("a tension between two artifacts the pack owns neither of is allowed, smaller first")
+    void aFullyForeignTensionIsAllowedSmallerFirst() {
+        assertThat(tensions(List.of(), edge("base::directive:X", "base::directive:Y", "tension")))
+                .isEmpty();
+        assertThat(tensions(List.of(), edge("base::directive:Y", "base::directive:X", "tension")))
+                .extracting(Reason::code)
+                .containsExactly(PackCodes.TENSION_ORIENTATION);
+    }
+
+    @Test
+    @DisplayName("a tension of an artifact with itself is left to the binding, which reports tension_self")
+    void aSelfTensionIsTheBindingsFinding() {
+        PackContents contents = holding(
+                OWNS_AB,
+                List.of(shard(List.of(), edge("directive:A", "rival::directive:A", "tension"))),
+                new FileRead.Absent<>(FRAGMENT));
+
+        assertThat(GraphRules.TENSION_CONSISTENCY.apply(contents)).isEmpty();
+        assertThat(GraphRules.UNBOUND.apply(contents)).extracting(Reason::code).containsExactly(PackCodes.TENSION_SELF);
     }
 }

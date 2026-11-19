@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "tension_self",
+    "detail": "qa/tension.graph.yaml: a tension cannot join 'directive:A' to itself or to a version of itself"
+  }
+}

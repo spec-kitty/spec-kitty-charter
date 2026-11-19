@@ -5,12 +5,32 @@ dependencies:
 - WP01
 requirement_refs:
 - FR-004
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: 4e3d72a9c30eed26ee8ea3886ccb60e2983327f2
+created_at: '2026-11-19T07:57:11.382841+00:00'
 subtasks:
 - T009
 - T010
 - T011
 - T012
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/GraphRules.java
+create_intent:
+- service/packs/src/test/resources/load-fixtures/shard-tension-duplicated/expected.json
+- service/packs/src/test/resources/load-fixtures/shard-tension-orientation-reversed/expected.json
+- service/packs/src/test/resources/load-fixtures/shard-tension-source-not-owned/expected.json
+- service/packs/src/test/resources/load-fixtures/shard-tension-self/expected.json
+- service/packs/src/test/resources/load-fixtures/shard-tension-canonical/expected.json
+- service/packs/src/testFixtures/resources/planted/tension-duplicated/expected.json
+execution_mode: code_change
 owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/GraphRules.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCodes.java
@@ -23,28 +43,10 @@ owned_files:
 - service/packs/src/test/resources/load-fixtures/shard-tension-canonical/**
 - service/pack-validation/src/test/resources/golden/validate.json
 - service/packs/src/testFixtures/resources/planted/tension-duplicated/**
-create_intent:
-- service/packs/src/test/resources/load-fixtures/shard-tension-duplicated/expected.json
-- service/packs/src/test/resources/load-fixtures/shard-tension-orientation-reversed/expected.json
-- service/packs/src/test/resources/load-fixtures/shard-tension-source-not-owned/expected.json
-- service/packs/src/test/resources/load-fixtures/shard-tension-self/expected.json
-- service/packs/src/test/resources/load-fixtures/shard-tension-canonical/expected.json
-- service/packs/src/testFixtures/resources/planted/tension-duplicated/expected.json
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: java-jenny
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP02 - Pack tension consistency

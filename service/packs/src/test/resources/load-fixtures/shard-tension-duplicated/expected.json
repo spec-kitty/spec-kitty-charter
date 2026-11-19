@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "tension_duplicated",
+    "detail": "qa/z.graph.yaml: a second tension on directive:A and directive:B; tension.graph.yaml /edges/0 already joins the pair"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "tension_orientation",
+    "detail": "qa/tension.graph.yaml: the tension between directive:A and directive:B is written with directive:B as its source; its source is directive:A, the smaller of the two"
+  }
+}
