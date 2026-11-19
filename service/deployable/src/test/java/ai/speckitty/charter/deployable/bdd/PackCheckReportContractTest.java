@@ -48,6 +48,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -64,6 +66,9 @@ import tools.jackson.databind.node.ObjectNode;
  *       renders for {@code getPackRegistration} from the same refusal, built from the registration's mapping
  *       ({@link PackRefusalMapping#of}) or from the composing read's resolver ({@link PackCompositionResolver}), never
  *       from pack-check's own rendering;
+ *   <li>the first composition problem equals the refusal {@link PackCompositionResolver#resolve} throws for the same
+ *       set, since a registration refuses with the first fault of each phase; the problems after it are the CLI's full
+ *       list, which the resolver's {@code faults} and {@code presetContests} give;
  *   <li>the round trip's problem, which the registration has no counterpart for, has the registration's title and
  *       status for {@code validation_failed}, its own lead sentence, and violations in the shared mapping's wording;
  *   <li>for every code pack-check can emit, its title and status are {@link RefusalHandler}'s.
@@ -232,6 +237,35 @@ class PackCheckReportContractTest {
         return refusals;
     }
 
+    /**
+     * What {@link PackCompositionResolver#resolve} throws for the same set: a registration refuses with the first fault
+     * of each phase, so the CLI's first composition problem must be the one the registration would answer.
+     */
+    private static CharterRefusal resolverRefusalOf(Map<Path, PackLevel> packs) {
+        FileSystemPackInspector reader = new FileSystemPackInspector();
+        List<PackUnderResolution> set = new ArrayList<>();
+        packs.forEach((pack, level) -> {
+            String name = String.valueOf(pack.getFileName());
+            PackReadout.Built built =
+                    (PackReadout.Built) reader.read(new PackRoot(name, Optional.of(level), pack.toString()))
+                            .facts();
+            set.add(built.underResolution(new ConfiguredPack(new PackIdentifier(name), level)));
+        });
+        try {
+            PackCompositionResolver.resolve(set);
+        } catch (PackCompositionResolver.Refusal refusal) {
+            return refusal.toCharterRefusal();
+        }
+        throw new AssertionError("the resolver resolved a set pack-check refuses: " + packs.keySet());
+    }
+
+    /** The CLI's first problem is the registration's refusal: the one the resolver throws first. */
+    private static void assertTheFirstIsTheRegistrations(Run run, Map<Path, PackLevel> packs) {
+        assertThat(withoutInstance(run.problems().getFirst()))
+                .as("the first composition problem, against what PackCompositionResolver.resolve throws")
+                .isEqualTo(registrationProblem(resolverRefusalOf(packs)));
+    }
+
     @Nested
     @DisplayName("the report validates against PackCheckReport")
     class Validates {
@@ -379,6 +413,7 @@ class PackCheckReportContractTest {
             Run run = run("--pack", project + ":project");
 
             List<CharterRefusal> expected = composingRefusalsOf(Map.of(project, PackLevel.PROJECT));
+            assertTheFirstIsTheRegistrations(run, Map.of(project, PackLevel.PROJECT));
             assertThat(expected)
                     .extracting(CharterRefusal::code)
                     .isNotEmpty()
@@ -405,6 +440,7 @@ class PackCheckReportContractTest {
             set.put(first, PackLevel.BUILT_IN);
             set.put(second, PackLevel.BUILT_IN);
             List<CharterRefusal> expected = composingRefusalsOf(set);
+            assertTheFirstIsTheRegistrations(run, set);
             assertThat(expected).extracting(CharterRefusal::code).contains(RefusalCode.PACK_DUPLICATE_ID);
             assertThat(run.problems())
                     .map(PackCheckReportContractTest::withoutInstance)
@@ -425,6 +461,22 @@ class PackCheckReportContractTest {
         private static PackRoundTripResult lossy(Path source, Path target) {
             return RoundTripControls.rewritingWrites(
                     source, target, ArtifactKind.TACTIC, TheRoundTripsProblem::withoutPurpose);
+        }
+
+        /** The {@code purpose} of a source tactic, as YAML reads it. */
+        private static String purposeOf(Path tactic) {
+            try {
+                Object document = new Load(LoadSettings.builder().build())
+                        .loadFromString(Files.readString(tactic, StandardCharsets.UTF_8));
+                return String.valueOf(((Map<?, ?>) document).get("purpose"));
+            } catch (IOException failure) {
+                throw new java.io.UncheckedIOException(failure);
+            }
+        }
+
+        /** A value as the round trip's comparison renders it in a reason: its first 80 characters, then an ellipsis. */
+        private static String rendered(String value) {
+            return value.length() <= 80 ? value : value.substring(0, 80) + "\u2026";
         }
 
         /** A tactic's text without its top-level {@code purpose} key and the indented lines that continue it. */
@@ -482,7 +534,8 @@ class PackCheckReportContractTest {
                     // the file, as each red reason of the round trip does.
                     assertThat(violation.get("detail").asString())
                             .as("the shared mapping: each detail names its file, as the registration words one")
-                            .startsWith("UNEXPECTED_RED " + pointer + " (tactic): ");
+                            .isEqualTo("UNEXPECTED_RED " + pointer + " (tactic): purpose: source "
+                                    + rendered(purposeOf(builtIn.resolve(pointer))) + ", written <absent>");
                 });
             });
         }
