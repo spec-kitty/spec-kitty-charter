@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.symlinks.rule`
 - **Input key:** `linked_entries_rule`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T07:20:34.313623+00:00`
+- **Resolved:** `2026-11-19T07:48:20.964580+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,7 +23,7 @@ How does the one reader judge a symbolic link inside a pack directory (pack-chec
 
 ## Final answer
 
-_(none)_
+A: refuse every link inside the pack root with a new violation code in the one reader; fold and close #597; the pack root may be a link; Breaking note (operator via orchestrator, 2026-11-19)
 
 ## Rationale
 
@@ -31,3 +32,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T07:20:34.313623+00:00` - opened
+- `2026-11-19T07:48:20.964580+00:00` - resolved (final_answer="A: refuse every link inside the pack root with a new violation code in the one reader; fold and close #597; the pack root may be a link; Breaking note (operator via orchestrator, 2026-11-19)")

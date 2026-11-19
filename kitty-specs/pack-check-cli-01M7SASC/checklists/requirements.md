@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [x] No [NEEDS CLARIFICATION] markers remain (D1 to D4 are recorded as assumptions pending the orchestrator's ruling)
+- [x] No [NEEDS CLARIFICATION] markers remain (D1 to D4 ruled 2026-11-19)
 - [x] Requirements are testable and unambiguous
 - [x] Requirement types are separated (Functional / Non-Functional / Constraints)
 - [x] IDs are unique across FR-###, NFR-###, C-### and SC-### entries, and match the requirement-ID grammar

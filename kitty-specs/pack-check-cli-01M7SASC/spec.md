@@ -2,8 +2,8 @@
 
 **Mission Branch**: `kitty/mission-pack-check-cli-01M7SASC` (target `feat/478-pack-check`, then `main` by PR)
 **Created**: 2026-11-19
-**Status**: Draft. Decisions D1 to D4 are put to the orchestrator; until ruled, this spec carries the recommended
-option of each (see Assumptions).
+**Status**: Ready for plan. Decisions D1 to D4 were ruled by the operator through the orchestrator on 2026-11-19, each
+as recommended (see Rulings).
 **Input**: Issue #478 (slice 8 of epic #549), as the operator ruled it on 2026-11-13 and as #554 (delivered by #594)
 handed it the CLI entry, the pack-set check, the module merge, the builder's reachability and the linked descriptors.
 Governing records: ADR-0075 decision 9 and its amendments, ADR-0046.
@@ -140,7 +140,7 @@ registration alike (D1; folds #597).
 | FR-005 | The output is one report naming the checks that ran and the packs checked, whose problems each validate against the contract's `Problem` schema with the API's codes (D2) | #478 | Proposed | build | no |
 | FR-006 | Exit codes: `0` valid (warnings allowed), `1` any violation, `2` usage or I/O failure; warnings go to standard error | #478 | Proposed | build | no |
 | FR-007 | When a pack cannot be read into composition facts, `CLOSURE` does not run and the report says so (D3) | #478 | Proposed | build | no |
-| FR-008 | A symbolic link inside a pack root is refused by the one reader with one violation code, so `pack-check` and registration refuse it alike (D1) | #478, #597 | Proposed | build | no |
+| FR-008 | A symbolic link inside a pack root is refused by the one reader with one violation code, so `pack-check` and registration refuse it alike (D1) | #478, #597 | Ruled (D1) | build | no |
 | FR-009 | Whatever `pack-validation` holds for the CLI alone lives in `pack-check`; the jar carries no second copy of a check | #478 | Proposed | build | no |
 | FR-010 | The release assembles `pack-check-<version>.jar` with its `.sha256`, lists it in `SHA256SUMS` and attests it; the rehearsal script and the asset-set check expect it | #478 | Proposed | build | no |
 | FR-011 | ADR-0046 is amended (the asset set gains the pack-check jar) and ADR-0075 records #478's landing; the service-build guide and a pack-author page document the CLI | #478 | Proposed | build | no |
@@ -192,13 +192,20 @@ registration alike (D1; folds #597).
 - **pack set** — the packs checked together, as a config root or repeated `--pack`; not "workspace".
 - **CLOSURE** — the descriptor-level composition rules; not the closure walk, which pack-check does not run.
 
+## Rulings (operator, through the orchestrator, 2026-11-19)
+
+- **D1 (A):** every symbolic link inside a pack root is refused with one new violation code in the one reader, so
+  registration refuses it too; #597 folds in and closes. The pack root itself may be a link. The contract change carries
+  a `### Breaking` CHANGELOG note (ADR-0022).
+- **D2 (A):** a `PackCheckReport` envelope, an additive contract schema; its problems are the contract's `Problem`.
+  Warnings go to standard error.
+- **D3 (A):** when a pack cannot be read into composition facts, `CLOSURE` is skipped and the report says so; the
+  unreadable pack is a violation (exit 1).
+- **D4 (A):** the first release with the jar is `service-v0.1.0-rc.2`, through a small release PR after the mission;
+  the orchestrator is told the tag and commit once the native run is green.
+
 ## Assumptions
 
-- D1 (recommended A): every symbolic link inside a pack root is refused with one new violation code; the pack root
-  itself may be a link. Folds #597.
-- D2 (recommended A): a `PackCheckReport` envelope with its schema in `contracts/charter/schemas`.
-- D3 (recommended A): `CLOSURE` does not run when a pack cannot be read into facts.
-- D4 (recommended A): the first release with the jar is `service-v0.1.0-rc.2`, via a separate release PR.
 - `--config-root` follows the service's layout: packs under `<root>/packs/<name>/`, each at the level its `pack.yaml`
   declares.
 - Core's service pin reads `SHA256SUMS` with `--ignore-missing`, so an added line does not disturb it (ADR-0046: adding

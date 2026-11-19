@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.release.version`
 - **Input key:** `release_version`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T07:20:40.136753+00:00`
+- **Resolved:** `2026-11-19T07:48:27.164235+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ Which service release carries pack-check first?
 
 ## Final answer
 
-_(none)_
+A: service-v0.1.0-rc.2 through a small release PR after the mission; tell the orchestrator the tag and commit when the native run is green (operator via orchestrator, 2026-11-19)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T07:20:40.136753+00:00` - opened
+- `2026-11-19T07:48:27.164235+00:00` - resolved (final_answer="A: service-v0.1.0-rc.2 through a small release PR after the mission; tell the orchestrator the tag and commit when the native run is green (operator via orchestrator, 2026-11-19)")

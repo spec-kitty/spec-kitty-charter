@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.output.shape`
 - **Input key:** `output_shape`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T07:20:36.142537+00:00`
+- **Resolved:** `2026-11-19T07:48:22.835070+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ What does pack-check write on stdout?
 
 ## Final answer
 
-_(none)_
+A: PackCheckReport envelope as an additive contract schema; warnings on stderr (operator via orchestrator, 2026-11-19)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T07:20:36.142537+00:00` - opened
+- `2026-11-19T07:48:22.835070+00:00` - resolved (final_answer="A: PackCheckReport envelope as an additive contract schema; warnings on stderr (operator via orchestrator, 2026-11-19)")
