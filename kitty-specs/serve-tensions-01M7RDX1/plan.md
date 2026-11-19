@@ -217,3 +217,41 @@ docs/                                    adr, api/service-contract.md, conforman
 ### Sequence
 
 IC-01 first. Then IC-02, IC-03, IC-04 and IC-05 can run in parallel. IC-06 and IC-07 follow IC-05. IC-08 comes last.
+
+## Revisions after the plan-point squad and rulings G1 to G3 (2026-11-19)
+
+These amend the concerns above; where they differ, this section wins. Dispositions: [research/squad-plan.md](research/squad-plan.md).
+
+- **IC-01** also: public `Relationship.samePair` and `sameSlot` in the kernel; `DoctrineGraph.merge` upserts on the
+  slot; `ArtifactRemovalService:175` filters by identity, not `contains`; `DomainRoundTrip.relationshipFields`
+  compares `fromPack` and `toPack`; the `Relationship` and `CompositionFactsBuilder` javadocs describe the pair class;
+  kernel equality tests for the PIT floor.
+- **IC-02** also: the stored orientation of G1 (the source is owned by the pack; two owned sides smaller first) and
+  `tension_self` (same bare URN on both sides).
+- **IC-03** also: 422 `tension_duplicated` when the pair is already joined by a tension in another document of the
+  pack; the wire refuses a self-tension; both owned sides written larger first are stored the other way round and
+  the answer echoes the request; `deletePackRelationship` per pair class (400 unknown `relation`; 409
+  `relationship_not_registered` naming `relation` when absent and an authored structural edge remains);
+  `RelationshipRemovalService.names` and `heldOutsideTheShard` filter by class; removing an artifact takes its
+  registered tensions with it on either side, and `InboundReferences` does not count a tension as a reference that
+  blocks a removal (a tension is not a dependency).
+- **IC-05** also:
+  - `TensionsInForce` resolves symmetrically (G2) from the authored tensions and the layer merge, not through
+    `EdgeIndex.merged`'s source-place rule; the graph takes tension edges only from it; `GraphProjection`'s distinct
+    stays for the other relations; merge order is the closure's writer order, then document order.
+  - `ClosureView.tensions(states)` public; `TensionSnapshot` in `activations.domain`; `GraphSnapshot.Edge` widened.
+  - `EffectiveGraphEdge` documented `oneOf`; `reconciledBy` unique and sorted; `x-derived` on each property.
+  - The example pack `tensions` joins `ExamplePacks.names()` and `LEVELS` at a writable level with an `open` policy;
+    the enumeration tests (WholePackRoundTripTest, ExamplePacksComposeTest, ExamplePacksTest, PackDigestBaselineTest,
+    WholePackExpectation, ProfileCorpusTest, ResolvedProfileCorpusTest, ManifestMembershipTest, ClosureViewTest,
+    ExampleVocabulary*Test, MissionTypeCorpusTest) update their expectations, never narrow them.
+  - `tensions.feature` holds the five activations inline; a graph step prints `reconciledBy`, `when` and `reason`.
+  - `EffectiveTag.DOMAIN` v4 with `EffectiveTagTest` twins (v3 no longer matches); `EffectiveReadOperationBudgetTest`
+    pins NFR-004; a permutation unit test pins NFR-001.
+- **IC-06**: depth only governs `suggests`; the depth and suggestion cases are one scenario with depth 0 and 1.
+- **IC-07** also: links `exclude-source`/`exclude-target` (PUT, If-Match) omitted for a locked or required side, and
+  `effective-source`/`effective-target` (G3); `_links` is `$ref Links.yaml`, ActivationTensions carries `self`; its own
+  `Read.TENSIONS`; every declared status asserted (400, 401, 403, 404, 304, 500), and its tag differs from the skipped
+  report's.
+- **IC-08** also: an ADR-0027 amendment note (pair class); the `### Breaking` / `### Added` / `### Changed` split of
+  the contract fragment; the stale #101 row of `docs/api/service-contract.md`.

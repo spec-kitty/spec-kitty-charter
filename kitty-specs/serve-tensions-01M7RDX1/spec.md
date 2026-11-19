@@ -18,8 +18,8 @@ DM-01M7RDXACK9SVR5E3G21BD9KW2).
   them, and each co-activated pair nothing reconciles, with the two ways to fix it. The pack author's tensions are
   read, written and registered without loss, and an inconsistent pack is refused with a clear reason.
 - **Invariant.** A tension is a relationship of its own pair class: it never replaces, and is never replaced by, the
-  one structural relationship of its pair. Within one pack, a pair has at most one tension, written in canonical
-  orientation.
+  one structural relationship of its pair. Within one pack, a pair has at most one tension, in its stored
+  orientation (G1).
 - **Boundary.** The finding warns; it never blocks an activation. Value impacts and the creed and values work (#16)
   are out of scope.
 
@@ -31,7 +31,8 @@ DM-01M7RDXACK9SVR5E3G21BD9KW2).
 | side | One of the two rules a tension joins | "end", "pole" |
 | reconciler | An artifact in force with a `reconciles_tension` edge to both sides | "arbiter" (core's word) |
 | pair class | Structural (every relation but `tension`) or tension; identity is the unordered pair plus its class | — |
-| canonical orientation | The smaller URN (lexicographic) is the `source` | — |
+| canonical orientation | In a read: the smaller bare URN is the `source` | — |
+| stored orientation | In a pack: the side the pack owns is the `source`; when it owns both, the smaller bare URN | — |
 | unreconciled tension | A tension in force that no reconciler in force reconciles | "unarbitrated" (core's word) |
 | finding | A reported, non-blocking observation about an activation | "warning" (that word is taken by the activation writes) |
 
@@ -55,7 +56,10 @@ tensions and findings.
    finding.
 2. **Given** an activation with both sides in force and no reconciler, **When** it is read, **Then** there is one
    finding `unreconciled_tension` naming the pair in canonical order, with resolutions `reconcile` and
-   `deactivate_one_side` and links to exclude each side.
+   `deactivate_one_side`, links to exclude each side, and links to read each side; following an exclude link and
+   reading again leaves no finding.
+6. **Given** an unreconciled tension whose one side is locked or required, **When** it is read, **Then** the finding
+   has no exclude link for that side; when neither side can be excluded, `resolutions` is `[reconcile]` only.
 3. **Given** an activation with only one side in force, **When** it is read, **Then** the tension is not listed and
    there is no finding.
 4. **Given** a tension registered with its sides in the non-canonical order (`from` the larger URN), **When** the
@@ -82,10 +86,11 @@ its reconcilers; an action's context lists the tensions whose two sides are both
 2. **Given** an action whose context lists both sides as in force, **When** the context is read, **Then** its
    `tensions` holds the tension with every reconciler in force, whether or not the reconciler is delivered to the
    action.
-3. **Given** a `depth` that cuts one side off, **When** the context is read, **Then** the tension is absent.
-4. **Given** a side that is only a suggestion (state inactive), **When** the context is read, **Then** the tension is
-   absent.
-5. **Given** a mission type not in force, **When** the context is read, **Then** `tensions` is empty.
+3. **Given** a side that is only a suggestion (state inactive, reached through `suggests` at depth 1), **When** the
+   context is read at depth 0 and at depth 1, **Then** the tension is absent from both, while a tension whose sides
+   are both in force is present in both.
+4. **Given** a mission type not in force, **When** the context is read, **Then** `tensions` is empty, while the same
+   activation's tensions read lists the tension.
 
 ### User Story 3 - Pack authors write `tension`, and inconsistent tensions are refused (Priority: P1)
 
@@ -103,15 +108,18 @@ registration scenarios.
    **Then** both edges survive with their words.
 2. **Given** a pack with two tensions on the same unordered pair, **When** it is loaded, validated or registered,
    **Then** it is refused, naming the pair.
-3. **Given** a pack with a tension whose `source` is the larger URN, **When** it is loaded, validated or registered,
-   **Then** it is refused, naming the edge.
+3. **Given** a pack with a tension whose `source` it does not own, or whose two owned sides are written larger first,
+   or whose two sides have the same bare URN, **When** it is loaded, validated or registered, **Then** it is refused,
+   naming the edge.
 4. **Given** a graph document that writes `in_tension_with`, **When** it is loaded, **Then** it is refused as an
    unknown relation.
 5. **Given** a `putPackRelationship` with `type: tension` on a pair that already has `requires`, **When** it is
    written, **Then** both are held, the tension is stored canonically and written to `registered.graph.yaml`, and a
-   later registration into the pack keeps it.
+   later registration into the pack keeps it. A registered tension on a pair another document of the pack already
+   joins by a tension is refused, 422 `tension_duplicated`.
 6. **Given** a pair with a registered `requires` and a registered tension, **When** the author removes it with
-   `relation=tension`, **Then** only the tension goes; without `relation`, both go.
+   `relation=tension`, **Then** only the tension goes; with `relation=requires` only the `requires` goes; without
+   `relation`, both go; an unknown `relation` is 400.
 
 ### User Story 4 - The taxonomy, references and records say `tension` (Priority: P2)
 
@@ -130,7 +138,8 @@ contract page and the divergence register describe the decided reads and each di
 
 ### Edge Cases
 
-- A tension aimed at an overridden version ends at the winner; one authored on a hidden version is absent.
+- A tension is absent when its authoring pack's own version of either side loses an override; a side the pack does
+  not hold is re-pointed to the winner (G2).
 - Two packs of a closure each declare the tension on one pair: the first in merge order keeps its words.
 - A reconciler with `reconciles_tension` to one side only does not reconcile the tension.
 - A reconciler that is itself not in force is not listed.
@@ -146,13 +155,13 @@ contract page and the divergence register describe the decided reads and each di
 | FR-001 | Tension is a relation of the one catalogue | As a maintainer, I want `tension` to be a relation of the model's one closed catalogue, bidirectional, joining guidance to guidance, carrying `when` and a reason and no strength, with the separate tension value removed, so that there is one model of an edge (ADR-0045 decision 1). | High | Open | [build] | no: a tension edge must bind as relation `tension`, which fails today |
 | FR-002 | Pair-class identity | As a maintainer, I want a relationship's identity to be its unordered pair and its pair class, so that a tension and the pair's one structural relationship coexist, and each replaces only its own class on a merge or a registration (ADR-0045 decision 1, ADR-0028 decision 3). | High | Open | [build] | no: registering a tension on a `requires` pair must keep both |
 | FR-003 | One spelling, `tension` | As a pack author, I want graph documents, the pack schemas, the readers, the writers, the taxonomy and the contract to spell the relation `tension`, and `in_tension_with` to be refused as an unknown relation, so that the canonical model has one spelling (ADR-0045 decision 2). | High | Open | [build] | no: an `in_tension_with` fixture must be refused |
-| FR-004 | Pack tension consistency | As a pack author, I want a pack refused at load, validation and registration when it holds two tensions on one unordered pair, or a tension whose source is not the smaller URN, naming the pair or edge, so that a pack's tensions are consistent (ADR-0045 decision 6). | High | Open | [build] | no: each refusal fixture beside an accepted canonical fixture |
+| FR-004 | Pack tension consistency | As a pack author, I want a pack refused at load, validation and registration when it holds two tensions on one unordered pair, a tension whose source it does not own, a reversed tension between two owned sides, or a tension of an artifact with itself, naming the pair or edge, so that a pack's tensions are consistent (ADR-0045 decisions 1 and 6, ruling G1). | High | Open | [build] | no: each refusal fixture beside an accepted canonical fixture |
 | FR-005 | Registration carries tensions | As a pack author, I want `putPackRelationship` to accept `type: tension`, store it canonically, keep every tension of `registered.graph.yaml` through a registration rewrite, and `deletePackRelationship` to take an optional `relation` parameter, so that a registration never drops or refuses a tension (ADR-0045 decision 5). | High | Open | [build] | no: register-then-register keeps the tension |
 | FR-006 | Resolution under an activation | As a consumer, I want tensions resolved through the layer overrides like edges, put in canonical order and collapsed across packs with the first in merge order keeping its words, and a reconciler to count only when it is in force and reaches both sides, so that every read agrees on the tensions in force (ADR-0045 decision 8). | High | Open | [build] | no: the override and one-sided-reconciler cases on the example pack |
 | FR-007 | Effective graph carries tensions | As a consumer, I want the effective graph to answer each tension with both sides in force as an edge `tension`, canonical, with `reconciledBy` and its authored `when` and `reason`, so that a graph walk sees the tension (ADR-0045 decision 9). | High | Open | [build] | no: the reconciled-activation graph must hold the edge |
 | FR-008 | Action context carries tensions | As a consumer, I want the effective action context to answer a required `tensions` list of the tensions whose two sides are both listed in force in the context, each with every reconciler in force, limited by `depth`, empty for a mission type not in force (ADR-0045 decision 10). | High | Open | [build] | no: the context of the reconciled activation must list it |
 | FR-009 | Activation tensions read | As a consumer, I want `getActivationTensions` to answer the activation's tensions in force and one `unreconciled_tension` finding per tension nothing in force reconciles, linked from the activation, with the skipped report's ETag rule, never refusing (ADR-0045 decisions 11, 12). | High | Open | [build] | no: the unreconciled activation must answer one finding |
-| FR-010 | Resolution vocabulary | As a consumer, I want each finding to carry `resolutions: [reconcile, deactivate_one_side]` and links to exclude each side and to read each side, so that a client can act on it without building a path (ADR-0045 decision 12). | Medium | Open | [build] | no: the finding's links must resolve to the exclusion write |
+| FR-010 | Resolution vocabulary | As a consumer, I want each finding to carry `resolutions` over `[reconcile, deactivate_one_side]`, `exclude-source`/`exclude-target` links for each side that may be excluded (none for a locked or required side; `deactivate_one_side` only when a link is present) and `effective-source`/`effective-target`, so that a client acts without building a path or following a link into a refusal (ADR-0045 decision 12, ruling G3). | Medium | Open | [build] | no: the finding's links must resolve to the exclusion write |
 | FR-011 | Taxonomy and references | As a consumer, I want the kind taxonomy's row renamed `tension` (`heldAs: tension`, `directed: false`), the reference reads to list tension edges as authored, and the governance walk and cascade never to follow a tension (ADR-0045 decision 13). | Medium | Open | [build] | no: the taxonomy scenario names `tension` |
 | FR-012 | Example pack with five activations | As a maintainer, I want one charter example pack holding a reconciled tension, an unreconciled tension, a tension with one side out of force, a tension registered in the non-canonical order (stored canonically), and a `requires` plus a tension on one pair, with one activation per case, each with `@contract` scenarios passing the ADR-0059 D1 gate (#602 acceptance). | High | Open | [build] | no: five scenarios, each failing before the reads exist |
 | FR-013 | Records | As a maintainer, I want the service-contract page to move "Tension annotation" into the decided reads and mark the stale "The other reads (expected-artifact manifests)" row (#101) as delivered (ADR-0044, PR #472), so that epic #94's done-when holds, the divergence register to record each intended difference from core (the spelling, the vocabulary, the read shape, the reconciler rule), and the contract CHANGELOG to record the changes, so that the records match the reads. | Medium | Open | [build] | no: the docs checks and the register entry |
@@ -165,7 +174,7 @@ contract page and the divergence register describe the decided reads and each di
 | NFR-001 | Byte-stable answers | Each new or changed read answers byte-identical JSON for the same activation and packs across 3 repeated reads (sorted lists, canonical pairs). | Reliability | High | Open |
 | NFR-002 | Round trip | The whole-pack round trip over charter's example packs reports 0 differences, with tension edges included. | Reliability | High | Open |
 | NFR-003 | Gates | `./gradlew verifyAll` on Java 25 passes with 0 failures, and `check_docs.py all`, markdownlint and cspell report 0 findings. | Quality | High | Open |
-| NFR-004 | No added cost on activations without tensions | A read of an activation whose closure holds no tension answers in no more than 110% of the time of the same read before the change, measured on the existing contract-scenario suite's wall time. | Performance | Medium | Open |
+| NFR-004 | No added cost on activations without tensions | For a closure with no tension, the effective graph, context and skipped reads perform the same counts of loads, resolutions, walk visits and digests as before (0 added), and the tensions read performs at most one merged-edge resolution, pinned by the effective-read operation budget test. | Performance | Medium | Open |
 
 ### Constraints
 
