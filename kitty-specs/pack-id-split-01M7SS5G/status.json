@@ -186,7 +186,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::generic-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -196,7 +196,8 @@
       "last_transition_at": "2026-11-19T17:48:46.014877+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "PackIdentifier guards slug(63); fixtures canonical; PackLocation refuses non-pack-id names (last 2 NFR-003 hits, 0 now); PackId.yaml wording + ### Changed; ADR-0075 status; glossary. NFR-002 exceptions: offering.feature packs renamed to pack ids (### Changed fragment), golden composition packIds lower-cased. verifyAll+wholePackRoundTrip on lane-f a1f7a99: 6824 tests, 1 failure = MixedReadConcurrencyTest timing assertion (99/100) under concurrent load; untouched by this mission; passes alone (rc=0). Docs checks green."
+        "PackIdentifier guards slug(63); fixtures canonical; PackLocation refuses non-pack-id names (last 2 NFR-003 hits, 0 now); PackId.yaml wording + ### Changed; ADR-0075 status; glossary. NFR-002 exceptions: offering.feature packs renamed to pack ids (### Changed fragment), golden composition packIds lower-cased. verifyAll+wholePackRoundTrip on lane-f a1f7a99: 6824 tests, 1 failure = MixedReadConcurrencyTest timing assertion (99/100) under concurrent load; untouched by this mission; passes alone (rc=0). Docs checks green.",
+        "Independent review: approved (lane-f a1f7a99). FR-001: PackIdentifier's constructor guards slug(63); stale #552 Q3 Javadoc gone; HTTP answers unchanged because path params outside the grammar are 400 by bean validation first (read-refusals.feature). PackLocation refuses a non-pack-id name; reachable only through the filtered listing and the guarded round trip. D8: PackId.yaml names the registered id, with a Changed fragment; ADR-0075 status note; glossary entry. NFR-002 exceptions accepted: offering.feature ids moved to pack ids with the order rule unchanged and a Changed fragment; golden composition.json verified by reviewer script: 97 lines, only packId/composed values lower-cased (code-point order kept). verifyAll and wholePackRoundTrip fully green on full history (run by reviewer), MixedReadConcurrencyTest included."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
