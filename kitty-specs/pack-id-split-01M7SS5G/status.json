@@ -129,6 +129,9 @@
       "last_event_id": "01M7T7PZM5FBZQZXDD28N2BXD0",
       "last_transition_at": "2026-11-19T15:44:56.453390+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Indexes and closure key by PackUlid; typed RefusalPack; EdgeNode carries the registered id; holdingPack without tolerance; Dropped/Enhancing typed; StagedTree carries the upload id (+ ### Changed fragment); case-twin guard over raw entries; CountingReading thread-safe. Golden composition.json: fake ids -> order-keeping ULIDs only. kernel/packs/pack-validation check + test (all modules) green on lane-d 419f7b5."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 29389,
