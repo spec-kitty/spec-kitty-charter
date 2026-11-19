@@ -164,4 +164,23 @@ class IdentifierGrammarTest {
         assertThatThrownBy(() -> IdentifierGrammar.slug(65)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> IdentifierGrammar.letterFirstSlug(0)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @ParameterizedTest(name = "\"{0}\": ULID {1}")
+    @MethodSource("ulidVerdicts")
+    void ulidsKeepTheirVerdict(String text, boolean ulid) {
+        assertThat(IdentifierGrammar.isUlid(text)).isEqualTo(ulid);
+        assertThat(IdentifierGrammar.ulid().predicate().test(text)).isEqualTo(ulid);
+    }
+
+    static Stream<Arguments> ulidVerdicts() {
+        return Stream.of(
+                Arguments.of("01J6XW9KQT7M0YB3N4R5CQZ2EX", true),
+                Arguments.of("0123456789ABCDEFGHJKMNPQRS", true),
+                Arguments.of("01J6XW9KQT7M0YB3N4R5CQZ2E", false),
+                Arguments.of("01J6XW9KQT7M0YB3N4R5CQZ2EXX", false),
+                Arguments.of("01J6XW9KQT7M0YB3N4R5CQZ2EI", false),
+                Arguments.of("01j6xw9kqt7m0yb3n4r5cqz2ex", false),
+                Arguments.of("01PACK", false),
+                Arguments.of("", false));
+    }
 }
