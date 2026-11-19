@@ -341,6 +341,47 @@ Feature: Registering a whole pack replaces the pack the service holds
       | ../outside.yaml             | a path that leaves the pack                  |
       | directives/C.directive.yaml | id: C, a directive missing its required keys |
 
+  # ADR-0045 decision 6 (#602, WP02): a pack's tensions are judged at registration as at load. A tension between two
+  # directives the pack holds is written smaller first; the reversed one refuses the pack, and its canonical twin in the
+  # same pack registers.
+  Scenario: A pack whose tension between two of its directives is written larger first is refused tension_orientation
+    Given the archive "tensed" is a copy of the archive "v1"
+    And the archive "tensed" holds the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:B
+        target: directive:A
+        relation: tension
+      """
+    And the archive "canonical" is a copy of the archive "v1"
+    And the archive "canonical" holds the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:A
+        target: directive:B
+        relation: tension
+      """
+    When I PUT "/packs/acme" with the archive "tensed"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "tension_orientation"
+    And the field at "/problem/violations/0/detail" contains "its source is directive:A, the smaller of the two"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "canonical"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   # FR-004, FR-005, FR-021 (#451): a file the pack model excludes is not pack content. The registration does not refuse
   # it, does not hold it, and reports each one as a file_not_held warning naming the file and the rule's reason. The
   # stored pack is the staged tree less those files, so the answer is `unchanged` against the same pack without them.
