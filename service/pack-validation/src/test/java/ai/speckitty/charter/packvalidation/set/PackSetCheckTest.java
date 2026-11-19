@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -204,7 +205,16 @@ class PackSetCheckTest {
         }
 
         @Test
-        @DisplayName("one judging path: the faults are PackRulesets.closure(presetIdsOf)'s reasons, in its order")
+        @DisplayName("one judging path: over the example packs, the faults are PackRulesets.closure(presetIdsOf)'s")
+        void theExamplePacksFaultsAreTheRulesetsReasons() {
+            PackSetVerdict verdict = CHECK.check(examples(ExamplePacks.names().toArray(String[]::new)));
+
+            assertThat(verdict.faults()).isEmpty();
+            assertFaultsAreTheRulesets(verdict);
+        }
+
+        @Test
+        @DisplayName("one judging path: over a set with faults, the faults are PackRulesets.closure(presetIdsOf)'s")
         void theFaultsAreTheRulesetsReasons(@TempDir Path dir) {
             Path mandate = ExamplePacks.copyOf(ExamplePacks.ORG_MANDATE, dir);
             holdSpdd(mandate);
@@ -212,29 +222,31 @@ class PackSetCheckTest {
                     example(ExamplePacks.PROJECT),
                     example(ExamplePacks.ORG),
                     at(ExamplePacks.ORG_MANDATE, mandate, Optional.of(PackLevel.ORG))));
-            List<PackUnderResolution> set = new ArrayList<>();
-            Map<PackUnderResolution, List<String>> presets = new HashMap<>();
-            for (PackResult result : verdict.packs()) {
-                PackReadout.Built built = (PackReadout.Built) result.facts();
-                PackUnderResolution pack = new PackUnderResolution(
-                        new ConfiguredPack(
-                                new PackIdentifier(result.entry().name()),
-                                result.level().orElseThrow()),
-                        built.descriptor(),
-                        built.facts().changed(),
-                        built.facts().defined(),
-                        Set.copyOf(built.facts().terms()));
-                set.add(pack);
-                presets.put(
-                        pack, built.facts().presets().stream().map(Preset::id).toList());
-            }
-
-            List<Reason> reasons = PackRulesets.closure(pack -> presets.getOrDefault(pack, List.of()))
-                    .apply(set);
 
             assertThat(codes(verdict.faults()))
                     .as("project's unknown org-alt, then the preset contest")
                     .contains(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token(), RefusalCode.PACK_SIBLING_CONFLICT.token());
+            assertFaultsAreTheRulesets(verdict);
+        }
+
+        /** The set's faults equal what the named ruleset answers over the same facts, code and detail, in order. */
+        private static void assertFaultsAreTheRulesets(PackSetVerdict verdict) {
+            List<PackUnderResolution> set = new ArrayList<>();
+            Map<String, List<String>> presets = new HashMap<>();
+            for (PackResult result : verdict.packs()) {
+                PackReadout.Built built = (PackReadout.Built) result.facts();
+                set.add(built.underResolution(new ConfiguredPack(
+                        new PackIdentifier(result.entry().name()),
+                        result.level().orElseThrow())));
+                presets.put(
+                        result.entry().name(),
+                        built.facts().presets().stream().map(Preset::id).toList());
+            }
+
+            List<Reason> reasons = PackRulesets.closure(
+                            pack -> presets.getOrDefault(pack.configured().id().value(), List.of()))
+                    .apply(set);
+
             assertThat(verdict.faults())
                     .extracting(fault -> fault.code(), CompositionFault::detail)
                     .containsExactlyElementsOf(reasons.stream()
@@ -315,7 +327,21 @@ class PackSetCheckTest {
         }
 
         @Test
-        @DisplayName("a pack with no configured and no declared level: CLOSURE is skipped and the skip names it")
+        @DisplayName("a pack whose facts cannot be read keeps the level its read pack.yaml declares")
+        void anUnreadablePackKeepsItsDeclaredLevel(@TempDir Path dir) throws IOException {
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir);
+            Files.writeString(builtIn.resolve("broken.graph.yaml"), "nodes: [valid\n", StandardCharsets.UTF_8);
+
+            PackResult result = CHECK.check(List.of(at(ExamplePacks.BUILT_IN, builtIn, Optional.empty())))
+                    .packs()
+                    .getFirst();
+
+            assertThat(result.facts()).isInstanceOf(PackReadout.Unreadable.class);
+            assertThat(result.level()).contains(PackLevel.BUILT_IN);
+        }
+
+        @Test
+        @DisplayName("a pack with no configured and no declared level: CLOSURE is skipped, the skip names it, it fails")
         void anUnknownLevelSkipsClosure(@TempDir Path dir) {
             Path bare = PlantedPacks.copyOf("control-no-pack-level-on-a-bare-path", dir);
 
@@ -331,8 +357,10 @@ class PackSetCheckTest {
                             .containsExactly(new Unjudged(
                                     "qa", "its level is unknown: none is configured and pack.yaml declares none")));
             assertThat(verdict.packs().get(1).failing())
-                    .as("an unknown level stops CLOSURE, but is no fault of the pack")
-                    .isFalse();
+                    .as("an unknown level stops CLOSURE, so it is the pack's fault: never a silent pass")
+                    .isTrue();
+            assertThat(verdict.packs().get(0).failing()).isFalse();
+            assertThat(verdict.failing()).isTrue();
         }
 
         /**
@@ -405,19 +433,87 @@ class PackSetCheckTest {
         @Test
         @DisplayName("the real flow over built-in: no reason")
         void theRealFlowOverBuiltInIsWhole(@TempDir Path dir) {
-            RoundTripping flow = root -> {
-                try {
-                    return PackRoundTrip.run(Path.of(root.locator()), Files.createTempDirectory(dir, root.name()));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            };
+            RoundTripping flow = realFlow(dir);
 
             PackSetVerdict verdict = CHECK.checkWithRoundTrip(examples(ExamplePacks.BUILT_IN), flow);
 
             assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.ROUND_TRIP);
             assertThat(verdict.packs().getFirst().roundTrip()).isEmpty();
             assertThat(verdict.failing()).isFalse();
+        }
+
+        private RoundTripping realFlow(Path dir) {
+            return root -> {
+                try {
+                    return PackRoundTrip.run(Path.of(root.locator()), Files.createTempDirectory(dir, root.name()));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            };
+        }
+
+        @Test
+        @DisplayName("the real flow over a garbled pack.yaml: the set still has a verdict; the round trip is skipped")
+        void aRefusedPackIsItsResultNotAnException(@TempDir Path dir) throws IOException {
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir.resolve("packs"));
+            Files.writeString(builtIn.resolve("pack.yaml"), "pack_id: [\n", StandardCharsets.UTF_8);
+
+            PackSetVerdict verdict = CHECK.checkWithRoundTrip(
+                    List.of(
+                            at(ExamplePacks.BUILT_IN, builtIn, Optional.of(PackLevel.BUILT_IN)),
+                            example(ExamplePacks.ORG)),
+                    realFlow(dir));
+
+            PackResult garbled = verdict.packs().getFirst();
+            assertThat(garbled.failing()).isTrue();
+            assertThat(hasViolation(garbled.verdict().findings())).isTrue();
+            assertThat(garbled.roundTrip())
+                    .as("validate mode reports the fault, so the refusal is not a second problem")
+                    .isEmpty();
+            assertThat(verdict.checks()).contains(Check.ROUND_TRIP);
+            assertThat(verdict.skipped())
+                    .filteredOn(skip -> skip.check() == Check.ROUND_TRIP)
+                    .singleElement()
+                    .satisfies(skip -> {
+                        assertThat(skip.packs()).extracting(Unjudged::pack).containsExactly(ExamplePacks.BUILT_IN);
+                        assertThat(skip.reason())
+                                .startsWith("ROUND_TRIP did not run for built-in (the round trip refused it:"
+                                        + " pack_unreadable: ");
+                    });
+            assertThat(verdict.packs().get(1).roundTrip()).isEmpty();
+        }
+
+        /** Error handling: a refusal of a pack validate mode passes, which no canonical pack gives today. */
+        @Test
+        @DisplayName("a refused round trip of a pack with no violation is one round_trip_red, so the pack fails")
+        void aRefusedPackWithNoViolationIsRed() {
+            RoundTripping refusing = root -> {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of built-in is not valid YAML");
+            };
+
+            PackSetVerdict verdict = CHECK.checkWithRoundTrip(examples(ExamplePacks.BUILT_IN), refusing);
+
+            PackResult result = verdict.packs().getFirst();
+            assertThat(hasViolation(result.verdict().findings())).isFalse();
+            assertThat(result.roundTrip())
+                    .extracting(Reason::code, Reason::detail)
+                    .containsExactly(
+                            tuple(
+                                    WholePackRoundTripRule.RED,
+                                    "the round trip refused the pack: pack_unreadable: pack.yaml of built-in is not valid YAML"));
+            assertThat(result.failing()).isTrue();
+            assertThat(verdict.skipped()).extracting(PackSetVerdict.Skip::check).containsExactly(Check.ROUND_TRIP);
+        }
+
+        @Test
+        @DisplayName("an I/O failure of the round trip propagates: it is no fault of the pack")
+        void anIoFailurePropagates() {
+            RoundTripping failing = root -> {
+                throw new UncheckedIOException(new IOException("no temporary directory"));
+            };
+
+            assertThatThrownBy(() -> CHECK.checkWithRoundTrip(examples(ExamplePacks.BUILT_IN), failing))
+                    .isInstanceOf(UncheckedIOException.class);
         }
 
         @Test

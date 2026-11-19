@@ -65,10 +65,12 @@ public record PackSetVerdict(
      *
      * @param entry the pack as the set gave it
      * @param verdict validate mode's verdict of the pack
-     * @param level the level the set places the pack at: its configured level, else the level its {@code pack.yaml}
-     *     declares as the composing read built it; empty when neither is known
+     * @param level the level the set places the pack at: its configured level, else the level its read
+     *     {@code pack.yaml} declares; empty when neither is known
      * @param facts the pack's composition facts from the same read, or the refusal that stopped them
-     * @param roundTrip the round trip's failing reasons; empty when it was not asked for or the pack round-trips whole
+     * @param roundTrip the round trip's failing reasons; empty when it was not asked for, when the pack round-trips
+     *     whole, or when the flow refused a pack whose verdict already reports a violation (the set's {@code
+     *     ROUND_TRIP} skip names it)
      */
     public record PackResult(
             PackSetEntry entry,
@@ -95,16 +97,18 @@ public record PackSetVerdict(
         }
 
         /**
-         * Whether the pack fails (D3): its verdict holds a violation, its round trip does, or its composition facts
-         * cannot be read. A pack whose facts are {@link PackReadout.Unreadable} fails even when its verdict holds no
-         * violation, since the composing read would refuse it.
+         * Whether the pack fails (D3): its verdict holds a violation, its round trip does, its composition facts cannot
+         * be read, or its level is unknown. A pack whose facts are {@link PackReadout.Unreadable} fails even when its
+         * verdict holds no violation, since the composing read would refuse it; a pack with no level fails because
+         * {@code CLOSURE} cannot judge it, so a skipped {@code CLOSURE} is never a silent pass.
          *
          * @return {@code true} when the pack fails
          */
         public boolean failing() {
             return hasViolation(verdict.findings())
                     || hasViolation(roundTrip)
-                    || facts instanceof PackReadout.Unreadable;
+                    || facts instanceof PackReadout.Unreadable
+                    || level.isEmpty();
         }
 
         /**
@@ -127,7 +131,8 @@ public record PackSetVerdict(
     }
 
     /**
-     * A check that did not run, and the packs that stopped it.
+     * A check that did not run, and the packs that stopped it: {@code CLOSURE} skipped for the whole set when a pack has
+     * no facts or no level (D3), or {@code ROUND_TRIP} skipped for each pack the flow refused (M2).
      *
      * @param check the check skipped
      * @param packs each pack that stopped it, in the order the set was given, never empty
@@ -154,13 +159,15 @@ public record PackSetVerdict(
          * @return the reason, in one line
          */
         public String reason() {
-            return check + " needs the composition facts and the level of every pack; it has none for "
-                    + packs.stream().map(Unjudged::text).collect(Collectors.joining("; "));
+            String named = packs.stream().map(Unjudged::text).collect(Collectors.joining("; "));
+            return check == Check.CLOSURE
+                    ? check + " needs the composition facts and the level of every pack; it has none for " + named
+                    : check + " did not run for " + named;
         }
     }
 
     /**
-     * A pack {@code CLOSURE} cannot judge.
+     * A pack a check cannot judge.
      *
      * @param pack the pack's configured name
      * @param why what is missing
