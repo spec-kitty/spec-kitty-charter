@@ -87,7 +87,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude::reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -100,6 +100,7 @@
         "PackCheck.check, PackSetCheck/PackSetVerdict, RoundTripping; verifyAll green; scoped PIT 40/40 killed; 6 hand mutants killed"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-check-cli-01M7SASC-coord/kitty-specs/pack-check-cli-01M7SASC/tasks/WP03-pack-set-check/review-cycle-1.md",
         "reference": "review-cycle://pack-check-cli-01M7SASC/WP03-pack-set-check/review-cycle-1.md",
@@ -107,13 +108,13 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 20536,
-      "shell_pid_created_at": "1795096537.54",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T010": "done",
-        "T011": "done",
-        "T012": "done",
-        "T013": "done"
+        "T010": "planned",
+        "T011": "planned",
+        "T012": "planned",
+        "T013": "planned"
       }
     },
     "WP04": {
