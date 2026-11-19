@@ -167,7 +167,8 @@
       "last_transition_at": "2026-11-19T20:20:37.646853+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "T019-T022 done; verifyAll -PrequireSymlinks=true green; parity 118/118 subjects; out-of-map: pack-check CLI edge cases, instance as file: URI, public run, PackCheckSeam test helper"
+        "T019-T022 done; verifyAll -PrequireSymlinks=true green; parity 118/118 subjects; out-of-map: pack-check CLI edge cases, instance as file: URI, public run, PackCheckSeam test helper",
+        "orchestrator ruling: round-trip lead wording (option C)"
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
