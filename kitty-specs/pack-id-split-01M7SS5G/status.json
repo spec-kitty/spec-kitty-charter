@@ -63,7 +63,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "PackDirectory for storage directories; StoreRead/ArtifactFiles assemble under the caller's registered id; :packs:check + compileTestJava green on lane-b 59b996f. TODOs for WP03 in StoreRead (descriptor fallback).",
-        "Changes requested: DomainRoundTrip:186 deviates from T007/occurrence map; reclassify as REG (D2b) and guard non-pack-id names (TODO WP03). :packs:check green."
+        "Changes requested: DomainRoundTrip:186 deviates from T007/occurrence map; reclassify as REG (D2b) and guard non-pack-id names (TODO WP03). :packs:check green.",
+        "Addressing review-cycle-1: DomainRoundTrip guards the source directory name"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
