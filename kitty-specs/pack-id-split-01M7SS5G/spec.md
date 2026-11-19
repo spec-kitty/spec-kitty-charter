@@ -8,8 +8,8 @@ The issue body is the brief. The orchestrator rules the open decisions of the ce
 
 ## Intent Summary
 
-Brief-intake mode: #583's body states the outcome and its done-when list. The open design choices went to the
-orchestrator as decisions D1 to D9 (`research/decisions.md`).
+Brief-intake mode: #583's body states the outcome and its done-when list. The open design choices were ruled by the
+operator through the orchestrator on 2026-11-19, all as recommended (D1 to D9, `research/decisions.md`).
 
 - **Primary actor**: a service operator, whose pack domain on disk the service reads and serves. A client
   reads and writes packs over HTTP.
@@ -105,7 +105,7 @@ expectations. A refusal for a newly uploaded pack names its upload id.
 | FR-008 | New staged pack named by its upload id | As a client, I want an inbound-reference refusal for a new pack to name its upload id so that the pointer addresses the pack. | Medium | Open | [build] | no — it names the descriptor `name` today |
 | FR-009 | Refuse on read | As an operator, I want a stored directory whose name is not a pack id to be refused on read with `pack_id_invalid` (logged, not listed, configured or served) so that read and write agree. | High | Open | [build] | no — `a--b` is served today; paired with a valid pack on the same fixture |
 | FR-010 | Fixtures use the type that fits | As a maintainer, I want every test fixture to build a `PackIdentifier` from a pack id and a `PackUlid` from a real ULID so that tests carry the canonical shape. | High | Open | [build] | no — FR-001 and FR-002 fail ~40 fixtures |
-| FR-011 | Activation pin grammar | As a client, I want an activation pin's `packId` to follow the pack id grammar so that a pin can only name a registrable pack (D7, if folded). | Medium | Open | [build] | no — `my_pack` is accepted today |
+| FR-011 | Activation pin grammar | As a client, I want an activation pin's `packId` to follow the pack id grammar so that a pin can only name a registrable pack (D7). | Medium | Open | [build] | no — `my_pack` is accepted today |
 | FR-012 | PackId wording | As a client reader, I want the `PackId` parameter to describe the registry name, not "as the pack declares it" (D8). | Low | Open | [build] | yes — docs only; checked by review |
 
 ### Non-Functional Requirements
@@ -147,5 +147,4 @@ expectations. A refusal for a newly uploaded pack names its upload id.
 
 - The descriptor schema read already refuses a `pack_id` that is not a ULID, so `PackUlid`'s guard adds no new refusal
   on a valid pack.
-- The rulings D1 to D9 follow the recommendations unless the orchestrator rules otherwise. This spec is revised on a
-  different ruling.
+- The operator ruled D1 to D9 as recommended on 2026-11-19 (`research/decisions.md`).
