@@ -68,7 +68,8 @@
         "Changes requested: DomainRoundTrip:186 deviates from T007/occurrence map; reclassify as REG (D2b) and guard non-pack-id names (TODO WP03). :packs:check green.",
         "Addressing review-cycle-1: DomainRoundTrip guards the source directory name",
         "review-cycle-1 addressed at afe8ca8: DomainRoundTrip:186 builds the id only when isPackId(name), else every modelled file is Refused naming the name and GRAMMAR_DETAIL (TODO WP03 for the pack_id_invalid token); error-path test added; census and occurrence map reclassify it REG (D2b). :packs:check green.",
-        "Independent review cycle 2: approved (lane-b afe8ca8). DomainRoundTrip:186 now builds a PackIdentifier only for a pack-id name, refuses every modelled file otherwise (TODO WP03 pack_id_invalid), with an error-path test; census and occurrence map reclassify it REG (D2b). :packs:check green (run by reviewer). Cycle-1 checks stand: PackDirectory, FilesystemPackStore keys, staging sites, caller-passed registered id, D6."
+        "Independent review cycle 2: approved (lane-b afe8ca8). DomainRoundTrip:186 now builds a PackIdentifier only for a pack-id name, refuses every modelled file otherwise (TODO WP03 pack_id_invalid), with an error-path test; census and occurrence map reclassify it REG (D2b). :packs:check green (run by reviewer). Cycle-1 checks stand: PackDirectory, FilesystemPackStore keys, staging sites, caller-passed registered id, D6.",
+        "Re-review to stamp the lane head: consolidate refuses APPROVAL_STAMP_MISSING; no content change"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
