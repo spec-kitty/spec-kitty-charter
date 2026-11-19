@@ -708,6 +708,25 @@ final class PackFileSet {
         return Files.isRegularFile(at, LinkOption.NOFOLLOW_LINKS);
     }
 
+    /**
+     * The bytes of a pack-relative file the pack holds in its own right ({@link #unlinkedFile}), opened without following
+     * a link, so a read never goes through one (D6); empty when no such file stands there.
+     *
+     * @param directory the pack directory
+     * @param packRelative the path, relative to the pack directory and {@code /}-separated
+     * @return the bytes, or empty
+     * @throws IOException when the file cannot be read
+     */
+    static Optional<byte[]> unlinkedBytes(Path directory, String packRelative) throws IOException {
+        if (!unlinkedFile(directory, packRelative)) {
+            return Optional.empty();
+        }
+        try (java.io.InputStream in =
+                Files.newInputStream(directory.resolve(packRelative), LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.of(in.readAllBytes());
+        }
+    }
+
     static CharterRefusal unlistable(String packName, Exception cause) {
         return new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + packName + " cannot be listed", cause);
     }

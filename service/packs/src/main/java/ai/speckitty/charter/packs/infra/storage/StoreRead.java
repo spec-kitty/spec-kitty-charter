@@ -170,14 +170,15 @@ record StoreRead(
     }
 
     /**
-     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words (D6): the store half
+     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words, the path stated once
+     * by the violation's file (D6): the store half
      * states it itself, as it states {@code duplicate_step_id}, so the composing read of a configured pack, which judges
      * nothing else, refuses a pack holding a link. It is recorded on the aggregate, not among the store-only faults, so
      * a registration and validate mode state it once, through {@code LinkRules}.
      */
-    private static List<PackElementViolation> linked(PackFileSet.Walk walk) {
+    static List<PackElementViolation> linked(PackFileSet.Walk walk) {
         return walk.links().stream()
-                .map(link -> new PackElementViolation(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.detail(link)))
+                .map(link -> new PackElementViolation(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.LINKED))
                 .toList();
     }
 

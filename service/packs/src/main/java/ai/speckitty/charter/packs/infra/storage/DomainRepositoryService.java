@@ -579,14 +579,17 @@ public final class DomainRepositoryService
 
     private static Pack assemble(PackIdentifier pack, Resolved resolved) {
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
-        return assemble(pack, resolved.store.read(resolved.key, graphs), graphs);
-    }
-
-    private static Pack assemble(
-            PackIdentifier pack, FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
+        // One walk, shared with the store's read, so the load records each link as StoreRead.of does (D6).
+        PackFileSet.Walk walk = PackFileSet.walk(resolved.directory, pack.value());
         // No read serves the warnings in phase 1: the list is filled and dropped.
-        return StoreRead.assembly(pack, read, new HashMap<>(), graphs, new ArrayList<>())
-                .build();
+        Pack.Builder builder = StoreRead.assembly(
+                pack,
+                resolved.store.read(resolved.key, KindBindings.all(), graphs, walk),
+                new HashMap<>(),
+                graphs,
+                new ArrayList<>());
+        StoreRead.linked(walk).forEach(builder::violation);
+        return builder.build();
     }
 
     // ---- the pack document (#451) --------------------------------------------------------------------------------

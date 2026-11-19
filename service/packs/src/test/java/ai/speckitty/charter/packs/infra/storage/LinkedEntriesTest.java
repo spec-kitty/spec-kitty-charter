@@ -7,8 +7,15 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.application.PackVersionHistory;
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
+import ai.speckitty.charter.packs.application.RegistryWriteLock;
+import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -19,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -303,7 +311,7 @@ class LinkedEntriesTest {
             assertThat(held.violations()).singleElement().satisfies(violation -> {
                 assertThat(violation.kind()).isEqualTo(StorageCodes.PACK_ENTRY_LINKED);
                 assertThat(violation.file()).isEqualTo("directives/B.directive.yaml");
-                assertThat(violation.reason()).isEqualTo(LinkRules.detail("directives/B.directive.yaml"));
+                assertThat(violation.reason()).isEqualTo(LinkRules.LINKED);
             });
             assertThat(held.storeOnly())
                     .as("never a store-only fault, so the verdict states it once")
@@ -324,7 +332,9 @@ class LinkedEntriesTest {
         assertThat(refused.code())
                 .as("as it refuses a pack with another store-half content fault")
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);
-        assertThat(refused.getMessage()).contains("directives/B.directive.yaml").contains(LinkRules.LINKED);
+        assertThat(refused.getMessage())
+                .as("the link's path is stated once")
+                .isEqualTo("the file directives/B.directive.yaml of qa cannot be read: " + LinkRules.LINKED);
     }
 
     @Test
@@ -335,5 +345,122 @@ class LinkedEntriesTest {
         assertThatCode(() -> new DomainRepositoryService(new StorageRootLocations(host.resolve("packs")), STRATEGY)
                         .compositionFacts(new PackIdentifier(PACK)))
                 .doesNotThrowAnyException();
+    }
+
+    // ---- the configured load names a linked pack.yaml (review cycle 1, item 5) -----------------------------------
+
+    @Test
+    @DisplayName("a configured pack whose pack.yaml is a link is refused naming the link, not as having no pack.yaml")
+    void aLinkedDescriptorIsNamedAsALink(@TempDir Path host) throws IOException {
+        Path pack = pack(host);
+        Path outside = host.resolve("outside/pack.yaml");
+        write(outside, DESCRIPTOR);
+        Files.delete(pack.resolve("pack.yaml"));
+        link(pack.resolve("pack.yaml"), outside);
+
+        CharterRefusal refused = catchThrowableOfType(
+                CharterRefusal.class,
+                () -> new DomainRepositoryService(new StorageRootLocations(host.resolve("packs")), STRATEGY)
+                        .compositionFacts(new PackIdentifier(PACK)));
+
+        assertThat(refused).isNotNull();
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+        assertThat(refused.getMessage()).isEqualTo("pack qa: " + LinkRules.detail("pack.yaml"));
+    }
+
+    // ---- the store's own reads of a stored pack follow no link (review cycle 1, items 1 to 3, 7) -----------------
+
+    private static final String SHARD = """
+            schema_version: '1.0'
+            generated_at: '2026-01-01T00:00:00Z'
+            generated_by: charter-registration
+            nodes: []
+            edges: []
+            """;
+
+    private static PackCommitStore commits(Path host) {
+        return new PackCommitStore(
+                new StorageRootLocations(host.resolve("packs")),
+                STRATEGY,
+                new RegistryWriteLock(Duration.ofSeconds(5)),
+                new PackWriteGeneration());
+    }
+
+    @Test
+    @DisplayName(
+            "a per-file commit to a stored pack holding a file link is refused, and the link is not copied through")
+    void aCommitNeverCopiesThroughALink(@TempDir Path host) throws IOException {
+        Path pack = pack(host);
+        Path outside = host.resolve("outside/B.directive.yaml");
+        write(outside, directive("B", "B"));
+        Path linked = link(pack.resolve("directives/B.directive.yaml"), outside);
+
+        CharterRefusal refused = catchThrowableOfType(
+                CharterRefusal.class, () -> commits(host).commit(new PackIdentifier(PACK), null, null, SHARD));
+
+        assertThat(refused).as("the commit is refused").isNotNull();
+        assertThat(refused.getMessage()).isEqualTo(LinkRules.detail("directives/B.directive.yaml"));
+        assertThat(Files.isSymbolicLink(linked))
+                .as("the live link is left as it was")
+                .isTrue();
+        assertThat(pack.resolve(RelationshipShard.SHARD_PATH))
+                .as("nothing was committed")
+                .doesNotExist();
+    }
+
+    @Test
+    @DisplayName("a replace never reads the stored pack's version through a pack.yaml that is a link")
+    void aReplaceNeverReadsTheStoredVersionThroughALink(@TempDir Path host) throws IOException {
+        Path pack = pack(host);
+        Path outside = host.resolve("outside/pack.yaml");
+        write(outside, DESCRIPTOR.replace("1.0.0", "9.9.9"));
+        Files.delete(pack.resolve("pack.yaml"));
+        link(pack.resolve("pack.yaml"), outside);
+        Path upload = Files.createDirectories(host.resolve("upload").resolve(PACK));
+        write(upload.resolve("pack.yaml"), DESCRIPTOR);
+        write(upload.resolve("directives/A.directive.yaml"), directive("A", "A"));
+        PackCommitStore store = commits(host);
+
+        store.replaceWhole(new PackIdentifier(PACK), new StagedPack(upload));
+
+        assertThat(store.versionHistory(PACK))
+                .extracting(PackVersionHistory.Entry::packVersion)
+                .containsExactly("1.0.0");
+    }
+
+    @Test
+    @DisplayName("the registered relationships are never read through a registered.graph.yaml that is a link")
+    void theRegisteredShardIsNeverReadThroughALink(@TempDir Path host) throws IOException {
+        Path pack = pack(host);
+        write(pack.resolve("directives/B.directive.yaml"), directive("B", "B"));
+        Path outside = host.resolve("outside/registered.graph.yaml");
+        write(
+                outside,
+                RelationshipShard.write(List.of(Relationship.of(
+                        Urn.parse("directive:A").orElseThrow(),
+                        Urn.parse("directive:B").orElseThrow(),
+                        RelationType.REQUIRES))));
+        link(pack.resolve(RelationshipShard.SHARD_PATH), outside);
+        StorageRootLocations locations = new StorageRootLocations(host.resolve("packs"));
+
+        assertThat(new CommitStorePackWriteStore(locations, STRATEGY, commits(host))
+                        .registeredRelationships(new PackIdentifier(PACK)))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the pack-scoped load of a configured pack holding a link records its pack_entry_linked")
+    void thePackScopedLoadRecordsTheLink(@TempDir Path host) throws IOException {
+        Path pack = pack(host);
+        Path outside = host.resolve("outside/B.directive.yaml");
+        write(outside, directive("B", "B"));
+        link(pack.resolve("directives/B.directive.yaml"), outside);
+
+        assertThat(new DomainRepositoryService(new StorageRootLocations(host.resolve("packs")), STRATEGY)
+                        .load(new PackIdentifier(PACK))
+                        .violations())
+                .extracting(PackElementViolation::kind, PackElementViolation::file)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(
+                        StorageCodes.PACK_ENTRY_LINKED, "directives/B.directive.yaml"));
     }
 }

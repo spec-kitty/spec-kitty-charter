@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
@@ -644,8 +645,11 @@ public final class PackCommitStore implements WholePackWriteStore {
         }
 
         private static String packVersionOf(Path tree) throws IOException {
-            String text = Files.readString(tree.resolve("pack.yaml"), StandardCharsets.UTF_8);
-            if (PackDescriptorReader.read(text) instanceof FileRead.Read<PackDescriptor> read) {
+            // Never through a link (D6): a pack.yaml that is one is no readable descriptor.
+            Optional<byte[]> bytes = PackFileSet.unlinkedBytes(tree, PackFileSet.PACK_YAML);
+            if (bytes.isPresent()
+                    && PackDescriptorReader.read(new String(bytes.get(), StandardCharsets.UTF_8))
+                            instanceof FileRead.Read<PackDescriptor> read) {
                 return read.value().packVersion();
             }
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the tree to store has no readable pack.yaml");
@@ -949,7 +953,10 @@ public final class PackCommitStore implements WholePackWriteStore {
         return parent;
     }
 
-    /** Copies the whole tree of {@code source} into the existing directory {@code target}, following file links. */
+    /**
+     * Copies the whole tree of {@code source} into the existing directory {@code target}. A link below the root is never
+     * copied through (D6): the copy is refused naming it, so a write never stores what a link led to.
+     */
     private static void copyTree(Path source, Path target) throws IOException {
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
             @Override
@@ -960,11 +967,18 @@ public final class PackCommitStore implements WholePackWriteStore {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String relative = source.relativize(file)
+                        .toString()
+                        .replace(file.getFileSystem().getSeparator(), "/");
+                if (attrs.isSymbolicLink()) {
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, LinkRules.detail(relative));
+                }
                 Files.copy(
                         file,
-                        target.resolve(source.relativize(file).toString()),
+                        target.resolve(relative),
                         StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.COPY_ATTRIBUTES);
+                        StandardCopyOption.COPY_ATTRIBUTES,
+                        LinkOption.NOFOLLOW_LINKS);
                 return FileVisitResult.CONTINUE;
             }
         });
