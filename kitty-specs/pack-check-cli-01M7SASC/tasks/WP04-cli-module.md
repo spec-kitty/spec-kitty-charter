@@ -12,6 +12,9 @@ requirement_refs:
 planning_base_branch: feat/478-pack-check
 merge_target_branch: feat/478-pack-check
 branch_strategy: Planning artifacts for this mission were generated on feat/478-pack-check. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/478-pack-check unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-pack-check-cli-01M7SASC
+base_commit: 8b845a012187466adffd71176a6abccab98c1f5c
+created_at: '2026-11-19T17:05:51.941485+00:00'
 subtasks:
 - T014
 - T015
