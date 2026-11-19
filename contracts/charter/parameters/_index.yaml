@@ -17,6 +17,7 @@ files:
   - IfMatch.yaml
   - IfNoneMatch.yaml
   - IfNoneMatchCreate.yaml
+  - DryRun.yaml
   - MissionTypePath.yaml
   - PresetId.yaml
   - SelectableKindPath.yaml

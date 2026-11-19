@@ -74,6 +74,7 @@ files:
   - SkippedDeactivated.yaml
   - SkippedReport.yaml
   - PackDocumentRead.yaml
+  - PackImpact.yaml
   - PackRegistration.yaml
   - PackRegistrationStatus.yaml
   - PackSource.yaml

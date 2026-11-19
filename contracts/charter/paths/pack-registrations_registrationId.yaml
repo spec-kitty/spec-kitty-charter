@@ -43,6 +43,10 @@ get:
               $ref: ../examples/PackRegistrationStatus.succeeded.yaml
             version-conflict:
               $ref: ../examples/PackRegistrationStatus.version-conflict.yaml
+            version-not-newer:
+              $ref: ../examples/PackRegistrationStatus.version-not-newer.yaml
+            dry-run:
+              $ref: ../examples/PackRegistrationStatus.dry-run.yaml
             asset-path-escape:
               $ref: ../examples/PackRegistrationStatus.asset-path-escape.yaml
             fragment-body-path-escape:

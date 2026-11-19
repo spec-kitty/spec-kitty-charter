@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-18T00:00:00Z
+updated: 2026-11-19T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -834,16 +834,17 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
   - Charter: `contracts/charter/scenarios/registration/whole-pack-registration.feature` (A replace drops what the new archive leaves out and keeps what it carries; Sending the identical archive again changes nothing)
   - Charter: `PackRegistrationServiceTest`; `RegistrationAcceptanceTimingTest`; `RegistrationJobsTest`
 
-### DIV-602: The version is a label, and a version is never reused with other content
+### DIV-602: A replacement moves the version forward, and a version is never reused with other content
 
 - **Core:** The service's understanding of core, to be confirmed against core: it registers per artifact and keeps no history of the versions a pack name held.
-- **Service:** `pack_version` is a label, not an order: a registration may go back to an older version. The service keeps every (`pack_version`, revision) a pack name was registered with, in the same swap as the pack, and a DELETE keeps the history. The same version with another revision is refused 409 `pack_version_conflict`, whether or not it is the stored version. This check runs before the `If-Match` precondition, so a re-send of an archive with the same version after a per-artifact PUT moved the revision is 409, not 412; the 412 race needs a new version. A history entry that the service restores after a repair carries the time of the repair, not of the lost registration. The service restores the stored pair only when the history has no entry for the stored `pack_version`: a per-artifact write moves the revision without registering anything, so a version registered with revision A stays restorable with A after a PUT moved the stored revision.
-- **Rationale:** A version that names content must keep naming it, or a client that pins a version reads different packs under one label.
-- **Ruling:** FR-026; decision `DM-01M6RA9BKJY7X9BFV93QW1KM1T` (B1); IC-16
+- **Service:** A replacement moves the version forward: a registration that replaces a stored pack with other content is refused 409 `pack_version_conflict` unless its `pack_version` is newer than the stored one by PEP 440 public-version precedence (a local segment does not order), and the stored content sent again is unchanged. A replace reports `previousVersion`. The service keeps every (`pack_version`, revision) a pack name was registered with, in the same swap as the pack, and every DELETE keeps the history, a pack DELETE after healing the stored pair into it. A version the history holds with another revision is refused 409 `pack_version_conflict`, whether or not it is the stored version; labels match by PEP 440 equality. After a pack DELETE a re-install may take any version the history does not hold with other content. These checks run before the `If-Match` precondition, so a re-send of an archive with the same version after a per-artifact PUT moved the revision is 409, not 412; the 412 race needs a new version. A history entry that the service restores after a repair carries the time of the repair, not of the lost registration. The service restores the stored pair only when the history has no entry for the stored `pack_version`.
+- **Rationale:** A version that names content must keep naming it, or a client that pins a version reads different packs under one label; and an update must move forward, or a replacement silently takes a pack back to older content.
+- **Ruling:** FR-026; decision `DM-01M6RA9BKJY7X9BFV93QW1KM1T` (B1), reversed in part by ADR-0081 D2 and D9 (#517); IC-16
 - **Status:** open, since 2026-11-08
 - **Evidence:**
+  - Charter: `contracts/charter/scenarios/registration/version-order.feature`
   - Charter: `contracts/charter/scenarios/registration/whole-pack-registration.feature` (The same version with other content is refused, and a new version is accepted)
-  - Charter: `PackVersionHistoryTest`; `PackRegistrationServiceTest`
+  - Charter: `PackVersionHistoryTest`; `PackRegistrationServiceTest`; `Pep440RangeTest`
 
 ### DIV-603: The write gate covers removal and each edge, on its source
 
