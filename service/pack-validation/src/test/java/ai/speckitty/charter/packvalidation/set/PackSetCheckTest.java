@@ -481,7 +481,7 @@ class PackSetCheckTest {
         }
 
         @Test
-        @DisplayName("the real flow over a garbled pack.yaml: the set still has a verdict; the round trip is skipped")
+        @DisplayName("the real flow over a garbled pack.yaml: the set still has a verdict; the pack has one problem")
         void aRefusedPackIsItsResultNotAnException(@TempDir Path dir) throws IOException {
             Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir.resolve("packs"));
             Files.writeString(builtIn.resolve("pack.yaml"), "pack_id: [\n", StandardCharsets.UTF_8);
@@ -500,14 +500,9 @@ class PackSetCheckTest {
                     .isEmpty();
             assertThat(verdict.checks()).contains(Check.ROUND_TRIP);
             assertThat(verdict.skipped())
-                    .filteredOn(skip -> skip.check() == Check.ROUND_TRIP)
-                    .singleElement()
-                    .satisfies(skip -> {
-                        assertThat(skip.packs()).extracting(Unjudged::pack).containsExactly(ExamplePacks.BUILT_IN);
-                        assertThat(skip.reason())
-                                .startsWith("ROUND_TRIP did not run for built-in (the round trip refused it:"
-                                        + " pack_unreadable: ");
-                    });
+                    .as("only CLOSURE is ever skipped: the garbled pack has no facts; its round trip is no skip")
+                    .extracting(PackSetVerdict.Skip::check)
+                    .containsExactly(Check.CLOSURE);
             assertThat(verdict.packs().get(1).roundTrip()).isEmpty();
         }
 
@@ -530,7 +525,9 @@ class PackSetCheckTest {
                                     WholePackRoundTripRule.RED,
                                     "the round trip refused the pack: pack_unreadable: pack.yaml of built-in is not valid YAML"));
             assertThat(result.failing()).isTrue();
-            assertThat(verdict.skipped()).extracting(PackSetVerdict.Skip::check).containsExactly(Check.ROUND_TRIP);
+            assertThat(verdict.skipped())
+                    .as("one problem, the red; no skip beside it")
+                    .isEmpty();
         }
 
         @Test

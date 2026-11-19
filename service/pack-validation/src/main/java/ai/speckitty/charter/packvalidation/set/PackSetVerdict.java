@@ -69,8 +69,7 @@ public record PackSetVerdict(
      *     {@code pack.yaml} declares; empty when neither is known
      * @param facts the pack's composition facts from the same read, or the refusal that stopped them
      * @param roundTrip the round trip's failing reasons; empty when it was not asked for, when the pack round-trips
-     *     whole, or when the flow refused a pack whose verdict already reports a violation (the set's {@code
-     *     ROUND_TRIP} skip names it)
+     *     whole, or when the flow refused a pack whose verdict already reports a violation
      * @param setCheck the set check's own reasons for the pack: {@code pack_level_missing}, a violation at
      *     {@code pack.yaml}, when its facts were built but its level is unknown; empty otherwise
      */
@@ -136,8 +135,8 @@ public record PackSetVerdict(
     }
 
     /**
-     * A check that did not run, and the packs that stopped it: {@code CLOSURE} skipped for the whole set when a pack has
-     * no facts or no level (D3), or {@code ROUND_TRIP} skipped for each pack the flow refused (M2).
+     * A check that did not run, and the packs that stopped it: {@code CLOSURE}, skipped for the whole set when a pack
+     * has no facts or no level (D3). It is the only check a set skips.
      *
      * @param check the check skipped
      * @param packs each pack that stopped it, in the order the set was given, never empty
@@ -164,10 +163,8 @@ public record PackSetVerdict(
          * @return the reason, in one line
          */
         public String reason() {
-            String named = packs.stream().map(Unjudged::text).collect(Collectors.joining("; "));
-            return check == Check.CLOSURE
-                    ? check + " needs the composition facts and the level of every pack; it has none for " + named
-                    : check + " did not run for " + named;
+            return check + " needs the composition facts and the level of every pack; it has none for "
+                    + packs.stream().map(Unjudged::text).collect(Collectors.joining("; "));
         }
     }
 

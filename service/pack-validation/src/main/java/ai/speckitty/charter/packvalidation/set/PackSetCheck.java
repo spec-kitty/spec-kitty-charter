@@ -4,8 +4,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.validation.Evaluation;
-import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -17,7 +15,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packvalidation.PackCheck;
-import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
+import ai.speckitty.charter.packvalidation.placement.LevelRules;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
@@ -47,7 +45,7 @@ import java.util.Set;
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
  *       validate mode found: the two are independent checks. A pack the flow refuses is that pack's result, never an
- *       exception: its round trip is skipped and the skip says why.
+ *       exception: one problem, its validate-mode violation or else a {@code round_trip_red}.
  * </ol>
  *
  * <p>No rule is defined here: {@code CLOSURE} has one derivation, in {@link PackRulesets}.
@@ -55,8 +53,6 @@ import java.util.Set;
 public final class PackSetCheck {
 
     private static final String NO_LEVEL = "its level is unknown: none is configured and pack.yaml declares none";
-
-    private static final String PACK_YAML = "pack.yaml";
 
     private final PackCheck check;
 
@@ -94,27 +90,13 @@ public final class PackSetCheck {
         return run(entries, Optional.of(Objects.requireNonNull(roundTripping, "roundTripping")));
     }
 
-    /** One pack's round trip: its failing reasons, or the refusal that stopped the flow. */
-    private record RoundTrip(List<Reason> reasons, Optional<CharterRefusal> refusal) {
-        static final RoundTrip NONE = new RoundTrip(List.of(), Optional.empty());
-    }
-
     private PackSetVerdict run(List<PackSetEntry> entries, Optional<RoundTripping> roundTripping) {
         refuseEmptyOrRepeated(entries);
         List<PackResult> results = new ArrayList<>();
-        List<Unjudged> notRoundTripped = new ArrayList<>();
         for (PackSetEntry entry : entries) {
             PackCheck.Checked checked = check.check(entry.root());
-            RoundTrip roundTrip =
-                    roundTripping.map(flow -> roundTrip(flow, entry)).orElse(RoundTrip.NONE);
-            List<Reason> reasons = roundTrip.reasons();
-            if (roundTrip.refusal().isPresent()) {
-                CharterRefusal refusal = roundTrip.refusal().get();
-                notRoundTripped.add(new Unjudged(
-                        entry.name(),
-                        "the round trip refused it: " + refusal.code().token() + ": " + detail(refusal)));
-                reasons = refusedWithoutViolation(checked, refusal);
-            }
+            List<Reason> reasons =
+                    roundTripping.map(flow -> roundTrip(flow, entry, checked)).orElse(List.of());
             Optional<PackLevel> level = levelOf(entry, checked.readout());
             results.add(new PackResult(
                     entry,
@@ -137,9 +119,6 @@ public final class PackSetCheck {
         if (roundTripping.isPresent()) {
             checks.add(Check.ROUND_TRIP);
         }
-        if (!notRoundTripped.isEmpty()) {
-            skipped.add(new Skip(Check.ROUND_TRIP, notRoundTripped));
-        }
         return new PackSetVerdict(results, faults, checks, skipped);
     }
 
@@ -155,32 +134,30 @@ public final class PackSetCheck {
         }
     }
 
-    /** The round trip of one pack: a refusal of the pack is its result; an I/O failure propagates. */
-    private static RoundTrip roundTrip(RoundTripping flow, PackSetEntry entry) {
+    /**
+     * The round trip of one pack, judged: a refusal of the pack is its result ({@link #refused}); an I/O failure
+     * propagates.
+     */
+    private static List<Reason> roundTrip(RoundTripping flow, PackSetEntry entry, PackCheck.Checked checked) {
         try {
-            return new RoundTrip(
-                    new WholePackRoundTripRule(WholePackExpectation.none()).apply(flow.run(entry.root())),
-                    Optional.empty());
+            return new WholePackRoundTripRule(WholePackExpectation.none()).apply(flow.run(entry.root()));
         } catch (CharterRefusal refusal) {
-            return new RoundTrip(List.of(), Optional.of(refusal));
+            return refused(checked, refusal);
         }
     }
 
     /**
-     * The round-trip reasons of a pack the flow refused: none when validate mode already reports a violation, so the
-     * pack gets no second problem for one fault; otherwise one {@code round_trip_red}, so the pack still fails.
+     * The round-trip reasons of a pack the flow refused, so the pack has exactly one problem for the fault: none when
+     * validate mode already reports a violation, which is that problem; otherwise one {@code round_trip_red}
+     * ({@link WholePackRoundTripRule#refused}) carrying the refusal's code and detail.
      */
-    private static List<Reason> refusedWithoutViolation(PackCheck.Checked checked, CharterRefusal refusal) {
+    private static List<Reason> refused(PackCheck.Checked checked, CharterRefusal refusal) {
         boolean reported =
                 checked.verdict().findings().stream().anyMatch(finding -> finding.isFailing(Severity.VIOLATION));
         if (reported) {
             return List.of();
         }
-        return List.of(WholePackRoundTripRule.refused(refusal.code().token(), detail(refusal)));
-    }
-
-    private static String detail(CharterRefusal refusal) {
-        return String.valueOf(refusal.getMessage());
+        return List.of(WholePackRoundTripRule.refused(refusal.code().token(), String.valueOf(refusal.getMessage())));
     }
 
     /**
@@ -204,12 +181,7 @@ public final class PackSetCheck {
         if (level.isPresent() || !(facts instanceof PackReadout.Built)) {
             return List.of();
         }
-        return List.of(new Reason(
-                PlacementCodes.PACK_LEVEL_MISSING_VIOLATION.value(),
-                Evaluation.FAIL,
-                PlacementCodes.PACK_LEVEL_MISSING_VIOLATION,
-                Location.in(PACK_YAML),
-                PACK_YAML + " of " + entry.name() + " declares no pack_level and none is configured"));
+        return List.of(LevelRules.unknownLevel(entry.name()));
     }
 
     /** Each pack {@code CLOSURE} cannot judge, in the order the set was given: no facts, or no level. */
