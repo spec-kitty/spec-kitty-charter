@@ -2,7 +2,6 @@ package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
-import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.transport.EntityTags;
@@ -62,9 +61,7 @@ final class IfMatchTags {
      */
     static Optional<EffectiveTag> closureTag(StoredActivation stored, AvailablePacks packs) {
         try {
-            ClosureSnapshot snapshot = packs.snapshot(stored.document()
-                    .packs()
-                    .map(list -> list.stream().map(PackRef::packId).toList()));
+            ClosureSnapshot snapshot = packs.snapshot(stored.document().packIds());
             return snapshot.resolved()
                     ? Optional.of(EffectiveTag.activation(stored.revision(), snapshot))
                     : Optional.empty();

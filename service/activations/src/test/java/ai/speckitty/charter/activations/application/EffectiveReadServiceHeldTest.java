@@ -100,7 +100,8 @@ class EffectiveReadServiceHeldTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("core"), PackRef.of("proj")))
+                                .packs(List.of(
+                                        PackRef.of(new PackIdentifier("core")), PackRef.of(new PackIdentifier("proj"))))
                                 .build()
                                 .document())
                 .orElseThrow();

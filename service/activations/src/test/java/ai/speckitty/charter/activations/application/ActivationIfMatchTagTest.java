@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.List;
@@ -54,7 +55,7 @@ class ActivationIfMatchTagTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("alpha")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
                                 .selected(ArtifactKind.DIRECTIVE, List.of("D1"))
                                 .build()
                                 .document())
@@ -93,7 +94,7 @@ class ActivationIfMatchTagTest {
         ActivationService.Written written = accepted(() -> service.put(
                 ID,
                 ActivationDocument.builder()
-                        .packs(List.of(PackRef.of("alpha")))
+                        .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
                         .selected(ArtifactKind.DIRECTIVE, List.of("D1", "D2"))
                         .build(),
                 closureTag(FIRST),
@@ -111,7 +112,9 @@ class ActivationIfMatchTagTest {
     void aPutTakesTheRevisionAsIfMatchWithoutReadingThePacksForTheTag() {
         service.put(
                 ID,
-                ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build(),
+                ActivationDocument.builder()
+                        .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
+                        .build(),
                 quoted(stored),
                 null);
 
@@ -126,7 +129,7 @@ class ActivationIfMatchTagTest {
         assertThatThrownBy(() -> service.put(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("alpha")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
                                 .build(),
                         stale,
                         null))
@@ -145,7 +148,7 @@ class ActivationIfMatchTagTest {
         assertThatThrownBy(() -> service.put(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("alpha")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
                                 .build(),
                         anotherDocument,
                         null))

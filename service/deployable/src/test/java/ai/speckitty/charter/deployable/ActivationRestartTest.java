@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.ActivationDirectoryName;
 import ai.speckitty.charter.activations.infra.storage.FileActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,7 +50,9 @@ class ActivationRestartTest {
 
     private static ActivationDocument document(int n) {
         return ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("pack-" + n, "1.0." + n), PackRef.of("shared")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("pack-" + n), "1.0." + n),
+                        PackRef.of(new PackIdentifier("shared"))))
                 .selected(ArtifactKind.TACTIC, List.of("tactic-" + n, "shared-tactic"))
                 .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
                 .languages(List.of("java", "lang-" + n))

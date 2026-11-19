@@ -389,7 +389,10 @@ class EffectiveSetTest {
     @Test
     void aPinToAVersionThePackIsNotHeldAtIsListedAndAHeldPinIsNot() {
         ActivationDocument document = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("alpha", "1.0.0"), PackRef.pinned("beta", "2.0.0"), PackRef.of("gamma")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("alpha"), "1.0.0"),
+                        PackRef.pinned(new PackIdentifier("beta"), "2.0.0"),
+                        PackRef.of(new PackIdentifier("gamma"))))
                 .build()
                 .document();
         ClosureSnapshot closure = ClosureSnapshots.snapshot()
@@ -689,7 +692,8 @@ class EffectiveSetTest {
     @Test
     void theQueryCarriesTheSelectionTheDenyEntriesTheLanguagesAndThePinsOfEveryKind() {
         ActivationDocument document = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("alpha", "1.0.0"), PackRef.of("beta")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("alpha"), "1.0.0"), PackRef.of(new PackIdentifier("beta"))))
                 .languages(List.of("java", "python"))
                 .selected(ArtifactKind.DIRECTIVE, List.of("D1"))
                 .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev"))

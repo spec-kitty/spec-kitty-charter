@@ -15,6 +15,7 @@ import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
 
     private ClosureSnapshot snapshot;
     private @Nullable CharterRefusal refusal;
-    private final List<Optional<List<String>>> calls = new ArrayList<>();
+    private final List<Optional<List<PackIdentifier>>> calls = new ArrayList<>();
     private Function<ReachPlan, Reach> graph = plan -> Reach.empty();
     private final List<ReachPlan> walked = new ArrayList<>();
     private MergedSnapshot merged = MergedSnapshot.empty();
@@ -374,7 +375,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
     }
 
     @Override
-    public PacksSession session(Optional<List<String>> packIds) {
+    public PacksSession session(Optional<List<PackIdentifier>> packIds) {
         calls.add(packIds);
         if (refusal != null) {
             throw refusal;
@@ -396,7 +397,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
      *
      * @return the roots; empty for every configured pack
      */
-    public Optional<List<String>> lastRoots() {
+    public Optional<List<PackIdentifier>> lastRoots() {
         return calls.getLast();
     }
 

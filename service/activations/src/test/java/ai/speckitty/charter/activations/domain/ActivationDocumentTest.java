@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
@@ -36,7 +37,7 @@ class ActivationDocumentTest {
     @Test
     void allowListsAreSortedAndDeduplicatedWhilePacksKeepTheirOrder() {
         ActivationDocument document = build(b -> b.selected(DIRECTIVE, List.of("D2", "D1", "D2"))
-                .packs(List.of(PackRef.of("zeta"), PackRef.of("alpha"))));
+                .packs(List.of(PackRef.of(new PackIdentifier("zeta")), PackRef.of(new PackIdentifier("alpha")))));
 
         assertThat(document.selected(DIRECTIVE))
                 .hasValueSatisfying(ids -> assertThat(ids).containsExactly("D1", "D2"));
@@ -178,13 +179,17 @@ class ActivationDocumentTest {
     @Test
     void aDuplicatePackIsAViolationAndKeptOnce() {
         ActivationDocument.Built built = ActivationDocument.builder()
-                .packs(List.of(PackRef.of("a"), PackRef.pinned("a", "1"), PackRef.of("b")))
+                .packs(List.of(
+                        PackRef.of(new PackIdentifier("a")),
+                        PackRef.pinned(new PackIdentifier("a"), "1"),
+                        PackRef.of(new PackIdentifier("b"))))
                 .build();
 
         assertThat(built.violations())
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/1/packId", "duplicate_pack"));
-        assertThat(built.document().packs()).contains(List.of(PackRef.of("a"), PackRef.of("b")));
+        assertThat(built.document().packs())
+                .contains(List.of(PackRef.of(new PackIdentifier("a")), PackRef.of(new PackIdentifier("b"))));
     }
 
     @Test
@@ -241,8 +246,8 @@ class ActivationDocumentTest {
         ActivationDocument first = build(b -> b.selected(MISSION_TYPE, List.of("software-dev", "research"))
                 .deactivated(TACTIC, List.of("T2", "T1"))
                 .selected(DIRECTIVE, List.of("D1"))
-                .packs(List.of(PackRef.pinned("org", "1.0"))));
-        ActivationDocument second = build(b -> b.packs(List.of(PackRef.pinned("org", "1.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("org"), "1.0"))));
+        ActivationDocument second = build(b -> b.packs(List.of(PackRef.pinned(new PackIdentifier("org"), "1.0")))
                 .selected(DIRECTIVE, List.of("D1", "D1"))
                 .deactivated(TACTIC, List.of("T1", "T2"))
                 .selected(MISSION_TYPE, List.of("research", "software-dev")));
@@ -261,7 +266,7 @@ class ActivationDocumentTest {
         ActivationDocument document = build(b -> b.languages(List.of("java"))
                 .deactivated(TACTIC, List.of("T1"))
                 .selected(DIRECTIVE, List.of("D1"))
-                .packs(List.of(PackRef.of("p"))));
+                .packs(List.of(PackRef.of(new PackIdentifier("p")))));
 
         Map<String, Object> tree = document.toCanonicalTree();
 

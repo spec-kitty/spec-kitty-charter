@@ -116,7 +116,7 @@ class ActivationImpactAffectedTest {
     private void activation(String id, Optional<String> pack, String... selected) {
         ActivationDocument.Builder builder =
                 ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of(selected));
-        pack.ifPresent(name -> builder.packs(List.of(PackRef.of(name))));
+        pack.ifPresent(name -> builder.packs(List.of(PackRef.of(new PackIdentifier(name)))));
         repository.create(new ActivationId(id), builder.build().document());
     }
 

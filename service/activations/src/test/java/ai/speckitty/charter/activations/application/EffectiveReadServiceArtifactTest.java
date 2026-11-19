@@ -82,7 +82,7 @@ class EffectiveReadServiceArtifactTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("main")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                                 .selected(ArtifactKind.DIRECTIVE, List.of("A"))
                                 .selected(ArtifactKind.AGENT_PROFILE, List.of("P"))
                                 .build()
@@ -423,7 +423,7 @@ class EffectiveReadServiceArtifactTest {
         answered(ArtifactKind.DIRECTIVE, "A", 0);
 
         assertThat(packs.calls()).isEqualTo(1);
-        assertThat(packs.lastRoots()).contains(List.of("main"));
+        assertThat(packs.lastRoots()).contains(List.of(new PackIdentifier("main")));
         assertThat(packs.merges()).isEqualTo(1);
         assertThat(packs.queries()).hasSize(1);
         assertThat(packs.effectiveAsks()).hasSize(1);
@@ -592,7 +592,7 @@ class EffectiveReadServiceArtifactTest {
                 ID,
                 Optional.of(stored.revision()),
                 ActivationDocument.builder()
-                        .packs(List.of(PackRef.of("main")))
+                        .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                         .selected(ArtifactKind.DIRECTIVE, List.of("A", "B"))
                         .build()
                         .document());

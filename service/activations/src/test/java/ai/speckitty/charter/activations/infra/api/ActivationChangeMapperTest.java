@@ -17,6 +17,7 @@ import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.SharedSkip;
 import ai.speckitty.charter.api.model.SkippedDeactivated;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -94,7 +95,9 @@ class ActivationChangeMapperTest {
                 change.withDropped(new StaleIds.Dropped(
                         after,
                         List.of(T, D),
-                        List.of(PackRef.pinned("beta", "2.0.0"), PackRef.pinned("alpha", "1.0.0"))))));
+                        List.of(
+                                PackRef.pinned(new PackIdentifier("beta"), "2.0.0"),
+                                PackRef.pinned(new PackIdentifier("alpha"), "1.0.0"))))));
 
         assertThat(none.getDropped()).isNull();
         assertThat(none.getDroppedPins()).isEmpty();

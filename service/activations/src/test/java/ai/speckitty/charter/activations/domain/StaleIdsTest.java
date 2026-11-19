@@ -5,6 +5,7 @@ import static ai.speckitty.charter.kernel.domain.ArtifactKind.MISSION_TYPE;
 import static ai.speckitty.charter.kernel.domain.ArtifactKind.TACTIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +26,7 @@ class StaleIdsTest {
     @Test
     void everyIdTheClosureNoLongerDeclaresIsDroppedAndNamed() {
         ActivationDocument stored = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("main", "1.0.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("main"), "1.0.0")))
                 .languages(List.of("java"))
                 .selected(MISSION_TYPE, List.of("research", "gone-type"))
                 .selected(DIRECTIVE, List.of("D", "GONE"))
@@ -87,25 +88,31 @@ class StaleIdsTest {
                 .held(DIRECTIVE, "D")
                 .build();
         ActivationDocument stored = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("main", "0.9.0"), PackRef.pinned("org", "2.0.0"), PackRef.of("team")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("main"), "0.9.0"),
+                        PackRef.pinned(new PackIdentifier("org"), "2.0.0"),
+                        PackRef.of(new PackIdentifier("team"))))
                 .selected(DIRECTIVE, List.of("D"))
                 .build()
                 .document();
 
         StaleIds.Dropped dropped = StaleIds.drop(stored, closure);
 
-        assertThat(dropped.droppedPins()).containsExactly(PackRef.pinned("main", "0.9.0"));
+        assertThat(dropped.droppedPins()).containsExactly(PackRef.pinned(new PackIdentifier("main"), "0.9.0"));
         assertThat(dropped.dropped()).isEmpty();
         assertThat(dropped.document().packs())
                 .as("the pack stays, at the version the service holds; the other entries are as stored")
-                .contains(List.of(PackRef.of("main"), PackRef.pinned("org", "2.0.0"), PackRef.of("team")));
+                .contains(List.of(
+                        PackRef.of(new PackIdentifier("main")),
+                        PackRef.pinned(new PackIdentifier("org"), "2.0.0"),
+                        PackRef.of(new PackIdentifier("team"))));
         assertThat(dropped.document().selected()).isEqualTo(stored.selected());
     }
 
     @Test
     void aDocumentWhosePinsArePinnedToTheHeldVersionsDropsNoPin() {
         ActivationDocument stored = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("main", "1.0.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("main"), "1.0.0")))
                 .build()
                 .document();
 

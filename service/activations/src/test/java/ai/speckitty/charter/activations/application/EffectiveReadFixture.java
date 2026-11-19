@@ -233,7 +233,7 @@ final class EffectiveReadFixture {
     private static ActivationDocument activation() {
         ActivationDocument.Builder builder = ActivationDocument.builder()
                 .packs(IntStream.range(0, PACKS)
-                        .mapToObj(pack -> PackRef.of(name(pack)))
+                        .mapToObj(pack -> PackRef.of(new PackIdentifier(name(pack))))
                         .toList());
         builder.selected(
                 ArtifactKind.DIRECTIVE,

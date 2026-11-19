@@ -195,7 +195,7 @@ class PacksAvailabilityTest {
     void theViewIsCopiedFieldByField() {
         closures.answers(Optional.of(List.of(new PackIdentifier("alpha"))), view());
 
-        ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
 
         assertThat(closures.calls).as("one verified read per snapshot").isEqualTo(1);
         assertThat(snapshot.resolved()).isTrue();
@@ -316,12 +316,13 @@ class PacksAvailabilityTest {
                 Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost"))),
                 new UnknownRootException(List.of("ghost")));
 
-        ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha", "ghost")));
+        ClosureSnapshot snapshot =
+                adapter.snapshot(Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost"))));
 
         assertThat(snapshot.resolved()).isFalse();
         assertThat(snapshot.unknownPacks()).containsExactly("ghost");
         ActivationDocument.Built built = ActivationDocument.builder()
-                .packs(List.of(PackRef.of("alpha"), PackRef.of("ghost")))
+                .packs(List.of(PackRef.of(new PackIdentifier("alpha")), PackRef.of(new PackIdentifier("ghost"))))
                 .build();
         assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
@@ -337,7 +338,7 @@ class PacksAvailabilityTest {
         IllegalArgumentException fault = new IllegalArgumentException("a fault of the compose");
         closures.throwsOn(Optional.of(List.of(new PackIdentifier("alpha"))), fault);
 
-        assertThatThrownBy(() -> adapter.snapshot(Optional.of(List.of("alpha"))))
+        assertThatThrownBy(() -> adapter.snapshot(Optional.of(List.of(new PackIdentifier("alpha")))))
                 .isSameAs(fault);
     }
 
@@ -355,7 +356,7 @@ class PacksAvailabilityTest {
         ArtifactRef d1 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D1");
         ReachPlan plan = new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true);
 
-        PacksSession session = adapter.session(Optional.of(List.of("alpha")));
+        PacksSession session = adapter.session(Optional.of(List.of(new PackIdentifier("alpha"))));
         session.reach(plan);
         session.reach(plan);
 
@@ -369,7 +370,7 @@ class PacksAvailabilityTest {
                 Optional.of(List.of(new PackIdentifier("ghost"))), new UnknownRootException(List.of("ghost")));
         ArtifactRef d1 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D1");
 
-        PacksSession session = adapter.session(Optional.of(List.of("ghost")));
+        PacksSession session = adapter.session(Optional.of(List.of(new PackIdentifier("ghost"))));
 
         assertThat(session.snapshot().unknownPacks()).containsExactly("ghost");
         assertThat(session.reach(new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true)))
@@ -485,8 +486,9 @@ class PacksAvailabilityTest {
             return view("sha256:merged");
         }
 
+        /** The view of the closure, its packs listed as the offering lists them: a pack it names is one it lists. */
         ClosureView view(String closureFingerprint) {
-            return view(closureFingerprint, Map.of(), List.of());
+            return view(closureFingerprint, Map.of(), entries());
         }
 
         /** The view of a closure whose held ids are declared, as the compose declares them. */
@@ -708,12 +710,12 @@ class PacksAvailabilityTest {
         PacksAvailability real = new PacksAvailability(closureQueriesOver(roots));
         Revision revision = ActivationDocument.builder().build().document().revision();
         EffectiveTag.Query page = new EffectiveTag.Query(Optional.empty(), Optional.empty(), Optional.empty(), 100);
-        ClosureSnapshot before = real.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot before = real.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
 
         Files.writeString(roots.get("gamma").resolve("pack.yaml"), "name: gamma\nchanged: true\n");
-        ClosureSnapshot gammaChanged = real.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot gammaChanged = real.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
         Files.writeString(roots.get("beta").resolve("pack.yaml"), "name: beta\nchanged: true\n");
-        ClosureSnapshot betaChanged = real.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot betaChanged = real.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
 
         assertThat(gammaChanged.fingerprint()).as("every configured pack").isNotEqualTo(before.fingerprint());
         assertThat(EffectiveTag.artifacts(revision, gammaChanged, page))
@@ -828,7 +830,7 @@ class PacksAvailabilityTest {
         closures.throwsOn(
                 Optional.of(List.of(new PackIdentifier("ghost"))), new UnknownRootException(List.of("ghost")));
 
-        PacksSession session = adapter.session(Optional.of(List.of("ghost")));
+        PacksSession session = adapter.session(Optional.of(List.of(new PackIdentifier("ghost"))));
 
         assertThat(session.merged()).isEqualTo(MergedSnapshot.empty());
         assertThat(session.inForce(new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of())))

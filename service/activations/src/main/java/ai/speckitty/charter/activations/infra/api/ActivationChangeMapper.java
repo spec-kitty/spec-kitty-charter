@@ -112,7 +112,7 @@ public class ActivationChangeMapper {
     static List<PackPin> pins(List<PackRef> pins) {
         return pins.stream()
                 .map(ref -> {
-                    PackPin pin = new PackPin(ref.packId());
+                    PackPin pin = new PackPin(ref.packId().value());
                     ref.version().ifPresent(pin::setVersion);
                     return pin;
                 })
