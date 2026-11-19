@@ -176,11 +176,17 @@ None.
 
 - **Purpose**: `PackCheckReport` as an additive contract schema; every problem is the shared `Problem`.
 - **Relevant requirements**: FR-005, D2
-- **Affected surfaces**: `contracts/charter/schemas` (or the home research.md R5 picks), `_index.yaml`, the `changes/`
-  fragment, the CHANGELOG, and a contract test validating real CLI output for a valid set, a pack fault and a
-  composition fault.
+- **Affected surfaces**:
+  - `contracts/charter/schemas/PackCheckReport.yaml` (draft in `contracts/`), listed in `_index.yaml`;
+  - a named `STANDALONE` exemption in `contracts/.../lint/ReachableContractFilesTest`, which asserts the file exists
+    and stays unreached;
+  - a `changes/` fragment (`### Added`); the CHANGELOG is assembled at release;
+  - a `service/deployable` test that validates real CLI output with `ContractConformance.schemaViolations`, for a
+    valid set, a pack fault and a composition fault, and pins title and status to `RefusalHandler` (R6).
 - **Sequencing/depends-on**: IC-04
-- **Risks**: a contract check that refuses a schema no operation references (research.md R5).
+- **Risks**:
+  - `ReachableContractFilesTest` refuses a schema no operation references. The exemption is named and self-checking.
+  - `ContractConformance` refuses `const`, `uniqueItems`, `anyOf` and `$defs`. The draft uses none.
 
 ### IC-06 — The Spring-free jar and its proof
 
