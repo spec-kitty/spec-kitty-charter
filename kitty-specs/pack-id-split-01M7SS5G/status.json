@@ -89,7 +89,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::generic-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -99,7 +99,8 @@
       "last_transition_at": "2026-11-19T13:42:25.325263+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "PackLocator by registered id only; StorageCodes.PACK_ID_INVALID; StorageRootLocations refuses non-pack-id entries; StoreRead/validate mode/round trip refuse with pack_id_invalid. :packs:check :pack-validation:check :deployable:test compileTestJava green on lane-c fc4906c."
+        "PackLocator by registered id only; StorageCodes.PACK_ID_INVALID; StorageRootLocations refuses non-pack-id entries; StoreRead/validate mode/round trip refuse with pack_id_invalid. :packs:check :pack-validation:check :deployable:test compileTestJava green on lane-c fc4906c.",
+        "Independent review: approved (lane-c fc4906c). D3: PackLocator locates by registered id only; declaresId/declares gone; ForeignArtifactRead and PackMutabilityPolicy no longer look up by declared pack_id; locate by ULID -> PACK_NOT_FOUND tested. D5: pack_id_invalid storage code, StorageRootLocations refuses non-pack-id entries (logged, not served), absent from contracts. D2b: validate mode gives one pack_id_invalid for My_Pack, none for my-pack. requireNoCaseTwin deferral to WP04 checked: placement still refuses an existing directory with REGISTRATION_CONFLICT, so no data risk. :packs:check :pack-validation:check :deployable:test green (run by reviewer). Nit: T010 asked for the former ULID callers to be listed in the activity log; they are named in the handoff only."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
