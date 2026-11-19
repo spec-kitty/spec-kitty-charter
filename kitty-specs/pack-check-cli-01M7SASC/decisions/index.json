@@ -100,7 +100,7 @@
     {
       "created_at": "2026-11-19T08:02:15.766461Z",
       "decision_id": "01M7SD7SJPW58ZYV9XJ1Z6D7KD",
-      "final_answer": null,
+      "final_answer": "A: judge the set as given; document that a pack is checked with the packs it depends on (operator via orchestrator, 2026-11-19)",
       "input_key": "closure_set_scope",
       "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
       "mission_slug": "pack-check-cli-01M7SASC",
@@ -115,17 +115,17 @@
       "other_answer": false,
       "question": "Does CLOSURE run over the set as given, so a dependent pack must be checked with its dependencies?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-19T08:11:37.284581Z",
       "resolved_by": null,
       "slot_key": "plan.closure.set-scope",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     },
     {
       "created_at": "2026-11-19T08:02:18.027134Z",
       "decision_id": "01M7SD7VSBW8V4EYYGK2E0MWG6",
-      "final_answer": null,
+      "final_answer": "A: refuse links everywhere; no read follows a link; the store half refuses pack_entry_linked at load (operator via orchestrator, 2026-11-19)",
       "input_key": "links_configured_load",
       "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
       "mission_slug": "pack-check-cli-01M7SASC",
@@ -139,10 +139,10 @@
       "other_answer": false,
       "question": "Does the service's load of a configured pack refuse a link too, and does any read follow a link?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-19T08:11:39.174852Z",
       "resolved_by": null,
       "slot_key": "plan.links.configured-load",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     }

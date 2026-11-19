@@ -210,9 +210,9 @@ registration alike (D1; folds #597).
 - **D4 (A):** the first release with the jar is `service-v0.1.0-rc.2`, through a small release PR after the mission;
   the orchestrator is told the tag and commit once the native run is green.
 
-- **D5 (A, proceeding on the recommendation pending the orchestrator):** `CLOSURE` runs over the set as given; a
+- **D5 (A, ruled 2026-11-19):** `CLOSURE` runs over the set as given; a
   pack is checked with the packs it depends on.
-- **D6 (A, proceeding on the recommendation pending the orchestrator):** no read follows a link on any surface, and the
+- **D6 (A, ruled 2026-11-19):** no read follows a link on any surface, and the
   store half states `pack_entry_linked`, so the service's load of a configured pack refuses it too.
 
 ## Assumptions

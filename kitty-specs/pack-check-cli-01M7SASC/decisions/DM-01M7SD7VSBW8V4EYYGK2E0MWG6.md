@@ -4,8 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.links.configured-load`
 - **Input key:** `links_configured_load`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T08:02:18.027134+00:00`
+- **Resolved:** `2026-11-19T08:11:39.174852+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ Does the service's load of a configured pack refuse a link too, and does any rea
 
 ## Final answer
 
-_(none)_
+A: refuse links everywhere; no read follows a link; the store half refuses pack_entry_linked at load (operator via orchestrator, 2026-11-19)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T08:02:18.027134+00:00` - opened
+- `2026-11-19T08:11:39.174852+00:00` - resolved (final_answer="A: refuse links everywhere; no read follows a link; the store half refuses pack_entry_linked at load (operator via orchestrator, 2026-11-19)")

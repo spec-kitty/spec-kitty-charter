@@ -4,8 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.closure.set-scope`
 - **Input key:** `closure_set_scope`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-19T08:02:15.766461+00:00`
+- **Resolved:** `2026-11-19T08:11:37.284581+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,7 +23,7 @@ Does CLOSURE run over the set as given, so a dependent pack must be checked with
 
 ## Final answer
 
-_(none)_
+A: judge the set as given; document that a pack is checked with the packs it depends on (operator via orchestrator, 2026-11-19)
 
 ## Rationale
 
@@ -31,3 +32,4 @@ _(none)_
 ## Change log
 
 - `2026-11-19T08:02:15.766461+00:00` - opened
+- `2026-11-19T08:11:37.284581+00:00` - resolved (final_answer="A: judge the set as given; document that a pack is checked with the packs it depends on (operator via orchestrator, 2026-11-19)")
