@@ -1,0 +1,7 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- {source: directive:A, target: directive:B, relation: tension, reason: both decide the depth}
+- {source: directive:B, target: directive:A, relation: requires}
+- {source: base::directive:X, target: base::directive:Y, relation: tension}

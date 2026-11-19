@@ -125,6 +125,9 @@ public final class GraphBinding {
                                 origin + ": " + refused.message()));
                     }
                 }
+                case SelfTension self ->
+                    findings.add(Findings.at(
+                            PackCodes.TENSION_SELF, raw.file(), List.of(EDGES, Integer.toString(i)), self.detail()));
                 default -> findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
             }
         }
@@ -205,6 +208,9 @@ public final class GraphBinding {
         };
     }
 
+    /** The finding text of a tension whose two sides have the same bare URN ({@link PackCodes#TENSION_SELF}). */
+    private record SelfTension(String detail) {}
+
     /** The two endpoints of an edge: each a bare URN and the pack its reference names, if it is pack-qualified. */
     private record Endpoints(Urn from, Optional<String> fromPack, Urn to, Optional<String> toPack) {}
 
@@ -224,17 +230,18 @@ public final class GraphBinding {
         if (targetUrn.isEmpty()) {
             return origin + ": edge endpoint '" + raw.target() + "' is not a URN";
         }
+        // A tension joins two rules: an artifact and itself, or two versions of one artifact, qualified or not, are not
+        // two rules (ADR-0045 decision 1). It is reported under its own code.
+        if (relation == RelationType.TENSION && sourceUrn.get().equals(targetUrn.get())) {
+            return new SelfTension(origin + ": a tension cannot join '" + sourceUrn.get()
+                    + "' to itself or to a version" + " of itself");
+        }
         // Only a bare endpoint pair is a self-loop: a qualifier names another pack's artifact of the same id
         // (`a::directive:X -> directive:X` joins two artifacts), which is legal (ADR-0053 decision 7).
         if (sourceUrn.get().equals(targetUrn.get())
                 && source.get().packName().isEmpty()
                 && target.get().packName().isEmpty()) {
             return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
-        }
-        // A tension joins two rules: two versions of one artifact, qualified or not, are not two rules (ADR-0045
-        // decision 1).
-        if (relation == RelationType.TENSION && sourceUrn.get().equals(targetUrn.get())) {
-            return origin + ": a tension cannot join '" + sourceUrn.get() + "' to a version of itself";
         }
         for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
             if (!endpoint.kind().edgeTarget()) {

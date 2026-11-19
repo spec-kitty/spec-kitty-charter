@@ -1,0 +1,5 @@
+schema_version: '1.0'
+id: A
+title: A
+intent: A
+enforcement: required

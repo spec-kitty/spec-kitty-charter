@@ -438,11 +438,26 @@ class GraphBindingTest {
                     edge("tactic:a", "rival::tactic:a", "tension")));
 
             assertThat(build.graph().relationships()).isEmpty();
-            assertThat(details(build))
+            assertThat(build.findings())
+                    .extracting(Reason::code, Reason::detail)
                     .containsExactly(
-                            "tactic.graph.yaml: edge endpoint 'nonsense' is not a URN",
-                            "tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself",
-                            "tactic.graph.yaml: a tension cannot join 'tactic:a' to a version of itself");
+                            tuple(
+                                    PackCodes.DRG_SCHEMA_ERROR,
+                                    "tactic.graph.yaml: edge endpoint 'nonsense' is not a URN"),
+                            tuple(
+                                    PackCodes.TENSION_SELF,
+                                    "tactic.graph.yaml: a tension cannot join 'tactic:a' to itself or to a version of"
+                                            + " itself"),
+                            tuple(
+                                    PackCodes.TENSION_SELF,
+                                    "tactic.graph.yaml: a tension cannot join 'tactic:a' to itself or to a version of"
+                                            + " itself"));
+            // A structural self-loop keeps its own wording and code.
+            assertThat(build(List.of(edge("tactic:a", "tactic:a", "refines"))).findings())
+                    .extracting(Reason::code, Reason::detail)
+                    .containsExactly(tuple(
+                            PackCodes.DRG_SCHEMA_ERROR,
+                            "tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself"));
             // Positive control: a structural edge to another pack's version of the same id binds (ADR-0053 d7).
             assertThat(build(List.of(edge("tactic:a", "rival::tactic:a", "refines")))
                             .graph()

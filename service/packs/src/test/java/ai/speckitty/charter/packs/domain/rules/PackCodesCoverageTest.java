@@ -141,6 +141,16 @@ class PackCodesCoverageTest {
                             ENHANCEMENTS + "spdd-specify.prompt-fragment.md",
                             "## Guidance\n\n<!-- other:slot:start -->\nText.\n");
                 }),
+                bare("tension_duplicated", PackCodes.TENSION_DUPLICATED, pack -> tensionPack(pack, """
+                        - {source: directive:A, target: directive:B, relation: tension}
+                        - {source: directive:A, target: directive:B, relation: tension, reason: twice}
+                        """)),
+                bare("tension_orientation", PackCodes.TENSION_ORIENTATION, pack -> tensionPack(pack, """
+                        - {source: directive:B, target: directive:A, relation: tension}
+                        """)),
+                bare("tension_self", PackCodes.TENSION_SELF, pack -> tensionPack(pack, """
+                        - {source: directive:A, target: directive:A, relation: tension}
+                        """)),
                 bare(
                         "overrides_source_not_activatable",
                         PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
@@ -153,6 +163,20 @@ class PackCodesCoverageTest {
                           target: directive:d
                           relation: overrides
                         """)));
+    }
+
+    /** A pack that holds the directives A and B and a shard of the given tension edges (ADR-0045 decision 6). */
+    private static void tensionPack(Path pack, String edges) throws IOException {
+        for (String id : List.of("A", "B")) {
+            write(pack, "directives/" + id + ".directive.yaml", """
+                    schema_version: '1.0'
+                    id: %s
+                    title: %s
+                    intent: %s
+                    enforcement: required
+                    """.formatted(id, id, id));
+        }
+        write(pack, "tension.graph.yaml", "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n" + edges);
     }
 
     /** The companion, the descriptor format and the storage codes. */
