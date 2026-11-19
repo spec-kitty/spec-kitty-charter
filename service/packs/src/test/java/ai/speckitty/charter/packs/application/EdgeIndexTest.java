@@ -127,6 +127,13 @@ class EdgeIndexTest {
             return index().merged(mergedClosure(), visits);
         }
 
+        /** The tensions in force of the closure under its layer merge, with the artifacts the predicate holds in force. */
+        TensionsInForce tensions(java.util.function.Predicate<Urn> effective) {
+            MergedClosure merge = mergedClosure();
+            return TensionsInForce.of(
+                    packs, facts, index(), new ClosureView.MergedView(merge, index().merged(merge)), effective);
+        }
+
         /** The layer merge of the closure, whose packs were added in merge order. */
         MergedClosure mergedClosure() {
             return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));

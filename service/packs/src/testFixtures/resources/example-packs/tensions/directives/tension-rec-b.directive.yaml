@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_REC_B
+title: Complete The Design First
+intent: >
+  Settle the whole design of a change before any part of it is delivered.
+enforcement: advisory

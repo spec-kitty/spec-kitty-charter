@@ -1,0 +1,7 @@
+schema_version: "1.0"
+id: reconcile-half
+name: Decision Log Entries
+purpose: Keep a short log entry for each decision a change takes.
+steps:
+- title: Log the decision
+  description: Write one line per decision, with its reason, in the change's log.

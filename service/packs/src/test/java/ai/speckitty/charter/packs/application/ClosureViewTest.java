@@ -1001,4 +1001,89 @@ class ClosureViewTest {
                         .extracting(EffectivePromptQuery.Fragment::enhancement)
                         .containsExactly("x"));
     }
+
+    // ---- ADR-0045 decisions 8 and 9: the tensions of the example packs ---------------------------------------------
+
+    private static final List<String> TENSION_PACK = List.of(
+            "directive:TENSION_REC_A",
+            "directive:TENSION_REC_B",
+            "tactic:reconcile-rec",
+            "directive:TENSION_UNREC_A",
+            "directive:TENSION_UNREC_B",
+            "tactic:reconcile-half",
+            "directive:TENSION_ONE_A",
+            "directive:TENSION_ONE_B",
+            "directive:TENSION_REG_A",
+            "directive:TENSION_REG_B",
+            "directive:TENSION_REQ_A",
+            "directive:TENSION_REQ_B");
+
+    private static TensionsInForce.TensionInForce tensionOf(
+            String source, String target, Optional<String> when, Optional<String> reason, String... reconcilers) {
+        return new TensionsInForce.TensionInForce(
+                Urn.parse(source).orElseThrow(),
+                Urn.parse(target).orElseThrow(),
+                when,
+                reason,
+                new java.util.TreeSet<>(urns(reconcilers)));
+    }
+
+    @Test
+    void theTensionsExamplePackAnswersEachCaseItHolds() {
+        ClosureView view = examplePacks();
+        InForceStates states = view.inForce(InForceRequest.selecting(urns(TENSION_PACK.toArray(String[]::new))));
+
+        TensionsInForce tensions = view.tensions(states);
+
+        assertThat(tensions.all())
+                .containsExactly(
+                        tensionOf(
+                                "directive:TENSION_ONE_A",
+                                "directive:TENSION_ONE_B",
+                                Optional.empty(),
+                                Optional.empty()),
+                        tensionOf(
+                                "directive:TENSION_REC_A",
+                                "directive:TENSION_REC_B",
+                                Optional.of("when a change is large enough to need a design"),
+                                Optional.of("Small increments ship sooner; a settled design avoids rework."),
+                                "tactic:reconcile-rec"),
+                        tensionOf(
+                                "directive:TENSION_REQ_A",
+                                "directive:TENSION_REQ_B",
+                                Optional.empty(),
+                                Optional.empty()),
+                        tensionOf(
+                                "directive:TENSION_UNREC_A",
+                                "directive:TENSION_UNREC_B",
+                                Optional.empty(),
+                                Optional.empty()));
+        assertThat(view.mergedGraph(states).edges())
+                .filteredOn(edge -> edge.relation() == RelationType.TENSION)
+                .map(GraphProjection.Edge::source)
+                .containsExactlyElementsOf(urns(
+                                "directive:TENSION_ONE_A",
+                                "directive:TENSION_REC_A",
+                                "directive:TENSION_REQ_A",
+                                "directive:TENSION_UNREC_A")
+                        .stream()
+                        .sorted()
+                        .toList());
+    }
+
+    @Test
+    void aTensionOfTheExamplePackWithOneSideOutOfForceIsAbsent() {
+        ClosureView view = examplePacks();
+        List<String> withoutOneSide = TENSION_PACK.stream()
+                .filter(urn -> !urn.equals("directive:TENSION_ONE_B"))
+                .toList();
+
+        TensionsInForce tensions =
+                view.tensions(view.inForce(InForceRequest.selecting(urns(withoutOneSide.toArray(String[]::new)))));
+
+        assertThat(tensions.all())
+                .extracting(TensionsInForce.TensionInForce::source)
+                .map(Urn::toString)
+                .containsExactly("directive:TENSION_REC_A", "directive:TENSION_REQ_A", "directive:TENSION_UNREC_A");
+    }
 }

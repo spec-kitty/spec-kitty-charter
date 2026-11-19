@@ -1,0 +1,52 @@
+# The tensions pack's generated manifest (ADR-0042, #110): its constituents, each with its content hash.
+schema_version: '1.0'
+manifest_hash: 1530d079b00bccd9947303c55fa2a5ac96e2c4eabec60fe36680057faa4f2935
+constituents:
+- kind: directive
+  id: TENSION_ONE_A
+  path: directives/tension-one-a.directive.yaml
+  content_hash: bf393c8d77c81e10151e133a0c93a0448e6d7a98b66440e3efaecc3e8db52150
+- kind: directive
+  id: TENSION_ONE_B
+  path: directives/tension-one-b.directive.yaml
+  content_hash: c681f7642987a2931b6ff918dcbc6a4eac690817f4820b0db1afd223ab5ae2b4
+- kind: directive
+  id: TENSION_REC_A
+  path: directives/tension-rec-a.directive.yaml
+  content_hash: 0f10f9ae1929cc013893f14feb162db7c7f0b67498e3b15aba69d61d4ac75c62
+- kind: directive
+  id: TENSION_REC_B
+  path: directives/tension-rec-b.directive.yaml
+  content_hash: cb6ad136a69657f2ac417fdf712eb6c19ee15975a4bc38e859000deb2cc01a2b
+- kind: directive
+  id: TENSION_REG_A
+  path: directives/tension-reg-a.directive.yaml
+  content_hash: 5d0494306feaeaa7b3b2812a0c298852ec83c373b7652675497a38a67ff61423
+- kind: directive
+  id: TENSION_REG_B
+  path: directives/tension-reg-b.directive.yaml
+  content_hash: d0fc155b258ae984ecb0bd45f880fca96f56934ab17edc7d623e8e953afb97ea
+- kind: directive
+  id: TENSION_REQ_A
+  path: directives/tension-req-a.directive.yaml
+  content_hash: 2eaa1759cbcf89971801e1453830bc3429a4174d0806e7d78ad805dbf209381c
+- kind: directive
+  id: TENSION_REQ_B
+  path: directives/tension-req-b.directive.yaml
+  content_hash: db46f921f37fa2a16a6b99287873be3b39f2f3984107aaa5e7e58ead225e990a
+- kind: directive
+  id: TENSION_UNREC_A
+  path: directives/tension-unrec-a.directive.yaml
+  content_hash: b8ffcde0094427af52c41e6dcf8924c5794c1841cb93606dfbfed8b3054baa14
+- kind: directive
+  id: TENSION_UNREC_B
+  path: directives/tension-unrec-b.directive.yaml
+  content_hash: b64e954b76b3f84c8facbeb2dd3a8744998bb29a1c46808d5e27650eb08ae3e4
+- kind: tactic
+  id: reconcile-half
+  path: tactics/reconcile-half.tactic.yaml
+  content_hash: db820d1cbab6ba4be518ba5f1aad530e9a6265a5e37d34a2d6b44f15b0e5eeaa
+- kind: tactic
+  id: reconcile-rec
+  path: tactics/reconcile-rec.tactic.yaml
+  content_hash: 841d03e6a4d160b3b9d38e9c0ba0b5a7c2d89bc8a1167be2c2bf755119dfd0a8

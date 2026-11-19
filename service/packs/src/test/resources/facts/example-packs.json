@@ -28,5 +28,11 @@
     "changed" : [ ],
     "defined" : [ "routing_catalog:mandated" ],
     "heldTerms" : [ ]
+  },
+  "tensions" : {
+    "packId" : "01M7RDX1000000000000TENS0N",
+    "changed" : [ ],
+    "defined" : [ "directive:TENSION_ONE_A", "directive:TENSION_ONE_B", "directive:TENSION_REC_A", "directive:TENSION_REC_B", "directive:TENSION_REG_A", "directive:TENSION_REG_B", "directive:TENSION_REQ_A", "directive:TENSION_REQ_B", "directive:TENSION_UNREC_A", "directive:TENSION_UNREC_B", "tactic:reconcile-half", "tactic:reconcile-rec" ],
+    "heldTerms" : [ ]
   }
 }

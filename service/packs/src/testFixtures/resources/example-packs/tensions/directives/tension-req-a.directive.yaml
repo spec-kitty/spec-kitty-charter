@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_REQ_A
+title: Review Every Change
+intent: >
+  Have a second person review each change before it merges.
+enforcement: advisory
