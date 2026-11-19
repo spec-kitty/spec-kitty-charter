@@ -1,0 +1,146 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-19T20:50:06.995705Z",
+      "decision_id": "01M7TS5S0KZYWF2ZGYG9WPXJYT",
+      "final_answer": null,
+      "input_key": "refusal_shape",
+      "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+      "mission_slug": "closure-checks-behind-ports-01M7TS43",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) problem code = first fault (fixed rule order), violations[] = every fault with its own code, packs = union (additive contract change)",
+        "(b) new catch-all code closure_invalid with violations",
+        "(c) keep one fault per refusal at the API; collect only internally"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D1: How does one HTTP refusal carry the collected faults?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.wire.collected-refusal",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T20:50:09.138246Z",
+      "decision_id": "01M7TS5V3JRBRA969FDN7QVN54",
+      "final_answer": null,
+      "input_key": "collect_scope",
+      "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+      "mission_slug": "closure-checks-behind-ports-01M7TS43",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) issue minimum: ImpactRelations 7 rules + FallbackProfileRule 4 checks",
+        "(b) (a) + every closure a write joins + role pins, profile enhancement, specialization cycle + every refused write of a registration (mutability) + the qualified-reference checks (ClosureWalk)"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D2: How far does collect-all reach?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.collect-all",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T20:50:11.601664Z",
+      "decision_id": "01M7TS5XGH84S9ND3RM7RZTPCR",
+      "final_answer": null,
+      "input_key": "dependents_seam",
+      "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+      "mission_slug": "closure-checks-behind-ports-01M7TS43",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) absorb: ImpactCheck judges a write and a removal; PackDependents/ClosurePackDependents are deleted; 409 pack_has_dependents stays its own code",
+        "(b) keep PackDependents as a sub-port ImpactCheck calls"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D3: Does ImpactCheck absorb #517 PackDependents?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.dependents-seam",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T20:50:13.794157Z",
+      "decision_id": "01M7TS5ZN2B9G0GCXKSBQHBXC1",
+      "final_answer": null,
+      "input_key": "impact_notices",
+      "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+      "mission_slug": "closure-checks-behind-ports-01M7TS43",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) one pass: the port returns Impact(verdict Rationale, notices) and exposes the Rule view; one compose per closure",
+        "(b) Rule only; notices from a second compose"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D4: ImpactCheck is a kernel Rule, but the impact also yields notices (floor/lock/activations). Shape?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.design.notices",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T20:50:16.001438Z",
+      "decision_id": "01M7TS61T1BVT5EE0MSZ1026KA",
+      "final_answer": null,
+      "input_key": "mutability_port",
+      "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+      "mission_slug": "closure-checks-behind-ports-01M7TS43",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) MutabilityCheck replaces WritePolicyGate outright, collect every refused write",
+        "(b) MutabilityCheck wraps WritePolicyGate; both kept"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D5: MutabilityCheck vs the existing WritePolicyGate port (12 main, 26 test files)?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.design.mutability",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T20:50:18.259354Z",
+      "decision_id": "01M7TS640K3TT3RXYDCS7NSWZW",
+      "final_answer": null,
+      "input_key": "parity_test",
+      "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+      "mission_slug": "closure-checks-behind-ports-01M7TS43",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) charter-owned mirror packs, each with an open-packs-format expected-code file, plus cases for the collected codes and their order; open-packs charter_service_check.py stays the real gate",
+        "(b) read open-packs at its pinned commit in a test",
+        "(c) drop: open-packs charter_service_check.py already is the parity test"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D6: The parity test, given ADR-0070 (charter tests read no open-packs content) and fixtures at tests/fixtures/invalid/?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.parity",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+  "version": 1
+}
