@@ -119,6 +119,8 @@ An operator removes an org pack that no other pack depends on and no activation 
 - A delete while the registry lock is busy: `503` with `Retry-After`, as the other writes.
 - A stored pack that cannot be read: it can still be deleted when nothing depends on it (its dependents are found
   from the other packs, not from it). Its inbound referrers are found by the salvage read, as for a replace.
+- Another configured pack whose descriptor cannot be read: it cannot be judged, so the delete is refused
+  `500 pack_unreadable`, naming it (fail closed).
 - A delete of a pack whose only dependent is itself (a self-reference): not a dependent.
 - Re-install after a delete: any version the history does not hold with other bytes (D9); there is no stored
   version to be newer than.
@@ -144,7 +146,7 @@ An operator removes an org pack that no other pack depends on and no activation 
 | FR-001 | `DELETE /packs/{packId}` removes a registered org or project pack whole and answers `204` with no body. | Draft |
 | FR-002 | The delete requires `If-Match` (absent `428`, stale `412`, `*` accepted), checked again under the locks. | Draft |
 | FR-003 | An identifier that names no configured pack is `404 pack_not_found`; a built-in pack or a pack in a read-only location is `409 registration_conflict`; while `charter.registration.enabled` is off the answer is `503 pack_source_unavailable` before anything else is judged. | Draft |
-| FR-004 | A delete with any dependent is refused `409 pack_has_dependents`; its violations name every dependent pack (`depends_on` or `parent_pack`), every activation whose `packs` lists the pack, and every inbound artifact referrer, in a stable order; nothing is written. | Draft |
+| FR-004 | A delete with any dependent is refused `409 pack_has_dependents`. Every dependent is found: each pack whose `depends_on` or `parent_pack` names it, each activation whose `packs` lists it, and each inbound artifact referrer. The `packs` member names the dependent packs, and the violations name the dependents in a stable order, at most 100, with the detail counting the rest. Nothing is written. | Draft |
 | FR-005 | With no dependent, the delete composes every other closure that holds the pack without it, strictly; one that does not compose or breaks a relation rule is refused `422` with its code, naming the closure; the activations gate (`requireComposable`) runs as on every write. | Draft |
 | FR-006 | The removal is one swap under the registry write lock then the pack's lock: a concurrent read sees the pack or no pack, and a failure leaves the pack whole. | Draft |
 | FR-007 | The version history of the name survives a delete and is used only for the label-reuse check (ADR-0065 D9). | Draft |
@@ -177,8 +179,9 @@ An operator removes an org pack that no other pack depends on and no activation 
 
 ### Key Entities
 
-- **PackImpact** (new schema): `packId`, `operation` (`delete`), `outcome` (`deleted` or `refused`), `dependents`,
-  `notices`, `problem` (when refused), `_links`.
+- **PackImpact** (new schema): `packId`, `operation` (`delete`), `outcome` (`deleted` or `refused`), `version`,
+  `revision`, `notices`, `problem` (when refused: the delete's own refusal, whose `packs` and `violations` name the
+  dependents), `_links`.
 - **PackRegistration** (changed): `previousVersion` (optional), `dryRun` (optional, true only on a dry run).
 - **CharterRefusalCode** (changed): `pack_has_dependents` (409).
 
