@@ -90,6 +90,11 @@ class CompanionFilesTest {
         Files.writeString(outside.resolve("note.md"), "x");
         Files.createSymbolicLink(pack.resolve("linked"), outside);
         artifact("linkdir.tactic.yaml", "linkdir", "linked/note.md");
+        // A linked directory that stays in the pack: never read through either (D6).
+        Path inner = Files.createDirectories(pack.resolve("inner"));
+        Files.writeString(inner.resolve("note.md"), "x");
+        Files.createSymbolicLink(pack.resolve("linkedin"), inner);
+        artifact("linkin.tactic.yaml", "linkin", "linkedin/note.md");
         artifact("binary.tactic.yaml", "binary", "binary.md");
         Files.write(pack.resolve("binary.md"), new byte[] {(byte) 0xC3, (byte) 0x28});
         artifact("backslash.tactic.yaml", "backslash", "a\\..\\x.md");
@@ -111,6 +116,7 @@ class CompanionFilesTest {
                         "escape.tactic.yaml: ../outside.md: leaves the pack",
                         "link.tactic.yaml: link.md: is not a regular file",
                         "linkdir.tactic.yaml: linked/note.md: leaves the pack",
+                        "linkin.tactic.yaml: linkedin/note.md: is reached through a link",
                         "missing.tactic.yaml: gone.md: missing",
                         "second.tactic.yaml: sub/../shared.md: named by two artifacts",
                         "slash.tactic.yaml: pack.yaml/: is a YAML file",

@@ -184,6 +184,16 @@ class PackCodesCoverageTest {
                                 "pack.yaml",
                                 DESCRIPTOR
                                         + "depends_on:\n  - pack_id: 01ARWG13C000000000000000FG\n    range: banana\n")),
+                bare("pack_entry_linked (a file link; the same tree without it is the clean control)",
+                        StorageCodes.PACK_ENTRY_LINKED, pack -> {
+                    Path outside = pack.resolveSibling("outside.directive.yaml");
+                    Files.writeString(
+                            outside,
+                            "schema_version: \"1.0\"\nid: B\ntitle: B\nintent: Intent of B\nenforcement: required\n",
+                            StandardCharsets.UTF_8);
+                    Files.createDirectories(pack.resolve("directives"));
+                    Files.createSymbolicLink(pack.resolve("directives/B.directive.yaml"), outside);
+                }),
                 bare(
                         "reserved_shard",
                         StorageCodes.RESERVED_SHARD,

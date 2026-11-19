@@ -821,7 +821,7 @@ final class FilesystemPackStore {
         for (Path shard : PackFileSet.rootShards(directory, id.value())) {
             files.add(String.valueOf(shard.getFileName()));
         }
-        boolean hasFragment = Files.isRegularFile(directory.resolve(PackFileSet.FRAGMENT));
+        boolean hasFragment = PackFileSet.unlinkedFile(directory, PackFileSet.FRAGMENT);
         if (hasFragment) {
             files.add(PackFileSet.FRAGMENT);
         }
@@ -862,7 +862,7 @@ final class FilesystemPackStore {
 
     private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
-        if (!Files.isRegularFile(packYaml)) {
+        if (!PackFileSet.unlinkedFile(directory, PackFileSet.PACK_YAML)) {
             throw descriptorRefusal("pack " + id.value() + " has no pack.yaml");
         }
         return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {

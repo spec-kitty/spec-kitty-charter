@@ -68,7 +68,7 @@ final class PolicyYaml {
      */
     static Named readNamed(Path directory, String named) {
         Path file = directory.resolve(named);
-        if (!Files.isRegularFile(file)) {
+        if (!PackFileSet.unlinkedFile(directory, named)) {
             throw new Unreadable("is missing");
         }
         String text = FilesystemPackStore.readText(file).orElseThrow(() -> new Unreadable("is not UTF-8 text"));
