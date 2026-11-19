@@ -154,7 +154,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::generic-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -164,7 +164,8 @@
       "last_transition_at": "2026-11-19T16:48:17.455826+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Consumers typed (AvailablePacks by PackIdentifier, PacksAvailability keyed by PackUlid, ReferenceReads Holder PackUlid); PackCheck.validate(PackIdentifier, Optional<PackLevel>, Path) + no-id overload; PackRef wraps PackIdentifier; PackPin.packId pack id grammar in both schemas (parity tests pass) + ### Breaking fragment, corpus examples and scenario outline. test (all) + :contracts:check (full clone, baseline compared) green on lane-e 5d9506c."
+        "Consumers typed (AvailablePacks by PackIdentifier, PacksAvailability keyed by PackUlid, ReferenceReads Holder PackUlid); PackCheck.validate(PackIdentifier, Optional<PackLevel>, Path) + no-id overload; PackRef wraps PackIdentifier; PackPin.packId pack id grammar in both schemas (parity tests pass) + ### Breaking fragment, corpus examples and scenario outline. test (all) + :contracts:check (full clone, baseline compared) green on lane-e 5d9506c.",
+        "Independent review: approved (lane-e 5d9506c). D7: PackPin.packId follows the PackId grammar (identical to parameters/PackId.yaml) in ActivationConfig.schema.json and PackPin.yaml; Breaking fragment accurate; corpus 20/21 and the 422 scenario outline added; unused Slug removed; PackRef wraps PackIdentifier. D2b: PackCheck takes the registered id or defaults to the directory name, pack_id_invalid otherwise. PacksAvailability keyed by PackUlid; its new IllegalStateException is unreachable from input (a missing parent is refused PARENT_UNRESOLVED before a view exists). Full test :contracts:check verifyAll green on full history (run by reviewer). PackIdentifier's stale constructor Javadoc is WP06 T026's."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
