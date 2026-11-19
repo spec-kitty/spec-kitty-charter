@@ -1,8 +1,8 @@
 // The pack-check CLI (ADR-0075 decision 9, #478): a thin main over pack-validation, with no Spring and no CLI framework,
 // that checks a set of packs and writes the contract's problem JSON. Its main, PackCheckMain, is the composition root:
 // it plugs the packs slice's file-system reader (FileSystemPackInspector) and the production round trip (PackRoundTrip)
-// into pack-validation's pack-set check, so it names :packs too. The jar that ships on the service-v* release is added by
-// a build-logic convention (#478, WP06), not here.
+// into pack-validation's pack-set check, so it names :packs too. The jar that ships on the service-v* release, its
+// licences and its jar test come from the build-logic convention charter.pack-check-jar (#478, WP06), not from here.
 //
 // It may depend on pack-validation, :packs and a JSON writer only, pinned below. HexagonalArchitectureTest's
 // PACK_VALIDATION_IS_FRAMEWORK_FREE pins the classes it uses: no Spring, HTTP, commit store or lock, and only
@@ -12,6 +12,8 @@ plugins {
     id("charter.hand-written")
     // The nightly mutation floor (#239), as pack-validation's.
     id("charter.mutation-conventions")
+    // The runnable Spring-free jar, its licences and its jar test (#478, WP06).
+    id("charter.pack-check-jar")
 }
 
 ModuleDependencyAllowlist(
