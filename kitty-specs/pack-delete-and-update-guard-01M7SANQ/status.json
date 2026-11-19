@@ -30,7 +30,8 @@
       "last_transition_at": "2026-11-19T09:46:02.589923+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Contract, ADR-0081 and records; contracts:check and check_docs green"
+        "Contract, ADR-0081 and records; contracts:check and check_docs green",
+        "Review cycle 1 rejected by the independent reviewer agent: 2 HIGH, 4 MEDIUM, 5 LOW, all folded (research/implementation-notes.md, WP01 review dispositions); the contract lands with the controller (I5)."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
