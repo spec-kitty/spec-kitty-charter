@@ -22,7 +22,7 @@ spec-kitty-open-packs now runs charter's round trip over its own content
 ([spec-kitty-open-packs#308](https://github.com/spec-kitty/spec-kitty-open-packs/pull/308)).
 
 - **At its pin, on every pull request.** The required gate runs `:pack-validation:driftTest` from the pinned charter.
-- **Daily, against each new charter release.** `charter-track.yml` checks the newest `service-v*` release when it is
+- **Daily, against each new charter release.** `charter-track.yml` checks the newest `service-v*` release or pre-release when it is
   newer than the pin: green opens a pull request that bumps the pin, red opens a `charter:release-red` issue in
   open-packs.
 - **On demand, against charter `main`.** A dispatch with `charter_ref`, or the `charter:head` label on an open-packs pull
