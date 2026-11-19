@@ -19,7 +19,7 @@ class RoutingCatalogEndpointTest {
     }
 
     @Test
-    @DisplayName("no relation, enhances and overrides included, names the catalog as a source or a target")
+    @DisplayName("no relation, enhances, overrides and tension included, names the catalog as a source or a target")
     void noRelationAdmitsTheCatalog() {
         for (RelationType type : RelationType.values()) {
             assertThat(EndpointTable.of(type))
@@ -27,9 +27,6 @@ class RoutingCatalogEndpointTest {
                     .noneMatch(pair ->
                             pair.source() == NodeKind.ROUTING_CATALOG || pair.target() == NodeKind.ROUTING_CATALOG);
         }
-        assertThat(EndpointTable.tension())
-                .noneMatch(
-                        pair -> pair.source() == NodeKind.ROUTING_CATALOG || pair.target() == NodeKind.ROUTING_CATALOG);
     }
 
     @Test

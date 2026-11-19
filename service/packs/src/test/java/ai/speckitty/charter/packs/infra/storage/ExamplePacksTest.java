@@ -67,7 +67,7 @@ class ExamplePacksTest {
                 .isNotEmpty();
     }
 
-    /** The four example packs as the store configures them, built-in first. */
+    /** The example packs as the store configures them, built-in first. */
     static List<PackLocation> locations() {
         return ExamplePacks.names().stream()
                 .map(name -> new PackLocation(name, ExamplePacks.level(name), ExamplePacks.pack(name)))
