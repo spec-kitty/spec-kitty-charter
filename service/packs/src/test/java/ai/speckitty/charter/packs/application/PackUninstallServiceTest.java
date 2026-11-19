@@ -78,7 +78,7 @@ class PackUninstallServiceTest {
 
         assertThat(outcome.dryRun()).isFalse();
         assertThat(outcome.refused()).isEmpty();
-        assertThat(outcome.version()).isEqualTo("1.0.0");
+        assertThat(outcome.version()).contains("1.0.0");
         assertThat(rig.packs.resolve("qa")).doesNotExist();
         assertThat(rig.asidesBeside(rig.packs.resolve("qa")))
                 .as("no aside copy is left that a listing could restore")
@@ -167,6 +167,69 @@ class PackUninstallServiceTest {
 
         assertThat(refused.code())
                 .as("a pack that cannot be read might depend on qa; even a dry run keeps the status")
+                .isEqualTo(RefusalCode.PACK_UNREADABLE);
+        assertThat(refused.getMessage()).contains("broken");
+        assertThat(rig.packs.resolve("qa")).isDirectory();
+    }
+
+    @Test
+    void aPackWhoseOwnPackYamlCannotBeReadIsStillRemoved(@TempDir Path host) throws IOException {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa()), Preconditions.none());
+        Files.writeString(rig.packs.resolve("qa").resolve("pack.yaml"), "pack_id: [\n");
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("qa"));
+
+        PackUninstallService.Outcome dryRun = uninstall(rig, "qa", "*", Mode.DRY_RUN);
+
+        assertThat(dryRun.refused())
+                .as("nothing depends on qa, judged by its configured name")
+                .isEmpty();
+        assertThat(dryRun.version())
+                .as("an unreadable pack.yaml has no version")
+                .isEmpty();
+        assertThat(rig.filesOf(rig.packs.resolve("qa")))
+                .as("a dry run changes nothing")
+                .isEqualTo(before);
+
+        PackUninstallService.Outcome removed = uninstall(rig, "qa", "*", Mode.COMMIT);
+
+        assertThat(removed.refused()).isEmpty();
+        assertThat(removed.version()).isEmpty();
+        assertThat(rig.packs.resolve("qa")).doesNotExist();
+    }
+
+    @Test
+    void anUnreadablePacksDependentsAreJudgedByItsConfiguredName(@TempDir Path host) throws IOException {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa()), Preconditions.none());
+        Files.writeString(rig.packs.resolve("qa").resolve("pack.yaml"), "pack_id: [\n");
+        rig.activations.add(Optional.of(List.of("qa")));
+
+        CharterRefusal refused = refusalOf(() -> uninstall(rig, "qa", "*", Mode.COMMIT));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_HAS_DEPENDENTS);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::code)
+                .as("an activation names qa by its configured name")
+                .containsExactly("activation");
+        assertThat(rig.packs.resolve("qa")).isDirectory();
+        assertThat(uninstall(rig, "qa", "*", Mode.DRY_RUN).refused())
+                .as("the dry run answers the same refusal as a body")
+                .hasValueSatisfying(same -> assertThat(same.violations()).isEqualTo(refused.violations()));
+    }
+
+    @Test
+    void anUnreadablePackIsNotRemovedWhileAnotherPackCannotBeJudged(@TempDir Path host) throws IOException {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa()), Preconditions.none());
+        Files.writeString(rig.packs.resolve("qa").resolve("pack.yaml"), "pack_id: [\n");
+        Files.createDirectories(rig.packs.resolve("broken"));
+        Files.writeString(rig.packs.resolve("broken").resolve("pack.yaml"), "pack_id: [\n");
+
+        CharterRefusal refused = refusalOf(() -> uninstall(rig, "qa", "*", Mode.DRY_RUN));
+
+        assertThat(refused.code())
+                .as("another pack the judgement needs fails it closed")
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);
         assertThat(refused.getMessage()).contains("broken");
         assertThat(rig.packs.resolve("qa")).isDirectory();

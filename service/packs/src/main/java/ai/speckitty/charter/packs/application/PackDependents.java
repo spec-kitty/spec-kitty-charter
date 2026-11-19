@@ -73,23 +73,49 @@ public interface PackDependents {
      * The pack a removal would remove.
      *
      * @param configured how it is configured: its name and level
-     * @param descriptor its descriptor, salvaged from its {@code pack.yaml} when the pack cannot be loaded whole
-     * @param held every artifact and term it holds, as URNs; an artifact of another pack that refers to one of them is a
-     *     dependent
+     * @param descriptor its descriptor; empty when its own {@code pack.yaml} cannot be read, and the pack is then judged
+     *     by its configured name (ADR-0081 D6)
+     * @param held every artifact and term it holds, as URNs, or what can still be read of them; an artifact of another
+     *     pack that refers to one of them is a dependent
      */
-    record Removed(ConfiguredPack configured, PackDescriptor descriptor, Set<Urn> held) {
+    record Removed(ConfiguredPack configured, Optional<PackDescriptor> descriptor, Set<Urn> held) {
 
         /**
          * Checks the fields and copies the set.
          *
          * @param configured how it is configured
-         * @param descriptor its descriptor
+         * @param descriptor its descriptor, if it can be read
          * @param held what it holds
          */
         public Removed {
             Objects.requireNonNull(configured, "configured");
             Objects.requireNonNull(descriptor, "descriptor");
             held = Set.copyOf(held);
+        }
+
+        /**
+         * The {@code pack_id} another pack's {@code depends_on} or {@code parent_pack} names the pack by: the declared
+         * one, or its configured name when its {@code pack.yaml} cannot be read. A {@code pack_id} is a ULID, so such a
+         * pack is then found by no edge; its dependents' closures already hold a pack that cannot be read.
+         *
+         * @return the {@code pack_id} it is judged by
+         */
+        public String packId() {
+            return descriptor
+                    .map(PackDescriptor::packId)
+                    .orElseGet(() -> configured.id().value());
+        }
+
+        /**
+         * The name a qualified reference names the pack by: the declared one, or its configured name when its
+         * {@code pack.yaml} cannot be read.
+         *
+         * @return the name it is judged by
+         */
+        public String name() {
+            return descriptor
+                    .map(PackDescriptor::name)
+                    .orElseGet(() -> configured.id().value());
         }
     }
 

@@ -5,7 +5,9 @@
 # is removed: each refusal and each removal below has its dry-run twin, and the twin is shown to leave the pack as it
 # was (its revision is unchanged).
 #
-# Steps this file adds (scenarios/README.md, "Registration steps"): When I DELETE "<path>" without If-Match.
+# Steps this file adds (scenarios/README.md, "Registration steps"): When I DELETE "<path>" without If-Match; Given the
+# stored pack "<pack>" has the file "<path>": (a doc string), which overwrites a file of a stored pack behind the
+# service's back.
 
 @contract @registration
 Feature: A registered pack is removed whole, or not at all
@@ -301,3 +303,20 @@ Feature: A registered pack is removed whole, or not at all
     Then the response status is 409
     When I GET "/packs/fixed"
     Then the response status is 200
+
+  Scenario: A pack whose own pack.yaml cannot be read can still be removed, judged by its configured name
+    Given the stored pack "qa" has the file "pack.yaml":
+      """
+      pack_id: [
+      """
+    When I DELETE "/packs/qa?dryRun=true" with the header "If-Match": "*"
+    Then the response status is 200
+    And the field at "/outcome" is "deleted"
+    And the field at "/packId" is "qa"
+    And the field at "/version" is absent
+    And the field at "/problem" is absent
+    When I DELETE "/packs/qa" with the header "If-Match": "*"
+    Then the response status is 204
+    When I DELETE "/packs/qa" with the header "If-Match": "*"
+    Then the response status is 404
+    And the problem code is "pack_not_found"

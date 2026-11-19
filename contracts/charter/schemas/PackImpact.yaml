@@ -13,7 +13,6 @@ required:
 - packId
 - operation
 - outcome
-- version
 - revision
 - _links
 properties:
@@ -48,9 +47,10 @@ properties:
   version:
     type: string
     minLength: 1
-    description: The pack_version of the stored pack the removal would remove.
+    description: The pack_version of the stored pack the removal would remove. Absent when the pack's own pack.yaml
+      cannot be read, which does not stop the removal.
     x-derived:
-      rule: The pack_version of the stored pack's descriptor.
+      rule: The pack_version of the stored pack's descriptor; absent when that descriptor cannot be read.
       inputs:
       - the pack.yaml of the pack
   revision:
