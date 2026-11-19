@@ -1,7 +1,7 @@
 {
-  "event_count": 22,
-  "last_event_id": "01M7SZD29JWYGZCANN36P4FA04",
-  "materialized_at": "2026-11-19T13:19:42.898725+00:00",
+  "event_count": 24,
+  "last_event_id": "01M7SZGXC3KH7HGS5QJYR4SAMQ",
+  "materialized_at": "2026-11-19T13:21:48.902840+00:00",
   "mission_number": "",
   "mission_slug": "pack-id-split-01M7SS5G",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -88,11 +88,20 @@
       }
     },
     "WP03": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7SSVTDW5H5PANK0VE27XXH5",
-      "last_transition_at": "2026-11-19T11:42:54.908663+00:00"
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M7SZGXC3KH7HGS5QJYR4SAMQ",
+      "last_transition_at": "2026-11-19T13:21:48.902840+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 23606,
+      "shell_pid_created_at": "1795094502.67"
     },
     "WP04": {
       "actor": "finalize-tasks",
