@@ -120,6 +120,17 @@ A missing target pack or artifact keeps `pack_reference_pack_missing` or
 with `raised: false` in `CharterRefusalCode` until #424 raises them. The warning spelling is reserved in
 `DiagnosticCode`.
 
+## Tensions (ADR-0045)
+
+A tension is an edge of relation `tension` between two guidance artifacts (directive, tactic, styleguide, toolguide,
+paradigm, procedure) of a graph shard or an org fragment, with an optional `when` and `reason`. It is written once,
+in its stored orientation: the side the pack holds is the `source`; when the pack holds both sides, or neither, the
+smaller bare URN is. A side the pack does not hold is written `<pack>::<kind>:<id>`. A tension may sit beside one
+structural edge on the same pair. A pack that writes a tension twice, against its stored orientation, or from an
+artifact to itself is refused at load (`tension_duplicated`, `tension_orientation`, `tension_self`). `in_tension_with`,
+the former spelling, is not in the `Relation` enum. A tension is reconciled by an artifact with `reconciles_tension`
+edges to both sides.
+
 ## Validate a file
 
 1. Find the schema for the file in `file-kinds.yaml`. `pack.yaml` at a pack root is

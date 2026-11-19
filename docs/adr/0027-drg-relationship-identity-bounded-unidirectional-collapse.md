@@ -2,8 +2,8 @@
 title: "ADR-0027: CRG relationship identity is a bounded, conditional unidirectional collapse"
 description: Why a relationship is one unidirectional edge per component pair as an upstream normalization with a revisit trigger, not a claim that relationships are intrinsically one-way.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0028 (2026-10-26); clarified by ADR-0036 (2026-10-27)'
+updated: 2026-11-19T00:00:00Z
+decision_status: 'Accepted, with Amendments 2026-11-05 (ADR-0064) and 2026-11-19 (ADR-0045); superseded in part by ADR-0028 (2026-10-26); clarified by ADR-0036 (2026-10-27)'
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
@@ -44,6 +44,14 @@ annotated:
   source ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 1 and 10);
 - Neutral: the provenance divergence dissolves, because the procedure's typed reference no longer mints
   an edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 2 and 10).
+
+### Amendment 2026-11-19
+
+[ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/) decision 1 (accepted
+2026-11-18, #602) makes a tension a relationship of its own pair class: a relationship's identity is its unordered pair
+and its pair class, structural or tension. A pair holds at most one structural relationship, as decision 1 here says,
+and beside it at most one tension; a write replaces only the edge of its own class. The original text stands for the
+structural class.
 
 ## Context
 

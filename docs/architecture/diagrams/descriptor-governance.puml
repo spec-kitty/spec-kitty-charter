@@ -59,7 +59,7 @@ enum Relation {
   requires, suggests, applies, scope,
   vocabulary, instantiates,
   specializes_from, enhances,
-  overrides, refines, in_tension_with,
+  overrides, refines, tension,
   reconciles_tension, rejects
   (replaces, delegates_to, impacts retired: ADR-0077)
 }

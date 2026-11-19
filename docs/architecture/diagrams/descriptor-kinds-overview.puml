@@ -116,7 +116,7 @@ PackSkill ..> PackSkill : enhances / overrides (fields)
 note bottom of kinds
   Relation enum (drg/models.py): requires, suggests, applies, scope,
   vocabulary, instantiates, specializes_from, enhances, overrides,
-  refines, in_tension_with, reconciles_tension, rejects
+  refines, tension, reconciles_tension, rejects
   (replaces and delegates_to retired, ADR-0077).
   Each relation joins only its endpoint kinds (ADR-0077 d5).
   vocabulary targets glossary and term (ADR-0049 d4).

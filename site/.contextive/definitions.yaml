@@ -241,6 +241,10 @@ contexts:
         definition: "An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it. Settling puts the named member's version in force (#357)."
         meta:
           status: "canonical"
+      - name: "Pair class"
+        definition: "Which of a pair's two relationship slots an edge fills: structural (every relation but `tension`) or tension. A relationship's identity is its unordered pair and its pair class, so a pair holds at most one structural relationship and one tension, and a write replaces only the edge of its own class (ADR-0045 decision 1)."
+        meta:
+          status: "canonical"
       - name: "Pack id (descriptor)"
         definition: "The ULID a pack declares as `pack_id` in `pack.yaml`; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape. It is `OfferingPack.descriptorPackId` and `dependsOn[].descriptorPackId` on the wire, and the identity a dependency edge names. Unique across a compose without exception (`pack_duplicate_id`). Not the configured pack id."
         meta:
@@ -263,12 +267,16 @@ contexts:
           status: "canonical"
       - name: "Ratchet Baseline"
         definition: "A snapshot of a quality metric (failure count, symbol count, dead-module count) recorded in `tests/architectural/ratchet-baseline-*.md` and enforced by the corresponding architectural gate. A ratchet baseline only moves in the decreasing direction during normal development; any increase fails CI. Org packs may declare additional ratchet metrics via governance policies, but cannot lower an existing shipped baseline."
+      - name: "Reconciler"
+        definition: "An artifact in force whose `reconciles_tension` edges in the merged closure reach both sides of a tension; an edge to one side only reconciles nothing. Every reconciler in force of a tension is answered with it as `reconciledBy` (ADR-0045 decision 9). Core calls it an arbiter."
+        meta:
+          status: "canonical"
       - name: "Recipe ingredients"
         definition: "The guidance a mission type names: the targets of its `scope` edges in the pack's graph documents (core reads them from `governance-profile.yaml`, which the service retires). The mission-type file has no `references` field; a relationship is authored only in the graph documents (ADR-0064). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile."
         meta:
           status: "canonical"
       - name: "Reconciliation — `reconciles_tension` (CRG Relation)"
-        definition: "A directional Three-layer CRG relation linking an active reconciliation artifact to one side of a declared Tension pair. A tension pair is treated as resolved only when an active artifact carries this edge to both sides of the pair — an edge to just one side leaves the pair half-reconciled and still flagged. It is authored explicitly and is never inferred from an `in_tension_with` edge. Canonical source: `RELATION_DESCRIPTIONS[Relation.RECONCILES_TENSION]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` (\"Tension vocabulary\")."
+        definition: "A directional Three-layer CRG relation linking an active reconciliation artifact to one side of a declared Tension pair. A tension pair is treated as resolved only when an active artifact carries this edge to both sides of the pair — an edge to just one side leaves the pair half-reconciled and still flagged. It is authored explicitly and is never inferred from a `tension` edge. An artifact in force that reaches both sides is the pair's reconciler (Reconciler). Canonical source: `RELATION_DESCRIPTIONS[Relation.RECONCILES_TENSION]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` (\"Tension vocabulary\")."
       - name: "Refinement — `refines` (CRG Relation)"
         definition: "A directional Three-layer CRG relation: an artifact narrows or sharpens the applicability or meaning of a parent or built-in target without replacing it. It is a first-class, traversable relation in its own right — never a stand-in for Workflow Application or Lineage. No built-in artifact currently emits a `refines` edge, so treat it as intended-but-dormant; an earlier version of the org-to-CRG bridge silently downgraded authored `refines` edges to `applies`, but that lossy downgrade has since been removed. Canonical source: `RELATION_DESCRIPTIONS[Relation.REFINES]` in `src/charter/offering/drg/models.py`."
       - name: "Rejection — `rejects` (CRG Relation)"
@@ -364,7 +372,7 @@ contexts:
         meta:
           status: "deprecated"
       - name: "Tension — `tension` (CRG Relation)"
-        definition: "An authored relationship between two rules that compete on the same decision; both stay valid. It is never derived from value impacts, and it may sit beside one structural relationship on the same pair (two rules can require each other and still be in tension). Replaces `in_tension_with` (ADR-0028)."
+        definition: "An authored relationship between two rules that compete on the same decision; both stay valid. It is never derived from value impacts, and it may sit beside one structural relationship on the same pair (two rules can require each other and still be in tension): a pair has at most one structural relationship and one tension, its two pair classes. It is stored with the side the pack holds as its source, the smaller URN when the pack holds both or neither. A tension is in force when both sides are, and every read answers it once from the smaller URN, with its first writer's words and its reconcilers (ADR-0045). Replaces `in_tension_with`, which the service no longer reads (ADR-0028, ADR-0045 decision 2)."
         aliases:
           - "in_tension_with"
         meta:
@@ -383,6 +391,10 @@ contexts:
           status: "canonical"
       - name: "Trigger Registry"
         definition: "Canonical frozenset of agent-action tokens (e.g. `write_comment`, `write_docstring`, `rename_identifier`, `add_dependency`) the prompt builder knows how to emit \"when you <token>, …\" stanzas for. Any `triggers:` value declared on a shipped charter artifact must be a member of this set; the architectural test `test_trigger_registry_coverage.py` enforces no dead triggers. Mission B's WP05 populates the initial set."
+      - name: "Unreconciled tension"
+        definition: "A tension in force that no artifact in force reconciles. The tensions read of an activation answers one `unreconciled_tension` finding for each, offering `reconcile` always and `deactivate_one_side` when the exclusion write would accept a side. A finding never refuses (ADR-0045 decisions 11 and 12)."
+        meta:
+          status: "canonical"
       - name: "Usage Examples Sync (Tactic)"
         definition: "Tactic `usage-examples-sync`. The step-by-step pattern for keeping canonical usage examples, acceptance checks, and the artifacts that quote them aligned during a behavior change."
       - name: "Value (charter)"

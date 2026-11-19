@@ -89,7 +89,7 @@ the relationship appear[s] in the domain, the pack files and the contract").
   - On a registration write (`putPackRelationship` with `type: tension`), `from` may be pack-qualified when the pack
     owns neither side; otherwise the wire's rule holds (`from` in the pack, `to` may be qualified). The service stores
     the pair in the stored orientation, the other way round when the request names it reversed. The answer echoes the
-    request as written, so its `from` is a pack-qualified reference for a fully foreign tension. *Open review item:*
+    request as written, so its `from` is a qualified reference for a fully foreign tension. *Open review item:*
     the pair is unordered in meaning, so the write normalizes rather than refuses.
   - **The paths that key on a source** (ruling of 2026-11-19): the governance gate judges a tension on each of its
     sides, not on its source alone; a registered tension goes with an artifact the pack removes, on either side; a

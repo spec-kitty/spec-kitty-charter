@@ -2,8 +2,8 @@
 title: "ADR-0028: `impacts` is an artifact's per-value list, and `tension` is the relationship between two rules"
 description: Splits the old signed impacts edge into a per-value impacts list on an artifact and an authored tension relationship that may sit beside one structural relationship.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: Accepted; decision 5 answered for the domain and the pack files by ADR-0045 (2026-10-31, proposed)
+updated: 2026-11-19T00:00:00Z
+decision_status: Accepted; decision 5 answered by ADR-0045 (accepted 2026-11-18)
 decision_date: '2026-10-26'
 type: ADR
 kind: ADR
@@ -86,6 +86,11 @@ this repository.
 5. **Representation is not decided here.** How the list and the relationship appear in the domain,
    the pack files and the contract is a candidate design for later records. No contract path or
    schema changes with this record (constraint C-003 of the documentation Mission).
+
+   *Answered 2026-11-19 by [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)
+   (accepted 2026-11-18, rulings G1 to G3; #602): the relationship is the relation `tension` in the domain, the pack
+   files and the contract, stored from the side the pack holds; `in_tension_with` is no longer read. The tensions in
+   force are answered by the effective graph, the action context and `getActivationTensions`.*
 
 ## Consequences
 
