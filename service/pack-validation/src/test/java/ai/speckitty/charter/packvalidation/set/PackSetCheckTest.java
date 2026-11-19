@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -25,6 +26,7 @@ import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
+import ai.speckitty.charter.packs.infra.storage.RoundTripControls;
 import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
@@ -478,6 +480,77 @@ class PackSetCheckTest {
                     throw new UncheckedIOException(e);
                 }
             };
+        }
+
+        /** A symbolic link, or the test is skipped where the file system cannot make one (failed under requireSymlinks). */
+        private static void link(Path link, Path target) throws IOException {
+            try {
+                Files.createSymbolicLink(link, target);
+            } catch (IOException | UnsupportedOperationException noLinks) {
+                org.junit.jupiter.api.Assumptions.assumeTrue(
+                        Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+                throw noLinks;
+            }
+        }
+
+        private static List<Reason> atFile(List<Reason> reasons, String file) {
+            return reasons.stream()
+                    .filter(reason -> reason.location().file().equals(file))
+                    .toList();
+        }
+
+        @Test
+        @DisplayName(
+                "the real flow over a planted link: the link is one problem, validate mode's, not a round-trip red too")
+        void aLinkIsOneProblemNotARoundTripRedToo(@TempDir Path dir) throws IOException {
+            Path pack = PlantedPacks.copyOf("pack-entry-linked-file", dir.resolve("plant"));
+            String linked = "directives/002-b.directive.yaml";
+            link(pack.resolve(linked), Path.of("001-a.directive.yaml"));
+
+            PackSetVerdict verdict =
+                    CHECK.checkWithRoundTrip(List.of(at("qa", pack, Optional.of(PackLevel.ORG))), realFlow(dir));
+
+            PackResult result = verdict.packs().getFirst();
+            assertThat(atFile(result.verdict().findings(), linked))
+                    .extracting(reason -> reason.code().value())
+                    .containsExactly("pack_entry_linked");
+            assertThat(result.roundTrip())
+                    .as("the round trip's red at the link, kind other:symlink, is the same cause")
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("a link beside an independent round-trip red: the red stays, the link is validate mode's alone")
+        void anIndependentRedBesideALinkStays(@TempDir Path dir) throws IOException {
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir.resolve("packs"));
+            String linked = "tactics/linked.tactic.yaml";
+            link(builtIn.resolve(linked), Path.of("acceptance-test-first.tactic.yaml"));
+            RoundTripping lossy = root -> {
+                try {
+                    return RoundTripControls.rewritingWrites(
+                            Path.of(root.locator()),
+                            Files.createTempDirectory(dir, root.name()),
+                            ArtifactKind.TACTIC,
+                            text -> text.replaceAll("(?m)^purpose:.*\\n(?: .*\\n)*", ""));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            };
+
+            PackSetVerdict verdict = CHECK.checkWithRoundTrip(
+                    List.of(at(ExamplePacks.BUILT_IN, builtIn, Optional.of(PackLevel.BUILT_IN))), lossy);
+
+            PackResult result = verdict.packs().getFirst();
+            assertThat(atFile(result.verdict().findings(), linked))
+                    .extracting(reason -> reason.code().value())
+                    .containsExactly("pack_entry_linked");
+            assertThat(atFile(result.roundTrip(), linked))
+                    .as("no second problem at the link")
+                    .isEmpty();
+            assertThat(atFile(result.roundTrip(), "tactics/acceptance-test-first.tactic.yaml"))
+                    .as("the independent red at a real tactic stays")
+                    .extracting(Reason::code)
+                    .containsExactly(WholePackRoundTripRule.RED);
         }
 
         @Test

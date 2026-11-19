@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The pack-set check (#478, FR-002 to FR-004, FR-007, T011): what pack-check runs over a set of packs.
@@ -44,8 +45,9 @@ import java.util.Set;
  *       skipped and the verdict names the packs that stopped it (D3).
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
- *       validate mode found: the two are independent checks. A pack the flow refuses is that pack's result, never an
- *       exception: one problem, its validate-mode violation or else a {@code round_trip_red}.
+ *       validate mode found: the two are independent checks, but a round-trip reason at a file where validate mode
+ *       already has a violation is dropped, so one cause is one problem. A pack the flow refuses is that pack's result,
+ *       never an exception: one problem, its validate-mode violation or else a {@code round_trip_red}.
  * </ol>
  *
  * <p>No rule is defined here: {@code CLOSURE} has one derivation, in {@link PackRulesets}.
@@ -140,10 +142,28 @@ public final class PackSetCheck {
      */
     private static List<Reason> roundTrip(RoundTripping flow, PackSetEntry entry, PackCheck.Checked checked) {
         try {
-            return new WholePackRoundTripRule(WholePackExpectation.none()).apply(flow.run(entry.root()));
+            return notReported(
+                    checked, new WholePackRoundTripRule(WholePackExpectation.none()).apply(flow.run(entry.root())));
         } catch (CharterRefusal refusal) {
             return refused(checked, refusal);
         }
+    }
+
+    /**
+     * The round-trip reasons whose file validate mode has no violation at, so a pack never gets two problems for one
+     * cause: a link validate mode refuses ({@code pack_entry_linked}) is also a census file no adapter models, which the
+     * round trip would report red at the same file. A reason at another file, or at none, stays: an independent red is
+     * never hidden.
+     */
+    static List<Reason> notReported(PackCheck.Checked checked, List<Reason> reasons) {
+        Set<String> violated = checked.verdict().findings().stream()
+                .filter(finding -> finding.isFailing(Severity.VIOLATION))
+                .map(finding -> finding.location().file())
+                .filter(file -> !file.isEmpty())
+                .collect(Collectors.toSet());
+        return reasons.stream()
+                .filter(reason -> !violated.contains(reason.location().file()))
+                .toList();
     }
 
     /**

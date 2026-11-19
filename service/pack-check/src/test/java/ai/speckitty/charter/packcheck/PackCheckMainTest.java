@@ -195,6 +195,31 @@ class PackCheckMainTest {
     }
 
     @Test
+    void aPlantedLinkWithTheRoundTripIsOneProblemForTheLink() throws IOException {
+        Path pack;
+        try {
+            pack = GoldenSubjects.copy(subject("planted/pack-entry-linked-file"), temp.resolve("plant"));
+        } catch (IOException | UnsupportedOperationException noLinks) {
+            assumeTrue(Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+            throw noLinks;
+        }
+
+        Run run = run(temp.resolve("round-trip-tmp"), "--pack", pack + ":org", "--round-trip");
+
+        assertThat(run.exit()).isEqualTo(PackCheckMain.PROBLEMS);
+        assertThat(run.codes())
+                .as("one problem: validate mode's, no round-trip problem beside it")
+                .containsExactly("validation_failed");
+        List<String> atTheLink = new ArrayList<>();
+        run.report().get("problems").get(0).get("violations").forEach(violation -> {
+            if (violation.get("pointer").asString().equals("directives/002-b.directive.yaml")) {
+                atTheLink.add(violation.get("code").asString());
+            }
+        });
+        assertThat(atTheLink).containsExactly("pack_entry_linked");
+    }
+
+    @Test
     void theRoundTripOverTheExamplePacksIsValid() {
         Path root = configRoot();
         Path temporary = temp.resolve("round-trip-tmp");
