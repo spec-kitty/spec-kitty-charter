@@ -1,7 +1,7 @@
 {
-  "event_count": 48,
-  "last_event_id": "01M7TEZ7Z8JSMHF7ZAX6YHTCWW",
-  "materialized_at": "2026-11-19T17:51:47.176751+00:00",
+  "event_count": 49,
+  "last_event_id": "01M7TEZES2PMAMPR9X5ESEV4T4",
+  "materialized_at": "2026-11-19T17:51:54.146668+00:00",
   "mission_number": "",
   "mission_slug": "pack-id-split-01M7SS5G",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
@@ -60,9 +60,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M7TEXB1A5XPGCJYY6CCT6SZN",
-      "last_transition_at": "2026-11-19T17:50:44.778951+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7TEZES2PMAMPR9X5ESEV4T4",
+      "last_transition_at": "2026-11-19T17:51:54.146668+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "PackDirectory for storage directories; StoreRead/ArtifactFiles assemble under the caller's registered id; :packs:check + compileTestJava green on lane-b 59b996f. TODOs for WP03 in StoreRead (descriptor fallback).",
@@ -80,7 +80,7 @@
         "reviewer": "claude::generic-reviewer",
         "verdict": "approved"
       },
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
