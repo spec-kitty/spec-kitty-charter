@@ -52,7 +52,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -62,9 +62,11 @@
       "last_transition_at": "2026-11-19T13:02:10.124816+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "PackDirectory for storage directories; StoreRead/ArtifactFiles assemble under the caller's registered id; :packs:check + compileTestJava green on lane-b 59b996f. TODOs for WP03 in StoreRead (descriptor fallback)."
+        "PackDirectory for storage directories; StoreRead/ArtifactFiles assemble under the caller's registered id; :packs:check + compileTestJava green on lane-b 59b996f. TODOs for WP03 in StoreRead (descriptor fallback).",
+        "Changes requested: DomainRoundTrip:186 deviates from T007/occurrence map; reclassify as REG (D2b) and guard non-pack-id names (TODO WP03). :packs:check green."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-id-split-01M7SS5G-coord/kitty-specs/pack-id-split-01M7SS5G/tasks/WP02-storage-pack-directory/review-cycle-1.md",
         "reference": "review-cycle://pack-id-split-01M7SS5G/WP02-storage-pack-directory/review-cycle-1.md",
@@ -72,15 +74,15 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 5314,
-      "shell_pid_created_at": "1795092034.51",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T004": "done",
-        "T005": "done",
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done"
+        "T004": "planned",
+        "T005": "planned",
+        "T006": "planned",
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned"
       }
     },
     "WP03": {
