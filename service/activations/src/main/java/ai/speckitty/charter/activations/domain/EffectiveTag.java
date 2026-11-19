@@ -51,8 +51,12 @@ public record EffectiveTag(String token) {
      * profile and its lineage), still before any release served {@code v3}, so it keeps {@code v3}: its inputs already
      * cover the profile's enhancers and ancestors, which the closure's packs hold. Its step-keyed selection (FR-012) adds
      * a {@code profile-selection} link to the action context, again before any release served {@code v3}.
+     * {@code v4} (#602, ADR-0045 decisions 9 and 10): {@code v3} was released (contract 0.2.0-rc.1), and a tension now
+     * answers another body for the same inputs: {@code getEffectiveGraph} answers each tension in force once, with its
+     * words and {@code reconciledBy}, and the action context a required {@code tensions} member; the activation's own
+     * read links its tensions.
      */
-    private static final String DOMAIN = "charter-effective-read\0v3\n";
+    private static final String DOMAIN = "charter-effective-read\0v4\n";
 
     private static final String NO_QUERY = "";
 

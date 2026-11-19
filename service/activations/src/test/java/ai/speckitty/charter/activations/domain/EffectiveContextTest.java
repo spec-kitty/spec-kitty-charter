@@ -103,12 +103,14 @@ class EffectiveContextTest {
                 set,
                 walked(List.of(reached("directive:D"), reached("directive:D2")), List.of(candidate), List.of()),
                 MISSION_TYPE,
-                STEP);
+                STEP,
+                List.of());
         EffectiveContext backward = EffectiveContext.of(
                 set,
                 walked(List.of(reached("directive:D2"), reached("directive:D")), List.of(candidate), List.of()),
                 MISSION_TYPE,
-                STEP);
+                STEP,
+                List.of());
 
         assertThat(forward.artifacts())
                 .extracting(EffectiveContextTest::urnOf)
@@ -133,7 +135,7 @@ class EffectiveContextTest {
                 candidate("tactic:S", AppliesThrough.ACTION));
 
         EffectiveContext context = EffectiveContext.of(
-                set, walked(List.of(reached("directive:D")), candidates, List.of()), MISSION_TYPE, STEP);
+                set, walked(List.of(reached("directive:D")), candidates, List.of()), MISSION_TYPE, STEP, List.of());
 
         assertThat(context.artifacts())
                 .extracting(EffectiveContextTest::urnOf)
@@ -157,7 +159,8 @@ class EffectiveContextTest {
                         List.of(),
                         List.of()),
                 MISSION_TYPE,
-                STEP);
+                STEP,
+                List.of());
 
         assertThat(context.artifacts())
                 .extracting(EffectiveContextTest::urnOf, Item::appliesThrough)
@@ -185,7 +188,8 @@ class EffectiveContextTest {
                                 candidate("tactic:S1", AppliesThrough.ACTION)),
                         List.of()),
                 MISSION_TYPE,
-                STEP);
+                STEP,
+                List.of());
 
         assertThat(context.artifacts())
                 .extracting(EffectiveContextTest::urnOf, Item::appliesThrough)
@@ -222,7 +226,8 @@ class EffectiveContextTest {
                         List.of(),
                         List.of(ref("step_enhancement:x"))),
                 MISSION_TYPE,
-                STEP);
+                STEP,
+                List.of());
 
         assertThat(context.enhancements())
                 .containsExactly(
@@ -251,7 +256,7 @@ class EffectiveContextTest {
                 List.of());
         EffectiveSet set = set(others, artifact("directive:D", State.ACTIVE, Reason.SELECTED));
 
-        EffectiveContext context = EffectiveContext.of(set, ActionContext.notInForce(), MISSION_TYPE, STEP);
+        EffectiveContext context = EffectiveContext.of(set, ActionContext.notInForce(), MISSION_TYPE, STEP, List.of());
 
         assertThat(context.artifacts()).isEmpty();
         assertThat(context.enhancements()).isEmpty();
@@ -280,7 +285,11 @@ class EffectiveContextTest {
         EffectiveSet set = set(others, artifact("directive:D", State.ACTIVE, Reason.SELECTED));
 
         EffectiveContext context = EffectiveContext.of(
-                set, walked(List.of(reached("directive:D")), List.of(), new ArrayList<>()), MISSION_TYPE, STEP);
+                set,
+                walked(List.of(reached("directive:D")), List.of(), new ArrayList<>()),
+                MISSION_TYPE,
+                STEP,
+                List.of());
 
         assertThat(context.artifacts()).extracting(EffectiveContextTest::urnOf).containsExactly("directive:D");
         assertThat(context.skipped().missionTypeNotInForce())
@@ -289,5 +298,87 @@ class EffectiveContextTest {
                                 + " that is out of force, which the activation-wide report lists, is absent (carrier exception)")
                 .isEmpty();
         assertThat(context.skipped().staleIds()).containsExactly(ref("directive:Gone"));
+    }
+
+    // ---- ADR-0045 decision 10: the tensions among the listed artifacts in force -----------------------------------
+
+    private static NodeRef node(String urn) {
+        return NodeRef.of(Urn.parse(urn).orElseThrow()).orElseThrow();
+    }
+
+    private static TensionSnapshot tension(String source, String target, String... reconcilers) {
+        return new TensionSnapshot(
+                node(source),
+                node(target),
+                Optional.of("when"),
+                Optional.of("why"),
+                java.util.Arrays.stream(reconcilers)
+                        .map(EffectiveContextTest::node)
+                        .toList());
+    }
+
+    @Test
+    void aTensionWhoseTwoSidesTheContextListsInForceIsListedAndOneWithASideNotListedIsNot() {
+        EffectiveSet set = set(
+                artifact("directive:A", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:B", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:C", State.ACTIVE, Reason.SELECTED),
+                artifact("tactic:R", State.ACTIVE, Reason.SELECTED));
+        TensionSnapshot listed = tension("directive:A", "directive:B", "tactic:R");
+        TensionSnapshot halfListed = tension("directive:A", "directive:C");
+
+        EffectiveContext context = EffectiveContext.of(
+                set,
+                walked(List.of(reached("directive:A"), reached("directive:B")), List.of(), List.of()),
+                MISSION_TYPE,
+                STEP,
+                List.of(listed, halfListed));
+
+        assertThat(context.tensions())
+                .as("A and B are listed in force; C is in force but not listed; R reconciles though it is not listed")
+                .containsExactly(listed);
+    }
+
+    @Test
+    void aSuggestionIsNeverASideOfAListedTension() {
+        EffectiveSet set = set(
+                artifact("directive:A", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:B", State.ACTIVE, Reason.SELECTED),
+                artifact("tactic:S", State.INACTIVE, Reason.NOT_SELECTED));
+        TensionSnapshot withSuggestion = tension("directive:A", "tactic:S");
+        TensionSnapshot control = tension("directive:A", "directive:B");
+
+        EffectiveContext context = EffectiveContext.of(
+                set,
+                walked(
+                        List.of(reached("directive:A"), reached("directive:B")),
+                        List.of(candidate("tactic:S", AppliesThrough.ACTION)),
+                        List.of()),
+                MISSION_TYPE,
+                STEP,
+                List.of(withSuggestion, control));
+
+        assertThat(context.artifacts()).extracting(EffectiveContextTest::urnOf).contains("tactic:S");
+        assertThat(context.tensions()).containsExactly(control);
+    }
+
+    @Test
+    void aMissionTypeNotInForceListsNoTensionThoughTheActivationHasOne() {
+        EffectiveSet set = set(
+                artifact("directive:A", State.ACTIVE, Reason.SELECTED),
+                artifact("directive:B", State.ACTIVE, Reason.SELECTED));
+        TensionSnapshot inForce = tension("directive:A", "directive:B");
+
+        EffectiveContext notInForce =
+                EffectiveContext.of(set, ActionContext.notInForce(), MISSION_TYPE, STEP, List.of(inForce));
+        EffectiveContext control = EffectiveContext.of(
+                set,
+                walked(List.of(reached("directive:A"), reached("directive:B")), List.of(), List.of()),
+                MISSION_TYPE,
+                STEP,
+                List.of(inForce));
+
+        assertThat(notInForce.tensions()).isEmpty();
+        assertThat(control.tensions()).containsExactly(inForce);
     }
 }

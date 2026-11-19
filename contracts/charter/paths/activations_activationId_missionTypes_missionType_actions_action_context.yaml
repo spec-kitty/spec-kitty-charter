@@ -40,6 +40,8 @@ get:
           examples:
             implement:
               $ref: ../examples/EffectiveActionContext.implement.yaml
+            tension:
+              $ref: ../examples/EffectiveActionContext.tension.yaml
     '304':
       $ref: ../responses/NotModified.yaml
     '400':

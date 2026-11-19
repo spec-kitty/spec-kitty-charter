@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.CompositionFactsCache;
 import ai.speckitty.charter.packs.application.ConsistentRead;
@@ -73,6 +74,21 @@ final class EffectiveReadFixture {
 
     static final String PATH = "/api/v1/activations/a-1/artifacts?pageSize=200";
 
+    /** The effective graph of the activation. */
+    static final String GRAPH = "/api/v1/activations/a-1/graph";
+
+    /** The skipped report of the activation. */
+    static final String SKIPPED = "/api/v1/activations/a-1/skipped";
+
+    /** The action context of the tension variant's one step, {@code mt/s}. */
+    static final String CONTEXT = "/api/v1/activations/a-1/mission-types/mt/actions/s/context";
+
+    /** The pair the tension variant joins by a tension, and the directive that reconciles it. */
+    static final String TENSION_A = "D0X100";
+
+    static final String TENSION_B = "D0X101";
+    static final String RECONCILER = "D0X102";
+
     /** The length of the chain of overrides: thirty links, from the first artifact of the first pack. */
     static final int CHAIN = 30;
 
@@ -115,6 +131,18 @@ final class EffectiveReadFixture {
     }
 
     EffectiveReadFixture(Path root) {
+        this(root, false);
+    }
+
+    /**
+     * The fixture, or its tension variant: the first pack also holds a tension between {@link #TENSION_A} and
+     * {@link #TENSION_B}, reconciled by {@link #RECONCILER}, and a mission type {@code mt} with one step {@code s} that the
+     * activation selects, so the context of {@code mt/s} lists the directives no action and no mission type scopes.
+     *
+     * @param root where the pack directories go
+     * @param withTensions whether to build the tension variant
+     */
+    EffectiveReadFixture(Path root, boolean withTensions) {
         List<ConfiguredPack> configured = new ArrayList<>();
         List<PackLocation> locations = new ArrayList<>();
         for (int pack = 0; pack < PACKS; pack++) {
@@ -157,12 +185,12 @@ final class EffectiveReadFixture {
         OfferingReadService offering = new OfferingReadService(
                 catalog,
                 descriptors,
-                pack -> factsOf(Integer.parseInt(pack.value().substring(1))),
+                pack -> factsOf(Integer.parseInt(pack.value().substring(1)), withTensions),
                 read,
                 cache);
         PacksAvailability packs = new PacksAvailability(new ClosureQueries(offering, catalog, read));
         InMemoryActivationRepository repository = new InMemoryActivationRepository();
-        repository.create(new ActivationId("a-1"), activation());
+        repository.create(new ActivationId("a-1"), activation(withTensions));
         this.mvc = StandaloneActivationMvc.over(repository, packs);
     }
 
@@ -190,7 +218,7 @@ final class EffectiveReadFixture {
     }
 
     /** The facts of a pack: two hundred directives, and in the first a chain of overrides, each hiding the next. */
-    private static PackCompositionFacts factsOf(int pack) {
+    private static PackCompositionFacts factsOf(int pack, boolean withTensions) {
         List<String> defined = new ArrayList<>(IntStream.range(0, ARTIFACTS_PER_PACK)
                 .mapToObj(artifact -> "directive:" + id(pack, artifact))
                 .toList());
@@ -224,12 +252,23 @@ final class EffectiveReadFixture {
                         Optional.empty()));
                 changed.add(to.asUrn().orElseThrow().toString());
             }
+            if (withTensions) {
+                defined.addAll(List.of("mission_type:mt", "action:mt/s"));
+                edges.add(edge("mission_type:mt", RelationType.REQUIRES, "action:mt/s"));
+                edges.add(edge("directive:" + TENSION_A, RelationType.TENSION, "directive:" + TENSION_B));
+                edges.add(edge("directive:" + RECONCILER, RelationType.RECONCILES_TENSION, "directive:" + TENSION_A));
+                edges.add(edge("directive:" + RECONCILER, RelationType.RECONCILES_TENSION, "directive:" + TENSION_B));
+            }
         }
         return new PackCompositionFacts(
                 changed, defined, List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
     }
 
-    private static ActivationDocument activation() {
+    private static Relationship edge(String from, RelationType type, String to) {
+        return Relationship.of(Urn.parse(from).orElseThrow(), Urn.parse(to).orElseThrow(), type);
+    }
+
+    private static ActivationDocument activation(boolean withTensions) {
         ActivationDocument.Builder builder = ActivationDocument.builder()
                 .packs(IntStream.range(0, PACKS)
                         .mapToObj(pack -> PackRef.of(name(pack)))
@@ -241,6 +280,9 @@ final class EffectiveReadFixture {
                         .flatMap(
                                 pack -> IntStream.range(0, ARTIFACTS_PER_PACK).mapToObj(artifact -> id(pack, artifact)))
                         .toList());
+        if (withTensions) {
+            builder.selected(ArtifactKind.MISSION_TYPE, List.of("mt"));
+        }
         return builder.build().document();
     }
 }

@@ -13,6 +13,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private Function<ContextAsk, ActionContext> contextAnswer = ask -> ActionContext.notInForce();
     private final List<ContextAsk> contextAsks = new ArrayList<>();
     private int graphReads;
+    private Function<InForceQuery, List<TensionSnapshot>> tensionsAnswer = query -> List.of();
+    private int tensionReads;
     private final List<String> nameChecks = new ArrayList<>();
     private Function<EffectiveAsk, Optional<EffectiveArtifactRead>> winnerAnswer = ask -> Optional.empty();
     private final List<EffectiveAsk> effectiveAsks = new ArrayList<>();
@@ -189,6 +192,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public void graphs(Function<InForceQuery, GraphSnapshot> next) {
         this.graphAnswer = next;
+    }
+
+    /**
+     * Answers every tensions question of a session with these tensions from now on.
+     *
+     * @param next the answers of {@link PacksSession#tensions}, by query
+     */
+    public void tensions(Function<InForceQuery, List<TensionSnapshot>> next) {
+        this.tensionsAnswer = next;
     }
 
     /**
@@ -373,6 +385,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
         return graphReads;
     }
 
+    /**
+     * How often the sessions were asked for the tensions.
+     *
+     * @return the number of {@link PacksSession#tensions} calls
+     */
+    public int tensionReads() {
+        return tensionReads;
+    }
+
     @Override
     public PacksSession session(Optional<List<String>> packIds) {
         calls.add(packIds);
@@ -471,6 +492,12 @@ public final class FakeAvailablePacks implements AvailablePacks {
         public GraphSnapshot graph(InForceQuery query) {
             graphReads++;
             return graphAnswer.apply(query);
+        }
+
+        @Override
+        public List<TensionSnapshot> tensions(InForceQuery query) {
+            tensionReads++;
+            return tensionsAnswer.apply(query);
         }
 
         @Override

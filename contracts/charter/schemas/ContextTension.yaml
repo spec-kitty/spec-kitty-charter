@@ -1,0 +1,51 @@
+title: ContextTension
+description: >-
+  A tension in force between two artifacts an action context lists in force (ADR-0045 decision 10): the same pair, the
+  same words and the same reconcilers the effective graph answers for it as a tension edge.
+type: object
+additionalProperties: false
+required:
+- source
+- target
+- reconciledBy
+properties:
+  source:
+    allOf:
+    - $ref: Urn.yaml
+    description: The side with the smaller URN.
+    x-derived:
+      rule: The source of the tension in force, as the effective graph answers it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  target:
+    allOf:
+    - $ref: Urn.yaml
+    description: The side with the larger URN.
+    x-derived:
+      rule: The target of the tension in force, as the effective graph answers it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  when:
+    allOf:
+    - $ref: TensionCondition.yaml
+    description: The condition of the tension, as its first writer authored it.
+    x-derived:
+      rule: The when of the tension edge of the pair in the effective graph.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    allOf:
+    - $ref: TensionReason.yaml
+    description: The reason of the tension, as its first writer authored it.
+    x-derived:
+      rule: The reason of the tension edge of the pair in the effective graph.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reconciledBy:
+    allOf:
+    - $ref: TensionReconcilers.yaml
+    description: The artifacts in force that reconcile the tension, whether or not the context lists them.
+    x-derived:
+      rule: The reconciledBy of the tension edge of the pair in the effective graph.
+      inputs:
+      - schemas/ActivationConfig.yaml

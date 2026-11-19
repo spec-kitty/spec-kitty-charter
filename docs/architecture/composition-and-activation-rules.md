@@ -1302,7 +1302,7 @@ C38, `PromptFactsTest` (`aStepIsDeclaredWhenThePacksVersionOfItsMissionTypeLists
 *Amended 2026-11-13 ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)): the step contract is retired, so its `step` link, the D11 scenario and the step-contract
 tests this rule named are gone; the place rule is unchanged for the other reads.*
 
-**E17 Validators.** `ETag = sha256("charter-effective-read\0v3\n", read, rev(D), closureFingerprint(C), query)`; a weak match
+**E17 Validators.** `ETag = sha256("charter-effective-read\0v4\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
 An effective answer changes with the document or the packs of its closure, and nothing else. `query` is the normalized
 `kind`, `state`, cursor and page size, so each representation has its own tag; the graph's `read` has no query, and the context's is
@@ -1318,6 +1318,9 @@ from before never matches and every effective read moves once. A read `PROMPT` i
 fragments included, so a fragment's bytes move the tag and a pack outside the closure does not. The closure fingerprint
 digests each pack's files on its own, in closure order (level, then pack id, dependencies first), so it no longer
 depends on the order in which the packs are configured; the tags of a closure of several packs change once with it.
+*Amended 2026-11-19 (#602, ADR-0045 decisions 9 and 10):* the domain separator is `"charter-effective-read\0v4\n"`. `v3`
+was released, and the graph now answers each tension in force once with its words and reconcilers, and the action
+context a required `tensions` member, under an unchanged revision and closure fingerprint.
 **Built (slice C).** *Pinned by:* `EffectiveTagTest` (`theContextTagOfAFixedInputIsAFixedLiteral`,
 `thePromptHasATagOfItsOwnPerStepThatMovesWithTheClosureAndNotWithAPackOutsideIt`),
 `ClosureQueriesTest.theClosureFingerprintIsTheSameWhateverOrderThePacksAreConfiguredIn`, `EffectivePromptDeterminismTest`

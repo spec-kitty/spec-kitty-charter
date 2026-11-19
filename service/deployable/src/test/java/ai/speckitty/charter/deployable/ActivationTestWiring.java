@@ -15,6 +15,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.Arrays;
@@ -144,6 +145,11 @@ public class ActivationTestWiring {
         @Override
         public GraphSnapshot graph(InForceQuery query) {
             return GraphSnapshot.empty();
+        }
+
+        @Override
+        public List<TensionSnapshot> tensions(InForceQuery query) {
+            return List.of();
         }
 
         @Override

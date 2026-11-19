@@ -2,19 +2,40 @@ title: EffectiveGraphEdge
 description: >-
   An edge of the graph of the merged closure under an activation. It resolves through the layer overrides: an edge
   from an overridden version is absent, and an edge to one ends at the winner. An edge is dropped with either endpoint.
+  A tension edge (relation tension) is a tension in force (ADR-0045 decisions 8 and 9): written once from the smaller
+  URN, its two sides in force, with its first writer's when and reason and its reconciledBy, which it always carries.
+  No other edge carries when, reason or reconciledBy; the if/then/else below states that rule.
 type: object
 additionalProperties: false
 required:
 - source
 - relation
 - target
+if:
+  required:
+  - relation
+  properties:
+    relation:
+      const: tension
+then:
+  required:
+  - reconciledBy
+else:
+  not:
+    anyOf:
+    - required:
+      - when
+    - required:
+      - reason
+    - required:
+      - reconciledBy
 properties:
   source:
     allOf:
     - $ref: Urn.yaml
     description: The edge's source node.
     x-derived:
-      rule: The source of an offering edge whose endpoints both remain.
+      rule: The source of an offering edge whose endpoints both remain; for a tension, the side with the smaller URN.
       inputs:
       - schemas/ActivationConfig.yaml
   relation:
@@ -30,6 +51,34 @@ properties:
     - $ref: Urn.yaml
     description: The edge's target node.
     x-derived:
-      rule: The target of the offering edge.
+      rule: The target of the offering edge; for a tension, the side with the larger URN.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  when:
+    allOf:
+    - $ref: TensionCondition.yaml
+    description: The condition of a tension, as its first writer authored it; on a tension edge only.
+    x-derived:
+      rule: >-
+        The when of the first written tension of the pair, in the closure's merge order, then document order within a
+        pack.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    allOf:
+    - $ref: TensionReason.yaml
+    description: The reason of a tension, as its first writer authored it; on a tension edge only.
+    x-derived:
+      rule: >-
+        The reason of the first written tension of the pair, in the closure's merge order, then document order within
+        a pack.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reconciledBy:
+    allOf:
+    - $ref: TensionReconcilers.yaml
+    description: The artifacts in force that reconcile the tension; on a tension edge only, where it is required.
+    x-derived:
+      rule: Each artifact in force whose reconciles_tension edges in the merged closure reach both sides, by URN.
       inputs:
       - schemas/ActivationConfig.yaml

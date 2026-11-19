@@ -610,7 +610,8 @@ public class EffectiveReadService {
                 set,
                 walked,
                 missionType,
-                NodeRef.of(Urn.action(query.missionType(), query.action())).orElseThrow());
+                NodeRef.of(Urn.action(query.missionType(), query.action())).orElseThrow(),
+                session.tensions(EffectiveSet.queryOf(stored.document())));
         Optional<EffectiveSet.EffectiveArtifact> listed = set.artifacts().stream()
                 .filter(artifact -> artifact.ref().equals(missionType))
                 .findFirst();

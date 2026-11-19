@@ -1,0 +1,45 @@
+summary: >-
+  The effective graph of an activation whose two directives are in tension and also joined by a requires: the tension
+  is one edge from the smaller URN with its words and the tactic in force that reconciles both sides, and the requires
+  is a separate edge with none (ADR-0045 decision 9).
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  nodes:
+    - urn: directive:TENSION_REC_A
+      kind: directive
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/TENSION_REC_A
+    - urn: directive:TENSION_REC_B
+      kind: directive
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/directive/TENSION_REC_B
+    - urn: tactic:reconcile-rec
+      kind: tactic
+      _links:
+        effective-artifact:
+          href: /api/v1/activations/a-1/artifacts/tactic/reconcile-rec
+  edges:
+    - source: directive:TENSION_REC_A
+      relation: tension
+      target: directive:TENSION_REC_B
+      when: when a change is large enough to need a design
+      reason: Small increments ship sooner; a settled design avoids rework.
+      reconciledBy:
+        - tactic:reconcile-rec
+    - source: directive:TENSION_REC_B
+      relation: requires
+      target: directive:TENSION_REC_A
+    - source: tactic:reconcile-rec
+      relation: reconciles_tension
+      target: directive:TENSION_REC_A
+    - source: tactic:reconcile-rec
+      relation: reconciles_tension
+      target: directive:TENSION_REC_B
+  layerOverrides: []
+  _links:
+    self:
+      href: /api/v1/activations/a-1/graph
