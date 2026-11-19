@@ -1,0 +1,51 @@
+# Bulk edit: PackIdentifier stops carrying descriptor ULIDs, descriptor names and directory names (#583).
+target:
+  term: PackIdentifier
+  replacement: PackIdentifier (registered id) | PackUlid (descriptor pack_id) | PackDirectory (storage directory name)
+  operation: split
+categories:
+  code_symbols:
+    action: rename
+    note: >-
+      Each `new PackIdentifier(` site is classified in research/census.md. REGISTERED sites stay. The 6 DESCRIPTOR sites
+      (EdgeIndex:218/649, ClosureView:365, ClosureViewSession:540, ArtifactFiles:42, StoreRead:113) become PackUlid or
+      take the caller's registered id. The STAGING and DIRECTORY sites (PackCommitStore:303/494/938, WholePackStore:295/
+      385/416, DomainRepositoryService:650/677, CommitStorePackWriteStore:359/375/443, ArtifactFiles:40, StoreRead:199/
+      260, PackLocator:116, DomainRoundTrip:186) become PackDirectory. InboundReferences:214 takes the upload id.
+      ClosureView:886 and ProfileEnhancementRule:95 lose the rewrap.
+  import_paths:
+    action: rename
+    note: add the PackUlid or PackDirectory import where used; drop a PackIdentifier import left unused
+  filesystem_paths:
+    action: do_not_change
+    note: no file or directory layout changes; new files PackUlid.java, PackDirectory.java and tests only
+  serialized_keys:
+    action: manual_review
+    note: >-
+      Wire tokens are unchanged except the new storage code pack_id_invalid (log only) and the PackPin.packId schema
+      (D7). RefusalPack keeps its string wire shape.
+  cli_commands:
+    action: manual_review
+    note: pack-check (PR #608) passes the directory name as the registered id by default (D2b); coordinated with #478
+  user_facing_strings:
+    action: manual_review
+    note: PackId.yaml description (D8); the pack id grammar detail text is reused unchanged
+  tests_fixtures:
+    action: rename
+    note: >-
+      ULID-shaped and fake-ULID literals (01PACK, 02OTHER, 01TOOLPACK, ...) used as a pack's descriptor id become real
+      ULIDs in PackUlid; test pack.yaml pack_id values become real ULIDs; directory-name constructions become
+      PackDirectory. Invalid ids stay only in error-path tests.
+  logs_telemetry:
+    action: manual_review
+    note: StorageRootLocations' refusal WARN line names pack_id_invalid
+exceptions:
+  - path: "kitty-specs/**"
+    action: do_not_change
+    note: earlier missions quote the old shape as history
+  - path: "docs/adr/**"
+    action: manual_review
+    note: ADR-0075 decision 2 status row only
+  - path: "service/activations/src/main/java/ai/speckitty/charter/activations/domain/PackRef.java"
+    action: manual_review
+    note: D7, wraps PackIdentifier
