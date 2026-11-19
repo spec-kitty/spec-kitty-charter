@@ -98,6 +98,9 @@
       "last_event_id": "01M7T034XVCA3BF3S2F0WJJXG3",
       "last_transition_at": "2026-11-19T13:31:46.491718+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "PackLocator by registered id only; StorageCodes.PACK_ID_INVALID; StorageRootLocations refuses non-pack-id entries; StoreRead/validate mode/round trip refuse with pack_id_invalid. :packs:check :pack-validation:check :deployable:test compileTestJava green on lane-c fc4906c."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 23606,
