@@ -1,0 +1,33 @@
+{
+  "change_mode": "bulk_edit",
+  "coordination_branch": "kitty/mission-serve-tensions-01M7RDX1",
+  "create_return_branch": "feat/602-tensions",
+  "created_at": "2026-11-18T22:54:38.684229+00:00",
+  "flattened": false,
+  "friendly_name": "Serve tensions",
+  "mid8": "01M7RDX1",
+  "mission_base_sha": "05796e7d35f09932b3328d70733793358138cd64",
+  "mission_branch": "kitty/mission-serve-tensions-01M7RDX1",
+  "mission_id": "01M7RDX1S8Y46WAKCP9M29PF9C",
+  "mission_number": null,
+  "mission_slug": "serve-tensions-01M7RDX1",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "A tension links two rules that pull against each other. The charter models it but no read answers it. This Mission makes tension one relation of the model, spelled tension, refuses inconsistent pack tensions, lets registrations carry them, and serves them in the effective graph, the action context and a new activation read that reports unreconciled pairs with their fixes (ADR-0045, #602).",
+  "purpose_tldr": "Let a consumer see which rules in force pull against each other, what reconciles them, and which pairs nothing reconciles.",
+  "slug": "serve-tensions-01M7RDX1",
+  "source_description": "Issue #602 and ADR-0045 as accepted 2026-11-18",
+  "target_branch": "feat/602-tensions",
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 8,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 8
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git"
+}

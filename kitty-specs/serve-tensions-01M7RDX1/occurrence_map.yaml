@@ -1,0 +1,59 @@
+# Bulk edit: the tension relation's spelling moves from in_tension_with to tension (ADR-0045 decision 2, C-001).
+# The kernel value Tension is removed and its users move to RelationType.TENSION (ADR-0045 decision 1).
+target:
+  term: in_tension_with
+  replacement: tension
+  operation: rename
+categories:
+  code_symbols:
+    action: rename
+    note: Tension.TOKEN, GraphBinding.TENSION and EndpointTable's tension set give way to RelationType.TENSION; Tension and its tests are deleted
+  import_paths:
+    action: rename
+    note: drop the kernel Tension imports; nothing else moves
+  filesystem_paths:
+    action: rename
+    note: the load fixture shard-tension-binds-as-tension is rewritten with the tension spelling; no production path is renamed
+  serialized_keys:
+    action: rename
+    note: the Relation enums of contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json, contracts/charter/schemas/Relation.yaml, TaxonomyRelation.yaml, RelationRow.yaml and the KindTaxonomy example; no reader keeps the old token
+  cli_commands:
+    action: do_not_change
+    note: no CLI surface names the relation
+  user_facing_strings:
+    action: rename_if_user_visible
+    note: schema descriptions, contract docs and the glossary name the relation tension
+  tests_fixtures:
+    action: rename
+    note: tests and fixtures use tension; in_tension_with stays only in the one refusal fixture that proves the old token is unknown
+  logs_telemetry:
+    action: do_not_change
+    note: no log key or metric names the relation
+exceptions:
+  - path: "kitty-specs/**"
+    action: do_not_change
+    note: earlier missions' records quote the old token as history; this mission's own directory is written
+  - path: "kitty-ops/**"
+    action: do_not_change
+    note: Op records are history
+  - path: ".kittify/**"
+    action: do_not_change
+    note: evidence and governance records are history
+  - path: "docs/adr/**"
+    action: manual_review
+    note: ADRs are not rewritten; ADR-0045 (accepted here) states the rename; ADR-0028 and ADR-0077 gain at most a dated note
+  - path: "docs/conformance/divergences.yaml"
+    action: manual_review
+    note: the entries quote core's spelling in_tension_with on purpose; charter's side says tension
+  - path: "contracts/charter/CHANGELOG.md"
+    action: do_not_change
+    note: assembled from changes/ fragments (ADR-0047); a new fragment records the rename
+  - path: "service/packs/src/testFixtures/resources/planted/core-verdicts.json"
+    action: do_not_change
+    note: core's own error text, evidence of core's behaviour
+  - path: "packs/**"
+    action: do_not_change
+    note: synced governance packs from open-packs; they follow at the pin bump (ADR-0070 decision 5)
+  - path: "site/**"
+    action: manual_review
+    note: the generated Contextive definitions follow docs/_meta/terminology.yaml

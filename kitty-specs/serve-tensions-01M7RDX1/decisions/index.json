@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-18T22:54:46.675894Z",
+      "decision_id": "01M7RDXACK9SVR5E3G21BD9KW2",
+      "final_answer": "Yes, ADR-0045 as accepted 2026-11-18. The operator's rulings on #602 (D1-D12, F1-F3, one example pack with five activations) were relayed by the orchestrating session (session_019C2Tk6DpTSEBeTcn9F6smy) and serve as the confirmed Intent Summary for this non-interactive child session.",
+      "input_key": "intent_source",
+      "mission_id": "01M7RDX1S8Y46WAKCP9M29PF9C",
+      "mission_slug": "serve-tensions-01M7RDX1",
+      "opened_by": "cli",
+      "options": [
+        "Yes, ADR-0045 as accepted",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Is the confirmed intent for this Mission ADR-0045 as accepted on 2026-11-18, with the operator's rulings D1-D12, F1-F3 and the one-pack-five-activations ruling on #602?",
+      "rationale": null,
+      "resolved_at": "2026-11-18T22:54:53.808877Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.intent-source",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M7RDX1S8Y46WAKCP9M29PF9C",
+  "version": 1
+}

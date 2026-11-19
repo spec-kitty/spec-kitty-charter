@@ -1,0 +1,66 @@
+# Sketch of the contract changes of this Mission (the contract of record is contracts/charter/).
+openapi: 3.1.0
+info: {title: serve-tensions sketch, version: 0.2.0-SNAPSHOT}
+paths:
+  /api/v1/activations/{activationId}/tensions:
+    get:
+      operationId: getActivationTensions
+      parameters:
+        - {name: activationId, in: path, required: true, schema: {type: string}}
+        - {name: If-None-Match, in: header, required: false, schema: {type: string}}
+      responses:
+        '200': {description: The activation's tensions and findings, content: {application/json: {schema: {$ref: '#/components/schemas/ActivationTensions'}}}}
+        '304': {description: Not modified}
+        '404': {description: activation_not_found}
+  /api/v1/packs/{packId}/relationships:
+    delete:
+      operationId: deletePackRelationship
+      parameters:
+        - {name: relation, in: query, required: false, schema: {$ref: '#/components/schemas/Relation'}}
+components:
+  schemas:
+    Relation:
+      type: string
+      enum: [requires, suggests, applies, scope, vocabulary, instantiates, refines, specializes_from, enhances, overrides, reconciles_tension, rejects, tension]
+    EffectiveGraphEdge:
+      type: object
+      additionalProperties: false
+      required: [source, relation, target]
+      properties:
+        source: {type: string}
+        relation: {$ref: '#/components/schemas/Relation'}
+        target: {type: string}
+        when: {type: string, description: On a tension edge only}
+        reason: {type: string, description: On a tension edge only}
+        reconciledBy: {type: array, items: {type: string}, description: On a tension edge only, required there}
+    ContextTension:
+      type: object
+      additionalProperties: false
+      required: [source, target, reconciledBy]
+      properties:
+        source: {type: string}
+        target: {type: string}
+        when: {type: string}
+        reason: {type: string}
+        reconciledBy: {type: array, items: {type: string}}
+    TensionFinding:
+      type: object
+      additionalProperties: false
+      required: [code, source, target, resolutions, _links]
+      properties:
+        code: {type: string, enum: [unreconciled_tension]}
+        source: {type: string}
+        target: {type: string}
+        resolutions: {type: array, items: {type: string, enum: [reconcile, deactivate_one_side]}}
+        _links: {type: object, required: [source, target, deactivate-source, deactivate-target]}
+    ActivationTensions:
+      type: object
+      additionalProperties: false
+      required: [activationId, revision, governanceFingerprint, tensions, findings, _links]
+      properties:
+        activationId: {type: string}
+        revision: {type: string}
+        governanceFingerprint: {type: string}
+        tensions: {type: array, items: {$ref: '#/components/schemas/ContextTension'}}
+        findings: {type: array, items: {$ref: '#/components/schemas/TensionFinding'}}
+        _links: {type: object}
