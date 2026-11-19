@@ -22,5 +22,5 @@ value:
       code: activation
       detail: The activation team-default names acme-style-pack in its packs.
   _links:
-    pack:
+    self:
       href: /api/v1/packs/acme-style-pack
