@@ -35,13 +35,14 @@ dependencies {
     testImplementation(testFixtures(project(":packs")))
 }
 
-// The nightly mutation floor (#239; ADR-0062): one group for the module, the CLI's arguments, config root, problems,
-// report and main. Measured on #478's WP04 head: 115 of 126 mutants detected (91.2 %), so floor5(score - 3) is 85 and
-// the margin is 7 mutants. Raised by PR once the score clears the floor by 5.
+// The nightly mutation floor (#239; ADR-0062, amendment of 2026-11-19): one group for the module, the CLI's arguments,
+// config root, problems, report and main. Measured on #478's WP06 base (WP04 approved): 139 of 149 mutants detected
+// (93.2 %, 5 survived, 5 uncovered), so floor5(score - 3) is 90, ADR-0062 decision 3's rule, and the margin is 4 mutants.
+// jarTest's tests (tag `jar`) never run under PIT. Raised by PR once the score clears the floor by 5.
 mutationFloors {
     group("pack-check") {
         packages.add("ai.speckitty.charter.packcheck")
-        floor = 85
+        floor = 90
     }
 }
 
