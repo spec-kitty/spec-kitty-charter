@@ -1,0 +1,6 @@
+# The tensions example's mutability policy (ADR-0063): its directives and tactics stay open, so a scenario can register
+# a relationship into the pack (#602).
+schema_version: 1
+kind_defaults:
+  directive: open
+  tactic: open

@@ -101,10 +101,11 @@ class SurfaceSubsetTest {
             "planted/r15-glossary-urn-in-a-root-shard+pack.yaml");
 
     /**
-     * Example packs added after the frozen baseline (#358: org-alt, the sibling whose contest the project pack settles).
-     * The baseline predates them, so the registration has nothing to answer as before: it must refuse nothing.
+     * Example packs added after the frozen baseline (#358: org-alt, the sibling whose contest the project pack settles;
+     * #602: tensions, one case of each tension). The baseline predates them, so the registration has nothing to answer
+     * as before: it must refuse nothing.
      */
-    private static final Set<String> NEWER_EXAMPLES = Set.of("example-packs/org-alt");
+    private static final Set<String> NEWER_EXAMPLES = Set.of("example-packs/org-alt", "example-packs/tensions");
 
     /**
      * The row of the plant whose sidecar's payload path the landing fixed (W1, a fixed fixture defect) that names the

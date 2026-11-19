@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_REG_A
+title: Freeze Interfaces Early
+intent: >
+  Fix a public interface as soon as a first consumer depends on it.
+enforcement: advisory

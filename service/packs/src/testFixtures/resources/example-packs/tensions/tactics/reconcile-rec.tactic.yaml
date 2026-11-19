@@ -1,0 +1,7 @@
+schema_version: "1.0"
+id: reconcile-rec
+name: Increment Behind A Settled Outline
+purpose: Reconcile shipping in small increments with completing the design first.
+steps:
+- title: Settle the outline, then ship increments
+  description: Agree the outline of the whole design first, then deliver it in increments that each fit the outline.

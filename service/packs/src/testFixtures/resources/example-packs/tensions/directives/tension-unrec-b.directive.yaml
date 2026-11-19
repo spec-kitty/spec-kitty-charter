@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_UNREC_B
+title: Keep Documentation Minimal
+intent: >
+  Write only the documentation a reader needs to use the change.
+enforcement: advisory

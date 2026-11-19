@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_ONE_A
+title: Prefer Strict Validation
+intent: >
+  Refuse any input that does not match its declared shape exactly.
+enforcement: advisory

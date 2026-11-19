@@ -49,6 +49,9 @@ Under `service/packs/src/testFixtures/resources/example-packs/` (a test-fixtures
   `pack.yaml`, a mission type with lifecycle and guards, step prompts with empty slots, presets, shards, a manifest.
 - `org-base/`: an org pack with `depends_on` on built-in, an org fragment, qualified references into built-in, a step
   enhancement with prompt fragments, a specialist profile with `specializes_from`.
+- `tensions/`: an org pack with `depends_on` on built-in, holding one case of each tension between two guidance
+  artifacts (reconciled, unreconciled, one side out of force, registered later, beside a `requires` on the pair) and an
+  open policy for directives and tactics, so a scenario can register a tension into it (ADR-0045, #602).
 - `project/`: a project pack depending on `org-base`, overriding an open artifact and naming a parent profile as its
   fallback.
 

@@ -23,6 +23,9 @@
   "example-packs/project" : {
     "findings" : [ ]
   },
+  "example-packs/tensions" : {
+    "findings" : [ ]
+  },
   "planted/artifact-not-utf8" : {
     "findings" : [ {
       "code" : "pack_unreadable",

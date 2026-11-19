@@ -7,8 +7,10 @@ import java.util.Map;
 
 /**
  * The charter-owned example packs every pack-reading test reads (ADR-0070): {@code built-in}; the org packs
- * {@code org-base} and {@code org-alt} that depend on it, siblings that contest one styleguide; and the project pack
- * {@code project} that depends on both and settles that contest as their distribution pack (#358). They carry only
+ * {@code org-base} and {@code org-alt} that depend on it, siblings that contest one styleguide; the org pack
+ * {@code tensions} that depends on it and holds one case of each tension (ADR-0045, #602); and the project pack
+ * {@code project} that depends on {@code org-base} and {@code org-alt} and settles their contest as their distribution
+ * pack (#358). They carry only
  * canonical shapes; an invalid shape belongs to an error-handling fixture, never here.
  *
  * <p>The packs ship as classpath resources, inside a jar when another module reads them. On first use the tree is
@@ -29,19 +31,34 @@ public final class ExamplePacks {
      */
     public static final String ORG_ALT = "org-alt";
 
+    /**
+     * The tensions example pack, at org; it depends on {@link #BUILT_IN}, holds one case of each tension between two
+     * guidance artifacts and leaves its directives and tactics open (ADR-0045, #602).
+     */
+    public static final String TENSIONS = "tensions";
+
     /** The project example pack; it depends on {@link #ORG} and {@link #ORG_ALT}, and is their distribution pack. */
     public static final String PROJECT = "project";
 
     private static final String RESOURCE = "/example-packs";
     private static final Map<String, PackLevel> LEVELS = Map.of(
-            BUILT_IN, PackLevel.BUILT_IN, ORG, PackLevel.ORG, ORG_ALT, PackLevel.ORG, PROJECT, PackLevel.PROJECT);
+            BUILT_IN,
+            PackLevel.BUILT_IN,
+            ORG,
+            PackLevel.ORG,
+            ORG_ALT,
+            PackLevel.ORG,
+            TENSIONS,
+            PackLevel.ORG,
+            PROJECT,
+            PackLevel.PROJECT);
 
     private static volatile Path copied;
 
     private ExamplePacks() {}
 
     /**
-     * The directory that holds the four packs, one sub-directory each.
+     * The directory that holds the five packs, one sub-directory each.
      *
      * @return a real directory
      */
@@ -62,7 +79,7 @@ public final class ExamplePacks {
     /**
      * One example pack's directory.
      *
-     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT} or {@link #PROJECT}
+     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT}, {@link #TENSIONS} or {@link #PROJECT}
      * @return its directory
      */
     public static Path pack(String name) {
@@ -73,18 +90,18 @@ public final class ExamplePacks {
     }
 
     /**
-     * The four pack names in the compose's stable order, built-in first, as the store configures them.
+     * The five pack names in the compose's stable order, built-in first, as the store configures them.
      *
-     * @return {@link #BUILT_IN}, {@link #ORG_ALT}, {@link #ORG}, {@link #PROJECT}
+     * @return {@link #BUILT_IN}, {@link #ORG_ALT}, {@link #ORG}, {@link #TENSIONS}, {@link #PROJECT}
      */
     public static List<String> names() {
-        return List.of(BUILT_IN, ORG_ALT, ORG, PROJECT);
+        return List.of(BUILT_IN, ORG_ALT, ORG, TENSIONS, PROJECT);
     }
 
     /**
      * The level one example pack is configured at.
      *
-     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT} or {@link #PROJECT}
+     * @param name {@link #BUILT_IN}, {@link #ORG}, {@link #ORG_ALT}, {@link #TENSIONS} or {@link #PROJECT}
      * @return its level
      */
     public static PackLevel level(String name) {
