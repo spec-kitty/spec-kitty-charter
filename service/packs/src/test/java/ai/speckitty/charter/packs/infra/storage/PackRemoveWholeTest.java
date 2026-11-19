@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackVersionHistory;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -92,7 +93,7 @@ class PackRemoveWholeTest {
             discarded[0] = to;
         });
         Files.createDirectories(discarded[0]);
-        Files.writeString(discarded[0].resolve("pack.yaml"), "pack_id: left-over\n");
+        Files.writeString(discarded[0].resolve("pack.yaml"), "pack_id: " + FixtureUlids.of("pack-a") + "\n");
 
         assertThat(locations.all())
                 .as("a hidden discard copy is never restored as the pack (#281)")

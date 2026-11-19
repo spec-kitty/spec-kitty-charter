@@ -100,8 +100,8 @@ class ActivationImpactAdapterTest {
     @Test
     void anActivationWhoseDocumentDoesNotReadIsNamedAsUnreadable(@TempDir Path root) throws java.io.IOException {
         FileActivationRepository repository = new FileActivationRepository(root.resolve("activations"));
-        repository.create(new ActivationId("good"), listing(PackRef.of("main")));
-        repository.create(new ActivationId("broken"), listing(PackRef.of("main")));
+        repository.create(new ActivationId("good"), listing(PackRef.of(new PackIdentifier("main"))));
+        repository.create(new ActivationId("broken"), listing(PackRef.of(new PackIdentifier("main"))));
         try (java.util.stream.Stream<Path> files = java.nio.file.Files.walk(root.resolve("activations"))) {
             for (Path file : files.filter(java.nio.file.Files::isRegularFile)
                     .filter(file -> file.toString().contains("broken"))

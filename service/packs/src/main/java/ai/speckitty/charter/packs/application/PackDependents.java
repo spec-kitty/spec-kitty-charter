@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
@@ -94,16 +95,14 @@ public interface PackDependents {
         }
 
         /**
-         * The {@code pack_id} another pack's {@code depends_on} or {@code parent_pack} names the pack by: the declared
-         * one, or its configured name when its {@code pack.yaml} cannot be read. A {@code pack_id} is a ULID, so such a
-         * pack is then found by no edge; its dependents' closures already hold a pack that cannot be read.
+         * The {@code pack_id} another pack's {@code depends_on} or {@code parent_pack} names the pack by: the one its
+         * descriptor declares. It is empty when its {@code pack.yaml} cannot be read: no edge can then name the pack, and
+         * its dependents' closures already hold a pack that cannot be read.
          *
-         * @return the {@code pack_id} it is judged by
+         * @return the declared {@code pack_id}, if it can be read
          */
-        public String packId() {
-            return descriptor
-                    .map(PackDescriptor::packId)
-                    .orElseGet(() -> configured.id().value());
+        public Optional<PackUlid> packId() {
+            return descriptor.map(declared -> new PackUlid(declared.packId()));
         }
 
         /**

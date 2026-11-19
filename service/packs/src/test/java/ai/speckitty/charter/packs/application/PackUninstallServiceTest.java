@@ -144,7 +144,7 @@ class PackUninstallServiceTest {
                 .as("the packs, then the activation that names qa; the one that lists no packs is no dependent")
                 .containsExactly("depends_on", "parent_pack", "activation");
         assertThat(refused.violations().get(2).detail()).contains("activation-0");
-        assertThat(refused.packs()).extracting(pack -> pack.packId()).containsExactly("other");
+        assertThat(refused.packs()).extracting(pack -> pack.packId()).containsExactly(new PackIdentifier("other"));
         assertThat(rig.filesOf(rig.packs.resolve("qa"))).as("nothing changed").isEqualTo(before);
 
         PackUninstallService.Outcome dryRun = uninstall(rig, "qa", "*", Mode.DRY_RUN);

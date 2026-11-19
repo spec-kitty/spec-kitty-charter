@@ -3,7 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
 /**
  * The {@link PackDependents} of this service (ADR-0081 D1): the finders the registration's impact check already has,
  * asked about a removal. A pack depends on the removed one when its descriptor's {@code depends_on} or
- * {@code parent_pack} names the removed pack's {@code pack_id} (its configured name when its own {@code pack.yaml}
- * cannot be read), an activation depends on it when its {@code packs} list
+ * {@code parent_pack} names the removed pack's {@code pack_id} (none can when its own {@code pack.yaml} cannot be
+ * read), an activation depends on it when its {@code packs} list
  * names its configured name ({@link ActivationImpact.ActivationRoots#names}), and an artifact depends on it when
  * {@link InboundReferences} finds that it refers to one of the removed pack's artifacts. Only direct dependents are
  * named: a pack that builds on a dependent is that dependent's concern.
@@ -67,7 +67,9 @@ public final class ClosurePackDependents implements PackDependents {
 
     /** The packs whose {@code depends_on}, then whose {@code parent_pack}, names the removed pack. */
     private static List<Dependent> packsBuildingOn(StagedPackViews.View stored, Removed removed) {
-        String target = removed.packId();
+        // A pack whose pack.yaml cannot be read declares no pack_id an edge could name; every other pack is still read,
+        // so one that cannot be judged fails the removal closed.
+        Optional<String> target = removed.packId().map(PackUlid::value);
         List<Dependent> dependsOn = new ArrayList<>();
         List<Dependent> parentOf = new ArrayList<>();
         List<ConfiguredPack> others = stored.catalog().configured().stream()
@@ -77,15 +79,20 @@ public final class ClosurePackDependents implements PackDependents {
                 .toList();
         for (ConfiguredPack other : others) {
             PackDescriptor descriptor = descriptorOf(stored, other);
-            RefusalPack pack = new RefusalPack(descriptor.packId(), other.id().value(), descriptor.name());
-            if (descriptor.dependencies().stream().map(PackDependency::packId).anyMatch(target::equals)) {
+            RefusalPack pack = new RefusalPack(new PackUlid(descriptor.packId()), other.id(), descriptor.name());
+            if (descriptor.dependencies().stream()
+                    .map(PackDependency::packId)
+                    .anyMatch(packId -> target.filter(packId::equals).isPresent())) {
                 dependsOn.add(new Dependent(
                         Kind.DEPENDS_ON,
                         Optional.of(pack),
                         "The pack " + other.id().value() + " declares depends_on "
                                 + removed.configured().id().value() + "."));
             }
-            if (descriptor.parentPack().filter(target::equals).isPresent()) {
+            if (descriptor
+                    .parentPack()
+                    .filter(parent -> target.filter(parent::equals).isPresent())
+                    .isPresent()) {
                 parentOf.add(new Dependent(
                         Kind.PARENT_PACK,
                         Optional.of(pack),
@@ -146,31 +153,16 @@ public final class ClosurePackDependents implements PackDependents {
     /** The artifacts of other packs that refer to one of the removed pack's artifacts. */
     private List<Dependent> referrers(StagedPackViews.View stored, Removed removed) {
         InboundReferences.StagedTree empty = new InboundReferences.StagedTree(
-                Optional.of(removed.configured().id()),
+                removed.configured().id(),
                 Optional.of(removed.name()),
-                removed.descriptor().orElseGet(() -> standIn(removed)),
+                removed.descriptor(),
                 PackCompositionFacts.NONE);
         return inbound.scan(stored, empty, removed.held()).stream()
                 .map(referrer -> new Dependent(
                         Kind.ARTIFACT_REFERENCE,
-                        Optional.of(new RefusalPack(
-                                referrer.descriptorPackId(), referrer.pack().value(), referrer.name())),
+                        Optional.of(new RefusalPack(referrer.descriptorPackId(), referrer.pack(), referrer.name())),
                         referrer.referrer() + " of the pack " + referrer.pack().value() + " refers to "
                                 + referrer.removed() + "."))
                 .toList();
     }
-
-    /**
-     * The empty tree's descriptor for a pack whose own {@code pack.yaml} cannot be read (ADR-0081 D6): it is named by its
-     * configured name and builds on nothing. The scan reads only a descriptor's {@code pack_id}, {@code name} and edges;
-     * the version is never read, and an unreadable file has none.
-     */
-    private static PackDescriptor standIn(Removed removed) {
-        String name = removed.configured().id().value();
-        return new PackDescriptor(
-                name, UNKNOWN_VERSION, Optional.empty(), name, Optional.empty(), Optional.empty(), PackPaths.none());
-    }
-
-    /** The version of a stand-in descriptor, which nothing reads. */
-    private static final String UNKNOWN_VERSION = "0";
 }

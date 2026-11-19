@@ -303,17 +303,21 @@ public final class RegistrationImpact {
      *
      * @param session the removal's session over the stored packs
      * @param removed how the removed pack is configured
-     * @param removedPackId the {@code pack_id} its descriptor declares
+     * @param removedPackId the {@code pack_id} its descriptor declares; empty when its {@code pack.yaml} cannot be read,
+     *     and no closure that can be walked then holds it
      * @return the floor and lock changes over those closures, and the activations whose in-force set changes
      * @throws CharterRefusal the composition or relation code of a closure that no longer holds together
      */
-    public Notices checkRemoval(StagedPackViews.Session session, ConfiguredPack removed, String removedPackId) {
+    public Notices checkRemoval(
+            StagedPackViews.Session session, ConfiguredPack removed, Optional<PackUlid> removedPackId) {
         Objects.requireNonNull(session, "session");
         Objects.requireNonNull(removed, "removed");
         Objects.requireNonNull(removedPackId, "removedPackId");
         StagedPackViews.View stored = session.stored();
         StagedPackViews.View after = session.without(removed.id());
-        ClosureRoots.Found found = ClosureRoots.of(stored, removedPackId, rootSets(activations.activationRoots()));
+        ClosureRoots.Found found = removedPackId
+                .map(packId -> ClosureRoots.of(stored, packId.value(), rootSets(activations.activationRoots())))
+                .orElseGet(ClosureRoots.Found::none);
         Views afterViews = Views.over(after);
         Views beforeViews = Views.over(stored);
         Set<PackIdentifier> configuredBefore = new HashSet<>();

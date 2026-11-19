@@ -224,9 +224,13 @@ Feature: A registered pack is removed whole, or not at all
     And the field at "/result/outcome" is "created"
 
   Scenario: A removal with an If-Match that breaks its pattern, or a packId outside the grammar, is 400
+    A pack is addressed by the id it is registered under only (#583 D3): its declared pack_id, a ULID, is outside the
+    pack id grammar.
     When I DELETE "/packs/qa" with the header "If-Match": "not-a-revision"
     Then the response status is 400
     When I DELETE "/packs/Not_A_Pack" with the header "If-Match": "*"
+    Then the response status is 400
+    When I DELETE "/packs/01M4P01D5TWB5FKZGNNQG3943R" with the header "If-Match": "*"
     Then the response status is 400
     When I GET "/packs/qa"
     Then the response status is 200
