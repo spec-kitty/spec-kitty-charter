@@ -17,5 +17,7 @@
   "target_branch": "feat/583-pack-id-split",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "default"
+  "topology_source": "default",
+  "change_mode": "bulk_edit",
+  "vcs": "git"
 }
