@@ -212,3 +212,4 @@ Feature: An unexpected failure is refused with internal_error on every operation
       | operation              | path                                                    |
       | deletePackArtifact     | /packs/qa/artifacts/directive/E                         |
       | deletePackRelationship | /packs/qa/relationships?from=directive:D&to=directive:E |
+      | deletePack             | /packs/qa                                               |

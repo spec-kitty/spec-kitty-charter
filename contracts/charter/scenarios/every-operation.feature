@@ -30,6 +30,7 @@ Feature: The worktree guard answers in front of every operation
       | getPackRegistration               | GET    | /pack-registrations/01ARWG13C000000000000000RG                                                |
       | putPackRelationship               | PUT    | /packs/qa/relationships                                                                       |
       | deletePackRelationship            | DELETE | /packs/qa/relationships                                                                       |
+      | deletePack                        | DELETE | /packs/qa                                                                                     |
       | listPackArtifacts                 | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile               | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
       | listPackAssets                    | GET    | /packs/qa/artifacts/asset                                                                     |
@@ -116,6 +117,7 @@ Feature: The worktree guard answers in front of every operation
       | getPackRegistration               | GET    | /pack-registrations/01ARWG13C000000000000000RG                                                |
       | putPackRelationship               | PUT    | /packs/qa/relationships                                                                       |
       | deletePackRelationship            | DELETE | /packs/qa/relationships                                                                       |
+      | deletePack                        | DELETE | /packs/qa                                                                                     |
       | listPackArtifacts                 | GET    | /packs/qa/artifacts                                                                           |
       | getPackAgentProfile               | GET    | /packs/qa/artifacts/agent_profile/rehearse                                                    |
       | listPackAssets                    | GET    | /packs/qa/artifacts/asset                                                                     |

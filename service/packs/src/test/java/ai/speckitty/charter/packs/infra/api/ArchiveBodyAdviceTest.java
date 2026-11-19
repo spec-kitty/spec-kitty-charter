@@ -173,7 +173,7 @@ class ArchiveBodyAdviceTest {
     @Test
     void itGuardsTheArchiveParameterOfTheUploadAndNoOtherBody() throws NoSuchMethodException {
         Method upload = PackRegistrationController.class.getMethod(
-                "registerPackFromArchive", String.class, Resource.class, String.class, String.class);
+                "registerPackFromArchive", String.class, Resource.class, String.class, Boolean.class, String.class);
         Method source = PackRegistrationController.class.getMethod(
                 "registerPackFromSource", ai.speckitty.charter.api.model.PackSource.class, String.class, String.class);
 
@@ -190,7 +190,12 @@ class ArchiveBodyAdviceTest {
         try {
             return new MethodParameter(
                     PackRegistrationController.class.getMethod(
-                            "registerPackFromArchive", String.class, Resource.class, String.class, String.class),
+                            "registerPackFromArchive",
+                            String.class,
+                            Resource.class,
+                            String.class,
+                            Boolean.class,
+                            String.class),
                     1);
         } catch (NoSuchMethodException missing) {
             throw new AssertionError(missing);

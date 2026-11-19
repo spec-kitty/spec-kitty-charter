@@ -61,6 +61,9 @@ implements or absorbs it later; this decision adds no rule, no fault collection 
   version included, is refused `409 pack_version_conflict`; the detail names both versions. No new code is added: the
   conflict is the same one, a version that cannot name this content.
 - A local segment (`+local`) does not order, so `1.0+a` to `1.0+b` with other content is refused.
+- **Order of checks.** A label that already names other content (the stored version, or one in the history) is judged
+  before `If-Match` and `If-None-Match`, as ADR-0065 D2 has it. That the version moves forward is judged after them,
+  so a client that named what it replaces, and lost a race to another writer, reads its `412`.
 - `pack_version` is already a PEP 440 version at read (`pack_version_invalid`), so the two versions always order.
 - The rule applies to `PUT /packs/{packId}` and `POST /packs` alike.
 

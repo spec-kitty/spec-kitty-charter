@@ -1,0 +1,17 @@
+title: PackImpactProblem
+description: >-
+  Only in a PackImpact whose outcome is refused: the refusal the removal itself answers (ADR-0081 D5), in the Problem
+  shape of every other refusal, with its status, its code (409 pack_has_dependents or a 422 of the strict compose) and
+  the packs and violations the code carries.
+allOf:
+  - $ref: ../../_shared/schemas/Problem.yaml
+  - type: object
+    required:
+      - code
+    properties:
+      code:
+        $ref: CharterRefusalCode.yaml
+x-derived:
+  rule: The refusal the removal's checks raise, with the commit switched off.
+  inputs:
+  - schemas/CharterRefusalCode.yaml

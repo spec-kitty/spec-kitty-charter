@@ -453,11 +453,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     private void requireRemovableEntry(PackIdentifier pack, Path directory) {
         Optional<Path> root = locations.writeRoot();
         Path parent = directory.getParent();
-        boolean underRoot = root.isPresent()
-                && parent != null
-                && parent.toAbsolutePath()
-                        .normalize()
-                        .equals(root.get().toAbsolutePath().normalize());
+        boolean underRoot = root.isPresent() && parent != null && sameDirectory(parent, root.get());
         if (!underRoot) {
             throw new CharterRefusal(
                     RefusalCode.REGISTRATION_CONFLICT,
@@ -468,6 +464,15 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             throw new CharterRefusal(
                     RefusalCode.REGISTRATION_CONFLICT,
                     "The pack " + pack.value() + " is a link; remove the link to remove it.");
+        }
+    }
+
+    /** Whether two paths name one directory, links and relative spellings resolved. */
+    private static boolean sameDirectory(Path one, Path other) {
+        try {
+            return one.toRealPath().equals(other.toRealPath());
+        } catch (IOException unresolved) {
+            return false;
         }
     }
 

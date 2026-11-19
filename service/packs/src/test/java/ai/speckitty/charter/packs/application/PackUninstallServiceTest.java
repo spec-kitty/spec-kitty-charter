@@ -54,6 +54,16 @@ class PackUninstallServiceTest {
         return uninstalls(rig).uninstall(new PackIdentifier(pack), ifMatch, mode, RevisionTrail.NONE);
     }
 
+    /**
+     * Removes a pack whole with {@code If-Match: *}, as a test that needs it gone does.
+     *
+     * @param rig the rig
+     * @param pack the pack's configured name
+     */
+    static void uninstall(Rig rig, String pack) {
+        uninstall(rig, pack, "*", Mode.COMMIT);
+    }
+
     private static CharterRefusal refusalOf(Runnable action) {
         return catchThrowableOfType(CharterRefusal.class, action::run);
     }
@@ -165,7 +175,8 @@ class PackUninstallServiceTest {
     @Test
     void aLinkedPackIsNotRemoved(@TempDir Path host) throws IOException {
         Rig rig = new Rig(host);
-        Path target = host.resolve("elsewhere").resolve("qa");
+        // A link into a hidden directory of the pack domain is listed and served as the pack (LinkedPackCommitTest).
+        Path target = rig.packs.resolve(".vendor").resolve("real-qa");
         qa().files().forEach((file, text) -> {
             try {
                 Files.createDirectories(target.resolve(file).getParent());
