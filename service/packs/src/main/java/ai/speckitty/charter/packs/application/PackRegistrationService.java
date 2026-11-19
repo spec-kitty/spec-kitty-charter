@@ -721,7 +721,7 @@ public final class PackRegistrationService {
                 new InboundReferences.StagedTree(
                         new PackIdentifier(upload.packId()),
                         Optional.of(stored.get().descriptor().name()),
-                        upload.descriptor(),
+                        Optional.of(upload.descriptor()),
                         upload.contents().facts()),
                 removed);
         if (!referrers.isEmpty()) {

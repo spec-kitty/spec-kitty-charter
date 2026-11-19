@@ -464,8 +464,8 @@ class InboundReferencesTest {
                         RelationType.REQUIRES,
                         Optional.empty(),
                         Optional.empty())));
-        InboundReferences.StagedTree staged =
-                new InboundReferences.StagedTree(new PackIdentifier("new-pack"), Optional.empty(), descriptor, facts);
+        InboundReferences.StagedTree staged = new InboundReferences.StagedTree(
+                new PackIdentifier("new-pack"), Optional.empty(), Optional.of(descriptor), facts);
         InboundReferences scan = new InboundReferences(List::of, NO_DESCRIPTORS, pack -> {
             throw new AssertionError("no stored pack is read: none is configured");
         });

@@ -62,14 +62,32 @@ public final class InboundReferences {
      *     pack is uploaded under
      * @param replacedName the name the stored pack had, which other packs may have qualified a reference with, since a
      *     replace can rename the pack; empty for a new pack
-     * @param descriptor the staged pack's descriptor
+     * @param descriptor the staged pack's descriptor; empty for a pack removed whole while its own {@code pack.yaml}
+     *     cannot be read (ADR-0081 D6), which no {@code depends_on} or {@code parent_pack} can name and which builds on
+     *     nothing, so only a reference qualified with its name ({@code replacedName}) reaches it
      * @param facts the staged pack's composition facts
      */
     public record StagedTree(
             PackIdentifier packId,
             Optional<String> replacedName,
-            PackDescriptor descriptor,
-            PackCompositionFacts facts) {}
+            Optional<PackDescriptor> descriptor,
+            PackCompositionFacts facts) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param packId the registered id
+         * @param replacedName the stored pack's name, if any
+         * @param descriptor the staged descriptor, if it can be read
+         * @param facts the staged facts
+         */
+        public StagedTree {
+            Objects.requireNonNull(packId, "packId");
+            Objects.requireNonNull(replacedName, "replacedName");
+            Objects.requireNonNull(descriptor, "descriptor");
+            Objects.requireNonNull(facts, "facts");
+        }
+    }
 
     private final PackCatalogRepository catalog;
     private final PackDescriptorRepository descriptors;
@@ -115,8 +133,12 @@ public final class InboundReferences {
         return CharterRefusal.withPacksAndViolations(RefusalCode.ARTIFACT_REFERENCED, detail, packs, violations);
     }
 
-    /** One pack as the scan reads it: how it is configured, its descriptor, and what it holds and writes. */
-    private record Member(PackIdentifier id, PackDescriptor descriptor, PackCompositionFacts facts, boolean staged) {
+    /**
+     * One pack as the scan reads it: how it is configured, its descriptor (empty only for a staged pack removed while
+     * unreadable), and what it holds and writes.
+     */
+    private record Member(
+            PackIdentifier id, Optional<PackDescriptor> descriptor, PackCompositionFacts facts, boolean staged) {
 
         /** Whether the pack holds the artifact, or the term, a URN names ({@link PackCompositionFacts#holds}). */
         boolean defines(Urn urn) {
@@ -125,9 +147,10 @@ public final class InboundReferences {
 
         /** The descriptor {@code pack_id}s the pack builds on: its {@code parent_pack} and its {@code depends_on}. */
         List<String> buildsOn() {
-            return Stream.concat(
-                            descriptor.parentPack().stream(),
-                            descriptor.dependencies().stream().map(PackDependency::packId))
+            return descriptor.stream()
+                    .flatMap(declared -> Stream.concat(
+                            declared.parentPack().stream(),
+                            declared.dependencies().stream().map(PackDependency::packId)))
                     .toList();
         }
     }
@@ -225,7 +248,7 @@ public final class InboundReferences {
                 return Optional.empty();
             }
             return Optional.of(new Member(
-                    configured.id(), descriptor.get(), stored.artifacts().compositionFacts(configured.id()), false));
+                    configured.id(), descriptor, stored.artifacts().compositionFacts(configured.id()), false));
         } catch (CharterRefusal unreadable) {
             return Optional.empty();
         }
@@ -233,6 +256,10 @@ public final class InboundReferences {
 
     private static List<Referrer> referrersOf(
             Member member, List<Member> members, StagedTree staged, Set<Urn> removed, boolean removal) {
+        if (member.descriptor().isEmpty()) {
+            return List.of(); // a pack removed while unreadable is staged with no facts: it refers to nothing
+        }
+        PackDescriptor descriptor = member.descriptor().get();
         List<Member> closure = closureOf(member, members);
         List<Referrer> out = new ArrayList<>();
         List<Reference> references = new ArrayList<>(referencesOf(member));
@@ -246,8 +273,8 @@ public final class InboundReferences {
             if (hit.isPresent() && !sourceRemoved) {
                 out.add(new Referrer(
                         member.id(),
-                        new PackUlid(member.descriptor().packId()),
-                        member.descriptor().name(),
+                        new PackUlid(descriptor.packId()),
+                        descriptor.name(),
                         reference.label(),
                         hit.get()));
             }
@@ -284,7 +311,10 @@ public final class InboundReferences {
 
     /** A qualifier names the staged pack by the name it is uploaded with, or the one the stored pack had. */
     private static boolean namesStagedPack(String name, StagedTree staged) {
-        return name.equals(staged.descriptor().name())
+        return staged.descriptor()
+                        .map(PackDescriptor::name)
+                        .filter(name::equals)
+                        .isPresent()
                 || staged.replacedName().filter(name::equals).isPresent();
     }
 
@@ -297,13 +327,15 @@ public final class InboundReferences {
     /** The pack and every pack it builds on, transitively, the pack first, each once. */
     private static List<Member> closureOf(Member member, List<Member> members) {
         Map<String, Member> byPackId = new LinkedHashMap<>();
-        members.forEach(candidate -> byPackId.putIfAbsent(candidate.descriptor().packId(), candidate));
+        members.forEach(candidate ->
+                candidate.descriptor().ifPresent(descriptor -> byPackId.putIfAbsent(descriptor.packId(), candidate)));
         List<Member> closure = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         Deque<Member> pending = new ArrayDeque<>(List.of(member));
         while (!pending.isEmpty()) {
             Member next = pending.poll();
-            if (seen.add(next.descriptor().packId())) {
+            // only a described member starts a closure or is reached by an edge
+            if (seen.add(next.descriptor().orElseThrow().packId())) {
                 closure.add(next);
                 next.buildsOn().stream()
                         .map(byPackId::get)
@@ -327,7 +359,8 @@ public final class InboundReferences {
                             new PackQualifiedReference(
                                     Optional.empty(), new Urn(NodeKind.of(kind), item.id()).toString())))));
         }
-        for (PackOverride override : member.descriptor().overrides()) {
+        for (PackOverride override :
+                member.descriptor().map(PackDescriptor::overrides).orElse(List.of())) {
             overrideReference(override).ifPresent(out::add);
         }
         return out;
