@@ -29,6 +29,9 @@
       "last_event_id": "01M7ST4F9WSSA542JXRV5EFFMA",
       "last_transition_at": "2026-11-19T11:47:38.428404+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "PackUlid + IdentifierGrammar.ulid; :kernel:check green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 5323,
