@@ -1,0 +1,5 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- {source: directive:B, target: directive:A, relation: tension}

@@ -25,15 +25,15 @@
       "wp": null
     },
     "#16": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Out of scope (spec Out of Scope): value impacts and the creed set stay with #16; #602 serves tensions apart from it (operator ruling 2026-11-18).",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "Creed and values contract set",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#472": {
@@ -61,16 +61,16 @@
       "wp": null
     },
     "#602": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered by this Mission (WP01 to WP08); closed on landing of PR #606.",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Serve tensions",
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#94": {
       "evidence_ref": "<auto-classified: no action required>",
