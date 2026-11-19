@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -24,6 +25,7 @@ import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
+import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict.Check;
@@ -356,11 +358,37 @@ class PackSetCheckTest {
                     .satisfies(skip -> assertThat(skip.packs())
                             .containsExactly(new Unjudged(
                                     "qa", "its level is unknown: none is configured and pack.yaml declares none")));
+            assertThat(verdict.packs().get(1).verdict().findings())
+                    .as("validate mode has no level to judge a bare path by")
+                    .isEmpty();
+            assertThat(verdict.packs().get(1).setCheck()).singleElement().satisfies(reason -> {
+                assertThat(reason.code()).isEqualTo(PlacementCodes.PACK_LEVEL_MISSING_VIOLATION);
+                assertThat(reason.severity()).isEqualTo(Severity.VIOLATION);
+                assertThat(reason.location()).isEqualTo(Location.in("pack.yaml"));
+                assertThat(reason.detail()).isEqualTo("pack.yaml of qa declares no pack_level and none is configured");
+            });
+            assertThat(verdict.packs().get(0).setCheck()).isEmpty();
             assertThat(verdict.packs().get(1).failing())
                     .as("an unknown level stops CLOSURE, so it is the pack's fault: never a silent pass")
                     .isTrue();
             assertThat(verdict.packs().get(0).failing()).isFalse();
             assertThat(verdict.failing()).isTrue();
+        }
+
+        @Test
+        @DisplayName("a pack with no pack.yaml and no level: its refusal speaks for it, the set check adds nothing")
+        void anUnreadablePackWithNoLevelGetsNoLevelReason(@TempDir Path dir) throws IOException {
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir);
+            Files.delete(builtIn.resolve("pack.yaml"));
+
+            PackResult result = CHECK.check(List.of(at(ExamplePacks.BUILT_IN, builtIn, Optional.empty())))
+                    .packs()
+                    .getFirst();
+
+            assertThat(result.facts()).isInstanceOf(PackReadout.Unreadable.class);
+            assertThat(result.level()).isEmpty();
+            assertThat(result.setCheck()).isEmpty();
+            assertThat(result.failing()).isTrue();
         }
 
         /**

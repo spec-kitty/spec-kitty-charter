@@ -4,6 +4,8 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.validation.Evaluation;
+import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -15,6 +17,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packvalidation.PackCheck;
+import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
@@ -52,6 +55,8 @@ import java.util.Set;
 public final class PackSetCheck {
 
     private static final String NO_LEVEL = "its level is unknown: none is configured and pack.yaml declares none";
+
+    private static final String PACK_YAML = "pack.yaml";
 
     private final PackCheck check;
 
@@ -110,12 +115,14 @@ public final class PackSetCheck {
                         "the round trip refused it: " + refusal.code().token() + ": " + detail(refusal)));
                 reasons = refusedWithoutViolation(checked, refusal);
             }
+            Optional<PackLevel> level = levelOf(entry, checked.readout());
             results.add(new PackResult(
                     entry,
                     checked.verdict(),
-                    levelOf(entry, checked.readout()),
+                    level,
                     checked.readout().facts(),
-                    reasons));
+                    reasons,
+                    levelMissing(entry, checked.readout().facts(), level)));
         }
         List<Check> checks = new ArrayList<>(List.of(Check.PACK));
         List<CompositionFault> faults = List.of();
@@ -186,6 +193,23 @@ public final class PackSetCheck {
                 .or(() -> readout.contents().descriptor() instanceof FileRead.Read<PackDescriptor> read
                         ? read.value().declaredLevel()
                         : Optional.empty());
+    }
+
+    /**
+     * The set check's reason for a pack it cannot place (M3): its facts were built, so its {@code pack.yaml} was read,
+     * but no level is configured and none is declared. A pack whose facts cannot be read is not given it: its refusal
+     * or its verdict already speaks for it.
+     */
+    private static List<Reason> levelMissing(PackSetEntry entry, PackReadout.Facts facts, Optional<PackLevel> level) {
+        if (level.isPresent() || !(facts instanceof PackReadout.Built)) {
+            return List.of();
+        }
+        return List.of(new Reason(
+                PlacementCodes.PACK_LEVEL_MISSING_VIOLATION.value(),
+                Evaluation.FAIL,
+                PlacementCodes.PACK_LEVEL_MISSING_VIOLATION,
+                Location.in(PACK_YAML),
+                PACK_YAML + " of " + entry.name() + " declares no pack_level and none is configured"));
     }
 
     /** Each pack {@code CLOSURE} cannot judge, in the order the set was given: no facts, or no level. */

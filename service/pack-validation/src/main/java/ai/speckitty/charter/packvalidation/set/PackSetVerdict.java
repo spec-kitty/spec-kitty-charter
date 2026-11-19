@@ -71,13 +71,16 @@ public record PackSetVerdict(
      * @param roundTrip the round trip's failing reasons; empty when it was not asked for, when the pack round-trips
      *     whole, or when the flow refused a pack whose verdict already reports a violation (the set's {@code
      *     ROUND_TRIP} skip names it)
+     * @param setCheck the set check's own reasons for the pack: {@code pack_level_missing}, a violation at
+     *     {@code pack.yaml}, when its facts were built but its level is unknown; empty otherwise
      */
     public record PackResult(
             PackSetEntry entry,
             PackVerdict verdict,
             Optional<PackLevel> level,
             PackReadout.Facts facts,
-            List<Reason> roundTrip) {
+            List<Reason> roundTrip,
+            List<Reason> setCheck) {
 
         /**
          * Checks the fields and copies the list.
@@ -87,6 +90,7 @@ public record PackSetVerdict(
          * @param level the level, possibly empty
          * @param facts the facts
          * @param roundTrip the round trip's reasons
+         * @param setCheck the set check's reasons
          */
         public PackResult {
             Objects.requireNonNull(entry, "entry");
@@ -94,21 +98,22 @@ public record PackSetVerdict(
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(facts, "facts");
             roundTrip = List.copyOf(roundTrip);
+            setCheck = List.copyOf(setCheck);
         }
 
         /**
-         * Whether the pack fails (D3): its verdict holds a violation, its round trip does, its composition facts cannot
-         * be read, or its level is unknown. A pack whose facts are {@link PackReadout.Unreadable} fails even when its
-         * verdict holds no violation, since the composing read would refuse it; a pack with no level fails because
-         * {@code CLOSURE} cannot judge it, so a skipped {@code CLOSURE} is never a silent pass.
+         * Whether the pack fails (D3): its verdict holds a violation, its round trip does, the set check does (an
+         * unknown level, so a skipped {@code CLOSURE} is never a silent pass), or its composition facts cannot be read.
+         * A pack whose facts are {@link PackReadout.Unreadable} fails even when its verdict holds no violation, since
+         * the composing read would refuse it.
          *
          * @return {@code true} when the pack fails
          */
         public boolean failing() {
             return hasViolation(verdict.findings())
                     || hasViolation(roundTrip)
-                    || facts instanceof PackReadout.Unreadable
-                    || level.isEmpty();
+                    || hasViolation(setCheck)
+                    || facts instanceof PackReadout.Unreadable;
         }
 
         /**
