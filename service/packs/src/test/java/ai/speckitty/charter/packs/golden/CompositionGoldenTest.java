@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.golden;
 
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -483,7 +484,7 @@ class CompositionGoldenTest {
     private static Map<String, Object> offer(Case compose) {
         List<PackIdentifier> roots = compose.roots().isEmpty()
                 ? compose.packs().stream().map(pack -> pack.configured().id()).toList()
-                : compose.roots().stream().map(PackIdentifier::new).toList();
+                : compose.roots().stream().map(FixtureUlids::registeredIdOf).toList();
         try {
             List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(compose.packs(), roots);
             for (PackUnderResolution pack : composed) {
@@ -531,7 +532,7 @@ class CompositionGoldenTest {
     }
 
     private static ConfiguredPack configured(String id, PackLevel level) {
-        return new ConfiguredPack(new PackIdentifier(id), level);
+        return new ConfiguredPack(registeredIdOf(id), level);
     }
 
     private static PackUnderResolution pack(String id, String name, String version, PackLevel level) {
