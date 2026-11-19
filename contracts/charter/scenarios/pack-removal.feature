@@ -515,6 +515,86 @@ Feature: One artifact or one registered relationship is removed from a pack
       | directive:D1   | directive:D2   |
       | directive:D2   | directive:D1   |
 
+  # ADR-0045 decisions 1 and 5 (#602, WP03): a tension is a relationship of its own pair class. It is registered beside
+  # the structural relationship of its pair, stored in its stored orientation, and removed by its relation.
+  Scenario: A tension is registered beside a requires on the same pair, stored smaller first, and removed by its relation
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "directive:D1", "type": "requires"}
+      """
+    Then the response status is 201
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "directive:D1", "type": "tension", "rationale": "both decide the depth"}
+      """
+    Then the response status is 201
+    And the field at "/relationship/from" is "directive:D2"
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: tension"
+    And the file "registered.graph.yaml" of the pack "qa" contains "source: directive:D1"
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: requires"
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "tension"}
+      """
+    Then the response status is 200
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2&relation=in_tension_with" with the remembered ETag
+    Then the response status is 400
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2&relation=tension" with the remembered ETag
+    Then the response status is 204
+    And the file "registered.graph.yaml" of the pack "qa" does not contain "relation: tension"
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: requires"
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2&relation=tension" with the header "If-Match": "*"
+    Then the response status is 404
+    And the problem code is "relationship_not_found"
+
+  Scenario: The old spelling in_tension_with is an unknown relation type, and nothing is written
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "in_tension_with"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field at "/violations/0/code" is "relationship_type_unknown"
+
+  Scenario: A tension on a pair an author-written shard already joins by a tension is refused tension_duplicated
+    Given the org pack "qa" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:D1
+        target: directive:D2
+        relation: tension
+      """
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "directive:D1", "type": "tension"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field at "/violations/0/code" is "tension_duplicated"
+    And the field at "/violations/0/pointer" is "/to"
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "directive:D3", "type": "tension"}
+      """
+    Then the response status is 201
+
   # bound by: WP19 (decision DM-01M6TQ62HXYF362GAFS2BZ3PGF: an edge the author wrote into a source shard is not a
   # registered edge)
   Scenario: An edge the author wrote into a source shard is refused, and the file is not rewritten

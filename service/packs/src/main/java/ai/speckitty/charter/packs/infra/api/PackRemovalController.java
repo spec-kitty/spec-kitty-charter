@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ArtifactRemovalService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.RelationshipRemovalService;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.packs.application.RevisionTrail;
 import ai.speckitty.charter.web.InvalidParameter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -48,11 +50,32 @@ final class PackRemovalController {
         return noContent(revision);
     }
 
-    ResponseEntity<Void> deleteRelationship(String packId, String from, String to, @Nullable String ifMatch) {
+    ResponseEntity<Void> deleteRelationship(
+            String packId, String from, String to, @Nullable String relation, @Nullable String ifMatch) {
+        Optional<RelationType> type = relationOf(relation);
         AuditContext audit = AuditContext.of(currentRequest());
         PackRevision revision = relationships.remove(
-                new PackIdentifier(packId), reference("from", from), reference("to", to), ifMatch, trailOf(audit));
+                new PackIdentifier(packId),
+                reference("from", from),
+                reference("to", to),
+                type,
+                ifMatch,
+                trailOf(audit));
         return noContent(revision);
+    }
+
+    /**
+     * The relation the removal names (ADR-0045 decision 5), judged before the pack: a token that is no value of the
+     * contract's {@code Relation} is a 400 Problem.
+     */
+    private static Optional<RelationType> relationOf(@Nullable String relation) {
+        if (relation == null) {
+            return Optional.empty();
+        }
+        return Optional.of(RelationType.fromToken(relation)
+                .filter(type -> !type.derived())
+                .orElseThrow(() -> new InvalidParameter(
+                        InvalidParameter.In.QUERY, "relation", relation, "which names no relation")));
     }
 
     /**

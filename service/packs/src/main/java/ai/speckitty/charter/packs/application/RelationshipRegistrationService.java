@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
@@ -31,7 +32,9 @@ import org.springframework.stereotype.Service;
  * {@code PUT /packs/{id}/relationships}. It is neutral to artifact kind; the per-kind services own the body-carried
  * door of the dual-write rule (an artifact body may assert only edges authored from itself) and this service owns the
  * other door, standalone or cross-authored edges. Both upsert the <em>same</em> pack relationship shard, keyed by the
- * unordered {@code {from, to}} pair, last-write-wins, through the one package-private {@code RelationshipMerge}.
+ * slot (the unordered {@code {from, to}} pair and its pair class, ADR-0045 decision 1), last-write-wins, through the one
+ * package-private {@code RelationshipMerge}. A {@code tension} is stored in its stored orientation and may name two
+ * artifacts the pack holds neither of.
  *
  * <p>The write is functional (ADR-0026): load &rarr; upsert into the relationship shard &rarr; commit the whole pack
  * atomically, so the revision advances and a refusal changes zero stored files (NFR-002).
@@ -67,7 +70,8 @@ public final class RelationshipRegistrationService {
      * into this neutral one.
      *
      * @param revision the revision of the committed state, for the {@code ETag}
-     * @param created {@code true} when the pair was not registered before (in either orientation)
+     * @param created {@code true} when the slot (the pair and its pair class) was not registered before, in either
+     *     orientation
      * @param target the registered edge's {@code from} URN
      */
     public record Registered(PackRevision revision, boolean created, Urn target) {}
@@ -111,12 +115,14 @@ public final class RelationshipRegistrationService {
         return writeStore.exclusively(pack, () -> {
             Pack current = packs.load(pack);
             precondition(pack, ifMatch);
-            if (!urnsOf(current).contains(draft.from())) {
+            boolean tension = draft.type() == RelationType.TENSION;
+            if (!tension && !urnsOf(current).contains(draft.from())) {
                 throw new CharterRefusal(
                         RefusalCode.REGISTRATION_CONFLICT,
                         "Relationship from " + draft.from() + " does not resolve within pack " + pack.value() + ".");
             }
-            if (GraphBinding.joinsItself(current.descriptor().name(), draft.fromReference(), draft.toReference())) {
+            if (GraphBinding.joinsItself(current.descriptor().name(), draft.fromReference(), draft.toReference())
+                    || (tension && draft.from().equals(draft.to()))) {
                 throw new CharterRefusal(
                         RefusalCode.VALIDATION_FAILED,
                         "A relationship cannot be a self-loop: " + draft.from() + " to " + draft.toReference()
@@ -128,16 +134,66 @@ public final class RelationshipRegistrationService {
             // target the compose cannot resolve the next offering read.
             // The fault order (WP05): the step-enhancement rules, then the source rule of slice C, then the table.
             refuseStepEnhancementEdge(current, draft, existing);
-            Relationship relationship = bound(draft);
+            Relationship relationship = bound(tension ? stored(current, draft) : draft);
             refuseStrayStepLink(pack, current.descriptor().name(), relationship, existing);
-            targets.require(pack, relationship.toReference());
-            policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
+            if (tension) {
+                refuseSecondTension(pack, relationship);
+                // A tension names two rules; each side the pack does not hold must resolve in the compose, and the
+                // gate judges each side (ADR-0045 decision 1, the paths that key on a source).
+                if (relationship.fromPack().isPresent()) {
+                    targets.require(pack, relationship.fromReference());
+                }
+                targets.require(pack, relationship.toReference());
+                policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
+                policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.to());
+            } else {
+                targets.require(pack, relationship.toReference());
+                policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
+            }
+            // Identity is the slot (pair and pair class): a tension on a pair with a requires is a new slot.
             boolean created = existing.stream().noneMatch(relationship::equals);
             List<Relationship> merged = RelationshipMerge.upsert(existing, relationship);
             PackRevision revision =
                     writeStore.commit(pack, ifMatch, PackWriteStore.Change.relationships(current, merged));
             return new Registered(revision, created, relationship.from());
         });
+    }
+
+    /**
+     * The draft in its stored orientation (ADR-0045 decision 1): the side the pack holds is the source; when it holds
+     * both sides, or neither, the smaller bare URN is. A held side is one the pack holds, written bare or with the
+     * pack's own name.
+     */
+    private static RelationshipDraft stored(Pack current, RelationshipDraft draft) {
+        String own = current.descriptor().name();
+        Set<Urn> held = urnsOf(current);
+        boolean fromHeld =
+                held.contains(draft.from()) && draft.fromPack().map(own::equals).orElse(true);
+        boolean toHeld =
+                held.contains(draft.to()) && draft.toPack().map(own::equals).orElse(true);
+        boolean reverse = fromHeld == toHeld
+                ? draft.from().toString().compareTo(draft.to().toString()) > 0
+                : toHeld;
+        return reverse ? draft.reversed() : draft;
+    }
+
+    /**
+     * Refuses a tension on a pair that a graph document of the pack other than the registered shard already joins by
+     * a tension: the pack would then hold two and be refused at its next load (ADR-0045 decisions 5 and 6). The
+     * refusal is {@code validation_failed} with one violation {@code tension_duplicated} at {@code /to}.
+     */
+    private void refuseSecondTension(PackIdentifier pack, Relationship tension) {
+        writeStore.authoredRelationships(pack).stream()
+                .filter(authored -> authored.sameSlot(tension))
+                .findFirst()
+                .ifPresent(authored -> {
+                    String reason = "the pack already joins " + authored.from() + " and " + authored.to()
+                            + " by a tension in one of its graph documents";
+                    throw CharterRefusal.withViolations(
+                            RefusalCode.VALIDATION_FAILED,
+                            "The relationship is refused: " + reason + ".",
+                            List.of(new RefusalViolation("/to", PackCodes.TENSION_DUPLICATED.value(), reason)));
+                });
     }
 
     /**
@@ -215,7 +271,7 @@ public final class RelationshipRegistrationService {
             }
             boolean registeredAlready = registered.stream()
                     .anyMatch(edge ->
-                            edge.type() == RelationType.ENHANCES && edge.from().equals(from) && samePair(edge, draft));
+                            edge.type() == RelationType.ENHANCES && edge.from().equals(from) && sameSlot(edge, draft));
             if (draft.type() == RelationType.ENHANCES && !registeredAlready) {
                 throw refused(from, "it has its enhances edge already and may have exactly one");
             }
@@ -223,17 +279,21 @@ public final class RelationshipRegistrationService {
         for (Relationship edge : registered) {
             if (edge.type() == RelationType.ENHANCES
                     && isHeldStepEnhancement(current, edge.from())
-                    && samePair(edge, draft)
+                    && sameSlot(edge, draft)
                     && !(draft.type() == RelationType.ENHANCES && from.equals(edge.from()))) {
                 throw refused(edge.from(), "the relationship would replace its enhances edge and leave it with none");
             }
         }
     }
 
-    /** Whether the draft names the registered edge's unordered pair, the identity of a relationship (ADR-0027). */
-    private static boolean samePair(Relationship edge, RelationshipDraft draft) {
-        return (edge.from().equals(draft.from()) && edge.to().equals(draft.to()))
+    /**
+     * Whether the draft would take the registered edge's slot: the same unordered pair and the same pair class, the
+     * identity of a relationship (ADR-0027 as amended by ADR-0045 decision 1). A tension takes no structural edge's slot.
+     */
+    private static boolean sameSlot(Relationship edge, RelationshipDraft draft) {
+        boolean samePair = (edge.from().equals(draft.from()) && edge.to().equals(draft.to()))
                 || (edge.from().equals(draft.to()) && edge.to().equals(draft.from()));
+        return samePair && edge.pairClass() == Relationship.PairClass.of(draft.type());
     }
 
     private static boolean isHeldStepEnhancement(Pack pack, Urn urn) {

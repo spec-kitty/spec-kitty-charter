@@ -107,6 +107,185 @@ class RelationshipRegistrationServiceTest {
         assertThat(store.relationships(PACK).getFirst().type()).isEqualTo(RelationType.SUGGESTS);
     }
 
+    // ---- ADR-0045 decisions 1 and 5: a tension is a relationship of its own pair class -------------------------
+
+    private static final Urn DIR_A = new Urn(NodeKind.DIRECTIVE, "DIR_A");
+    private static final Urn DIR_B = new Urn(NodeKind.DIRECTIVE, "DIR_B");
+
+    @Test
+    void aTensionOnAPairWithARequiresIsANewSlotAndBothAreKept() {
+        seedDirective("DIR_A");
+        seedDirective("DIR_B");
+        service.registerRelationship(
+                PACK,
+                RelationshipDraft.of(Relationship.of(DIR_B, DIR_A, RelationType.REQUIRES)),
+                store.currentRevision(PACK).token());
+
+        RelationshipRegistrationService.Registered tension = service.registerRelationship(
+                PACK,
+                draft(DIR_A, DIR_B, RelationType.TENSION),
+                store.currentRevision(PACK).token());
+
+        assertThat(tension.created()).isTrue();
+        assertThat(store.relationships(PACK))
+                .extracting(Relationship::type)
+                .containsExactly(RelationType.REQUIRES, RelationType.TENSION);
+        // Registering the tension again is the same slot: 200, still two edges.
+        RelationshipRegistrationService.Registered again = service.registerRelationship(
+                PACK,
+                draft(DIR_A, DIR_B, RelationType.TENSION),
+                store.currentRevision(PACK).token());
+        assertThat(again.created()).isFalse();
+        assertThat(store.relationships(PACK)).hasSize(2);
+        // A structural relation on the pair replaces only the requires.
+        service.registerRelationship(
+                PACK,
+                draft(DIR_A, DIR_B, RelationType.SUGGESTS),
+                store.currentRevision(PACK).token());
+        assertThat(store.relationships(PACK))
+                .extracting(Relationship::type)
+                .containsExactly(RelationType.TENSION, RelationType.SUGGESTS);
+    }
+
+    @Test
+    void aTensionBetweenTwoHeldSidesWrittenLargerFirstIsStoredSmallerFirst() {
+        seedDirective("DIR_A");
+        seedDirective("DIR_B");
+
+        service.registerRelationship(
+                PACK,
+                draft(DIR_B, DIR_A, RelationType.TENSION),
+                store.currentRevision(PACK).token());
+
+        assertThat(store.relationships(PACK)).singleElement().satisfies(stored -> {
+            assertThat(stored.type()).isEqualTo(RelationType.TENSION);
+            assertThat(stored.from()).isEqualTo(DIR_A);
+            assertThat(stored.to()).isEqualTo(DIR_B);
+        });
+        // Positive control: a structural relation keeps the orientation written.
+        service.registerRelationship(
+                PACK,
+                draft(DIR_B, DIR_A, RelationType.REQUIRES),
+                store.currentRevision(PACK).token());
+        assertThat(store.relationships(PACK))
+                .filteredOn(edge -> edge.type() == RelationType.REQUIRES)
+                .singleElement()
+                .satisfies(stored -> assertThat(stored.from()).isEqualTo(DIR_B));
+    }
+
+    @Test
+    void aTensionTheHeldSideNamesAsTargetIsStoredWithTheHeldSideAsSource() {
+        seedDirective("DIR_B");
+        Urn outside = new Urn(NodeKind.DIRECTIVE, "AAA_OUTSIDE");
+
+        // DIR_B is held, AAA_OUTSIDE is not (and is the smaller): the held side is the stored source.
+        service.registerRelationship(
+                PACK,
+                new RelationshipDraft(
+                        outside,
+                        Optional.empty(),
+                        DIR_B,
+                        Optional.empty(),
+                        RelationType.TENSION,
+                        Optional.empty(),
+                        Optional.empty()),
+                store.currentRevision(PACK).token());
+
+        assertThat(store.relationships(PACK)).singleElement().satisfies(stored -> {
+            assertThat(stored.from()).isEqualTo(DIR_B);
+            assertThat(stored.to()).isEqualTo(outside);
+        });
+    }
+
+    @Test
+    void aTensionOnAPairAnotherDocumentOfThePackJoinsByATensionIsRefusedAndNothingIsWritten() {
+        seedDirective("DIR_A");
+        seedDirective("DIR_B");
+        store.authored.add(Relationship.of(DIR_A, DIR_B, RelationType.TENSION));
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        draft(DIR_B, DIR_A, RelationType.TENSION),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations()).singleElement().satisfies(violation -> {
+                        assertThat(violation.pointer()).isEqualTo("/to");
+                        assertThat(violation.code()).isEqualTo("tension_duplicated");
+                    });
+                });
+        assertThat(store.commits).isEqualTo(before);
+        // Positive control: an authored requires on the pair does not stand in the tension's way.
+        store.authored.clear();
+        store.authored.add(Relationship.of(DIR_A, DIR_B, RelationType.REQUIRES));
+        service.registerRelationship(
+                PACK,
+                draft(DIR_B, DIR_A, RelationType.TENSION),
+                store.currentRevision(PACK).token());
+        assertThat(store.commits).isEqualTo(before + 1);
+    }
+
+    @Test
+    void aTensionOfAnArtifactWithItselfIsASelfLoop() {
+        seedDirective("DIR_A");
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        new RelationshipDraft(
+                                DIR_A,
+                                Optional.empty(),
+                                DIR_A,
+                                Optional.of("other"),
+                                RelationType.TENSION,
+                                Optional.empty(),
+                                Optional.empty()),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
+    }
+
+    @Test
+    void theGovernanceGateJudgesATensionOnEachSideAndAStructuralRelationOnItsSourceOnly() {
+        seedDirective("DIR_A");
+        seedDirective("DIR_B");
+        List<Urn> judged = new ArrayList<>();
+        RelationshipRegistrationService gated = new RelationshipRegistrationService(
+                store,
+                store,
+                new WritePolicyGate() {
+                    @Override
+                    public void authorize(Pack pack, Operation operation, Urn target) {
+                        judged.add(target);
+                    }
+
+                    @Override
+                    public void authorizeStaged(Pack staged, List<Write> writes) {}
+                },
+                SinglePackCompose.check(PACK, () -> store.packs.get(PACK)));
+
+        gated.registerRelationship(
+                PACK,
+                draft(DIR_A, DIR_B, RelationType.TENSION),
+                store.currentRevision(PACK).token());
+        assertThat(judged).containsExactly(DIR_A, DIR_B);
+        judged.clear();
+        gated.registerRelationship(
+                PACK,
+                draft(DIR_A, DIR_B, RelationType.REQUIRES),
+                store.currentRevision(PACK).token());
+        assertThat(judged).containsExactly(DIR_A);
+    }
+
+    @Test
+    void aTensionFromAHeldStepEnhancementIsTheEndpointTablesFaultNotTheEnhancementRule() {
+        seedEnhancementAndDirectives();
+
+        // A tension takes no structural slot, so the enhancement rule does not judge it; the table refuses its kinds.
+        assertRefusedByTheEndpointTableAndNothingWritten(draft(ENHANCEMENT, TYPE, RelationType.TENSION));
+    }
+
     /**
      * A target the compose cannot resolve is refused before anything is written: the next read of the offering would
      * refuse the pack that holds the edge. The accepted bare external target of the tests around it is the control.
@@ -533,7 +712,8 @@ class RelationshipRegistrationServiceTest {
 
     /** A draft as a write asks for it, whether or not the endpoint table allows its kinds. */
     private static RelationshipDraft draft(Urn from, Urn to, RelationType type) {
-        return new RelationshipDraft(from, to, Optional.empty(), type, Optional.empty(), Optional.empty());
+        return new RelationshipDraft(
+                from, Optional.empty(), to, Optional.empty(), type, Optional.empty(), Optional.empty());
     }
 
     private void assertRefusedByTheEndpointTableAndNothingWritten(RelationshipDraft draft) {
@@ -757,6 +937,7 @@ class RelationshipRegistrationServiceTest {
         private final Map<PackIdentifier, Pack> packs = new HashMap<>(
                 Map.of(PACK, Pack.builder().id(PACK).descriptor(descriptor()).build()));
         private final Map<PackIdentifier, List<Relationship>> edges = new HashMap<>();
+        private final List<Relationship> authored = new ArrayList<>();
         private int commits;
 
         @Override
@@ -775,8 +956,7 @@ class RelationshipRegistrationServiceTest {
 
         @Override
         public List<Relationship> authoredRelationships(PackIdentifier pack) {
-
-            return List.of();
+            return List.copyOf(authored);
         }
 
         @Override

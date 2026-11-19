@@ -1,7 +1,8 @@
 title: RelationshipRegistration
 description: >-
   A relationship edge between two components, as registered on the wire. Identity is the unordered
-  {from, to} pair (ADR-0025/0027): re-registering a pair, in either orientation, replaces it
+  {from, to} pair and its pair class (ADR-0027, ADR-0045 decision 1): re-registering a slot, in either orientation,
+  replaces it, and a tension stands beside the structural relationship of its pair
   (last-write-wins). It is the request body of PUT /packs/{packId}/relationships, the only write of an
   edge (ADR-0064); an artifact registration carries none. As the
   body of PUT /packs/{packId}/relationships it is at most 1 MiB; a larger body is refused 422 validation_failed
@@ -13,7 +14,10 @@ properties:
   from:
     type: string
     maxLength: 255
-    description: The URN <kind>:<id> the relationship is authored from; must resolve within the pack.
+    description: >-
+      The URN <kind>:<id> the relationship is authored from; must resolve within the pack. For a tension whose two
+      sides the pack holds neither of, it may be the pack-qualified <pack-name>::<kind>:<id> of another pack's artifact
+      (ADR-0045 decision 1).
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
       symbol: RelationshipWire.MAX_ENDPOINT_LENGTH

@@ -2,12 +2,18 @@ put:
   operationId: putPackRelationship
   summary: Register a relationship edge in a Charter Pack.
   description: >-
-    Registers a relationship edge, idempotent on the unordered {from, to} pair (FR-009, last-write-wins):
-    re-registering a pair, in either orientation, replaces it. A new pair answers 201 and a replaced one
-    200, each with an ETag revision (ADR-0018 D10 as amended) and a RelationshipRegistered body: the
-    registered edge as relationship, and _links holding artifacts, the list of the pack's artifacts. There
-    is no self link and no Location: this path has no GET. The from endpoint must resolve within the
-    pack (else 409 registration_conflict); to may be external, but a to the compose of the pack cannot
+    Registers a relationship edge, idempotent on its slot: the unordered {from, to} pair and its pair class
+    (FR-009, last-write-wins; ADR-0045 decision 1). Re-registering a slot, in either orientation, replaces
+    it; a tension and the one structural relationship of its pair are two slots, and neither replaces the
+    other. A new slot answers 201 and a replaced one 200, each with an ETag revision (ADR-0018 D10 as amended) and a
+    RelationshipRegistered body: the edge as the request wrote it as relationship, and _links holding artifacts, the
+    list of the pack's artifacts. There is no self link and no Location: this path has no GET. A tension (type
+    tension) is stored in its stored orientation, the side the pack holds as from, and when it holds both sides or
+    neither, the smaller bare URN; its from may be pack-qualified when the pack holds neither side, each side the pack
+    does not hold must resolve as to does, the governance gate judges each side, and a pair another graph document of
+    the pack already joins by a tension is 422 validation_failed with the violation tension_duplicated at /to. For
+    every other relation the from endpoint must resolve within the pack (else 409 registration_conflict); to may be
+    external, but a to the compose of the pack cannot
     resolve is refused before anything is written (422): pack_reference_pack_missing, a qualified to naming
     a pack outside the pack's depends_on closure; pack_reference_unqualified, a bare to that only another
     pack holds; pack_reference_artifact_missing, a qualified to naming an artifact the named pack does not
@@ -34,7 +40,7 @@ put:
           $ref: ../schemas/RelationshipRegistration.yaml
   responses:
     '200':
-      description: The relationship replaced one already registered for the same unordered pair.
+      description: The relationship replaced the one already registered in its slot, the same unordered pair and pair class.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -52,7 +58,7 @@ put:
             requires:
               $ref: ../examples/RelationshipRegistered.requires.yaml
     '201':
-      description: The relationship was registered; no edge was registered for the pair before.
+      description: The relationship was registered; no edge of its pair class was registered for the pair before.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -69,6 +75,8 @@ put:
           examples:
             requires:
               $ref: ../examples/RelationshipRegistered.requires.yaml
+            tension:
+              $ref: ../examples/RelationshipRegistered.tension.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -152,7 +160,8 @@ delete:
   operationId: deletePackRelationship
   summary: Remove one registered relationship edge from a Charter Pack.
   description: >-
-    Removes the edge of the unordered {from, to} pair, only from registered.graph.yaml, the shard putPackRelationship
+    Removes the edge of the unordered {from, to} pair, of the relation the optional relation parameter names or of every
+    pair class when it is absent, only from registered.graph.yaml, the shard putPackRelationship
     writes, and answers 204 with an ETag, the pack's new revision (ADR-0065 D4, FR-006; decision
     DM-01M6TQ62HXYF362GAFS2BZ3PGF). A DELETE never rewrites a file the author wrote. The removed edge is gated as a
     RELATIONSHIP write on its from (409 governance_policy_violation), as a whole-pack replace that drops it is. from and
@@ -196,6 +205,19 @@ delete:
     description: The other end of the pair, spelled as from.
     schema:
       $ref: ../schemas/PackQualifiedReferenceWrite.yaml
+  - name: relation
+    in: query
+    required: false
+    description: >-
+      The relation of the registered edge to remove (ADR-0045 decision 5). A pair holds at most one structural
+      relationship and, beside it, at most one tension, so the removal is judged per pair class. Given, only the
+      registered edge of that relation on the pair goes, and a pair with no registered edge of it is 404
+      relationship_not_found, whatever other edge it holds; the 409 rule judges only edges of that relation. Absent,
+      every registered edge of the pair goes; when an author-written or derived edge of the pair would remain beside a
+      registered one, the answer is 409 relationship_not_registered and its detail names the relation parameter. A
+      token that is no Relation is 400, before the pack is judged.
+    schema:
+      $ref: ../schemas/Relation.yaml
   - $ref: ../parameters/IfMatch.yaml
   responses:
     '204':
