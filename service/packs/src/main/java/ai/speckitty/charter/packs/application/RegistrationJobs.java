@@ -233,13 +233,14 @@ public final class RegistrationJobs implements AutoCloseable {
     }
 
     /**
-     * Where a job's attempt came from, for its audit entry.
+     * Where a job's attempt came from, for its audit entry, and whether it asked for the write or only a dry run of it.
      *
      * @param worktree the worktree identity
      * @param credential what the request carried
      * @param operation the operation
      * @param sourceKind the source kind
      * @param locator the locator with its query cut
+     * @param mode whether the write is made or only judged ({@code dryRun=true}, ADR-0081 D5)
      */
     public record Origin(
             String worktree,
