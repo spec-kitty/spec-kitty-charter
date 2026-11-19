@@ -69,7 +69,8 @@
       "last_event_id": "01M7SPFJQGEYTRNC71N7ZSNS7H",
       "last_transition_at": "2026-11-19T10:43:48.080144+00:00",
       "notes": [
-        "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25"
+        "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25",
+        "Review cycle 1 findings folded in commits 9308057, 6482c34 and f8ed08d (after the reviewer's 548832d); forced because the implement claim could not be re-taken on this single-branch mission. Packs and deployable suites green. WP04 R4-1 awaits the operator ruling."
       ],
       "review": null,
       "review_result": {
