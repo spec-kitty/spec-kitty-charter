@@ -80,16 +80,23 @@ the relationship appear[s] in the domain, the pack files and the contract").
   structural relationship per pair. Beside it, at most one tension per pair (ADR-0028 decision 3).
   `Relationship.samePair` stays the pair test; a new `sameSlot` (pair and class) is the identity
   `RelationshipMerge` replaces on, so a tension never replaces a `requires` on the same pair, nor the reverse.
-- **Stored orientation** (ruling G1 (b), 2026-11-19). A tension is stored with the side its pack owns as `source`.
-  When the pack owns both sides, the lexicographically smaller **bare** URN is the `source` (ADR-0036 decision 4); the
-  pack qualifier is provenance and takes no part in the comparison. So every path that keys on an edge's source (the
-  governance gate, the registration answer, removal, the references listing) stays in the owning pack.
-  - In a pack file, a tension whose `source` the pack does not own, or a reversed tension between two owned sides,
-    refuses the pack (decision 6).
-  - On a registration write (`putPackRelationship` with `type: tension`), the wire's rule holds (`from` in the pack,
-    `to` may be qualified). When both sides are in the pack and `from` is the larger, the service stores the pair the
-    other way round. The answer echoes the request as written. *Open review item:* the pair is unordered in meaning,
-    so the write normalizes rather than refuses.
+- **Stored orientation** (ruling G1 (b), 2026-11-19, extended the same day). A tension is stored with the side its
+  pack owns as `source`. When the pack owns both sides, or neither, the lexicographically smaller **bare** URN is the
+  `source` (ADR-0036 decision 4); the pack qualifier is provenance and takes no part in the comparison. A pack may so
+  declare a tension between two artifacts it holds neither of (two built-in directives, from an org pack).
+  - In a pack file, a tension whose `source` is not the side the pack owns, or a reversed tension between two sides
+    the pack owns or two it owns neither of, refuses the pack (decision 6).
+  - On a registration write (`putPackRelationship` with `type: tension`), `from` may be pack-qualified when the pack
+    owns neither side; otherwise the wire's rule holds (`from` in the pack, `to` may be qualified). The service stores
+    the pair in the stored orientation, the other way round when the request names it reversed. The answer echoes the
+    request as written, so its `from` is a pack-qualified reference for a fully foreign tension. *Open review item:*
+    the pair is unordered in meaning, so the write normalizes rather than refuses.
+  - **The paths that key on a source** (ruling of 2026-11-19): the governance gate judges a tension on each of its
+    sides, not on its source alone; a registered tension goes with an artifact the pack removes, on either side; a
+    tension in another pack that names an artifact is a reference that blocks removing it, as any cross-pack reference
+    does; and the reference reads list a tension under its stored source, so a fully foreign tension is listed by
+    neither of its sides' packs (*open review item*: it is visible in the effective graph and the activation's tensions
+    read).
   - A tension whose two sides have the same bare URN (two versions of one artifact) is refused, at load and on the
     wire.
 - **The reads** answer every tension in canonical order: the smaller bare URN as `source` (decision 8).
@@ -143,8 +150,8 @@ Within one pack, across all its graph documents, each of these is a violation: i
 validation and at registration, and is never corrected by the reader.
 
 - **A second tension on the same unordered pair** (ADR-0028 decision 3's "at most one").
-- **A tension in the wrong orientation**: its `source` is not owned by the pack, or both sides are owned and its
-  `source` is not the smaller bare URN.
+- **A tension in the wrong orientation**: the pack owns one side and the `source` is the other; or the pack owns both
+  sides, or neither, and the `source` is not the smaller bare URN.
 - **A tension of an artifact with itself**: both sides have the same bare URN.
 
 Across packs, two tensions on one pair are not a fault: the merge collapses them (decision 8). charter's example
@@ -221,7 +228,7 @@ force is listed, sorted by URN, whether or not it is delivered to the action bei
 ### 13. What else the relation reaches
 
 - **References.** `listPackArtifactReferences` and `listEffectiveArtifactReferences` answer a tension edge whose
-  source is the artifact, as stored, like any other edge; the stored source is always owned by the pack (decision 1).
+  source is the artifact, as stored, like any other edge (decision 1, the paths that key on a source).
 - **The taxonomy.** `getKindTaxonomy`'s row is `tension`, `heldAs: tension`, `directed: false`, with its `G ↔ G`
   pairs.
 - **Not reached.** The governance walk, the activation cascade and the closure-reach rules do not follow `tension`.
