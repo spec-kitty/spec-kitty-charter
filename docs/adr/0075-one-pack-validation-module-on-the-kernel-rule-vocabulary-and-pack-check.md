@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-18T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554)
+updated: 2026-11-19T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -40,6 +40,10 @@ audience:
 
 **Amendment 2026-11-13** ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/)): decision 2 drops `MissionStepContractIdentifier`, which slice F deletes with its
 kind.
+
+**Status note 2026-11-19** ([#583](https://github.com/spec-kitty/spec-kitty-charter/issues/583)): decision 2's pack id
+rule is now enforced by `PackIdentifier`'s constructor, and the descriptor's `pack_id` has a type of its own; see the
+note under decision 2.
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
@@ -269,6 +273,13 @@ title and description stand, and this amendment governs where they differ.
      the regex `^[a-z0-9][a-z0-9-]{0,62}$` in `PackRegistrationService` and `RegistrationAdmission`, and the contract's
      `PackId.yaml`, `PackSource.yaml` and the two `packs_packId` path parameters, which take the same pattern as the
      rule (`^[a-z0-9]+(-[a-z0-9]+)*$`, `maxLength: 63`).
+     *Status note 2026-11-19 ([#583](https://github.com/spec-kitty/spec-kitty-charter/issues/583)): the pack id and
+     the descriptor's `pack_id` are split. `PackIdentifier` holds only the registered pack id, and its constructor
+     refuses any text that is not `slug(63)` with the rule's detail. The descriptor's `pack_id` is a `PackUlid`, which
+     admits only a ULID, and no code converts one into the other: the configured packs map them. A directory name
+     under the pack domain travels as the storage-local `PackDirectory`, never as a pack id. A stored directory whose
+     name is no pack id is refused on read with the storage code `pack_id_invalid`: it is logged, and it is not listed,
+     configured or served.*
    - **The letter-first types** move to `letterFirstSlug`, because each is letter-first today:
      - `ParadigmIdentifier`, `StyleguideIdentifier`, `MissionStepContractIdentifier` and `ProcedureStep`, which write
        `^[a-z][a-z0-9-]*$` and accept `a--b`;
