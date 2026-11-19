@@ -235,8 +235,8 @@ public class EffectiveBodies {
                 links);
         reference
                 .holder()
-                .ifPresent(holder -> wire.setHoldingPack(
-                        new HoldingPack(holder.packId().value(), holder.descriptorPackId(), holder.name())));
+                .ifPresent(holder -> wire.setHoldingPack(new HoldingPack(
+                        holder.packId().value(), holder.descriptorPackId().value(), holder.name())));
         return wire;
     }
 

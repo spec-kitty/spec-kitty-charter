@@ -171,7 +171,7 @@ class ClosureViewSessionStepRefsTest {
         assertThat(read.overriddenBy()).isEmpty();
 
         ActivationDocument denied = ActivationDocument.builder()
-                .packs(List.of(PackRef.of("main")))
+                .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("T"))
                 .build()
                 .document();

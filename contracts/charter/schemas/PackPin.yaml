@@ -6,9 +6,13 @@ required:
 - packId
 properties:
   packId:
-    allOf:
-    - $ref: Slug.yaml
-    description: The pack's id, as the service's pack registry names it.
+    type: string
+    minLength: 1
+    maxLength: 63
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    description: >-
+      The pack's id, as the service's pack registry names it: a kebab slug of at most 63 characters (ADR-0075
+      decision 2).
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/PackPin/properties/packId'

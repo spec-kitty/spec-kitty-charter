@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -89,6 +90,15 @@ public final class ActivationDocument {
      */
     public Optional<List<PackRef>> packs() {
         return packs;
+    }
+
+    /**
+     * The registered ids of the packs the activation builds on, in merge order: the roots of its closure.
+     *
+     * @return the ids, never empty when present; empty for every configured pack
+     */
+    public Optional<List<PackIdentifier>> packIds() {
+        return packs.map(list -> list.stream().map(PackRef::packId).toList());
     }
 
     /**
@@ -456,7 +466,7 @@ public final class ActivationDocument {
                 throw new IllegalArgumentException("An activation's packs list is absent or not empty.");
             }
             List<PackRef> kept = new ArrayList<>();
-            Set<String> seen = new HashSet<>();
+            Set<PackIdentifier> seen = new HashSet<>();
             for (int i = 0; i < written.size(); i++) {
                 keepOnce(written.get(i), i, seen, kept);
             }
@@ -465,7 +475,7 @@ public final class ActivationDocument {
             return this;
         }
 
-        private void keepOnce(PackRef pack, int index, Set<String> seen, List<PackRef> kept) {
+        private void keepOnce(PackRef pack, int index, Set<PackIdentifier> seen, List<PackRef> kept) {
             if (seen.add(pack.packId())) {
                 kept.add(pack);
                 return;
@@ -473,7 +483,7 @@ public final class ActivationDocument {
             violations.add(new RefusalViolation(
                     "/packs/" + index + "/packId",
                     "duplicate_pack",
-                    "The pack '" + pack.packId() + "' is named more than once."));
+                    "The pack '" + pack.packId().value() + "' is named more than once."));
         }
 
         /**

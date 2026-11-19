@@ -11,7 +11,6 @@ import ai.speckitty.charter.activations.domain.CascadeScope;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
-import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.domain.StaleIds;
@@ -223,9 +222,7 @@ public class ActivationWrites {
      *     with the refusal of the compose
      */
     PacksSession session(StoredActivation stored) {
-        PacksSession session = packs.session(stored.document()
-                .packs()
-                .map(list -> list.stream().map(PackRef::packId).toList()));
+        PacksSession session = packs.session(stored.document().packIds());
         ClosureSnapshot snapshot = session.snapshot();
         if (!snapshot.resolved()) {
             throw CharterRefusal.withViolations(

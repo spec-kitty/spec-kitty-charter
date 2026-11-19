@@ -100,11 +100,9 @@ public class PacksAvailability implements AvailablePacks {
     }
 
     @Override
-    public PacksSession session(Optional<List<String>> packIds) {
-        Optional<List<PackIdentifier>> roots =
-                packIds.map(ids -> ids.stream().map(PackIdentifier::new).toList());
+    public PacksSession session(Optional<List<PackIdentifier>> packIds) {
         try {
-            ClosureView view = closures.snapshot(roots);
+            ClosureView view = closures.snapshot(packIds);
             return new ClosureViewSession(view, snapshotOf(view));
         } catch (UnknownRootException unknownRoot) {
             return new Unresolved(ClosureSnapshot.unresolved(new LinkedHashSet<>(unknownRoot.unknownIds())));
@@ -188,7 +186,7 @@ public class PacksAvailability implements AvailablePacks {
      * @return the snapshot
      */
     static ClosureSnapshot snapshotOf(ClosureView view) {
-        Map<String, String> configuredIdOf = configuredIds(view.packs());
+        Map<PackUlid, PackIdentifier> configuredIdOf = configuredIds(view.packs());
         return new ClosureSnapshot(
                 view.packs().stream()
                         .map(entry -> entryOf(entry, view, configuredIdOf))
@@ -203,7 +201,7 @@ public class PacksAvailability implements AvailablePacks {
     }
 
     private static ClosureSnapshot.PackEntry entryOf(
-            OfferingEntry entry, ClosureView view, Map<String, String> configuredIdOf) {
+            OfferingEntry entry, ClosureView view, Map<PackUlid, PackIdentifier> configuredIdOf) {
         return new ClosureSnapshot.PackEntry(
                 entry.id().value(),
                 entry.descriptorPackId().value(),
@@ -213,41 +211,51 @@ public class PacksAvailability implements AvailablePacks {
                 entry.dependencies().stream()
                         .map(edge -> new ClosureSnapshot.Dependency(edge.to(), edge.range(), edge.version()))
                         .toList(),
-                view.parentOf(entry.descriptorPackId())
-                        .map(PackUlid::value)
-                        .map(parent -> configuredIdOf.getOrDefault(parent, parent)));
+                view.parentOf(entry.descriptorPackId()).map(parent -> configuredId(configuredIdOf, parent)));
     }
 
     /** Each closure pack's descriptor {@code pack_id} with the id it is configured under, the first in closure order. */
-    private static Map<String, String> configuredIds(List<OfferingEntry> packs) {
-        Map<String, String> ids = new HashMap<>();
-        packs.forEach(pack ->
-                ids.putIfAbsent(pack.descriptorPackId().value(), pack.id().value()));
+    private static Map<PackUlid, PackIdentifier> configuredIds(List<OfferingEntry> packs) {
+        Map<PackUlid, PackIdentifier> ids = new HashMap<>();
+        packs.forEach(pack -> ids.putIfAbsent(pack.descriptorPackId(), pack.id()));
         return ids;
     }
 
-    private static Map<String, List<String>> requiredBy(ClosureView view, Map<String, String> configuredIdOf) {
+    /**
+     * The id a closure pack is configured under, by its descriptor {@code pack_id}. A pack the view names is one of its
+     * packs, so no descriptor id stands in for a registered one (#583).
+     */
+    private static String configuredId(Map<PackUlid, PackIdentifier> configuredIdOf, PackUlid descriptorPackId) {
+        PackIdentifier configured = configuredIdOf.get(descriptorPackId);
+        if (configured == null) {
+            throw new IllegalStateException(
+                    "The closure names the pack " + descriptorPackId.value() + ", which it does not list.");
+        }
+        return configured.value();
+    }
+
+    private static Map<String, List<String>> requiredBy(
+            ClosureView view, Map<PackUlid, PackIdentifier> configuredIdOf) {
         Map<String, List<String>> requiredBy = new LinkedHashMap<>();
         view.mergedFloor()
                 .requiredBy()
                 .forEach((urn, packs) -> requiredBy.put(
                         urn.toString(),
                         packs.stream()
-                                .map(pack -> configuredIdOf.getOrDefault(pack, pack))
+                                .map(pack -> configuredId(configuredIdOf, new PackUlid(pack)))
                                 .distinct()
                                 .toList()));
         return requiredBy;
     }
 
     /** The locks of the held URNs: a lock on an id the closure does not hold changes no write. */
-    private static Map<String, String> lockedBy(ClosureView view, Map<String, String> configuredIdOf) {
+    private static Map<String, String> lockedBy(ClosureView view, Map<PackUlid, PackIdentifier> configuredIdOf) {
         Map<String, String> lockedBy = new LinkedHashMap<>();
         for (Urn urn : view.holderOf().keySet()) {
             if (view.isLocked(urn)) {
                 view.lockOf(urn)
                         .setBy()
-                        .map(PackUlid::value)
-                        .ifPresent(pack -> lockedBy.put(urn.toString(), configuredIdOf.getOrDefault(pack, pack)));
+                        .ifPresent(pack -> lockedBy.put(urn.toString(), configuredId(configuredIdOf, pack)));
             }
         }
         return lockedBy;

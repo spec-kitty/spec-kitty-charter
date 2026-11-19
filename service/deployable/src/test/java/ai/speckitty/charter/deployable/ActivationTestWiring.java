@@ -17,6 +17,7 @@ import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
@@ -81,7 +82,7 @@ public class ActivationTestWiring {
         }
 
         @Override
-        public PacksSession session(Optional<List<String>> packIds) {
+        public PacksSession session(Optional<List<PackIdentifier>> packIds) {
             reads.incrementAndGet();
             ClosureSnapshot snapshot = fixture(fingerprint);
             return new FixtureSession(snapshot);

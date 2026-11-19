@@ -9,6 +9,7 @@ import ai.speckitty.charter.activations.domain.Jcs;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,8 @@ class ActivationFileCodecTest {
     /** A document with every member: pinned and unpinned packs, both list objects, mission types and {@code []} languages. */
     private static ActivationDocument everyMember() {
         return ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("zeta", "2.0.0"), PackRef.of("alpha")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("zeta"), "2.0.0"), PackRef.of(new PackIdentifier("alpha"))))
                 .languages(List.of())
                 .selected(ArtifactKind.TACTIC, List.of("b-tactic", "a-tactic"))
                 .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev", "research"))

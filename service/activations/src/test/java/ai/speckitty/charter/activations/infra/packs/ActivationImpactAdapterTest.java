@@ -76,7 +76,9 @@ class ActivationImpactAdapterTest {
     @Test
     void eachStoredActivationGivesItsPacksInTheOrderWrittenAndOneWithNoneGivesEmpty() {
         InMemoryActivationRepository repository = new InMemoryActivationRepository();
-        repository.create(new ActivationId("one"), listing(PackRef.of("beta"), PackRef.pinned("alpha", "1.2")));
+        repository.create(
+                new ActivationId("one"),
+                listing(PackRef.of(new PackIdentifier("beta")), PackRef.pinned(new PackIdentifier("alpha"), "1.2")));
         repository.create(new ActivationId("two"), listingNone());
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
@@ -86,7 +88,7 @@ class ActivationImpactAdapterTest {
     @Test
     void theFileStoreIsListedToo(@TempDir Path root) {
         FileActivationRepository repository = new FileActivationRepository(root.resolve("activations"));
-        repository.create(new ActivationId("file-one"), listing(PackRef.of("main")));
+        repository.create(new ActivationId("file-one"), listing(PackRef.of(new PackIdentifier("main"))));
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
                 .containsExactly(Optional.of(List.of("main")));

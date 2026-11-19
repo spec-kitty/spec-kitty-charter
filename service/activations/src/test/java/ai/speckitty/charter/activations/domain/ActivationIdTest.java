@@ -3,6 +3,7 @@ package ai.speckitty.charter.activations.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,14 +44,34 @@ class ActivationIdTest {
     }
 
     @Test
-    void packRefKeepsItsSlugAndOptionalPin() {
-        assertThat(PackRef.of("built-in")).isEqualTo(new PackRef("built-in", Optional.empty()));
-        assertThat(PackRef.pinned("org_a", "1.2.0").version()).contains("1.2.0");
-        assertThat(PackRef.pinned("org_a", "1.2.0")).isNotEqualTo(PackRef.of("org_a"));
-        assertThatThrownBy(() -> PackRef.of("Built-In")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> PackRef.of("-x")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> PackRef.of("x".repeat(65))).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> PackRef.pinned("x", " ")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> PackRef.pinned("x", "1".repeat(65))).isInstanceOf(IllegalArgumentException.class);
+    void packRefKeepsItsPackIdAndOptionalPin() {
+        PackIdentifier builtIn = new PackIdentifier("built-in");
+        PackIdentifier orgA = new PackIdentifier("org-a");
+        assertThat(PackRef.of(builtIn)).isEqualTo(new PackRef(builtIn, Optional.empty()));
+        assertThat(PackRef.pinned(orgA, "1.2.0").version()).contains("1.2.0");
+        assertThat(PackRef.pinned(orgA, "1.2.0")).isNotEqualTo(PackRef.of(orgA));
+        assertThat(PackRef.of(new PackIdentifier("x".repeat(PackIdentifier.MAX_LENGTH)))
+                        .packId()
+                        .value())
+                .hasSize(PackIdentifier.MAX_LENGTH);
+        PackIdentifier x = new PackIdentifier("x");
+        assertThatThrownBy(() -> PackRef.pinned(x, " ")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> PackRef.pinned(x, "1".repeat(65))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** #583, D7: a pin names a pack by the pack id grammar, so it names no pack that cannot be registered. */
+    @ParameterizedTest
+    @ValueSource(strings = {"org_a", "Built-In", "-x", "a--b"})
+    void aPackRefRefusesAnIdOutsideThePackIdGrammar(String id) {
+        PackIdentifier notAPackId = new PackIdentifier(id);
+        assertThatThrownBy(() -> PackRef.of(notAPackId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(id);
+    }
+
+    @Test
+    void aPackRefRefusesAnIdOfSixtyFourCharacters() {
+        PackIdentifier tooLong = new PackIdentifier("x".repeat(PackIdentifier.MAX_LENGTH + 1));
+        assertThatThrownBy(() -> PackRef.of(tooLong)).isInstanceOf(IllegalArgumentException.class);
     }
 }

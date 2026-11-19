@@ -22,7 +22,6 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
-import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -1411,9 +1410,7 @@ public class EffectiveReadService {
 
     /** One verified read of the closure the document names, refused when a pack it names is no longer configured. */
     private PacksSession open(StoredActivation stored) {
-        PacksSession session = packs.session(stored.document()
-                .packs()
-                .map(list -> list.stream().map(PackRef::packId).toList()));
+        PacksSession session = packs.session(stored.document().packIds());
         if (!session.snapshot().resolved()) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,

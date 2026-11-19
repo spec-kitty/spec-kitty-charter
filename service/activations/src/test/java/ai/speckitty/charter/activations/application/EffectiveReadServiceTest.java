@@ -41,6 +41,7 @@ import ai.speckitty.charter.activations.infra.storage.InMemoryActivationReposito
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -86,7 +87,7 @@ class EffectiveReadServiceTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("main")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                                 .selected(ArtifactKind.DIRECTIVE, List.of("A"))
                                 .selected(ArtifactKind.TACTIC, List.of("t1"))
                                 .deactivated(ArtifactKind.DIRECTIVE, List.of("C"))
@@ -263,7 +264,7 @@ class EffectiveReadServiceTest {
                 ID,
                 Optional.of(stored.revision()),
                 ActivationDocument.builder()
-                        .packs(List.of(PackRef.of("main")))
+                        .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                         .build()
                         .document());
 
@@ -308,7 +309,7 @@ class EffectiveReadServiceTest {
         page(everything());
 
         assertThat(packs.calls()).as("E19: one verified read").isEqualTo(1);
-        assertThat(packs.lastRoots()).contains(List.of("main"));
+        assertThat(packs.lastRoots()).contains(List.of(new PackIdentifier("main")));
         assertThat(packs.merges()).isEqualTo(1);
         assertThat(packs.queries()).hasSize(1);
         assertThat(packs.queries().getFirst().selected()).containsExactlyInAnyOrder(A, T1);

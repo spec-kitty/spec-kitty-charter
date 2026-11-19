@@ -5,6 +5,8 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.Jcs;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,7 +78,7 @@ final class ActivationFileCodec {
             Map<String, @Nullable Object> tree = object(MAPPER.readValue(bytes, Object.class), Set.of());
             versionOne = integer(tree.get("schemaVersion")) == VERSION_ONE;
             built = versionOne ? upgrade(tree) : build(tree);
-        } catch (JacksonException | IllegalArgumentException e) {
+        } catch (JacksonException | IllegalArgumentException | ConstraintBreachException e) {
             throw new ActivationStorageException(id, "is not an activation document", e);
         }
         if (!built.violations().isEmpty()) {
@@ -142,7 +144,7 @@ final class ActivationFileCodec {
         Map<String, @Nullable Object> pack = object(parsed, PACK_MEMBERS);
         Optional<String> version =
                 pack.containsKey("version") ? Optional.of(string(pack.get("version"))) : Optional.empty();
-        return new PackRef(string(pack.get("packId")), version);
+        return new PackRef(new PackIdentifier(string(pack.get("packId"))), version);
     }
 
     private static ArtifactKind kind(String token) {
