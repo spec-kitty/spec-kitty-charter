@@ -1,6 +1,6 @@
 ---
 work_package_id: WP04
-title: 'Closure and edge indexes key by PackUlid; typed refusal pack'
+title: Closure and edge indexes key by PackUlid; typed refusal pack
 dependencies:
 - WP03
 requirement_refs:
@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: feat/583-pack-id-split
 merge_target_branch: feat/583-pack-id-split
 branch_strategy: Planning artifacts for this mission were generated on feat/583-pack-id-split. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/583-pack-id-split unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-pack-id-split-01M7SS5G
+base_commit: 9845369bbe2f56d609f090965dd924044011ff5b
+created_at: '2026-11-19T15:33:40.332093+00:00'
 subtasks:
 - T014
 - T015
