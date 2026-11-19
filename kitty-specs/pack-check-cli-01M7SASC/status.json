@@ -20,9 +20,9 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -30,7 +30,8 @@
       "last_transition_at": "2026-11-19T10:44:04.195252+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: links refused on every surface (D1, D6, #597); verifyAll green with -PrequireSymlinks=true. No contract scenario: every registration stager refuses a link before the reader."
+        "Ready for review: links refused on every surface (D1, D6, #597); verifyAll green with -PrequireSymlinks=true. No contract scenario: every registration stager refuses a link before the reader.",
+        "Review cycle 1 folded: items 1-7 fixed, each with a test red before the fix; verifyAll green with -PrequireSymlinks=true."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
