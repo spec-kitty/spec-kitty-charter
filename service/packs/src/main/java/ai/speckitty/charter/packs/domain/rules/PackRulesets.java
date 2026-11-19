@@ -3,7 +3,9 @@ package ai.speckitty.charter.packs.domain.rules;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * The named compositions of the content rules and of {@code CLOSURE} (#554, FR-002, FR-003, S1 to S3): each surface runs a composition by its name,
@@ -53,5 +55,19 @@ public final class PackRulesets {
      */
     public static ModularRuleset<List<PackUnderResolution>> closure() {
         return CompositionRules.closure();
+    }
+
+    /**
+     * {@code CLOSURE} with its preset phase ({@link CompositionRules#presets}): the set check pack-check runs (#478), so
+     * pack-check names one composition and defines no rule of its own. The preset phase judges the packs in merge order,
+     * so the answer does not depend on the order the packs are given in. The closure walk's checks (#556) extend it
+     * here. The service paths that judge presets elsewhere keep {@link #closure()}.
+     *
+     * @param presetIdsOf the ids of the presets a pack holds
+     * @return the composition
+     */
+    public static ModularRuleset<List<PackUnderResolution>> closure(
+            Function<PackUnderResolution, Collection<String>> presetIdsOf) {
+        return closure().must(CompositionRules.presets(presetIdsOf));
     }
 }
