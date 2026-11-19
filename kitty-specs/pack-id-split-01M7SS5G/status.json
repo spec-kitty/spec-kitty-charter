@@ -1,7 +1,7 @@
 {
-  "event_count": 35,
-  "last_event_id": "01M7TAF0YWP58AM6C8ZP2FC56A",
-  "materialized_at": "2026-11-19T16:33:01.404290+00:00",
+  "event_count": 36,
+  "last_event_id": "01M7TBAY103B060492CSZ48SFR",
+  "materialized_at": "2026-11-19T16:48:15.904826+00:00",
   "mission_number": "",
   "mission_slug": "pack-id-split-01M7SS5G",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -159,15 +159,15 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M7TAF0YWP58AM6C8ZP2FC56A",
-      "last_transition_at": "2026-11-19T16:33:01.404290+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7TBAY103B060492CSZ48SFR",
+      "last_transition_at": "2026-11-19T16:48:15.904826+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Consumers typed (AvailablePacks by PackIdentifier, PacksAvailability keyed by PackUlid, ReferenceReads Holder PackUlid); PackCheck.validate(PackIdentifier, Optional<PackLevel>, Path) + no-id overload; PackRef wraps PackIdentifier; PackPin.packId pack id grammar in both schemas (parity tests pass) + ### Breaking fragment, corpus examples and scenario outline. test (all) + :contracts:check (full clone, baseline compared) green on lane-e 5d9506c."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": 24510,
       "shell_pid_created_at": "1795105262.24",
       "subtasks": {
