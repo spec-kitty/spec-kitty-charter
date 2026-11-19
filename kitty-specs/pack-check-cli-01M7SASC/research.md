@@ -119,3 +119,41 @@
 
 The charter requires an adversarial squad at the plan point, because this changes the contract and the architecture.
 Its findings and their dispositions are appended below once it reports.
+
+### Plan-point squad (2026-11-19): architect-alphonso, java-jenny, reviewer-renata
+
+All three returned **PLAN SOUND WITH CHANGES**. Each finding is dispositioned below: **A** accepted as recommended,
+**C** accepted with a change, **R** put to the orchestrator for a ruling.
+
+| # | Lens | Sev | Finding | Disposition |
+|---|---|---|---|---|
+| S1 | arch | HIGH | `PackFactsReading` adds a second read; the one read's `StoreRead` already yields the facts | **A.** No new port. `PackReadout` gains `facts`: a sealed `Built(PackCompositionFacts)` or `Unreadable(code, detail)`, computed in `FileSystemPackInspector.read` by `CompositionFactsBuilder.composeFacts(id, one.store())`. The preset ids come from `facts.presets()`. R4 is superseded |
+| S2 | arch + renata | HIGH | The link's target is read before it is refused, and the configured-directory load never judges links | **R (D6).** Recommend: the walk drops links from `regular` (nothing reads through a link), and the store half states `pack_entry_linked`. A jar test plants links to a marker file and asserts the marker is in neither stdout nor stderr |
+| S3 | arch | MED | The CLI rebuilds `PackRefusals.of` with other wording | **A.** The Rationale→`CharterRefusal` mapping moves to `packs.domain` (it names only `PackCodes` and the kernel). `PackRefusals` and the CLI both call it. The deployable test compares the whole problem for one fixture per code family |
+| S4 | arch | MED | The preset phase sits outside `PackRulesets` | **A.** `PackRulesets.closure(presetIdsOf)` = `closure().must(presets)`. `PackSetCheck` calls only that |
+| S5 | arch | MED | The exemption names three adapters | **A.** `PackCheckMain` is named by FQCN. It may name `FileSystemPackInspector` and `PackRoundTrip`, with a known-good control, and the ADR-0075 note records `PackRoundTrip` |
+| S6 | arch | LOW | The port signature gives the name and level twice | **A.** Folded into S1 (no port) |
+| S7 | arch | LOW | #174 root link, and a link to a directory inside the pack | **A.** Both get a test |
+| S8 | renata | HIGH | `CLOSURE` over a set that does not hold a pack's dependencies | **R (D5).** Recommend: always run over the set as given; US1 reworded; the docs say to pass the dependencies. An acceptance test uses a dependent pack |
+| S9 | renata | MED | Stricter than the deployment | **R.** Folded into D6 |
+| S10 | renata | MED | D3 under-specified (other refusal codes, `IllegalStateException` on `Assembly.None`) | **A.** `Unreadable` carries any `CharterRefusal` code. `Assembly.None` maps to `Unreadable(pack_unreadable)`. When the pack has no `PACK` problem, the refusal becomes that pack's problem; it is never duplicated. Each branch gets a test |
+| S11 | renata | MED | NFR-003 is tautological | **C.** NFR-003 is reworded: every planted golden subject runs through `PackCheckMain`'s output and is compared with registration's codes (`surfaces.json`) |
+| S12 | renata | MED | FR-009 has no test | **C.** It is verified by inventory: no `pack-validation` type is CLI-only. Recorded in the WP and the PR; the row is marked `folded` |
+| S13 | renata | MED | FR-012 cannot be accepted inside the mission; step 5 is missing | **A.** FR-012 becomes a post-merge follow-through: the version PR, then the `service-native` dispatch at the merge commit, then the tag for the operator, then the next `-SNAPSHOT` PR. Evidence is the PR and run URLs. The rc.2 notes say the contract is unreleased |
+| S14 | renata | MED | `packs[].level` can be unknown | **A.** `level` is optional in the schema: absent when not given and `pack.yaml` declares none that can be read. It gets a test |
+| S15 | renata | LOW | "I/O error mid-run: exit 2" contradicts the reader | **A.** Exit 2 only for failures outside a pack read (arguments, missing directory, writing output) |
+| S16 | renata | LOW | SC-004 wording | **A.** Reworded: one code for a staged tree and a local directory; real uploads are refused earlier (`ENTRY_TYPE`, `PATH_REFUSED`) |
+| S17 | renata | LOW | Hard links, Windows junctions, TOCTOU | **A.** Documented on the pack-author page; out of D1's scope |
+| S18 | renata | LOW | pack-check allowlist, jar-entry checks, duplicate `--pack` by `toRealPath` | **A.** Folded into IC-04 and IC-06 |
+| J1 | jenny | HIGH | The SLF4J NOP service file in `main` resources breaks deployable's Logback tests | **A.** The service file is generated into a build directory and added only to the fat jar |
+| J2 | jenny | HIGH | R7's claim about core's extras is unproven | **A, settled by evidence.** Core's `src/specify_cli/services/vendor.py` (spec-kitty `4890242`), `map_assets`, maps `SHA256SUMS` names by exact match. Anything else is ignored and listed back; extras are only the `*.tar.gz` stems. The ADR-0046 amendment cites it |
+| J3 | jenny | HIGH | The jar test runs only the success path | **A.** `jarTest` runs the jar for valid, pack fault, composition fault, planted link, schema-invalid file and usage error, each with `--round-trip` where it applies. It asserts the exit code, the schema-valid stdout and an empty stderr (warnings are asserted where expected). It uses the toolchain's `javaLauncher`, a cleared `JAVA_TOOL_OPTIONS`/`JDK_JAVA_OPTIONS`/`CLASSPATH`, a temporary working directory, and the jar as an input |
+| J4 | jenny | MED | The jar-entry deny list is incomplete | **A.** It refuses `org/springframework/`, `org/apache/tomcat/`, `jakarta/`, `ch/qos/logback/`, `ai/speckitty/charter/api/`, `ai/speckitty/charter/web/`, the resolver service and `module-info.class`, and asserts `Multi-Release: true` |
+| J5 | jenny | MED | A group exclude drops the BOM and shifts versions | **A.** Exclude by module (`spring-boot-starter-webmvc`, `:web-transport`, `:charter-api`) on a jar configuration that resolves consistently with `runtimeClasspath`. A test asserts the jar's library versions equal `runtimeClasspath`'s |
+| J6 | jenny | MED | The allowlist never judges a new configuration | **A.** `enforceOn` judges the jar configuration too (build-logic change), or the jar is built from `runtimeClasspath` with the excludes; the WP picks one and tests it |
+| J7 | jenny | MED | The fat jar and the thin jar write the same path | **A.** The fat jar gets its own `destinationDirectory` (`build/pack-check/`) |
+| J8 | jenny | MED | Licence relocation | **A.** A configuration-cache-safe task relocates each artifact's licence files. The texts of re2j, json-schema-validator, itu and snakeyaml-engine are checked in. The build fails if an artifact has no licence. Source `MANIFEST.MF` files are excluded |
+| J9 | jenny | MED | No mutation floor for the CLI | **A.** `charter.mutation-conventions` is applied to `pack-check` with a floor measured on the new code; `jarTest` stays out of PIT |
+| J10 | jenny | MED | `verifyAll` must run the jar test; no timing in `check` | **A.** A tagged `Test` task over the `test` source set, wired into `check`. NFR-002's 20 s is timed in the CI jar job only |
+| J11 | jenny | LOW | Release scripts and notes | **A.** Folded into IC-07; a refused case without the pack-check jar; the release notes name both jars |
+| J12 | jenny | LOW | Reproducibility | **A.** Gradle 9.8.1's reproducible-archive defaults are kept, and a byte-identical check on two builds goes in `jarTest` |

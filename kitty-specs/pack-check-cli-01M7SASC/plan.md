@@ -9,8 +9,8 @@
 `service/pack-check` becomes a runnable, Spring-free jar: a thin `main` over `pack-validation`.
 
 - **Per pack** it runs validate mode (`PackCheck`) through the one reader (`FileSystemPackInspector`).
-- **Over the set** it runs `CLOSURE` (`PackRulesets.closure()` plus the preset phase) on facts that a new public
-  adapter builds through `CompositionFactsBuilder.underResolution`.
+- **Over the set** it runs `CLOSURE` (`PackRulesets.closure(presetIdsOf)`) on the facts the one read already
+  carries.
 - **With `--round-trip`** it runs `PackRoundTrip` and `WholePackRoundTripRule` with no baseline.
 - **Output.** It writes a `PackCheckReport` (an additive contract schema) whose problems are the API's own, and exits
   `0`, `1` or `2`.
@@ -89,8 +89,8 @@ service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/
     ├── PackCheck.java                            # gains check(root) → readout + verdict; validate delegates
     └── set/PackSetCheck.java, PackSetVerdict.java # per-pack PackCheck, then CLOSURE + presets, D3 skip
 service/packs/src/main/java/ai/speckitty/charter/packs/
-    ├── domain/PackFactsReading.java              # port: PackUnderResolution of a configured pack root
-    ├── infra/storage/FileSystemPackFactsReader.java  # public adapter over CompositionFactsBuilder.underResolution
+    ├── domain/PackReadout.java                   # gains Facts (Built | Unreadable), filled by the one read
+    ├── domain/PackRefusalMapping (moved from application.PackRefusals)
     └── infra/storage/rules/LinkRules.java (+ StorageCodes.PACK_ENTRY_LINKED)   # D1
 service/deployable/src/test/.../HexagonalArchitectureTest.java   # PackCheckMain may name the adapters; controls
 contracts/charter/schemas/PackCheckReport.yaml (+ CharterRefusalCode docs, changes/, CHANGELOG)
@@ -123,24 +123,33 @@ None.
   - contract: `CharterRefusalCode.yaml` docs, a `changes/` fragment, CHANGELOG `### Breaking`, and the
     `whole-pack-registration.feature` scenario;
   - an open-packs draft issue in `research/` (its Python mirror).
+  - `PackFileSet.walk` drops links from `regular` (D6), so no read on any surface follows a link; the store half
+    states `pack_entry_linked` (D6 A), so the configured load refuses the pack too.
 - **Sequencing/depends-on**: none
 - **Risks**:
-  - A pack root that is itself a link must still read (#174); a test pins it.
-  - The followed file is still read today, so the reader must not also emit a second finding (e.g. `file_not_held`) at
-    the same path. Precedence goes to the link code (R2: the specific code wins).
+  - A pack root that is itself a link must still read (#174); a test pins it, and a link to a directory inside the
+    pack too.
+  - Service behaviour changes for a configured pack holding a link (D6): check open-packs and `packs/` for committed
+    symlinks before landing.
+  - Once the walk drops links, no other finding can arise at a link's path, so no precedence filter is needed (S2).
 
-### IC-02 — The facts port and its public adapter
+### IC-02 — The facts ride on the one read (squad S1)
 
-- **Purpose**: let the validation edge build each pack's composition facts without naming storage.
-- **Relevant requirements**: FR-003
+- **Purpose**: let the validation edge get each pack's composition facts from the read it already made, with no new
+  port and no second read.
+- **Relevant requirements**: FR-003, FR-007
 - **Affected surfaces**:
-  - `packs.domain.PackFactsReading`;
-  - `packs.infra.storage.FileSystemPackFactsReader` (public, delegating to the package-private
-    `CompositionFactsBuilder.underResolution`);
-  - `CompositionFactsBuilderTest`, kept on the adapter.
+  - `packs.domain.PackReadout` gains `facts`, a sealed `PackReadout.Facts`: `Built(PackCompositionFacts)` or
+    `Unreadable(RefusalCode, detail)`;
+  - `FileSystemPackInspector.read` fills it with `CompositionFactsBuilder.composeFacts(id, one.store())`, catching the
+    builder's `CharterRefusal`, and mapping `Assembly.None` to `pack_unreadable`;
+  - every `PackReadout` construction site (tests, registration);
+  - `CompositionFactsBuilderTest` keeps pinning the facts.
 - **Sequencing/depends-on**: none
-- **Risks**: the adapter must refuse an unreadable pack with `pack_unreadable`, unchanged, so D3 can catch it as a
-  value, not an exception that escapes as exit 2.
+- **Risks**:
+  - Registration now computes facts it ignores: a cost on every upload, measured against the registration budget
+    tests.
+  - Alternatively, compute them lazily (a memoized supplier) if the budget moves.
 
 ### IC-03 — The pack-set check in pack-validation
 
@@ -152,10 +161,12 @@ None.
   - `packvalidation.set` holds `PackSetCheck` and `PackSetVerdict`;
   - the round-trip step (temporary target, deleted after);
   - mutation floor group `pack-validation`.
+  - `PackRulesets.closure(presetIdsOf)` (= `closure().must(CompositionRules.presets(...))`, squad S4), the one
+    definition of `CLOSURE` the CLI runs.
 - **Sequencing/depends-on**: IC-02
 - **Risks**:
-  - Set mode reads each pack twice: once through the one reader, once through the facts builder's `StoreRead`. That
-    is accepted and recorded as the known limit tied to AA1 (single-parse unification).
+  - D5: `CLOSURE` runs over the set as given, so a dependent pack is checked with its dependencies; an acceptance test
+    uses a dependent pack.
   - #556 later extends `CLOSURE` in `PackRulesets`, with no change here.
 
 ### IC-04 — The CLI module: main, arguments, report, problems, exit codes
@@ -164,12 +175,17 @@ None.
 - **Relevant requirements**: FR-001, FR-005, FR-006, FR-009, edge cases
 - **Affected surfaces**:
   - `service/pack-check` main and tests, and its `build.gradle.kts` (the javadoc skip block goes);
-  - `HexagonalArchitectureTest`: `PackCheckMain` alone may name `FileSystemPackInspector`, `FileSystemPackFactsReader`
-    and `PackRoundTrip`, with a known-good control that another `packcheck` class still may not.
+  - `HexagonalArchitectureTest`: `PackCheckMain` alone (by FQCN) may name `FileSystemPackInspector` and
+    `PackRoundTrip`, with a known-good control that another `packcheck` class still may not (S5);
+  - the Rationale→`CharterRefusal` mapping moves from `packs.application.PackRefusals` to `packs.domain`, and both
+    surfaces call it (S3);
+  - `pack-check`'s `ModuleDependencyAllowlist` gains `:packs`; duplicate `--pack` is detected by `toRealPath`;
+  - `charter.mutation-conventions` with a measured floor (J9).
 - **Sequencing/depends-on**: IC-03
 - **Risks**:
-  - The problem's title, status and left-out wording must equal `RefusalHandler`'s for the registration operation. A
-    deployable test compares them code by code (the decision 9 contract test).
+  - The problem must equal what `RefusalHandler` renders for `getPackRegistration`. A deployable test compares the
+    whole problem for one fixture per code family, and title and status for every code the CLI can emit (the decision
+    9 contract test).
   - Status per code is a small table in the CLI, pinned by that test.
 
 ### IC-05 — The report schema and its contract test
@@ -190,20 +206,30 @@ None.
 
 ### IC-06 — The Spring-free jar and its proof
 
-- **Purpose**: build `pack-check-<version>.jar` as one runnable file without Spring, and prove it runs.
+- **Purpose**: build `pack-check-<version>.jar` as one runnable file without Spring, and prove it runs on every path.
 - **Relevant requirements**: NFR-001, NFR-002, NFR-004, US4
 - **Affected surfaces**:
-  - `service/pack-check/build.gradle.kts`: a runtime classpath that excludes the Spring, Tomcat, Jakarta,
-    web-transport and charter-api modules `:packs` brings, and a fat `Jar` task built from it;
-  - the jar's settings: `Main-Class`, `Multi-Release: true`, no `module-info.class`, `:packs`' `InetAddressResolver`
-    service left out, dependency licences kept under `META-INF/licenses/<artifact>/`, and duplicates failing the
-    build;
-  - a `jarTest` that runs `java -jar` in a child JVM over the example packs and asserts no `org/springframework` entry
-    in the jar.
+  - `service/pack-check/build.gradle.kts`: a jar configuration that excludes by module (`spring-boot-starter-webmvc`,
+    `:web-transport`, `:charter-api`) and resolves consistently with `runtimeClasspath`, judged by the allowlist (J5,
+    J6);
+  - a `Jar` task writing to `build/pack-check/` (J7), with:
+    - `Main-Class` and `Multi-Release: true`;
+    - no `module-info.class`, no `:packs` resolver service, no source `MANIFEST.MF`;
+    - the generated SLF4J NOP service file, added only here (J1);
+    - licences relocated per artifact by a configuration-cache-safe task, with checked-in texts for re2j,
+      json-schema-validator, itu and snakeyaml-engine, failing when one is missing (J8);
+    - `DuplicatesStrategy.FAIL`;
+  - a tagged `jarTest` (`Test` over the `test` source set, wired into `check`) that runs the jar with the toolchain
+    launcher in a clean environment (J3, J10):
+    - for a valid set, a pack fault, a composition fault, a planted link, a schema-invalid file and a usage error, with
+      `--round-trip` where it applies;
+    - asserting the exit code, the schema-valid stdout and an empty stderr (or the expected warnings);
+    - with a marker-file test for links (S2);
+    - with the jar-entry deny list (J4) and a byte-identical double build (J12).
 - **Sequencing/depends-on**: IC-04
 - **Risks**:
-  - A class reached only reflectively from an excluded module fails at run time only. The jar test over every example
-    pack, with `--round-trip`, is the guard.
+  - A class reached only reflectively from an excluded module fails at run time only. The failure-path runs are the
+    guard.
 
 ### IC-07 — Release wiring and the ADRs
 
@@ -219,5 +245,6 @@ None.
   - the release PR for `service-v0.1.0-rc.2` after this merges (D4).
 - **Sequencing/depends-on**: IC-06
 - **Risks**:
-  - `SHA256SUMS` gains a sixth line. Core's pin reads it with `--ignore-missing` (ADR-0046 decision 6), but its parser
-    is in core; research.md R7 records the check.
+  - `SHA256SUMS` gains a sixth line. Core's vendor ignores names it does not map (J2, evidence in research.md).
+  - FR-012 is a post-merge follow-through (S13): the version PR, then the native dispatch, then the operator's tag,
+    then the `-SNAPSHOT` PR.

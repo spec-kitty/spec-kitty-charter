@@ -32,7 +32,8 @@ packs domain), with no Spring on its runtime classpath.
 
 ### User Story 1 - Check one pack on my machine (Priority: P1)
 
-A pack author runs `pack-check --pack ./my-pack:org` and learns whether the registration would accept the pack.
+A pack author runs `pack-check --pack ./my-pack:org` (with the packs it depends on, as further `--pack`) and learns
+whether the registration would accept the pack.
 
 **Why this priority**: it is the smallest useful slice, and every other story builds on the same entry.
 
@@ -124,7 +125,11 @@ registration alike (D1; folds #597).
 - A config root with no `packs/` directory, or an empty one: exit `2` (nothing to check is a usage fault, not a pass).
 - More than 100 violations in one pack: the problem lists the first 100 and its detail counts the rest, as the API does.
 - `--pack <dir>` with no level: the level the pack's `pack.yaml` declares, as `--config-root` uses.
-- A pack read throws an unexpected I/O error mid-run: exit `2`, never a partial report with exit `0`.
+- A pack that cannot be read is a `pack_unreadable` violation (exit `1`); exit `2` is for failures outside a pack read
+  (writing the output, the round trip's temporary directory), never a partial report with exit `0`.
+- A dependent pack checked without its dependencies: `pack_dependency_unknown` (exit `1`); pass the dependencies (D5).
+- `--pack <dir>` with no level and no readable declared level: the pack's entry has no `level`, and its fault is
+  reported.
 - Two `--pack` entries resolving to the same directory: exit `2`.
 
 ## Requirements *(mandatory)*
@@ -141,10 +146,10 @@ registration alike (D1; folds #597).
 | FR-006 | Exit codes: `0` valid (warnings allowed), `1` any violation, `2` usage or I/O failure; warnings go to standard error | #478 | Proposed | build | no |
 | FR-007 | When a pack cannot be read into composition facts, `CLOSURE` does not run and the report says so (D3) | #478 | Proposed | build | no |
 | FR-008 | A symbolic link inside a pack root is refused by the one reader with one violation code, so `pack-check` and registration refuse it alike (D1) | #478, #597 | Ruled (D1) | build | no |
-| FR-009 | Whatever `pack-validation` holds for the CLI alone lives in `pack-check`; the jar carries no second copy of a check | #478 | Proposed | build | no |
+| FR-009 | Whatever `pack-validation` holds for the CLI alone lives in `pack-check`; the jar carries no second copy of a check (verified by inventory: no `pack-validation` type is CLI-only) | #478 | Proposed | folded | yes |
 | FR-010 | The release assembles `pack-check-<version>.jar` with its `.sha256`, lists it in `SHA256SUMS` and attests it; the rehearsal script and the asset-set check expect it | #478 | Proposed | build | no |
 | FR-011 | ADR-0046 is amended (the asset set gains the pack-check jar) and ADR-0075 records #478's landing; the service-build guide and a pack-author page document the CLI | #478 | Proposed | build | no |
-| FR-012 | The first release carrying the jar is prepared up to the tag (D4): the version PR and the native dispatch; the operator pushes the tag | #478 | Proposed | build | no |
+| FR-012 | Post-merge follow-through (D4): the `0.1.0-rc.2` version PR, the `service-native` dispatch at its merge commit, the tag and commit handed to the operator, then the next `-SNAPSHOT` PR; evidence is the PR and run URLs | #478 | Proposed | build | no |
 
 ### Non-Functional Requirements
 
@@ -152,7 +157,7 @@ registration alike (D1; folds #597).
 |----|-------------|-----------|--------|
 | NFR-001 | Spring-free runtime | The jar and its runtime classpath hold zero `org.springframework`, `org.apache.tomcat` or `jakarta.servlet` classes; a test runs the built jar on that classpath | Proposed |
 | NFR-002 | Speed on a pack author's machine | Checking all of charter's example packs as a set, with `--round-trip`, completes in under 20 s wall time on a CI runner (the service route takes about 6 min including the build) | Proposed |
-| NFR-003 | Parity with registration | For every golden subject of validate mode, the codes `pack-check` reports equal those `PackCheck` reports in-process: 100 % of subjects | Proposed |
+| NFR-003 | Parity with registration | For every planted golden subject, the codes in `PackCheckMain`'s report equal the registration's codes recorded in `surfaces.json`: 100 % of subjects | Proposed |
 | NFR-004 | Jar size | The jar is under 40 MB | Proposed |
 | NFR-005 | Gates | `./gradlew verifyAll` on Java 25 passes, with the ArchUnit gate, the mutation floors of the touched modules and the docs checks | Proposed |
 
@@ -176,7 +181,8 @@ registration alike (D1; folds #597).
   — ratchet · no-op passable: no
 - SC-003: The published jar verifies with `sha256sum --check --ignore-missing SHA256SUMS` and `gh attestation verify`
   — build · no-op passable: no
-- SC-004: A linked descriptor is refused on both surfaces with one code — build · no-op passable: no
+- SC-004: A link inside a pack is refused with one code by `pack-check`, by a registration of a staged tree and by the
+  service's load of a configured pack; real uploads are refused earlier by their stagers — build · no-op passable: no
 
 ## Key Entities
 
@@ -203,6 +209,11 @@ registration alike (D1; folds #597).
   unreadable pack is a violation (exit 1).
 - **D4 (A):** the first release with the jar is `service-v0.1.0-rc.2`, through a small release PR after the mission;
   the orchestrator is told the tag and commit once the native run is green.
+
+- **D5 (A, proceeding on the recommendation pending the orchestrator):** `CLOSURE` runs over the set as given; a
+  pack is checked with the packs it depends on.
+- **D6 (A, proceeding on the recommendation pending the orchestrator):** no read follows a link on any surface, and the
+  store half states `pack_entry_linked`, so the service's load of a configured pack refuses it too.
 
 ## Assumptions
 
