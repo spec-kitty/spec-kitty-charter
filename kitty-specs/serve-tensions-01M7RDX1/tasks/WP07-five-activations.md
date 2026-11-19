@@ -8,34 +8,36 @@ dependencies:
 requirement_refs:
 - SC-001
 - SC-003
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: 3d77660f50922005b6fbf8f625be4c66d1a0374d
+created_at: '2026-11-19T14:03:29.162256+00:00'
 subtasks:
 - T035
 - T036
 - T037
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: java-jenny
 authoritative_surface: contracts/charter/scenarios/tensions.feature
+create_intent:
+- contracts/charter/scenarios/tensions.feature
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/TensionSteps.java
+execution_mode: code_change
 owned_files:
 - contracts/charter/scenarios/tensions.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveGraphSteps.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/TensionSteps.java
 - contracts/charter/scenarios/README.md
-create_intent:
-- contracts/charter/scenarios/tensions.feature
-- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/TensionSteps.java
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: java-jenny
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP07 - The five example activations

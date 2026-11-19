@@ -7,13 +7,32 @@ requirement_refs:
 - FR-007
 - FR-008
 - NFR-004
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: fde1d859426eca9fc0ee81e2d3d6785f3ccafb6a
+created_at: '2026-11-19T11:33:06.552559+00:00'
 subtasks:
 - T024
 - T025
 - T026
 - T027
 - T028
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: java-jenny
 authoritative_surface: service/activations/src/main/java/ai/speckitty/charter/activations/
+create_intent:
+- service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionSnapshot.java
+- contracts/charter/schemas/ContextTension.yaml
+- contracts/charter/examples/EffectiveGraph.tension.yaml
+- contracts/charter/examples/EffectiveActionContext.tension.yaml
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionTest.java
+execution_mode: code_change
 owned_files:
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/GraphSnapshot.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionSnapshot.java
@@ -38,27 +57,10 @@ owned_files:
 - contracts/charter/examples/EffectiveActionContext.implement.yaml
 - contracts/charter/examples/EffectiveActionContext.tension.yaml
 - contracts/charter/headers/EffectiveETag.yaml
-create_intent:
-- service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionSnapshot.java
-- contracts/charter/schemas/ContextTension.yaml
-- contracts/charter/examples/EffectiveGraph.tension.yaml
-- contracts/charter/examples/EffectiveActionContext.tension.yaml
-- service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionTest.java
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: java-jenny
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP05 - The effective graph and the action context
