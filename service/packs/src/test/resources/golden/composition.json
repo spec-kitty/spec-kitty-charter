@@ -5,7 +5,7 @@
       "detail" : "pack `loop` (01KZNZNZP00000000000000000) names itself as its parent_pack",
       "packs" : [ {
         "descriptorPackId" : "01KZNZNZP00000000000000000",
-        "packId" : "01KZNZNZP00000000000000000",
+        "packId" : "01kznznzp00000000000000000",
         "name" : "loop"
       } ]
     }
@@ -16,11 +16,11 @@
       "detail" : "pack `first` (01FHZRST000000000000000000) is on a dependency cycle: `first` -> `second` -> `first`",
       "packs" : [ {
         "descriptorPackId" : "01FHZRST000000000000000000",
-        "packId" : "01FHZRST000000000000000000",
+        "packId" : "01fhzrst000000000000000000",
         "name" : "first"
       }, {
         "descriptorPackId" : "01SECNZND00000000000000000",
-        "packId" : "01SECNZND00000000000000000",
+        "packId" : "01secnznd00000000000000000",
         "name" : "second"
       } ]
     }
@@ -31,11 +31,11 @@
       "detail" : "pack `child` (01CHHZKZD00000000000000000) is on a dependency cycle: `child` -> `parent` -> `child`",
       "packs" : [ {
         "descriptorPackId" : "01CHHZKZD00000000000000000",
-        "packId" : "01CHHZKZD00000000000000000",
+        "packId" : "01chhzkzd00000000000000000",
         "name" : "child"
       }, {
         "descriptorPackId" : "01PARENT000000000000000000",
-        "packId" : "01PARENT000000000000000000",
+        "packId" : "01parent000000000000000000",
         "name" : "parent"
       } ]
     }
@@ -46,11 +46,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both hold the preset `team`, and neither extends the other by parent_pack",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -61,11 +61,11 @@
       "detail" : "packs `one` (01NZNE00000000000000000000) and `two` (01TWNZ00000000000000000000) at org both hold the preset `team`, and neither extends the other by parent_pack",
       "packs" : [ {
         "descriptorPackId" : "01TWNZ00000000000000000000",
-        "packId" : "01TWNZ00000000000000000000",
+        "packId" : "01twnz00000000000000000000",
         "name" : "two"
       }, {
         "descriptorPackId" : "01NZNE00000000000000000000",
-        "packId" : "01NZNE00000000000000000000",
+        "packId" : "01nzne00000000000000000000",
         "name" : "one"
       } ]
     }
@@ -76,11 +76,11 @@
       "detail" : "pack `mentioner` (01MENT00000000000000000000) names `directive:directive_001`, but pack `holder` (01HNZKZD000000000000000000) holds `directive:DIRECTIVE_001`: ids differ only by case and are matched exactly",
       "packs" : [ {
         "descriptorPackId" : "01MENT00000000000000000000",
-        "packId" : "01MENT00000000000000000000",
+        "packId" : "01ment00000000000000000000",
         "name" : "mentioner"
       }, {
         "descriptorPackId" : "01HNZKZD000000000000000000",
-        "packId" : "01HNZKZD000000000000000000",
+        "packId" : "01hnzkzd000000000000000000",
         "name" : "holder"
       } ]
     }
@@ -91,11 +91,11 @@
       "detail" : "pack `b` (01BBB000000000000000000000) is on a dependency cycle: `b` -> `c` -> `b`",
       "packs" : [ {
         "descriptorPackId" : "01BBB000000000000000000000",
-        "packId" : "01BBB000000000000000000000",
+        "packId" : "01bbb000000000000000000000",
         "name" : "b"
       }, {
         "descriptorPackId" : "01CCC000000000000000000000",
-        "packId" : "01CCC000000000000000000000",
+        "packId" : "01ccc000000000000000000000",
         "name" : "c"
       } ]
     }
@@ -106,7 +106,7 @@
       "detail" : "pack `self` (01SEKZF0000000000000000000) depends on itself",
       "packs" : [ {
         "descriptorPackId" : "01SEKZF0000000000000000000",
-        "packId" : "01SEKZF0000000000000000000",
+        "packId" : "01sekzf0000000000000000000",
         "name" : "self"
       } ]
     }
@@ -117,7 +117,7 @@
       "detail" : "pack `dependent` (01DEP000000000000000000000) depends on pack `01GNZNE0000000000000000000`, which no configured pack declares",
       "packs" : [ {
         "descriptorPackId" : "01DEP000000000000000000000",
-        "packId" : "01DEP000000000000000000000",
+        "packId" : "01dep000000000000000000000",
         "name" : "dependent"
       } ]
     }
@@ -128,11 +128,11 @@
       "detail" : "packs `one` (01NZNE00000000000000000000) and `two` (01TWNZ00000000000000000000) require pack `base` (01BASE00000000000000000000) in ranges `>=1.0,<2` and `>=2.0`, which no version satisfies together",
       "packs" : [ {
         "descriptorPackId" : "01TWNZ00000000000000000000",
-        "packId" : "01TWNZ00000000000000000000",
+        "packId" : "01twnz00000000000000000000",
         "name" : "two"
       }, {
         "descriptorPackId" : "01NZNE00000000000000000000",
-        "packId" : "01NZNE00000000000000000000",
+        "packId" : "01nzne00000000000000000000",
         "name" : "one"
       } ]
     }
@@ -143,11 +143,11 @@
       "detail" : "packs `shared-name` (01AAA000000000000000000000) and `shared-name` (01BBB000000000000000000000) both declare the name `shared-name`",
       "packs" : [ {
         "descriptorPackId" : "01BBB000000000000000000000",
-        "packId" : "01BBB000000000000000000000",
+        "packId" : "01bbb000000000000000000000",
         "name" : "shared-name"
       }, {
         "descriptorPackId" : "01AAA000000000000000000000",
-        "packId" : "01AAA000000000000000000000",
+        "packId" : "01aaa000000000000000000000",
         "name" : "shared-name"
       } ]
     }
@@ -158,7 +158,7 @@
       "detail" : "pack `orphan` (01NZRPH0000000000000000000) names parent_pack `01MHZSSHZNG000000000000000`, which no configured pack declares",
       "packs" : [ {
         "descriptorPackId" : "01NZRPH0000000000000000000",
-        "packId" : "01NZRPH0000000000000000000",
+        "packId" : "01nzrph0000000000000000000",
         "name" : "orphan"
       } ]
     }
@@ -169,11 +169,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -184,11 +184,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both define the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -199,11 +199,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both define the artifact `mission_type:m`, and no pack of the compose declares an overrides edge settling it",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -214,11 +214,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -229,19 +229,19 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `done` (01DNZNE0000000000000000000) and `dtwo` (01DTWNZ0000000000000000000), more than one distribution pack, and only one may settle a contest",
       "packs" : [ {
         "descriptorPackId" : "01DNZNE0000000000000000000",
-        "packId" : "01DNZNE0000000000000000000",
+        "packId" : "01dnzne0000000000000000000",
         "name" : "done"
       }, {
         "descriptorPackId" : "01DTWNZ0000000000000000000",
-        "packId" : "01DTWNZ0000000000000000000",
+        "packId" : "01dtwnz0000000000000000000",
         "name" : "dtwo"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -252,19 +252,19 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `distribution` (01DSTR00000000000000000000) and `dtwo` (01DTWNZ0000000000000000000), more than one distribution pack, and only one may settle a contest",
       "packs" : [ {
         "descriptorPackId" : "01DSTR00000000000000000000",
-        "packId" : "01DSTR00000000000000000000",
+        "packId" : "01dstr00000000000000000000",
         "name" : "distribution"
       }, {
         "descriptorPackId" : "01DTWNZ0000000000000000000",
-        "packId" : "01DTWNZ0000000000000000000",
+        "packId" : "01dtwnz0000000000000000000",
         "name" : "dtwo"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -275,11 +275,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01GHNZST000000000000000000, which is not a contestant",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -290,17 +290,17 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it names 01DSTR00000000000000000000, which is not a contestant",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
   },
   "the-distribution-pack-settles" : {
-    "composed" : [ "01KZEFT0000000000000000000", "01RHZGHT000000000000000000", "01DSTR00000000000000000000" ]
+    "composed" : [ "01kzeft0000000000000000000", "01rhzght000000000000000000", "01dstr00000000000000000000" ]
   },
   "a-member-of-the-distribution-does-not-settle" : {
     "refused" : {
@@ -308,15 +308,15 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB00000000000000000000), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01MEMB00000000000000000000",
-        "packId" : "01MEMB00000000000000000000",
+        "packId" : "01memb00000000000000000000",
         "name" : "member"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -327,15 +327,15 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `unrelated` (01TZNRKZ000000000000000000), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01TZNRKZ000000000000000000",
-        "packId" : "01TZNRKZ000000000000000000",
+        "packId" : "01tznrkz000000000000000000",
         "name" : "unrelated"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -346,15 +346,15 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `member` (01MEMB00000000000000000000), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01MEMB00000000000000000000",
-        "packId" : "01MEMB00000000000000000000",
+        "packId" : "01memb00000000000000000000",
         "name" : "member"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -365,11 +365,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and an overrides edge settling it is declared by pack `left` (01KZEFT0000000000000000000), which is not the distribution pack, the pack that depends on every contestant and that no pack of the contest's level depends on",
       "packs" : [ {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       } ]
     }
@@ -380,19 +380,19 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and overrides edges settling it are declared by packs `distribution` (01DSTR00000000000000000000) and `dtwo` (01DTWNZ0000000000000000000), more than one distribution pack, and only one may settle a contest",
       "packs" : [ {
         "descriptorPackId" : "01DSTR00000000000000000000",
-        "packId" : "01DSTR00000000000000000000",
+        "packId" : "01dstr00000000000000000000",
         "name" : "distribution"
       }, {
         "descriptorPackId" : "01DTWNZ0000000000000000000",
-        "packId" : "01DTWNZ0000000000000000000",
+        "packId" : "01dtwnz0000000000000000000",
         "name" : "dtwo"
       }, {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -403,11 +403,11 @@
       "detail" : "pack `reader` (01REA000000000000000000000) writes the reference `writing::directive:DIRECTIVE_009`, but pack `writing` (01WRHZ00000000000000000000) does not hold `directive:DIRECTIVE_009`",
       "packs" : [ {
         "descriptorPackId" : "01REA000000000000000000000",
-        "packId" : "01REA000000000000000000000",
+        "packId" : "01rea000000000000000000000",
         "name" : "reader"
       }, {
         "descriptorPackId" : "01WRHZ00000000000000000000",
-        "packId" : "01WRHZ00000000000000000000",
+        "packId" : "01wrhz00000000000000000000",
         "name" : "writing"
       } ]
     }
@@ -418,11 +418,11 @@
       "detail" : "pack `reader` (01REA000000000000000000000) writes the reference `writing::directive:DIRECTIVE_009`, but pack `writing` (01WRHZ00000000000000000000) is outside its depends_on closure",
       "packs" : [ {
         "descriptorPackId" : "01REA000000000000000000000",
-        "packId" : "01REA000000000000000000000",
+        "packId" : "01rea000000000000000000000",
         "name" : "reader"
       }, {
         "descriptorPackId" : "01WRHZ00000000000000000000",
-        "packId" : "01WRHZ00000000000000000000",
+        "packId" : "01wrhz00000000000000000000",
         "name" : "writing"
       } ]
     }
@@ -433,11 +433,11 @@
       "detail" : "pack `reader` (01REA000000000000000000000) writes the bare reference `anti_pattern:big-ball-of-mud`, which resolves only in pack `writing` (01WRHZ00000000000000000000); a cross-pack reference is written pack-qualified",
       "packs" : [ {
         "descriptorPackId" : "01REA000000000000000000000",
-        "packId" : "01REA000000000000000000000",
+        "packId" : "01rea000000000000000000000",
         "name" : "reader"
       }, {
         "descriptorPackId" : "01WRHZ00000000000000000000",
-        "packId" : "01WRHZ00000000000000000000",
+        "packId" : "01wrhz00000000000000000000",
         "name" : "writing"
       } ]
     }
@@ -448,7 +448,7 @@
       "detail" : "pack `reader` (01REA000000000000000000000) writes the reference `writing::directive:DIRECTIVE_009`, but the compose holds no pack named `writing`",
       "packs" : [ {
         "descriptorPackId" : "01REA000000000000000000000",
-        "packId" : "01REA000000000000000000000",
+        "packId" : "01rea000000000000000000000",
         "name" : "reader"
       } ]
     }
@@ -459,11 +459,11 @@
       "detail" : "pack `first` (01FHZRST000000000000000000) is on a dependency cycle: `first` -> `second` -> `first`",
       "packs" : [ {
         "descriptorPackId" : "01FHZRST000000000000000000",
-        "packId" : "01FHZRST000000000000000000",
+        "packId" : "01fhzrst000000000000000000",
         "name" : "first"
       }, {
         "descriptorPackId" : "01SECNZND00000000000000000",
-        "packId" : "01SECNZND00000000000000000",
+        "packId" : "01secnznd00000000000000000",
         "name" : "second"
       } ]
     }
@@ -478,7 +478,7 @@
         "name" : "gamma-twin"
       }, {
         "descriptorPackId" : "01GAMMA0000000000000000000",
-        "packId" : "01GAMMA0000000000000000000",
+        "packId" : "01gamma0000000000000000000",
         "name" : "gamma"
       } ]
     }
@@ -489,11 +489,11 @@
       "detail" : "packs `gamma` (01GAMMA0000000000000000000) and `gamma` (01NZTHER000000000000000000) both declare the name `gamma`",
       "packs" : [ {
         "descriptorPackId" : "01NZTHER000000000000000000",
-        "packId" : "01NZTHER000000000000000000",
+        "packId" : "01nzther000000000000000000",
         "name" : "gamma"
       }, {
         "descriptorPackId" : "01GAMMA0000000000000000000",
-        "packId" : "01GAMMA0000000000000000000",
+        "packId" : "01gamma0000000000000000000",
         "name" : "gamma"
       } ]
     }
@@ -504,7 +504,7 @@
       "detail" : "pack `dependent` (01DEP000000000000000000000) depends on pack `01GNZNE0000000000000000000`, which no configured pack declares",
       "packs" : [ {
         "descriptorPackId" : "01DEP000000000000000000000",
-        "packId" : "01DEP000000000000000000000",
+        "packId" : "01dep000000000000000000000",
         "name" : "dependent"
       } ]
     }
@@ -519,7 +519,7 @@
         "name" : "beta-twin"
       }, {
         "descriptorPackId" : "01BETA00000000000000000000",
-        "packId" : "01BETA00000000000000000000",
+        "packId" : "01beta00000000000000000000",
         "name" : "beta"
       } ]
     }
@@ -530,11 +530,11 @@
       "detail" : "pack `first` (01FHZRST000000000000000000) is on a dependency cycle: `first` -> `second` -> `first`",
       "packs" : [ {
         "descriptorPackId" : "01FHZRST000000000000000000",
-        "packId" : "01FHZRST000000000000000000",
+        "packId" : "01fhzrst000000000000000000",
         "name" : "first"
       }, {
         "descriptorPackId" : "01SECNZND00000000000000000",
-        "packId" : "01SECNZND00000000000000000",
+        "packId" : "01secnznd00000000000000000",
         "name" : "second"
       } ]
     }
@@ -545,11 +545,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at built-in depends on pack `target` (01TRGT00000000000000000000) at org; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -560,11 +560,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at built-in depends on pack `target` (01TRGT00000000000000000000) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -575,11 +575,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at org depends on pack `target` (01TRGT00000000000000000000) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -590,11 +590,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at built-in names pack `target` (01TRGT00000000000000000000) at org as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -605,11 +605,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at built-in names pack `target` (01TRGT00000000000000000000) at project as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -620,11 +620,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at org names pack `target` (01TRGT00000000000000000000) at project as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -635,7 +635,7 @@
       "detail" : "pack `c` (01CCC000000000000000000000) depends on pack `01GNZNE0000000000000000000`, which no configured pack declares",
       "packs" : [ {
         "descriptorPackId" : "01CCC000000000000000000000",
-        "packId" : "01CCC000000000000000000000",
+        "packId" : "01ccc000000000000000000000",
         "name" : "c"
       } ]
     }
@@ -646,11 +646,11 @@
       "detail" : "packs `shared-name` (01AAA000000000000000000000) and `shared-name` (01BBB000000000000000000000) both declare the name `shared-name`",
       "packs" : [ {
         "descriptorPackId" : "01BBB000000000000000000000",
-        "packId" : "01BBB000000000000000000000",
+        "packId" : "01bbb000000000000000000000",
         "name" : "shared-name"
       }, {
         "descriptorPackId" : "01AAA000000000000000000000",
-        "packId" : "01AAA000000000000000000000",
+        "packId" : "01aaa000000000000000000000",
         "name" : "shared-name"
       } ]
     }
@@ -661,11 +661,11 @@
       "detail" : "pack `right` (01RHZGHT000000000000000000) writes the bare reference `anti_pattern:big-ball-of-mud`, which resolves only in pack `left` (01KZEFT0000000000000000000); a cross-pack reference is written pack-qualified",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -680,7 +680,7 @@
         "name" : "base-twin"
       }, {
         "descriptorPackId" : "01BASE00000000000000000000",
-        "packId" : "01BASE00000000000000000000",
+        "packId" : "01base00000000000000000000",
         "name" : "base"
       } ]
     }
@@ -691,11 +691,11 @@
       "detail" : "pack `own` (01NZWN01000000000000000000) at built-in depends on pack `target` (01TRGT00000000000000000000) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in",
       "packs" : [ {
         "descriptorPackId" : "01NZWN01000000000000000000",
-        "packId" : "01NZWN01000000000000000000",
+        "packId" : "01nzwn01000000000000000000",
         "name" : "own"
       }, {
         "descriptorPackId" : "01TRGT00000000000000000000",
-        "packId" : "01TRGT00000000000000000000",
+        "packId" : "01trgt00000000000000000000",
         "name" : "target"
       } ]
     }
@@ -706,11 +706,11 @@
       "detail" : "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both change the artifact `directive:DIRECTIVE_009`, and no pack of the compose declares an overrides edge settling it",
       "packs" : [ {
         "descriptorPackId" : "01RHZGHT000000000000000000",
-        "packId" : "01RHZGHT000000000000000000",
+        "packId" : "01rhzght000000000000000000",
         "name" : "right"
       }, {
         "descriptorPackId" : "01KZEFT0000000000000000000",
-        "packId" : "01KZEFT0000000000000000000",
+        "packId" : "01kzeft0000000000000000000",
         "name" : "left"
       } ]
     }
@@ -721,7 +721,7 @@
       "detail" : "pack `dependent` (01DEP000000000000000000000) depends on pack `01GNZNE0000000000000000000`, which no configured pack declares",
       "packs" : [ {
         "descriptorPackId" : "01DEP000000000000000000000",
-        "packId" : "01DEP000000000000000000000",
+        "packId" : "01dep000000000000000000000",
         "name" : "dependent"
       } ]
     }
@@ -732,11 +732,11 @@
       "detail" : "pack `reader` (01REA000000000000000000000) writes the bare reference `anti_pattern:big-ball-of-mud`, which resolves only in pack `writing` (01WRHZ00000000000000000000); a cross-pack reference is written pack-qualified",
       "packs" : [ {
         "descriptorPackId" : "01REA000000000000000000000",
-        "packId" : "01REA000000000000000000000",
+        "packId" : "01rea000000000000000000000",
         "name" : "reader"
       }, {
         "descriptorPackId" : "01WRHZ00000000000000000000",
-        "packId" : "01WRHZ00000000000000000000",
+        "packId" : "01wrhz00000000000000000000",
         "name" : "writing"
       } ]
     }
