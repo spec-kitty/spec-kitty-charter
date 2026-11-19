@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude::generic-reviewer",
+      "agent": "claude::java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
@@ -34,7 +34,8 @@
         "Re-submit to record the implementer's full identity (tool and profile)",
         "Ready for review: PackUlid and the ULID grammar; :kernel:check green; implementer claude::java-jenny",
         "Independent review: approved (e6d8f60, same patch as 8556f53). ULID grammar matches pack-descriptor.schema.json Ulid exactly; PackUlid guards like PackIdentifier with its own detail; tests cover 25/27 chars, I/L/O/U, lower case, 01PACK, blank, null with the detail asserted, real ULIDs only. :kernel:check green (run by reviewer). Occurrence map complete: every main-source new PackIdentifier( site is classified in the census; D9 is carried by WP04 T018. Nit: census tally says 'REG 43' then sums to 45.",
-        "Re-review to stamp the lane head: consolidate refuses APPROVAL_STAMP_MISSING; no content change"
+        "Re-review to stamp the lane head: consolidate refuses APPROVAL_STAMP_MISSING; no content change",
+        "Re-submitted unchanged for a stamped approval (lane head as approved before)"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -42,7 +43,7 @@
         "reviewer": "claude::generic-reviewer",
         "verdict": "approved"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": 5323,
       "shell_pid_created_at": "1795088621.05",
       "subtasks": {
