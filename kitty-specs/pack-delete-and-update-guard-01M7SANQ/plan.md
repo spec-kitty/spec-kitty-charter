@@ -24,33 +24,60 @@ are logged as open review items for the plan-point squad:
   - `ActivationImpact.activationRoots()` becomes `List<ActivationRoots>`, a record of the activation id and its
     optional `packs` list. The old shape is replaced (C-001); its one implementation, in `activations.infra`, and the
     tests move with it.
-- **P2. The removal compose is a third `RegistrationImpact` entry point.**
-  - `checkRemoval(ConfiguredPack)` finds the closures that hold the pack on the stored view (`ClosureRoots.of`). It
-    composes each one again on `Session.without(pack)`, a new method beside `with`, after dropping the removed pack
-    from its roots.
-  - It reuses `judge`, `viewBefore` and the `ForceDiff` notices, so no compose rule is copied.
-  - This is the one place #556's `ImpactCheck` will also have to take over. FR-014's seam covers the dependents;
-    this entry point stays on `RegistrationImpact` with it.
-- **P3. The dependents come before the compose, and every dependent is collected.**
-  - `PackDependents` returns all of them, in this order: packs (`depends_on`, then `parent_pack`, each sorted by
-    configured name), then activations (sorted by id), then inbound referrers (as `InboundReferences` orders them).
-  - It does not stop at the first. This is a refusal of the delete's own, not a #556 rule (C-003).
+- **P2. The removal compose is a third `RegistrationImpact` entry point, on the caller's session.**
+  `checkRemoval(Session, ConfiguredPack)` finds the closures that hold the pack on the stored view (`ClosureRoots.of`),
+  drops the removed pack from each one's roots, and composes them again on `Session.without(pack)`, a new method beside
+  `with`. It reuses `judge`, `viewBefore` and the `ForceDiff` notices. One `Session` is shared by the dependents, the
+  inbound scan and this compose (NFR-001, squad M8). This entry point is the one place #556's `ImpactCheck` will also
+  take over.
+- **P3. The dependents come before the compose, all of them, and the check fails closed.**
+  - `PackDependents` lists only direct dependents, in this order: packs (`depends_on`, then `parent_pack`, one
+    violation per relation, sorted by configured name), then activations (sorted by id), then inbound referrers (in
+    the order `InboundReferences` gives them).
+  - A's `pack_id` is salvaged from its `pack.yaml` when A cannot be loaded.
+  - Any other configured pack whose descriptor cannot be read refuses the delete with `500 pack_unreadable`, naming
+    it. A dependent that cannot be read never lets a delete through (squad M3).
+  - This is a refusal of the delete's own, not a #556 rule (C-003).
 - **P4. The dry run is a `Mode` argument, not a separate service.**
-  - `register(..., Mode)` and `uninstall(..., Mode)` return the same outcome record, with `dryRun` set.
-  - In dry-run mode `commit` is never called, the version history is not written, and `impact.committed` is not
-    called.
-  - A registration dry run still stages and judges the archive. The staging area is cleaned up as on a refusal.
-- **P5. The PUT and POST dry runs stay asynchronous.** Same `202`, same job and same status. The job's result
-  `PackRegistration` carries `dryRun: true` and the outcome it would have had (`created`, `replaced` or `unchanged`).
-  It adds no `would_*` values to the `outcome` enum.
-- **P6. The delete dry run answers `200 PackImpact`.**
-  - When the delete would succeed: `outcome: deleted`, its notices, `dependents: []`.
-  - When it would be refused with `pack_has_dependents`, or with a `422`: `outcome: refused` and `problem`, the same
-    Problem the delete answers, so the refusal is a body and not an error status.
-  - `428`, `412`, `404` and `503` stay error statuses, as they are answered before anything is judged.
-  - *Open review item:* the alternative is to answer refusals with their own status and a `dryRun` flag in the Problem.
-- **P7. The audit log.** A committed uninstall writes an audit entry (`AuditLog`, action `pack_removed`). A dry run
-  writes none.
+  - `register(..., Mode)` and `uninstall(..., Mode)` return their usual outcome, with `dryRun` set.
+  - In dry-run mode `commit` and `removeWhole` are never called, the history is not written, `impact.committed` is not
+    called, and nothing is audited.
+  - A registration dry run still stages and judges the archive, and cleans up its staging as a refusal does.
+- **P5. The PUT and POST dry runs stay asynchronous.**
+  - The same `202`, job and status. The job's result `PackRegistration` carries `dryRun: true` and the outcome it
+    would have had (`created`, `replaced` or `unchanged`); the outcome enum gains no `would_*` values.
+  - A dry-run status has no `pack` link. The result's `_links.self` is the pack URI the write would hold; it answers
+    404 after a would-be create (documented).
+  - `previousVersion` and `dryRun` never appear on `getPack` (squad M7).
+- **P6. The delete dry run answers `200 PackImpact` for a judgement, and an error status for anything else.**
+  - A judgement is a body: `outcome: deleted` with notices, or `outcome: refused` with `problem` for
+    `409 pack_has_dependents` or a `422` compose refusal.
+  - Everything decided before the judgement, or by infrastructure, keeps its status: `503` (the flag, or the registry
+    lock busy), `404`, `428`, `409 registration_conflict`, `412` and `500`.
+  - The order of checks is `RemovalPrecondition`'s: the 503 flag, 404, 428, then under the locks 409 identity and 412
+    (squad M9).
+- **P7. The audit follows the registration audit filter.** `RegistrationPaths.classify` and `WorktreeGuard` learn
+  `DELETE /packs/{packId}` as operation `deletePack`; every attempt is entered, refusals included, and
+  `RevisionTrail` carries revisionBefore and revisionAfter. A request with `dryRun=true`, on any of the three
+  operations, is never entered: the filter skips it and the job does not `record` it (squad H1, NFR-002).
+- **P8. The store: resolve, then lock, then one rename to discard.**
+  - The uninstall goes through the `PackRemovalStore` seam. Its `exclusively(PackIdentifier)` resolves a name or a
+    `pack_id` under the registry lock and locks the resolved directory, the lock a listing's crash repair takes
+    (squad H2).
+  - The new `PackRemovalStore.removeWhole(PackIdentifier)` hides stale asides first, then renames the live directory
+    straight to `.pack-discard-*` (atomic; nothing is left that a repair would restore) under the write-generation
+    bracket, then deletes that tree. The generation counters are kept (squad H3).
+- **P9. A linked pack is not removed.** A writable-root entry that is a link (#174) is refused with
+  `409 registration_conflict`; the operator removes the link. The service never deletes outside its writable root
+  (squad M1).
+- **P10. The history is healed and labels compare by PEP 440.** Before the removal, the stored
+  `(pack_version, revision)` pair is staged into the history when it is missing. `requireNotReused` matches labels by
+  PEP 440 equality (`compareVersions == 0`), so `1.1`, `1.1.0` and `1.1.0+x` name one label (squad M2).
+- **Open review items for the pre-merge reviewer:** P1, P5's self link, P6, P9, and M5. M5 is that an activation with
+  no `packs` list may hold selections of the removed pack's artifacts, which read as stale and are dropped on the next
+  write, as after an artifact `DELETE`. It is documented, with a scenario.
+
+Squad findings and dispositions: [research/squad-plan.md](research/squad-plan.md).
 
 ## Technical Context
 
@@ -141,39 +168,57 @@ the job.
 
 ### IC-03 — Dependents (FR-004, FR-014, P1, P3)
 
-- The `PackDependents` port and `ClosurePackDependents` over `ClosureRoots`, `ActivationImpact` and
-  `InboundReferences.scanRemoval` (every artifact and term of the pack counts as removed).
-- The `ActivationImpact` record change, and its implementation in `activations.infra`.
-- The refusal `PACK_HAS_DEPENDENTS` (409), with one violation per dependent: `pointer` `/dependents/<i>`, a code per
-  kind (`depends_on`, `parent_pack`, `activation`, `artifact_reference`), and the dependent named in the detail.
+- The `PackDependents` port and `ClosurePackDependents`, built over `ClosureRoots` (direct reverse `depends_on` and
+  `parent_pack`), `ActivationImpact` (the activations whose `packs` list names the pack) and
+  `InboundReferences.scanRemoval`. The scan's `StagedTree` carries the pack's descriptor and empty facts, and `removed`
+  is the pack's defined artifacts, its digested artifacts and its terms (squad M4).
+- `ActivationImpact`'s record change (P1), and its implementation in `activations.infra`.
+- The refusal `PACK_HAS_DEPENDENTS` (409), shaped like `artifact_referenced`: a `packs` member (RefusalPack) for each
+  dependent pack, and up to 100 violations. Each violation has an empty pointer, a code (`depends_on`, `parent_pack`,
+  `activation` or `artifact_reference`) and the dependent named in its detail. When more than 100 are found, the count
+  left out is named in the detail (squad M6).
+- The check fails closed: when another pack cannot be read, the delete is refused `500 pack_unreadable` (P3).
 
-### IC-04 — Uninstall (FR-001 to FR-007, P2, P7)
+### IC-04 — Uninstall (FR-001 to FR-007, P2, P7 to P10)
 
-- `Session.without`; `RegistrationImpact.checkRemoval`.
-- `WholePackWriteStore.removeWhole` and its implementation in `PackCommitStore`: under the generation bracket, move the
-  live directory aside, then hide it and delete it. A failure restores it. The history is kept.
-- `PackUninstallService.uninstall(packId, Preconditions, Mode)`, under `store.exclusively`:
-  1. resolve the pack (404, or 409 when it is built-in or read-only);
-  2. check `If-Match`;
-  3. find the dependents (409);
-  4. compose the closures without the pack (422);
-  5. remove, unless dry run;
-  6. write the audit entry.
-- The controller: `DELETE /packs/{packId}` (204 or 200 on a dry run), behind the registration flag (503), with
-  `If-Match` required (428).
+- `Session.without`, and `RegistrationImpact.checkRemoval(Session, ConfiguredPack)`.
+- `PackRemovalStore.removeWhole`, implemented in `CommitStorePackWriteStore` and `PackCommitStore`, which:
+  1. hides the stale asides;
+  2. renames the live directory straight to `.pack-discard-*` under the generation bracket;
+  3. deletes that tree;
+  4. heals the stored pair into the history first (P10).
+- `PackUninstallService.uninstall(packId, Preconditions, Mode)`, in this order:
+  1. the 503 flag (in the controller);
+  2. resolve the pack (404);
+  3. `If-Match` present (428);
+  4. under `store.exclusively(PackIdentifier)`: the identity (409 for a built-in pack, a read-only location or a
+     linked pack), the stale check (412), the dependents (409), the compose (422);
+  5. remove, unless this is a dry run.
+- The controller: `DELETE /packs/{packId}` answers 204 (200 `PackImpact` on a dry run). The generated
+  `RegistrationApi` gains `deletePack`, implemented by delegating to the uninstall controller.
+- The audit (P7): `RegistrationPaths` and `WorktreeGuard` learn `deletePack`, and a dry run is never entered.
+- `PackVersionHistory.requireNotReused` matches labels by PEP 440 equality (P10).
 
 ### IC-05 — Dry run (FR-011 to FR-013, P4 to P6)
 
-- `Mode` in `PackRegistrationService`, `RegistrationJobs` and both registration controllers (`dryRun` query
-  parameter).
-- `PackImpact` mapping for the delete.
+- `Mode` in `PackRegistrationService`, `RegistrationJobs` and both registration controllers (the `dryRun` query
+  parameter). A dry-run job neither records nor writes.
+- The `PackImpact` mapping for the delete. The dry-run links on `PackRegistrationStatus` (P5).
 
-### IC-06 — Scenarios and tests (FR-015)
+### IC-06 — Scenarios, tests, docs (FR-015)
 
-- `@contract` scenarios on charter's example packs, for every acceptance scenario of stories 1 to 4. Each story 1–3
-  case has a dry-run twin (SC-002).
-- Unit tests: `PackUninstallServiceTest`, `ClosurePackDependentsTest`, the version-rule cases in
-  `PackRegistrationServiceTest`, and the `PackCommitStoreTest` swap failure for `removeWhole`.
+- `@contract` scenarios on charter's example packs, for every acceptance scenario of stories 1 to 4. Each case of
+  stories 1 to 3 has a dry-run twin (SC-002). They include the M5 stale-selection case.
+- Unit tests:
+  - `PackUninstallServiceTest`, `ClosurePackDependentsTest`;
+  - the version-rule and label-equality cases;
+  - `PackCommitStoreTest`: `removeWhole`, its swap failure, and the crash/listing-repair that must not resurrect a
+    deleted pack;
+  - `RegistrationPathsTest`.
+- The existing scenarios that step a version back (`whole-pack-registration.feature`) are rewritten to move forward.
+- Remove the "label, not an order" wording from: `paths/packs_packId.yaml`, `PackVersionHistory`, `compose-packs.md`,
+  `divergences.yaml` and `divergence-register.md`. Also update the `CharterRefusalCode` prose that lists which
+  operations raise which codes.
 - `./gradlew verifyAll`.
 
 ### Sequence
