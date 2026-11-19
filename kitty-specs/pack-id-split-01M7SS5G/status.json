@@ -61,6 +61,9 @@
       "last_event_id": "01M7SXPPHC0Z5FWV73PBKA3Z2D",
       "last_transition_at": "2026-11-19T12:50:01.388349+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "PackDirectory for storage directories; StoreRead/ArtifactFiles assemble under the caller's registered id; :packs:check + compileTestJava green on lane-b 59b996f. TODOs for WP03 in StoreRead (descriptor fallback)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 5314,
