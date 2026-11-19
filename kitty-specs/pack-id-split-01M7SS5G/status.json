@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "PackUlid + IdentifierGrammar.ulid; :kernel:check green",
-        "Re-submit to record the implementer's full identity (tool and profile)"
+        "Re-submit to record the implementer's full identity (tool and profile)",
+        "Ready for review: PackUlid and the ULID grammar; :kernel:check green; implementer claude::java-jenny"
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
