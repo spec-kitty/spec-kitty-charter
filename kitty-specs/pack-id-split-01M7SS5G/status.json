@@ -163,6 +163,9 @@
       "last_event_id": "01M7TAF0YWP58AM6C8ZP2FC56A",
       "last_transition_at": "2026-11-19T16:33:01.404290+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Consumers typed (AvailablePacks by PackIdentifier, PacksAvailability keyed by PackUlid, ReferenceReads Holder PackUlid); PackCheck.validate(PackIdentifier, Optional<PackLevel>, Path) + no-id overload; PackRef wraps PackIdentifier; PackPin.packId pack id grammar in both schemas (parity tests pass) + ### Breaking fragment, corpus examples and scenario outline. test (all) + :contracts:check (full clone, baseline compared) green on lane-e 5d9506c."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 24510,
