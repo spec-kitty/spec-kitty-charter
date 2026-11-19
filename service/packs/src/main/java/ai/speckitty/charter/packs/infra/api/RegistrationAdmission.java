@@ -97,7 +97,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         }
         if (SOURCE.equals(name) || DELETE_PACK.equals(name)) {
             // After the switch, before anything else: a dryRun outside the boolean is 400 (R5-1). The upload reads it
-            // when it records the job's origin, after its own switch check.
+            // right after its own switch check, before it takes a place.
             modeOf(request);
         }
         return true;
@@ -106,6 +106,8 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     private void admitUpload(HttpServletRequest request) {
         AuditContext audit = AuditContext.of(request);
         requireRegistrationOn();
+        // A dryRun outside the boolean is 400 before the upload takes a place or anything is spooled (R5-1).
+        PackRegistrationService.Mode mode = modeOf(request);
         String packId = packIdOf(request);
         audit.packId(packId);
         audit.source("archive", "");
@@ -133,7 +135,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         request.setAttribute(
                 ORIGIN,
                 new RegistrationJobs.Origin(
-                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", "", modeOf(request)));
+                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", "", mode));
     }
 
     /**

@@ -161,6 +161,12 @@ Feature: A registered pack is removed whole, or not at all
     Then the response status is 204
     When I GET "/activations/everything"
     Then the response status is 200
+    When I GET "/activations/everything/skipped"
+    Then the response status is 200
+    And the field at "/report/staleIds" holds exactly the ids:
+      """
+      directive:D1
+      """
 
   Scenario: A removal answers 503 while registration is switched off, and nothing is removed
     Given registration is switched off
