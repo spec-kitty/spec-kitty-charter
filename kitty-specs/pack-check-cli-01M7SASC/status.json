@@ -87,15 +87,18 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M7T1CWV53CHG0XB7ASYEWXN9",
       "last_transition_at": "2026-11-19T13:54:34.469720+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "PackCheck.check, PackSetCheck/PackSetVerdict, RoundTripping; verifyAll green; scoped PIT 40/40 killed; 6 hand mutants killed"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 32699,
