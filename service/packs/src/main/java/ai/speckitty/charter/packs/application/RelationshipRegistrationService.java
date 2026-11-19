@@ -138,11 +138,10 @@ public final class RelationshipRegistrationService {
             refuseStrayStepLink(pack, current.descriptor().name(), relationship, existing);
             if (tension) {
                 refuseSecondTension(pack, relationship);
-                // A tension names two rules; each side the pack does not hold must resolve in the compose, and the
-                // gate judges each side (ADR-0045 decision 1, the paths that key on a source).
-                if (relationship.fromPack().isPresent()) {
-                    targets.require(pack, relationship.fromReference());
-                }
+                // A tension names two rules; each side, the stored source as much as the target, must resolve in the
+                // compose as a target does (a bare side another pack holds is unqualified), and the gate judges each
+                // side (ADR-0045 decision 1, the paths that key on a source).
+                targets.require(pack, relationship.fromReference());
                 targets.require(pack, relationship.toReference());
                 policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
                 policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.to());
