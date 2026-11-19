@@ -87,9 +87,9 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -98,7 +98,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "PackCheck.check, PackSetCheck/PackSetVerdict, RoundTripping; verifyAll green; scoped PIT 40/40 killed; 6 hand mutants killed",
-        "Cycle 2: M1 closureFaults (out-of-map edit of WP02's PackRulesets/PackReadout, approved), M2 round-trip refusal as the pack's result, M3 pack_level_missing VIOLATION twin (operator-delegated ruling A), L1-L4 folded; verifyAll green; reviewer M1 and 12 more hand mutants killed"
+        "Cycle 2: M1 closureFaults (out-of-map edit of WP02's PackRulesets/PackReadout, approved), M2 round-trip refusal as the pack's result, M3 pack_level_missing VIOLATION twin (operator-delegated ruling A), L1-L4 folded; verifyAll green; reviewer M1 and 12 more hand mutants killed",
+        "Cycle 3: C2-M1 LevelRules.unknownLevel + rule C covers the twin (bite fixture BuildsTwinDirectly); C2-M2/C2-L2 no ROUND_TRIP skip, skipped stays CLOSURE-only, a refused pack has one problem; C2-L1 CompositionRules.presets deleted. verifyAll green; 4 new mutants killed. WP04: skipped is CLOSURE-only; PackResult.setCheck holds pack_level_missing (VIOLATION)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
