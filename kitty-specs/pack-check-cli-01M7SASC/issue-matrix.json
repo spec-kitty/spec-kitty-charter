@@ -61,16 +61,16 @@
       "wp": null
     },
     "#597": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP01 commits 89c6da5e..92408ae7: LinkRules (pack_entry_linked) in StorageRulesets.HOLDING; PackRegistrationLinkTest covers #597's three cases; mutant without LinkRules fails it",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "PackRegistrationService accepts a staged tree whose symlink points outside the pack",
+      "verdict": "fixed",
+      "wp": "WP01"
     }
   },
   "schema_version": 1
