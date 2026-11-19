@@ -18,7 +18,7 @@ standard output.
   - `violations`: one per violation of the pack's verdict, `{ pointer: <pack-relative file>, code, detail }`, the
     detail in the one wording (`PackCodes.detail`).
   - Capped at 100; `detail` names the pack and ends with the count left out, as `RefusalHandler.leftOut` words it.
-  - `instance`: the pack's path as given, so two packs' problems are told apart.
+  - `instance`: the `file:` URI of the pack's directory (absolute, normalized), so two packs' problems are told apart; `packs[].path` keeps the path as given.
 - **A composition fault:** one problem per `CompositionFault`, with its code (`pack_dependency_cycle`, …), the status
   the registration operation declares for that code, and `packs` (`RefusalPack`: `descriptorPackId`, `packId`,
   `name`). Its `detail` is the fault's.
@@ -58,4 +58,4 @@ One line each: `warning: <pack>: <code> <file>: <detail>`, for every `WARNING` r
 |---|---|
 | 0 | No problem (warnings allowed) |
 | 1 | At least one problem |
-| 2 | Usage fault (no input, both inputs, unknown option, bad level, an ambiguous `--pack` value, duplicate pack by real path or by name, overlapping packs, missing directory, empty config root, a dangling entry under the config root's `packs/`), an I/O failure outside a pack read (writing the output, the round trip's temporary directory), or an internal failure (an unexpected exception: `pack-check: internal error: …` and the stack trace on stderr) |
+| 2 | Usage fault (no input, both inputs, unknown option, bad level, an ambiguous `--pack` value, duplicate pack by real path or by name, overlapping packs, missing directory, empty config root, an entry under the config root's `packs/` that is a link to no directory), an I/O failure outside a pack read (writing the output, the round trip's temporary directory), or an internal failure (an unexpected exception: `pack-check: internal error: …` and the stack trace on stderr) |

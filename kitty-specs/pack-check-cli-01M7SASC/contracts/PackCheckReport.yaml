@@ -69,7 +69,7 @@ properties:
   problems:
     type: array
     description: >-
-      Per pack, in order: one validation_failed problem when the pack has a violation (its instance is the pack's path);
+      Per pack, in order: one validation_failed problem when the pack has a violation (its instance is the file: URI of the pack's directory);
       otherwise, when its facts could not be read, one problem with the refusal's code (e.g. pack_unreadable); then one
       validation_failed problem for its round-trip reasons. Then one problem per composition fault, with its code and
       packs. A pack never gets two problems for one cause. Empty when the set is valid.
