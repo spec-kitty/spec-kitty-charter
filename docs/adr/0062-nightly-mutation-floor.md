@@ -409,9 +409,11 @@ problems, the report and the main). No other group holds the package.
 - **The first run.** A whole-module `:pack-check:pitest` on #478's WP06 base, after WP04's review, scores 93.2 % (139 of
   149 mutants detected, 5 survived, 5 uncovered, test strength 96.5 %). The survivors and uncovered mutants sit in
   `Arguments` (5), `PackCheckMain` (3), `Problems` (1) and `ReportWriter` (1).
-- **Why 90.** The floor follows decision 3's rule, `floor5(score − 3)`, which gives 90. The first floor of 85 that
-  `:activations`, the edges and `:pack-validation` took was chosen for modules with no score, or one mutant, yet; this
-  module has a measured score, so the rule applies. The margin is 4 mutants (135 of 149 needed), as narrow as profiles'
+- **Why 90.** The floor follows decision 3's rule, `floor5(score − 3)`, which gives 90. `:activations` followed the
+  same rule: it measured 91.3 %, so the rule gave 85. `:profiles-edge` measured 100 % and took 85, not the rule's 95,
+  to leave room for a small module to grow; `:pack-validation` (one mutant) and the other edges (no score yet) took 85
+  after it. This module lands with its code whole and a measured score, so the rule applies as `:activations` applied
+  it. The margin is 4 mutants (135 of 149 needed), as narrow as profiles'
   was when it was raised: one deleted test class of the CLI turns the nightly red.
 - **The jar test stays out.** `jarTest` (the `jar` tag) runs the built jar in child JVMs inside `check`. `test` leaves the
   tag out, and PIT takes `test`'s excluded tags, so no mutant is judged by a child JVM.
