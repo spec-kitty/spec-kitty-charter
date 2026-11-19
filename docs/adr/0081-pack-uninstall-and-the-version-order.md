@@ -29,7 +29,7 @@ audience:
 [#517](https://github.com/spec-kitty/spec-kitty-charter/issues/517) through the orchestrating session, each a Decision
 Moment of Mission `pack-delete-and-update-guard-01M7SANQ` (`kitty-specs/pack-delete-and-update-guard-01M7SANQ/decisions/`).
 Decision 2 reverses [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) D2 and its ruling B1
-(DM-01M6RA9BKJY7X9BFV93QW1KM1T); the operator acknowledged the reversal.
+(`DM-01M6RA9BKJY7X9BFV93QW1KM1T`); the operator acknowledged the reversal.
 
 The design calls of the Mission's plan (P1 to P10) were made without a ruling and are open review items for the
 pre-merge review: the shape change of the activations port, the dry run's answer shapes, and the refusal of a linked
@@ -39,7 +39,7 @@ pack.
 
 An external org pack can be registered (`POST /packs`, `PUT /packs/{packId}`) and replaced, but it cannot be removed,
 and a replacement is not checked against what it replaces: any version replaces, an older one included. Core's org-pack
-lifecycle (the MOES-Media architecture pack, D06 of spec-kitty#5243) needs a clean install, an authenticated update and
+lifecycle (an org architecture pack, D06 of spec-kitty#5243) needs a clean install, an authenticated update and
 an uninstall, and a way to see what each would do before it is done.
 
 The service already finds every closure that holds a pack (`ClosureRoots`, the reverse `depends_on` and lineage index
