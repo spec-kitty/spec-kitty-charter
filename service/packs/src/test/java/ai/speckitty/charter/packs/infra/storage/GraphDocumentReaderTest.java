@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -68,7 +67,7 @@ class GraphDocumentReaderTest {
                   when: always
                   reason: because
                 - {source: tactic:t, target: tactic:u, relation: refines}
-                - {source: tactic:t, target: tactic:u, relation: in_tension_with}
+                - {source: tactic:t, target: tactic:u, relation: tension}
                 """, Shape.SHARD, SHARD);
 
         assertThat(raw.file()).isEqualTo(SHARD);
@@ -82,8 +81,8 @@ class GraphDocumentReaderTest {
                         new RawEdge(
                                 "tactic:t", "directive:d", "requires", Optional.of("always"), Optional.of("because")),
                         new RawEdge("tactic:t", "tactic:u", "refines", Optional.empty(), Optional.empty()),
-                        // The tension's spelling is still the word on the page; the domain binds it.
-                        new RawEdge("tactic:t", "tactic:u", "in_tension_with", Optional.empty(), Optional.empty()));
+                        // The relation is the word on the page; the domain binds it.
+                        new RawEdge("tactic:t", "tactic:u", "tension", Optional.empty(), Optional.empty()));
     }
 
     @Test
@@ -163,7 +162,7 @@ class GraphDocumentReaderTest {
                                 edges:
                                 - {source: tactic:t, target: directive:d, relation: requires, reason: because}
                                 - {source: tactic:t, target: tactic:u, relation: suggests, when: always}
-                                - {source: directive:d, target: tactic:t, relation: in_tension_with, when: w, reason: r}
+                                - {source: directive:d, target: tactic:t, relation: tension, when: w, reason: r}
                                 """, Shape.SHARD, SHARD)).graph();
 
         RawGraph reread = read(GraphShardWriter.write(graph), Shape.SHARD, "w.graph.yaml");
@@ -175,12 +174,6 @@ class GraphDocumentReaderTest {
             assertThat(node.provenance()).contains("p");
             assertThat(node.tags()).containsExactly("y", "x");
         });
-        assertThat(rebuilt.tensions())
-                .containsExactly(new Tension(
-                        new Urn(NodeKind.DIRECTIVE, "d"),
-                        new Urn(NodeKind.TACTIC, "t"),
-                        Optional.of("w"),
-                        Optional.of("r")));
         // The round-trip keeps relation, condition and rationale, present-vs-absent distinct (NFR-003).
         assertThat(rebuilt.relationships())
                 .satisfiesExactly(
@@ -193,6 +186,14 @@ class GraphDocumentReaderTest {
                             assertThat(suggests.type()).isEqualTo(RelationType.SUGGESTS);
                             assertThat(suggests.when()).contains("always");
                             assertThat(suggests.rationale()).isEmpty();
+                        },
+                        tension -> {
+                            // A tension beside the requires on the same pair: its own slot, written as stored.
+                            assertThat(tension.type()).isEqualTo(RelationType.TENSION);
+                            assertThat(tension.from()).isEqualTo(new Urn(NodeKind.DIRECTIVE, "d"));
+                            assertThat(tension.to()).isEqualTo(new Urn(NodeKind.TACTIC, "t"));
+                            assertThat(tension.when()).contains("w");
+                            assertThat(tension.rationale()).contains("r");
                         });
     }
 

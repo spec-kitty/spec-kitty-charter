@@ -12,54 +12,34 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * An ordered DRG: nodes keyed by URN in first-declared order, {@link Relationship}s in declared order.
- * Merging appends; a node declared twice keeps its first declaration (layer semantics beyond this union
- * arrive with the conformance corpus, roadmap step 5).
+ * A node declared twice keeps its first declaration whole, tags and provenance included (ADR-0045 decision 7).
  *
- * <p>The graph holds first-class {@link Relationship}s (ADR-0025 Decision 5): {@code DrgEdge} is now a
- * storage DSO in {@code packs.infra.storage} and never reaches the kernel. Relationship identity is the
- * unordered {@code {from, to}} pair (ADR-0027 Decision 1), so this list is pair-sensitive in order but not a
+ * <p>The graph holds first-class {@link Relationship}s (ADR-0025 Decision 5): {@code DrgEdge} is a storage DSO in
+ * {@code packs.infra.storage} and never reaches the kernel. A relationship's identity is its unordered
+ * {@code {from, to}} pair and its {@link Relationship.PairClass} (ADR-0027 Decision 1 as amended by ADR-0045 decision 1),
+ * so a pair may hold one structural relationship and, beside it, one {@code tension}. This list is ordered and not a
  * multigraph index; a transitive walk is the {@code packs.application} walker's job, not an edge index here.
- *
- * <p>Beside the relationships the graph holds its {@link Tension}s, in declared order (ADR-0028 Decision 3, ADR-0045): a
- * tension is not a relationship and is outside the pair identity, so a pair may hold one structural relationship and a
- * tension. A node declared twice keeps its first declaration whole, tags and provenance included.
  */
 public final class DoctrineGraph {
 
     private final Map<Urn, DrgNode> nodes;
     private final List<Relationship> relationships;
-    private final List<Tension> tensions;
 
     /**
-     * A graph of {@code nodes} and {@code relationships} with no tension; a node whose URN was already declared is
-     * dropped.
+     * A graph of {@code nodes} and {@code relationships}; a node whose URN was already declared is dropped.
      *
      * @param nodes the nodes, in declaration order
      * @param relationships the relationships, in declaration order; endpoints need not be nodes of this graph
      */
     public DoctrineGraph(Collection<DrgNode> nodes, Collection<Relationship> relationships) {
-        this(nodes, relationships, List.of());
-    }
-
-    /**
-     * A graph of {@code nodes}, {@code relationships} and {@code tensions}; a node whose URN was already declared is
-     * dropped.
-     *
-     * @param nodes the nodes, in declaration order
-     * @param relationships the relationships, in declaration order; endpoints need not be nodes of this graph
-     * @param tensions the tensions, in declaration order; endpoints need not be nodes of this graph
-     */
-    public DoctrineGraph(
-            Collection<DrgNode> nodes, Collection<Relationship> relationships, Collection<Tension> tensions) {
         Map<Urn, DrgNode> byUrn = new LinkedHashMap<>();
         nodes.forEach(n -> byUrn.putIfAbsent(n.urn(), n));
         this.nodes = Collections.unmodifiableMap(byUrn);
         this.relationships = List.copyOf(relationships);
-        this.tensions = List.copyOf(tensions);
     }
 
     /**
-     * The graph with no nodes, relationships or tensions, the identity of {@link #merge(DoctrineGraph)}.
+     * The graph with no nodes or relationships, the identity of {@link #merge(DoctrineGraph)}.
      *
      * @return an empty graph
      */
@@ -77,21 +57,12 @@ public final class DoctrineGraph {
     }
 
     /**
-     * The relationships, in declared order.
+     * The relationships, in declared order, tensions among them.
      *
      * @return an unmodifiable list of the relationships
      */
     public List<Relationship> relationships() {
         return relationships;
-    }
-
-    /**
-     * The tensions, in declared order.
-     *
-     * @return an unmodifiable list of the tensions
-     */
-    public List<Tension> tensions() {
-        return tensions;
     }
 
     /**
@@ -115,8 +86,9 @@ public final class DoctrineGraph {
     }
 
     /**
-     * This graph followed by {@code other}: its nodes, relationships and tensions are appended, and a node of
-     * {@code other} whose URN this graph already declares is dropped.
+     * This graph followed by {@code other}: a node of {@code other} whose URN this graph already declares is dropped,
+     * and a relationship of {@code other} whose slot (pair and pair class, {@link Relationship#sameSlot}) this graph
+     * already holds is dropped, so the first declaration wins (ADR-0045 decision 7).
      *
      * @param other the graph of the next layer
      * @return the merged graph; neither input changes
@@ -125,22 +97,23 @@ public final class DoctrineGraph {
         List<DrgNode> mergedNodes = new ArrayList<>(nodes.values());
         mergedNodes.addAll(other.nodes());
         List<Relationship> mergedRelationships = new ArrayList<>(relationships);
-        mergedRelationships.addAll(other.relationships());
-        List<Tension> mergedTensions = new ArrayList<>(tensions);
-        mergedTensions.addAll(other.tensions());
-        return new DoctrineGraph(mergedNodes, mergedRelationships, mergedTensions);
+        for (Relationship incoming : other.relationships()) {
+            if (mergedRelationships.stream().noneMatch(incoming::sameSlot)) {
+                mergedRelationships.add(incoming);
+            }
+        }
+        return new DoctrineGraph(mergedNodes, mergedRelationships);
     }
 
     @Override
     public boolean equals(@Nullable Object o) {
         return o instanceof DoctrineGraph g
                 && List.copyOf(nodes.values()).equals(List.copyOf(g.nodes.values()))
-                && relationships.equals(g.relationships)
-                && tensions.equals(g.tensions);
+                && relationships.equals(g.relationships);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(List.copyOf(nodes.values()), relationships, tensions);
+        return Objects.hash(List.copyOf(nodes.values()), relationships);
     }
 }

@@ -20,8 +20,8 @@ import org.jspecify.annotations.Nullable;
  * document that breaks its bundled schema ({@code graph-shard} or {@code org-fragment}) is {@link FileRead.Unreadable}
  * with the validator's facts; any other document is read as written, every declared node field included, with
  * nothing bound or defaulted. Every code and every text belongs to the pack rules ({@code Wording},
- * {@code GraphBinding}); {@code in_tension_with}, today's spelling of a tension (ADR-0036 Decision 4), stays the word
- * on the page here and {@code GraphBinding} binds it. It never throws on content.
+ * {@code GraphBinding}); a relation stays the word on the page here, {@code tension} included, and {@code GraphBinding}
+ * binds it. It never throws on content.
  */
 public final class GraphDocumentReader {
 

@@ -5,7 +5,6 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -29,8 +28,8 @@ import java.util.Set;
  * hold, or from another pack's, is no fact of those rules, so the table judges it here.
  *
  * <p>An endpoint that is no reference, an unknown relation, a derived relation and a bare self-loop are faults of the
- * graph rules, which refuse them on their own. An {@code in_tension_with} edge joins two guidance kinds
- * ({@link EndpointRule#bindTension}).
+ * graph rules, which refuse them on their own. A {@code tension} edge is judged by the table like any relation
+ * (ADR-0045 decision 1): guidance on both sides.
  *
  * <p>The content rule ({@code GraphRules}) states each refusal as a finding at the edge, so a registration and validate
  * mode list one per edge; the store half records the same refusal at the graph document, so a composing read answers
@@ -84,8 +83,6 @@ public final class RelationshipEndpointRule {
             Objects.requireNonNull(reason, "reason");
         }
     }
-
-    private static final String TENSION = GraphBinding.TENSION;
 
     private RelationshipEndpointRule() {}
 
@@ -157,9 +154,6 @@ public final class RelationshipEndpointRule {
                 || bareSelfLoop(source.get(), sourceUrn.get(), target.get(), targetUrn.get())) {
             return Optional.empty();
         }
-        if (TENSION.equals(edge.relation())) {
-            return EndpointRule.bindTension(sourceUrn.get(), targetUrn.get()).map(EndpointRule.Fault::message);
-        }
         Optional<RelationType> relation = RelationType.fromToken(edge.relation());
         if (relation.isEmpty()
                 || relation.get().derived()
@@ -177,7 +171,9 @@ public final class RelationshipEndpointRule {
                     Optional.empty(),
                     Optional.empty());
         } catch (IllegalArgumentException malformed) {
-            // A qualifier that breaks the pack-name grammar: the graph rules refuse the edge on their own.
+            // A qualifier that breaks the pack-name grammar, or a tension of an artifact with another version of
+            // itself:
+            // the graph rules refuse the edge on their own.
             return Optional.empty();
         }
         return binding instanceof EndpointRule.Fault fault ? Optional.of(fault.message()) : Optional.empty();

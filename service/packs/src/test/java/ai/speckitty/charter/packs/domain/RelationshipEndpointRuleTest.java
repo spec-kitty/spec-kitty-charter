@@ -60,7 +60,7 @@ class RelationshipEndpointRuleTest {
         "tactic:t, vocabulary, directive:D, tactic:t, glossary_context:g",
         "action:software-dev/plan, applies, styleguide:s, action:software-dev/plan, tactic:t",
         "directive:d, overrides, tactic:t, directive:d, directive:E",
-        "directive:d, in_tension_with, skill:s, directive:d, tactic:t"
+        "directive:d, tension, skill:s, directive:d, tactic:t"
     })
     @DisplayName("validate mode refuses one edge of each relation family with one finding, beside a twin that passes")
     void eachRelationFamilyRefusesKindsItsRowsDoNotHold(

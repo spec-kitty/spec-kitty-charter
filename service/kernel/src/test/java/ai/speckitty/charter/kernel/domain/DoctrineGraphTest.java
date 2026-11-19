@@ -55,39 +55,40 @@ class DoctrineGraphTest {
     }
 
     @Test
-    void tensionsAreHeldBesideTheRelationshipsInDeclaredOrder() {
+    void aTensionIsARelationshipBesideTheStructuralOneOfItsPair() {
         Relationship requires = Relationship.of(B, A, RelationType.REQUIRES);
-        Tension first = new Tension(A, B, Optional.empty(), Optional.of("r"));
-        Tension second = new Tension(A, C, Optional.of("w"), Optional.empty());
-        DoctrineGraph graph = new DoctrineGraph(List.of(), List.of(requires), List.of(first, second));
+        Relationship tension = Relationship.of(A, B, RelationType.TENSION);
+        DoctrineGraph graph = new DoctrineGraph(List.of(), List.of(requires, tension));
 
-        assertThat(graph.relationships())
-                .singleElement()
-                .satisfies(r -> assertThat(r.type()).isEqualTo(RelationType.REQUIRES));
-        assertThat(graph.tensions()).containsExactly(first, second);
-        assertThat(new DoctrineGraph(List.of(), List.of(requires)).tensions()).isEmpty();
-        assertThat(DoctrineGraph.empty().tensions()).isEmpty();
+        assertThat(graph.relationships()).containsExactly(requires, tension);
     }
 
     @Test
-    void aMergedGraphAppendsTheTensionsOfBothLayersInOrder() {
-        Tension fromFirst = new Tension(A, B, Optional.empty(), Optional.empty());
-        Tension fromSecond = new Tension(A, C, Optional.empty(), Optional.empty());
-        DoctrineGraph merged = new DoctrineGraph(List.of(), List.of(), List.of(fromFirst))
-                .merge(new DoctrineGraph(List.of(), List.of(), List.of(fromSecond)));
+    void aMergedGraphKeepsTheFirstRelationshipOfEachSlot() {
+        Relationship requires = Relationship.of(B, A, RelationType.REQUIRES);
+        Relationship tension = Relationship.of(A, B, RelationType.TENSION, Optional.empty(), Optional.of("first"));
+        Relationship laterTension =
+                Relationship.of(B, A, RelationType.TENSION, Optional.empty(), Optional.of("second"));
+        Relationship laterSuggests = Relationship.of(A, B, RelationType.SUGGESTS);
+        Relationship elsewhere = Relationship.of(A, C, RelationType.TENSION);
 
-        assertThat(merged.tensions()).containsExactly(fromFirst, fromSecond);
+        DoctrineGraph merged = new DoctrineGraph(List.of(), List.of(requires, tension))
+                .merge(new DoctrineGraph(List.of(), List.of(laterTension, laterSuggests, elsewhere)));
+
+        assertThat(merged.relationships()).containsExactly(requires, tension, elsewhere);
+        assertThat(merged.relationships().get(1).rationale()).contains("first");
+        assertThat(merged.relationships().get(0).type()).isEqualTo(RelationType.REQUIRES);
     }
 
     @Test
     void graphsThatDifferOnlyByATensionAreNotEqual() {
-        Tension tension = new Tension(A, B, Optional.empty(), Optional.empty());
-        DoctrineGraph with = new DoctrineGraph(List.of(), List.of(), List.of(tension));
-        DoctrineGraph without = new DoctrineGraph(List.of(), List.of());
+        Relationship requires = Relationship.of(B, A, RelationType.REQUIRES);
+        DoctrineGraph with =
+                new DoctrineGraph(List.of(), List.of(requires, Relationship.of(A, B, RelationType.TENSION)));
+        DoctrineGraph without = new DoctrineGraph(List.of(), List.of(requires));
 
         assertThat(with).isNotEqualTo(without);
         assertThat(with.hashCode()).isNotEqualTo(without.hashCode());
-        assertThat(with).isEqualTo(new DoctrineGraph(List.of(), List.of(), List.of(tension)));
     }
 
     @Test

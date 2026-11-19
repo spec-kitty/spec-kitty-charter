@@ -24,21 +24,43 @@ import java.util.Optional;
 /**
  * A first-class relationship between two components (FR-001).
  *
- * <p><strong>Identity is the unordered {@code {from, to}} pair</strong> (ADR-0027 Decision 1): an
- * {@code A → B} relationship {@linkplain #equals(Object) equals} a {@code B → A} relationship and
- * the two {@linkplain #hashCode() hash} alike, so a {@code Set} keeps at most one relationship per
- * component pair. {@code type}, {@code when} and {@code rationale} are <em>not</em> part of identity.
- * The authored {@code from}/{@code to} orientation is still stored and readable, so a
- * {@link Directionality#DIRECTED} relation keeps its direction.
+ * <p><strong>Identity is the unordered {@code {from, to}} pair and its {@link PairClass}</strong> (ADR-0027
+ * Decision 1, as amended by ADR-0045 decision 1): an {@code A → B} relationship {@linkplain #equals(Object) equals} a
+ * {@code B → A} relationship of the same pair class, and the two {@linkplain #hashCode() hash} alike, so a {@code Set}
+ * keeps at most one structural relationship and at most one {@code tension} per component pair (ADR-0028 Decision 3).
+ * The relation itself within a class, {@code when} and {@code rationale} are <em>not</em> part of identity.
+ * {@link #samePair} compares the pair alone; {@link #sameSlot} is identity. The authored {@code from}/{@code to}
+ * orientation is still stored and readable, so a {@link Directionality#DIRECTED} relation keeps its direction.
  *
  * <p>This is a {@code final class} rather than a {@code record} precisely because the generated
  * component-wise equality would make {@code A → B} unequal to {@code B → A} and silently break
- * "one relationship per pair"; equality is overridden to compare the unordered pair.
+ * "one relationship per slot"; equality is overridden to compare the unordered pair and the class.
  *
  * <p>The typed factories (ADR-0064 decision 13) each name the relation they build: a factory's name starts with the
  * relation's token in camel case, which {@code EndpointTableAgreementTest} relies on to check them against the table.
  */
 public final class Relationship {
+
+    /**
+     * The class a relationship's identity counts it in (ADR-0045 decision 1): a {@code tension} stands beside the one
+     * structural relationship of its pair, and neither replaces the other.
+     */
+    public enum PairClass {
+        /** Every relation but {@code tension}: at most one per unordered pair (ADR-0027). */
+        STRUCTURAL,
+        /** The {@code tension} between two rules: at most one per unordered pair, beside the structural one. */
+        TENSION;
+
+        /**
+         * The class of a relation.
+         *
+         * @param type the relation
+         * @return {@link #TENSION} for {@link RelationType#TENSION}, else {@link #STRUCTURAL}
+         */
+        public static PairClass of(RelationType type) {
+            return type == RelationType.TENSION ? TENSION : STRUCTURAL;
+        }
+    }
 
     private final Urn from;
     private final Optional<String> fromPack;
@@ -76,7 +98,9 @@ public final class Relationship {
      * @param rationale the authored reason; empty when absent, never {@code null}
      * @throws IllegalArgumentException when any argument is {@code null}, a qualifier breaks the pack-name grammar, or
      *     {@code from} equals {@code to} with neither endpoint pack-qualified (a self-loop; a qualified endpoint names
-     *     another pack's artifact of the same id, which is legal)
+     *     another pack's artifact of the same id, which is legal for a structural relation), or a {@code tension}'s two
+     *     sides have the same bare URN, qualified or not (two versions of one artifact are not two rules, ADR-0045
+     *     decision 1)
      */
     Relationship(
             Urn from,
@@ -93,7 +117,7 @@ public final class Relationship {
         this.type = requireArg(type, "type");
         this.when = requireArg(when, "when");
         this.rationale = requireArg(rationale, "rationale");
-        if (from.equals(to) && fromPack.isEmpty() && toPack.isEmpty()) {
+        if (from.equals(to) && ((fromPack.isEmpty() && toPack.isEmpty()) || type == RelationType.TENSION)) {
             throw new IllegalArgumentException("A relationship cannot be a self-loop: " + from);
         }
     }
@@ -362,6 +386,18 @@ public final class Relationship {
     }
 
     /**
+     * Builds the {@code tension} relationship (ADR-0028, ADR-0045 decision 1): two guidance rules that pull against each
+     * other. It is bidirectional, so the orientation written carries no meaning.
+     *
+     * @param from one side
+     * @param to the other side
+     * @return the relationship
+     */
+    public static Relationship tension(KindRef<? extends Guidance> from, KindRef<? extends Guidance> to) {
+        return typed(from, to, RelationType.TENSION);
+    }
+
+    /**
      * Builds the {@code rejects} relationship (ADR-0064 decision 13): a guidance kind rejects an anti-pattern.
      *
      * @param from the source
@@ -481,31 +517,59 @@ public final class Relationship {
     }
 
     /**
-     * Whether this relationship joins the same unordered pair as another. Identity is the
-     * {@code {from, to}} set only; type, condition and rationale are ignored.
+     * The class this relationship's identity counts it in.
+     *
+     * @return {@link PairClass#TENSION} for a tension, else {@link PairClass#STRUCTURAL}
+     */
+    public PairClass pairClass() {
+        return PairClass.of(type);
+    }
+
+    /**
+     * Whether this relationship joins the same unordered pair of bare URNs as another, whatever its class.
+     *
+     * @param other the relationship to compare with
+     * @return {@code true} when {@code other} joins the same two components, in either orientation
+     */
+    public boolean samePair(Relationship other) {
+        return (from.equals(other.from) && to.equals(other.to)) || (from.equals(other.to) && to.equals(other.from));
+    }
+
+    /**
+     * Whether this relationship holds the same slot as another: the same unordered pair and the same {@link PairClass}.
+     * It is {@link #equals(Object)}.
+     *
+     * @param other the relationship to compare with
+     * @return {@code true} when a graph would keep only one of the two
+     */
+    public boolean sameSlot(Relationship other) {
+        return samePair(other) && pairClass() == other.pairClass();
+    }
+
+    /**
+     * Whether this relationship holds the same slot as another (ADR-0045 decision 1): the same unordered pair and the
+     * same pair class. The relation within a class, the condition and the rationale are ignored.
      *
      * @param other the object to compare with
-     * @return {@code true} when {@code other} is a relationship over the same pair, in either orientation
+     * @return {@code true} when {@code other} is a relationship of the same class over the same pair, in either
+     *     orientation
      */
     @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof Relationship that)) {
-            return false;
-        }
-        return (from.equals(that.from) && to.equals(that.to)) || (from.equals(that.to) && to.equals(that.from));
+        return other instanceof Relationship that && sameSlot(that);
     }
 
     /**
-     * An order-independent hash of the {@code {from, to}} pair, so the two orientations hash alike.
+     * An order-independent hash of the {@code {from, to}} pair and the pair class, so the two orientations hash alike.
      *
      * @return the hash code
      */
     @Override
     public int hashCode() {
-        return from.hashCode() + to.hashCode();
+        return 31 * (from.hashCode() + to.hashCode()) + pairClass().hashCode();
     }
 
     @Override

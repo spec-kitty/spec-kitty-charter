@@ -121,20 +121,6 @@ public final class EndpointRule {
         return new Bound(new Relationship(from, fromPack, to, toPack, type, when, rationale));
     }
 
-    /**
-     * Checks the kinds of a tension, which ADR-0028 holds beside the relations: guidance on both sides.
-     *
-     * @param one one side
-     * @param other the other side
-     * @return the fault, when either side is not a guidance kind
-     */
-    public static Optional<Fault> bindTension(Urn one, Urn other) {
-        if (EndpointTable.tensionAllows(one.kind(), other.kind())) {
-            return Optional.empty();
-        }
-        return Optional.of(new Fault(ENDPOINT_NOT_ALLOWED, Tension.TOKEN, one.kind(), other.kind()));
-    }
-
     /** An artifact kind without activation state; a node-only kind (a step) is the table's to judge. */
     private static boolean inactivatableArtifact(NodeKind kind) {
         return kind.artifactKind().map(artifact -> !artifact.activatable()).orElse(false);

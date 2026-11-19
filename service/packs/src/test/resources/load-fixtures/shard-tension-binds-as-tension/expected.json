@@ -10,9 +10,8 @@
     }
   ],
   "nodeCount": 0,
-  "edgeCount": 0,
-  "edges": [],
-  "tensions": [
-    "directive:a in_tension_with directive:b"
+  "edgeCount": 1,
+  "edges": [
+    "directive:a tension directive:b"
   ]
 }

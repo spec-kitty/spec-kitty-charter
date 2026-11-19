@@ -37,4 +37,16 @@ class RelationTypeTest {
     void fromTokenResolvesAKnownToken() {
         assertThat(RelationType.fromToken("overrides")).contains(RelationType.OVERRIDES);
     }
+
+    @Test
+    void tensionIsABidirectionalAuthoredRelationSpelledTensionAndTheOldSpellingIsUnknown() {
+        assertThat(RelationType.fromToken("tension")).contains(RelationType.TENSION);
+        assertThat(RelationType.TENSION.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
+        assertThat(RelationType.TENSION.derived()).isFalse();
+        assertThat(RelationType.TENSION.allows(NodeKind.DIRECTIVE, NodeKind.TACTIC))
+                .isTrue();
+        assertThat(RelationType.TENSION.allows(NodeKind.DIRECTIVE, NodeKind.AGENT_PROFILE))
+                .isFalse();
+        assertThat(RelationType.fromToken("in_tension_with")).isEmpty();
+    }
 }

@@ -47,7 +47,6 @@ import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -408,8 +407,8 @@ public final class DomainRepositoryService
 
     /**
      * The edges of the pack's graph documents, in {@link FilesystemPackStore#readGraphs} order: the root shards by
-     * file name, then the fragment, each in document order (ADR-0064). An {@code in_tension_with} edge is a tension,
-     * not a relationship, and is left out.
+     * file name, then the fragment, each in document order (ADR-0064). A {@code tension} edge is a relationship
+     * like any other (ADR-0045 decision 1).
      *
      * @param pack the pack
      * @return the edges
@@ -430,10 +429,6 @@ public final class DomainRepositoryService
         List<PackEdge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
-                if (GraphBinding.TENSION.equals(edge.relation())) {
-                    // A tension is read as a tension, never answered as a relationship (Relation.yaml).
-                    continue;
-                }
                 RelationType relation = RelationType.fromToken(edge.relation())
                         .orElseThrow(() -> new CharterRefusal(
                                 RefusalCode.PACK_UNREADABLE,

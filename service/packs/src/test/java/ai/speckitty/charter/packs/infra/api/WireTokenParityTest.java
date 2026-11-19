@@ -36,7 +36,6 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService;
 import ai.speckitty.charter.packs.domain.Diagnostic;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
@@ -274,7 +273,7 @@ class WireTokenParityTest {
 
     /**
      * The kind taxonomy's copies (R18): TaxonomyKind, every node kind, guard and lifecycle among them, in the three
-     * places the generator inlines it; TaxonomyRelation, every relation type and the tension's spelling; and how a
+     * places the generator inlines it; TaxonomyRelation, every relation type, {@code tension} among them; and how a
      * relation is held.
      */
     private static List<Pair> kindTaxonomyPairs() {
@@ -297,10 +296,7 @@ class WireTokenParityTest {
                         EndpointPair.TargetEnum::fromValue),
                 new Pair(
                         "RelationRow.relation (TaxonomyRelation)",
-                        Stream.concat(
-                                        tokens(RelationType.values(), RelationType::token).stream(),
-                                        Stream.of(GraphBinding.TENSION))
-                                .toList(),
+                        tokens(RelationType.values(), RelationType::token),
                         values(RelationRow.RelationEnum.values(), RelationRow.RelationEnum::getValue),
                         RelationRow.RelationEnum::fromValue),
                 new Pair(

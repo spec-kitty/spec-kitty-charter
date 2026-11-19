@@ -88,7 +88,7 @@ class RelationshipShardRoundTripTest {
     }
 
     @Test
-    void aTensionInARegisteredShardIsAFindingSoTheNextRegistrationRefusesInsteadOfDroppingIt() {
+    void aTensionInARegisteredShardBindsLikeAnyRelationshipSoTheNextRegistrationKeepsIt() {
         String header = """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -97,15 +97,18 @@ class RelationshipShardRoundTripTest {
                 - {source: tactic:a, target: directive:b, relation: requires}
                 """;
 
-        ShardRead withTension = RelationshipShard.read(
-                "qa", header + "- {source: tactic:a, target: tactic:c, relation: in_tension_with}\n");
-        ShardRead without = RelationshipShard.read("qa", header);
+        ShardRead withTension =
+                RelationshipShard.read("qa", header + "- {source: tactic:a, target: tactic:c, relation: tension}\n");
 
-        assertThat(withTension.findings())
+        assertThat(withTension.findings()).isEmpty();
+        assertThat(withTension.relationships())
+                .extracting(Relationship::type)
+                .containsExactly(RelationType.REQUIRES, RelationType.TENSION);
+        // The old spelling is an unknown relation, so that shard does not bind whole.
+        assertThat(RelationshipShard.read(
+                                "qa", header + "- {source: tactic:a, target: tactic:c, relation: in_tension_with}\n")
+                        .findings())
                 .singleElement()
-                .satisfies(finding -> assertThat(finding.detail()).contains("never a tension"));
-        // Positive control: the same shard without the tension binds whole.
-        assertThat(without.findings()).isEmpty();
-        assertThat(without.relationships()).containsExactly(Relationship.of(A, B, RelationType.REQUIRES));
+                .satisfies(finding -> assertThat(finding.detail()).contains("unknown relation 'in_tension_with'"));
     }
 }
