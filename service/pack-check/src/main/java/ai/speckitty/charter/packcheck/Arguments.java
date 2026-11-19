@@ -241,6 +241,10 @@ final class Arguments {
             // x:org is a directory and x is not: the value names the directory x:org, at no configured level.
             return directoryOf(value, Optional.empty());
         }
+        if (level.isPresent() && !Files.isDirectory(Path.of(path))) {
+            // Neither x:org nor x is a directory: name the value as given, and the directory it was read as.
+            return Given.refused(PACK + " " + value + " is not a directory, and nor is " + path);
+        }
         return directoryOf(path, level);
     }
 

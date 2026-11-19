@@ -262,8 +262,25 @@ class ArgumentsTest {
         void aMissingPackDirectory() {
             Path missing = temp.resolve("missing");
 
-            assertThat(fault(Arguments.parse(new String[] {"--pack", missing + ":org"})))
+            assertThat(fault(Arguments.parse(new String[] {"--pack", missing.toString()})))
                     .isEqualTo("--pack " + missing + " is not a directory");
+        }
+
+        @Test
+        void aMissingPackDirectoryWithALevelIsNamedAsGiven() {
+            // Neither missing:org nor missing exists: the fault names the value, not only its directory part.
+            Path missing = temp.resolve("missing");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", missing + ":org"})))
+                    .isEqualTo("--pack " + missing + ":org is not a directory, and nor is " + missing);
+        }
+
+        @Test
+        void aLevelOnAFileIsNamedAsGiven() throws IOException {
+            Path file = Files.writeString(temp.resolve("pack.yaml"), "name: x\n");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", file + ":project"})))
+                    .isEqualTo("--pack " + file + ":project is not a directory, and nor is " + file);
         }
 
         @Test
