@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class TacticSaveContractTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+    private static final PackDirectory PACK = new PackDirectory("pack-a");
 
     private static TacticDso tactic(String id, String name) {
         return new TacticDso(

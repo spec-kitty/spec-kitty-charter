@@ -37,6 +37,7 @@ class StepDocumentRulesTest {
 
     private static final String CASES = "ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#";
     private static final PackIdentifier PACK_ID = new PackIdentifier("mission-type");
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK_ID);
 
     private static StepDocument titled(String title) {
         return new StepDocument(Optional.of(title), Optional.empty(), "", List.of());
@@ -162,17 +163,17 @@ class StepDocumentRulesTest {
             FilesystemPackStore store = new FilesystemPackStore(host, strategy);
             MissionType type = MissionTypeBinding.INSTANCE.toEntity(
                     PACK_ID,
-                    store.read(PACK_ID, List.of(MissionTypeBinding.INSTANCE))
+                    store.read(PACK_DIRECTORY, List.of(MissionTypeBinding.INSTANCE))
                             .dsos(MissionTypeBinding.INSTANCE)
                             .getFirst());
             MissionType changed = withFirstPrompt(type, prompt);
 
-            store.write(PACK_ID, MissionTypeBinding.INSTANCE, MissionTypeBinding.INSTANCE.toDso(changed));
+            store.write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, MissionTypeBinding.INSTANCE.toDso(changed));
 
             MissionType reread = MissionTypeBinding.INSTANCE.toEntity(
                     PACK_ID,
                     new FilesystemPackStore(host, strategy)
-                            .read(PACK_ID, List.of(MissionTypeBinding.INSTANCE))
+                            .read(PACK_DIRECTORY, List.of(MissionTypeBinding.INSTANCE))
                             .dsos(MissionTypeBinding.INSTANCE)
                             .getFirst());
             assertThat(reread.steps().getFirst().prompt()).contains(prompt);

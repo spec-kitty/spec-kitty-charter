@@ -291,7 +291,7 @@ class PackFileSetExactnessTest {
         DomainRepositoryService service = new DomainRepositoryService(tree::locations, strategy);
         for (Pack pack : tree.packs()) {
             String where = where(tree, pack);
-            FilesystemPackStore.PackRead read = store.read(new PackIdentifier(pack.directoryName()));
+            FilesystemPackStore.PackRead read = store.read(new PackDirectory(pack.directoryName()));
             Set<String> observed = assertTheStoreReadTheValidFilesOfEveryKind(pack, read, where);
 
             Set<String> expected = new LinkedHashSet<>();

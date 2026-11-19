@@ -183,6 +183,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     @Override
     public Map<String, Outcome> roundTrip(Path source, Path target, Map<String, String> kindOf) {
         String name = String.valueOf(source.getFileName());
+        if (!PackIdentifier.isPackId(name)) {
+            // The source directory's name is the registered id the round trip configures and loads under (D2b), so a
+            // name that is no pack id refuses every modelled file instead of posing as one.
+            // TODO(#583 WP03): refuse with pack_id_invalid
+            return refusedAsNoPackId(name, kindOf);
+        }
         PackIdentifier id = new PackIdentifier(name);
         createDirectories(target);
         DomainRepositoryService from = service(name, source);
@@ -206,6 +212,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         Map<String, List<String>> readBack = readBack(reloaded);
         Map<String, String> written = writtenByKindAndId(target);
         Rewrite rewrite = new Rewrite(
+                id,
                 source,
                 target,
                 kindOf,
@@ -238,6 +245,18 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         return outcomes;
     }
 
+    /** Every modelled source file refused, because the source directory's name is no pack id. */
+    private static Map<String, Outcome> refusedAsNoPackId(String name, Map<String, String> kindOf) {
+        Refused refused = new Refused("source directory " + name + " is no pack id: " + PackIdentifier.GRAMMAR_DETAIL);
+        SortedMap<String, Outcome> outcomes = new TreeMap<>();
+        kindOf.forEach((path, kind) -> {
+            if (MODELLED.contains(kind)) {
+                outcomes.put(path, refused);
+            }
+        });
+        return outcomes;
+    }
+
     /** Writes every graph shard that is no companion, by its path. */
     private static Map<String, Outcome> shards(
             String name, Path source, Path target, Map<String, String> kindOf, Set<String> companionPaths) {
@@ -264,6 +283,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * and the written pack as read back.
      */
     private record Rewrite(
+            PackIdentifier id,
             Path source,
             Path target,
             Map<String, String> kindOf,
@@ -303,7 +323,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
             return payload(path, kind, rewrite.pack(), rewrite.assemblyFailure(), rewrite.reloaded());
         } else if (MANIFEST.equals(kind)) {
-            return manifest(rewrite.source(), rewrite.target(), path, rewrite.written());
+            return manifest(rewrite.id(), rewrite.source(), rewrite.target(), path, rewrite.written());
         } else if (PRESET.equals(kind)) {
             return inPlace(
                     path,
@@ -666,7 +686,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     // ---- the manifest (#195) -------------------------------------------------------------------
 
-    private Outcome manifest(Path source, Path target, String path, Map<String, String> written) {
+    private Outcome manifest(PackIdentifier id, Path source, Path target, String path, Map<String, String> written) {
         Optional<String> text = FilesystemPackStore.readText(source.resolve(path));
         if (text.isEmpty()) {
             return new Refused(FilesystemPackStore.NOT_UTF8);
@@ -686,7 +706,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         }
         // #110: the lists are derived from the source pack, as a registration derives them; a difference refuses, and
         // the gate writes the derived lists, in path order, as the store's write does.
-        PackManifestDso derived = PackManifestDerivation.derivedAt(source, strategy);
+        PackManifestDso derived = PackManifestDerivation.derivedAt(id, source, strategy);
         List<String> membership = ManifestMembership.mismatch(good.value(), derived);
         if (!membership.isEmpty()) {
             return new Refused(String.join("; ", membership));

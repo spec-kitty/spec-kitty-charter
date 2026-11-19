@@ -22,6 +22,7 @@ final class ArtifactFiles {
     /**
      * The pack-relative files of the artifacts, read from one read of the pack.
      *
+     * @param pack the registered id the pack is assembled under
      * @param directory the stored pack's directory
      * @param artifacts the artifacts
      * @param strategy the serialization format
@@ -29,17 +30,17 @@ final class ArtifactFiles {
      *     the pack does not store adds none
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be read
      */
-    static List<String> of(Path directory, List<Urn> artifacts, SerializationStrategy strategy) {
+    static List<String> of(PackIdentifier pack, Path directory, List<Urn> artifacts, SerializationStrategy strategy) {
         Path packDir = directory.toAbsolutePath().normalize();
         Path parent = packDir.getParent();
         if (parent == null || packDir.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
         }
         Companions.Rules rules = Companions.Rules.bundled();
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(parent, strategy, rules)
-                .read(new PackIdentifier(String.valueOf(packDir.getFileName())), KindBindings.all());
+        FilesystemPackStore.PackRead read =
+                new FilesystemPackStore(parent, strategy, rules).read(PackDirectory.of(packDir), KindBindings.all());
         Map<Urn, String> places = new HashMap<>();
-        PackAssembly.assembly(new PackIdentifier(read.descriptor().packId()), read, places);
+        PackAssembly.assembly(pack, read, places);
         List<String> files = new ArrayList<>();
         for (Urn artifact : artifacts) {
             String file = places.get(artifact);

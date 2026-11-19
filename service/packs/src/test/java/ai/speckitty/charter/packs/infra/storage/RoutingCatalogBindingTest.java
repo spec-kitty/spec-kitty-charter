@@ -33,6 +33,7 @@ class RoutingCatalogBindingTest {
 
     private static final String PACK = "routing-catalog";
     private static final PackIdentifier PACK_ID = new PackIdentifier(PACK);
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK_ID);
     private static final String FILE = "routing_catalogs/default.routing-catalog.yaml";
 
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();
@@ -42,7 +43,7 @@ class RoutingCatalogBindingTest {
 
     private RoutingCatalogDso dso() {
         return new FilesystemPackStore(host, strategy)
-                .read(PACK_ID, List.of(RoutingCatalogBinding.INSTANCE))
+                .read(PACK_DIRECTORY, List.of(RoutingCatalogBinding.INSTANCE))
                 .dsos(RoutingCatalogBinding.INSTANCE)
                 .getFirst();
     }
@@ -107,7 +108,7 @@ class RoutingCatalogBindingTest {
 
         Files.delete(pack.resolve(FILE));
         new FilesystemPackStore(host, strategy)
-                .write(PACK_ID, RoutingCatalogBinding.INSTANCE, RoutingCatalogBinding.INSTANCE.toDso(catalog));
+                .write(PACK_DIRECTORY, RoutingCatalogBinding.INSTANCE, RoutingCatalogBinding.INSTANCE.toDso(catalog));
 
         assertThat(pack.resolve(FILE)).hasContent(source);
     }

@@ -546,11 +546,12 @@ public final class PackRegistrationService {
         if (stored.isEmpty()) {
             return Before.NOTHING;
         }
-        Path directory = store.liveDirectory(stored.get().configured().id());
+        PackIdentifier pack = stored.get().configured().id();
+        Path directory = store.liveDirectory(pack);
         try {
-            return Before.of(loader.loadStored(directory));
+            return Before.of(loader.loadStored(pack, directory));
         } catch (CharterRefusal unreadable) {
-            return Before.of(loader.salvageStored(directory));
+            return Before.of(loader.salvageStored(pack, directory));
         }
     }
 
