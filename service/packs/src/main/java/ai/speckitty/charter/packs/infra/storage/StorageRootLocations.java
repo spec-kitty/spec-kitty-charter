@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
+import ai.speckitty.charter.packs.domain.PackEntryNames;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -71,7 +72,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class StorageRootLocations implements Locations {
 
-    private static final String ASIDE_MARKER = ".pack-old-";
+    private static final String ASIDE_MARKER = PackEntryNames.ASIDE_MARKER;
 
     private static final Logger LOG = LoggerFactory.getLogger(StorageRootLocations.class);
 
@@ -269,7 +270,7 @@ public final class StorageRootLocations implements Locations {
      * when the pack now resolves: restored, or swapped into place by a commit that finished since the domain was read.
      */
     private boolean restore(Path entry, Path domain, List<Path> served) {
-        Optional<Path> missing = PackCommitStore.missingLiveDirectory(entry);
+        Optional<Path> missing = PackDirectories.missingLiveDirectory(entry);
         if (missing.isEmpty() || !mayRestore(missing.get(), domain, served)) {
             return Files.exists(entry);
         }
@@ -277,7 +278,7 @@ public final class StorageRootLocations implements Locations {
             reported.remove(nameOf(entry) + ASIDE_MARKER);
             return true;
         }
-        int asides = PackCommitStore.asidesOf(missing.get()).size();
+        int asides = PackDirectories.asidesOf(missing.get()).size();
         if (asides > 1) {
             warnUnrepaired(
                     entry,
@@ -462,8 +463,7 @@ public final class StorageRootLocations implements Locations {
     }
 
     private static boolean isPack(Path directory) {
-        String name = String.valueOf(directory.getFileName());
-        return !name.startsWith(".") && !name.contains(ASIDE_MARKER);
+        return PackEntryNames.canBeAPack(String.valueOf(directory.getFileName()));
     }
 
     /** The pack's location; empty when the entry turned out to be a create's reservation as it was read. */

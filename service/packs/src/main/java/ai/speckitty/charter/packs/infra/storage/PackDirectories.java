@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * the staged copy into its place; the aside copy is then hidden and deleted. Between the renames there is no live
  * directory, only the aside copy, which holds the last committed state. A reader takes no lock (NFR-001), so it reads
  * that aside copy. {@link #resolve} answers the entry's own directory when it exists; when it is missing, the missing
- * live directory ({@link PackCommitStore#missingLiveDirectory}, which follows a dangling link to its target) and its
+ * live directory ({@link #missingLiveDirectory}, which follows a dangling link to its target) and its
  * aside copies: exactly one is read, zero or several are absent, and the caller refuses as before. An aside copy beside
  * a directory the service may not write (a pack linked from outside the configuration root) was not left by the
  * service and is never read. An entry that is itself an empty directory (not a link) is the reservation of a create in
@@ -42,6 +42,9 @@ import org.jspecify.annotations.Nullable;
  * {@code PACK_UNREADABLE}.
  */
 final class PackDirectories {
+
+    /** The most links a dangling chain is followed through, as the usual {@code ELOOP} bound. */
+    private static final int MAX_LINK_HOPS = 40;
 
     /** The most attempts whose directory changed under them before a read gives up with {@code STALE_INPUT}. */
     static final int MAX_PROGRESS = 8;
@@ -131,13 +134,13 @@ final class PackDirectories {
 
     /** The one aside copy beside the missing live directory of {@code entry}, when the service left it. */
     private static Optional<Resolution> aside(Path entry, Locations locations) {
-        Optional<Path> missing = PackCommitStore.missingLiveDirectory(entry);
+        Optional<Path> missing = missingLiveDirectory(entry);
         if (missing.isEmpty() || locations.whyReadOnly(missing.get()).isPresent()) {
             return Optional.empty();
         }
         List<Path> asides;
         try {
-            asides = PackCommitStore.asidesOf(missing.get());
+            asides = asidesOf(missing.get());
         } catch (CharterRefusal unlistable) {
             return Optional.empty();
         }
@@ -244,6 +247,62 @@ final class PackDirectories {
                             : Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS));
         } catch (IOException gone) {
             return Optional.empty();
+        }
+    }
+
+    /**
+     * The directory a crash between the swap's two renames may have left missing for a pack entry: the entry itself
+     * for a plain pack, the final target of its link chain for a linked one. It is written as the real path of its
+     * parent plus its name, which is where the swap left the aside copy, since a commit swaps the real path. Each link
+     * is read with {@link Files#readSymbolicLink} and resolved against the real path of the directory that holds it,
+     * since {@code toRealPath} fails on a dangling link and a lexical {@code ..} under a linked directory goes wrong.
+     *
+     * @param entry the pack's entry under the pack domain
+     * @return the missing directory, or empty when it exists or the chain cannot be followed
+     */
+    static Optional<Path> missingLiveDirectory(Path entry) {
+        Path current = entry;
+        try {
+            for (int hop = 0; hop <= MAX_LINK_HOPS; hop++) {
+                Path parent = current.getParent();
+                Path name = current.getFileName();
+                if (parent == null || name == null) {
+                    return Optional.empty();
+                }
+                if (!Files.isSymbolicLink(current)) {
+                    boolean missing = !Files.exists(current, LinkOption.NOFOLLOW_LINKS)
+                            && !".".equals(name.toString())
+                            && !"..".equals(name.toString());
+                    return missing ? Optional.of(parent.toRealPath().resolve(name)) : Optional.empty();
+                }
+                current = parent.toRealPath().resolve(Files.readSymbolicLink(current));
+            }
+        } catch (IOException unresolved) {
+            // A parent that does not resolve holds no aside copy the service left.
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The {@code <name>.pack-old-*} aside copies beside a live directory.
+     *
+     * @param live the pack's live directory, not a link: for a linked pack, its target
+     * @return the aside copies, in no particular order
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the parent cannot be listed
+     */
+    static List<Path> asidesOf(Path live) {
+        Path parent = live.getParent();
+        if (parent == null || !Files.isDirectory(parent)) {
+            return List.of();
+        }
+        String prefix = live.getFileName() + ".pack-old-";
+        try (Stream<Path> siblings = Files.list(parent)) {
+            return siblings.filter(
+                            sibling -> String.valueOf(sibling.getFileName()).startsWith(prefix))
+                    .filter(sibling -> Files.isDirectory(sibling, LinkOption.NOFOLLOW_LINKS))
+                    .toList();
+        } catch (IOException failure) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot inspect the parent of " + live, failure);
         }
     }
 }

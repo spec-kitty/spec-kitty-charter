@@ -51,6 +51,9 @@ final class Placements {
                 List.of(),
                 List.of(),
                 List.of());
-        return new Placement(new PackReadout(contents, List.of(), List.of(), new Rationale(List.of())), configured);
+        // Hand-written facts carry no assembly input: the one reader answers such a read pack_unreadable.
+        PackReadout.Unreadable facts = PackReadout.Unreadable.noAssembly("qa");
+        return new Placement(
+                new PackReadout(contents, List.of(), List.of(), new Rationale(List.of()), facts), configured);
     }
 }

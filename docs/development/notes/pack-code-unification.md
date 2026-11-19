@@ -97,9 +97,10 @@ at a pointer, which is the file unless the row says otherwise.
 | 36 | Declared level differs from the configured one | `pack_level_mismatch` | not judged | unchanged (validate only) | none | none | no golden subject; `PackPolicy.java:155` |
 | 37 | Org pack has no `drg/fragment.yaml` | `org_fragment_missing` | not judged | unchanged (validate only) | none | none | checked against golden: `org-fragment-missing` and every `+pack.yaml` org plant |
 | 38 | `requires_core`, `pack_version` or a `depends_on` range is not PEP 440 | `requires_core_invalid`, `pack_version_invalid`, `dependency_range_invalid` | not judged (accepted); the offering answers the first as `pack_unreadable` | unchanged (validate only; one descriptor function, IC-03) | none | none | checked against golden: `requires-core-invalid` (registration accepts it) |
+| 39 | A symbolic link below the pack root (D1, D6, #597) | not judged (a file link was read through) | not judged (a file link was read through, #597) | `pack_entry_linked`, `<link>: is a symbolic link; a pack holds no links`; owner `StorageCodes` (`LinkRules`, and the store half in `StoreRead`); surfaces: registration, validate mode, the configured load (the composing read answers `pack_unreadable` naming it); the pack root may be a link (#174) | R, V | R, V | checked against golden: `pack-entry-linked-file`, `asset-path-escape-through-a-symlink`, `asset-path-inside-through-a-symlink-is-contained`, `asset-path-symlink-loop` |
 
-38 rows. 29 change a surface: 21 change validate mode and 14 change registration, 6 of them both. Row 33 changes under
-Q1, the others under R2.
+39 rows. 30 change a surface: 22 change validate mode and 15 change registration, 7 of them both. Row 33 changes under
+Q1, row 39 under rulings D1 and D6 of #478 (added 2026-11-19), the others under R2.
 
 ## Open cases
 
@@ -578,7 +579,8 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
 - **`CLOSURE` is `CompositionRules.closure()`,** a `ModularRuleset<List<PackUnderResolution>>` in `packs.domain.rules`,
   its codes `PackCodes.CLOSURE`. `CompositionFault(code, packs, detail)` keeps the pack list a `Reason` cannot carry
   (A-M4). WP09 adds the one-line delegate `PackRulesets.closure()`. The preset contests are a phase of their own,
-  `CompositionRules.presets(presetIdsOf)`, since a `PackUnderResolution` carries no preset ids. It orders the packs
+  `CompositionRules.presetFaults(packs, presetIdsOf)`, since a `PackUnderResolution` carries no preset ids; #478 joins
+  the two phases in `PackRulesets.closureFaults` and `PackRulesets.closure(presetIdsOf)`. It orders the packs
   itself, by `PackCompositionResolver.mergeOrder` (the resolved order, then the unplaced packs in the stable order), so
   its answer does not depend on the input order; the offering's `presetContests` keeps the order it is given.
 - **Classification (T045).** The offering keeps its interleaved order, answering the first fault of each phase: the

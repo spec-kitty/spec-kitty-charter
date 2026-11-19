@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -51,8 +52,9 @@ import org.jspecify.annotations.Nullable;
  * document ({@code README.md}, #260); no store path reads any other. The walk is
  * the store's: {@link Files#walkFileTree} from the root's real path (a root configured through a link is entered, #174;
  * hidden directories are entered, a directory link below the root is not followed, an entry that vanishes mid-walk is
- * not listed), every regular file ({@link Files#isRegularFile} follows a file link)
- * classified once, in {@link String} order. Every entry point normalizes the directory first, so a configured root such
+ * not listed), every regular file that is not itself a link classified once, in {@link String} order. A link below the
+ * root, to a file, a directory or nothing, is never read through (D6): the walk lists it apart, and the storage rules
+ * refuse it ({@code pack_entry_linked}). Every entry point normalizes the directory first, so a configured root such
  * as {@code packs/foo/.} classifies like the store's own normalized directory.
  */
 final class PackFileSet {
@@ -211,31 +213,28 @@ final class PackFileSet {
     }
 
     /**
-     * One walk of a pack tree (#554, T028): every regular file, a file link followed (the store's listing), every
-     * regular file that is not itself a link (the census), and every link, never followed (the census), each
-     * pack-relative, {@code /}-separated and in {@link String} order. Every tree walk of a pack goes through here, so a
-     * test counts them ({@link #walks()}).
+     * One walk of a pack tree (#554, T028): every regular file that is not itself a link (the store's listing and the
+     * census), and every link, never followed (the census, which refuses it, D6), each pack-relative,
+     * {@code /}-separated and in {@link String} order. No surface reads a file but through {@link #regular()}, so none
+     * reads through a link. Every tree walk of a pack goes through here, so a test counts them ({@link #walks()}).
      *
-     * @param regular every regular file, a file link followed
-     * @param unlinked every regular file that is not itself a link
+     * @param regular every regular file that is not itself a link
      * @param links every symbolic link, to a file, a directory or nothing
      */
-    record Walk(List<String> regular, List<String> unlinked, List<String> links) {
+    record Walk(List<String> regular, List<String> links) {
         /**
          * Copies the lists.
          *
          * @param regular the regular files
-         * @param unlinked the files that are not links
          * @param links the links
          */
         Walk {
             regular = List.copyOf(regular);
-            unlinked = List.copyOf(unlinked);
             links = List.copyOf(links);
         }
 
         /** A walk of nothing: a tree the read could not enter. */
-        static final Walk NONE = new Walk(List.of(), List.of(), List.of());
+        static final Walk NONE = new Walk(List.of(), List.of());
     }
 
     private static final java.util.concurrent.atomic.LongAdder WALKS = new java.util.concurrent.atomic.LongAdder();
@@ -251,7 +250,8 @@ final class PackFileSet {
 
     /**
      * Walks a pack tree once, from the directory's real path, so a root configured through a link is entered (#174,
-     * #284); links below the root are not followed into, and an entry that vanishes while the tree is walked is skipped.
+     * #284); a link below the root is listed as a link and never read through, and an entry that vanishes while the
+     * tree is walked is skipped.
      *
      * @param directory the pack directory
      * @param packName the pack's name, which a refusal to list it names
@@ -262,18 +262,16 @@ final class PackFileSet {
     static Walk walk(Path directory, String packName) {
         WALKS.increment();
         List<String> regular = new ArrayList<>();
-        List<String> unlinked = new ArrayList<>();
         List<String> links = new ArrayList<>();
         try {
             Path root = directory.toRealPath();
-            Files.walkFileTree(root, new FileCollector(root, regular, unlinked, links));
+            Files.walkFileTree(root, new FileCollector(root, regular, links));
         } catch (IOException | UncheckedIOException e) {
             throw unlistable(packName, e);
         }
         Collections.sort(regular);
-        Collections.sort(unlinked);
         Collections.sort(links);
-        return new Walk(regular, unlinked, links);
+        return new Walk(regular, links);
     }
 
     /**
@@ -367,7 +365,7 @@ final class PackFileSet {
 
     private static List<String> digested(Path directory, Set<ArtifactKind> kinds, String packName, Listing loaded) {
         List<String> out = new ArrayList<>();
-        if (Files.isRegularFile(directory.resolve(PACK_YAML))) {
+        if (unlinkedFile(directory, PACK_YAML)) {
             out.add(PACK_YAML);
         }
         Set<String> listed = new HashSet<>(out);
@@ -390,7 +388,7 @@ final class PackFileSet {
         for (Path shard : rootShards(directory, packName)) {
             out.add(directory.relativize(shard).toString());
         }
-        if (Files.isRegularFile(directory.resolve(FRAGMENT))) {
+        if (unlinkedFile(directory, FRAGMENT)) {
             out.add(FRAGMENT);
         }
         // Appended after every YAML input, so a pack without asset files or templates keeps its digest (NFR-002). No
@@ -416,10 +414,10 @@ final class PackFileSet {
     private static List<String> packLevelTail(Path directory, Listing loaded) {
         List<String> out = new ArrayList<>(loaded.presets());
         loaded.document().ifPresent(out::add);
-        if (Files.isRegularFile(directory.resolve(MANIFEST))) {
+        if (unlinkedFile(directory, MANIFEST)) {
             out.add(MANIFEST);
         }
-        if (Files.isRegularFile(directory.resolve(PolicyYaml.FILE))) {
+        if (unlinkedFile(directory, PolicyYaml.FILE)) {
             out.add(PolicyYaml.FILE);
         }
         return out;
@@ -456,7 +454,7 @@ final class PackFileSet {
 
     /**
      * The graph shards in a pack's root directory: its {@code *.graph.yaml} regular files but a retired one, sorted by
-     * the file name as a {@link String}, which is the same order on every OS.
+     * the file name as a {@link String}, which is the same order on every OS. A shard that is a link is none (D6).
      *
      * @param directory the pack directory
      * @param packName the pack, named in a refusal
@@ -465,7 +463,7 @@ final class PackFileSet {
     static List<Path> rootShards(Path directory, String packName) {
         String prefix = nameOf(directory) + "/";
         try (Stream<Path> files = Files.list(directory)) {
-            return graphShards(files, packName, Files::isRegularFile).stream()
+            return graphShards(files, packName, shard -> Files.isRegularFile(shard, LinkOption.NOFOLLOW_LINKS)).stream()
                     // A retired graph fragment is refused by name with the other retired files, never read as a shard.
                     .filter(shard -> !(PackFileKind.bundled().classify(prefix + shard.getFileName())
                             instanceof PackFileKind.Retired))
@@ -581,9 +579,9 @@ final class PackFileSet {
      * listed; any other failure to list refuses.
      *
      * <p>The walk starts at the directory's real path, so a pack root configured through a symbolic link is entered
-     * (#174); {@link Files#walkFileTree} does not follow a start that is a link, and the pack would list as empty. Links
-     * below the root are still not followed. The paths stay relative to the root, and the caller classifies them under
-     * the configured directory's name, so the link changes neither.
+     * (#174); {@link Files#walkFileTree} does not follow a start that is a link, and the pack would list as empty. A link
+     * below the root is not listed: nothing reads through it (D6). The paths stay relative to the root, and the caller
+     * classifies them under the configured directory's name, so the link changes neither.
      *
      * <p>Validate mode walks the pack too ({@code FileSystemPackInspector.yamlFiles}); it orders by path segment like
      * core's pathlib (#115), where this walk orders by {@link String}, the order the store has always loaded in; the two
@@ -594,19 +592,17 @@ final class PackFileSet {
     }
 
     /**
-     * Collects the regular files, a file link followed, and those that are not themselves links; an entry that is gone
-     * by the time it is visited is skipped.
+     * Collects the regular files that are not themselves links, and the links apart, never followed; an entry that is
+     * gone by the time it is visited is skipped.
      */
     private static final class FileCollector extends SimpleFileVisitor<Path> {
         private final Path root;
         private final List<String> found;
-        private final List<String> unlinked;
         private final List<String> links;
 
-        FileCollector(Path root, List<String> found, List<String> unlinked, List<String> links) {
+        FileCollector(Path root, List<String> found, List<String> links) {
             this.root = root;
             this.found = found;
-            this.unlinked = unlinked;
             this.links = links;
         }
 
@@ -615,13 +611,10 @@ final class PackFileSet {
             String relative = root.relativize(file)
                     .toString()
                     .replace(file.getFileSystem().getSeparator(), "/");
-            // isRegularFile follows a file link and is false for an entry that has just vanished.
-            if (Files.isRegularFile(file)) {
-                found.add(relative);
-            }
-            // The walk does not follow links, so these are the entry's own attributes.
+            // The walk does not follow links, so these are the entry's own attributes: a file link is a link, never a
+            // regular file (D6), and nothing reads through it.
             if (attrs.isRegularFile()) {
-                unlinked.add(relative);
+                found.add(relative);
             }
             if (attrs.isSymbolicLink()) {
                 links.add(relative);
@@ -692,6 +685,46 @@ final class PackFileSet {
             case PackFileKind.Retired retired -> Optional.of("is retired by " + retired.match() + ", not " + noun);
             case PackFileKind.Unclassified unclassified -> Optional.of("is classified by no rule, not " + noun);
         };
+    }
+
+    /**
+     * Whether a pack-relative path names a regular file the pack holds in its own right: no segment of it below the pack
+     * directory is a symbolic link, so a probe of a known path ({@code pack.yaml}, the fragment, the manifest, the
+     * policy file) never reads through a link, a linked parent directory included (D6). The pack directory itself may
+     * be a link (#174).
+     *
+     * @param directory the pack directory
+     * @param packRelative the path, relative to the pack directory and {@code /}-separated
+     * @return true when a regular file stands there and no link leads to it
+     */
+    static boolean unlinkedFile(Path directory, String packRelative) {
+        Path at = directory;
+        for (String segment : packRelative.split("/", -1)) {
+            at = at.resolve(segment);
+            if (Files.isSymbolicLink(at)) {
+                return false;
+            }
+        }
+        return Files.isRegularFile(at, LinkOption.NOFOLLOW_LINKS);
+    }
+
+    /**
+     * The bytes of a pack-relative file the pack holds in its own right ({@link #unlinkedFile}), opened without following
+     * a link, so a read never goes through one (D6); empty when no such file stands there.
+     *
+     * @param directory the pack directory
+     * @param packRelative the path, relative to the pack directory and {@code /}-separated
+     * @return the bytes, or empty
+     * @throws IOException when the file cannot be read
+     */
+    static Optional<byte[]> unlinkedBytes(Path directory, String packRelative) throws IOException {
+        if (!unlinkedFile(directory, packRelative)) {
+            return Optional.empty();
+        }
+        try (java.io.InputStream in =
+                Files.newInputStream(directory.resolve(packRelative), LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.of(in.readAllBytes());
+        }
     }
 
     static CharterRefusal unlistable(String packName, Exception cause) {

@@ -108,6 +108,12 @@ class SurfaceSubsetTest {
     private static final Set<String> NEWER_EXAMPLES = Set.of("example-packs/org-alt", "example-packs/org-mandate");
 
     /**
+     * Plants added after the frozen baseline for D1 of #478 (#597): the baseline predates them, and the registration
+     * answers the link alone.
+     */
+    private static final Set<String> NEWER_LINK_PLANTS = Set.of("planted/pack-entry-linked-file");
+
+    /**
      * The row of the plant whose sidecar's payload path the landing fixed (W1, a fixed fixture defect) that names the
      * payload before the landing: the plant with a descriptor. The bare plant answered its descriptor's refusal alone.
      */
@@ -215,6 +221,16 @@ class SurfaceSubsetTest {
         List<Fault> faults = registration(key);
         boolean s2 = faults.stream().anyMatch(SurfaceSubsetTest::isS2);
         assertThat(s2).as("%s gains an S2 fault exactly when S2 lists it", key).isEqualTo(S2_ROWS.contains(key));
+        // D1 (#597) adds one pack_entry_linked per link to the registration of every plant that plants a link.
+        boolean d1 = faults.stream().anyMatch(SurfaceSubsetTest::isD1);
+        assertThat(d1)
+                .as("%s gains a pack_entry_linked exactly when it plants a link (D1)", key)
+                .isEqualTo(subject.plantsLinks());
+        if (NEWER_LINK_PLANTS.contains(key)) {
+            assertThat(BEFORE.has(key)).as("%s is newer than the baseline", key).isFalse();
+            assertThat(faults).as("%s answers its link alone", key).allMatch(SurfaceSubsetTest::isD1);
+            return;
+        }
         // A plant without pack.yaml is the one the golden judges again with a descriptor, as its +pack.yaml twin.
         boolean bare = SURFACES.has(key + GoldenSubjects.WITH_DESCRIPTOR);
         boolean s8 = bare || UNREADABLE_DESCRIPTORS.contains(key);
@@ -245,8 +261,14 @@ class SurfaceSubsetTest {
                     .as("%s: that refusal is one of every fault now (S8)", key)
                     .containsAll(was);
         } else if (s2) {
-            assertThat(faults.stream().filter(fault -> !isS2(fault)).toList())
+            assertThat(faults.stream()
+                            .filter(fault -> !isS2(fault) && !isD1(fault))
+                            .toList())
                     .as("%s: apart from S2's gains, the registration answers what it answered before WP12", key)
+                    .isEqualTo(was);
+        } else if (d1) {
+            assertThat(faults.stream().filter(fault -> !isD1(fault)).toList())
+                    .as("%s: apart from D1's links, the registration answers what it answered before WP12", key)
                     .isEqualTo(was);
         } else {
             assertThat(SURFACES.get(key).get("registration"))
@@ -332,6 +354,11 @@ class SurfaceSubsetTest {
                                     .map(reason -> reason.detail())
                                     .toList());
                 });
+    }
+
+    /** A link refused under D1 of #478 (#597), which the baseline predates. */
+    private static boolean isD1(Fault fault) {
+        return "pack_entry_linked".equals(fault.code());
     }
 
     private static boolean isS2(Fault fault) {
