@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
 import ai.speckitty.charter.packs.domain.rules.StepRules;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,8 +118,9 @@ record StoreRead(
         List<PackElementViolation> storeOnly = new ArrayList<>();
         List<ReferenceFacts> references = new ArrayList<>();
         Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add, references::add);
+        linked(walk).forEach(builder::violation);
         List<PackElementViolation> trailing = new ArrayList<>();
-        Optional<PackManifestDso> manifest = manifest(packDir.resolve(PackFileSet.MANIFEST), strategy, trailing);
+        Optional<PackManifestDso> manifest = manifest(packDir, strategy, trailing);
         List<String> policyFault = new ArrayList<>();
         Optional<PolicyYaml.Named> policy =
                 read.descriptor().mutabilityPolicy().flatMap(file -> policy(packDir, file, trailing, policyFault));
@@ -166,6 +168,18 @@ record StoreRead(
      */
     static long runs() {
         return RUNS.sum();
+    }
+
+    /**
+     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words (D6): the store half
+     * states it itself, as it states {@code duplicate_step_id}, so the composing read of a configured pack, which judges
+     * nothing else, refuses a pack holding a link. It is recorded on the aggregate, not among the store-only faults, so
+     * a registration and validate mode state it once, through {@code LinkRules}.
+     */
+    private static List<PackElementViolation> linked(PackFileSet.Walk walk) {
+        return walk.links().stream()
+                .map(link -> new PackElementViolation(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.detail(link)))
+                .toList();
     }
 
     /** Each held artifact with the file it is stored in, in the aggregate's order. */
@@ -322,10 +336,11 @@ record StoreRead(
      * an unreadable or misplaced manifest is a violation.
      */
     private static Optional<PackManifestDso> manifest(
-            Path manifestFile, SerializationStrategy strategy, List<PackElementViolation> violations) {
-        if (!Files.isRegularFile(manifestFile)) {
+            Path packDir, SerializationStrategy strategy, List<PackElementViolation> violations) {
+        if (!PackFileSet.unlinkedFile(packDir, PackFileSet.MANIFEST)) {
             return Optional.empty();
         }
+        Path manifestFile = packDir.resolve(PackFileSet.MANIFEST);
         Optional<byte[]> bytes = FilesystemPackStore.readBytes(manifestFile);
         FileRead<PackManifestDso> read = bytes.flatMap(FilesystemPackStore::decodeUtf8)
                 .map(text -> strategy.readManifest(text, PackFileSet.MANIFEST))

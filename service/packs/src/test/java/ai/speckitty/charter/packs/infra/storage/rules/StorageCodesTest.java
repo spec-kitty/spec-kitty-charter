@@ -39,6 +39,16 @@ class StorageCodesTest {
     }
 
     @Test
+    @DisplayName("pack_entry_linked is a violation, ordered before file_not_held (D1)")
+    void packEntryLinkedIsAViolation() {
+        assertThat(StorageCodes.PACK_ENTRY_LINKED.value()).isEqualTo("pack_entry_linked");
+        assertThat(StorageCodes.PACK_ENTRY_LINKED.severity()).isEqualTo(Severity.VIOLATION);
+        assertThat(StorageCodes.ALL).contains(StorageCodes.PACK_ENTRY_LINKED);
+        assertThat(StorageCodes.ORDERED.indexOf(StorageCodes.PACK_ENTRY_LINKED))
+                .isLessThan(StorageCodes.ORDERED.indexOf(StorageCodes.FILE_NOT_HELD));
+    }
+
+    @Test
     @DisplayName("a token the contract enum spells is the contract's token (A-m1)")
     void aTokenTheContractSpellsIsTheContractsToken() {
         assertThat(StorageCodes.PACK_UNREADABLE.value()).isEqualTo(RefusalCode.PACK_UNREADABLE.token());

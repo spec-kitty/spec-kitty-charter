@@ -174,18 +174,20 @@ class FileSystemPackSourcesTest {
         }
     }
 
-    /** Where permissions do not bite (root), a loaded file whose read fails with an I/O error still refuses. */
+    /**
+     * A link at a loaded file's path, here to a file whose read fails even for root, is never read (D6, #597): the
+     * fingerprint is the fingerprint of the pack without it. The storage rules refuse the link itself.
+     */
     @Test
-    void aLoadedFileWhoseReadFailsRefusesTheFingerprintEvenForRoot(@TempDir Path dir) throws IOException {
+    void aLinkAtALoadedFilesPathIsNeverReadByTheFingerprint(@TempDir Path dir) throws IOException {
         Path unreadable = Path.of("/proc/self/mem");
         assumeTrue(Files.isRegularFile(unreadable), "no /proc/self/mem on this system");
         Path root = Files.createDirectories(dir.resolve("qa"));
+        Files.writeString(root.resolve("a.tactic.yaml"), "id: a\n");
+        String without = sources(root).fingerprint();
         Files.createSymbolicLink(root.resolve("e.tactic.yaml"), unreadable);
 
-        assertThatThrownBy(() -> sources(root).fingerprint()).isInstanceOfSatisfying(CharterRefusal.class, r -> {
-            assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(r.getMessage()).isEqualTo("qa/e.tactic.yaml cannot be read");
-        });
+        assertThat(sources(root).fingerprint()).isEqualTo(without);
     }
 
     /** An atomic save creates and renames a temp file in the pack while it is walked; the walk must not refuse. */

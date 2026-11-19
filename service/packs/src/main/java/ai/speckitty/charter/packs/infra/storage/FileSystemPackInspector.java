@@ -335,7 +335,7 @@ public final class FileSystemPackInspector implements PackReading {
     private OneRead readDirectory(PackRoot root, Path directory, String name) {
         FileRead<PackDescriptor> descriptor = new FileRead.Absent<>(PackFileSet.PACK_YAML);
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
-        if (Files.isRegularFile(packYaml)) {
+        if (PackFileSet.unlinkedFile(directory, PackFileSet.PACK_YAML)) {
             descriptor = read(packYaml, PackFileSet.PACK_YAML, name, PackDescriptorReader::read);
         }
         List<FileRead<RawGraph>> shards = new ArrayList<>();
@@ -345,7 +345,7 @@ public final class FileSystemPackInspector implements PackReading {
         }
         FileRead<RawGraph> fragment = new FileRead.Absent<>(PackFileSet.FRAGMENT);
         Path fragmentYaml = directory.resolve("drg").resolve("fragment.yaml");
-        if (Files.isRegularFile(fragmentYaml)) {
+        if (PackFileSet.unlinkedFile(directory, PackFileSet.FRAGMENT)) {
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
         // One walk of the tree: the census and the DSO half read the files it lists (#554, T028).
@@ -534,7 +534,7 @@ public final class FileSystemPackInspector implements PackReading {
         String prefix = (last == null ? "pack" : last.toString()) + "/";
         Set<String> held = Set.copyOf(PackFileSet.digested(directory, table, walk));
         List<NotHeldFile> out = new ArrayList<>();
-        for (String file : walk.unlinked()) {
+        for (String file : walk.regular()) {
             if (unnamedPolicy && PolicyYaml.FILE.equals(file)) {
                 out.add(NotHeldFile.unnamedPolicy(file));
                 continue;
@@ -1281,7 +1281,7 @@ public final class FileSystemPackInspector implements PackReading {
      * {@code PurePath}: segment by segment, a directory before a sibling that extends its name. {@code PackFileSet}'s
      * listing, which the store and the fingerprint share, orders by {@link String} instead; this validate-mode order
      * mirrors core's pathlib (#115). The walk starts at the directory's real path, so a pack root that is a symbolic
-     * link is entered (#284); a directory link below the root is not entered, and a file link is followed.
+     * link is entered (#284); a link below the root is not a regular file of the walk, and is never read through (D6).
      */
     private static List<Path> packFiles(Path directory, PackFileSet.Walk walk, String suffix) {
         return walk.regular().stream()
