@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
@@ -52,6 +53,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     private static final String SOURCE = "registerPackFromSource";
     private static final String DELETE_ARTIFACT = "deletePackArtifact";
     private static final String DELETE_RELATIONSHIP = "deletePackRelationship";
+    private static final String DELETE_PACK = "deletePack";
     private static final Pattern IF_MATCH = Pattern.compile("^(\\*|\"sha256:[0-9a-f]{64}\")$");
 
     private final RegistrationSwitch registration;
@@ -87,11 +89,16 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
             admitSource(request);
         } else if (UPLOAD.equals(name)) {
             admitUpload(request);
-        } else if (DELETE_ARTIFACT.equals(name) || DELETE_RELATIONSHIP.equals(name)) {
+        } else if (DELETE_ARTIFACT.equals(name) || DELETE_RELATIONSHIP.equals(name) || DELETE_PACK.equals(name)) {
             // ADR-0065 D13, FR-037: the pack's writes of this PR are one family under one switch. A removal reads no
             // body
             // and takes no slot, so the switch is the whole of its admission; the revision rules are the services'.
             requireRegistrationOn();
+        }
+        if (SOURCE.equals(name) || DELETE_PACK.equals(name)) {
+            // After the switch, before anything else: a dryRun outside the boolean is 400 (R5-1). The upload reads it
+            // right after its own switch check, before it takes a place.
+            modeOf(request);
         }
         return true;
     }
@@ -99,6 +106,8 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     private void admitUpload(HttpServletRequest request) {
         AuditContext audit = AuditContext.of(request);
         requireRegistrationOn();
+        // A dryRun outside the boolean is 400 before the upload takes a place or anything is spooled (R5-1).
+        PackRegistrationService.Mode mode = modeOf(request);
         String packId = packIdOf(request);
         audit.packId(packId);
         audit.source("archive", "");
@@ -126,7 +135,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         request.setAttribute(
                 ORIGIN,
                 new RegistrationJobs.Origin(
-                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", ""));
+                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", "", mode));
     }
 
     /**
@@ -185,6 +194,27 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
             return upload;
         }
         throw new IllegalStateException("the registration was not admitted");
+    }
+
+    /**
+     * Whether a write is made or only judged: {@code dryRun=true} is a dry run (ADR-0081 D5), {@code false} or no
+     * parameter the write; any other value is a {@code 400}. The admission reads it for the three operations that take
+     * it, before the write is judged, and they all act on this one reading.
+     *
+     * @param request the request
+     * @return the mode
+     */
+    static PackRegistrationService.Mode modeOf(HttpServletRequest request) {
+        @Nullable String dryRun = request.getParameter("dryRun");
+        if (dryRun == null || dryRun.equals("false")) {
+            return PackRegistrationService.Mode.COMMIT;
+        }
+        if (dryRun.equals("true")) {
+            return PackRegistrationService.Mode.DRY_RUN;
+        }
+        // One reading for the three operations (review R5-1): a value the contract's boolean does not spell is no
+        // write and no dry run, so it is refused before anything is judged, never taken as either.
+        throw new InvalidParameter(InvalidParameter.In.QUERY, "dryRun", dryRun, "which is neither true nor false");
     }
 
     /**

@@ -51,7 +51,9 @@ class PackRegistrationMapperNoticesTest {
                         PackRevision.compute(List.of("x")),
                         notices,
                         List.of(),
-                        hasDocument),
+                        hasDocument,
+                        Optional.empty(),
+                        false),
                 Map.of());
     }
 

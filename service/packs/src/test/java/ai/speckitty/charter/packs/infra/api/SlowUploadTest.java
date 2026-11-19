@@ -216,7 +216,12 @@ class SlowUploadTest {
 
     private static RegistrationJobs.Origin origin() {
         return new RegistrationJobs.Origin(
-                "worktree-slow", AuditLog.Credential.NONE, "registerPackFromArchive", "archive", "");
+                "worktree-slow",
+                AuditLog.Credential.NONE,
+                "registerPackFromArchive",
+                "archive",
+                "",
+                ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
     }
 
     private int staged() throws IOException {

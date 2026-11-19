@@ -122,8 +122,8 @@ public enum RefusalCode {
     PACK_REFERENCE_ARTIFACT_MISSING("pack_reference_artifact_missing"),
 
     /**
-     * A registration of the same {@code pack_version} with another revision than the one the version history holds
-     * (ADR-0065 D2, D9). Answered as 409.
+     * A replacement whose {@code pack_version} is not newer than the stored one, or a registration of a version the
+     * history holds with another revision (ADR-0081 D2, ADR-0065 D9). Answered as 409.
      */
     PACK_VERSION_CONFLICT("pack_version_conflict"),
     /**
@@ -286,7 +286,12 @@ public enum RefusalCode {
      * A model recommendation was asked for a task type the routing catalog in force does not declare (ADR-0080 decision
      * 9). Answered as 404 by {@code getModelRecommendation}, after the two 409s of the catalog.
      */
-    TASK_TYPE_NOT_FOUND("task_type_not_found");
+    TASK_TYPE_NOT_FOUND("task_type_not_found"),
+    /**
+     * A configured pack, a stored activation or another pack's artifact still depends on the pack a pack {@code DELETE}
+     * removes (ADR-0081 D7); the refusal names the dependent packs and every dependent. Answered as 409.
+     */
+    PACK_HAS_DEPENDENTS("pack_has_dependents");
 
     /** The codes about what was asked rather than about the offering; {@link #notFound()} answers from it. */
     private static final Set<RefusalCode> NOT_FOUND = EnumSet.of(

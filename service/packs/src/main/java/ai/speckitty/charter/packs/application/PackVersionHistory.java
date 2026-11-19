@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -10,7 +11,8 @@ import java.util.Objects;
 /**
  * The version history of a pack name (IC-16, FR-026, B1): every {@code (pack_version, revision)} pair the name was
  * registered with, kept by the registry beside the packs and surviving a {@code DELETE}. A {@code pack_version} is a
- * label, not an order, so a registration may go back to an older one; what it may not do is put other content under a
+ * label that names one content forever (ADR-0065 D9), and a replacement moves it forward (ADR-0081 D2); what a registration
+ * may never do is put other content under a
  * label that already names content, whether or not that label is the stored one.
  *
  * <p>The judge is a pure function of the history it is given. Reading and writing the file is
@@ -57,7 +59,7 @@ public final class PackVersionHistory {
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(packVersion, "packVersion");
         for (Entry entry : history) {
-            if (entry.packVersion().equals(packVersion) && !entry.revision().equals(revision.token())) {
+            if (sameLabel(entry.packVersion(), packVersion) && !entry.revision().equals(revision.token())) {
                 throw new CharterRefusal(
                         RefusalCode.PACK_VERSION_CONFLICT,
                         "The pack " + packId + " was registered at pack_version " + packVersion + " on "
@@ -77,7 +79,7 @@ public final class PackVersionHistory {
     public static List<Entry> appended(List<Entry> history, Entry entry) {
         Objects.requireNonNull(entry, "entry");
         boolean held = history.stream()
-                .anyMatch(known -> known.packVersion().equals(entry.packVersion())
+                .anyMatch(known -> sameLabel(known.packVersion(), entry.packVersion())
                         && known.revision().equals(entry.revision()));
         if (held) {
             return history;
@@ -100,7 +102,26 @@ public final class PackVersionHistory {
      */
     public static List<Entry> healed(List<Entry> history, Entry stored) {
         Objects.requireNonNull(stored, "stored");
-        boolean known = history.stream().anyMatch(entry -> entry.packVersion().equals(stored.packVersion()));
+        boolean known = history.stream().anyMatch(entry -> sameLabel(entry.packVersion(), stored.packVersion()));
         return known ? history : appended(history, stored);
+    }
+
+    /**
+     * Whether two {@code pack_version}s are one label: equal by PEP 440 precedence, so {@code 1.1}, {@code 1.1.0} and
+     * {@code 1.1.0+x} are one label (ADR-0081 D9). A text that is not a PEP 440 version (a history written before the
+     * read checked the grammar) is one label only with the same text.
+     *
+     * @param left a version the history or an upload holds
+     * @param right another
+     * @return whether they name one label
+     */
+    static boolean sameLabel(String left, String right) {
+        if (left.equals(right)) {
+            return true;
+        }
+        if (!Pep440Range.isVersion(left) || !Pep440Range.isVersion(right)) {
+            return false;
+        }
+        return Pep440Range.compareVersions(left, right) == 0;
     }
 }

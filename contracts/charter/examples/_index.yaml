@@ -37,10 +37,14 @@ files:
   - PackDocumentRead.yaml
   - PackDocumentRead.markdown.yaml
   - CharterRefusal.pack_document_not_found.yaml
+  - PackImpact.deleted.yaml
+  - PackImpact.refused.yaml
   - PackRegistration.stored.yaml
   - PackRegistrationStatus.accepted.yaml
   - PackRegistrationStatus.succeeded.yaml
   - PackRegistrationStatus.version-conflict.yaml
+  - PackRegistrationStatus.version-not-newer.yaml
+  - PackRegistrationStatus.dry-run.yaml
   - PackRegistrationStatus.asset-path-escape.yaml
   - PackRegistrationStatus.fragment-body-path-escape.yaml
   - PackRegistrationStatus.overrides-source-not-activatable.yaml

@@ -2,7 +2,7 @@
 title: Compose packs
 description: "Declare depends_on, qualify cross-pack references, settle a sibling conflict, register and remove packs, artifacts and edges, and fix each refusal."
 doc_status: draft
-updated: 2026-11-16T00:00:00Z
+updated: 2026-11-19T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -258,19 +258,53 @@ archive, the tree it expands to and the copy made beside the pack, each at most 
 
 ## The version rule
 
-`pack_version` is a label, not an order. A registration may go back to an older version. The service keeps every
-`(pack_version, revision)` a pack name was registered with, in a history beside the packs. A `DELETE` keeps the history.
+A replacement moves the version forward ([ADR-0081](/adr/0081-pack-uninstall-and-the-version-order/) decision 2).
+`pack_version` is a PEP 440 version, and versions order by PEP 440 public-version precedence.
 
-- The same version with the same revision ends `succeeded` as `unchanged`.
-- The same version with another revision is refused `409 pack_version_conflict`, whether or not that version is the
-  stored one.
-- The version rule runs before the `If-Match` precondition. A re-send of an archive with the same `pack_version`, after
+- Sending the content that is stored (the same revision) ends `succeeded` as `unchanged`, whatever the version says.
+- Otherwise the replacement's `pack_version` must be newer than the stored one. An older or equal version is refused
+  `409 pack_version_conflict`, and the detail names both versions. A local segment (`+local`) does not order: `1.0+a`
+  to `1.0+b` with other content is refused.
+- A replace reports the version it moved from as `previousVersion`.
+- The service keeps every `(pack_version, revision)` a pack name was registered with, in a history beside the packs.
+  A version the history holds with other content is refused `409 pack_version_conflict`, whether or not it is the
+  stored one. Labels match by PEP 440 equality, so `1.1` and `1.1.0` are one label.
+- An older version is judged after the `If-Match` and `If-None-Match` preconditions, so a stale precondition answers
+  `412` first. The label rules (the same version, or one the history holds, with other content) run before them.
+- The label rule runs before the `If-Match` precondition. A re-send of an archive with the same `pack_version`, after
   a per-artifact `PUT` moved the revision, answers `409 pack_version_conflict`, not `412`. The `412` race needs a new
   version.
 - When the service restores a lost history entry, the entry carries the time of the repair, not of the lost
-  registration. It restores only a `pack_version` the history does not hold at all: a per-artifact `PUT` that moved the
-  revision of a version registered earlier does not make that version impossible to restore. Send the archive that was
-  registered and it is accepted.
+  registration. It restores only a `pack_version` the history does not hold at all.
+
+To go back to older content, publish it under a newer version, or remove the pack and register the older version.
+The history still holds that version, so the older version is accepted only with the very content it was registered
+with.
+
+## Removing a pack
+
+`DELETE /packs/{packId}` removes a registered org or project pack whole (ADR-0081). Send the pack's `ETag` in
+`If-Match`, or `*`.
+
+- It is refused `409 pack_has_dependents` while another pack declares `depends_on` or `parent_pack` on it, a stored
+  activation names it in its `packs`, or another pack's artifact refers to one of its artifacts. The refusal names
+  every dependent; remove or change them first.
+- An activation that lists no packs is not a dependent. Its closure is composed without the pack, and one that no
+  longer composes refuses the delete `422`. A selection it holds of one of the pack's artifacts reads as stale.
+- A built-in pack, a pack in a read-only location, or a linked pack cannot be removed (`409 registration_conflict`).
+- A pack whose own `pack.yaml` no longer reads can still be removed; it is judged by its configured name. Any other
+  pack that cannot be read refuses the delete `500 pack_unreadable`, since it might depend on the pack.
+- The version history survives the delete. A re-install may take any version the history does not hold with other
+  content.
+
+## Dry runs
+
+Add `?dryRun=true` to `DELETE /packs/{packId}`, `PUT /packs/{packId}` or `POST /packs` to see what the write would do
+without making it. The same checks run under the same locks, and nothing is written or audited.
+
+- The delete answers `200` with a `PackImpact`: `deleted`, or `refused` with the refusal the delete would answer.
+- A registration's job ends `succeeded` with the outcome it would have had and `dryRun: true`, or `refused` with the
+  same problem.
 
 ## What a registration is refused for
 

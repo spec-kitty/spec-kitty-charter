@@ -40,8 +40,13 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class RegistrationJobsUploadTest {
 
-    private static final Origin ORIGIN =
-            new Origin("worktree-1", Credential.WORKTREE_TOKEN, "registerPackFromArchive", "archive", "");
+    private static final Origin ORIGIN = new Origin(
+            "worktree-1",
+            Credential.WORKTREE_TOKEN,
+            "registerPackFromArchive",
+            "archive",
+            "",
+            ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
     private static final int SLOTS = RegistrationJobs.RUNNING_LIMIT + RegistrationJobs.WAITING_LIMIT;
 
     @TempDir

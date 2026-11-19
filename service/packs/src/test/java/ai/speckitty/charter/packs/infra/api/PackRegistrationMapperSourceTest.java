@@ -47,6 +47,8 @@ class PackRegistrationMapperSourceTest {
                 PackRevision.compute(List.of("x")),
                 RegistrationImpact.Notices.NONE,
                 List.of(),
+                false,
+                Optional.empty(),
                 false);
     }
 

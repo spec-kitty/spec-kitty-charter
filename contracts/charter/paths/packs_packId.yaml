@@ -3,8 +3,9 @@ parameters:
   in: path
   required: true
   description: >-
-    The identity of the Charter Pack a registration writes to, or that getPack reads: the configured identifier, a
-    lower-case slug of at most 63 characters. A value outside the grammar breaks the parameter's schema and is a 400
+    The identity of the Charter Pack a registration writes to, that getPack reads or that deletePack removes: the
+    configured identifier, a lower-case slug of at most 63 characters; a read and deletePack also resolve it by the
+    pack_id a pack declares. A value outside the grammar breaks the parameter's schema and is a 400
     Problem without a code, before the body is read.
   schema:
     type: string
@@ -36,9 +37,15 @@ put:
     another pack still refers to) and the 422 answers (an archive path or entry the extractor refuses, an invalid
     artifact, a changed pack_level or pack_id, a closure that no longer composes, a relation rule
     broken), the 412 of a revision that moved after the 202, and a timeout or a full disk (the codes are declared on
-    getPackRegistration). The version is a label, not an order: any version replaces, an identical re-send (the same
-    version and the same revision) ends succeeded with outcome unchanged, and the same version with another content is
-    refused. If-Match, a quoted pack revision, is optional: absent means the last writer wins on the whole pack, and a
+    getPackRegistration). A replacement moves the version forward (ADR-0081 D2): an identical re-send (the same
+    revision) ends succeeded with outcome unchanged; otherwise a pack_version that is not newer than the stored one by
+    PEP 440 precedence, the same version included, is refused 409 pack_version_conflict (a label that names other
+    content is judged before the preconditions, an older version after them, so a stale precondition is 412 first),
+    and the result of a replace
+    reports the version it moved from as previousVersion. A version the name was registered with before keeps naming its
+    content, after a deletePack too (ADR-0065 D9). With dryRun=true the job judges the pack as the registration would and
+    writes nothing: it ends succeeded with the outcome it would have had and dryRun true, or refused with the same
+    problem. If-Match, a quoted pack revision, is optional: absent means the last writer wins on the whole pack, and a
     stale one is 412 at acceptance, before any job exists, so an identical re-send under a stale If-Match is 412 and
     not unchanged (RFC 9110 section 13.1.1); the revision is checked again under the lock. If-None-Match: * makes the
     request create-only, and an existing pack is 412. There is no 428 here: If-Match is optional on a registration.
@@ -46,6 +53,7 @@ put:
   - Registration
   parameters:
   - $ref: ../parameters/IfMatch.yaml
+  - $ref: ../parameters/DryRun.yaml
   - name: If-None-Match
     in: header
     required: false
@@ -128,6 +136,129 @@ put:
             $ref: ../../_shared/schemas/Problem.yaml
     '503':
       $ref: ../responses/PackRegistrationUnavailable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+delete:
+  operationId: deletePack
+  summary: Remove a registered Charter Pack whole.
+  description: >-
+    Removes the org or project pack the packId names, by its configured name or its declared pack_id, as one unit, and
+    answers 204 with no body (ADR-0081 D1, D7, D8). It is synchronous: it reads no source and does one bounded compose,
+    under the registry write lock and then the pack's lock, and the pack's directory is renamed away in one step, so a
+    concurrent read sees the pack or no pack, and a failure leaves the pack whole. While charter.registration.enabled is
+    off (the default) the answer is 503 pack_source_unavailable before the pack, the path or If-Match is judged (ADR-0065
+    D13). Then, in this order: an identifier that matches no configured pack is 404 pack_not_found, so a repeated delete
+    answers 404 and changes nothing; If-Match is required (absent 428; * accepted), as on every DELETE; under the locks,
+    a built-in pack, a pack in a read-only location or a pack whose entry is a link is 409 registration_conflict, and a
+    stale If-Match is 412. Then the pack's dependents: a configured pack whose depends_on or parent_pack names it, a
+    stored activation whose packs list names it, and an artifact of another pack that refers to one of its artifacts.
+    A configured pack whose descriptor cannot be read cannot be judged, so it refuses the removal with 500
+    pack_unreadable naming it, before any dependent is judged. The removed pack's own pack.yaml need not be readable:
+    such a pack can still be deleted, and is judged by its configured name. Any dependent refuses the removal with 409 pack_has_dependents, whose
+    packs member names the dependent packs and whose violations name every dependent (at most 100; the detail counts
+    the rest), and nothing is written. Then every other closure that holds the pack (an activation that lists no packs) is composed without it,
+    strictly: one that does not compose or breaks a rule refuses the removal with 422 and its composition code, naming
+    the closure, as an artifact DELETE does. An activation that lists no packs and holds a selection of one of the pack's
+    artifacts is not a dependent: the selection reads as stale and is dropped on the next write, as after an artifact
+    DELETE. The pack's version history is kept (ADR-0065 D9), for the label-reuse rule only. With dryRun=true the request
+    is judged the same way and nothing is written: a removal that would succeed or would be refused by its dependents or
+    its compose answers 200 with a PackImpact; every earlier answer keeps its status.
+  tags:
+  - Registration
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  - $ref: ../parameters/DryRun.yaml
+  responses:
+    '200':
+      description: >-
+        Only with dryRun=true: what the removal would do, judged and not written (PackImpact). outcome deleted when it
+        would succeed; refused with the problem it would answer (409 pack_has_dependents or a 422 of the compose).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackImpact.yaml
+          examples:
+            deleted:
+              $ref: ../examples/PackImpact.deleted.yaml
+            refused:
+              $ref: ../examples/PackImpact.refused.yaml
+    '204':
+      description: The pack was removed; no body.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '409':
+      description: >-
+        pack_has_dependents, another configured pack, a stored activation or another pack's artifact depends on the
+        pack (packs names the dependent packs; violations name every dependent, at most 100, with the code depends_on,
+        parent_pack, activation or artifact_reference); or registration_conflict, the pack is built-in, in a read-only
+        location, or a link. Nothing is written.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-has-dependents:
+              summary: Another pack depends on the pack, and an activation names it.
+              value:
+                title: Pack has dependents
+                status: 409
+                code: pack_has_dependents
+                detail: The pack acme-style-pack has 2 dependent(s); remove or change them first.
+                packs:
+                - descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+                  packId: acme-review-pack
+                  name: acme-review-pack
+                violations:
+                - pointer: ''
+                  code: depends_on
+                  detail: The pack acme-review-pack declares depends_on acme-style-pack.
+                - pointer: ''
+                  code: activation
+                  detail: The activation team-default names acme-style-pack in its packs.
+    '412':
+      $ref: ../responses/PackPreconditionFailed.yaml
+    '422':
+      description: >-
+        The compose is strict: a closure that holds the pack and that no dependent names (an activation that lists no packs)
+        does not compose without it, or breaks a rule, so the removal is refused with the composition code or one of
+        override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, naming the
+        packs; or prompt_slot_missing (C38), the activation named in the detail. Nothing is written.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/PackRemovalUnavailable.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 get:

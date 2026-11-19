@@ -355,7 +355,8 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
                 RefusalCode.ROUTING_CATALOG_NOT_IN_FORCE,
                 RefusalCode.ROUTING_CATALOG_CONFLICT,
-                RefusalCode.TASK_TYPE_NOT_FOUND
+                RefusalCode.TASK_TYPE_NOT_FOUND,
+                RefusalCode.PACK_HAS_DEPENDENTS
             };
         }
     }

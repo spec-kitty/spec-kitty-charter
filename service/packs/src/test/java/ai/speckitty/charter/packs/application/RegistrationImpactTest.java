@@ -941,6 +941,11 @@ class RegistrationImpactTest {
                 public View with(RegistrationImpact.Replacement written) {
                     return counted(session.with(written));
                 }
+
+                @Override
+                public View without(ai.speckitty.charter.kernel.domain.PackIdentifier pack) {
+                    return counted(session.without(pack));
+                }
             };
         }
 
@@ -1062,8 +1067,8 @@ class RegistrationImpactTest {
         }
 
         @Override
-        public List<Optional<List<String>>> activationRoots() {
-            return List.of(Optional.empty());
+        public List<ActivationRoots> activationRoots() {
+            return List.of(new ActivationRoots("all", Optional.empty()));
         }
 
         @Override

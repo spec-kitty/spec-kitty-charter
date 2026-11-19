@@ -1,0 +1,33 @@
+summary: 'A dry run of a replacement (dryRun=true): the job judged the archive as the registration would and wrote nothing.'
+value:
+  registrationId: 01M6TQ62HXYF362GAFS2BZ3PGH
+  state: succeeded
+  packId: acme-review-pack
+  acceptedAt: '2026-11-19T10:00:00Z'
+  finishedAt: '2026-11-19T10:00:02Z'
+  result:
+    packId: acme-review-pack
+    descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+    name: acme-review-pack
+    version: 1.2.0
+    previousVersion: 1.1.0
+    level: org
+    revision: 'sha256:0000000000000000000000000000000000000000000000000000000000000000'
+    outcome: replaced
+    dryRun: true
+    notices:
+      floorAdded: []
+      floorRemoved: []
+      locksAdded: []
+      locksRemoved: []
+    _links:
+      self:
+        href: /api/v1/packs/acme-review-pack
+      artifacts:
+        href: /api/v1/packs/acme-review-pack/artifacts{?kind}
+        templated: true
+      presets:
+        href: /api/v1/packs/acme-review-pack/presets
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGH

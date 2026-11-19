@@ -36,7 +36,8 @@ class RegistrationJobsUpstreamTest {
             Credential.WORKTREE_TOKEN,
             "registerPackFromSource",
             "https_archive",
-            "https://packs.example.org/acme.tar.gz");
+            "https://packs.example.org/acme.tar.gz",
+            ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
 
     private final List<AuditLog.Entry> audit = new CopyOnWriteArrayList<>();
     private RegistrationJobs jobs;

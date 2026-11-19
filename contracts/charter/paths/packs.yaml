@@ -30,6 +30,7 @@ post:
   - Registration
   parameters:
   - $ref: ../parameters/IfMatch.yaml
+  - $ref: ../parameters/DryRun.yaml
   - name: If-None-Match
     in: header
     required: false

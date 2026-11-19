@@ -62,7 +62,7 @@ class PackRemovalControllerTest {
                     mock(PackArchiveReader.class),
                     mock(PackRegistrationMapper.class),
                     PackSourceIntake.none(),
-                    new PackRemovalController(artifacts, relationships),
+                    new PackRemovalController(artifacts, relationships, mock(PackUninstallController.class)),
                     mock(PackDocumentController.class)))
             .addInterceptors(new RegistrationAdmission(registration, mock(RegistrationJobs.class), info))
             .setControllerAdvice(new RefusalHandler())

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import ai.speckitty.charter.api.model.PackImpact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.packs.application.ArtifactRemovalService;
@@ -17,8 +18,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * The inbound adapter of the two {@code DELETE}s of a pack (ADR-0065 D4, IC-06): {@code deletePackArtifact} and
- * {@code deletePackRelationship}. Both operations carry the contract's {@code Registration} tag, so the generated
+ * The inbound adapter of the {@code DELETE}s of a pack (ADR-0065 D4, IC-06; ADR-0081 D8): {@code deletePackArtifact},
+ * {@code deletePackRelationship}, and {@code deletePack}, which {@link PackUninstallController} answers. Both operations carry the contract's {@code Registration} tag, so the generated
  * interface is {@code RegistrationApi}, which {@link PackRegistrationController} implements; its two methods hand the
  * request here, where the answer is made. Each is synchronous and answers {@code 204} with the pack's new revision as
  * its {@code ETag}. What refuses a removal is the services' and is answered by the refusal handler: a missing
@@ -29,17 +30,25 @@ final class PackRemovalController {
 
     private final ArtifactRemovalService artifacts;
     private final RelationshipRemovalService relationships;
+    private final PackUninstallController packs;
 
     /**
      * An adapter over the removal use cases.
      *
      * @param artifacts the removal of an artifact
      * @param relationships the removal of a registered relationship
+     * @param packs the removal of a pack whole
      */
     @Autowired
-    PackRemovalController(ArtifactRemovalService artifacts, RelationshipRemovalService relationships) {
+    PackRemovalController(
+            ArtifactRemovalService artifacts, RelationshipRemovalService relationships, PackUninstallController packs) {
         this.artifacts = Objects.requireNonNull(artifacts, "artifacts");
         this.relationships = Objects.requireNonNull(relationships, "relationships");
+        this.packs = Objects.requireNonNull(packs, "packs");
+    }
+
+    ResponseEntity<PackImpact> deletePack(String packId, @Nullable String ifMatch, boolean dryRun) {
+        return packs.delete(packId, ifMatch, dryRun);
     }
 
     ResponseEntity<Void> deleteArtifact(String packId, String kind, String artifactId, @Nullable String ifMatch) {

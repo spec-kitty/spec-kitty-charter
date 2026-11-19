@@ -1,0 +1,69 @@
+title: PackImpact
+description: >-
+  The answer of a dry run of DELETE /packs/{packId} (deletePack with dryRun=true, ADR-0081 D5): what the removal would
+  do, judged by the same code as the removal, under the same locks, with nothing written. outcome deleted means the
+  removal would succeed; refused means it would be refused with problem, the very refusal the removal answers (409
+  pack_has_dependents naming every dependent, or a 422 of the strict compose of a closure that holds the pack). A
+  request the removal answers before it judges anything (503, 404, 428, a 409 registration_conflict of the pack's
+  identity, a stale If-Match 412) or that infrastructure refuses (500) keeps its status on a dry run and has no
+  PackImpact. _links holds self, the pack the dry run judged (the resource the DELETE names, getPack).
+type: object
+additionalProperties: false
+required:
+- packId
+- operation
+- outcome
+- revision
+- _links
+properties:
+  packId:
+    type: string
+    minLength: 1
+    description: The configured name of the pack the removal would remove.
+    x-derived:
+      rule: The configured pack the packId of the path resolves to, by name or by declared pack_id.
+      inputs:
+      - parameters/PackId.yaml
+  operation:
+    type: string
+    enum:
+    - delete
+    description: The write the dry run judged. Only delete answers a PackImpact; a registration's dry run answers its usual status.
+    x-derived:
+      rule: The operation of the request.
+      inputs:
+      - the request
+  outcome:
+    type: string
+    enum:
+    - deleted
+    - refused
+    description: deleted when the removal would succeed, refused when it would be refused with problem.
+    x-derived:
+      rule: The end the removal's checks reach, with the commit switched off.
+      inputs:
+      - the stored packs
+      - the stored activations
+  version:
+    type: string
+    minLength: 1
+    description: The pack_version of the stored pack the removal would remove. Absent when the pack's own pack.yaml
+      cannot be read, which does not stop the removal.
+    x-derived:
+      rule: The pack_version of the stored pack's descriptor; absent when that descriptor cannot be read.
+      inputs:
+      - the pack.yaml of the pack
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: The revision of the stored pack, the value an If-Match names on the removal itself.
+    x-derived:
+      rule: The pack revision over the stored tree.
+      inputs:
+      - the stored files of the pack
+  notices:
+    $ref: PackRegistrationNotices.yaml
+  problem:
+    $ref: PackImpactProblem.yaml
+  _links:
+    $ref: Links.yaml

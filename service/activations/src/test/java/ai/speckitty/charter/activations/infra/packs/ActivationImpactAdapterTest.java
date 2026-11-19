@@ -22,6 +22,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
+import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.ActivationImpact.ClosureChange;
 import ai.speckitty.charter.packs.application.ActivationImpact.ClosureChanges;
 import ai.speckitty.charter.packs.application.ClosureView;
@@ -82,7 +83,9 @@ class ActivationImpactAdapterTest {
         repository.create(new ActivationId("two"), listingNone());
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
-                .containsExactlyInAnyOrder(Optional.of(List.of("beta", "alpha")), Optional.empty());
+                .containsExactlyInAnyOrder(
+                        new ActivationImpact.ActivationRoots("one", Optional.of(List.of("beta", "alpha"))),
+                        new ActivationImpact.ActivationRoots("two", Optional.empty()));
     }
 
     @Test
@@ -91,7 +94,30 @@ class ActivationImpactAdapterTest {
         repository.create(new ActivationId("file-one"), listing(PackRef.of(new PackIdentifier("main"))));
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
-                .containsExactly(Optional.of(List.of("main")));
+                .containsExactly(new ActivationImpact.ActivationRoots("file-one", Optional.of(List.of("main"))));
+    }
+
+    @Test
+    void anActivationWhoseDocumentDoesNotReadIsNamedAsUnreadable(@TempDir Path root) throws java.io.IOException {
+        FileActivationRepository repository = new FileActivationRepository(root.resolve("activations"));
+        repository.create(new ActivationId("good"), listing(PackRef.of("main")));
+        repository.create(new ActivationId("broken"), listing(PackRef.of("main")));
+        try (java.util.stream.Stream<Path> files = java.nio.file.Files.walk(root.resolve("activations"))) {
+            for (Path file : files.filter(java.nio.file.Files::isRegularFile)
+                    .filter(file -> file.toString().contains("broken"))
+                    .toList()) {
+                java.nio.file.Files.writeString(file, "{ not json");
+            }
+        }
+        ActivationImpactAdapter adapter = new ActivationImpactAdapter(repository);
+
+        assertThat(adapter.activationRoots())
+                .extracting(ActivationImpact.ActivationRoots::id)
+                .as("the listing leaves out what it cannot read")
+                .containsExactly("good");
+        assertThat(adapter.unreadableActivations())
+                .as("so a check that must fail closed can ask for it (review R3-1)")
+                .containsExactly("broken");
     }
 
     @Test

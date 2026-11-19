@@ -86,6 +86,28 @@ public final class Pep440Range {
     }
 
     /**
+     * Orders two versions by PEP 440 public-version precedence, the order {@link #admits} judges by: epoch, release,
+     * prerelease, post-release, then development release. A local segment ({@code +local}) does not order, so two
+     * versions that differ only in it compare equal (#517, ADR-0081).
+     *
+     * @param left a PEP 440 version
+     * @param right a PEP 440 version
+     * @return a negative number, zero or a positive number as {@code left} is older than, as new as, or newer than
+     *     {@code right}
+     * @throws IllegalArgumentException when either text is not a PEP 440 version
+     */
+    public static int compareVersions(String left, String right) {
+        Objects.requireNonNull(left, "left");
+        Objects.requireNonNull(right, "right");
+        return compare(parsedOrThrow(left), parsedOrThrow(right));
+    }
+
+    private static Parsed parsedOrThrow(String version) {
+        return Parsed.parse(version)
+                .orElseThrow(() -> new IllegalArgumentException("not a PEP 440 version: " + version));
+    }
+
+    /**
      * Whether some version satisfies both specifier sets: whether two ranges asked of one pack leave a version that
      * could satisfy them together. Ranges that only touch ({@code <2} and {@code >=2}) share no version.
      *

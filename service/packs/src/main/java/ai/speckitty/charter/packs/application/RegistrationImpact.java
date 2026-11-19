@@ -293,11 +293,60 @@ public final class RegistrationImpact {
         }
     }
 
+    /**
+     * The impact of removing a pack whole (ADR-0081 D6, P2), judged on the session the removal read its dependents
+     * with: every closure that holds the pack today is composed again without it, strictly, and a closure that no longer
+     * composes or breaks a relation rule refuses the removal with its code, naming the closure, as a registration's
+     * would. The removal names its dependents before it asks, so the closures left are those of an activation that lists
+     * no packs; a closure rooted at the removed pack alone has nothing left to compose. The activations slice's gate
+     * runs as on every write, and the notices name what the removal takes off the floor and the locks.
+     *
+     * @param session the removal's session over the stored packs
+     * @param removed how the removed pack is configured
+     * @param removedPackId the {@code pack_id} its descriptor declares
+     * @return the floor and lock changes over those closures, and the activations whose in-force set changes
+     * @throws CharterRefusal the composition or relation code of a closure that no longer holds together
+     */
+    public Notices checkRemoval(StagedPackViews.Session session, ConfiguredPack removed, String removedPackId) {
+        Objects.requireNonNull(session, "session");
+        Objects.requireNonNull(removed, "removed");
+        Objects.requireNonNull(removedPackId, "removedPackId");
+        StagedPackViews.View stored = session.stored();
+        StagedPackViews.View after = session.without(removed.id());
+        ClosureRoots.Found found = ClosureRoots.of(stored, removedPackId, rootSets(activations.activationRoots()));
+        Views afterViews = Views.over(after);
+        Views beforeViews = Views.over(stored);
+        Set<PackIdentifier> configuredBefore = new HashSet<>();
+        stored.catalog().configured().forEach(pack -> configuredBefore.add(pack.id()));
+        ForceDiff diff = new ForceDiff();
+        Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
+        for (ClosureRoots.Roots roots : found.closures()) {
+            List<PackIdentifier> left =
+                    roots.ids().stream().filter(id -> !id.equals(removed.id())).toList();
+            if (left.isEmpty()) {
+                continue;
+            }
+            ClosureView now = judge(new ClosureRoots.Roots(left), afterViews, after);
+            Optional<ClosureView> was = viewBefore(roots, beforeViews, configuredBefore);
+            diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now));
+            changes.put(roots, new ActivationImpact.ClosureChange(was, now));
+        }
+        ActivationImpact.ClosureChanges joined =
+                roots -> found.holding().apply(roots).map(changes::get);
+        activations.requireComposable(joined);
+        return diff.notices(activations.activationsAffected(joined));
+    }
+
+    /** The root sets of the stored activations, as the closure finder takes them. */
+    private static List<Optional<List<String>>> rootSets(List<ActivationImpact.ActivationRoots> activations) {
+        return activations.stream().map(ActivationImpact.ActivationRoots::packs).toList();
+    }
+
     private Notices check(StagedPackViews.Session session, Replacement replacement, boolean namingActivations) {
         StagedPackViews.View stored = session.stored();
         StagedPackViews.View staged = session.with(replacement);
         ClosureRoots.Found found =
-                ClosureRoots.of(staged, replacement.descriptor().packId(), activations.activationRoots());
+                ClosureRoots.of(staged, replacement.descriptor().packId(), rootSets(activations.activationRoots()));
         Views after = Views.over(staged);
         Views before = Views.over(stored);
         Set<PackIdentifier> configuredBefore = new HashSet<>();

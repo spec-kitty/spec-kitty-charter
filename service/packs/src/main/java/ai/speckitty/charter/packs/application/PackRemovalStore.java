@@ -194,4 +194,25 @@ public interface PackRemovalStore extends PackRevisions {
      *     unchanged
      */
     PackRevision remove(PackIdentifier pack, Removal removal);
+
+    /**
+     * Removes the pack whole (ADR-0081 D8): its directory is renamed away in one step under the write generation and then
+     * deleted, so a concurrent read sees the pack or no pack. The version history is kept, with the stored pair healed
+     * into it (D9). It takes the locks itself when the caller does not hold them; a removal's caller runs it inside
+     * {@link #exclusively}, whose locks are re-entrant.
+     *
+     * @param pack the pack's identity
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code registration_conflict} for a pack in a read-only
+     *     location or a linked pack; {@code pack_unreadable} when the rename fails, the pack then whole
+     */
+    void removeWhole(PackIdentifier pack);
+
+    /**
+     * Refuses a pack that {@link #removeWhole} would not remove: one in a read-only location, or a linked pack (ADR-0081
+     * P9). A removal judges it before its revision, so a dry run answers it too.
+     *
+     * @param pack the pack's identity
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code registration_conflict}
+     */
+    void requireRemovable(PackIdentifier pack);
 }

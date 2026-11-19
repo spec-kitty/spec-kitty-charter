@@ -1,0 +1,26 @@
+summary: A dry run of a removal another pack and an activation depend on; the problem is the removal's own refusal.
+value:
+  packId: acme-style-pack
+  operation: delete
+  outcome: refused
+  version: 1.0.0
+  revision: sha256:4f2a9c1b7e3d5a6f8091b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f8
+  problem:
+    title: Pack has dependents
+    status: 409
+    code: pack_has_dependents
+    detail: The pack acme-style-pack has 2 dependent(s); remove or change them first.
+    packs:
+    - descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+      packId: acme-review-pack
+      name: acme-review-pack
+    violations:
+    - pointer: ''
+      code: depends_on
+      detail: The pack acme-review-pack declares depends_on acme-style-pack.
+    - pointer: ''
+      code: activation
+      detail: The activation team-default names acme-style-pack in its packs.
+  _links:
+    self:
+      href: /api/v1/packs/acme-style-pack

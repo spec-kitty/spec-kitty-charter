@@ -2,8 +2,8 @@
 title: "ADR-0065: Registering a pack replaces the whole pack"
 description: Registering a whole pack replaces the known pack, removals included; per-artifact writes are helpers; removal is by DELETE; registration is asynchronous and impact-checked.
 doc_status: active
-updated: 2026-11-17T00:00:00Z
-decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490); D1 extended 2026-11-15 (an unmodelled file is not held, #554)
+updated: 2026-11-19T00:00:00Z
+decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490); D1 extended 2026-11-15 (an unmodelled file is not held, #554); D2, D4 and D9 amended 2026-11-19 (ADR-0081, #517)
 decision_date: '2026-11-07'
 type: ADR
 kind: ADR
@@ -43,6 +43,21 @@ rulings of the phase A delta squad:
 
 It supersedes ADR-0026 decision 2 and amends ADR-0005 decision 1, ADR-0019 decision 2, ADR-0063 and ADR-0064
 decision 4, as [Amends](#amends) sets out.
+
+### Amendment 2026-11-19 (#517, ADR-0081): the version order, the pack removal and the history
+
+[ADR-0081](/adr/0081-pack-uninstall-and-the-version-order/) amends three decisions here:
+
+- **D2.** The version is an order, not a label: a replacement whose `pack_version` is not newer than the stored one by
+  PEP 440 precedence, the same version included, is refused `409 pack_version_conflict`, unless it sends the stored
+  content (`unchanged`). Ruling B1's "label, not an order" is reversed by the operator.
+- **D4.** A third `DELETE`, `DELETE /packs/{packId}`, removes a registered pack whole, refused
+  `409 pack_has_dependents` while a pack, an activation that names it, or another pack's artifact depends on it.
+  `?dryRun=true` judges it, and both registrations, without writing.
+- **D9.** A pack `DELETE` keeps the history, healed with the stored pair, for the label-reuse rule only; labels match by
+  PEP 440 equality.
+
+The text of D2, D4 and D9 below is kept as decided on 2026-11-07; read it with this amendment.
 
 ### Amendment 2026-11-11 (#451, #490): excluded files, and readers during a swap
 
@@ -121,6 +136,9 @@ changes. A registration of a pack that does not exist yet creates it.
 is not held. See the amendment under Status.)*
 
 ### D2. The version rule
+
+*(Amended 2026-11-19, ADR-0081: a replacement moves the version forward by PEP 440 precedence; the first bullet below
+no longer holds. See the amendment under Status.)*
 
 - Any `pack_version` replaces the stored pack, an older one included. The version is a label, not an order.
 - A re-send of the same content (the same revision) is a no-op: the job ends `succeeded` with outcome `unchanged`.

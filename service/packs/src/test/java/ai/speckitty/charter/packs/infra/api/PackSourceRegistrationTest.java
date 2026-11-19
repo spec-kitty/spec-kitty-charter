@@ -279,7 +279,12 @@ class PackSourceRegistrationTest {
     @Test
     void aFullQueueIsToldToRetryLater() throws Exception {
         RegistrationJobs.Origin origin = new RegistrationJobs.Origin(
-                "worktree-source", AuditLog.Credential.WORKTREE_TOKEN, "registerPackFromSource", "https_archive", "");
+                "worktree-source",
+                AuditLog.Credential.WORKTREE_TOKEN,
+                "registerPackFromSource",
+                "https_archive",
+                "",
+                ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
         List<RegistrationJobs.Reservation> held = new ArrayList<>();
         for (int i = 0; i < RegistrationJobs.RUNNING_LIMIT + RegistrationJobs.WAITING_LIMIT; i++) {
             held.add(jobs.reserve("held-" + i, Preconditions.none(), origin));

@@ -1,0 +1,212 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-19T07:29:42.367589Z",
+      "decision_id": "01M7SBC5YZMB2Y33SVZZGBNY56",
+      "final_answer": "(a) Operator 2026-11-19: build now behind a PackDependents port in packs/application over ClosureRoots and InboundReferences; #556's ImpactCheck absorbs it later. No rule or fault collection of #556 is added here.",
+      "input_key": "dependency_option",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "(a) build now behind a PackDependents port",
+        "(b) contract and ADR now, build after #556"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Build the dependents check now on the existing closure machinery behind a seam (a), or contract+ADR now and build after #556 (b)?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:29:44.493638Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.scope.dependents-seam",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:29:46.691062Z",
+      "decision_id": "01M7SBCA63DZ78JHTFWR0ESFYR",
+      "final_answer": "Operator acknowledges reversing B1. Newer means PEP 440 public-version precedence through the existing kernel Pep440 ordering. Older-or-equal with other bytes reuses 409 pack_version_conflict with new detail (no new code). Equal with the same bytes is unchanged.",
+      "input_key": "version_order",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "PEP 440 precedence, reuse 409 pack_version_conflict",
+        "PEP 440 precedence, new code pack_version_not_newer"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0065 D2 (ruling B1) makes pack_version a label, not an order. What does the update guard compare, and with which code?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:29:48.707720Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.domain.version-order",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:29:50.739392Z",
+      "decision_id": "01M7SBCE4KP5BYNBJ1FXV5PXTX",
+      "final_answer": "(a) The answer reports previousVersion and packVersion; If-Match stays the from-guard. No new request header.",
+      "input_key": "from_to_declaration",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "(a) report previousVersion and packVersion; If-Match is the from-guard",
+        "(b) new Charter-Pack-From-Version header"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How does a replacement declare the version it moves from and to?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:29:52.965680Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.wire.from-to",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:29:55.177814Z",
+      "decision_id": "01M7SBCJF9M5R61EAXPS36Z80R",
+      "final_answer": "(a) ?dryRun=true on DELETE /packs/{packId}, PUT /packs/{packId} and POST /packs, one code path with a commit switch.",
+      "input_key": "dry_run_shape",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "(a) ?dryRun=true on DELETE, PUT and POST, one code path",
+        "(b) separate impact reads"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Shape of the impact dry run?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:29:57.425649Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.wire.dry-run",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:29:59.555460Z",
+      "decision_id": "01M7SBCPR3DSGJ80S3H8F8PPPR",
+      "final_answer": "(a) Only activations whose packs list names the pack are dependents; the strict closure compose still runs for every other closure that holds the pack (422 with its code).",
+      "input_key": "selecting_activation",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "(a) only activations whose packs list names the pack",
+        "(b) any activation whose closure contains it"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which activations count as dependents that refuse a pack DELETE?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:30:01.701054Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.domain.selecting-activation",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:30:03.881131Z",
+      "decision_id": "01M7SBCTZ9198XCJAYBT57H10M",
+      "final_answer": "New 409 pack_has_dependents whose violations name each dependent pack, activation and artifact referrer.",
+      "input_key": "delete_refusal_code",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "new 409 pack_has_dependents naming each dependent",
+        "reuse artifact_referenced"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which refusal does a DELETE with dependents answer?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:30:06.081250Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.wire.delete-refusal",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:30:08.269213Z",
+      "decision_id": "01M7SBCZ8D3EFNH0S44RBJ3MBP",
+      "final_answer": "Accepted as listed: synchronous; If-Match required (428 absent, 412 stale, * allowed); 404 pack_not_found; 409 registration_conflict for a built-in or read-only-location pack; 503 pack_source_unavailable while registration is off; the pack directory is removed whole in one swap under the registry lock then the pack lock.",
+      "input_key": "delete_semantics",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "synchronous, If-Match required (428/412, * allowed), 404 pack_not_found, 409 registration_conflict for built-in or read-only, 503 when registration is off, whole-directory swap under both locks"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "DELETE /packs/{packId} semantics?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:30:10.293844Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.wire.delete-semantics",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:30:12.433920Z",
+      "decision_id": "01M7SBD3AH3M4XJM6NK2G5WK3Q",
+      "final_answer": "(b) The history is kept for the label-reuse check only: after a DELETE a re-install may take any pack_version the history does not hold with other bytes.",
+      "input_key": "history_after_delete",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "(a) keep; reinstall must be newer than every version",
+        "(b) keep for label reuse only",
+        "(c) drop"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "What does the version history (ADR-0065 D9) do after a pack DELETE?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:30:14.731877Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.domain.history-after-delete",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:30:16.804963Z",
+      "decision_id": "01M7SBD7K44SZS8897GHWN3DA3",
+      "final_answer": "New ADR-0081 amending ADR-0065 D2, D4 and D9; DIV-602 updated; a ### Breaking change fragment on 0.2.0-SNAPSHOT; the ADR records D2's reuse of pack_version_conflict.",
+      "input_key": "adr_and_contract",
+      "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+      "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
+      "opened_by": "cli",
+      "options": [
+        "new ADR-0081 amending ADR-0065 D2/D4/D9, DIV-602 updated, Breaking fragment"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Where is the decision recorded, and how does the contract change?",
+      "rationale": null,
+      "resolved_at": "2026-11-19T07:30:18.929271Z",
+      "resolved_by": "operator (relayed by orchestrator session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "specify.docs.adr",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M7SANQX9M7RKJ0QB8XFPK46F",
+  "version": 1
+}

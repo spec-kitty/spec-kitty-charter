@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.packs;
 
+import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
@@ -26,8 +27,8 @@ import org.springframework.stereotype.Component;
  * {@link ActivationImpact}. It names only {@code packs.application}, as the rest of this adapter package does
  * ({@code HexagonalArchitectureTest} pins it).
  *
- * <p>{@link #activationRoots()} is the {@code packs} list of every stored activation that reads, as the pack ids it names
- * in the order written, or empty for an activation that lists none, which roots at every configured pack.
+ * <p>{@link #activationRoots()} is the id and the {@code packs} list of every stored activation that reads, as the pack
+ * ids it names in the order written, or empty for an activation that lists none, which roots at every configured pack.
  * {@link #activationsAffected} is the affected-activations notice (FR-027, B4): given the closures a registration
  * composed, before and after, it asks the in-force resolution of each activation whose closure holds the pack, over both
  * closures, and names the activations whose effective set differs: the artifacts in force, or the version in force of one
@@ -55,8 +56,15 @@ public class ActivationImpactAdapter implements ActivationImpact {
     }
 
     @Override
-    public List<Optional<List<String>>> activationRoots() {
-        return stored().stream().map(ActivationImpactAdapter::rootsOf).toList();
+    public List<ActivationRoots> activationRoots() {
+        return stored().stream()
+                .map(activation -> new ActivationRoots(activation.id().value(), rootsOf(activation)))
+                .toList();
+    }
+
+    @Override
+    public List<String> unreadableActivations() {
+        return repository.unreadable().stream().map(ActivationId::value).toList();
     }
 
     @Override
