@@ -35,6 +35,8 @@ import org.junit.jupiter.api.io.TempDir;
 class CompanionFilesTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("p");
+
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK);
     private static final String PACK_YAML =
             "pack_id: 01ARWG13C0000000000000000P\npack_version: 1.0.0\nname: p\npack_level: org\n";
 
@@ -57,9 +59,9 @@ class CompanionFilesTest {
         artifact("tactics/a.tactic.yaml", "a", "a.note.md");
         Files.writeString(pack.resolve("tactics/a.note.md"), text, StandardCharsets.UTF_8);
 
-        assertThat(store.readAll(PACK, Fixture.INSTANCE))
+        assertThat(store.readAll(PACK_DIRECTORY, Fixture.INSTANCE))
                 .containsExactly(new FixtureDso("a", Optional.of("a.note.md"), Optional.of(text)));
-        assertThat(store.readOne(PACK, Fixture.INSTANCE, "a"))
+        assertThat(store.readOne(PACK_DIRECTORY, Fixture.INSTANCE, "a"))
                 .contains(new FixtureDso("a", Optional.of("a.note.md"), Optional.of(text)));
     }
 
@@ -68,7 +70,7 @@ class CompanionFilesTest {
     void anArtifactWithoutCompanionsIsUnchanged() throws IOException {
         artifact("a.tactic.yaml", "a", null);
 
-        assertThat(store.readAll(PACK, Fixture.INSTANCE))
+        assertThat(store.readAll(PACK_DIRECTORY, Fixture.INSTANCE))
                 .containsExactly(new FixtureDso("a", Optional.empty(), Optional.empty()));
     }
 
@@ -97,7 +99,7 @@ class CompanionFilesTest {
         artifact("second.tactic.yaml", "second", "sub/../shared.md"); // the same file, named again: one owner
         Files.writeString(pack.resolve("shared.md"), "x");
 
-        FilesystemPackStore.PackRead read = store.read(PACK, List.of(Fixture.INSTANCE));
+        FilesystemPackStore.PackRead read = store.read(PACK_DIRECTORY, List.of(Fixture.INSTANCE));
 
         assertThat(read.dsos(Fixture.INSTANCE)).extracting(FixtureDso::id).containsExactly("first");
         assertThat(read.violations())
@@ -127,7 +129,7 @@ class CompanionFilesTest {
         artifact("note.tactic.yaml", "note", "NOTES.MD");
         Files.writeString(pack.resolve("NOTES.MD"), "an author-style note, claimed by its artifact");
 
-        FilesystemPackStore.PackRead read = store.read(PACK, List.of(Fixture.INSTANCE));
+        FilesystemPackStore.PackRead read = store.read(PACK_DIRECTORY, List.of(Fixture.INSTANCE));
 
         assertThat(read.violations())
                 .extracting(violation -> violation.file() + ": " + violation.reason())
@@ -148,7 +150,7 @@ class CompanionFilesTest {
         Files.writeString(pack.resolve("shared.md"), "x");
         Files.writeString(pack.resolve("SHARED.md"), "y"); // a case-insensitive file system folds the two
 
-        FilesystemPackStore.PackRead read = store.read(PACK, List.of(Fixture.INSTANCE));
+        FilesystemPackStore.PackRead read = store.read(PACK_DIRECTORY, List.of(Fixture.INSTANCE));
 
         assertThat(read.dsos(Fixture.INSTANCE)).extracting(FixtureDso::id).containsExactly("a");
         assertThat(read.violations())
@@ -159,11 +161,12 @@ class CompanionFilesTest {
     @Test
     @DisplayName("a new artifact is written with its companion beside it")
     void upsertCreatesTheCompanion() throws IOException {
-        store.write(PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("n.note.md"), Optional.of("body\n")));
+        store.write(
+                PACK_DIRECTORY, Fixture.INSTANCE, new FixtureDso("n", Optional.of("n.note.md"), Optional.of("body\n")));
 
         assertThat(Files.readString(pack.resolve("n.tactic.yaml"))).isEqualTo("id: n\nnote_path: n.note.md\n");
         assertThat(Files.readString(pack.resolve("n.note.md"))).isEqualTo("body\n");
-        assertThat(store.readOne(PACK, Fixture.INSTANCE, "n"))
+        assertThat(store.readOne(PACK_DIRECTORY, Fixture.INSTANCE, "n"))
                 .as("found again where a load finds it")
                 .contains(new FixtureDso("n", Optional.of("n.note.md"), Optional.of("body\n")));
     }
@@ -174,7 +177,9 @@ class CompanionFilesTest {
         Files.writeString(pack.resolve("taken.md"), "someone else's");
 
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("taken.md"), Optional.of("mine"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("n", Optional.of("taken.md"), Optional.of("mine"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
@@ -192,13 +197,17 @@ class CompanionFilesTest {
         Files.writeString(pack.resolve("notes.txt"), "the pack's own");
 
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("notes.txt"), Optional.of("x"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("a", Optional.of("notes.txt"), Optional.of("x"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessageContaining("companion notes.txt is taken");
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("pack.yaml/"), Optional.of("x"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("a", Optional.of("pack.yaml/"), Optional.of("x"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
@@ -216,7 +225,9 @@ class CompanionFilesTest {
         Files.writeString(pack.resolve("body.md"), "a's");
 
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("b", Optional.of("Body.md"), Optional.of("b's"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("b", Optional.of("Body.md"), Optional.of("b's"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
@@ -232,7 +243,9 @@ class CompanionFilesTest {
         Files.writeString(pack.resolve("body.md"), "before");
 
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("Body.md"), Optional.of("after"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("a", Optional.of("Body.md"), Optional.of("after"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
@@ -246,7 +259,7 @@ class CompanionFilesTest {
         artifact("tactics/a.tactic.yaml", "a", "old.md");
         Files.writeString(pack.resolve("tactics/old.md"), "old");
 
-        store.write(PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("new.md"), Optional.of("new")));
+        store.write(PACK_DIRECTORY, Fixture.INSTANCE, new FixtureDso("a", Optional.of("new.md"), Optional.of("new")));
 
         assertThat(pack.resolve("tactics/old.md")).doesNotExist();
         assertThat(Files.readString(pack.resolve("tactics/new.md"))).isEqualTo("new");
@@ -259,7 +272,7 @@ class CompanionFilesTest {
         artifact("a.tactic.yaml", "a", "a.md");
         Files.writeString(pack.resolve("a.md"), "before");
 
-        store.write(PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("a.md"), Optional.of("after")));
+        store.write(PACK_DIRECTORY, Fixture.INSTANCE, new FixtureDso("a", Optional.of("a.md"), Optional.of("after")));
 
         assertThat(Files.readString(pack.resolve("a.md"))).isEqualTo("after");
     }
@@ -268,7 +281,7 @@ class CompanionFilesTest {
     @DisplayName("a companion with no content, or one breaking the path rule, is refused before anything is written")
     void upsertRefusesBadCompanions() throws IOException {
         assertThatThrownBy(() -> store.write(
-                        PACK,
+                        PACK_DIRECTORY,
                         Fixture.INSTANCE,
                         new FixtureDso("n", Optional.of("first.md,second.md/.."), Optional.of("x"))))
                 .isInstanceOfSatisfying(
@@ -280,18 +293,22 @@ class CompanionFilesTest {
                 .doesNotExist();
         assertThat(pack.resolve("n.tactic.yaml")).doesNotExist();
 
-        assertThatThrownBy(() ->
-                        store.write(PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("n.md"), Optional.empty())))
+        assertThatThrownBy(() -> store.write(
+                        PACK_DIRECTORY, Fixture.INSTANCE, new FixtureDso("n", Optional.of("n.md"), Optional.empty())))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("companion n.md has no content");
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("../n.md"), Optional.of("x"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("n", Optional.of("../n.md"), Optional.of("x"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
                 .hasMessageContaining("companion ../n.md leaves the pack");
         assertThatThrownBy(() -> store.write(
-                        PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("x.tactic.yaml"), Optional.of("x"))))
+                        PACK_DIRECTORY,
+                        Fixture.INSTANCE,
+                        new FixtureDso("n", Optional.of("x.tactic.yaml"), Optional.of("x"))))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
@@ -330,7 +347,7 @@ class CompanionFilesTest {
                 yaml.read(TacticBinding.INSTANCE, Files.readString(source), String.valueOf(source.getFileName()));
 
         assertThat(direct).isInstanceOf(FileRead.Read.class);
-        assertThat(real.readAll(PACK, TacticBinding.INSTANCE))
+        assertThat(real.readAll(PACK_DIRECTORY, TacticBinding.INSTANCE))
                 .containsExactly(((FileRead.Read<TacticDso>) direct).value());
 
         // Failing control: the comparison sees a change, so the equality above is not vacuous.
@@ -341,7 +358,7 @@ class CompanionFilesTest {
                 .findFirst()
                 .orElseThrow();
         Files.writeString(copied, text.replace(nameLine, "name: changed by the control"));
-        assertThat(real.readAll(PACK, TacticBinding.INSTANCE))
+        assertThat(real.readAll(PACK_DIRECTORY, TacticBinding.INSTANCE))
                 .doesNotContain(((FileRead.Read<TacticDso>) direct).value());
     }
 

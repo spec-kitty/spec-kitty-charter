@@ -113,7 +113,7 @@ final class PackLocator {
         }
         try {
             return new FilesystemPackStore(parent, strategy)
-                    .readDescriptor(new PackIdentifier(name.toString()))
+                    .readDescriptor(PackDirectory.of(directory))
                     .packId()
                     .equals(pack.value());
         } catch (CharterRefusal malformed) {

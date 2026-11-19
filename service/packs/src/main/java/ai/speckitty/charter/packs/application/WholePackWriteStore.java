@@ -121,23 +121,25 @@ public interface WholePackWriteStore {
         /**
          * Reads a stored pack's directory as it is, refusing what cannot be read as the reads do.
          *
+         * @param pack the registered id the pack is stored under: what it holds is assembled under it
          * @param directory the stored pack's directory
          * @return what the pack holds
          * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when it cannot be read
          */
-        Contents loadStored(Path directory);
+        Contents loadStored(PackIdentifier pack, Path directory);
 
         /**
          * Reads what can still be read of a stored pack that {@link #loadStored} refuses: every file on its own, as plain
          * YAML where it does not bind. An artifact file counts by the {@code id} it declares, and by the id its path
          * names when that differs or cannot be read; each entry of a graph file whose source can be read is an edge.
          *
+         * @param pack the registered id the pack is stored under
          * @param directory the stored pack's directory
          * @return what the pack still holds
          * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the set of artifacts
          *     cannot be determined at all, for example when the directory cannot be listed; it is never taken as empty
          */
-        Remains salvageStored(Path directory);
+        Remains salvageStored(PackIdentifier pack, Path directory);
     }
 
     /**

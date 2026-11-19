@@ -305,9 +305,12 @@ public final class FileSystemPackInspector implements PackReading {
         }
     }
 
-    /** The read's DSO half ({@link StoreRead}) over this reader's format, bindings and companion rules. */
+    /**
+     * The read's DSO half ({@link StoreRead}) over this reader's format, bindings and companion rules, assembled under
+     * the root's name when it is a pack id ({@link StoreRead#ofNamed}).
+     */
     private StoreRead storeRead(Path directory, String name, PackFileSet.Walk walk) {
-        return StoreRead.of(directory, name, walk, strategy, bindings, companionRules);
+        return StoreRead.ofNamed(directory, name, walk, strategy, bindings, companionRules);
     }
 
     /** The read of a root that cannot be read: no fact, an empty census, and the one fault at {@value #ROOT}. */

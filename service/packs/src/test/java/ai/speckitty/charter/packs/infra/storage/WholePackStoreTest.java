@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -43,6 +44,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Whole-pack load and write (ADR-0037 decision 5)")
 class WholePackStoreTest {
+
+    /** The id a stored pack of these tests is registered under. */
+    private static final PackIdentifier STORED = new PackIdentifier("stored");
 
     private static final String DIRECTIVE_FILE = "directives/043-close-the-class.directive.yaml";
     private static final String NESTED_TACTIC = "tactics/analysis/gamma.tactic.yaml";
@@ -170,7 +174,8 @@ class WholePackStoreTest {
         WholePackStore.LoadedPack loaded = store.load(richPack(host));
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.pack().id().value()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
+        assertThat(loaded.pack().id().value()).as("the id the directory names").isEqualTo("pack-a");
+        assertThat(loaded.pack().descriptor().packId()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
         assertThat(loaded.pack().tactics()).hasSize(3);
         assertThat(loaded.pack().directives()).hasSize(1);
         assertThat(loaded.layout().paths()).containsEntry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_043"), DIRECTIVE_FILE);
@@ -487,14 +492,16 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("the target may have another name than the source; the identity is the declared pack_id")
+    @DisplayName("the target may have another name than the source: it is read under its own name, its pack_id kept")
     void theTargetNameIsFree(@TempDir Path host) throws IOException {
         WholePackStore.LoadedPack loaded = store.load(richPack(host.resolve("source")));
         Path target = host.resolve("renamed");
 
         store.write(loaded, target);
 
-        assertThat(store.load(target).pack().id()).isEqualTo(loaded.pack().id());
+        assertThat(store.load(target).pack().id()).isEqualTo(new PackIdentifier("renamed"));
+        assertThat(store.load(target).pack().descriptor().packId())
+                .isEqualTo(loaded.pack().descriptor().packId());
         assertThat(meaning(store.load(target))).isEqualTo(meaning(loaded));
     }
 
@@ -842,7 +849,7 @@ class WholePackStoreTest {
                             .extracting(violation -> violation.pointer())
                             .contains("PROVENANCE.md", BROKEN_FILE);
                 });
-        assertThatThrownBy(() -> store.loadStored(pack))
+        assertThatThrownBy(() -> store.loadStored(STORED, pack))
                 .as("a stored pack that cannot be read is refused as the reads refuse it, not as an upload")
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
@@ -927,13 +934,13 @@ class WholePackStoreTest {
                 """);
         write(pack, "bad.graph.yaml", "edges: [unclosed");
 
-        WholePackWriteStore.Remains remains = store.salvageStored(pack);
+        WholePackWriteStore.Remains remains = store.salvageStored(STORED, pack);
 
         assertThat(remains.defined())
                 .contains("tactic:alpha-tactic", "tactic:broken-tactic", "directive:DIRECTIVE_043");
         assertThat(remains.digests()).containsKey(new Urn(NodeKind.TACTIC, "alpha-tactic"));
         assertThat(remains.edges()).extracting(edge -> edge.from().toString()).contains("tactic:alpha-tactic");
-        assertThatThrownBy(() -> store.salvageStored(host.resolve("nowhere")))
+        assertThatThrownBy(() -> store.salvageStored(STORED, host.resolve("nowhere")))
                 .as("a pack whose artifacts cannot be told is refused, never taken as empty")
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
@@ -972,7 +979,7 @@ class WholePackStoreTest {
         AtomicInteger reads = new AtomicInteger();
         long lookupsBefore = FilesystemPackStore.lookupParses();
         WholePackWriteStore.Remains remains =
-                new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(pack);
+                new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(STORED, pack);
         assertThat(remains.defined()).hasSize(files);
         return reads.get() + (int) (FilesystemPackStore.lookupParses() - lookupsBefore);
     }
@@ -1006,9 +1013,9 @@ class WholePackStoreTest {
         write(both, "directives/A.directive.yaml", one);
         write(both, "directives/B.directive.yaml", two);
 
-        String digestOne = store.salvageStored(onlyOne).digests().get(urn);
-        String digestTwo = store.salvageStored(onlyTwo).digests().get(urn);
-        String digestBoth = store.salvageStored(both).digests().get(urn);
+        String digestOne = store.salvageStored(STORED, onlyOne).digests().get(urn);
+        String digestTwo = store.salvageStored(STORED, onlyTwo).digests().get(urn);
+        String digestBoth = store.salvageStored(STORED, both).digests().get(urn);
 
         assertThat(digestOne).isNotEqualTo(digestTwo);
         assertThat(digestBoth)

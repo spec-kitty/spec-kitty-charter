@@ -32,6 +32,7 @@ class PlacedWriteTest {
     private static final String PLACE = "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml";
     private static final String FRAGMENT = "missions/software-dev/enhancements/spdd-plan.prompt-fragment.md";
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK);
 
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();
     private Path host;
@@ -66,12 +67,13 @@ class PlacedWriteTest {
     @Test
     @DisplayName("a create lands at the given place, with its fragment beside it, and not at the pack root")
     void aCreateLandsAtTheGivenPlace() throws IOException {
-        store.writeAt(PACK, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill the slot."), PLACE);
+        store.writeAt(
+                PACK_DIRECTORY, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill the slot."), PLACE);
 
         assertThat(files()).contains(PLACE, FRAGMENT).doesNotContain("spdd-plan.step-enhancement.yaml");
         assertThat(Files.readString(pack.resolve(PLACE))).contains("id: spdd-plan");
         assertThat(Files.readString(pack.resolve(FRAGMENT))).contains("Fill the slot.");
-        assertThat(store.readOne(PACK, StepEnhancementBinding.INSTANCE, "spdd-plan"))
+        assertThat(store.readOne(PACK_DIRECTORY, StepEnhancementBinding.INSTANCE, "spdd-plan"))
                 .as("the file is read back as the enhancement it was written as, body included")
                 .contains(enhancement("spdd-plan", "Fill the slot."));
     }
@@ -90,7 +92,10 @@ class PlacedWriteTest {
                 "",
                 ".")) {
             assertThatThrownBy(() -> store.writeAt(
-                            PACK, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill the slot."), place))
+                            PACK_DIRECTORY,
+                            StepEnhancementBinding.INSTANCE,
+                            enhancement("spdd-plan", "Fill the slot."),
+                            place))
                     .as(place)
                     .isInstanceOfSatisfying(
                             CharterRefusal.class,
@@ -109,7 +114,7 @@ class PlacedWriteTest {
         Files.writeString(taken, "not an enhancement of this id\n");
 
         assertThatThrownBy(() -> store.writeAt(
-                        PACK,
+                        PACK_DIRECTORY,
                         StepEnhancementBinding.INSTANCE,
                         enhancement("other-plan", "Fill the slot."),
                         "missions/software-dev/enhancements/other-plan.step-enhancement.yaml"))
@@ -124,10 +129,10 @@ class PlacedWriteTest {
     @Test
     @DisplayName("an id that already exists is replaced where it sits, whatever place is given")
     void anExistingIdIsReplacedInPlace() throws IOException {
-        store.writeAt(PACK, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "First."), PLACE);
+        store.writeAt(PACK_DIRECTORY, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "First."), PLACE);
 
         store.writeAt(
-                PACK,
+                PACK_DIRECTORY,
                 StepEnhancementBinding.INSTANCE,
                 enhancement("spdd-plan", "Second."),
                 "elsewhere/spdd-plan.step-enhancement.yaml");
@@ -150,7 +155,10 @@ class PlacedWriteTest {
                 "missions/software-dev/spdd-plan.step-enhancement.yaml",
                 "missions/software-dev/enhancements/")) {
             assertThatThrownBy(() -> store.writeAt(
-                            PACK, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill the slot."), place))
+                            PACK_DIRECTORY,
+                            StepEnhancementBinding.INSTANCE,
+                            enhancement("spdd-plan", "Fill the slot."),
+                            place))
                     .as(place)
                     .isInstanceOfSatisfying(
                             CharterRefusal.class,
@@ -183,7 +191,8 @@ class PlacedWriteTest {
     @Test
     @DisplayName("the control: the same enhancement is not writable through the canonical form, whose fileName refuses")
     void theCanonicalFormRefusesIt() {
-        assertThatThrownBy(() -> store.write(PACK, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill.")))
+        assertThatThrownBy(() ->
+                        store.write(PACK_DIRECTORY, StepEnhancementBinding.INSTANCE, enhancement("spdd-plan", "Fill.")))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }
