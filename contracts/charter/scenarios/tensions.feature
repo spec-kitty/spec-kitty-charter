@@ -126,6 +126,8 @@ Feature: A tension between two artifacts in force is answered by the graph, the 
       """
     Then the response status is 201
     And the field at "/relationship/type" is "tension"
+    And the field at "/relationship/from" is "directive:TENSION_REG_B"
+    And the field at "/relationship/to" is "directive:TENSION_REG_A"
     And the file "registered.graph.yaml" of the pack "tensions" contains "source: directive:TENSION_REG_A"
     And the file "registered.graph.yaml" of the pack "tensions" contains "target: directive:TENSION_REG_B"
     Given the activation "a-1" holds:
@@ -213,7 +215,10 @@ Feature: A tension between two artifacts in force is answered by the graph, the 
 
   Scenario: A side the context lists only as a suggestion is no side of a tension, at depth 0 or 1
     TENSION_REC_B is not selected, so it is out of force: reached through a suggests edge of TENSION_REC_A it is listed as
-    a suggestion, and the tension is in no read. Case 1's context, with both selected, has it.
+    a suggestion, and the tension is in no read. Case 1's context, with both selected, has it. The context lists an
+    artifact as a suggestion only when it is not in force (reason not_selected), so a side in force is never a
+    suggestion only: the tension is absent here because a side is out of force, which the context's rule (both sides
+    listed in force) agrees with.
     Given the org pack "tensions" with the file "suggests.graph.yaml":
       """
       schema_version: '1.0'

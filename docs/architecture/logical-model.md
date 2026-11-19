@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-15T00:00:00Z
+updated: 2026-11-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -406,8 +406,8 @@ is a substep's data, a `replaces` edge is written `overrides`, and an `impacts` 
 | `enhances` | Field-merge into a target artifact; keeps the step sequence and step inputs and outputs. | step_enhancement → action; X → X for every activatable X except mission_type and step_enhancement |
 | `overrides` | Full replacement of a target artifact of the same kind. | X → X, X activatable and not step_enhancement |
 | `supports` | A resource helps check a rule (an asset supports a directive). Target ([conceptual model](/context/conceptual-model/#relationships)); candidate, undecided as a relation name in the schemas. | not a relation of the model |
-| `tension` | Two rules pull against each other. Authored, never derived from value impacts; it may sit beside one structural relationship on the same pair. Written `in_tension_with` and held beside the relations ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/), [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). | G ↔ G |
-| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). | G → G |
+| `tension` | Two rules pull against each other. Authored, never derived from value impacts; it may sit beside one structural relationship on the same pair, in its own pair class. Stored with the side the pack holds as its source, the smaller URN when the pack holds both or neither; answered by the effective graph, the action context and `getActivationTensions` ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/), [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). | G ↔ G |
+| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides: that artifact is the pair's reconciler, answered in `reconciledBy` (ADR-0028, ADR-0045 decision 9). | G → G |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. | G → anti_pattern |
 | `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.derivedRelationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. | guard → asset |
 
@@ -420,17 +420,15 @@ schemas are in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas);
 the authored files are drawn in the [pack write model](/architecture/descriptor-schemas/#pack-write-model).
 
-Current state: core still writes `in_tension_with` until its migration lands. The contract once reserved `impacts` as
-a relation for 1.0, with core's seam mapping an `in_tension_with` edge to a negative `impacts` edge (provisional,
-[ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), superseded in part by ADR-0028); the
-relation is retired ([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6).
-Target: [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) supersedes that
-naming in part; the relation is `tension` and `impacts` is a per-value list on one artifact
-(see [Values and value impacts](#values-and-value-impacts)). The domain representation of the
-relationship is proposed by [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/):
-a tension is a domain value held beside the relationships, outside their pair identity, written
-`in_tension_with` in today's pack files, and not on the contract. Candidate, undecided: how the list
-appears in the pack schemas and the contract, and whether the relationship reaches the contract.
+Current state: the relation is `tension` in the domain, the pack files and the contract, and `in_tension_with` is no
+longer read ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/), accepted
+2026-11-18, #602); core still writes the old spelling until it aligns through the generated client (DIV-615). The
+contract once reserved `impacts` as a relation for 1.0 (provisional,
+[ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), superseded in part by
+[ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)); that relation is retired
+([ADR-0077](/adr/0077-kind-taxonomy-and-step-authority/) decision 6), and `impacts` is a per-value list on one artifact
+(see [Values and value impacts](#values-and-value-impacts)). Candidate, undecided: how the per-value list appears in the
+pack schemas and the contract.
 
 ### Relationships in the domain
 

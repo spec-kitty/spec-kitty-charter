@@ -630,14 +630,28 @@
 
 - id: DIV-108
   surface: The tension annotation, in the action-context answer
-  core: An annotation over in_tension_with pairs.
-  service: No tension annotation until the creed set (#16, #77).
-  rationale: Decided in ADR-0018.
-  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  core: >-
+    A governance-bundle annotation over in_tension_with pairs, tension_arbiters and unarbitrated_tensions, in the
+    action-context answer.
+  service: >-
+    Three reads answer the tensions in force (ADR-0045 decisions 8 to 11): getEffectiveGraph answers each as one edge of
+    relation tension, from the smaller URN, with its first writer's when and reason and reconciledBy; the action
+    context's required tensions member lists those whose two sides it lists in force; and getActivationTensions answers
+    every tension in force of the activation with one unreconciled_tension finding per tension nothing in force
+    reconciles. No answer is an annotation of a bundle.
+  rationale: >-
+    A tension is a relationship of the graph (ADR-0028 decision 2), so it is answered where the graph is, and its
+    findings are a read of their own that never refuses (ADR-0045). The seam maps the three reads to core's two
+    annotation members.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19); ADR-0045 decisions 8 to 12 (accepted 2026-11-18, rulings G1 to G3)
   status: open
   since: 2026-10-19
+  note: >-
+    Until #602 (2026-11-19) the service answered no tension annotation until the creed set (#16, #77); the decided
+    reads replace that.
   evidence:
     - "corpus case: tension-pair"
+    - "charter: contracts/charter/scenarios/tensions.feature; TensionsInForceTest; TensionReadServiceTest"
 
 - id: DIV-109
   surface: The artifact kinds the action-context answer lists
@@ -2454,3 +2468,67 @@
     - "core: offering/model_task_routing/loader.py (load)"
     - "core: offering/model_task_routing/evaluator.py (evaluate)"
     - "charter: model-recommendation.feature (rows 7 to 10; the 404 and order outlines)"
+- id: DIV-615
+  surface: The spelling of a tension in the pack files
+  core: Writes and reads in_tension_with.
+  service: >-
+    Reads and writes tension (ADR-0045 decision 2). in_tension_with is an unknown relation: a pack file that writes it
+    is refused at load, and a registration that names it is 422 validation_failed with relationship_type_unknown. No
+    reader of the old spelling is kept.
+  rationale: >-
+    The charter's model is canonical and has one name for the relation (AGENTS.md model rules). The pack content
+    follows in spec-kitty-open-packs (open-packs #316); core aligns through the generated client.
+  ruling: ADR-0045 decision 2; ADR-0028 decision 2
+  status: open
+  since: 2026-11-19
+  evidence:
+    - "charter: service/packs/src/test/resources/load-fixtures/shard-in-tension-with-is-unknown; RelationTypeTest; contracts/charter/scenarios/pack-removal.feature (The old spelling in_tension_with is an unknown relation type)"
+- id: DIV-616
+  surface: The resolutions of an unreconciled tension
+  core: Two fixed strings for every tension without an arbiter, whatever the activation can do.
+  service: >-
+    An unreconciled_tension finding offers reconcile always, and deactivate_one_side only when the exclusion write
+    would accept at least one side, with an exclude-source or exclude-target link per side it would accept: a side a
+    pack locks or a governing preset requires has none (ADR-0045 decision 12, ruling G3).
+  rationale: >-
+    A read never advertises a write that would refuse (the hypermedia guide); whether a side can be excluded is the
+    exclusion write's own floor check on the same document and closure.
+  ruling: ADR-0045 decision 12; ruling G3 (2026-11-19)
+  status: open
+  since: 2026-11-19
+  evidence:
+    - "charter: contracts/charter/scenarios/tensions.feature (A side a pack locks has no exclude link); TensionReadServiceTest; TensionFindingTest"
+- id: DIV-617
+  surface: What reconciles a tension, and its name
+  core: >-
+    An arbiter, named in tension_arbiters for a pair.
+  service: >-
+    A reconciler: an artifact in force whose reconciles_tension edges in the merged closure reach both sides of the
+    pair. An edge to one side only reconciles nothing. Every reconciler in force is listed, sorted by URN, whether or
+    not the read lists it.
+  rationale: >-
+    reconciles_tension is the charter's relation for it (ADR-0028), and a pair is resolved only when both sides are
+    reached (ADR-0045 decision 9).
+  ruling: ADR-0045 decisions 8 and 9
+  status: open
+  since: 2026-11-19
+  evidence:
+    - "charter: TensionsInForceTest; contracts/charter/scenarios/tensions.feature (Case 2 - an unreconciled tension)"
+- id: DIV-618
+  surface: The stored orientation of a tension, and the load refusals
+  core: >-
+    Writes a tension smaller URN first, and accepts a pair written twice, reversed or from a side the pack does not
+    hold.
+  service: >-
+    Stores a tension with the side the pack holds as its source; when the pack holds both sides, or neither, the
+    smaller bare URN is the source (ADR-0045 decision 1, ruling G1 as extended). A registration normalizes to that
+    orientation. A pack whose graph documents write a tension twice, against its stored orientation, or from an
+    artifact to itself is refused at load with tension_duplicated, tension_orientation or tension_self.
+  rationale: >-
+    One stored form keeps the pair's identity and the round trip exact; a pack that breaks it is refused rather than
+    read two ways.
+  ruling: ADR-0045 decisions 1 and 6; rulings G1 and its extension
+  status: open
+  since: 2026-11-19
+  evidence:
+    - "charter: GraphRulesTest; service/packs/src/test/resources/load-fixtures/shard-tension-duplicated, shard-tension-orientation-reversed, shard-tension-self, shard-tension-source-not-owned; RelationshipRegistrationServiceTest"

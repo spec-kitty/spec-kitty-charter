@@ -1,4 +1,4 @@
-# Draft issue for spec-kitty-open-packs (placeholder open-packs#316)
+# Draft issue for spec-kitty-open-packs, filed as spec-kitty-open-packs#316
 
 **Title**: Migrate tension edges to charter's `tension` spelling, canonical orientation and one per pair
 

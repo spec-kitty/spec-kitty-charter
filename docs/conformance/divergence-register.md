@@ -83,7 +83,7 @@ That section still links them. They were decided in [ADR-0018](/adr/0018-action-
 | DIV-105 | an ordered answer with `relation`, `via`, `hops` and `diagnostics` | unordered sets | every case (mapping) |
 | DIV-106 | vocabulary targets as entries with relation `vocabulary`, a `glossary_context:` or `term:` URN since #106; the seam drops them from delivery. The vocabulary in force is its own read of the activation, the terms of the glossary contexts in force and their Contextive and taboo projections ([ADR-0076](/adr/0076-the-activation-vocabulary-reads-and-projections/)), ordered by Unicode code point. A context overrides across levels whole, and the load warning of ADR-0049 decision 13 is retired (ADR-0076 decision 2) | computes `glossary_scopes` and discards it; the charter retires those scopes (ADR-0049 decision 11): a context's scope is its pack level | `vocabulary-walk` |
 | DIV-107 | the offering's walk only; activation, selection roots, the language filter and the directive allowlist are the effective-context operation's (R9, #103) | one filtered, selected answer | `activated-project`, `selected-roots`, `language-filtered`, `directive-allowlist` |
-| DIV-108 | no tension annotation until the creed set (#16, #77) | an annotation over `in_tension_with` pairs | `tension-pair` |
+| DIV-108 | the tensions in force on three reads (ADR-0045): a `tension` edge of the effective graph with `when`, `reason` and `reconciledBy`; the action context's `tensions`; and `getActivationTensions`, with one `unreconciled_tension` finding per tension nothing in force reconciles. Until #602 there was no tension annotation | a governance-bundle annotation, `tension_arbiters` and `unarbitrated_tensions`, over `in_tension_with` pairs | `tension-pair` |
 | DIV-109 | every walked kind, including paradigm, template and agent profile | delivery slots exclude those kinds (seam-side) | `undelivered-kind` |
 | DIV-110 | the hard dependencies (`requires`, transitive) of suggested artifacts are listed | a suggested artifact without its `requires` | `suggested-artifact-requires` |
 
@@ -1053,3 +1053,43 @@ scenarios that pin it.
   - Core: `offering/model_task_routing/loader.py` (load)
   - Core: `offering/model_task_routing/evaluator.py` (evaluate)
   - Charter: `model-recommendation.feature` (rows 7 to 10; the 404 and order outlines)
+
+### DIV-615: The spelling of a tension in the pack files
+
+- **Core:** Writes and reads `in_tension_with`.
+- **Service:** Reads and writes `tension` (ADR-0045 decision 2). `in_tension_with` is an unknown relation: a pack file that writes it is refused at load, and a registration that names it is `422 validation_failed` with `relationship_type_unknown`. No reader of the old spelling is kept.
+- **Rationale:** The charter's model is canonical and has one name for the relation. The pack content follows in spec-kitty-open-packs (open-packs #316); core aligns through the generated client.
+- **Ruling:** ADR-0045 decision 2; ADR-0028 decision 2
+- **Status:** open, since 2026-11-19
+- **Evidence:**
+  - Charter: `service/packs/src/test/resources/load-fixtures/shard-in-tension-with-is-unknown`; `RelationTypeTest`; `contracts/charter/scenarios/pack-removal.feature` (The old spelling in_tension_with is an unknown relation type)
+
+### DIV-616: The resolutions of an unreconciled tension
+
+- **Core:** Two fixed strings for every tension without an arbiter, whatever the activation can do.
+- **Service:** An `unreconciled_tension` finding offers `reconcile` always, and `deactivate_one_side` only when the exclusion write would accept at least one side, with an `exclude-source` or `exclude-target` link per side it would accept: a side a pack locks or a governing preset requires has none (ADR-0045 decision 12, ruling G3).
+- **Rationale:** A read never advertises a write that would refuse; whether a side can be excluded is the exclusion write's own floor check on the same document and closure.
+- **Ruling:** ADR-0045 decision 12; ruling G3 (2026-11-19)
+- **Status:** open, since 2026-11-19
+- **Evidence:**
+  - Charter: `contracts/charter/scenarios/tensions.feature` (A side a pack locks has no exclude link); `TensionReadServiceTest`; `TensionFindingTest`
+
+### DIV-617: What reconciles a tension, and its name
+
+- **Core:** An arbiter, named in `tension_arbiters` for a pair.
+- **Service:** A reconciler: an artifact in force whose `reconciles_tension` edges in the merged closure reach both sides of the pair. An edge to one side only reconciles nothing. Every reconciler in force is listed, sorted by URN, whether or not the read lists it.
+- **Rationale:** `reconciles_tension` is the charter's relation for it (ADR-0028), and a pair is resolved only when both sides are reached (ADR-0045 decision 9).
+- **Ruling:** ADR-0045 decisions 8 and 9
+- **Status:** open, since 2026-11-19
+- **Evidence:**
+  - Charter: `TensionsInForceTest`; `contracts/charter/scenarios/tensions.feature` (Case 2)
+
+### DIV-618: The stored orientation of a tension, and the load refusals
+
+- **Core:** Writes a tension smaller URN first, and accepts a pair written twice, reversed or from a side the pack does not hold.
+- **Service:** Stores a tension with the side the pack holds as its source; when the pack holds both sides, or neither, the smaller bare URN is the source (ADR-0045 decision 1, ruling G1 as extended). A registration normalizes to that orientation. A pack whose graph documents write a tension twice, against its stored orientation, or from an artifact to itself is refused at load with `tension_duplicated`, `tension_orientation` or `tension_self`.
+- **Rationale:** One stored form keeps the pair's identity and the round trip exact; a pack that breaks it is refused rather than read two ways.
+- **Ruling:** ADR-0045 decisions 1 and 6; ruling G1 and its extension
+- **Status:** open, since 2026-11-19
+- **Evidence:**
+  - Charter: `GraphRulesTest`; the `shard-tension-*` load fixtures; `RelationshipRegistrationServiceTest`
