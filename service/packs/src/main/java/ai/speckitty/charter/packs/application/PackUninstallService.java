@@ -180,11 +180,11 @@ public final class PackUninstallService {
     }
 
     /**
-     * Whether a refusal is the removal's judgement, which a dry run answers as a body: the dependents and the compose.
-     * A pack that cannot be read, or a failure of the service, is no judgement and keeps its status.
+     * Whether a refusal is the removal's judgement, which a dry run answers as a body: the dependents and the compose. A
+     * pack that cannot be read is no judgement and keeps its status; a failure of the service is no refusal at all.
      */
     private static boolean isJudgement(CharterRefusal refused) {
-        return refused.code() != RefusalCode.PACK_UNREADABLE && refused.code() != RefusalCode.INTERNAL_ERROR;
+        return refused.code() != RefusalCode.PACK_UNREADABLE;
     }
 
     private static ConfiguredPack configuredOf(StagedPackViews.View stored, PackIdentifier name) {

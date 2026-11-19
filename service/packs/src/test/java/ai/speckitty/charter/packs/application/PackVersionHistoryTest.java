@@ -254,10 +254,11 @@ class PackVersionHistoryTest {
         assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("2.0.0", "Other")), Preconditions.none())))
                 .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
 
+        PackUninstallServiceTest.uninstall(rig, "pack-x");
         assertThat(rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none())
                         .outcome())
-                .as("the control: the content 2.0.0 had")
-                .isEqualTo(Outcome.REPLACED);
+                .as("the control: after a removal, the content 2.0.0 had (ADR-0081 D9)")
+                .isEqualTo(Outcome.CREATED);
     }
 
     @Test
@@ -280,10 +281,11 @@ class PackVersionHistoryTest {
                                 "1.0.0", first.revision().token()),
                         org.assertj.core.groups.Tuple.tuple(
                                 "2.0.0", rig.writeStore.currentRevision(pack).token()));
+        PackUninstallServiceTest.uninstall(rig, "pack-x");
         assertThat(rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none())
                         .outcome())
-                .as("the content 1.0.0 was registered with is accepted again")
-                .isEqualTo(Outcome.REPLACED);
+                .as("after a removal, the content 1.0.0 was registered with is accepted again (ADR-0081 D9)")
+                .isEqualTo(Outcome.CREATED);
         assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("1.0.0", "Other")), Preconditions.none())))
                 .as("the control: other content under 1.0.0 is still refused")
                 .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);

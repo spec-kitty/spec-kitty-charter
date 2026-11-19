@@ -49,7 +49,7 @@ Feature: A registered pack is removed whole, or not at all
   Scenario: The dry run of a removal nothing refuses answers deleted, and the pack stays
     When I GET "/packs/qa"
     And I remember the ETag
-    And I remember the field "/revision" of the response body
+    And I remember the field "revision" of the response body
     And I DELETE "/packs/qa?dryRun=true" with the remembered ETag
     Then the response status is 200
     And the field at "/operation" is "delete"
@@ -59,7 +59,7 @@ Feature: A registered pack is removed whole, or not at all
     And the field at "/problem" is absent
     When I GET "/packs/qa"
     Then the response status is 200
-    And the field at "/revision" is the remembered one
+    And the field "revision" of the response body is the remembered one
     When I DELETE "/packs/qa" with the remembered ETag
     Then the response status is 204
 
@@ -88,7 +88,7 @@ Feature: A registered pack is removed whole, or not at all
           range: '>=1.0'
       """
     When I GET "/packs/qa"
-    And I remember the field "/revision" of the response body
+    And I remember the field "revision" of the response body
     And I DELETE "/packs/qa?dryRun=true" with the header "If-Match": "*"
     Then the response status is 200
     And the field at "/outcome" is "refused"
@@ -104,7 +104,7 @@ Feature: A registered pack is removed whole, or not at all
     And the field at "/violations/0/detail" contains "other"
     When I GET "/packs/qa"
     Then the response status is 200
-    And the field at "/revision" is the remembered one
+    And the field "revision" of the response body is the remembered one
     When I DELETE "/packs/other" with the header "If-Match": "*"
     Then the response status is 204
     When I DELETE "/packs/qa" with the header "If-Match": "*"
@@ -215,3 +215,67 @@ Feature: A registered pack is removed whole, or not at all
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
     And the field at "/result/outcome" is "created"
+
+  Scenario: A removal with an If-Match that breaks its pattern, or a packId outside the grammar, is 400
+    When I DELETE "/packs/qa" with the header "If-Match": "not-a-revision"
+    Then the response status is 400
+    When I DELETE "/packs/Not_A_Pack" with the header "If-Match": "*"
+    Then the response status is 400
+    When I GET "/packs/qa"
+    Then the response status is 200
+
+  Scenario: A removal that leaves the closure of an activation listing no packs unable to compose is refused 422
+    The activation lists no packs, so it roots at every configured pack, and the org packs rival-a and rival-b hold one
+    directive id: that closure does not compose with qa or without it, and the compose is strict, so the removal is
+    refused as an artifact DELETE is (pack-write-refusals.feature). Once the activation is deleted the removal is
+    accepted.
+    Given the activation "everything" holds:
+      """
+      {"schemaVersion": 2}
+      """
+    And the org pack "rival-a" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rival-a
+      pack_level: org
+      """
+    And the org pack "rival-a" with the file "directives/X.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: X
+      title: The first X
+      intent: A directive two sibling packs hold
+      enforcement: required
+      """
+    And the org pack "rival-b" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rival-b
+      pack_level: org
+      """
+    And the org pack "rival-b" with the file "directives/X.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: X
+      title: The second X
+      intent: A directive two sibling packs hold
+      enforcement: required
+      """
+    When I DELETE "/packs/qa?dryRun=true" with the header "If-Match": "*"
+    Then the response status is 200
+    And the field at "/outcome" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "pack_sibling_conflict"
+    When I DELETE "/packs/qa" with the header "If-Match": "*"
+    Then the response status is 422
+    And the problem code is "pack_sibling_conflict"
+    When I GET "/packs/qa"
+    Then the response status is 200
+    When I DELETE "/activations/everything" with the header "If-Match": "*"
+    Then the response status is 204
+    When I DELETE "/packs/qa" with the header "If-Match": "*"
+    Then the response status is 204

@@ -39,7 +39,9 @@ put:
     broken), the 412 of a revision that moved after the 202, and a timeout or a full disk (the codes are declared on
     getPackRegistration). A replacement moves the version forward (ADR-0081 D2): an identical re-send (the same
     revision) ends succeeded with outcome unchanged; otherwise a pack_version that is not newer than the stored one by
-    PEP 440 precedence, the same version included, is refused 409 pack_version_conflict, and the result of a replace
+    PEP 440 precedence, the same version included, is refused 409 pack_version_conflict (a label that names other
+    content is judged before the preconditions, an older version after them, so a stale precondition is 412 first),
+    and the result of a replace
     reports the version it moved from as previousVersion. A version the name was registered with before keeps naming its
     content, after a deletePack too (ADR-0065 D9). With dryRun=true the job judges the pack as the registration would and
     writes nothing: it ends succeeded with the outcome it would have had and dryRun true, or refused with the same

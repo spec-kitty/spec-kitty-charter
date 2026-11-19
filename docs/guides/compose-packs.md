@@ -269,7 +269,9 @@ A replacement moves the version forward ([ADR-0081](/adr/0081-pack-uninstall-and
 - The service keeps every `(pack_version, revision)` a pack name was registered with, in a history beside the packs.
   A version the history holds with other content is refused `409 pack_version_conflict`, whether or not it is the
   stored one. Labels match by PEP 440 equality, so `1.1` and `1.1.0` are one label.
-- The version rule runs before the `If-Match` precondition. A re-send of an archive with the same `pack_version`, after
+- An older version is judged after the `If-Match` and `If-None-Match` preconditions, so a stale precondition answers
+  `412` first. The label rules (the same version, or one the history holds, with other content) run before them.
+- The label rule runs before the `If-Match` precondition. A re-send of an archive with the same `pack_version`, after
   a per-artifact `PUT` moved the revision, answers `409 pack_version_conflict`, not `412`. The `412` race needs a new
   version.
 - When the service restores a lost history entry, the entry carries the time of the repair, not of the lost

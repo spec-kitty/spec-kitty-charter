@@ -64,13 +64,6 @@ properties:
   notices:
     $ref: PackRegistrationNotices.yaml
   problem:
-    allOf:
-    - $ref: CharterRefusal.yaml
-    description: >-
-      Only when outcome is refused: the refusal the removal itself answers, with its status, code, packs and violations.
-    x-derived:
-      rule: The refusal the removal's checks raise, with the commit switched off.
-      inputs:
-      - schemas/CharterRefusalCode.yaml
+    $ref: PackImpactProblem.yaml
   _links:
     $ref: Links.yaml
