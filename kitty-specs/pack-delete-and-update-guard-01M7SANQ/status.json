@@ -116,6 +116,7 @@
     },
     "WP05": {
       "actor": "reviewer-claude",
+      "agent": null,
       "force_count": 2,
       "lane": "planned",
       "last_event_id": "01M7SMS472TK1CB42Y7GSN167M",
@@ -123,17 +124,20 @@
       "notes": [
         "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25"
       ],
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/pack-delete-and-update-guard-01M7SANQ/tasks/WP05-registration-dry-run/review-cycle-1.md",
         "reference": "review-cycle://pack-delete-and-update-guard-01M7SANQ/WP05-registration-dry-run/review-cycle-1.md",
         "reviewer": "reviewer-claude",
         "verdict": "changes_requested"
       },
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T018": "done",
-        "T019": "done",
-        "T020": "done",
-        "T021": "done"
+        "T018": "planned",
+        "T019": "planned",
+        "T020": "planned",
+        "T021": "planned"
       }
     }
   }
