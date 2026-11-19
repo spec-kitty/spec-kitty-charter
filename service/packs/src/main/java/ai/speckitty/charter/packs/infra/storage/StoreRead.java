@@ -84,10 +84,11 @@ record StoreRead(
     }
 
     /**
-     * Reads a pack directory's DSO half once.
+     * Reads a pack directory's DSO half once, assembling it under the id it is registered under.
      *
      * @param directory the pack directory
-     * @param name the name the pack is known by: the refusals and the composition facts name it
+     * @param id the registered id the pack is assembled under: every artifact carries it, and the refusals and the
+     *     composition facts name it
      * @param walk the walk of the tree the one read makes; the store's listing comes from it
      * @param strategy the serialization format
      * @param bindings the bindings to read with
@@ -96,7 +97,51 @@ record StoreRead(
      */
     static StoreRead of(
             Path directory,
+            PackIdentifier id,
+            PackFileSet.Walk walk,
+            SerializationStrategy strategy,
+            List<KindBinding<?, ?>> bindings,
+            Companions.Rules companionRules) {
+        return read(directory, id, walk, strategy, bindings, companionRules);
+    }
+
+    /**
+     * Reads the DSO half of a pack directory known only by a name (its directory name, or the name a validate-mode
+     * caller passed): the name is the id the pack is assembled under when it is a pack id
+     * ({@link PackIdentifier#isPackId}).
+     *
+     * @param directory the pack directory
+     * @param name the name the pack is known by
+     * @param walk the walk of the tree the one read makes; the store's listing comes from it
+     * @param strategy the serialization format
+     * @param bindings the bindings to read with
+     * @param companionRules the companion rules
+     * @return the read; a refusal of the load is an {@link Assembly.Refused}, never thrown
+     */
+    static StoreRead ofNamed(
+            Path directory,
             String name,
+            PackFileSet.Walk walk,
+            SerializationStrategy strategy,
+            List<KindBinding<?, ?>> bindings,
+            Companions.Rules companionRules) {
+        return read(directory, registeredIdOf(name).orElse(null), walk, strategy, bindings, companionRules);
+    }
+
+    /**
+     * The id a pack known only by a name is assembled under: the name, when it is a pack id.
+     *
+     * @param name the name the pack is known by
+     * @return the id; empty when the name is not a pack id
+     */
+    static Optional<PackIdentifier> registeredIdOf(String name) {
+        // TODO(#583 WP03): refuse with pack_id_invalid
+        return PackIdentifier.isPackId(name) ? Optional.of(new PackIdentifier(name)) : Optional.empty();
+    }
+
+    private static StoreRead read(
+            Path directory,
+            @Nullable PackIdentifier registered,
             PackFileSet.Walk walk,
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
@@ -110,7 +155,10 @@ record StoreRead(
         }
         FilesystemPackStore.GraphRead graphs = dso.graphs();
         FilesystemPackStore.PackRead read = dso.read();
-        PackIdentifier id = new PackIdentifier(read.descriptor().packId());
+        // TODO(#583 WP03): refuse with pack_id_invalid instead of assembling under the descriptor's pack_id
+        PackIdentifier id = registered != null
+                ? registered
+                : new PackIdentifier(read.descriptor().packId());
         Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
         List<Reason> warnings = new ArrayList<>();
@@ -131,7 +179,7 @@ record StoreRead(
             return breached(graphs.violations(), String.valueOf(breach.getMessage()), graphRefusal);
         }
         List<String> factsRefusal = new ArrayList<>();
-        Optional<PackCompositionFacts> facts = facts(name, pack, read, graphs, policy, factsRefusal);
+        Optional<PackCompositionFacts> facts = facts(id, pack, read, graphs, policy, factsRefusal);
         Assembly.Assembled assembled = new Assembly.Assembled(
                 id,
                 pack.descriptor(),
@@ -196,7 +244,7 @@ record StoreRead(
             return null;
         }
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        return dsoRead(store, new PackIdentifier(String.valueOf(packDir.getFileName())), bindings, walk, refusal);
+        return dsoRead(store, PackDirectory.of(packDir), bindings, walk, refusal);
     }
 
     /** What the store's reader read of a pack: its graph documents, then everything else. */
@@ -208,7 +256,7 @@ record StoreRead(
      */
     private static @Nullable DsoRead dsoRead(
             FilesystemPackStore store,
-            PackIdentifier key,
+            PackDirectory key,
             List<KindBinding<?, ?>> bindings,
             PackFileSet.Walk walk,
             List<StoreRead> refusal) {
@@ -246,7 +294,7 @@ record StoreRead(
      * that joins an artifact to itself) goes to {@code refusal}.
      */
     private static Optional<PackCompositionFacts> facts(
-            String name,
+            PackIdentifier id,
             Pack pack,
             FilesystemPackStore.PackRead read,
             FilesystemPackStore.GraphRead graphs,
@@ -257,7 +305,7 @@ record StoreRead(
         }
         try {
             return Optional.of(CompositionFactsBuilder.build(
-                    new PackIdentifier(name),
+                    id,
                     pack,
                     read,
                     graphs.documents(),

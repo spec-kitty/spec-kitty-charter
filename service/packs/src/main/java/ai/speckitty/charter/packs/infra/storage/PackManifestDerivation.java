@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.Preset;
@@ -55,13 +56,15 @@ final class PackManifestDerivation {
     /**
      * The derived manifest of the pack stored in a directory, read with the bundled bindings and companion rules.
      *
+     * @param pack the registered id the pack is read under
      * @param directory the pack's directory
      * @param strategy the serialization format the pack is read in
      * @return the manifest with the derived lists, in path order
-     * @throws CharterRefusal as {@link #derivedAt(Path, SerializationStrategy, List, Companions.Rules)} does
+     * @throws CharterRefusal as {@link #derivedAt(PackIdentifier, Path, SerializationStrategy, List, Companions.Rules)}
+     *     does
      */
-    static PackManifestDso derivedAt(Path directory, SerializationStrategy strategy) {
-        return derivedAt(directory, strategy, KindBindings.all(), Companions.Rules.bundled());
+    static PackManifestDso derivedAt(PackIdentifier pack, Path directory, SerializationStrategy strategy) {
+        return derivedAt(pack, directory, strategy, KindBindings.all(), Companions.Rules.bundled());
     }
 
     /**
@@ -73,6 +76,7 @@ final class PackManifestDerivation {
      * tolerates it: the strict load and this one hold the same artifacts, so the registration check and the stamp never
      * derive different lists.
      *
+     * @param pack the registered id the pack is read under
      * @param directory the pack's directory
      * @param strategy the serialization format the pack is read in
      * @param bindings the bindings the pack is read with
@@ -82,15 +86,16 @@ final class PackManifestDerivation {
      *     {@code pack.yaml}; with {@code VALIDATION_FAILED} when the readable artifacts break an aggregate invariant
      */
     static PackManifestDso derivedAt(
+            PackIdentifier pack,
             Path directory,
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
         Path packDir = directory.toAbsolutePath().normalize();
-        String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
         // The store's read refuses a directory that is not there before it lists anything.
-        PackFileSet.Walk walk = Files.isDirectory(packDir) ? PackFileSet.walk(packDir, name) : PackFileSet.Walk.NONE;
-        StoreRead read = StoreRead.of(packDir, name, walk, strategy, bindings, companionRules);
+        PackFileSet.Walk walk =
+                Files.isDirectory(packDir) ? PackFileSet.walk(packDir, pack.value()) : PackFileSet.Walk.NONE;
+        StoreRead read = StoreRead.of(packDir, pack, walk, strategy, bindings, companionRules);
         return switch (read.assembly()) {
             case Assembly.Assembled held -> derived(PackAssembly.build(held), read.layout());
             case Assembly.Refused refused -> throw new CharterRefusal(refused.code(), refused.message());

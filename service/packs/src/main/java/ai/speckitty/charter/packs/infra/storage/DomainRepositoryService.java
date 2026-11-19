@@ -245,7 +245,7 @@ public final class DomainRepositoryService
 
     private static <D> void writeAt(
             FilesystemPackStore store,
-            PackIdentifier key,
+            PackDirectory key,
             KindBinding<D, ?> kind,
             CharterArtifact artifact,
             String place) {
@@ -488,7 +488,7 @@ public final class DomainRepositoryService
         // read runs the same DSO read registration's readTree runs, and none of the reader's prechecks (S4).
         StoreRead read = StoreRead.of(
                 resolved.directory,
-                pack.value(),
+                pack,
                 PackFileSet.walk(resolved.directory, pack.value()),
                 strategy,
                 KindBindings.all(),
@@ -558,7 +558,7 @@ public final class DomainRepositoryService
      * @param artifact the artefact to write
      * @throws IllegalArgumentException when {@code artifact} is of a kind this store does not persist
      */
-    static void writeArtifact(FilesystemPackStore store, PackIdentifier key, CharterArtifact artifact) {
+    static void writeArtifact(FilesystemPackStore store, PackDirectory key, CharterArtifact artifact) {
         if (artifact instanceof Template template) {
             store.writePayload(
                     key,
@@ -573,7 +573,7 @@ public final class DomainRepositoryService
     }
 
     private static <D> void write(
-            FilesystemPackStore store, PackIdentifier key, KindBinding<D, ?> kind, CharterArtifact artifact) {
+            FilesystemPackStore store, PackDirectory key, KindBinding<D, ?> kind, CharterArtifact artifact) {
         store.write(key, kind, kind.dsoOf(artifact));
     }
 
@@ -604,7 +604,7 @@ public final class DomainRepositoryService
     // ---- identifier to directory ---------------------------------------------------------------------------------
 
     /** A pack's store, the directory-name key the store addresses it by, and the pack's directory. */
-    private record Resolved(FilesystemPackStore store, PackIdentifier key, Path directory) {}
+    private record Resolved(FilesystemPackStore store, PackDirectory key, Path directory) {}
 
     /**
      * The real path of a pack's live directory, refused with {@code PACK_UNREADABLE} when it is not a directory, cannot
@@ -645,10 +645,7 @@ public final class DomainRepositoryService
         if (realParent == null || real.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no parent directory");
         }
-        return new Resolved(
-                new FilesystemPackStore(realParent, strategy),
-                new PackIdentifier(real.getFileName().toString()),
-                real);
+        return new Resolved(new FilesystemPackStore(realParent, strategy), PackDirectory.of(real), real);
     }
 
     /** The pack's store and configured directory, at the location {@link PackLocator} resolves: what a write addresses. */
@@ -672,10 +669,7 @@ public final class DomainRepositoryService
         if (parent == null || directory.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack location has no parent directory");
         }
-        return new Resolved(
-                new FilesystemPackStore(parent, strategy),
-                new PackIdentifier(directory.getFileName().toString()),
-                directory);
+        return new Resolved(new FilesystemPackStore(parent, strategy), PackDirectory.of(directory), directory);
     }
 
     // ---- DSO to entity -------------------------------------------------------------------------------------------

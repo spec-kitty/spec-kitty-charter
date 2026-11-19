@@ -57,7 +57,7 @@ class MarkdownCompanionTest {
             .toList();
 
     private static final String PACK = "built-in";
-    private static final PackIdentifier PACK_ID = new PackIdentifier(PACK);
+    private static final PackDirectory PACK_DIRECTORY = new PackDirectory(PACK);
     private static final String PACK_YAML = """
             pack_id: 01ARWG13C000000000000000FG
             pack_version: 1.0.0
@@ -123,12 +123,13 @@ class MarkdownCompanionTest {
         Path pack = pack(BODY.replace("## Detail", "\n\n## Detail"));
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy(), RULES);
 
-        List<SkillDso> read = store.readAll(PACK_ID, MarkdownSkill.INSTANCE);
+        List<SkillDso> read = store.readAll(PACK_DIRECTORY, MarkdownSkill.INSTANCE);
 
         assertThat(read).extracting(SkillDso::body).containsExactly(Optional.of(BODY));
-        store.write(PACK_ID, MarkdownSkill.INSTANCE, read.getFirst());
+        store.write(PACK_DIRECTORY, MarkdownSkill.INSTANCE, read.getFirst());
         assertThat(pack.resolve(BODY_FILE)).hasContent(BODY);
-        assertThat(store.readOne(PACK_ID, MarkdownSkill.INSTANCE, "land")).contains(read.getFirst());
+        assertThat(store.readOne(PACK_DIRECTORY, MarkdownSkill.INSTANCE, "land"))
+                .contains(read.getFirst());
     }
 
     @Test
@@ -139,7 +140,7 @@ class MarkdownCompanionTest {
         write(pack, "skills/broken.md", BODY.replace("## Summary", "## Overview"));
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy(), RULES);
 
-        FilesystemPackStore.PackRead read = store.read(PACK_ID, List.of(MarkdownSkill.INSTANCE));
+        FilesystemPackStore.PackRead read = store.read(PACK_DIRECTORY, List.of(MarkdownSkill.INSTANCE));
 
         assertThat(read.dsos(MarkdownSkill.INSTANCE)).isEmpty();
         assertThat(read.violations())
@@ -162,7 +163,7 @@ class MarkdownCompanionTest {
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy(), RULES);
         SkillDso dso = dso("land", "land.md", BODY.replace("## Summary", "## Overview"));
 
-        assertThatThrownBy(() -> store.write(PACK_ID, MarkdownSkill.INSTANCE, dso))
+        assertThatThrownBy(() -> store.write(PACK_DIRECTORY, MarkdownSkill.INSTANCE, dso))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
@@ -236,7 +237,7 @@ class MarkdownCompanionTest {
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
         SkillDso readme = dso("land", "assets/README.md", "body\n");
 
-        assertThatThrownBy(() -> store.write(PACK_ID, SkillBinding.INSTANCE, readme))
+        assertThatThrownBy(() -> store.write(PACK_DIRECTORY, SkillBinding.INSTANCE, readme))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))

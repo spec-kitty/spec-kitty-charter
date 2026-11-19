@@ -175,15 +175,16 @@ class MissionTypeCorpusTest {
         List<String> written = missionFiles(copy);
         FilesystemPackStore store = new FilesystemPackStore(packs, new YamlSerializationStrategy());
         PackIdentifier id = new PackIdentifier(pack);
+        PackDirectory directory = PackDirectory.of(id);
         List<MissionTypeDso> dsos =
-                store.read(id, List.of(MissionTypeBinding.INSTANCE)).dsos(MissionTypeBinding.INSTANCE);
+                store.read(directory, List.of(MissionTypeBinding.INSTANCE)).dsos(MissionTypeBinding.INSTANCE);
         for (String file : written) {
             Files.delete(copy.resolve(file));
         }
 
         for (MissionTypeDso dso : dsos) {
             store.write(
-                    id,
+                    directory,
                     MissionTypeBinding.INSTANCE,
                     MissionTypeBinding.INSTANCE.toDso(MissionTypeBinding.INSTANCE.toEntity(id, dso)));
         }
@@ -299,7 +300,7 @@ class MissionTypeCorpusTest {
             packs = copyWithDescriptor(packs.resolve(pack));
         }
         FilesystemPackStore.PackRead read = new FilesystemPackStore(packs, new YamlSerializationStrategy())
-                .read(new PackIdentifier(pack), List.of(MissionTypeBinding.INSTANCE));
+                .read(new PackDirectory(pack), List.of(MissionTypeBinding.INSTANCE));
 
         // The built-in pack's presets load clean (OP-1 landed upstream before the pin); nothing is refused.
         assertThat(read.violations())

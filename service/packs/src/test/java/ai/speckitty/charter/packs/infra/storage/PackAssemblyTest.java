@@ -73,8 +73,7 @@ class PackAssemblyTest {
     }
 
     private static FilesystemPackStore.PackRead read(Path pack) {
-        return new FilesystemPackStore(pack.getParent(), new YamlSerializationStrategy())
-                .read(new PackIdentifier(String.valueOf(pack.getFileName())));
+        return new FilesystemPackStore(pack.getParent(), new YamlSerializationStrategy()).read(PackDirectory.of(pack));
     }
 
     private static PackIdentifier id(FilesystemPackStore.PackRead read) {
