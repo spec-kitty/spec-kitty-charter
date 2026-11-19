@@ -1023,11 +1023,11 @@ class PackRegistrationServiceTest {
         return caught.kind();
     }
 
-    /** A {@link PackReading} that records the root of each read it serves. */
+    /** A {@link PackReading} that records the root of each read it serves; safe across racing threads. */
     static final class CountingReading implements PackReading {
 
         private final PackReading delegate;
-        final java.util.List<PackRoot> roots = new java.util.ArrayList<>();
+        final java.util.List<PackRoot> roots = new java.util.concurrent.CopyOnWriteArrayList<>();
 
         CountingReading(PackReading delegate) {
             this.delegate = delegate;
