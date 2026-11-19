@@ -54,7 +54,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude::reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -67,6 +67,7 @@
         "Ready for review: facts on the one read, closure(presetIdsOf), PackRefusalMapping; verifyAll green"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-check-cli-01M7SASC-coord/kitty-specs/pack-check-cli-01M7SASC/tasks/WP02-facts-closure-mapping/review-cycle-1.md",
         "reference": "review-cycle://pack-check-cli-01M7SASC/WP02-facts-closure-mapping/review-cycle-1.md",
@@ -74,13 +75,13 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 27959,
-      "shell_pid_created_at": "1795088355.43",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done"
+        "T006": "planned",
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned"
       }
     },
     "WP03": {
