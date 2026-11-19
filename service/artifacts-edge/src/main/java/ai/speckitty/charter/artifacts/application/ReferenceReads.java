@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
@@ -75,7 +76,7 @@ public interface ReferenceReads {
      * @param descriptorPackId the {@code pack_id} of its {@code pack.yaml}
      * @param name its name
      */
-    record Holder(PackIdentifier packId, String descriptorPackId, String name) {
+    record Holder(PackIdentifier packId, PackUlid descriptorPackId, String name) {
 
         /**
          * Checks the fields.

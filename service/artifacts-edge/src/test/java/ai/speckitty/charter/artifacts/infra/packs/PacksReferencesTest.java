@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
@@ -50,7 +51,7 @@ class PacksReferencesTest {
                         RelationType.REQUIRES,
                         tactic,
                         Optional.of(new ReferenceReads.Holder(
-                                new PackIdentifier("core"), "01M4P01D5TWB5FKZGNNQG3943R", "core-pack")),
+                                new PackIdentifier("core"), new PackUlid("01M4P01D5TWB5FKZGNNQG3943R"), "core-pack")),
                         Optional.of(ArtifactKind.TACTIC)));
     }
 

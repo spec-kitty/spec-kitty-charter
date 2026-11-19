@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Pack.without leaves out the removed artifacts and keeps every other part")
 class PackWithoutTest {
 
-    private static final PackIdentifier ID = new PackIdentifier("01PACK");
-    private static final PackDescriptor DESCRIPTOR =
-            new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
+    private static final PackIdentifier ID = new PackIdentifier("pack");
+    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
+            "01PACK00000000000000000000", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     private static Tactic tactic(String id) {
         return Tactic.builder()

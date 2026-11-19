@@ -1,5 +1,6 @@
 package ai.speckitty.charter.profiles.domain.resolution;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.io.Serial;
 import java.util.Objects;
 
@@ -13,8 +14,8 @@ public final class ProfileEnhancementDropsField extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** The enhancing pack. */
-    private final String pack;
+    /** The registered id of the enhancing pack. */
+    private final transient PackIdentifier pack;
 
     /** The top-level field that loses base content. */
     private final String field;
@@ -22,14 +23,14 @@ public final class ProfileEnhancementDropsField extends RuntimeException {
     /**
      * A refused enhancement.
      *
-     * @param pack the enhancing pack
+     * @param pack the registered id of the enhancing pack
      * @param field the top-level field, as the schema names it (for example {@code specialization})
      * @param enhancer the enhancing profile's id
      * @param base the enhanced profile's id
      */
-    public ProfileEnhancementDropsField(String pack, String field, String enhancer, String base) {
+    public ProfileEnhancementDropsField(PackIdentifier pack, String field, String enhancer, String base) {
         super(message(
-                Objects.requireNonNull(pack, "pack"),
+                Objects.requireNonNull(pack, "pack").value(),
                 Objects.requireNonNull(field, "field"),
                 Objects.requireNonNull(enhancer, "enhancer"),
                 Objects.requireNonNull(base, "base")));
@@ -48,9 +49,9 @@ public final class ProfileEnhancementDropsField extends RuntimeException {
     /**
      * The enhancing pack, named first.
      *
-     * @return the pack
+     * @return the pack's registered id
      */
-    public String pack() {
+    public PackIdentifier pack() {
         return pack;
     }
 

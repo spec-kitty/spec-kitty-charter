@@ -9,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -531,7 +530,7 @@ class ArtifactRemovalServiceTest {
         CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("other");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).containsExactly("other");
         assertThat(removals.filesOf("qa")).isEqualTo(before);
     }
 
@@ -1041,7 +1040,7 @@ class ArtifactRemovalServiceTest {
         CharterRefusal refused = refusal(() -> removals.remove("qa", "directive", "D1"));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("other");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).containsExactly("other");
         assertThat(refused.violations())
                 .extracting(RefusalViolation::detail)
                 .anySatisfy(detail -> assertThat(detail).contains("directive:R"));
@@ -1071,7 +1070,7 @@ class ArtifactRemovalServiceTest {
         CharterRefusal refused = refusal(() -> removals.remove("qa", "directive", "D1"));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("other");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).containsExactly("other");
         assertThat(refused.violations())
                 .extracting(RefusalViolation::detail)
                 .anySatisfy(detail -> assertThat(detail).contains("governing"));

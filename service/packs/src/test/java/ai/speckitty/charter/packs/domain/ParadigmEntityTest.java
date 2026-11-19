@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Paradigm entity")
 class ParadigmEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     private static Paradigm.Builder valid(String id) {
         return Paradigm.builder()

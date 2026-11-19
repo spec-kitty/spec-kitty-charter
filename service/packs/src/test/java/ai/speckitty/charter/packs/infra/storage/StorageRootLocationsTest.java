@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ch.qos.logback.classic.Level;
@@ -93,6 +94,65 @@ class StorageRootLocationsTest {
         assertThat(new StorageRootLocations(packs).all())
                 .extracting(PackLocation::name)
                 .containsExactly("qa");
+    }
+
+    /** A descriptor's {@code pack_id}: a real ULID, never a directory name. */
+    private static final String ULID = "01J6XW9KQT7M0YB3N4R5CQZ2EX";
+
+    /** A pack directory named {@code name} whose {@code pack.yaml} declares {@link #ULID}. */
+    private void declaredPack(String name) throws IOException {
+        Files.createDirectories(packs.resolve(name));
+        Files.writeString(
+                packs.resolve(name + "/pack.yaml"),
+                "pack_id: " + ULID + "\npack_version: 1.0.0\nname: " + name + "\npack_level: org\n");
+    }
+
+    @Test
+    void aDirectoryWhoseNameIsNotAPackIdIsNotServedAndIsRefusedPackIdInvalid() throws IOException {
+        declaredPack("a--b");
+        declaredPack("good-pack");
+        StorageRootLocations locations = new StorageRootLocations(packs);
+        DomainRepositoryService store = new DomainRepositoryService(locations, new YamlSerializationStrategy());
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(locations.all()).extracting(PackLocation::name).containsExactly("good-pack");
+            assertThat(store.configured())
+                    .containsExactly(new ConfiguredPack(new PackIdentifier("good-pack"), PackLevel.ORG));
+            assertThat(store.find(new PackIdentifier("good-pack")))
+                    .hasValueSatisfying(
+                            descriptor -> assertThat(descriptor.name()).isEqualTo("good-pack"));
+
+            assertThat(log.warnings())
+                    .as("the refusal is warned once, however often the domain is listed")
+                    .singleElement()
+                    .satisfies(warning ->
+                            assertThat(warning).contains("a--b", "pack_id_invalid", PackIdentifier.GRAMMAR_DETAIL));
+        }
+    }
+
+    @Test
+    void aDomainOfPackIdsRefusesNothing() throws IOException {
+        declaredPack("a-b");
+        declaredPack("good-pack");
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(locations.all()).extracting(PackLocation::name).containsExactly("a-b", "good-pack");
+            assertThat(log.warnings()).isEmpty();
+        }
+    }
+
+    @Test
+    void theLocatorFindsAPackByItsRegisteredIdAndItsDescriptorUlidIsNoPackIdentifier() throws IOException {
+        declaredPack("good-pack");
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        assertThat(PackLocator.locate(locations, new PackIdentifier("good-pack")))
+                .isEqualTo(new PackLocation("good-pack", PackLevel.ORG, packs.resolve("good-pack")));
+        assertThatThrownBy(() -> PackLocator.locate(locations, new PackIdentifier(ULID)))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
     }
 
     @Test

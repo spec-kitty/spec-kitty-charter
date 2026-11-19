@@ -29,6 +29,13 @@ public final class StorageCodes {
      */
     public static final ReasonCode ASSEMBLY_REFUSED = violation(RefusalCode.VALIDATION_FAILED.token());
 
+    /**
+     * A pack directory whose name is not a pack id ({@code PackIdentifier#isPackId}, #583, D5): the store never wrote
+     * it, so its read refuses it rather than serve it under another name. The listing does not serve it, and a read of
+     * it by its directory name (validate mode, a whole-pack load) states this one fault at the pack.
+     */
+    public static final ReasonCode PACK_ID_INVALID = violation("pack_id_invalid");
+
     /** A file's bytes cannot be read, are not UTF-8, or do not parse; or the manifest is not a regular file. */
     public static final ReasonCode UNREADABLE = violation("unreadable");
 
@@ -64,6 +71,7 @@ public final class StorageCodes {
     public static final List<ReasonCode> ORDERED = List.of(
             PACK_UNREADABLE,
             ASSEMBLY_REFUSED,
+            PACK_ID_INVALID,
             UNREADABLE,
             RETIRED,
             COMPANION,

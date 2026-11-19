@@ -317,7 +317,8 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
         Map<String, String> pins = new LinkedHashMap<>();
         document.packs()
                 .orElseGet(List::of)
-                .forEach(pack -> pack.version().ifPresent(version -> pins.put(pack.packId(), version)));
+                .forEach(pack -> pack.version()
+                        .ifPresent(version -> pins.put(pack.packId().value(), version)));
         return new InForceQuery(
                 ActivationChange.refs(document.selected()),
                 ActivationChange.refs(document.deactivated()),
@@ -415,7 +416,12 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
                 answered.requiredNotHeld(),
                 answered.requiredNotInForce(),
                 StaleIds.drop(document, closure).droppedPins().stream()
-                        .flatMap(pin -> pin.version().map(version -> new PinNotHeld(pin.packId(), version)).stream())
+                        .flatMap(pin ->
+                                pin
+                                        .version()
+                                        .map(version ->
+                                                new PinNotHeld(pin.packId().value(), version))
+                                        .stream())
                         .toList(),
                 refsIn(states, Bucket.LANGUAGE_FILTERED),
                 refsIn(states, Bucket.MISSION_TYPE_NOT_IN_FORCE),

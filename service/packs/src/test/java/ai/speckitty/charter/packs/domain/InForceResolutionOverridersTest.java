@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.domain.InForceStates.Bucket;
 import ai.speckitty.charter.packs.domain.InForceStates.OverrideNotApplied;
 import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import ai.speckitty.charter.packs.domain.InForceStates.State;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -51,7 +52,9 @@ class InForceResolutionOverridersTest {
 
         Closure lockedAt(PackLevel level, String... urns) {
             return held(
-                    level, new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(level.token() + "-pack")), urns);
+                    level,
+                    new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(FixtureUlids.ulid(level.token()))),
+                    urns);
         }
 
         private Closure held(PackLevel level, PerPackPolicy.Level policy, String... urns) {
@@ -60,7 +63,11 @@ class InForceResolutionOverridersTest {
                 winners.put(
                         urn,
                         new MergedClosure.Winner(
-                                urn, new PackIdentifier(level.token()), level.token() + "-pack", level, policy));
+                                urn,
+                                new PackIdentifier(level.token()),
+                                FixtureUlids.ulid(level.token()),
+                                level,
+                                policy));
             }
             return this;
         }

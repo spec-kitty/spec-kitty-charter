@@ -19,7 +19,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Procedure entity")
 class ProcedureEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     private static ProcedureStep step(String title) {
         return new ProcedureStep(title, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());

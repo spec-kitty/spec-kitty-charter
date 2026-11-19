@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -57,7 +58,7 @@ class ClosureViewMergedTest {
         descriptors.put(
                 name,
                 new PackDescriptor(
-                        "id-" + name,
+                        FixtureUlids.of(name),
                         "1.0.0",
                         Optional.empty(),
                         name,
@@ -65,7 +66,7 @@ class ClosureViewMergedTest {
                         Optional.empty(),
                         PackPaths.none(),
                         dependsOn.stream()
-                                .map(other -> new PackDependency("id-" + other, ">=0"))
+                                .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                                 .toList()));
         facts.put(name, held);
     }
@@ -150,7 +151,7 @@ class ClosureViewMergedTest {
         ClosureView.MergedView merged = snapshot().merged();
 
         assertThat(winner(merged, D).packId()).isEqualTo(new PackIdentifier("project"));
-        assertThat(winner(merged, D).descriptorPackId()).isEqualTo("id-project");
+        assertThat(winner(merged, D).descriptorPackId()).isEqualTo(FixtureUlids.ulid("project"));
         assertThat(merged.closure().layerOverrides())
                 .extracting(LayerOverride::loser)
                 .extracting(LayerOverride.Side::level)
@@ -163,8 +164,8 @@ class ClosureViewMergedTest {
 
         ClosureView view = snapshot();
 
-        assertThat(view.holderOf()).containsEntry(D, "id-builtin");
-        assertThat(winner(view.merged(), D).descriptorPackId()).isEqualTo("id-project");
+        assertThat(view.holderOf()).containsEntry(D, FixtureUlids.ulid("builtin"));
+        assertThat(winner(view.merged(), D).descriptorPackId()).isEqualTo(FixtureUlids.ulid("project"));
     }
 
     @Test

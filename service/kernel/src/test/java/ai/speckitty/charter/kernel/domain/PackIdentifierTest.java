@@ -45,4 +45,30 @@ class PackIdentifierTest {
                         breach ->
                                 assertThat(breach.reason().detail()).isEqualTo("A pack identifier must not be blank."));
     }
+
+    @ParameterizedTest(name = "the constructor refuses \"{0}\"")
+    @ValueSource(
+            strings = {
+                "a--b",
+                "-a",
+                "a-",
+                "A",
+                "my_pack",
+                "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+                "01J0Z3Y7S8QK4W5E6R2T9V1N0M"
+            })
+    @DisplayName("the constructor refuses a text that is no pack id, with the grammar's detail")
+    void constructorRefusesNoPackId(String text) {
+        assertThatThrownBy(() -> new PackIdentifier(text))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
+    }
+
+    @ParameterizedTest(name = "the constructor accepts \"{0}\"")
+    @ValueSource(strings = {"a", "1a", "my-pack", "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"})
+    @DisplayName("the constructor accepts a pack id, up to 63 characters")
+    void constructorAcceptsPackId(String text) {
+        assertThat(new PackIdentifier(text).value()).isEqualTo(text);
+    }
 }

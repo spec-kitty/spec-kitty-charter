@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -243,10 +244,10 @@ public final class ClosureQueries {
             OfferingReadService.ComposedClosure composed, String fingerprint, String closureFingerprint) {
         List<PackUnderResolution> packs = composed.packs();
         Map<ArtifactKind, Set<String>> heldIds = new EnumMap<>(ArtifactKind.class);
-        Map<Urn, String> holderOf = new LinkedHashMap<>();
+        Map<Urn, PackUlid> holderOf = new LinkedHashMap<>();
         heldOf(packs, heldIds, holderOf);
-        List<String> closurePackIds =
-                packs.stream().map(pack -> pack.descriptor().packId()).toList();
+        List<PackUlid> closurePackIds =
+                packs.stream().map(PackUnderResolution::descriptorId).toList();
         List<ClosureView.HeldPreset> presets = winningPresets(composed);
         return new ClosureView(
                 OfferingReadService.entriesOf(packs),
@@ -318,11 +319,11 @@ public final class ClosureQueries {
 
     /** The held ids per kind, and the first holder of each URN in closure order. */
     private static void heldOf(
-            List<PackUnderResolution> packs, Map<ArtifactKind, Set<String>> heldIds, Map<Urn, String> holderOf) {
+            List<PackUnderResolution> packs, Map<ArtifactKind, Set<String>> heldIds, Map<Urn, PackUlid> holderOf) {
         for (PackUnderResolution pack : packs) {
             for (String defined : pack.definedArtifacts()) {
                 Urn.parse(defined).ifPresent(urn -> {
-                    holderOf.putIfAbsent(urn, pack.descriptor().packId());
+                    holderOf.putIfAbsent(urn, pack.descriptorId());
                     urn.kind()
                             .artifactKind()
                             .ifPresent(kind -> heldIds.computeIfAbsent(kind, ignored -> new LinkedHashSet<>())
@@ -342,9 +343,7 @@ public final class ClosureQueries {
         Map<String, ClosureView.HeldPreset> byId = new LinkedHashMap<>();
         for (PackUnderResolution pack : composed.packs()) {
             for (Preset preset : composed.factsOf(pack).presets()) {
-                byId.put(
-                        preset.id(),
-                        new ClosureView.HeldPreset(preset, pack.descriptor().packId()));
+                byId.put(preset.id(), new ClosureView.HeldPreset(preset, pack.descriptorId()));
             }
         }
         return List.copyOf(byId.values());
@@ -352,10 +351,10 @@ public final class ClosureQueries {
 
     /** The winning presets regrouped by holder, in closure order, as the floor reads them: only winners require. */
     private static List<Map.Entry<String, List<Preset>>> byHolder(
-            List<String> closurePackIds, List<ClosureView.HeldPreset> presets) {
+            List<PackUlid> closurePackIds, List<ClosureView.HeldPreset> presets) {
         return closurePackIds.stream()
                 .map(packId -> Map.entry(
-                        packId,
+                        packId.value(),
                         presets.stream()
                                 .filter(held -> held.descriptorPackId().equals(packId))
                                 .map(ClosureView.HeldPreset::preset)
@@ -364,11 +363,11 @@ public final class ClosureQueries {
     }
 
     /** Each closure pack's {@code parent_pack}, by descriptor {@code pack_id}, from the descriptors already read. */
-    private static Map<String, String> parentsOf(List<PackUnderResolution> packs) {
-        Map<String, String> parents = new HashMap<>();
+    private static Map<PackUlid, PackUlid> parentsOf(List<PackUnderResolution> packs) {
+        Map<PackUlid, PackUlid> parents = new HashMap<>();
         packs.forEach(pack -> pack.descriptor()
                 .parentPack()
-                .ifPresent(parent -> parents.putIfAbsent(pack.descriptor().packId(), parent)));
+                .ifPresent(parent -> parents.putIfAbsent(pack.descriptorId(), new PackUlid(parent))));
         return parents;
     }
 

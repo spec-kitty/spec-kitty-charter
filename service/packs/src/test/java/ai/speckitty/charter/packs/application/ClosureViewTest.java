@@ -36,6 +36,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -108,7 +109,7 @@ class ClosureViewTest {
         descriptors.put(
                 name,
                 new PackDescriptor(
-                        "id-" + name,
+                        FixtureUlids.of(name),
                         "1.0.0",
                         Optional.empty(),
                         name,
@@ -116,7 +117,7 @@ class ClosureViewTest {
                         Optional.empty(),
                         PackPaths.none(),
                         dependsOn.stream()
-                                .map(other -> new PackDependency("id-" + other, ">=0"))
+                                .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                                 .toList()));
         facts.put(
                 name,
@@ -308,7 +309,9 @@ class ClosureViewTest {
                     .contains("step_enhancement:x")
                     .contains("mission_type:M")
                     .contains("locked");
-            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "base");
+            assertThat(refused.packs())
+                    .extracting(pack -> pack.packId().value())
+                    .containsExactly("enhancer", "base");
         });
     }
 
@@ -655,10 +658,13 @@ class ClosureViewTest {
                     .contains("spdd:reasons-block")
                     .contains("`proj`");
             assertThat(refused.packs())
-                    .extracting(RefusalPack::packId, RefusalPack::name, RefusalPack::descriptorPackId)
+                    .extracting(
+                            pack -> pack.packId().value(),
+                            RefusalPack::name,
+                            pack -> pack.descriptorPackId().value())
                     .containsExactly(
-                            org.assertj.core.groups.Tuple.tuple("base", "base", "id-base"),
-                            org.assertj.core.groups.Tuple.tuple("proj", "proj", "id-proj"));
+                            org.assertj.core.groups.Tuple.tuple("base", "base", FixtureUlids.of("base")),
+                            org.assertj.core.groups.Tuple.tuple("proj", "proj", FixtureUlids.of("proj")));
         });
     }
 

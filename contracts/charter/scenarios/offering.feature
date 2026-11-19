@@ -3,7 +3,7 @@ Feature: The offering lists the configured packs in force
   A client reads which Charter Packs the service answers from (ADR-0020 D1, FR-002): GET /offering
   answers every configured pack with its id, its configured level, the name and the version its
   pack.yaml gives, and the link to its artifacts. The order is the merge order: by configured level
-  (built-in, then org, then project), then by pack id in code-point order, so Zeta comes before
+  (built-in, then org, then project), then by pack id in code-point order, so a-zeta comes before
   alpha. The level is the one the pack is configured at, never the one its pack.yaml declares.
   Merging is not applied yet (#10, #11): the offering lists the packs, not a merged result. The
   answer is one read verified against the source fingerprint, and carries it; a configured pack
@@ -11,8 +11,8 @@ Feature: The offering lists the configured packs in force
   it is read refuse it with stale_input.
 
   Scenario: The packs are ordered by configured level, then by pack id in code-point order
-    The packs are configured out of order, project first and the lower-case id before the
-    upper-case one at every level; neither the configured order nor a case-blind order is the answer.
+    The packs are configured out of order, project first and the letter-first id before the one with a
+    hyphen at every level; neither the configured order nor an order that ignores the hyphen is the answer.
     Given the project pack "charlie" with the file "pack.yaml":
       """
       pack_id: 01ARWG13C0000000000CHAR11E
@@ -21,7 +21,7 @@ Feature: The offering lists the configured packs in force
       name: charlie-pack
       pack_level: project
       """
-    And the project pack "Kilo" with the file "pack.yaml":
+    And the project pack "c-kilo" with the file "pack.yaml":
       """
       pack_id: 01ARWG13C0000000000000K110
       pack_version: 1.0.0
@@ -37,12 +37,12 @@ Feature: The offering lists the configured packs in force
       name: bravo-pack
       pack_level: org
       """
-    And the org pack "Omega" with the file "pack.yaml":
+    And the org pack "b-zulu" with the file "pack.yaml":
       """
       pack_id: 01ARWG13C0000000000000MEGA
       pack_version: 1.0.0
       parent_pack: null
-      name: omega-pack
+      name: zulu-pack
       pack_level: org
       """
     And the built-in pack "alpha" with the file "pack.yaml":
@@ -53,7 +53,7 @@ Feature: The offering lists the configured packs in force
       name: alpha-pack
       pack_level: built-in
       """
-    And the built-in pack "Zeta" with the file "pack.yaml":
+    And the built-in pack "a-zeta" with the file "pack.yaml":
       """
       pack_id: 01ARWG13C0000000000000ZETA
       pack_version: 1.0.0
@@ -69,11 +69,11 @@ Feature: The offering lists the configured packs in force
       """
       {
         "packs": [
-          {"packId": "Zeta", "descriptorPackId": "01ARWG13C0000000000000ZETA", "level": "built-in", "name": "zeta-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Zeta/artifacts"}}},
+          {"packId": "a-zeta", "descriptorPackId": "01ARWG13C0000000000000ZETA", "level": "built-in", "name": "zeta-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/a-zeta/artifacts"}}},
           {"packId": "alpha", "descriptorPackId": "01ARWG13C000000000000A1PHA", "level": "built-in", "name": "alpha-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/alpha/artifacts"}}},
-          {"packId": "Omega", "descriptorPackId": "01ARWG13C0000000000000MEGA", "level": "org", "name": "omega-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Omega/artifacts"}}},
+          {"packId": "b-zulu", "descriptorPackId": "01ARWG13C0000000000000MEGA", "level": "org", "name": "zulu-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/b-zulu/artifacts"}}},
           {"packId": "bravo", "descriptorPackId": "01ARWG13C000000000000BRAV0", "level": "org", "name": "bravo-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/bravo/artifacts"}}},
-          {"packId": "Kilo", "descriptorPackId": "01ARWG13C0000000000000K110", "level": "project", "name": "kilo-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Kilo/artifacts"}}},
+          {"packId": "c-kilo", "descriptorPackId": "01ARWG13C0000000000000K110", "level": "project", "name": "kilo-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/c-kilo/artifacts"}}},
           {"packId": "charlie", "descriptorPackId": "01ARWG13C0000000000CHAR11E", "level": "project", "name": "charlie-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/charlie/artifacts"}}}
         ],
         "_links": {"self": {"href": "/api/v1/offering"}, "kinds": {"href": "/api/v1/offering/kinds"}}

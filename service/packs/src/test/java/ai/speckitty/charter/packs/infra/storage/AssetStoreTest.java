@@ -28,7 +28,9 @@ import org.junit.jupiter.api.io.TempDir;
 class AssetStoreTest {
 
     private static final PackIdentifier SOURCE = new PackIdentifier("source");
-    private static final PackIdentifier TARGET = new PackIdentifier("target");
+
+    private static final PackDirectory SOURCE_DIRECTORY = PackDirectory.of(SOURCE);
+    private static final PackDirectory TARGET = new PackDirectory("target");
 
     /** A PNG signature, a NUL, CR/LF byte pairs, a byte that is no UTF-8, and no final newline. */
     static final byte[] BINARY = {
@@ -82,7 +84,7 @@ class AssetStoreTest {
         Path target = pack(host, "target");
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        AssetDso dso = store.read(SOURCE).dsos(AssetBinding.INSTANCE).getFirst();
+        AssetDso dso = store.read(SOURCE_DIRECTORY).dsos(AssetBinding.INSTANCE).getFirst();
         store.write(TARGET, AssetBinding.INSTANCE, dso);
 
         assertThat(dso.title()).isNull();
@@ -104,7 +106,7 @@ class AssetStoreTest {
         Path target = pack(host, "target");
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        FilesystemPackStore.PackRead read = store.read(SOURCE);
+        FilesystemPackStore.PackRead read = store.read(SOURCE_DIRECTORY);
         assertThat(read.violations()).isEmpty();
         AssetDso logo = read.dsos(AssetBinding.INSTANCE).getFirst();
         AssetDso plain = read.dsos(AssetBinding.INSTANCE).get(1);
@@ -134,7 +136,7 @@ class AssetStoreTest {
         Path target = pack(host, "target");
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        FilesystemPackStore.PackRead read = store.read(SOURCE);
+        FilesystemPackStore.PackRead read = store.read(SOURCE_DIRECTORY);
         for (AssetFile file : read.assetFiles()) {
             store.writePayload(TARGET, PackFileSet.ASSETS + file.path(), file.payload(), PackFileKind.ASSET_PAYLOAD);
         }
@@ -158,7 +160,7 @@ class AssetStoreTest {
         write(source, "assets/font.otf.asset.yaml", sidecar("font", "font.otf"));
         write(source, "assets/font.otf", new byte[] {(byte) 0xc3, (byte) 0x28, 0, (byte) 0xff});
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(read.violations()).isEmpty();
         assertThat(ids(read)).containsExactly("font");
@@ -177,7 +179,7 @@ class AssetStoreTest {
         write(source, "assets/b.md.asset.yaml", sidecar("b", "b.md"));
         write(source, "assets/b.md", "b\n");
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(ids(read)).containsExactly("b");
         assertThat(read.violations()).singleElement().satisfies(v -> {
@@ -196,7 +198,7 @@ class AssetStoreTest {
         write(source, "assets/here.md.asset.yaml", sidecar("here", "here.md"));
         write(source, "assets/here.md", "here\n");
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(ids(read)).containsExactly("here");
         assertThat(read.violations())
@@ -214,7 +216,7 @@ class AssetStoreTest {
                 sidecar("writing-audience-line-manager", "assets/audiences/line_manager.md"));
         write(source, "assets/audiences/line_manager.md", "# Line manager\n");
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(ids(read)).isEmpty();
         assertThat(reasonFor(read, "assets/audiences/line_manager.md.asset.yaml"))
@@ -230,7 +232,7 @@ class AssetStoreTest {
         write(source, "assets/b.asset.yaml", sidecar("second", "shared.md"));
         write(source, "assets/shared.md", "shared\n");
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(ids(read)).containsExactly("first");
         assertThat(reasonFor(read, "assets/b.asset.yaml"))
@@ -256,7 +258,7 @@ class AssetStoreTest {
         write(source, "assets/ok.md.asset.yaml", sidecar("ok", "ok.md"));
         write(source, "assets/ok.md", "ok\n");
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(ids(read)).containsExactly("ok");
         assertThat(read.dsos(DirectiveBinding.INSTANCE))
@@ -280,7 +282,7 @@ class AssetStoreTest {
         write(source, "assets/in.md.asset.yaml", sidecar("in", "in.md"));
         write(source, "assets/in.md", "in\n");
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(ids(read)).containsExactly("in");
         assertThat(reasonFor(read, "assets/climb.asset.yaml"))
@@ -328,7 +330,7 @@ class AssetStoreTest {
         write(source, "assets/   ", BINARY);
         write(source, "assets/a/kept.bin", BINARY);
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("a/kept.bin");
         assertThat(read.violations())
@@ -349,7 +351,7 @@ class AssetStoreTest {
         link(source.resolve("assets/leak.bin"), outside);
         link(source.resolve("assets/inside.bin"), source.resolve("assets/real.bin"));
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("inside.bin", "real.bin");
         assertThat(read.violations())
@@ -374,7 +376,7 @@ class AssetStoreTest {
             return Files.readAllBytes(file);
         };
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy, failing).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy, failing).read(SOURCE_DIRECTORY);
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("kept.bin");
         assertThat(read.violations())

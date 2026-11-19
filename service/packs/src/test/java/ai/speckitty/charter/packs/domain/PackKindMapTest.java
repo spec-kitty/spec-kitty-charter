@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Pack aggregate keyed by kind (ADR-0037)")
 class PackKindMapTest {
 
-    private static final PackIdentifier ID = new PackIdentifier("01PACK");
-    private static final PackDescriptor DESCRIPTOR =
-            new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
+    private static final PackIdentifier ID = new PackIdentifier("pack");
+    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
+            "01PACK00000000000000000000", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     /** A kind the aggregate does not name anywhere: it must be held all the same. */
     private record Procedure(PackIdentifier packId, String localId) implements CharterArtifact {
@@ -111,7 +111,7 @@ class PackKindMapTest {
         assertThatThrownBy(() -> Pack.builder()
                         .id(ID)
                         .descriptor(DESCRIPTOR)
-                        .artifact(new Procedure(new PackIdentifier("02OTHER"), "x"))
+                        .artifact(new Procedure(new PackIdentifier("other"), "x"))
                         .build())
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("Every procedure of a pack must belong to that pack.");
@@ -160,7 +160,7 @@ class PackKindMapTest {
     void withRevalidates() {
         Pack current = Pack.builder().id(ID).descriptor(DESCRIPTOR).build();
 
-        assertThatThrownBy(() -> current.with(new Procedure(new PackIdentifier("02OTHER"), "x")))
+        assertThatThrownBy(() -> current.with(new Procedure(new PackIdentifier("other"), "x")))
                 .isInstanceOf(ConstraintBreachException.class);
     }
 

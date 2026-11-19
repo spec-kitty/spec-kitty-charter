@@ -72,7 +72,7 @@ final class CompositionFactsBuilder {
         PackIdentifier pack = configured.id();
         StoreRead read = StoreRead.of(
                 packDir,
-                pack.value(),
+                pack,
                 PackFileSet.walk(packDir, pack.value()),
                 strategy,
                 KindBindings.all(),

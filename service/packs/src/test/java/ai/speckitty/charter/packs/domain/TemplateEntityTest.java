@@ -16,7 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Template entity")
 class TemplateEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01TEMPLATEPACK");
+    private static final PackIdentifier PACK = new PackIdentifier("templatepack");
     private static final Payload CONTENT =
             Payload.of("---\ntitle: x\n---\n# Minutes\n".getBytes(StandardCharsets.UTF_8));
 

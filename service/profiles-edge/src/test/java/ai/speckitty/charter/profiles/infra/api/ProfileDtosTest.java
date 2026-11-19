@@ -464,12 +464,12 @@ class ProfileDtosTest {
     @Test
     void aTrailingSlashOfTheBasePathAndAnIdThatNeedsEncodingAreHandledAsTheActivationsMapperHandlesThem() {
         ProfileRead odd =
-                new ProfileRead(leanProfile("a pack", "P 1"), "r", "f", List.of(), List.of(ArtifactKind.DIRECTIVE));
+                new ProfileRead(leanProfile("a-pack", "P 1"), "r", "f", List.of(), List.of(ArtifactKind.DIRECTIVE));
 
         Artifact envelope = new ProfileDtos("/api/v1/").artifact(odd, OptionalInt.empty());
 
         assertThat(envelope.getLinks().get("self").getHref())
-                .isEqualTo("/api/v1/packs/a%20pack/artifacts/agent_profile/P%201");
+                .isEqualTo("/api/v1/packs/a-pack/artifacts/agent_profile/P%201");
     }
 
     @Test

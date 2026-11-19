@@ -15,7 +15,8 @@ in `service/packs`) and with the scenario validator (`ActivationConfigConformanc
   `schemaVersion` (`1` included: a stored version 1 document is upgraded by the service, never
   validated as is); an unknown member at the top or in a pack; a kind that is not activatable
   (`template`, `asset` as a deny kind); `null` in place of a member; an empty deny list (of a
-  mission type too) or an empty `packs`; a malformed id; and the members left out by ruling
+  mission type too) or an empty `packs`; a malformed id, a pinned `packId` outside the pack id grammar
+  (upper case, `_`, 64 characters; #583) included; and the members left out by ruling
   (`appliedPresets`, `contextActivations`, and the remnant `activatedKinds` and `missionTypes`).
 - `invalid-reasons.json`: the reasons each invalid document fails for, so a test pins why it fails, not only
   that it does (#295). A reason is the JSON Schema `keyword` that refuses it, the instance location `at` as a

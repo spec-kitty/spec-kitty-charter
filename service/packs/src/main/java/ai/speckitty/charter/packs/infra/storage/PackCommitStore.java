@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -300,7 +301,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             @Nullable String relationshipShardText) {
         return commitEdited(pack, ifMatch, (staging, parent) -> {
             if (artifact != null) {
-                PackIdentifier stagingKey = new PackIdentifier(String.valueOf(staging.getFileName()));
+                PackDirectory stagingKey = PackDirectory.of(staging);
                 DomainRepositoryService.writeArtifact(new FilesystemPackStore(parent, strategy), stagingKey, artifact);
             }
             if (relationshipShardText != null) {
@@ -390,7 +391,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
-            if (ifMatch != null && !PackRevision.matches(ifMatch, revisionOf(liveDir, pack))) {
+            if (ifMatch != null && !PackRevision.matches(ifMatch, revisionOf(liveDir, pack.value()))) {
                 throw new PreconditionException(
                         PreconditionException.Kind.STALE, "The If-Match precondition is stale; read the pack again.");
             }
@@ -399,9 +400,9 @@ public final class PackCommitStore implements WholePackWriteStore {
             copyTree(liveDir, staging);
             edit.apply(staging, parent);
             // #110: every commit restamps the manifest over the edited copy, and generates it when the pack held none.
-            ManifestMembership.stamp(staging, wholePack::derivedManifest, strategy);
+            ManifestMembership.stamp(staging, directory -> wholePack.derivedManifest(pack, directory), strategy);
             requireNoNewViolation(resolved.name, liveDir, staging);
-            PackRevision revision = revisionOf(staging, pack);
+            PackRevision revision = revisionOf(staging, pack.value());
             rename.swap(staging, liveDir, () -> generation.moved(resolved.name));
             staging = null; // swapped into place; there is nothing left to clean up
             return revision;
@@ -490,8 +491,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     public PackRevision revisionOf(StagedPack staged) {
         try {
             return revisionOf(
-                    staged.directory(),
-                    new PackIdentifier(String.valueOf(staged.directory().getFileName())));
+                    staged.directory(), PackDirectory.of(staged.directory()).name());
         } catch (IOException failure) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot read the staged pack", failure);
         }
@@ -522,6 +522,24 @@ public final class PackCommitStore implements WholePackWriteStore {
         } catch (IOException unresolved) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot resolve the pack directory " + packId, unresolved);
+        }
+    }
+
+    @Override
+    public Optional<String> caseTwinOf(String packId) {
+        String folded = packId.toLowerCase(Locale.ROOT);
+        Path root = writableRoot();
+        if (!Files.isDirectory(root)) {
+            return Optional.empty(); // no pack is stored yet: the first create makes the domain
+        }
+        try (Stream<Path> entries = Files.list(root)) {
+            return entries.map(entry -> entry.getFileName().toString())
+                    .filter(name -> !name.equals(packId)
+                            && name.toLowerCase(Locale.ROOT).equals(folded))
+                    .sorted()
+                    .findFirst();
+        } catch (IOException unlisted) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot list the pack domain", unlisted);
         }
     }
 
@@ -618,9 +636,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         private static Optional<PackVersionHistory.Entry> storedPair(Path live, String packId) {
             try {
                 return Optional.of(new PackVersionHistory.Entry(
-                        packVersionOf(live),
-                        revisionOf(live, new PackIdentifier(packId)).token(),
-                        Instant.now()));
+                        packVersionOf(live), revisionOf(live, packId).token(), Instant.now()));
             } catch (IOException | RuntimeException unreadable) {
                 return Optional.empty();
             }
@@ -671,7 +687,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             // be on another one.
             copy = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(staged.directory(), copy);
-            PackRevision revision = revisionOf(copy, pack);
+            PackRevision revision = revisionOf(copy, pack.value());
             history = HistoryWrite.stage(writableRoot(), pack.value(), copy, revision, liveDir);
             swapBracketed(resolved.name, copy, liveDir); // keyed by the configured name, as every write is
             copy = null; // swapped into place; there is nothing left to clean up
@@ -763,7 +779,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             Files.createDirectories(root);
             staging = Files.createTempDirectory(root, ".pack-write-");
             copyTree(staged.directory(), staging);
-            PackRevision revision = revisionOf(staging, new PackIdentifier(packId));
+            PackRevision revision = revisionOf(staging, packId);
             history = HistoryWrite.stage(root, packId, staging, revision, null);
             placeBracketed(packId, staging, destination);
             staging = null; // moved into place; nothing left to clean up
@@ -960,12 +976,13 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /**
      * The revision of a staged directory: the digest over the bytes of every file the fingerprint would cover, so a
-     * file that is not UTF-8 text (a binary payload) is digested, not refused.
+     * file that is not UTF-8 text (a binary payload) is digested, not refused. {@code packName} only labels a refusal
+     * to list the tree: the registered id of the pack, or the name of a staged directory.
      */
-    private static PackRevision revisionOf(Path packDir, PackIdentifier pack) throws IOException {
+    private static PackRevision revisionOf(Path packDir, String packName) throws IOException {
         List<byte[]> contents = new ArrayList<>();
         // Named after the pack, not the directory: the live directory may be a link's target, the staging copy a temp.
-        for (String relative : PackFileSet.digested(packDir, pack.value())) {
+        for (String relative : PackFileSet.digested(packDir, packName)) {
             contents.add(Files.readAllBytes(packDir.resolve(relative)));
         }
         return PackRevision.computeOverBytes(contents);
@@ -974,11 +991,11 @@ public final class PackCommitStore implements WholePackWriteStore {
     // ---- id to directory -----------------------------------------------------------------------------------------
 
     /** A pack's live directory, its store and the directory-name key, at the location {@link PackLocator} resolves. */
-    private record Resolved(String name, FilesystemPackStore store, PackIdentifier key, Path directory) {}
+    private record Resolved(String name, FilesystemPackStore store, PackDirectory key, Path directory) {}
 
     /** The pack's store and directory, at the location {@link PackLocator} resolves. */
     private Resolved resolve(PackIdentifier pack) {
-        return over(PackLocator.locate(locations, strategy, pack));
+        return over(PackLocator.locate(locations, pack));
     }
 
     private Resolved over(PackLocation location) {
@@ -988,10 +1005,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack location has no parent directory");
         }
         return new Resolved(
-                location.name(),
-                new FilesystemPackStore(parent, strategy),
-                new PackIdentifier(directory.getFileName().toString()),
-                directory);
+                location.name(), new FilesystemPackStore(parent, strategy), PackDirectory.of(directory), directory);
     }
 
     // ---- filesystem helpers --------------------------------------------------------------------------------------

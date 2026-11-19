@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -22,6 +23,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,7 +49,7 @@ class EdgeIndexTest {
         /**
          * Adds a pack, depending on the named packs.
          *
-         * @param name the configured identifier and descriptor name; the descriptor {@code pack_id} is {@code id-name}
+         * @param name the configured identifier and descriptor name; the descriptor {@code pack_id} is {@link FixtureUlids#of the ULID of the name}
          * @param dependsOn the names of the packs it depends on
          * @param held the bare URNs it holds
          * @param edges the edges its facts carry
@@ -141,11 +143,11 @@ class EdgeIndexTest {
     }
 
     static String packId(String name) {
-        return "id-" + name;
+        return FixtureUlids.of(name);
     }
 
-    static PackIdentifier pack(String name) {
-        return new PackIdentifier(packId(name));
+    static PackUlid pack(String name) {
+        return FixtureUlids.ulid(name);
     }
 
     static Urn urn(String text) {
@@ -197,7 +199,9 @@ class EdgeIndexTest {
 
         CharterArtifact directive =
                 index.inPack(pack("alpha")).resolve(urn("directive:D")).orElseThrow();
-        assertThat(directive.packId()).isEqualTo(pack("alpha"));
+        assertThat(directive.packId())
+                .as("a node carries the id its pack is registered under")
+                .isEqualTo(new PackIdentifier("alpha"));
         assertThat(directive.urn()).isEqualTo(urn("directive:D"));
         assertThat(directive.label()).isEqualTo("directive:D");
         assertThat(written(directive)).containsExactly("directive:D requires tactic:T");
@@ -223,8 +227,7 @@ class EdgeIndexTest {
 
         assertThat(index.inPack(pack("alpha")).resolve(urn("tactic:T"))).isEmpty();
         assertThat(index.inPack(pack("beta")).resolve(urn("directive:D"))).isEmpty();
-        assertThat(index.inPack(new PackIdentifier("id-nowhere")).resolve(urn("directive:D")))
-                .isEmpty();
+        assertThat(index.inPack(pack("nowhere")).resolve(urn("directive:D"))).isEmpty();
     }
 
     @Test

@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -138,7 +139,7 @@ class CompositeComponentResolverTest {
         @Override
         public Optional<PackDescriptor> find(PackIdentifier pack) {
             return Optional.of(new PackDescriptor(
-                    pack.value(),
+                    FixtureUlids.of(pack.value()),
                     "1.0.0",
                     Optional.empty(),
                     pack.equals(PACK_B) ? "bravo" : "alpha",
@@ -146,7 +147,9 @@ class CompositeComponentResolverTest {
                     Optional.empty(),
                     PackPaths.none(),
                     // alpha relies on bravo, so bravo is in alpha's own closure
-                    pack.equals(PACK_B) ? List.of() : List.of(new PackDependency(PACK_B.value(), ">=1.0"))));
+                    pack.equals(PACK_B)
+                            ? List.of()
+                            : List.of(new PackDependency(FixtureUlids.of(PACK_B.value()), ">=1.0"))));
         }
 
         @Override

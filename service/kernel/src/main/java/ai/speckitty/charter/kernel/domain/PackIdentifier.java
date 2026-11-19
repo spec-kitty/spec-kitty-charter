@@ -27,15 +27,16 @@ public record PackIdentifier(String value) {
             IdentifierGrammar.slug(MAX_LENGTH).described(GRAMMAR_DETAIL);
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.notBlank().described("A pack identifier must not be blank."));
+            .must(Constraints.notBlank().described("A pack identifier must not be blank."))
+            .must(RULE);
 
     /**
-     * Checks that the identifier is present and not blank. A registered pack id must also be {@link #isPackId}; the
-     * constructor does not demand it, because the descriptor's {@code pack_id} also travels as a pack identifier
-     * (#552 Q3, pending).
+     * Checks that the identifier is a pack id: present, not blank, and a kebab slug of at most {@value #MAX_LENGTH}
+     * characters. The descriptor's {@code pack_id} is not a pack identifier: it is a {@link PackUlid} (#583).
      *
      * @param value the raw identifier text
-     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the text is null or blank
+     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the text is null or blank, or is
+     *     no pack id
      */
     public PackIdentifier {
         RULES.guard(value);

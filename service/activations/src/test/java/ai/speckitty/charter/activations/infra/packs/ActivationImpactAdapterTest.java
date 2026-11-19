@@ -18,7 +18,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -35,6 +34,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -77,7 +77,9 @@ class ActivationImpactAdapterTest {
     @Test
     void eachStoredActivationGivesItsPacksInTheOrderWrittenAndOneWithNoneGivesEmpty() {
         InMemoryActivationRepository repository = new InMemoryActivationRepository();
-        repository.create(new ActivationId("one"), listing(PackRef.of("beta"), PackRef.pinned("alpha", "1.2")));
+        repository.create(
+                new ActivationId("one"),
+                listing(PackRef.of(new PackIdentifier("beta")), PackRef.pinned(new PackIdentifier("alpha"), "1.2")));
         repository.create(new ActivationId("two"), listingNone());
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
@@ -89,7 +91,7 @@ class ActivationImpactAdapterTest {
     @Test
     void theFileStoreIsListedToo(@TempDir Path root) {
         FileActivationRepository repository = new FileActivationRepository(root.resolve("activations"));
-        repository.create(new ActivationId("file-one"), listing(PackRef.of("main")));
+        repository.create(new ActivationId("file-one"), listing(PackRef.of(new PackIdentifier("main"))));
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
                 .containsExactly(new ActivationImpact.ActivationRoots("file-one", Optional.of(List.of("main"))));
@@ -237,7 +239,7 @@ class ActivationImpactAdapterTest {
                 Map.of(),
                 new RequiredFloor(Map.of()),
                 new PerPackPolicy(Map.of()),
-                packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                packs.stream().map(PackUnderResolution::descriptorId).toList(),
                 List.of(),
                 Map.of(),
                 "sha256:merged",
@@ -255,7 +257,7 @@ class ActivationImpactAdapterTest {
             PromptFacts prompts,
             String... held) {
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -305,7 +307,9 @@ class ActivationImpactAdapterTest {
                             .contains("a-1")
                             .contains("step_enhancement:x")
                             .contains("spdd:reasons-block");
-                    assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("base", "proj");
+                    assertThat(refused.packs())
+                            .extracting(pack -> pack.packId().value())
+                            .containsExactly("base", "proj");
                 });
     }
 

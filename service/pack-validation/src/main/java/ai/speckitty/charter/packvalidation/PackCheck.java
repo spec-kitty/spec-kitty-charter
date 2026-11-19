@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packvalidation;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.packs.domain.PackReading;
@@ -9,7 +11,9 @@ import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packvalidation.placement.LevelRules;
 import ai.speckitty.charter.packvalidation.placement.OrgFragmentRules;
 import ai.speckitty.charter.packvalidation.placement.Placement;
+import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Validate mode, the validation edge (#554, FR-005, S2, S6): it reads a pack once through the domain port
@@ -22,6 +26,10 @@ import java.util.Objects;
  * and is checked after the gate, so it never gates it. It names the packs domain and the kernel only (C-003): a
  * composition root supplies the reading, the tests now and pack-check's main later (#478). A {@link PackRoot} with no
  * configured level judges a bare path, as core's {@code validate_pack(path)} does.
+ *
+ * <p>The pack is assembled under one registered id (#583, D2b): the id its caller names, or, when the caller names none,
+ * the name of its directory. A name that is not a pack id is one {@code pack_id_invalid} violation at the pack, and the
+ * pack is not assembled.
  */
 public final class PackCheck {
 
@@ -49,7 +57,41 @@ public final class PackCheck {
     }
 
     /**
-     * Validates one pack: the pack is read once and every rule runs.
+     * Validates the pack in a directory, assembled under the registered id its caller names (#583, D2b), whatever the
+     * directory is called.
+     *
+     * @param packId the registered id the pack is assembled under
+     * @param configuredLevel the level the pack is configured at; empty for a bare-path validation
+     * @param directory the pack's directory
+     * @return the classification of every file and every finding, in precedence order; a pack with no finding is
+     *     valid
+     */
+    public PackVerdict validate(PackIdentifier packId, Optional<PackLevel> configuredLevel, Path directory) {
+        Objects.requireNonNull(packId, "packId");
+        return validate(new PackRoot(packId.value(), configuredLevel, directory.toString()));
+    }
+
+    /**
+     * Validates the pack in a directory that its caller names no id for: it is assembled under the directory's name
+     * (#583, D2b), and a directory name that is not a pack id is one {@code pack_id_invalid} violation.
+     *
+     * @param configuredLevel the level the pack is configured at; empty for a bare-path validation
+     * @param directory the pack's directory
+     * @return the classification of every file and every finding, in precedence order; a pack with no finding is
+     *     valid
+     */
+    public PackVerdict validate(Optional<PackLevel> configuredLevel, Path directory) {
+        return validate(new PackRoot(directoryName(directory), configuredLevel, directory.toString()));
+    }
+
+    /** The name of a directory, as the reader names it: the last segment of its normalized absolute path. */
+    private static String directoryName(Path directory) {
+        Path last = directory.toAbsolutePath().normalize().getFileName();
+        return last == null ? "" : last.toString();
+    }
+
+    /**
+     * Validates one pack, assembled under its root's name: the pack is read once and every rule runs.
      *
      * @param root the pack to validate
      * @return the classification of every file and every finding, in precedence order; a pack with no finding is

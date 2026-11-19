@@ -83,7 +83,7 @@ public final class StaleIds {
 
     /** Whether the closure holds the pack at its pinned version; an unpinned or unknown pack is not dropped here. */
     private static boolean held(PackRef pack, ClosureSnapshot snapshot) {
-        Optional<String> heldVersion = snapshot.pack(pack.packId()).map(ClosureSnapshot.PackEntry::version);
+        Optional<String> heldVersion = snapshot.pack(pack.packId().value()).map(ClosureSnapshot.PackEntry::version);
         return pack.version().isEmpty()
                 || heldVersion.isEmpty()
                 || pack.version().equals(heldVersion);

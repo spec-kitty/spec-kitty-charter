@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -309,16 +310,16 @@ public final class EnhancementCompose {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(edgesOf, "edgesOf");
         Objects.requireNonNull(policy, "policy");
-        List<String> closurePackIds =
-                closure.stream().map(pack -> pack.descriptor().packId()).toList();
+        List<PackUlid> closurePackIds =
+                closure.stream().map(PackUnderResolution::descriptorId).toList();
         List<LockedEnhancement> locked = new ArrayList<>();
         for (PackUnderResolution enhancing : closure) {
             List<StepEnhancement> enhancements = stepEnhancementsOf(edgesOf.apply(enhancing));
             if (enhancements.isEmpty()) {
                 continue;
             }
-            List<String> judging = closurePackIds.stream()
-                    .filter(packId -> !packId.equals(enhancing.descriptor().packId()))
+            List<PackUlid> judging = closurePackIds.stream()
+                    .filter(packId -> !packId.equals(enhancing.descriptorId()))
                     .toList();
             for (StepEnhancement enhancement : enhancements) {
                 StepHolding.missionTypeOf(enhancement.target()).ifPresent(missionType -> {
@@ -331,9 +332,8 @@ public final class EnhancementCompose {
                                 enhancing,
                                 level.setBy()
                                         .flatMap(packId -> closure.stream()
-                                                .filter(pack -> pack.descriptor()
-                                                        .packId()
-                                                        .equals(packId))
+                                                .filter(pack ->
+                                                        pack.descriptorId().equals(packId))
                                                 .findFirst())));
                     }
                 });
@@ -344,8 +344,6 @@ public final class EnhancementCompose {
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {
         return new RefusalPack(
-                pack.descriptor().packId(),
-                pack.configured().id().value(),
-                pack.descriptor().name());
+                pack.descriptorId(), pack.configured().id(), pack.descriptor().name());
     }
 }

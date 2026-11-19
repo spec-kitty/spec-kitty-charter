@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("A step enhancement and its fragments round-trip by meaning (#428)")
 class StepEnhancementYamlTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M6ZRYK0000000000000000E1");
+    private static final PackIdentifier PACK = new PackIdentifier("enhancing-pack");
     private static final StepEnhancementBinding BINDING = StepEnhancementBinding.INSTANCE;
 
     private static final String SOURCE = """

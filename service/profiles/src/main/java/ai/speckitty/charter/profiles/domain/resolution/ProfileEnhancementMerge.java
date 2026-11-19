@@ -1,5 +1,6 @@
 package ai.speckitty.charter.profiles.domain.resolution;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,9 +24,9 @@ public final class ProfileEnhancementMerge {
      * One enhancer of the profile.
      *
      * @param profile the enhancing profile
-     * @param pack the pack that holds it, named first in a refusal
+     * @param pack the registered id of the pack that holds it, named first in a refusal
      */
-    public record Enhancer(AgentProfile profile, String pack) {
+    public record Enhancer(AgentProfile profile, PackIdentifier pack) {
 
         /**
          * Checks the fields.

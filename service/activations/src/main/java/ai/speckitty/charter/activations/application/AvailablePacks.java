@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +18,7 @@ public interface AvailablePacks {
      * One verified read of a composition closure, kept for the whole request: the snapshot and every walk of the
      * cascade answer from it (NFR-007).
      *
-     * @param packIds the configured ids of the packs the closure is rooted at, in the document's order; empty for every
+     * @param packIds the registered ids of the packs the closure is rooted at, in the document's order; empty for every
      *     configured pack (an activation without {@code packs})
      * @return the session; its snapshot is {@linkplain ClosureSnapshot#unresolved unresolved}, naming the ids, when a
      *     root names no configured pack
@@ -25,7 +26,7 @@ public interface AvailablePacks {
      *     closure cannot be read ({@code pack_unreadable}), does not compose (a composition code) or changed during the
      *     read ({@code stale_input})
      */
-    PacksSession session(Optional<List<String>> packIds);
+    PacksSession session(Optional<List<PackIdentifier>> packIds);
 
     /**
      * The artifact kinds a client can list and follow, in the list order: the gate of the generic read of one artifact
@@ -40,12 +41,12 @@ public interface AvailablePacks {
      * One verified read of a composition closure, for a use case that walks nothing: the snapshot of a
      * {@linkplain #session session}.
      *
-     * @param packIds the configured ids of the packs the closure is rooted at; empty for every configured pack
+     * @param packIds the registered ids of the packs the closure is rooted at; empty for every configured pack
      * @return the closure; {@linkplain ClosureSnapshot#unresolved unresolved}, naming the ids, when a root names no
      *     configured pack
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #session} does
      */
-    default ClosureSnapshot snapshot(Optional<List<String>> packIds) {
+    default ClosureSnapshot snapshot(Optional<List<PackIdentifier>> packIds) {
         return session(packIds).snapshot();
     }
 }

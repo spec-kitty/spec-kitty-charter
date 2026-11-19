@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.InForceStates.DenyReason;
 import ai.speckitty.charter.packs.domain.InForceStates.OverrideNotApplied;
 import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import ai.speckitty.charter.packs.domain.InForceStates.State;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -60,10 +61,11 @@ class InForceResolutionTest {
                 Urn urn = u(text);
                 PerPackPolicy.Level policy = level == MutabilityLevel.OPEN
                         ? PerPackPolicy.Level.OPEN
-                        : new PerPackPolicy.Level(level, Optional.of("id-pack"));
+                        : new PerPackPolicy.Level(level, Optional.of(FixtureUlids.ulid("pack")));
                 winners.put(
                         urn,
-                        new MergedClosure.Winner(urn, new PackIdentifier("pack"), "id-pack", PackLevel.ORG, policy));
+                        new MergedClosure.Winner(
+                                urn, new PackIdentifier("pack"), FixtureUlids.ulid("pack"), PackLevel.ORG, policy));
             }
             return this;
         }
@@ -96,7 +98,7 @@ class InForceResolutionTest {
         }
 
         Closure requires(String... urns) {
-            Arrays.stream(urns).forEach(urn -> required.put(u(urn), List.of("id-pack")));
+            Arrays.stream(urns).forEach(urn -> required.put(u(urn), List.of(FixtureUlids.of("pack"))));
             return this;
         }
 
@@ -106,7 +108,7 @@ class InForceResolutionTest {
         }
 
         Closure unheld(String... urns) {
-            Arrays.stream(urns).forEach(urn -> unheld.put(u(urn), List.of("id-pack")));
+            Arrays.stream(urns).forEach(urn -> unheld.put(u(urn), List.of(FixtureUlids.of("pack"))));
             return this;
         }
 

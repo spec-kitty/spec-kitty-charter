@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.activations.domain.ClosureSnapshot.PresetView;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +31,7 @@ class PresetRulesTest {
     }
 
     private static ActivationDocument.Builder document() {
-        return ActivationDocument.builder().packs(List.of(PackRef.of("main")));
+        return ActivationDocument.builder().packs(List.of(PackRef.of(new PackIdentifier("main"))));
     }
 
     @Test

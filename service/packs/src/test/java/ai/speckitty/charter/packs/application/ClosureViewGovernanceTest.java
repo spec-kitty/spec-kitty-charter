@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
@@ -102,7 +103,7 @@ class ClosureViewGovernanceTest {
             Relationship... edges) {
         configured.add(new ConfiguredPack(new PackIdentifier(name), level));
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -110,7 +111,7 @@ class ClosureViewGovernanceTest {
                 Optional.empty(),
                 PackPaths.none(),
                 dependsOn.stream()
-                        .map(other -> new PackDependency("id-" + other, ">=0"))
+                        .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                         .toList());
         descriptors.put(name, descriptor);
         List<String> held = Stream.concat(profiles.stream().map(id -> "agent_profile:" + id), others.stream())

@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
 import java.io.IOException;
@@ -97,7 +96,7 @@ class WholePackCensusAgreementTest {
         FilesystemPackStore store = new FilesystemPackStore(pack.getParent(), new YamlSerializationStrategy());
         FilesystemPackStore.PackRead read;
         try {
-            read = store.read(new PackIdentifier(String.valueOf(pack.getFileName())));
+            read = store.read(PackDirectory.of(pack));
         } catch (CharterRefusal refused) {
             return Optional.empty();
         }

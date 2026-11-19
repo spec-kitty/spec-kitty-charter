@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -18,9 +19,9 @@ public interface ProfileEnhancementGateway {
      * One enhancer of a profile.
      *
      * @param profile the enhancing agent profile
-     * @param pack the pack that holds it
+     * @param pack the registered id of the pack that holds it
      */
-    record Enhancing(CharterArtifact profile, String pack) {
+    record Enhancing(CharterArtifact profile, PackIdentifier pack) {
 
         /**
          * Checks the fields.
@@ -37,11 +38,11 @@ public interface ProfileEnhancementGateway {
     /**
      * An enhancement that would lose content of the profile it enhances.
      *
-     * @param pack the enhancing pack
+     * @param pack the registered id of the enhancing pack
      * @param field the top-level field, as the schema names it
      * @param detail the sentence naming the pack, the profiles and the field
      */
-    record Dropped(String pack, String field, String detail) implements Composed {
+    record Dropped(PackIdentifier pack, String field, String detail) implements Composed {
 
         /**
          * Checks the fields.

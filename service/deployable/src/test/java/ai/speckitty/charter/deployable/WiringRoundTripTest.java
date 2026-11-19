@@ -31,7 +31,7 @@ import org.springframework.test.context.DynamicPropertySource;
 class WiringRoundTripTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
-    private static final PackIdentifier PACK = new PackIdentifier("01M5EET9W1R1NGF1XTVRE0000A");
+    private static final PackIdentifier PACK = new PackIdentifier("fixture");
     private static final TacticIdentifier ALPHA = new TacticIdentifier("alpha-tactic");
     private static Path packs = Path.of("");
 

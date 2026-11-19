@@ -4,6 +4,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RequiringPack;
@@ -245,7 +246,7 @@ public final class DocumentRules {
     private static List<RefusalViolation> packViolations(
             ActivationDocument.Written written, ClosureSnapshot snapshot, Tolerance tolerance) {
         List<PackRef> packs = written.packs();
-        Set<String> seen = new HashSet<>();
+        Set<PackIdentifier> seen = new HashSet<>();
         List<RefusalViolation> violations = new ArrayList<>();
         for (int i = 0; i < packs.size(); i++) {
             PackRef pack = packs.get(i);
@@ -258,13 +259,16 @@ public final class DocumentRules {
 
     private static Optional<RefusalViolation> packViolation(
             PackRef pack, String pointer, ClosureSnapshot snapshot, Tolerance tolerance) {
-        if (!snapshot.resolved() && !snapshot.unknownPacks().contains(pack.packId())) {
+        if (!snapshot.resolved()
+                && !snapshot.unknownPacks().contains(pack.packId().value())) {
             return Optional.empty();
         }
-        Optional<ClosureSnapshot.PackEntry> entry = snapshot.pack(pack.packId());
+        Optional<ClosureSnapshot.PackEntry> entry = snapshot.pack(pack.packId().value());
         if (entry.isEmpty()) {
             return Optional.of(new RefusalViolation(
-                    pointer + "/packId", "unknown_pack", "No pack is configured as '" + pack.packId() + "'."));
+                    pointer + "/packId",
+                    "unknown_pack",
+                    "No pack is configured as '" + pack.packId().value() + "'."));
         }
         String held = entry.orElseThrow().version();
         return pack.version()
@@ -272,7 +276,7 @@ public final class DocumentRules {
                 .map(pinned -> new RefusalViolation(
                         pointer + "/version",
                         "version_not_held",
-                        "The pack '" + pack.packId() + "' is held at " + held + ", not " + pinned + "."));
+                        "The pack '" + pack.packId().value() + "' is held at " + held + ", not " + pinned + "."));
     }
 
     private static List<RefusalViolation> idViolations(
@@ -436,7 +440,7 @@ public final class DocumentRules {
     /** Each requiring pack with the extends chain it is reached through from the document's packs. */
     private static List<RequiringPack> via(ActivationDocument document, ClosureSnapshot snapshot, Set<String> packs) {
         List<String> roots = document.packs()
-                .map(list -> list.stream().map(PackRef::packId).toList())
+                .map(list -> list.stream().map(pack -> pack.packId().value()).toList())
                 .orElseGet(List::of);
         return packs.stream()
                 .map(pack -> new RequiringPack(pack, chainTo(pack, roots, snapshot)))

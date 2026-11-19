@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
@@ -335,8 +336,8 @@ class CompositionFactsCacheTest {
     // ---- the offering's compose reads through it -----------------------------------------------------------------
 
     private OfferingReadService offeringOver(CompositionFactsCache cache) {
-        PackDescriptor descriptor =
-                new PackDescriptor("id-alpha", "1.0.0", Optional.empty(), "alpha", Optional.empty(), Optional.empty());
+        PackDescriptor descriptor = new PackDescriptor(
+                FixtureUlids.of("alpha"), "1.0.0", Optional.empty(), "alpha", Optional.empty(), Optional.empty());
         PackCatalogRepository catalog = () -> List.of(new ConfiguredPack(ALPHA, PackLevel.ORG));
         PackDescriptorRepository descriptors = new PackDescriptorRepository() {
             @Override

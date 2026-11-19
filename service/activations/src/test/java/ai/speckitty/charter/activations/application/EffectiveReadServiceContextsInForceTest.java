@@ -21,6 +21,7 @@ import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.util.HashSet;
@@ -82,7 +83,8 @@ class EffectiveReadServiceContextsInForceTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("core"), PackRef.of("proj")))
+                                .packs(List.of(
+                                        PackRef.of(new PackIdentifier("core")), PackRef.of(new PackIdentifier("proj"))))
                                 .build()
                                 .document())
                 .orElseThrow();

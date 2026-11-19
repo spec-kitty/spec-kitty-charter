@@ -25,6 +25,7 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -61,7 +62,7 @@ class ClosureQueriesTest {
 
     private static PackDescriptor descriptor(String packId, String version, PackDependency... dependencies) {
         return new PackDescriptor(
-                packId,
+                FixtureUlids.of(packId),
                 version,
                 Optional.empty(),
                 packId + " pack",
@@ -74,7 +75,7 @@ class ClosureQueriesTest {
     /** A descriptor whose name is its {@code pack_id}, so a {@code <pack>::} qualifier can name it. */
     private static PackDescriptor named(String packId, String version, PackDependency... dependencies) {
         return new PackDescriptor(
-                packId,
+                FixtureUlids.of(packId),
                 version,
                 Optional.empty(),
                 packId,
@@ -86,9 +87,9 @@ class ClosureQueriesTest {
 
     private static PackDescriptor extending(String packId, String parent) {
         return new PackDescriptor(
-                packId,
+                FixtureUlids.of(packId),
                 "1.0.0",
-                Optional.of(parent),
+                Optional.of(FixtureUlids.of(parent)),
                 packId + " pack",
                 Optional.empty(),
                 Optional.empty(),
@@ -110,7 +111,7 @@ class ClosureQueriesTest {
         pack(
                 "alpha",
                 PackLevel.ORG,
-                descriptor("alpha", "1.0.0", new PackDependency("beta", ">=1.0")),
+                descriptor("alpha", "1.0.0", new PackDependency(FixtureUlids.of("beta"), ">=1.0")),
                 holding("directive:A1", "mission_type:software-dev"));
         pack("beta", PackLevel.ORG, descriptor("beta", "1.2.0"), holding("directive:B1", "tactic:t"));
         pack("gamma", PackLevel.ORG, descriptor("gamma", "1.0.0"), holding("directive:G1"));
@@ -200,7 +201,7 @@ class ClosureQueriesTest {
 
         assertThat(view.packs()).extracting(entry -> entry.id().value()).containsExactly("beta", "alpha");
         assertThat(view.packs().getLast().dependencies()).singleElement().satisfies(edge -> {
-            assertThat(edge.to()).isEqualTo("beta");
+            assertThat(edge.to()).isEqualTo(FixtureUlids.of("beta"));
             assertThat(edge.version()).isEqualTo("1.2.0");
         });
         assertThat(view.heldIds().get(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("A1", "B1");
@@ -209,9 +210,9 @@ class ClosureQueriesTest {
                 .as("gamma is outside the closure")
                 .isFalse();
         assertThat(view.holds(ArtifactKind.DIRECTIVE, "B1")).isTrue();
-        assertThat(view.holderOf()).containsEntry(new Urn(NodeKind.DIRECTIVE, "B1"), "beta");
+        assertThat(view.holderOf()).containsEntry(new Urn(NodeKind.DIRECTIVE, "B1"), FixtureUlids.ulid("beta"));
         assertThat(view.heldIds().get(ArtifactKind.MISSION_TYPE)).containsExactly("software-dev");
-        assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
+        assertThat(view.closurePackIds()).containsExactly(FixtureUlids.ulid("beta"), FixtureUlids.ulid("alpha"));
         assertThat(view.fingerprint()).isEqualTo(D1);
     }
 
@@ -289,7 +290,11 @@ class ClosureQueriesTest {
 
     @Test
     void aClosureThatCannotComposePropagatesTheCompositionRefusalUnchanged() {
-        pack("alpha", PackLevel.ORG, descriptor("alpha", "1.0.0", new PackDependency("beta", ">=2.0")), holding());
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                descriptor("alpha", "1.0.0", new PackDependency(FixtureUlids.of("beta"), ">=2.0")),
+                holding());
         pack("beta", PackLevel.ORG, descriptor("beta", "1.2.0"), holding());
 
         assertThatThrownBy(() -> queries().snapshot(roots("alpha")))
@@ -305,12 +310,16 @@ class ClosureQueriesTest {
                 .entry(DIRECTIVE_D1, MutabilityLevel.LOCKED)
                 .build();
         pack("org-local", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:D1"), locksD1));
-        pack("team", PackLevel.PROJECT, descriptor("team", "1.0.0", new PackDependency("org", ">=1.0")), holding());
+        pack(
+                "team",
+                PackLevel.PROJECT,
+                descriptor("team", "1.0.0", new PackDependency(FixtureUlids.of("org"), ">=1.0")),
+                holding());
 
         ClosureView view = queries().snapshot(roots("team"));
 
         assertThat(view.lockOf(DIRECTIVE_D1))
-                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of("org")));
+                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(FixtureUlids.ulid("org"))));
         assertThat(view.isLocked(DIRECTIVE_D1)).isTrue();
         assertThat(view.floor().isRequired(DIRECTIVE_D1))
                 .as("no preset requires it")
@@ -319,7 +328,7 @@ class ClosureQueriesTest {
                 .as("locked implies required (ADR-0012 D7)")
                 .isTrue();
         assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "D2"))).isFalse();
-        assertThat(view.holderOf()).containsEntry(DIRECTIVE_D1, "org");
+        assertThat(view.holderOf()).containsEntry(DIRECTIVE_D1, FixtureUlids.ulid("org"));
     }
 
     @Test
@@ -345,14 +354,14 @@ class ClosureQueriesTest {
 
         ClosureView view = queries().allConfigured();
 
-        assertThat(view.floor().requiringPacks(DIRECTIVE_D1)).containsExactly("org");
+        assertThat(view.floor().requiringPacks(DIRECTIVE_D1)).containsExactly(FixtureUlids.of("org"));
         assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "D2"))).isFalse();
         assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "D3"))).isFalse();
         assertThat(view.presets()).containsOnlyKeys("shared", "builtin-only");
         assertThat(view.presets().get("shared"))
                 .as("the last holder in merge order wins (ADR-0053 d6)")
-                .isEqualTo(new ClosureView.HeldPreset(governing, "org"));
-        assertThat(view.presets().get("builtin-only").descriptorPackId()).isEqualTo("builtin");
+                .isEqualTo(new ClosureView.HeldPreset(governing, FixtureUlids.ulid("org")));
+        assertThat(view.presets().get("builtin-only").descriptorPackId()).isEqualTo(FixtureUlids.ulid("builtin"));
     }
 
     @Test
@@ -375,13 +384,15 @@ class ClosureQueriesTest {
 
         assertThat(view.presets().get("team"))
                 .as("the last holder in merge order wins (ADR-0053 d6)")
-                .isEqualTo(new ClosureView.HeldPreset(later, "org"));
+                .isEqualTo(new ClosureView.HeldPreset(later, FixtureUlids.ulid("org")));
         assertThat(view.floor().requiringPacks(new Urn(NodeKind.DIRECTIVE, "B")))
-                .containsExactly("org");
+                .containsExactly(FixtureUlids.of("org"));
         assertThat(view.floor().isRequired(new Urn(NodeKind.DIRECTIVE, "A")))
                 .as("the losing copy requires nothing")
                 .isFalse();
-        assertThat(view.heldPresets()).as("each preset once").containsExactly(new ClosureView.HeldPreset(later, "org"));
+        assertThat(view.heldPresets())
+                .as("each preset once")
+                .containsExactly(new ClosureView.HeldPreset(later, FixtureUlids.ulid("org")));
     }
 
     @Test
@@ -456,13 +467,13 @@ class ClosureQueriesTest {
         pack(
                 "e",
                 PackLevel.ORG,
-                descriptor("e", "1.0.0", new PackDependency("b", ">=1.0")),
+                descriptor("e", "1.0.0", new PackDependency(FixtureUlids.of("b"), ">=1.0")),
                 holding(List.of("directive:E1"), locksDirectives));
 
         ClosureView view = queries().snapshot(roots("e"));
 
         assertThat(view.lockOf(new Urn(NodeKind.DIRECTIVE, "B1")))
-                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of("e")));
+                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(FixtureUlids.ulid("e"))));
         assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "E1"))).isTrue();
         assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "UNHELD")))
                 .as("an id no pack of e's closure holds is not locked by a kind default")
@@ -490,10 +501,10 @@ class ClosureQueriesTest {
                 .as("no pack of the closure holds directive:Z")
                 .isFalse();
         assertThat(view.isRequired(z)).isFalse();
-        assertThat(view.floor().unheld()).containsOnlyKeys(z).containsEntry(z, List.of("org"));
+        assertThat(view.floor().unheld()).containsOnlyKeys(z).containsEntry(z, List.of(FixtureUlids.of("org")));
         assertThat(view.floor().requiringPacks(DIRECTIVE_D1))
                 .as("same fixture: the held must-have item stays on the floor")
-                .containsExactly("org");
+                .containsExactly(FixtureUlids.of("org"));
     }
 
     @Test
@@ -526,12 +537,12 @@ class ClosureQueriesTest {
 
         ClosureView view = queries().snapshot(roots("a-child"));
 
-        assertThat(view.closurePackIds()).containsExactly("z-parent", "a-child");
+        assertThat(view.closurePackIds()).containsExactly(FixtureUlids.ulid("z-parent"), FixtureUlids.ulid("a-child"));
         assertThat(view.presets().get("team"))
                 .as("the child merges after the pack it extends, so its copy wins")
-                .isEqualTo(new ClosureView.HeldPreset(overriding, "a-child"));
+                .isEqualTo(new ClosureView.HeldPreset(overriding, FixtureUlids.ulid("a-child")));
         assertThat(view.floor().requiringPacks(new Urn(NodeKind.DIRECTIVE, "FROM-CHILD")))
-                .containsExactly("a-child");
+                .containsExactly(FixtureUlids.of("a-child"));
         assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "FROM-PARENT")))
                 .as("the losing parent copy requires nothing")
                 .isFalse();
@@ -576,8 +587,8 @@ class ClosureQueriesTest {
 
         ClosureView view = queries().snapshot(roots("team"));
 
-        assertThat(view.parentOf("team")).contains("base");
-        assertThat(view.parentOf("base")).isEmpty();
+        assertThat(view.parentOf(FixtureUlids.ulid("team"))).contains(FixtureUlids.ulid("base"));
+        assertThat(view.parentOf(FixtureUlids.ulid("base"))).isEmpty();
     }
 
     @Test
@@ -622,7 +633,7 @@ class ClosureQueriesTest {
         ClosureView view = queries(() -> calls.incrementAndGet() == 1 ? D1 : D2).snapshot(roots("alpha"));
 
         assertThat(view.fingerprint()).as("the retry's own verified digest").isEqualTo(D2);
-        assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
+        assertThat(view.closurePackIds()).containsExactly(FixtureUlids.ulid("beta"), FixtureUlids.ulid("alpha"));
     }
 
     @Test
@@ -642,7 +653,11 @@ class ClosureQueriesTest {
 
     @Test
     void aRefusalThatIsNotStaleIsNeverRetried() {
-        pack("alpha", PackLevel.ORG, descriptor("alpha", "1.0.0", new PackDependency("beta", ">=2.0")), holding());
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                descriptor("alpha", "1.0.0", new PackDependency(FixtureUlids.of("beta"), ">=2.0")),
+                holding());
         pack("beta", PackLevel.ORG, descriptor("beta", "1.2.0"), holding());
 
         assertThatThrownBy(() -> queries().snapshot(roots("alpha"))).isInstanceOf(CharterRefusal.class);
@@ -683,7 +698,7 @@ class ClosureQueriesTest {
         pack(
                 "alpha",
                 PackLevel.ORG,
-                named("alpha", "1.0.0", new PackDependency("beta", ">=1.0")),
+                named("alpha", "1.0.0", new PackDependency(FixtureUlids.of("beta"), ">=1.0")),
                 new PackCompositionFacts(
                         List.of(),
                         List.of("directive:A1", "tactic:e"),

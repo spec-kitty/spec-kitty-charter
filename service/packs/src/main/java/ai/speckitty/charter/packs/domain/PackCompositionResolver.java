@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
@@ -107,6 +108,18 @@ public final class PackCompositionResolver {
                 List<String> changedArtifacts,
                 List<String> definedArtifacts) {
             this(configured, descriptor, changedArtifacts, definedArtifacts, Set.of());
+        }
+
+        /**
+         * The pack's descriptor identity, the key the closure's indexes use: the {@code pack_id} its descriptor declares,
+         * which the descriptor read checked against the descriptor schema.
+         *
+         * @return the descriptor's {@code pack_id}
+         * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the descriptor's {@code pack_id}
+         *     is no ULID
+         */
+        public PackUlid descriptorId() {
+            return new PackUlid(descriptor.packId());
         }
 
         /**
@@ -246,9 +259,9 @@ public final class PackCompositionResolver {
         /**
          * The pack that broke the graph.
          *
-         * @return its descriptor {@code pack_id}
+         * @return the id it is registered under
          */
-        public String packId() {
+        public PackIdentifier packId() {
             return packs.getFirst().packId();
         }
 
@@ -543,6 +556,7 @@ public final class PackCompositionResolver {
      *     pack, with {@link Failure#REFERENCE_PACK_MISSING} when a qualified reference names a pack outside the
      *     referring pack's closure, or with {@link Failure#REFERENCE_ARTIFACT_MISSING} when it names a pack of the
      *     closure that does not hold the artifact
+     * @throws IllegalArgumentException when no pack of the compose has the referring {@code pack_id}
      */
     public static void checkReferences(
             List<PackUnderResolution> packs, String referringPackId, List<ResolvedReference> references) {
@@ -556,15 +570,14 @@ public final class PackCompositionResolver {
         }
         Set<String> closure = dependsOnClosure(referringPackId, byId);
         PackUnderResolution referring = byId.get(referringPackId);
-        List<RefusalPack> referringPack = List.of(
-                referring == null
-                        ? new RefusalPack(referringPackId, referringPackId, referringPackId)
-                        : refusalPack(referring));
-        String referringLabel = referring == null ? "pack `" + referringPackId + "`" : label(referring);
+        if (referring == null) {
+            throw new IllegalArgumentException("the referring pack " + referringPackId + " is no pack of the compose");
+        }
+        String referringLabel = label(referring);
         for (ResolvedReference resolved : references) {
             PackQualifiedReference reference = resolved.reference();
             if (reference.qualified()) {
-                checkQualifiedReference(reference, byName, closure, referringPack, referringLabel);
+                checkQualifiedReference(reference, byName, closure, referring, referringLabel);
             } else if (resolved.holdingPackId()
                     .filter(id -> !id.equals(referringPackId))
                     .isPresent()) {
@@ -574,7 +587,7 @@ public final class PackCompositionResolver {
                 String holdingLabel = holding == null ? "pack `" + holdingId + "`" : label(holding);
                 throw new Refusal(
                         Failure.REFERENCE_UNQUALIFIED,
-                        concat(referringPack, holder),
+                        concat(named(referring), holder),
                         referringLabel + " writes the bare reference `" + reference + "`, which resolves only in "
                                 + holdingLabel + "; a cross-pack reference is written pack-qualified");
             }
@@ -635,21 +648,21 @@ public final class PackCompositionResolver {
             PackQualifiedReference reference,
             Map<String, PackUnderResolution> byName,
             Set<String> closure,
-            List<RefusalPack> referringPack,
+            PackUnderResolution referring,
             String referringLabel) {
         String missing = reference.packName().orElseThrow();
         PackUnderResolution target = byName.get(missing);
         if (target == null) {
             throw new Refusal(
                     Failure.REFERENCE_PACK_MISSING,
-                    referringPack,
+                    named(referring),
                     referringLabel + " writes the reference `" + reference + "`, but the compose holds no pack"
                             + " named `" + missing + "`");
         }
         if (!closure.contains(target.descriptor().packId())) {
             throw new Refusal(
                     Failure.REFERENCE_PACK_MISSING,
-                    concat(referringPack, named(target)),
+                    named(referring, target),
                     referringLabel + " writes the reference `" + reference + "`, but " + label(target)
                             + " is outside its depends_on closure");
         }
@@ -660,7 +673,7 @@ public final class PackCompositionResolver {
                 && !target.holds(urn.get().toString())) {
             throw new Refusal(
                     Failure.REFERENCE_ARTIFACT_MISSING,
-                    concat(referringPack, named(target)),
+                    named(referring, target),
                     referringLabel + " writes the reference `" + reference + "`, but " + label(target)
                             + " does not hold `" + urn.get() + "`");
         }
@@ -1430,9 +1443,7 @@ public final class PackCompositionResolver {
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {
         return new RefusalPack(
-                pack.descriptor().packId(),
-                pack.configured().id().value(),
-                pack.descriptor().name());
+                pack.descriptorId(), pack.configured().id(), pack.descriptor().name());
     }
 
     /** The pack as a sentence names it: {@code `name` (pack_id)}. */

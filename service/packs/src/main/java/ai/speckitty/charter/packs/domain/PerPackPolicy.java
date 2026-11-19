@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.Optional;
  *
  * @param byPack each pack's policy, by descriptor {@code pack_id}; a pack left out has the empty policy
  */
-public record PerPackPolicy(Map<String, MutabilityPolicySource> byPack) {
+public record PerPackPolicy(Map<PackUlid, MutabilityPolicySource> byPack) {
 
     /**
      * Checks and copies the map.
@@ -36,7 +37,7 @@ public record PerPackPolicy(Map<String, MutabilityPolicySource> byPack) {
      * @param setBy the descriptor {@code pack_id} of the first pack, in closure order, that declared it; empty when no
      *     pack raised the target above {@link MutabilityLevel#OPEN}
      */
-    public record Level(MutabilityLevel level, Optional<String> setBy) {
+    public record Level(MutabilityLevel level, Optional<PackUlid> setBy) {
 
         /** The answer for a target no pack raises. */
         public static final Level OPEN = new Level(MutabilityLevel.OPEN, Optional.empty());
@@ -60,11 +61,11 @@ public record PerPackPolicy(Map<String, MutabilityPolicySource> byPack) {
      * @param urn the target
      * @return the level and the pack that set it
      */
-    public Level levelIn(List<String> closurePackIds, Urn urn) {
+    public Level levelIn(List<PackUlid> closurePackIds, Urn urn) {
         Objects.requireNonNull(closurePackIds, "closurePackIds");
         Objects.requireNonNull(urn, "urn");
         Level highest = Level.OPEN;
-        for (String packId : closurePackIds) {
+        for (PackUlid packId : closurePackIds) {
             MutabilityLevel declared =
                     byPack.getOrDefault(packId, MutabilityPolicySource.empty()).levelOf(urn);
             // MutabilityLevel declares its levels rising, so the ordinal order is the strictness order.

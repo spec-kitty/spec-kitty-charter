@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -59,8 +60,8 @@ public final class LayerMerge {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
         Objects.requireNonNull(policy, "policy");
-        List<String> closurePackIds =
-                closure.stream().map(pack -> pack.descriptor().packId()).toList();
+        List<PackUlid> closurePackIds =
+                closure.stream().map(PackUnderResolution::descriptorId).toList();
         Map<Urn, MergedClosure.Winner> winners = new LinkedHashMap<>();
         List<LayerOverride> overrides = new ArrayList<>();
         Map<Urn, List<PackUnderResolution>> holdersByUrn = holdersByUrn(closure);
@@ -95,10 +96,10 @@ public final class LayerMerge {
             Urn urn,
             PackUnderResolution winner,
             PackUnderResolution loser,
-            List<String> closurePackIds,
+            List<PackUlid> closurePackIds,
             PerPackPolicy policy) {
-        List<String> judging = closurePackIds.stream()
-                .filter(packId -> !packId.equals(winner.descriptor().packId()))
+        List<PackUlid> judging = closurePackIds.stream()
+                .filter(packId -> !packId.equals(winner.descriptorId()))
                 .toList();
         PerPackPolicy.Level level = policy.levelIn(judging, urn);
         if (level.level() != MutabilityLevel.OPEN) {
@@ -112,7 +113,7 @@ public final class LayerMerge {
                             + level.level().token()
                             + " along the closure"
                             + level.setBy()
-                                    .map(by -> " (set by pack " + by + ")")
+                                    .map(by -> " (set by pack " + by.value() + ")")
                                     .orElse("")
                             + "; only an open artifact may be replaced by a later level",
                     List.of(refusalPack(winner), refusalPack(loser)));
@@ -121,9 +122,7 @@ public final class LayerMerge {
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {
         return new RefusalPack(
-                pack.descriptor().packId(),
-                pack.configured().id().value(),
-                pack.descriptor().name());
+                pack.descriptorId(), pack.configured().id(), pack.descriptor().name());
     }
 
     /**
@@ -134,8 +133,8 @@ public final class LayerMerge {
             Map<Urn, MergedClosure.Winner> winners,
             List<PackUnderResolution> closure,
             Map<String, PackCompositionFacts> facts) {
-        Map<String, PackCompositionFacts> byDescriptorPackId = new LinkedHashMap<>();
-        closure.forEach(pack -> byDescriptorPackId.put(pack.descriptor().packId(), factsOf(pack, facts)));
+        Map<PackUlid, PackCompositionFacts> byDescriptorPackId = new LinkedHashMap<>();
+        closure.forEach(pack -> byDescriptorPackId.put(pack.descriptorId(), factsOf(pack, facts)));
         Map<Urn, Set<String>> languages = new LinkedHashMap<>();
         winners.forEach((urn, winner) -> {
             List<String> declared = byDescriptorPackId
@@ -185,17 +184,14 @@ public final class LayerMerge {
             PackUnderResolution winner =
                     levelWinners(holders, LayerMerge::lastHolder).getLast();
             Preset applied = copies.stream()
-                    .filter(copy -> copy.pack()
-                            .descriptor()
-                            .packId()
-                            .equals(winner.descriptor().packId()))
+                    .filter(copy -> copy.pack().descriptorId().equals(winner.descriptorId()))
                     .findFirst()
                     .orElseThrow()
                     .preset();
             merged.put(
                     id,
                     new MergedClosure.MergedPreset(
-                            applied, winner.descriptor().packId(), mustHaveOf(copiesInForceAtEachLevel(copies))));
+                            applied, winner.descriptorId(), mustHaveOf(copiesInForceAtEachLevel(copies))));
         });
         return merged;
     }
@@ -206,11 +202,11 @@ public final class LayerMerge {
      * function as {@link #mergedPresets} and the artifacts use; the requirement is the union across these copies (A1).
      */
     private static List<Copy> copiesInForceAtEachLevel(List<Copy> copies) {
-        Set<String> inForce = levelWinners(copies.stream().map(Copy::pack).toList(), LayerMerge::lastHolder).stream()
-                .map(pack -> pack.descriptor().packId())
+        Set<PackUlid> inForce = levelWinners(copies.stream().map(Copy::pack).toList(), LayerMerge::lastHolder).stream()
+                .map(PackUnderResolution::descriptorId)
                 .collect(Collectors.toSet());
         return copies.stream()
-                .filter(copy -> inForce.contains(copy.pack().descriptor().packId()))
+                .filter(copy -> inForce.contains(copy.pack().descriptorId()))
                 .toList();
     }
 
@@ -260,10 +256,7 @@ public final class LayerMerge {
             PackUnderResolution pack, PackCompositionFacts facts, Map<String, List<Copy>> inForce) {
         return facts.presets().stream()
                 .filter(preset -> inForce.getOrDefault(preset.id(), List.of()).stream()
-                        .anyMatch(copy -> copy.pack()
-                                        .descriptor()
-                                        .packId()
-                                        .equals(pack.descriptor().packId())
+                        .anyMatch(copy -> copy.pack().descriptorId().equals(pack.descriptorId())
                                 && copy.preset().equals(preset)))
                 .toList();
     }
@@ -272,7 +265,7 @@ public final class LayerMerge {
         return new MergedClosure.Winner(
                 urn,
                 pack.configured().id(),
-                pack.descriptor().packId(),
+                pack.descriptorId(),
                 pack.configured().level(),
                 policy);
     }
