@@ -1,0 +1,15 @@
+summary: A replacement the job refused because its pack_version is not newer than the stored one (ADR-0081 D2).
+value:
+  registrationId: 01M6TQ62HXYF362GAFS2BZ3PGG
+  state: refused
+  packId: acme-review-pack
+  acceptedAt: '2026-11-19T10:00:00Z'
+  finishedAt: '2026-11-19T10:00:01Z'
+  problem:
+    title: Pack version conflict
+    status: 409
+    code: pack_version_conflict
+    detail: The pack acme-review-pack is stored at pack_version 1.1.0, and the upload's pack_version 1.0.0 is not newer; a replacement moves the version forward, or sends the content that is stored.
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGG

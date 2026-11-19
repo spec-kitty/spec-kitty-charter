@@ -411,6 +411,7 @@ public class RefusalHandler {
                 RefusalCode.ARTIFACT_LOCKED,
                 RefusalCode.PACK_VERSION_CONFLICT,
                 RefusalCode.ARTIFACT_REFERENCED,
+                RefusalCode.PACK_HAS_DEPENDENTS,
                 RefusalCode.RELATIONSHIP_NOT_REGISTERED,
                 RefusalCode.MISSION_TYPE_NOT_IN_FORCE,
                 RefusalCode.ROUTING_CATALOG_NOT_IN_FORCE,
