@@ -455,11 +455,14 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         Path parent = directory.getParent();
         boolean underRoot = root.isPresent()
                 && parent != null
-                && parent.toAbsolutePath().normalize().equals(root.get().toAbsolutePath().normalize());
+                && parent.toAbsolutePath()
+                        .normalize()
+                        .equals(root.get().toAbsolutePath().normalize());
         if (!underRoot) {
             throw new CharterRefusal(
                     RefusalCode.REGISTRATION_CONFLICT,
-                    "The pack " + pack.value() + " is in a read-only location; only a pack the service stores is removed.");
+                    "The pack " + pack.value()
+                            + " is in a read-only location; only a pack the service stores is removed.");
         }
         if (Files.isSymbolicLink(directory)) {
             throw new CharterRefusal(

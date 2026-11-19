@@ -69,7 +69,8 @@ public final class ClosurePackDependents implements PackDependents {
         List<Dependent> dependsOn = new ArrayList<>();
         List<Dependent> parentOf = new ArrayList<>();
         List<ConfiguredPack> others = stored.catalog().configured().stream()
-                .filter(configured -> !configured.id().equals(removed.configured().id()))
+                .filter(configured ->
+                        !configured.id().equals(removed.configured().id()))
                 .sorted(Comparator.comparing(configured -> configured.id().value()))
                 .toList();
         for (ConfiguredPack other : others) {
@@ -98,9 +99,7 @@ public final class ClosurePackDependents implements PackDependents {
     /** A configured pack that cannot be judged fails the removal closed: it might depend on the removed pack. */
     private static PackDescriptor descriptorOf(StagedPackViews.View stored, ConfiguredPack other) {
         try {
-            return stored.descriptors()
-                    .find(other.id())
-                    .orElseThrow(() -> unjudgeable(other, null));
+            return stored.descriptors().find(other.id()).orElseThrow(() -> unjudgeable(other, null));
         } catch (CharterRefusal unreadable) {
             if (unreadable.code() == RefusalCode.PACK_UNREADABLE) {
                 throw unjudgeable(other, unreadable);

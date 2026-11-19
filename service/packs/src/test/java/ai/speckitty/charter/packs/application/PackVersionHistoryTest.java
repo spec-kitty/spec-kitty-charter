@@ -147,7 +147,8 @@ class PackVersionHistoryTest {
         assertThat(refusalOf(() -> PackVersionHistory.requireNotReused("pack-x", history, "1.1.0", revision("b"))))
                 .as("1.1 and 1.1.0 are one label")
                 .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
-        assertThat(refusalOf(() -> PackVersionHistory.requireNotReused("pack-x", history, "1.1.0+local", revision("b"))))
+        assertThat(refusalOf(
+                        () -> PackVersionHistory.requireNotReused("pack-x", history, "1.1.0+local", revision("b"))))
                 .as("a local segment does not make another label")
                 .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
         assertThat(PackVersionHistory.appended(history, entry("1.1.0", "a")))

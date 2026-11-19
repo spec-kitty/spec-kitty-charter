@@ -125,8 +125,8 @@ public interface PackDependents {
                 .flatMap(dependent -> dependent.pack().stream())
                 .distinct()
                 .toList();
-        String detail = "The pack " + packId + " has " + dependents.size()
-                + " dependent(s); remove or change them first.";
+        String detail =
+                "The pack " + packId + " has " + dependents.size() + " dependent(s); remove or change them first.";
         return CharterRefusal.withPacksAndViolations(RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations);
     }
 }

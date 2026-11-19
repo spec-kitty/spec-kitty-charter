@@ -320,9 +320,8 @@ public final class RegistrationImpact {
         ForceDiff diff = new ForceDiff();
         Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
         for (ClosureRoots.Roots roots : found.closures()) {
-            List<PackIdentifier> left = roots.ids().stream()
-                    .filter(id -> !id.equals(removed.id()))
-                    .toList();
+            List<PackIdentifier> left =
+                    roots.ids().stream().filter(id -> !id.equals(removed.id())).toList();
             if (left.isEmpty()) {
                 continue;
             }
