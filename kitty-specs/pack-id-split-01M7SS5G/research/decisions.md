@@ -1,6 +1,6 @@
 # Open decisions (sent to the orchestrator, 2026-11-19)
 
-Status: **pending ruling**. Recommendation in bold.
+Status: **ruled** by the operator through the orchestrator, 2026-11-19: all nine as recommended. D7 folds in with a `### Breaking` fragment.
 
 | # | Question | Options | Recommendation |
 |---|----------|---------|----------------|
