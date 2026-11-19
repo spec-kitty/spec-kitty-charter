@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable.bdd;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -18,10 +19,12 @@ import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.RoundTripControls;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.io.ByteArrayOutputStream;
@@ -61,6 +64,8 @@ import tools.jackson.databind.node.ObjectNode;
  *       renders for {@code getPackRegistration} from the same refusal, built from the registration's mapping
  *       ({@link PackRefusalMapping#of}) or from the composing read's resolver ({@link PackCompositionResolver}), never
  *       from pack-check's own rendering;
+ *   <li>the round trip's problem, which the registration has no counterpart for, has the registration's title and
+ *       status for {@code validation_failed}, its own lead sentence, and violations in the shared mapping's wording;
  *   <li>for every code pack-check can emit, its title and status are {@link RefusalHandler}'s.
  * </ul>
  */
@@ -406,6 +411,80 @@ class PackCheckReportContractTest {
                     .containsExactlyElementsOf(expected.stream()
                             .map(PackCheckReportContractTest::registrationProblem)
                             .toList());
+        }
+    }
+
+    @Nested
+    @DisplayName("the round trip's problem: no registration counterpart, so its shape and the shared violation mapping")
+    class TheRoundTripsProblem {
+
+        /**
+         * Error handling: the production flow with every tactic's {@code purpose} dropped on its write path, the
+         * positive control {@code :pack-validation}'s round-trip gate uses.
+         */
+        private static PackRoundTripResult lossy(Path source, Path target) {
+            return RoundTripControls.rewritingWrites(
+                    source, target, ArtifactKind.TACTIC, TheRoundTripsProblem::withoutPurpose);
+        }
+
+        /** A tactic's text without its top-level {@code purpose} key and the indented lines that continue it. */
+        private static String withoutPurpose(String text) {
+            StringBuilder out = new StringBuilder();
+            boolean skipping = false;
+            for (String line : text.split("\n", -1)) {
+                if (line.startsWith("purpose:")) {
+                    skipping = true;
+                    continue;
+                }
+                if (skipping && line.startsWith(" ")) {
+                    continue;
+                }
+                skipping = false;
+                out.append(line).append('\n');
+            }
+            return out.toString().stripTrailing() + "\n";
+        }
+
+        @Test
+        void aLossyRoundTripIsOneValidationFailedProblemInItsOwnWords() throws IOException {
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+            Path temporary = Files.createDirectories(temp.resolve("tmp"));
+
+            Run run = run((out, err) -> PackCheckSeam.runWithRoundTrip(
+                    new String[] {"--pack", builtIn + ":built-in", "--round-trip"},
+                    out,
+                    err,
+                    temporary,
+                    TheRoundTripsProblem::lossy));
+
+            assertThat(run.exit()).as(run.err()).isEqualTo(1);
+            assertConforms(run, builtIn);
+            assertThat(run.problems()).singleElement().satisfies(problem -> {
+                ObjectNode api = registrationProblem(new CharterRefusal(RefusalCode.VALIDATION_FAILED, "detail"));
+                assertThat(problem.get("code").asString()).isEqualTo("validation_failed");
+                assertThat(problem.get("title")).isEqualTo(api.get("title"));
+                assertThat(problem.get("status")).isEqualTo(api.get("status"));
+                assertThat(problem.get("instance").asString())
+                        .isEqualTo(builtIn.toUri().toString());
+                assertThat(problem.has("packs")).isFalse();
+                List<JsonNode> violations = new ArrayList<>();
+                problem.get("violations").forEach(violations::add);
+                assertThat(violations).isNotEmpty();
+                String first = violations.getFirst().get("pointer").asString();
+                assertThat(problem.get("detail").asString())
+                        .isEqualTo("The pack does not round-trip through the charter's model: " + violations.size()
+                                + " fault(s), the first at " + first + ".");
+                assertThat(violations).allSatisfy(violation -> {
+                    String pointer = violation.get("pointer").asString();
+                    assertThat(violation.get("code").asString()).isIn("round_trip_red", "round_trip_written_unpaired");
+                    assertThat(pointer).endsWith(".tactic.yaml");
+                    // The one wording (PackCodes.detail): "<file>: <reason>", or the reason as it is when it names
+                    // the file, as each red reason of the round trip does.
+                    assertThat(violation.get("detail").asString())
+                            .as("the shared mapping: each detail names its file, as the registration words one")
+                            .startsWith("UNEXPECTED_RED " + pointer + " (tactic): ");
+                });
+            });
         }
     }
 
