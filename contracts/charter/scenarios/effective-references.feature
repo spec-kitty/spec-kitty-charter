@@ -129,6 +129,33 @@ Feature: The references of an artifact under an activation are the pack read of 
     And the field at "/items" holds exactly 0 items
     And the field at "/_links/self/href" is "/api/v1/activations/a-1/artifacts/tactic/drill/references"
 
+  Scenario: A tension edge is answered as a reference of its source, with its relation (ADR-0045 decision 13)
+    A tension is a relationship like any other: the references of D list the tension the pack stores with D as its
+    source, after the requires edge of the earlier graph document. The other side, drill, writes no reference.
+    Given the built-in pack "core" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:D
+        target: tactic:drill
+        relation: tension
+        reason: both decide the depth of a rehearsal
+      """
+    When I GET "/activations/a-1/artifacts/directive/D/references"
+    Then the response status is 200
+    And the field "relation" of the elements of "items" is, in order:
+      """
+      requires
+      tension
+      """
+    And the field at "/items/1/reference" is "tactic:drill"
+    And the field at "/items/1/_links/effective-artifact/href" is "/api/v1/activations/a-1/artifacts/tactic/drill"
+    When I GET "/activations/a-1/artifacts/tactic/drill/references"
+    Then the response status is 200
+    And the field at "/items" holds exactly 0 items
+
   Scenario: An overridden artifact answers the references its winning copy writes
     proj (project) holds its own D, whose graph document writes D requires drill: the layer merge keeps the project copy, so
     the references are proj's pack read of D, and core's D requires rehearse is not answered.

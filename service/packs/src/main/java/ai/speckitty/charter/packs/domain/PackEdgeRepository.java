@@ -17,8 +17,8 @@ public interface PackEdgeRepository {
      * @param pack the pack's identity
      * @return the edges; empty for a pack with no graph document
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when a graph document of the
-     *     pack cannot be read, or an edge names a relation the service does not know; an {@code in_tension_with} edge is
-     *     a tension, not a relationship, and is left out
+     *     pack cannot be read, or an edge names a relation the service does not know; a {@code tension} edge is a
+     *     relationship like any other (ADR-0045 decision 1)
      */
     List<PackEdge> edges(PackIdentifier pack);
 }

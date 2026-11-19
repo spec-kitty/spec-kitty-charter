@@ -2,11 +2,10 @@ title: Relation
 description: >-
   The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md. Each relation names
   the source and target kinds it may connect (ADR-0064 decision 13); impacts, replaces and delegates_to
-  are retired (slice F). A tension between two rules is not a value of this enum (not a
-  relation type of the service): the service holds a
-  graph document's in_tension_with edge as a tension beside the relationships,
-  and does not answer it as a relationship (ADR-0045). reconciles_tension points at the sides of a
-  pair joined by a tension.
+  are retired (slice F). tension is the relation between two rules that pull against each
+  other (ADR-0028, ADR-0045 decision 1): bidirectional, in a pair class of its own, so it
+  stands beside the one structural relationship of its pair; no walk, cascade or reach
+  follows it. reconciles_tension points at the sides of a pair joined by a tension.
 type: string
 enum:
   - requires
@@ -21,6 +20,7 @@ enum:
   - overrides
   - reconciles_tension
   - rejects
+  - tension
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
   symbol: RelationType

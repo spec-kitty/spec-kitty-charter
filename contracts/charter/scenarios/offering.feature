@@ -371,7 +371,7 @@ Feature: The offering lists the configured packs in force
     The kinds are the model's node kinds in their order, guard and lifecycle among them and no retired kind, with
     glossary_context, whose artifact kind is glossary, and term, only ever the target of a vocabulary edge, which has
     no plural and stands for no artifact kind (#106); the
-    relations are the relation types in their order, then in_tension_with, and none of the retired impacts, replaces
+    relations are the relation types in their order, tension among them, and none of the retired impacts, replaces
     or delegates_to. Every relation names at least one pair of kinds it may connect. The
     answer reads no pack file, so it carries no fingerprint, and its ETag is the digest of the body it serves.
     When I GET "/offering/kinds"
@@ -415,13 +415,15 @@ Feature: The offering lists the configured packs in force
       overrides
       reconciles_tension
       rejects
+      tension
       implemented_by
-      in_tension_with
       """
     And every element of "relations" has a non-empty "endpoints"
-    And the field at "/relations/13/heldAs" is "tension"
-    And the field at "/relations/12/derived" is true
-    And the field at "/relations/12/endpoints/0/source" is "guard"
+    And the field at "/relations/12/heldAs" is "tension"
+    And the field at "/relations/12/directed" is false
+    And the field at "/relations/0/heldAs" is "relationship"
+    And the field at "/relations/13/derived" is true
+    And the field at "/relations/13/endpoints/0/source" is "guard"
     And the field at "/kinds/13/artifact" is false
     And the field at "/kinds/15/declarableInGraphs" is false
     And the field at "/kinds/15/edgeTarget" is false

@@ -12,8 +12,8 @@ import java.util.Set;
  *
  * <p>The one relation catalogue: the catalogue is closed and the wire spelling is contractual. {@code impacts},
  * {@code replaces} and {@code delegates_to} are retired (slice F, operator ruling DM-01M7B1YXJHQCBSYJ145NJC77V5): a
- * tension between two rules is a {@link Tension} (ADR-0028), a former {@code replaces} edge is an {@code overrides}
- * edge, and a delegation is a substep's data (ADR-0064 decision 11).
+ * tension between two rules is the {@link #TENSION} relation (ADR-0028, ADR-0045), a former {@code replaces} edge is
+ * an {@code overrides} edge, and a delegation is a substep's data (ADR-0064 decision 11).
  *
  * <p>{@code propagation()} is deferred (ADR-0025 remediation / ADR-0027); this type ships only
  * {@link #directionality()} and {@link #token()}.
@@ -39,10 +39,16 @@ public enum RelationType {
     ENHANCES(Directionality.DIRECTED),
     /** Full replacement of a target artifact. */
     OVERRIDES(Directionality.DIRECTED),
-    /** From a reconciling artifact to one side of a pair joined by a {@link Tension} (ADR-0028 Decision 4). */
+    /** From a reconciling artifact to one side of a pair joined by a {@link #TENSION} (ADR-0028 Decision 4). */
     RECONCILES_TENSION(Directionality.DIRECTED),
     /** From a good artifact to an {@code anti_pattern} node. */
     REJECTS(Directionality.DIRECTED),
+    /**
+     * Two guidance rules that pull against each other (ADR-0028, ADR-0045 decision 1). Bidirectional: neither side is
+     * the source in meaning. It is a {@link Relationship.PairClass#TENSION}, so it stands beside the one structural
+     * relationship of its pair, and no walk, cascade or reach follows it.
+     */
+    TENSION(Directionality.BIDIRECTIONAL),
     /**
      * From a guard to the executable asset that implements it (ADR-0054 decision 3). It is {@link #derived()}: the
      * guard's {@code implemented_by} field is its one authoring, so a graph shard or a registration that names it is

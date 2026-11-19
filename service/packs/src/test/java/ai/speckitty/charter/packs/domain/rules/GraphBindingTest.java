@@ -1,12 +1,13 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -41,7 +42,7 @@ class GraphBindingTest {
     // ---- the graph of a pack's graph document -------------------------------------------------------
 
     @Test
-    void aShardBindsItsNodesItsRelationshipsAndItsTensions() {
+    void aShardBindsItsNodesAndItsRelationshipsATensionAmongThem() {
         GraphBuild build = GraphBinding.graph(
                 "qa",
                 shard(
@@ -49,16 +50,13 @@ class GraphBindingTest {
                         List.of(new RawNode("tactic:a", "tactic", Optional.of("A"))),
                         List.of(
                                 edge("tactic:a", "directive:b", "requires"),
-                                edge("tactic:a", "directive:b", "in_tension_with"))));
+                                edge("tactic:a", "directive:b", "tension"))));
 
         assertThat(build.findings()).isEmpty();
         assertThat(build.graph().nodes()).containsExactly(new DrgNode(A, Optional.of("A")));
-        assertThat(build.graph().relationships()).singleElement().satisfies(relationship -> {
-            assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES);
-            assertThat(relationship.from()).isEqualTo(A);
-            assertThat(relationship.to()).isEqualTo(B);
-        });
-        assertThat(build.graph().tensions()).containsExactly(new Tension(A, B, Optional.empty(), Optional.empty()));
+        assertThat(build.graph().relationships())
+                .extracting(Relationship::type, Relationship::from, Relationship::to)
+                .containsExactly(tuple(RelationType.REQUIRES, A, B), tuple(RelationType.TENSION, A, B));
     }
 
     @Test
@@ -95,18 +93,14 @@ class GraphBindingTest {
     // ---- the registered-relationship shard ----------------------------------------------------------
 
     @Test
-    void theRegisteredShardHoldsNoTension() {
+    void theRegisteredShardHoldsATensionLikeAnyRelationship() {
         GraphBuild build = GraphBinding.registeredGraph(
-                "qa", shard(REGISTERED, List.of(), List.of(edge("tactic:a", "directive:c", GraphBinding.TENSION))));
+                "qa", shard(REGISTERED, List.of(), List.of(edge("tactic:a", "directive:c", "tension"))));
 
-        assertThat(build.graph().tensions()).isEmpty();
-        assertThat(build.findings())
-                .containsExactly(Findings.at(
-                        PackCodes.DRG_SCHEMA_ERROR,
-                        REGISTERED,
-                        List.of("edges", "0"),
-                        "registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
-                                + " authored in a pack's graph shards"));
+        assertThat(build.findings()).isEmpty();
+        assertThat(build.graph().relationships())
+                .singleElement()
+                .satisfies(relationship -> assertThat(relationship.type()).isEqualTo(RelationType.TENSION));
     }
 
     @Test
@@ -131,7 +125,6 @@ class GraphBindingTest {
 
     @Test
     void theEndpointTextsKeepTheirWording() {
-        assertThat(GraphBinding.TENSION).isEqualTo("in_tension_with");
         assertThat(GraphBinding.NOT_AUTHORED)
                 .isEqualTo("a guard or a lifecycle is not an authored edge endpoint until its contract set lands: ");
         assertThat(GraphBinding.TERM_ENDPOINT)
@@ -380,9 +373,8 @@ class GraphBindingTest {
                     edge("term:g/t", "glossary_context:g", "vocabulary"),
                     edge("directive:b", "term:g/t", "overrides"),
                     edge("tactic:a", "rival::term:g/t", "enhances"),
-                    edge("tactic:a", "term:g/t", "in_tension_with")));
+                    edge("tactic:a", "term:g/t", "tension")));
             assertThat(build.graph().relationships()).isEmpty();
-            assertThat(build.graph().tensions()).isEmpty();
             assertThat(details(build))
                     .containsExactly(
                             "tactic.graph.yaml: " + GraphBinding.TERM_ENDPOINT + "'term:g/t' requires 'directive:b'",
@@ -391,8 +383,7 @@ class GraphBindingTest {
                             "tactic.graph.yaml: " + GraphBinding.TERM_ENDPOINT + "'directive:b' overrides 'term:g/t'",
                             "tactic.graph.yaml: " + GraphBinding.TERM_ENDPOINT
                                     + "'tactic:a' enhances 'rival::term:g/t'",
-                            "tactic.graph.yaml: " + GraphBinding.TERM_ENDPOINT
-                                    + "'tactic:a' in_tension_with 'term:g/t'");
+                            "tactic.graph.yaml: " + GraphBinding.TERM_ENDPOINT + "'tactic:a' tension 'term:g/t'");
         }
 
         @Test
@@ -406,79 +397,66 @@ class GraphBindingTest {
         }
 
         @Test
-        void anInTensionWithEdgeBindsAsATensionAndNeverAsARelationship() {
+        void aTensionEdgeBindsAsATensionRelationshipWithItsWords() {
             GraphBuild build = build(List.of(new RawEdge(
-                    "tactic:a",
-                    "directive:b",
-                    "in_tension_with",
-                    Optional.of("always"),
-                    Optional.of("both stay valid"))));
+                    "tactic:a", "directive:b", "tension", Optional.of("always"), Optional.of("both stay valid"))));
 
             assertThat(build.findings()).isEmpty();
-            assertThat(build.graph().relationships()).isEmpty();
-            assertThat(build.graph().tensions())
-                    .containsExactly(new Tension(A, B, Optional.of("always"), Optional.of("both stay valid")));
-        }
-
-        @Test
-        void aTensionAndAStructuralRelationshipOnTheSamePairBothBind() {
-            GraphBuild build = build(List.of(
-                    edge("tactic:a", "directive:b", "in_tension_with"), edge("directive:b", "tactic:a", "requires")));
-
-            assertThat(build.findings()).isEmpty();
-            assertThat(build.graph().tensions()).containsExactly(new Tension(A, B, Optional.empty(), Optional.empty()));
             assertThat(build.graph().relationships()).singleElement().satisfies(relationship -> {
-                assertThat(relationship.from()).isEqualTo(B);
-                assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES);
+                assertThat(relationship.type()).isEqualTo(RelationType.TENSION);
+                assertThat(relationship.from()).isEqualTo(A);
+                assertThat(relationship.to()).isEqualTo(B);
+                assertThat(relationship.when()).contains("always");
+                assertThat(relationship.rationale()).contains("both stay valid");
             });
         }
 
         @Test
-        void aTensionWhoseEndpointIsNotAUrnOrThatJoinsARuleToItselfIsAFinding() {
-            GraphBuild build = build(List.of(
-                    edge("nonsense", "directive:b", "in_tension_with"),
-                    edge("tactic:a", "tactic:a", "in_tension_with")));
+        void theOldSpellingInTensionWithIsAnUnknownRelation() {
+            GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "in_tension_with")));
 
-            assertThat(build.graph().tensions()).isEmpty();
-            assertThat(details(build))
-                    .containsExactly(
-                            "tactic.graph.yaml: edge endpoint 'nonsense' is not a URN",
-                            "tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+            assertThat(build.graph().relationships()).isEmpty();
+            assertThat(details(build)).containsExactly("tactic.graph.yaml: unknown relation 'in_tension_with'");
         }
 
         @Test
-        void aRegisteredShardHoldsNoTensionSoATensionThereIsAFindingAndIsNotBound() {
-            RawGraph registered = new RawGraph(
-                    "registered.graph.yaml",
-                    RawGraph.Shape.SHARD,
-                    List.of(),
-                    List.of(
-                            edge("tactic:a", "directive:b", "requires"),
-                            edge("tactic:a", "directive:c", "in_tension_with")));
+        void aTensionAndAStructuralRelationshipOnTheSamePairBothBind() {
+            GraphBuild build = build(
+                    List.of(edge("tactic:a", "directive:b", "tension"), edge("directive:b", "tactic:a", "requires")));
 
-            GraphBuild build = GraphBinding.registeredGraph("qa", registered);
-
-            assertThat(build.graph().tensions()).isEmpty();
+            assertThat(build.findings()).isEmpty();
             assertThat(build.graph().relationships())
-                    .singleElement()
-                    .satisfies(relationship -> assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES));
-            assertThat(build.findings())
-                    .containsExactly(Findings.at(
-                            PackCodes.DRG_SCHEMA_ERROR,
-                            "registered.graph.yaml",
-                            List.of("edges", "1"),
-                            "registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
-                                    + " authored in a pack's graph shards"));
-            // Positive control: the same shard without the tension binds whole.
-            assertThat(GraphBinding.registeredGraph(
-                                    "qa",
-                                    new RawGraph(
-                                            "registered.graph.yaml",
-                                            RawGraph.Shape.SHARD,
-                                            List.of(),
-                                            List.of(edge("tactic:a", "directive:b", "requires"))))
-                            .findings())
-                    .isEmpty();
+                    .extracting(Relationship::type, Relationship::from)
+                    .containsExactly(tuple(RelationType.TENSION, A), tuple(RelationType.REQUIRES, B));
+        }
+
+        @Test
+        void aTensionWhoseEndpointIsNotAUrnOrThatJoinsARuleToItselfOrToAnotherVersionOfItIsAFinding() {
+            GraphBuild build = build(List.of(
+                    edge("nonsense", "directive:b", "tension"),
+                    edge("tactic:a", "tactic:a", "tension"),
+                    edge("tactic:a", "rival::tactic:a", "tension")));
+
+            assertThat(build.graph().relationships()).isEmpty();
+            assertThat(details(build))
+                    .containsExactly(
+                            "tactic.graph.yaml: edge endpoint 'nonsense' is not a URN",
+                            "tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself",
+                            "tactic.graph.yaml: a tension cannot join 'tactic:a' to a version of itself");
+            // Positive control: a structural edge to another pack's version of the same id binds (ADR-0053 d7).
+            assertThat(build(List.of(edge("tactic:a", "rival::tactic:a", "refines")))
+                            .graph()
+                            .relationships())
+                    .hasSize(1);
+        }
+
+        @Test
+        void aTensionBetweenAGuidanceKindAndAnotherKindIsRefusedByTheTable() {
+            GraphBuild refused = build(List.of(edge("tactic:a", "agent_profile:p", "tension")));
+            GraphBuild bound = build(List.of(edge("tactic:a", "directive:b", "tension")));
+
+            assertThat(refused.graph().relationships()).isEmpty();
+            assertThat(bound.graph().relationships()).hasSize(1);
         }
 
         @Test

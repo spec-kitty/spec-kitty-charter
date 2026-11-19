@@ -9,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.missions.domain.SubstepDelegation;
@@ -21,10 +20,6 @@ import ai.speckitty.charter.packs.application.KindTaxonomyReadService.RelationFa
 import ai.speckitty.charter.packs.application.KindTaxonomyReadService.Taxonomy;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
-import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
-import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding.GraphBuild;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import java.io.IOException;
@@ -42,7 +37,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -51,15 +45,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The vocabulary of the bundled schemas and the domain's vocabulary are the same words (T024): a kind added in
- * {@code file-kinds.yaml} and the schemas has to be added to {@code NodeKind} too, or one of these fails. The one
- * place the two differ on purpose is {@code in_tension_with}, today's spelling of the tension relationship (ADR-0036
- * Decision 4): the schemas accept it as a relation, and the domain binds it to a {@code Tension} held beside the
- * relationships, not to a relation type (ADR-0028, ADR-0045).
+ * {@code file-kinds.yaml} and the schemas has to be added to {@code NodeKind} too, or one of these fails. The tension
+ * is a relation of the catalogue, spelled {@code tension} in both (ADR-0045 decisions 1 and 2), so the two never
+ * differ.
  */
 class VocabularyEqualityTest {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final String TENSION_SPELLING = "in_tension_with";
     private static final Pattern ALTERNATION =
             Pattern.compile("^\\^(?:\\(\\[a-z0-9\\]\\[a-z0-9_-\\]\\*::\\)\\?)?\\(([a-z_|]+)\\):");
     private static final Pattern TARGET_ONLY_PREFIX =
@@ -315,7 +307,7 @@ class VocabularyEqualityTest {
     // ---- relations ---------------------------------------------------------------------------------
 
     @Test
-    void theSchemasRelationsAreTheDomainsRelationsPlusExactlyTheTensionSpelling() throws IOException {
+    void theSchemasRelationsAreExactlyTheDomainsAuthoredRelationsTensionAmongThem() throws IOException {
         // A derived relation type (implemented_by, ADR-0054 decision 3) is never authored: no document spells it.
         Set<String> domain = new TreeSet<>(Arrays.stream(RelationType.values())
                 .filter(type -> !type.derived())
@@ -326,25 +318,11 @@ class VocabularyEqualityTest {
         Set<String> fragment = new TreeSet<>(
                 texts(schema("org-fragment").get("$defs").get("Relation").get("enum")));
 
-        assertThat(domain).as("the domain has no " + TENSION_SPELLING).doesNotContain(TENSION_SPELLING);
-        Set<String> accepted = new TreeSet<>(domain);
-        accepted.add(TENSION_SPELLING);
         assertThat(shard)
-                .as("the shard schema accepts the domain's relations and exactly the tension spelling")
-                .isEqualTo(accepted);
+                .as("the shard schema accepts exactly the domain's authored relations")
+                .isEqualTo(domain);
         assertThat(fragment).isEqualTo(shard);
-        // The extra word is bound, not merely tolerated: the domain reads it as a tension.
-        GraphBuild build = GraphBinding.graph(
-                "qa",
-                new RawGraph(
-                        "x.graph.yaml",
-                        RawGraph.Shape.SHARD,
-                        List.of(),
-                        List.of(new RawEdge(
-                                "tactic:a", "tactic:b", TENSION_SPELLING, Optional.empty(), Optional.empty()))));
-        assertThat(build.findings()).isEmpty();
-        assertThat(build.graph().tensions()).hasSize(1);
-        assertThat(build.graph().relationships()).isEmpty();
+        assertThat(shard).contains("tension").doesNotContain("in_tension_with");
     }
 
     // ---- substep delegation kinds -------------------------------------------------------------------
@@ -634,8 +612,8 @@ class VocabularyEqualityTest {
      * {@code fragment_kinds} names it by (the kernel's plural for the two kinds no fragment names), its artifact kind,
      * artifact and activation facts as {@code artifact_kinds} and {@link ArtifactKind} hold them, whether a graph
      * document declares it ({@code fragment_kinds}) and whether an edge targets it (the shard schema's edge target) and whether the pack artifact list
-     * serves it ({@link ArtifactReadService#listed()}); and every {@link RelationType}, then the tension, each held as
-     * the model holds it, with the kernel's direction, derivation and endpoints ({@link RelationType}, {@link Tension}).
+     * serves it ({@link ArtifactReadService#listed()}); and every {@link RelationType}, each held as the model holds it,
+     * with the kernel's direction, derivation and endpoints.
      */
     private static void assertTaxonomyIsTheModel(Taxonomy taxonomy) {
         PackFileKind table = PackFileKind.bundled();
@@ -702,28 +680,24 @@ class VocabularyEqualityTest {
         }
     }
 
-    /** Every relation of the taxonomy, then the tension, held, directed, derived and connected as the kernel says. */
+    /** Every relation of the taxonomy, held, directed, derived and connected as the kernel says. */
     private static void assertRelationsAreTheModel(Taxonomy taxonomy) {
         assertThat(taxonomy.relations().stream().map(RelationFacts::relation).toList())
-                .as("the relations, in RelationType order, then the tension")
-                .containsExactlyElementsOf(Stream.concat(
-                                Arrays.stream(RelationType.values()).map(RelationType::token),
-                                Stream.of(TENSION_SPELLING))
+                .as("the relations, in RelationType order")
+                .containsExactlyElementsOf(Arrays.stream(RelationType.values())
+                        .map(RelationType::token)
                         .toList());
         for (RelationFacts relation : taxonomy.relations()) {
-            Optional<RelationType> type = RelationType.fromToken(relation.relation());
+            RelationType type = RelationType.fromToken(relation.relation()).orElseThrow();
             String name = relation.relation();
             assertThat(relation.heldAs())
                     .as("how " + name + " is held")
-                    .isEqualTo(type.isPresent() ? HeldAs.RELATIONSHIP : HeldAs.TENSION);
+                    .isEqualTo(type == RelationType.TENSION ? HeldAs.TENSION : HeldAs.RELATIONSHIP);
             assertThat(relation.directed())
                     .as("whether " + name + " is directed")
-                    .isEqualTo(type.map(RelationType::directionality).orElseGet(Tension::directionality)
-                            == Directionality.DIRECTED);
-            assertThat(relation.derived())
-                    .as("whether " + name + " is derived")
-                    .isEqualTo(type.map(RelationType::derived).orElseGet(Tension::derived));
-            Set<EndpointPair> expected = type.map(RelationType::endpoints).orElseGet(Tension::allowedEndpoints);
+                    .isEqualTo(type.directionality() == Directionality.DIRECTED);
+            assertThat(relation.derived()).as("whether " + name + " is derived").isEqualTo(type.derived());
+            Set<EndpointPair> expected = type.endpoints();
             assertThat(relation.endpoints())
                     .as("the endpoints of " + relation.relation())
                     .isNotEmpty()

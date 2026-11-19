@@ -167,7 +167,7 @@ public enum NodeKind {
     }
 
     /**
-     * Whether an authored or registered edge, a tension included, may name this kind as its source.
+     * Whether an authored or registered edge may name this kind as its source.
      *
      * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE} (#156), and for {@link #TERM}, which is only
      *     ever a {@code vocabulary} target
@@ -179,14 +179,12 @@ public enum NodeKind {
     /**
      * Whether an authored or registered edge of the relation may name this kind as its target.
      *
-     * @param relation the edge's relation type; empty for a tension, which has none
+     * @param relation the edge's relation type
      * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE} (#156), and for {@link #TERM} unless the
      *     relation is {@code vocabulary}
      */
-    public boolean edgeTargetOf(Optional<RelationType> relation) {
-        return edgeTarget
-                && (onlyTargetOf == null
-                        || relation.filter(onlyTargetOf::equals).isPresent());
+    public boolean edgeTargetOf(RelationType relation) {
+        return edgeTarget && (onlyTargetOf == null || onlyTargetOf == relation);
     }
 
     /**

@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -41,13 +40,6 @@ public final class GraphBinding {
      */
     public static final String TERM_ENDPOINT = "a term is an edge endpoint only as the target of a vocabulary edge: ";
 
-    /**
-     * Today's spelling of the tension relationship in a graph document (ADR-0036 Decision 4). The domain binds it to a
-     * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
-     * a tension back with it.
-     */
-    public static final String TENSION = Tension.TOKEN;
-
     private GraphBinding() {}
 
     /**
@@ -69,11 +61,11 @@ public final class GraphBinding {
     }
 
     /**
-     * Builds the graph of one document and collects what does not bind: the URN binding, the tension edges, which
-     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0045). Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
+     * Builds the graph of one document and collects what does not bind. A {@code tension} edge binds like any other
+     * relation (ADR-0045 decision 1). Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
      *
      * <p>A node or edge with a finding is left out of the graph, so the constructor checks of {@link Relationship}
-     * and {@link Tension} stay programming-error guards and never fire. An edge reports its first fault only, checked
+     * stay programming-error guards and never fire. An edge reports its first fault only, checked
      * in the order the adapter's reader used: relation, then the endpoints, then a self-loop. The schema normally
      * refuses these first; the domain check keeps the same text for a document that reaches here anyway.
      *
@@ -86,9 +78,9 @@ public final class GraphBinding {
     }
 
     /**
-     * Builds the graph of the registered-relationship shard, which holds structural relationships only: a tension is
-     * authored in a pack's graph shards and never registered, so one found here is a finding and is not bound. The
-     * store then refuses to rewrite the shard rather than drop the tension in silence.
+     * Builds the graph of the registered-relationship shard. It holds every registered relationship, tensions among
+     * them (ADR-0045 decision 5); an edge the endpoint table or the source rule refuses is reported here, because the
+     * shard is read on its own.
      *
      * @param packName the pack's configured name, which prefixes the origin in a text
      * @param raw the registered shard as written
@@ -102,7 +94,6 @@ public final class GraphBinding {
         String origin = Paths.origin(packName, raw.file());
         List<DrgNode> nodes = new ArrayList<>();
         List<Relationship> relationships = new ArrayList<>();
-        List<Tension> tensions = new ArrayList<>();
         List<Reason> findings = new ArrayList<>();
         for (int i = 0; i < raw.nodes().size(); i++) {
             RawNode node = raw.nodes().get(i);
@@ -118,13 +109,9 @@ public final class GraphBinding {
         }
         for (int i = 0; i < raw.edges().size(); i++) {
             RawEdge edge = raw.edges().get(i);
-            Object outcome = registered && TENSION.equals(edge.relation())
-                    ? origin + ": a registered relationship is never a tension; " + TENSION
-                            + " is authored in a pack's graph shards"
-                    : edge(edge, origin);
+            Object outcome = edge(edge, origin);
             switch (outcome) {
                 case Relationship relationship -> relationships.add(relationship);
-                case Tension tension -> tensions.add(tension);
                 // Refused by the table or by the source rule. In a pack's graph documents each pack-level pass reports
                 // it under its own code; the registered shard is read on its own, so its read reports it here.
                 case EndpointRule.Fault refused -> {
@@ -141,7 +128,7 @@ public final class GraphBinding {
                 default -> findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
             }
         }
-        return new GraphBuild(new DoctrineGraph(nodes, relationships, tensions), findings);
+        return new GraphBuild(new DoctrineGraph(nodes, relationships), findings);
     }
 
     private static Reason graphFinding(RawGraph raw, String list, int index, String detail) {
@@ -195,14 +182,10 @@ public final class GraphBinding {
     }
 
     /**
-     * Binds one edge; the result is the {@link Relationship}, the {@link Tension} of an {@code in_tension_with} edge, the
-     * {@link EndpointRule.Fault} of an edge whose relation does not allow its endpoints, or the finding text for the
-     * first other fault.
+     * Binds one edge; the result is the {@link Relationship}, the {@link EndpointRule.Fault} of an edge whose relation
+     * does not allow its endpoints, or the finding text for the first other fault.
      */
     private static Object edge(RawEdge raw, String origin) {
-        if (TENSION.equals(raw.relation())) {
-            return tension(raw, origin);
-        }
         Optional<RelationType> relation = RelationType.fromToken(raw.relation());
         if (relation.isEmpty()) {
             return origin + ": unknown relation '" + raw.relation() + "'";
@@ -211,7 +194,7 @@ public final class GraphBinding {
             return origin + ": relation '" + raw.relation() + "' is derived from an artifact's own field, never"
                     + " authored as an edge";
         }
-        Object endpoints = endpoints(raw, origin, relation);
+        Object endpoints = endpoints(raw, origin, relation.get());
         if (!(endpoints instanceof Endpoints bound)) {
             return endpoints;
         }
@@ -222,29 +205,15 @@ public final class GraphBinding {
         };
     }
 
-    /**
-     * Binds a tension edge, kept as written (ADR-0036 Decision 4: the reader never turns it around).
-     */
-    private static Object tension(RawEdge raw, String origin) {
-        Object endpoints = endpoints(raw, origin, Optional.empty());
-        if (!(endpoints instanceof Endpoints bound)) {
-            return endpoints;
-        }
-        Optional<EndpointRule.Fault> fault = EndpointRule.bindTension(bound.from(), bound.to());
-        return fault.isPresent()
-                ? fault.get()
-                : new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason());
-    }
-
     /** The two endpoints of an edge: each a bare URN and the pack its reference names, if it is pack-qualified. */
     private record Endpoints(Urn from, Optional<String> fromPack, Urn to, Optional<String> toPack) {}
 
     /**
      * The endpoints of an edge, or the finding text for the first that does not bind.
      *
-     * @param relation the edge's relation type; empty for a tension
+     * @param relation the edge's relation type
      */
-    private static Object endpoints(RawEdge raw, String origin, Optional<RelationType> relation) {
+    private static Object endpoints(RawEdge raw, String origin, RelationType relation) {
         Optional<PackQualifiedReference> source = reference(raw.source());
         Optional<Urn> sourceUrn = source.flatMap(PackQualifiedReference::asUrn);
         if (sourceUrn.isEmpty()) {
@@ -261,6 +230,11 @@ public final class GraphBinding {
                 && source.get().packName().isEmpty()
                 && target.get().packName().isEmpty()) {
             return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
+        }
+        // A tension joins two rules: two versions of one artifact, qualified or not, are not two rules (ADR-0045
+        // decision 1).
+        if (relation == RelationType.TENSION && sourceUrn.get().equals(targetUrn.get())) {
+            return origin + ": a tension cannot join '" + sourceUrn.get() + "' to a version of itself";
         }
         for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
             if (!endpoint.kind().edgeTarget()) {

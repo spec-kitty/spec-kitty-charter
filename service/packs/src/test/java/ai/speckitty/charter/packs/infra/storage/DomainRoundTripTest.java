@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -356,7 +355,7 @@ class DomainRoundTripTest {
                 edges:
                 - source: directive:a
                   target: directive:b
-                  relation: in_tension_with
+                  relation: tension
                   when: a change grows beyond its goal
                   reason: both stay valid
                 - source: directive:b
@@ -374,12 +373,12 @@ class DomainRoundTripTest {
         assertThat(comparator.compareTexts("graph-shard", source, written.replace("  - b\n  - a\n", "  - a\n  - b\n")))
                 .isPresent();
         assertThat(comparator.compareTexts(
-                        "graph-shard", source, written.replace("relation: in_tension_with", "relation: impacts")))
+                        "graph-shard", source, written.replace("relation: tension", "relation: refines")))
                 .isPresent();
     }
 
     @Test
-    void theReadBackComparesRelationshipsFieldByFieldWhereRelationshipEqualityIsOnlyThePair() {
+    void theReadBackComparesRelationshipsFieldByFieldWhereRelationshipEqualityIsOnlyTheSlot() {
         Urn a = new Urn(NodeKind.DIRECTIVE, "a");
         Urn b = new Urn(NodeKind.DIRECTIVE, "b");
         DoctrineGraph withReason = new DoctrineGraph(
@@ -389,7 +388,7 @@ class DomainRoundTripTest {
         DoctrineGraph otherType = new DoctrineGraph(
                 List.of(), List.of(Relationship.of(b, a, RelationType.SUGGESTS, Optional.empty(), Optional.of("r"))));
 
-        // Relationship equality is the unordered pair, so graph equality cannot see these losses; the read-back does.
+        // Relationship equality is the slot, so graph equality cannot see these losses; the read-back does.
         assertThat(withReason).isEqualTo(withoutReason);
         assertThat(DomainRoundTrip.sameGraph(withReason, withoutReason)).isFalse();
         assertThat(DomainRoundTrip.sameGraph(withReason, otherType)).isFalse();
@@ -398,9 +397,23 @@ class DomainRoundTripTest {
                         withReason,
                         new DoctrineGraph(
                                 withReason.nodes(),
-                                withReason.relationships(),
-                                List.of(new Tension(a, b, Optional.empty(), Optional.empty())))))
+                                List.of(
+                                        withReason.relationships().getFirst(),
+                                        Relationship.of(a, b, RelationType.TENSION)))))
                 .isFalse();
+        // A lost pack qualifier is a lost field too (ADR-0036): the read-back compares fromPack and toPack.
+        DoctrineGraph qualified = new DoctrineGraph(
+                List.of(),
+                List.of(Relationship.of(
+                        b,
+                        Optional.empty(),
+                        a,
+                        Optional.of("base"),
+                        RelationType.REQUIRES,
+                        Optional.empty(),
+                        Optional.of("r"))));
+        assertThat(qualified).isEqualTo(withReason);
+        assertThat(DomainRoundTrip.sameGraph(withReason, qualified)).isFalse();
     }
 
     @Test

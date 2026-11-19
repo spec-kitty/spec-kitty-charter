@@ -94,7 +94,7 @@ final class RelationshipWire {
             throw new IllegalArgumentException(
                     "relation type " + type + " is derived from an artifact's own field, never registered");
         }
-        if (!fromUrn.kind().edgeSource() || !toUrn.kind().edgeTargetOf(Optional.of(relationType))) {
+        if (!fromUrn.kind().edgeSource() || !toUrn.kind().edgeTargetOf(relationType)) {
             throw new IllegalArgumentException(GraphBinding.TERM_ENDPOINT + from + " " + type + " " + to);
         }
         if (fromUrn.equals(toUrn) && toReference.packName().isEmpty()) {

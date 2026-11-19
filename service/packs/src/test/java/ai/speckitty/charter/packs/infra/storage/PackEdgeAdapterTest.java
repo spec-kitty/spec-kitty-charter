@@ -72,13 +72,23 @@ class PackEdgeAdapterTest {
     }
 
     @Test
-    @DisplayName("a tension edge is not a relationship: it is left out and does not refuse the read")
-    void aTensionEdgeIsLeftOut(@TempDir Path host) throws IOException {
+    @DisplayName("a tension edge is a relationship like any other: it is answered with its relation")
+    void aTensionEdgeIsAnswered(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.writeString(pack.resolve("directive.graph.yaml"), shard("directive:D1", "directive:D2", "tension"));
+
+        assertThat(over(pack).edges(new PackIdentifier(PACK)))
+                .containsExactly(new PackEdge("directive:D1", "directive:D2", RelationType.TENSION));
+    }
+
+    @Test
+    @DisplayName("the old spelling in_tension_with is an unknown relation and refuses the read")
+    void theOldTensionSpellingRefusesTheRead(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         Files.writeString(
                 pack.resolve("directive.graph.yaml"), shard("directive:D1", "directive:D2", "in_tension_with"));
 
-        assertThat(over(pack).edges(new PackIdentifier(PACK))).isEmpty();
+        assertRefused(over(pack));
     }
 
     private static void assertRefused(DomainRepositoryService repository) {
