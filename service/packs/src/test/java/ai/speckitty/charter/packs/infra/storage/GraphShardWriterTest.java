@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -53,11 +52,13 @@ class GraphShardWriterTest {
     }
 
     @Test
-    void aTensionIsWrittenAsTheInTensionWithEdgeItWasWithNoStrength() {
+    void aTensionIsWrittenAsTheTensionEdgeItIsWithNoStrength() {
         DoctrineGraph graph = new DoctrineGraph(
                 List.of(),
-                List.of(Relationship.of(B, A, RelationType.REQUIRES)),
-                List.of(new Tension(A, B, Optional.of("always"), Optional.of("both stay valid"))));
+                List.of(
+                        Relationship.of(B, A, RelationType.REQUIRES),
+                        Relationship.of(
+                                A, B, RelationType.TENSION, Optional.of("always"), Optional.of("both stay valid"))));
 
         String written = GraphShardWriter.write(graph);
 
@@ -66,7 +67,7 @@ class GraphShardWriterTest {
                 .contains("""
                         - source: directive:a
                           target: directive:b
-                          relation: in_tension_with
+                          relation: tension
                           when: always
                           reason: both stay valid
                         """)
@@ -92,8 +93,9 @@ class GraphShardWriterTest {
                 List.of(
                         new DrgNode(A, Optional.of("A"), Optional.empty(), List.of(), Optional.of("a.md")),
                         new DrgNode(new Urn(NodeKind.AGENT_PROFILE, "p"), Optional.empty())),
-                List.of(Relationship.of(A, B, RelationType.SUGGESTS, Optional.empty(), Optional.of("why"))),
-                List.of(new Tension(A, B, Optional.empty(), Optional.of("both"))));
+                List.of(
+                        Relationship.of(A, B, RelationType.SUGGESTS, Optional.empty(), Optional.of("why")),
+                        Relationship.of(A, B, RelationType.TENSION, Optional.empty(), Optional.of("both"))));
 
         String written = GraphShardWriter.writeFragment(graph);
 
@@ -102,7 +104,7 @@ class GraphShardWriterTest {
                 .contains("- id: a\n  kind: directives\n  title: A\n  body_path: a.md\n")
                 .contains("- id: p\n  kind: agent_profiles\n")
                 .contains("- source: directive:a\n  target: directive:b\n  relation: suggests\n  reason: why\n")
-                .contains("- source: directive:a\n  target: directive:b\n  relation: in_tension_with\n  reason: both\n")
+                .contains("- source: directive:a\n  target: directive:b\n  relation: tension\n  reason: both\n")
                 .doesNotContain("schema_version", "generated_at");
         assertThat(GraphDocumentReader.read(written, Shape.FRAGMENT, "drg/fragment.yaml"))
                 .isInstanceOf(FileRead.Read.class);
@@ -169,9 +171,9 @@ class GraphShardWriterTest {
                   relation: suggests
                   when: writing a REASONS canvas
                   reason: the canvas has its own writing rules
-                - source: directive:QA_001
-                  target: directive:DIRECTIVE_010
-                  relation: in_tension_with
+                - source: directive:DIRECTIVE_010
+                  target: directive:QA_001
+                  relation: tension
                   when: under deadline
                 """;
         DoctrineGraph graph = GraphBinding.graph(
@@ -185,7 +187,7 @@ class GraphShardWriterTest {
 
         assertThat(written)
                 .contains("  relation: suggests\n  when: writing a REASONS canvas\n")
-                .contains("  relation: in_tension_with\n  when: under deadline\n");
+                .contains("  relation: tension\n  when: under deadline\n");
         MeaningOfTexts comparator = MeaningOfTexts.adr0036();
         assertThat(comparator.compareTexts("org-fragment", source, written)).isEmpty();
         // Positive control: the comparator would see the condition go missing.

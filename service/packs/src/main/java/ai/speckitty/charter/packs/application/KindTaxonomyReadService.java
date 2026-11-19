@@ -5,8 +5,7 @@ import ai.speckitty.charter.kernel.domain.Directionality;
 import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Tension;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -18,23 +17,32 @@ import org.springframework.stereotype.Service;
 /**
  * The kind taxonomy (R18, #112): every node kind with its facts and every relation with the kinds it may connect. It is
  * the model's, not the configured packs': every fact is read from the kernel's kinds and relations ({@link NodeKind},
- * {@link ArtifactKind}, {@link RelationType} and {@link Tension}), never listed here, so a kind or a relation the model
- * gains or loses reaches the answer with no change to this class. It reads no pack file.
+ * {@link ArtifactKind} and {@link RelationType}), never listed here, so a kind or a relation the model gains or loses
+ * reaches the answer with no change to this class. It reads no pack file.
  *
- * <p>The kinds are in {@link NodeKind} order. The relations are in {@link RelationType} order, then the tension, which
- * the model holds beside the relationships (ADR-0028, ADR-0045) and which the pack files write
- * {@value GraphBinding#TENSION}. The endpoints of a relation are sorted by source kind, then by target kind, in
+ * <p>The kinds are in {@link NodeKind} order. The relations are in {@link RelationType} order, {@code tension} among
+ * them (ADR-0045 decision 13). The endpoints of a relation are sorted by source kind, then by target kind, in
  * {@link NodeKind} order, so the answer is the same on every run.
  */
 @Service
 public final class KindTaxonomyReadService {
 
-    /** How the service holds an edge of a relation. */
+    /** How the service holds an edge of a relation: the {@link Relationship.PairClass} its identity counts it in. */
     public enum HeldAs {
-        /** A {@code Relationship} of a {@link RelationType}. */
+        /** A structural relationship: at most one per pair (ADR-0027). */
         RELATIONSHIP,
-        /** A {@link Tension}, held beside the relationships. */
+        /** A {@code tension}: at most one per pair, beside the structural one (ADR-0045 decision 1). */
         TENSION;
+
+        /**
+         * How a relation is held.
+         *
+         * @param type the relation
+         * @return {@link #TENSION} for a tension, else {@link #RELATIONSHIP}
+         */
+        static HeldAs of(RelationType type) {
+            return Relationship.PairClass.of(type) == Relationship.PairClass.TENSION ? TENSION : RELATIONSHIP;
+        }
 
         /**
          * The wire spelling.
@@ -90,7 +98,7 @@ public final class KindTaxonomyReadService {
      * The taxonomy.
      *
      * @param kinds every node kind, in {@link NodeKind} order
-     * @param relations every relation, in {@link RelationType} order, then the tension
+     * @param relations every relation, in {@link RelationType} order
      */
     public record Taxonomy(List<KindFacts> kinds, List<RelationFacts> relations) {
 
@@ -126,17 +134,11 @@ public final class KindTaxonomyReadService {
         for (RelationType type : RelationType.values()) {
             relations.add(new RelationFacts(
                     type.token(),
-                    HeldAs.RELATIONSHIP,
+                    HeldAs.of(type),
                     type.directionality() == Directionality.DIRECTED,
                     type.derived(),
                     sorted(type.endpoints())));
         }
-        relations.add(new RelationFacts(
-                GraphBinding.TENSION,
-                HeldAs.TENSION,
-                Tension.directionality() == Directionality.DIRECTED,
-                Tension.derived(),
-                sorted(Tension.allowedEndpoints())));
         return new Taxonomy(kinds, relations);
     }
 

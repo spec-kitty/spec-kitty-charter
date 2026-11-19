@@ -4,7 +4,7 @@ get:
   description: >-
     The kind taxonomy of the charter's model (R18, #112): every node kind, in NodeKind order, with its plural, whether
     it is an artifact, whether an activation selects it and whether a graph document may name it; and every relation,
-    in RelationType order and then in_tension_with (held as a tension, ADR-0028), with whether it is directed, whether
+    in RelationType order, tension among them (held as a tension, ADR-0045), with whether it is directed, whether
     it is derived and the source and target kinds it may connect (ADR-0064 decision 13). A kind the pack artifact list
     serves links that list as a template (artifacts, /api/v1/packs/{packId}/artifacts?kind=<kind>). The answer is the
     model's, not the configured packs': it is the same whatever packs are configured, reads no pack file and never

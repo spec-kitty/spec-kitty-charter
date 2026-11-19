@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Tension;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * FR-012's independent oracle: the endpoint table as ADR-0077 decision 5 writes it, parsed from the ADR, is the table
- * the kernel answers ({@link RelationType#endpoints()}, {@link Tension#allowedEndpoints()}). The record and the code
+ * the kernel answers ({@link RelationType#endpoints()}, the tension's row among them). The record and the code
  * cannot drift: a row changed in one and not the other fails here. The words of the table read as follows: {@code G}
  * is the six guidance kinds; "any kind authored in graphs" is every kind a graph fragment names by a plural
  * ({@code file-kinds.yaml}'s {@code fragment_kinds}), {@code glossary_context} among them; "activatable" is
@@ -89,14 +88,12 @@ class EndpointTableAdrTest {
         Map<String, Set<EndpointPair>> table = parse(adr);
         Set<String> expected = new LinkedHashSet<>();
         Arrays.stream(RelationType.values()).map(RelationType::token).forEach(expected::add);
-        expected.add(TENSION_ROW);
         assertThat(table.keySet()).as("the relations of the ADR's table").isEqualTo(expected);
         for (RelationType type : RelationType.values()) {
             assertThat(table.get(type.token()))
                     .as("the endpoints of " + type.token())
                     .isEqualTo(type.endpoints());
         }
-        assertThat(table.get(TENSION_ROW)).as("the endpoints of the tension").isEqualTo(Tension.allowedEndpoints());
     }
 
     /** The rows of decision 5's table, by relation token ({@code tension} for the tension row). */

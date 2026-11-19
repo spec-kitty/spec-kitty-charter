@@ -3,8 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Tension;
-import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,8 +16,8 @@ import org.snakeyaml.engine.v2.common.FlowStyle;
 /**
  * Writes a {@link DoctrineGraph} as a graph shard, or as an org fragment, in the canonical key order of the packs. Each
  * {@link Relationship} is mapped to its {@link DrgEdge} DSO via {@link RelationshipMapper} and emitted in the edge key
- * order ({@code source, target, relation, when?, reason?}); each {@link Tension} is written back as the
- * {@code in_tension_with} edge it was read from, with no strength (ADR-0028, ADR-0036 Decision 4, ADR-0045).
+ * order ({@code source, target, relation, when?, reason?}); a {@code tension} is a relationship like any other, written
+ * as stored, with no strength (ADR-0028, ADR-0036 Decision 4, ADR-0045).
  *
  * <p>Every field the document shape holds is written, and a field it cannot hold is refused rather than dropped
  * (ADR-0036: a node's value is every declared field). A shard node is written {@code urn, kind, label?, provenance?,
@@ -103,20 +101,12 @@ public final class GraphShardWriter {
         return dump(root);
     }
 
-    /** The relationships, then the tensions; edges are a set, so the order carries no meaning (ADR-0036). */
+    /** The relationships, tensions among them; edges are a set, so the order carries no meaning (ADR-0036). */
     private static List<Object> edges(DoctrineGraph graph) {
         List<Object> edges = new ArrayList<>();
         for (Relationship relationship : graph.relationships()) {
             DrgEdge edge = RelationshipMapper.toDso(relationship);
             edges.add(edge(edge.source(), edge.target(), edge.relation(), edge.when(), edge.reason()));
-        }
-        for (Tension tension : graph.tensions()) {
-            edges.add(edge(
-                    tension.fromReference(),
-                    tension.toReference(),
-                    GraphBinding.TENSION,
-                    tension.when(),
-                    tension.rationale()));
         }
         return edges;
     }

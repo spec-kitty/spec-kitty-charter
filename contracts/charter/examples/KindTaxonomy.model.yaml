@@ -533,13 +533,7 @@ value:
         - {source: toolguide, target: anti_pattern}
         - {source: paradigm, target: anti_pattern}
         - {source: procedure, target: anti_pattern}
-    - relation: implemented_by
-      heldAs: relationship
-      directed: true
-      derived: true
-      endpoints:
-        - {source: guard, target: asset}
-    - relation: in_tension_with
+    - relation: tension
       heldAs: tension
       directed: false
       derived: false
@@ -580,6 +574,12 @@ value:
         - {source: procedure, target: toolguide}
         - {source: procedure, target: paradigm}
         - {source: procedure, target: procedure}
+    - relation: implemented_by
+      heldAs: relationship
+      directed: true
+      derived: true
+      endpoints:
+        - {source: guard, target: asset}
   _links:
     self:
       href: /api/v1/offering/kinds

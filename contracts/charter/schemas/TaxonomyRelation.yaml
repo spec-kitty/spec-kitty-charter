@@ -1,10 +1,9 @@
 title: TaxonomyRelation
 description: >-
-  A relation of the charter's model, in RelationType order, then in_tension_with: every value of Relation and, beside
-  them, implemented_by, which a guard derives and no one authors (ADR-0054 decision 3), and in_tension_with, the
-  tension the service holds beside the relationships (ADR-0028, ADR-0045). Relation leaves those two out because no
-  relationship read or write names them; the kind taxonomy names every relation, so it carries its own enum. A parity
-  test keeps it equal to the domain's relations.
+  A relation of the charter's model, in RelationType order: every value of Relation, tension among them (ADR-0045
+  decision 1), and implemented_by, which a guard derives and no one authors (ADR-0054 decision 3). Relation leaves
+  implemented_by out because no relationship read or write names it; the kind taxonomy names every relation, so it
+  carries its own enum. A parity test keeps it equal to the domain's relations.
 type: string
 enum:
   - requires
@@ -19,8 +18,8 @@ enum:
   - overrides
   - reconciles_tension
   - rejects
+  - tension
   - implemented_by
-  - in_tension_with
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
   symbol: RelationType.token

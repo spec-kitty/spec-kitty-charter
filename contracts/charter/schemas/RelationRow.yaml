@@ -1,7 +1,7 @@
 title: RelationRow
 description: >-
-  One relation of the model, with the kinds it may connect (ADR-0064 decision 13). The tension between two rules is
-  held beside the relationships (ADR-0028, ADR-0045), so its row is in_tension_with, held as a tension; every other
+  One relation of the model, with the kinds it may connect (ADR-0064 decision 13). The tension between two rules is a
+  relation of its own pair class (ADR-0028, ADR-0045 decision 1), so its row is tension, held as a tension; every other
   row is held as a relationship.
 type: object
 additionalProperties: false
@@ -25,16 +25,16 @@ properties:
       - relationship
       - tension
     description: >-
-      How the service holds an edge of the relation: relationship for a value of RelationType, tension for
-      in_tension_with, which is a Tension beside the relationships.
+      How the service holds an edge of the relation, the pair class its identity counts it in: tension for tension,
+      which stands beside the one structural relationship of its pair; relationship for every other relation.
     x-source:
-      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Tension.java
-      symbol: Tension
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java
+      symbol: Relationship.PairClass
   directed:
     type: boolean
     description: >-
-      Whether the relation holds from source to target only; false for in_tension_with, where the two rules pull
-      against each other and either orientation states the same tension.
+      Whether the relation holds from source to target only; false for tension, where the two rules pull against each
+      other and either orientation states the same tension.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java
       symbol: RelationType.directionality

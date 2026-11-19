@@ -254,7 +254,8 @@ final class CompositionFactsBuilder {
      * its components' derived relationships in assembly order (a guard's {@code implemented_by}, ADR-0064), then the
      * edges of its registered relationship shard ({@link RelationshipShard#SHARD_PATH}, a root shard the one graph read
      * already holds). Each (from, relation, to, qualifiers) is kept once, where it was first seen: the kernel
-     * {@link Relationship#equals} ignores the relation and the qualifiers, so the key is explicit.
+     * {@link Relationship#equals} is slot identity (the pair and its class, ADR-0045 decision 1) and ignores the relation
+     * within a class and the qualifiers, so the key is explicit. A {@code tension} is a typed edge like any other.
      */
     private static List<Relationship> typedEdges(List<GraphDocument> documents, Pack assembled) {
         Map<EdgeKey, Relationship> edges = new LinkedHashMap<>();

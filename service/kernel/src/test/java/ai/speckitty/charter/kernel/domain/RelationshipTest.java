@@ -24,7 +24,7 @@ class RelationshipTest {
     }
 
     @Test
-    void identityIgnoresTypeWhenAndRationaleSoAtMostOneRelationshipExistsPerPair() {
+    void identityIgnoresTheRelationWithinAClassAndWhenAndRationaleSoAtMostOneStructuralRelationshipExistsPerPair() {
         Relationship requires = Relationship.of(A, B, RelationType.REQUIRES);
         Relationship suggests =
                 new Relationship(B, A, RelationType.SUGGESTS, Optional.of("activated"), Optional.of("because"));
@@ -49,6 +49,63 @@ class RelationshipTest {
         assertThat(relationships).hasSize(2).contains(forward, otherPair);
         assertThat(otherPair).isNotEqualTo(forward);
         assertThat(otherPair.hashCode()).isNotEqualTo(forward.hashCode());
+    }
+
+    @Test
+    void aTensionIsAnotherSlotThanTheStructuralRelationshipOfItsPair() {
+        Relationship requires = Relationship.of(B, A, RelationType.REQUIRES);
+        Relationship tension = Relationship.of(A, B, RelationType.TENSION);
+        Relationship reverseTension =
+                Relationship.of(B, A, RelationType.TENSION, Optional.of("under load"), Optional.of("other words"));
+
+        assertThat(tension.pairClass()).isEqualTo(Relationship.PairClass.TENSION);
+        assertThat(requires.pairClass()).isEqualTo(Relationship.PairClass.STRUCTURAL);
+        assertThat(tension).isNotEqualTo(requires);
+        assertThat(tension.samePair(requires)).isTrue();
+        assertThat(tension.sameSlot(requires)).isFalse();
+        // Positive control: two tensions on the pair, in either orientation and with other words, are one slot.
+        assertThat(tension).isEqualTo(reverseTension).hasSameHashCodeAs(reverseTension);
+        assertThat(tension.sameSlot(reverseTension)).isTrue();
+
+        Set<Relationship> relationships = new HashSet<>(Set.of(requires, tension));
+        relationships.add(reverseTension);
+        assertThat(relationships).hasSize(2).contains(requires, tension);
+    }
+
+    @Test
+    void samePairIgnoresTheClassAndADifferentPairIsNeitherPairNorSlot() {
+        Relationship tension = Relationship.of(A, B, RelationType.TENSION);
+        Relationship elsewhere = Relationship.of(A, C, RelationType.TENSION);
+
+        assertThat(tension.samePair(Relationship.of(B, A, RelationType.SUGGESTS)))
+                .isTrue();
+        assertThat(tension.samePair(elsewhere)).isFalse();
+        assertThat(tension.sameSlot(elsewhere)).isFalse();
+        assertThat(tension).isNotEqualTo(elsewhere);
+    }
+
+    @Test
+    void aTensionOfAnArtifactWithAnotherPacksVersionOfItIsRefusedWhileAStructuralOneIsNot() {
+        assertThatThrownBy(() -> new Relationship(
+                        A,
+                        Optional.empty(),
+                        A,
+                        Optional.of("writing"),
+                        RelationType.TENSION,
+                        Optional.empty(),
+                        Optional.empty()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("self");
+        assertThat(new Relationship(
+                                A,
+                                Optional.empty(),
+                                A,
+                                Optional.of("writing"),
+                                RelationType.REQUIRES,
+                                Optional.empty(),
+                                Optional.empty())
+                        .toReference())
+                .hasToString("writing::tactic:a");
     }
 
     @Test

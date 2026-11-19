@@ -26,8 +26,6 @@ final class EndpointTable {
 
     private static final Map<RelationType, Set<EndpointPair>> TABLE = table();
 
-    private static final Set<EndpointPair> TENSION = tensionPairs();
-
     private EndpointTable() {}
 
     static Set<EndpointPair> of(RelationType type) {
@@ -61,7 +59,7 @@ final class EndpointTable {
                         union(GUIDANCE, EnumSet.of(NodeKind.AGENT_PROFILE)));
             case VOCABULARY -> product(graphDeclarable(), EnumSet.of(NodeKind.GLOSSARY_CONTEXT, NodeKind.TERM));
             case INSTANTIATES -> pair(NodeKind.ACTION, NodeKind.TEMPLATE);
-            case REFINES, RECONCILES_TENSION -> product(GUIDANCE, GUIDANCE);
+            case REFINES, RECONCILES_TENSION, TENSION -> product(GUIDANCE, GUIDANCE);
             case SPECIALIZES_FROM -> pair(NodeKind.AGENT_PROFILE, NodeKind.AGENT_PROFILE);
             case ENHANCES ->
                 rectangles(
@@ -72,30 +70,6 @@ final class EndpointTable {
             case IMPLEMENTED_BY -> pair(NodeKind.GUARD, NodeKind.ASSET);
         };
         return Collections.unmodifiableSet(pairs);
-    }
-
-    /**
-     * Whether a tension, which ADR-0028 holds beside the relations, may join two kinds: guidance on both sides.
-     *
-     * @param one one side's kind
-     * @param other the other side's kind
-     * @return whether both are guidance kinds
-     */
-    static boolean tensionAllows(NodeKind one, NodeKind other) {
-        return TENSION.contains(new EndpointPair(one, other));
-    }
-
-    /**
-     * The kinds a tension may join, as pairs in the order of {@link NodeKind}: guidance on both sides.
-     *
-     * @return the allowed pairs
-     */
-    static Set<EndpointPair> tension() {
-        return TENSION;
-    }
-
-    private static Set<EndpointPair> tensionPairs() {
-        return Collections.unmodifiableSet(product(GUIDANCE, GUIDANCE));
     }
 
     private static Set<NodeKind> advisors() {

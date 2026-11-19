@@ -141,23 +141,17 @@ class EndpointRuleTest {
     }
 
     @Test
-    @DisplayName("a tension joins two guidance kinds only")
+    @DisplayName("a tension binds between two guidance kinds only, and names its token in the fault")
     void aTensionJoinsGuidanceOnly() {
-        assertThat(EndpointRule.bindTension(
-                        Urn.parse("directive:a").orElseThrow(),
-                        Urn.parse("procedure:b").orElseThrow()))
-                .isEmpty();
-        assertThat(EndpointRule.bindTension(
-                        Urn.parse("directive:a").orElseThrow(),
-                        Urn.parse("skill:b").orElseThrow()))
-                .contains(new Fault(
-                        EndpointRule.ENDPOINT_NOT_ALLOWED, "in_tension_with", NodeKind.DIRECTIVE, NodeKind.SKILL));
+        assertThat(bind(RelationType.TENSION, "directive:a", "procedure:b")).isInstanceOf(EndpointRule.Bound.class);
+        assertThat(bind(RelationType.TENSION, "directive:a", "skill:b"))
+                .isEqualTo(new Fault(EndpointRule.ENDPOINT_NOT_ALLOWED, "tension", NodeKind.DIRECTIVE, NodeKind.SKILL));
     }
 
     @Test
-    @DisplayName("a tension's allowed endpoints are every pair of guidance kinds, and bindTension judges by them")
+    @DisplayName("a tension's endpoints are every pair of guidance kinds; it is bidirectional and authored")
     void aTensionsEndpointsAreTheGuidancePairs() {
-        java.util.Set<EndpointPair> pairs = Tension.allowedEndpoints();
+        java.util.Set<EndpointPair> pairs = RelationType.TENSION.endpoints();
 
         assertThat(pairs).hasSize(36);
         for (NodeKind one : NodeKind.values()) {
@@ -168,8 +162,8 @@ class EndpointRuleTest {
                         .isEqualTo(guidance);
             }
         }
-        assertThat(Tension.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
-        assertThat(Tension.derived()).isFalse();
+        assertThat(RelationType.TENSION.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
+        assertThat(RelationType.TENSION.derived()).isFalse();
     }
 
     // ---- the source rule of #447, folded into the bridge (operator ruling DM-01M7B1Z03VF9A36FBV65431HR3) ----------

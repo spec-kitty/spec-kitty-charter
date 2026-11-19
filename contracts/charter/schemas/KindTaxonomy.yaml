@@ -21,7 +21,7 @@ properties:
       symbol: KindTaxonomyReadService.Taxonomy.kinds
   relations:
     type: array
-    description: Every relation, in RelationType order, then in_tension_with.
+    description: Every relation, in RelationType order, tension among them.
     items:
       $ref: RelationRow.yaml
     x-source:
