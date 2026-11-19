@@ -12,5 +12,5 @@ value:
     locksRemoved: []
     activationsAffected: []
   _links:
-    pack:
+    self:
       href: /api/v1/packs/acme-style-pack

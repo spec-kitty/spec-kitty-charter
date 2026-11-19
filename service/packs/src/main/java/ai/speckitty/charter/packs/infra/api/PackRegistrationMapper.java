@@ -227,7 +227,7 @@ final class PackRegistrationMapper {
 
     /**
      * The answer of a dry run of a pack's removal (ADR-0081 D5): what the removal would do, or the refusal it would
-     * answer, with a {@code pack} link to the pack it judged.
+     * answer, with a {@code self} link to the pack it judged, the resource the {@code DELETE} names.
      *
      * @param outcome what the removal's checks reached
      * @return the body
@@ -245,7 +245,7 @@ final class PackRegistrationMapper {
                         refused -> body.setProblem(impactProblem(refusals.registrationProblem(refused))),
                         () -> body.setNotices(notices(outcome.notices())));
         Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
-        own.put(Relation.PACK, links.link(PACKS, outcome.pack().value()));
+        own.put(Relation.SELF, links.link(PACKS, outcome.pack().value()));
         body.setLinks(Hypermedia.wire(own));
         return body;
     }
