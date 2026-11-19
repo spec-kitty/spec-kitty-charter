@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,19 +60,19 @@ class ActivationIdTest {
         assertThatThrownBy(() -> PackRef.pinned(x, "1".repeat(65))).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /** #583, D7: a pin names a pack by the pack id grammar, so it names no pack that cannot be registered. */
+    /** #583, D7: a pin names a pack by a pack identifier, which admits only the pack id grammar. */
     @ParameterizedTest
     @ValueSource(strings = {"org_a", "Built-In", "-x", "a--b"})
-    void aPackRefRefusesAnIdOutsideThePackIdGrammar(String id) {
-        PackIdentifier notAPackId = new PackIdentifier(id);
-        assertThatThrownBy(() -> PackRef.of(notAPackId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(id);
+    void aPinnedPackIdOutsideThePackIdGrammarIsRefused(String id) {
+        assertThatThrownBy(() -> PackRef.of(new PackIdentifier(id)))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
     }
 
     @Test
-    void aPackRefRefusesAnIdOfSixtyFourCharacters() {
-        PackIdentifier tooLong = new PackIdentifier("x".repeat(PackIdentifier.MAX_LENGTH + 1));
-        assertThatThrownBy(() -> PackRef.of(tooLong)).isInstanceOf(IllegalArgumentException.class);
+    void aPinnedPackIdOfSixtyFourCharactersIsRefused() {
+        String tooLong = "x".repeat(PackIdentifier.MAX_LENGTH + 1);
+        assertThatThrownBy(() -> PackRef.of(new PackIdentifier(tooLong))).isInstanceOf(ConstraintBreachException.class);
     }
 }

@@ -9,8 +9,9 @@ import java.util.Optional;
 /**
  * One pack an activation builds on (the contract's {@code PackPin}, ADR-0033 D6). Equal by both fields.
  *
- * @param packId the id the pack is registered under: a pack id ({@link PackIdentifier#isPackId}, a kebab slug of at
- *     most 63 characters, ADR-0075 decision 2), so a pin can only name a pack that can be registered (#583, D7)
+ * @param packId the id the pack is registered under: a {@link PackIdentifier}, which admits only a pack id (a kebab
+ *     slug of at most 63 characters, ADR-0075 decision 2), so a pin can only name a pack that can be registered (#583,
+ *     D7)
  * @param version the pinned pack version, not blank and at most 64 characters; empty for the version the service holds
  */
 public record PackRef(PackIdentifier packId, Optional<String> version) {
@@ -22,15 +23,11 @@ public record PackRef(PackIdentifier packId, Optional<String> version) {
      *
      * @param packId the pack's registered id
      * @param version the pinned version
-     * @throws IllegalArgumentException when the id is not a pack id, or the version is blank or too long
+     * @throws IllegalArgumentException when the version is blank or too long
      */
     public PackRef {
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(version, "version");
-        if (!PackIdentifier.isPackId(packId.value())) {
-            throw new IllegalArgumentException("A pinned pack is named by a pack id, not '" + packId.value() + "'. "
-                    + PackIdentifier.GRAMMAR_DETAIL);
-        }
         if (version.filter(v -> v.isBlank() || v.length() > MAX_VERSION_LENGTH).isPresent()) {
             throw new IllegalArgumentException("A pinned pack version is 1 to 64 characters and not blank.");
         }
