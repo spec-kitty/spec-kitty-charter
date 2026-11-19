@@ -147,8 +147,16 @@ Keep it small; add a step only when a scenario cannot be written without it.
   `Then the context lists "<kind>:<id>" as "<expected>"` reads one artifact of the context: `listed / <appliesThrough>`
   when exactly one item is that artifact, with that `appliesThrough`, and `absent` when none is
   (`effective-context-scoping.feature`, bound in `EffectiveGraphSteps`).
+- The tensions (`tensions.feature`, #602, bound in `TensionSteps`): `Then the graph's tension edges are exactly:`, `Then
+  the context's tensions are exactly:` and `Then the activation's tensions are exactly:` read one line per tension in
+  the answer's order, `<source> tension <target> reconciledBy [<urn>, ...] when <when|-> reason <reason|->`, so a
+  tension that loses its words or its reconcilers fails; `Then the activation's findings are exactly:` reads `<source>
+  <target> resolutions [<token>, ...] links [<relation>, ...]`, the relations in the answer's order; `Then the edge
+  "<source>" "<relation>" "<target>" has no tension words` reads one graph edge without `when`, `reason` or
+  `reconciledBy`; and `When I follow the link "<relation>" of the finding <n> with the answer's revision and an empty
+  body` follows a finding's link with its method, the answer's `revision` quoted as `If-Match`, and `{}`.
 - `Given the example pack "<name>" of the charter` — configures one of charter's example packs (ADR-0070; `built-in`,
-  `org-base` or `project`, held in `service/packs/src/testFixtures/resources/example-packs`) under its own name and at
+  `org-base`, `org-alt`, `tensions` or `project`, held in `service/packs/src/testFixtures/resources/example-packs`) under its own name and at
   its own level, every file as it is held. `Then the field at "<json-pointer>" is the file "<path>" of the pack "<name>"`
   — the string member is that file of the configured pack, byte for byte. `Then the prompt holds exactly the slots:`
   followed by a doc string reads an effective prompt's `slots`, in the answer's order: one line per fragment, `<slot>
@@ -369,6 +377,13 @@ from ready to held, is a breaking change of the contract.
   A10, A14, A15, B8; SC-005), each with a control in the same answer; the A10 report and `DELETE` half is `@WIP`.
 - `activation-cascade-depth.feature`: the optional `depth` of a cascading select and deactivate (IC-21, FR-043; #408): the
   count of `suggests` hops, `skippedByDepth`, the round trip of a deactivate and its gap, and the refusals at `/depth`.
+- `tensions.feature`: the tensions (ADR-0045, #602) over the charter's `tensions` example pack, one activation per
+  case: a reconciled tension is one graph edge with its words and its reconciler, in the context and the tensions read,
+  with no finding; an unreconciled one has a finding with both resolutions, whose `exclude-source` link, followed with
+  the answer's revision, puts the tension out of force; one side out of force puts it in no read; a tension registered
+  larger first is stored and answered from the smaller URN; a requires and a tension on one pair are two edges; a locked
+  side has no exclude link, and with both locked only `reconcile` is offered; a suggestion is no side; and a mission
+  type not in force answers no tension in its context. `@contract`.
 - `effective-reads.feature` and `layer-merge.feature`: the effective artifact list, the skipped report and the layer
   merge as they answer (PR B). `effective-graph-and-context.feature`: the effective graph and the effective action
   context (PR C, IC-11, FR-018 to FR-021, US5 AS1 to AS5): an edge with an endpoint out of force is absent, a layer
