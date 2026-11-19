@@ -1,7 +1,7 @@
 {
-  "event_count": 20,
-  "last_event_id": "01M7SPFVNG1HJEZMGJKQR8XKZS",
-  "materialized_at": "2026-11-19T10:43:57.232842+00:00",
+  "event_count": 21,
+  "last_event_id": "01M7SQKFXKCSDM6B39NFGDE6PB",
+  "materialized_at": "2026-11-19T11:03:24.851053+00:00",
   "mission_number": "",
   "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
   "mission_type": "software-dev",
@@ -12,22 +12,22 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 5,
+    "for_review": 4,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
     "WP01": {
-      "actor": "claude",
+      "actor": "reviewer-claude",
       "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M7SK87S1JPNN74XDDYSEP9Q6",
-      "last_transition_at": "2026-11-19T09:47:21.761849+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7SQKFXKCSDM6B39NFGDE6PB",
+      "last_transition_at": "2026-11-19T11:03:24.851053+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Contract, ADR-0081 and records; contracts:check and check_docs green",
@@ -35,7 +35,7 @@
         "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": 8940,
       "shell_pid_created_at": "1795074843.08",
       "subtasks": {
