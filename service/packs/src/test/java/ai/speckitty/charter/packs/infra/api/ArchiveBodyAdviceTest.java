@@ -175,7 +175,11 @@ class ArchiveBodyAdviceTest {
         Method upload = PackRegistrationController.class.getMethod(
                 "registerPackFromArchive", String.class, Resource.class, String.class, Boolean.class, String.class);
         Method source = PackRegistrationController.class.getMethod(
-                "registerPackFromSource", ai.speckitty.charter.api.model.PackSource.class, String.class, String.class);
+                "registerPackFromSource",
+                ai.speckitty.charter.api.model.PackSource.class,
+                String.class,
+                Boolean.class,
+                String.class);
 
         assertThat(advice.supports(new MethodParameter(upload, 1), Resource.class, null))
                 .isTrue();
