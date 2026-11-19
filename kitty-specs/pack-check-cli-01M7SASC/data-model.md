@@ -58,4 +58,4 @@ One line each: `warning: <pack>: <code> <file>: <detail>`, for every `WARNING` r
 |---|---|
 | 0 | No problem (warnings allowed) |
 | 1 | At least one problem |
-| 2 | Usage fault (no input, both inputs, unknown option, bad level, duplicate pack by real path, missing directory, empty config root, a dangling entry under the config root's `packs/`) an I/O failure outside a pack read (writing the output, the round trip's temporary directory), or an internal failure (an unexpected exception: `pack-check: internal error: …` and the stack trace on stderr) |
+| 2 | Usage fault (no input, both inputs, unknown option, bad level, an ambiguous `--pack` value, duplicate pack by real path or by name, overlapping packs, missing directory, empty config root, a dangling entry under the config root's `packs/`), an I/O failure outside a pack read (writing the output, the round trip's temporary directory), or an internal failure (an unexpected exception: `pack-check: internal error: …` and the stack trace on stderr) |
