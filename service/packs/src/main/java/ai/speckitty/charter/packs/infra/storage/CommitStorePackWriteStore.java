@@ -356,7 +356,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             if (parent == null || directory.getFileName() == null) {
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
             }
-            PackIdentifier key = new PackIdentifier(directory.getFileName().toString());
+            PackDirectory key = PackDirectory.of(directory);
             List<MissionTypeFacts> types = new ArrayList<>();
             for (MissionTypeDso type :
                     new FilesystemPackStore(parent, strategy).readAll(key, MissionTypeBinding.INSTANCE)) {
@@ -371,8 +371,8 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         if (parent == null || directory.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
         }
-        FilesystemPackStore.GraphRead read = new FilesystemPackStore(parent, strategy)
-                .readGraphs(new PackIdentifier(directory.getFileName().toString()));
+        FilesystemPackStore.GraphRead read =
+                new FilesystemPackStore(parent, strategy).readGraphs(PackDirectory.of(directory));
         if (!read.violations().isEmpty()) {
             // Fail closed, as the edges and the composition facts do: what an unread document declares or joins cannot
             // be judged, and a removal that skipped it would pass what it never saw.
@@ -413,7 +413,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             Path directory = resolve(pack);
             List<String> files = removal.artifacts().isEmpty()
                     ? List.of()
-                    : ArtifactFiles.of(directory, removal.artifacts(), strategy);
+                    : ArtifactFiles.of(pack, directory, removal.artifacts(), strategy);
             // The shard is rewritten only when an edge goes: a removal adds none, so equal sizes mean none went.
             @Nullable String shard = removal.relationships().size()
                             == registeredRelationships(pack).size()
@@ -439,8 +439,8 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         if (dropped.isEmpty() || parent == null || directory.getFileName() == null) {
             return Map.of();
         }
-        FilesystemPackStore.GraphRead read = new FilesystemPackStore(parent, strategy)
-                .readGraphs(new PackIdentifier(directory.getFileName().toString()));
+        FilesystemPackStore.GraphRead read =
+                new FilesystemPackStore(parent, strategy).readGraphs(PackDirectory.of(directory));
         Map<String, String> out = new LinkedHashMap<>();
         for (GraphDocument document : read.documents()) {
             if (RelationshipShard.SHARD_PATH.equals(document.file())) {
@@ -497,6 +497,6 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     /** The configured location of a pack, as {@link PackLocator} resolves it. */
     private PackLocation location(PackIdentifier pack) {
-        return PackLocator.locate(locations, strategy, pack);
+        return PackLocator.locate(locations, pack);
     }
 }

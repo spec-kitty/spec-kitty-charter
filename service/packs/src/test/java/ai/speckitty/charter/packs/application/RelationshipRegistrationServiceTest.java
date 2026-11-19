@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.StepEnhancement;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
@@ -133,7 +134,8 @@ class RelationshipRegistrationServiceTest {
                     assertThat(r.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
                     assertThat(r.packs())
                             .extracting("packId", "name")
-                            .containsExactly(org.assertj.core.groups.Tuple.tuple("pack-a", "pack-a"));
+                            .containsExactly(
+                                    org.assertj.core.groups.Tuple.tuple(new PackIdentifier("pack-a"), "pack-a"));
                 });
         assertThat(store.commits).isEqualTo(before);
         assertThat(store.relationships(PACK)).isEmpty();
@@ -469,7 +471,12 @@ class RelationshipRegistrationServiceTest {
 
     private static PackDescriptor descriptor() {
         return new PackDescriptor(
-                PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty());
+                FixtureUlids.of(PACK.value()),
+                "1.0.0",
+                Optional.empty(),
+                PACK.value(),
+                Optional.empty(),
+                Optional.empty());
     }
 
     private static Directive directive(String id) {

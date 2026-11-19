@@ -1,9 +1,9 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import ai.speckitty.charter.packs.domain.RolePins;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -157,7 +157,7 @@ public final class ClosureRoleFacts {
      */
     public static ClosureRoleFacts of(ClosureView closure) {
         Objects.requireNonNull(closure, "closure");
-        Map<String, PackIdentifier> byDescriptor = new HashMap<>();
+        Map<PackUlid, PackIdentifier> byDescriptor = new HashMap<>();
         closure.packs().forEach(entry -> byDescriptor.putIfAbsent(entry.descriptorPackId(), entry.id()));
         Map<PackIdentifier, PackUnderResolution> composed = new HashMap<>();
         closure.mergeInputs()
@@ -167,7 +167,7 @@ public final class ClosureRoleFacts {
         List<Member> members = new ArrayList<>();
         for (OfferingReadService.OfferingEntry entry : closure.packs()) {
             List<PackIdentifier> buildsOn = Stream.concat(
-                            entry.dependencies().stream().map(ResolvedEdge::to),
+                            entry.dependencies().stream().map(edge -> new PackUlid(edge.to())),
                             closure.parentOf(entry.descriptorPackId()).stream())
                     .map(byDescriptor::get)
                     .filter(Objects::nonNull)

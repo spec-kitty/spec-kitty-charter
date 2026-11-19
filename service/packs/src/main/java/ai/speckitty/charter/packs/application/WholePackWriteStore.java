@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -121,23 +122,25 @@ public interface WholePackWriteStore {
         /**
          * Reads a stored pack's directory as it is, refusing what cannot be read as the reads do.
          *
+         * @param pack the registered id the pack is stored under: what it holds is assembled under it
          * @param directory the stored pack's directory
          * @return what the pack holds
          * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when it cannot be read
          */
-        Contents loadStored(Path directory);
+        Contents loadStored(PackIdentifier pack, Path directory);
 
         /**
          * Reads what can still be read of a stored pack that {@link #loadStored} refuses: every file on its own, as plain
          * YAML where it does not bind. An artifact file counts by the {@code id} it declares, and by the id its path
          * names when that differs or cannot be read; each entry of a graph file whose source can be read is an edge.
          *
+         * @param pack the registered id the pack is stored under
          * @param directory the stored pack's directory
          * @return what the pack still holds
          * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the set of artifacts
          *     cannot be determined at all, for example when the directory cannot be listed; it is never taken as empty
          */
-        Remains salvageStored(Path directory);
+        Remains salvageStored(PackIdentifier pack, Path directory);
     }
 
     /**
@@ -176,6 +179,17 @@ public interface WholePackWriteStore {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code VALIDATION_FAILED} (422) when it would not
      */
     void requireWritableLocation(String packId);
+
+    /**
+     * The directory entry under the writable root whose name is {@code packId} once case is folded and is not
+     * {@code packId} itself: on a file system that folds case the two are one directory. Every entry counts, a directory
+     * the listing does not serve as a pack (a name that is no pack id) included.
+     *
+     * @param packId the name the pack is stored under
+     * @return the entry's name; empty when no entry folds to {@code packId}
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the root cannot be listed
+     */
+    Optional<String> caseTwinOf(String packId);
 
     /**
      * Runs a registration's decisive steps holding the registry write lock and then the pack's own lock, in that order.

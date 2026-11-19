@@ -1004,7 +1004,9 @@ class PackRegistrationServiceTest {
     static final class CountingReading implements PackReading {
 
         private final PackReading delegate;
-        final java.util.List<PackRoot> roots = new java.util.ArrayList<>();
+
+        /** Every root read, in the order the reads began; concurrent registrations add to it from their own threads. */
+        final java.util.List<PackRoot> roots = new java.util.concurrent.CopyOnWriteArrayList<>();
 
         CountingReading(PackReading delegate) {
             this.delegate = delegate;

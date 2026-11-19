@@ -4,8 +4,8 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.GraphWalker;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
@@ -34,8 +34,11 @@ import java.util.Set;
  */
 public final class GraphWalk {
 
-    /** A component's place: the pack that holds it and its bare URN. The visited set is keyed by it. */
-    private record Held(PackIdentifier pack, Urn urn) {}
+    /**
+     * A component's place: the descriptor identity of the pack that holds it and its bare URN. The visited set is keyed
+     * by it.
+     */
+    private record Held(PackUlid pack, Urn urn) {}
 
     private final ComposeResolver resolvers;
 
@@ -66,13 +69,18 @@ public final class GraphWalk {
      * yields a not-yet-visited component, recurses into it. A relationship whose neighbour is already visited (the
      * cycle guard) or resolves empty (an unwired kind, research D6) is passed over and the walk continues.
      *
-     * @param start the component to start from; it is visited but never resolved
+     * @param start the component to start from, an artifact of the compose; it is visited but never resolved
      * @param visitor the visitor notified of every node and relationship
+     * @throws IllegalArgumentException when no pack of the compose is registered under the start's pack id
      */
     public void walk(CharterArtifact start, GraphWalker visitor) {
         Objects.requireNonNull(start, "start");
         Objects.requireNonNull(visitor, "visitor");
-        visit(start, visitor, new HashSet<>());
+        PackUlid pack = resolvers
+                .descriptorIdOf(start.packId())
+                .orElseThrow(() -> new IllegalArgumentException("the walk starts at " + start.urn() + " of pack "
+                        + start.packId().value() + ", which is no pack of the compose"));
+        visit(new Held(pack, start.urn()), start, visitor, new HashSet<>());
     }
 
     /**
@@ -80,8 +88,8 @@ public final class GraphWalk {
      *
      * @return {@code true} to keep the overall walk going, {@code false} once a {@link Descent#STOP} has halted it
      */
-    private boolean visit(CharterArtifact component, GraphWalker visitor, Set<Held> visited) {
-        visited.add(new Held(component.packId(), component.urn()));
+    private boolean visit(Held place, CharterArtifact component, GraphWalker visitor, Set<Held> visited) {
+        visited.add(place);
         Descent nodeDescent = visitor.onNode(new DrgNode(component.urn(), Optional.of(component.label())));
         if (nodeDescent == Descent.STOP) {
             return false;
@@ -97,7 +105,7 @@ public final class GraphWalk {
             if (relationshipDescent == Descent.SKIP) {
                 continue;
             }
-            Optional<Held> neighbour = neighbourOf(component, relationship);
+            Optional<Held> neighbour = neighbourOf(place, relationship);
             if (neighbour.isEmpty() || visited.contains(neighbour.get())) {
                 continue;
             }
@@ -107,7 +115,7 @@ public final class GraphWalk {
             if (resolved.isEmpty()) {
                 continue;
             }
-            if (!visit(resolved.get(), visitor, visited)) {
+            if (!visit(neighbour.get(), resolved.get(), visitor, visited)) {
                 return false;
             }
         }
@@ -122,12 +130,12 @@ public final class GraphWalk {
      * @return the neighbour's place, or empty when the compose holds no pack for its qualified reference; the
      *     compose's own refusal (a pack outside the writer's {@code depends_on} closure) is thrown, not returned
      */
-    private Optional<Held> neighbourOf(CharterArtifact component, Relationship relationship) {
+    private Optional<Held> neighbourOf(Held component, Relationship relationship) {
         Urn neighbour = relationship.to();
         Optional<String> qualifier = relationship.toPack();
-        Optional<PackIdentifier> holder = qualifier.isPresent()
-                ? resolvers.holdingPack(new PackQualifiedReference(qualifier, neighbour.toString()), component.packId())
-                : Optional.of(component.packId());
+        Optional<PackUlid> holder = qualifier.isPresent()
+                ? resolvers.holdingPack(new PackQualifiedReference(qualifier, neighbour.toString()), component.pack())
+                : Optional.of(component.pack());
         return holder.map(pack -> new Held(pack, neighbour));
     }
 }

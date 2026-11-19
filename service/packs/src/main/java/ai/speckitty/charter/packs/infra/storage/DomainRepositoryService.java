@@ -72,10 +72,9 @@ import org.springframework.stereotype.Service;
  * sibling would carry its own stereotype.
  *
  * <p>It serves every configured pack through an explicit {@link PackIdentifier}. The identifier is resolved to a pack
- * directory through the configured {@link Locations}: a location whose configured name equals the identifier wins,
- * otherwise the location whose {@code pack.yaml} declares that {@code pack_id}. A directory name is therefore never
- * assumed to be the id. An identifier that no location resolves is refused {@code PACK_NOT_FOUND}, as the write side
- * refuses it.
+ * directory through the configured {@link Locations}: the location configured as that registered id ({@link
+ * PackLocator}, #583). The {@code pack_id} a {@code pack.yaml} declares is never an address. An identifier that no
+ * location is configured as is refused {@code PACK_NOT_FOUND}, as the write side refuses it.
  *
  * <p>The persistence shapes ({@link TacticDso}, {@link PackDescriptorDso}) stay inside this package. Each kind is
  * mapped to and from its domain entity by its {@link KindBinding}, and assembled and committed through the
@@ -245,7 +244,7 @@ public final class DomainRepositoryService
 
     private static <D> void writeAt(
             FilesystemPackStore store,
-            PackIdentifier key,
+            PackDirectory key,
             KindBinding<D, ?> kind,
             CharterArtifact artifact,
             String place) {
@@ -488,7 +487,7 @@ public final class DomainRepositoryService
         // read runs the same DSO read registration's readTree runs, and none of the reader's prechecks (S4).
         StoreRead read = StoreRead.of(
                 resolved.directory,
-                pack.value(),
+                pack,
                 PackFileSet.walk(resolved.directory, pack.value()),
                 strategy,
                 KindBindings.all(),
@@ -558,7 +557,7 @@ public final class DomainRepositoryService
      * @param artifact the artefact to write
      * @throws IllegalArgumentException when {@code artifact} is of a kind this store does not persist
      */
-    static void writeArtifact(FilesystemPackStore store, PackIdentifier key, CharterArtifact artifact) {
+    static void writeArtifact(FilesystemPackStore store, PackDirectory key, CharterArtifact artifact) {
         if (artifact instanceof Template template) {
             store.writePayload(
                     key,
@@ -573,7 +572,7 @@ public final class DomainRepositoryService
     }
 
     private static <D> void write(
-            FilesystemPackStore store, PackIdentifier key, KindBinding<D, ?> kind, CharterArtifact artifact) {
+            FilesystemPackStore store, PackDirectory key, KindBinding<D, ?> kind, CharterArtifact artifact) {
         store.write(key, kind, kind.dsoOf(artifact));
     }
 
@@ -604,7 +603,7 @@ public final class DomainRepositoryService
     // ---- identifier to directory ---------------------------------------------------------------------------------
 
     /** A pack's store, the directory-name key the store addresses it by, and the pack's directory. */
-    private record Resolved(FilesystemPackStore store, PackIdentifier key, Path directory) {}
+    private record Resolved(FilesystemPackStore store, PackDirectory key, Path directory) {}
 
     /**
      * The real path of a pack's live directory, refused with {@code PACK_UNREADABLE} when it is not a directory, cannot
@@ -645,15 +644,12 @@ public final class DomainRepositoryService
         if (realParent == null || real.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no parent directory");
         }
-        return new Resolved(
-                new FilesystemPackStore(realParent, strategy),
-                new PackIdentifier(real.getFileName().toString()),
-                real);
+        return new Resolved(new FilesystemPackStore(realParent, strategy), PackDirectory.of(real), real);
     }
 
     /** The pack's store and configured directory, at the location {@link PackLocator} resolves: what a write addresses. */
     private Resolved resolve(PackIdentifier pack) {
-        return over(PackLocator.directoryOf(PackLocator.locate(locations, strategy, pack)));
+        return over(PackLocator.directoryOf(PackLocator.locate(locations, pack)));
     }
 
     /**
@@ -662,7 +658,7 @@ public final class DomainRepositoryService
      * swap moved that directory under it ({@link PackLocator#read}, #490). A whole load runs inside one such read.
      */
     private <T> T reading(PackIdentifier pack, Function<Resolved, T> body) {
-        PackLocation location = PackLocator.locate(locations, strategy, pack);
+        PackLocation location = PackLocator.locate(locations, pack);
         return PackLocator.read(locations, location, directory -> body.apply(over(directory)));
     }
 
@@ -672,10 +668,7 @@ public final class DomainRepositoryService
         if (parent == null || directory.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack location has no parent directory");
         }
-        return new Resolved(
-                new FilesystemPackStore(parent, strategy),
-                new PackIdentifier(directory.getFileName().toString()),
-                directory);
+        return new Resolved(new FilesystemPackStore(parent, strategy), PackDirectory.of(directory), directory);
     }
 
     // ---- DSO to entity -------------------------------------------------------------------------------------------

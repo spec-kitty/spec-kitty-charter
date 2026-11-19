@@ -88,7 +88,7 @@ public final class PackSummaryQuery {
     /**
      * The summary of a stored pack.
      *
-     * @param identifier the configured name, or the declared {@code pack_id}
+     * @param identifier the registered id, the configured name
      * @return the summary and the fingerprint the read verified
      * @throws CharterRefusal {@code PACK_NOT_FOUND} when no configured pack has the identifier, or the pack is a built-in
      *     one, which is read-only and has no registration summary; {@code PACK_UNREADABLE} when it cannot be read;
@@ -123,7 +123,7 @@ public final class PackSummaryQuery {
      * the document read share (#451), so a pack whose {@code pack.yaml} cannot be read (a stored {@code active_charter},
      * for one) is refused by both alike. Call it inside a verified read.
      *
-     * @param identifier the configured name, or the declared {@code pack_id}
+     * @param identifier the registered id, the configured name
      * @return the configured pack and its descriptor
      * @throws CharterRefusal {@code PACK_NOT_FOUND} as {@link #stored} refuses; {@code PACK_UNREADABLE} when the pack's
      *     {@code pack.yaml} cannot be read
@@ -137,7 +137,7 @@ public final class PackSummaryQuery {
      * The stored pack an identifier names: judged as every pack path judges it, and never a built-in one, which is
      * read-only and has no registration summary and no document read. Call it inside a verified read.
      *
-     * @param identifier the configured name, or the declared {@code pack_id}
+     * @param identifier the registered id, the configured name
      * @return the configured pack
      * @throws CharterRefusal {@code PACK_NOT_FOUND} when no configured pack has the identifier, or the pack is a built-in
      *     one

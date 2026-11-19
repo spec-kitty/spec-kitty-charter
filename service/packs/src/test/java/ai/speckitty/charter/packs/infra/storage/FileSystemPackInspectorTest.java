@@ -822,7 +822,7 @@ class FileSystemPackInspectorTest {
 
         TreeRead contents = full(dir);
         FilesystemPackStore.PackRead load =
-                new FilesystemPackStore(host, new YamlSerializationStrategy()).read(new PackIdentifier("qa"));
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).read(new PackDirectory("qa"));
 
         assertThat(contents.readFaults())
                 .filteredOn(fault -> !fault.code().equals(StorageCodes.ASSET_MIME_INVALID))
@@ -879,7 +879,7 @@ class FileSystemPackInspectorTest {
 
         List<Reason> found = verdict(dir);
         FilesystemPackStore.GraphRead load =
-                new FilesystemPackStore(host, new YamlSerializationStrategy()).readGraphs(new PackIdentifier("qa"));
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).readGraphs(new PackDirectory("qa"));
 
         assertThat(found)
                 .extracting(Reason::code, finding -> finding.location().file(), Reason::detail)
@@ -915,7 +915,7 @@ class FileSystemPackInspectorTest {
 
         TreeRead contents = full(dir);
         FilesystemPackStore.PackRead load =
-                new FilesystemPackStore(host, new YamlSerializationStrategy()).read(new PackIdentifier("qa"));
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).read(new PackDirectory("qa"));
 
         assertThat(contents.readFaults())
                 .filteredOn(fault -> !fault.code().equals(StorageCodes.ASSET_MIME_INVALID))
@@ -1738,8 +1738,8 @@ class FileSystemPackInspectorTest {
         assertThat(manifest.listed()).isPresent();
         assertThat(manifest.derived())
                 .as("the reader derives the held lists through PackManifestDerivation (T024)")
-                .contains(ManifestMembership.entries(
-                        PackManifestDerivation.derivedAt(dir, new YamlSerializationStrategy())));
+                .contains(ManifestMembership.entries(PackManifestDerivation.derivedAt(
+                        new PackIdentifier(ExamplePacks.BUILT_IN), dir, new YamlSerializationStrategy())));
         assertThat(ManifestRules.mismatch(
                         manifest.listed().orElseThrow(), manifest.derived().orElseThrow()))
                 .as("the example pack's manifest lists what it holds")
@@ -1856,7 +1856,8 @@ class FileSystemPackInspectorTest {
                 .containsExactlyElementsOf(held.artifacts().stream()
                         .map(PackContents.Assembly.Placed::artifact)
                         .toList());
-        assertThat(built.id().value()).isEqualTo("01ARWG13C000000000000000FG");
+        assertThat(built.id().value()).as("the id the root is read under").isEqualTo("built-in");
+        assertThat(built.descriptor().packId()).isEqualTo("01ARWG13C000000000000000FG");
         assertThat(held.artifacts())
                 .allSatisfy(placed -> assertThat(pack.resolve(placed.file())).exists());
     }

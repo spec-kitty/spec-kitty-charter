@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
@@ -136,7 +135,9 @@ class RolePinImpactTest {
                 .contains("the role implementer")
                 .contains("pack org-base pins it to implementer-ivan")
                 .contains("pack project pins it to reviewer-renata");
-        assertThat(refused.packs()).extracting(RefusalPack::descriptorPackId).containsExactly(ORG_ID, PROJECT_ID);
+        assertThat(refused.packs())
+                .extracting(pack -> pack.descriptorPackId().value())
+                .containsExactly(ORG_ID, PROJECT_ID);
         assertThat(rig.packs.resolve("project")).as("nothing was stored").doesNotExist();
     }
 

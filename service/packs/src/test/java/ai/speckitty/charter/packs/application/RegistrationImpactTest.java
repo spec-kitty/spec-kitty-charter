@@ -5,8 +5,8 @@ import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
@@ -143,7 +143,7 @@ class RegistrationImpactTest {
         assertThat(refused.code())
                 .as("left, right and top each hold base, and 2.0.0 is outside their range")
                 .isEqualTo(RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("base");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("base");
         assertThat(refused.getMessage()).contains("closure rooted at");
         assertThat(rig.filesOf(rig.packs.resolve("base"))).as("nothing changed").isEqualTo(before);
 
@@ -255,7 +255,7 @@ class RegistrationImpactTest {
 
         assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
         assertThat(refused.getMessage()).contains("declared by pack `member`", "which is not the distribution pack");
-        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("member");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("member");
         assertThat(rig.packs.resolve("member")).as("nothing was created").doesNotExist();
     }
 
@@ -271,7 +271,7 @@ class RegistrationImpactTest {
 
         assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
         assertThat(refused.getMessage()).contains("more than one distribution pack");
-        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("dist", "dist-two");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("dist", "dist-two");
     }
 
     @Test
@@ -349,7 +349,7 @@ class RegistrationImpactTest {
         CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(orgBase("2.0.0")), Preconditions.none()));
 
         assertThat(refused.packs()).as("the packs of the refusal").isNotEmpty();
-        assertThat(refused.packs().stream().map(RefusalPack::packId))
+        assertThat(refused.packs().stream().map(pack -> pack.packId().value()))
                 .as("the dependent that no longer composes, and base")
                 .contains("base")
                 .anyMatch(id -> List.of("left", "right", "top").contains(id));
@@ -509,7 +509,7 @@ class RegistrationImpactTest {
                 rig.register("acme", rig.stage(acme(relation.refused().toArray(String[]::new))), Preconditions.none()));
 
         assertThat(refused.code()).isEqualTo(relation.code());
-        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("acme");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("acme");
         assertThat(refused.getMessage()).contains("acme");
         assertThat(rig.packs.resolve("acme")).as("nothing was created").doesNotExist();
 
@@ -601,7 +601,7 @@ class RegistrationImpactTest {
             assertThat(refused.code()).as(target).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
             assertThat(refused.packs())
                     .as("the pack that breaks the rule first, then the pack that holds the level")
-                    .extracting(RefusalPack::packId)
+                    .extracting(pack -> pack.packId().value())
                     .containsExactly("derived", "base");
         }
         assertThat(rig.packs.resolve("derived")).doesNotExist();
@@ -632,7 +632,7 @@ class RegistrationImpactTest {
         CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(locksIt), Preconditions.none()));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("derived", "base");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("derived", "base");
         assertThat(rig.filesOf(rig.packs.resolve("base"))).as("nothing changed").isEqualTo(before);
     }
 
@@ -1103,7 +1103,7 @@ class RegistrationImpactTest {
         assertThat(refusal(() -> gated(rig, gate).check(storedAs(rig, "base")))).isSameAs(SLOT_MISSING);
         assertThat(gate.judged).singleElement().satisfies(change -> {
             assertThat(change.before()).isPresent();
-            assertThat(change.after().closurePackIds()).containsExactly(BASE_ID);
+            assertThat(change.after().closurePackIds()).containsExactly(new PackUlid(BASE_ID));
         });
     }
 

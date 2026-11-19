@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
@@ -169,6 +170,33 @@ class DomainRoundTripTest {
     private String written(Outcome outcome) throws IOException {
         assertThat(outcome).isInstanceOf(Written.class);
         return Files.readString(temp.resolve("out/built-in").resolve(((Written) outcome).writtenPath()));
+    }
+
+    @Test
+    void aSourceDirectoryWhoseNameIsNoPackIdRefusesEveryModelledFileAndWritesNothing() throws IOException {
+        Path misnamed = temp.resolve("src/Built_In");
+        Files.createDirectories(misnamed.getParent());
+        Files.move(source, misnamed);
+        Path target = temp.resolve("out/Built_In");
+
+        Map<String, Outcome> outcomes =
+                new DomainRoundTrip(new YamlSerializationStrategy()).roundTrip(misnamed, target, kinds);
+
+        assertThat(outcomes)
+                .isNotEmpty()
+                .containsOnlyKeys(kinds.entrySet().stream()
+                        .filter(entry -> DomainRoundTrip.MODELLED.contains(entry.getValue()))
+                        .map(Map.Entry::getKey)
+                        .toList());
+        assertThat(outcomes.values())
+                .allSatisfy(outcome -> assertThat(outcome)
+                        .isInstanceOfSatisfying(
+                                Refused.class,
+                                refused -> assertThat(refused.reason())
+                                        .startsWith("pack_id_invalid: ")
+                                        .contains("Built_In")
+                                        .contains(PackIdentifier.GRAMMAR_DETAIL)));
+        assertThat(target).doesNotExist();
     }
 
     @Test

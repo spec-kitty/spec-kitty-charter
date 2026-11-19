@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,9 +33,14 @@ class PackMutabilityPolicyClosureTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
 
+    /** A member whose descriptor {@code pack_id} and built-on packs are the ULIDs of the mnemonics given. */
     private static Member member(
             PackIdentifier configured, String descriptorPackId, List<String> buildsOn, Urn... held) {
-        return new Member(configured, descriptorPackId, buildsOn, Set.of(held));
+        return new Member(
+                configured,
+                FixtureUlids.ulid(descriptorPackId),
+                buildsOn.stream().map(FixtureUlids::ulid).toList(),
+                Set.of(held));
     }
 
     @Test
@@ -55,7 +61,7 @@ class PackMutabilityPolicyClosureTest {
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refusal.getMessage())
-                            .contains("Q")
+                            .contains(FixtureUlids.of("Q"))
                             .contains("locked")
                             .contains(locked.toString());
                 });
@@ -84,7 +90,7 @@ class PackMutabilityPolicyClosureTest {
         assertThatThrownBy(() -> gate.authorize(packWithDescriptor(), Operation.REPLACE, target))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
-                    assertThat(refusal.getMessage()).contains("extendable").contains("Q");
+                    assertThat(refusal.getMessage()).contains("extendable").contains(FixtureUlids.of("Q"));
                 });
         assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.RELATIONSHIP, target))
                 .doesNotThrowAnyException();
@@ -140,7 +146,9 @@ class PackMutabilityPolicyClosureTest {
                     .as("E's lock reaches %s, which E or a pack E builds on holds", enforced)
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
-                        assertThat(refusal.getMessage()).contains("pack E").contains("locked");
+                        assertThat(refusal.getMessage())
+                                .contains("pack " + FixtureUlids.of("E"))
+                                .contains("locked");
                     });
         }
         assertThatCode(() -> gate.authorize(pack, Operation.REPLACE, ofU))
@@ -205,7 +213,9 @@ class PackMutabilityPolicyClosureTest {
         assertThatThrownBy(() -> gate.authorize(pack, Operation.REPLACE, inherited))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
-                    assertThat(refusal.getMessage()).contains("pack BASE").contains("extendable");
+                    assertThat(refusal.getMessage())
+                            .contains("pack " + FixtureUlids.of("BASE"))
+                            .contains("extendable");
                 });
     }
 

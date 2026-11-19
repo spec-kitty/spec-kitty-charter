@@ -32,6 +32,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.TermIdentifier;
 import ai.speckitty.charter.packs.domain.TermStatus;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
@@ -106,7 +107,7 @@ class ForeignArtifactReadTest {
             Relationship... edges) {
         configured.add(new ConfiguredPack(new PackIdentifier(name), level));
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -114,7 +115,7 @@ class ForeignArtifactReadTest {
                 Optional.empty(),
                 PackPaths.none(),
                 dependsOn.stream()
-                        .map(other -> new PackDependency("id-" + other, ">=0"))
+                        .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                         .toList());
         descriptors.put(name, descriptor);
         List<String> held = Stream.concat(
@@ -241,20 +242,6 @@ class ForeignArtifactReadTest {
 
         assertThat(read.servedKinds()).containsExactlyElementsOf(ArtifactReadService.listed());
         assertThat(read.servedKinds()).contains(ArtifactKind.ASSET, ArtifactKind.SKILL);
-    }
-
-    @Test
-    void aPackAddressedByItsDeclaredPackIdIsWalkedAsTheConfiguredPackItIs() {
-        projectOverBuiltIn();
-        ForeignArtifactRead service = service();
-
-        ForeignArtifactRead.Foreign read = service.read(
-                        new PackIdentifier("id-project"), ArtifactKind.AGENT_PROFILE, "P", 0)
-                .value();
-
-        assertThat(read.governance().orElseThrow().entries())
-                .extracting(entry -> entry.urn().toString())
-                .containsExactly("agent_profile:Q", "directive:D");
     }
 
     @Test

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
@@ -71,7 +70,7 @@ class ProfileEnhancementImpactTest {
                 .contains("reviewer-renata-org of pack org-base enhances reviewer-renata")
                 .contains(field);
         assertThat(refused.packs())
-                .extracting(RefusalPack::descriptorPackId)
+                .extracting(pack -> pack.descriptorPackId().value())
                 .first()
                 .isEqualTo(ORG_ID);
     }
@@ -146,7 +145,7 @@ class ProfileEnhancementImpactTest {
                 .contains("of pack project enhances reviewer-renata")
                 .contains("capabilities");
         assertThat(refused.packs())
-                .extracting(RefusalPack::descriptorPackId)
+                .extracting(pack -> pack.descriptorPackId().value())
                 .first()
                 .isEqualTo(PROJECT_ID);
         assertThat(rig.packs.resolve("project")).as("nothing was stored").doesNotExist();

@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActivationImpact.ClosureChange;
 import ai.speckitty.charter.packs.application.ActivationImpact.ClosureChanges;
@@ -23,6 +24,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,11 +55,11 @@ class ActivationImpactAffectedTest {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
-        private final Map<String, MutabilityPolicySource> policies = new LinkedHashMap<>();
+        private final Map<PackUlid, MutabilityPolicySource> policies = new LinkedHashMap<>();
 
         Closure pack(String name, PackLevel level, MutabilityPolicySource policy, String... held) {
             PackDescriptor descriptor = new PackDescriptor(
-                    "id-" + name,
+                    FixtureUlids.of(name),
                     "1.0.0",
                     Optional.empty(),
                     name,
@@ -70,7 +72,7 @@ class ActivationImpactAffectedTest {
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), urns));
             facts.put(
                     name, new PackCompositionFacts(List.of(), urns, List.of(), policy, List.of(), List.of(), Map.of()));
-            policies.put("id-" + name, policy);
+            policies.put(FixtureUlids.ulid(name), policy);
             return this;
         }
 
@@ -81,7 +83,7 @@ class ActivationImpactAffectedTest {
                     Map.of(),
                     new RequiredFloor(Map.of()),
                     new PerPackPolicy(policies),
-                    packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                    packs.stream().map(PackUnderResolution::descriptorId).toList(),
                     List.of(),
                     Map.of(),
                     "sha256:merged",

@@ -18,7 +18,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -34,6 +33,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -211,7 +211,7 @@ class ActivationImpactAdapterTest {
                 Map.of(),
                 new RequiredFloor(Map.of()),
                 new PerPackPolicy(Map.of()),
-                packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                packs.stream().map(PackUnderResolution::descriptorId).toList(),
                 List.of(),
                 Map.of(),
                 "sha256:merged",
@@ -229,7 +229,7 @@ class ActivationImpactAdapterTest {
             PromptFacts prompts,
             String... held) {
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -279,7 +279,9 @@ class ActivationImpactAdapterTest {
                             .contains("a-1")
                             .contains("step_enhancement:x")
                             .contains("spdd:reasons-block");
-                    assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("base", "proj");
+                    assertThat(refused.packs())
+                            .extracting(pack -> pack.packId().value())
+                            .containsExactly("base", "proj");
                 });
     }
 

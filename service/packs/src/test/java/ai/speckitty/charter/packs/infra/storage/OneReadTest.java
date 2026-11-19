@@ -76,7 +76,7 @@ class OneReadTest {
         long walks = PackFileSet.walks();
         long before = FilesystemPackStore.reads();
 
-        new WholePackStore(STRATEGY).loadStored(pack);
+        new WholePackStore(STRATEGY).loadStored(new PackIdentifier(ExamplePacks.BUILT_IN), pack);
 
         assertThat(PackFileSet.walks() - walks).isOne();
         assertThat(FilesystemPackStore.reads() - before).isOne();
@@ -140,9 +140,9 @@ class OneReadTest {
     void theFactsBuilderReadsNothing(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
         FilesystemPackStore store = new FilesystemPackStore(pack.getParent(), STRATEGY);
-        PackIdentifier key = new PackIdentifier(String.valueOf(pack.getFileName()));
-        FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
-        FilesystemPackStore.PackRead read = store.read(key, graphs);
+        PackIdentifier key = new PackIdentifier(ExamplePacks.BUILT_IN);
+        FilesystemPackStore.GraphRead graphs = store.readGraphs(PackDirectory.of(pack));
+        FilesystemPackStore.PackRead read = store.read(PackDirectory.of(pack), graphs);
         Pack assembled = StoreRead.assembly(key, read, new HashMap<>(), graphs, new ArrayList<>())
                 .build();
         long before = FilesystemPackStore.reads();

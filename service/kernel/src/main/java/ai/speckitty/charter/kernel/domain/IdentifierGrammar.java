@@ -43,6 +43,17 @@ public final class IdentifierGrammar {
      */
     public static final String RELATIVE_PATH = "[A-Za-z0-9_][A-Za-z0-9_.-]*+(?:/[A-Za-z0-9_][A-Za-z0-9_.-]*+)*+";
 
+    /**
+     * A ULID: 26 characters of Crockford base32 in upper case, the digits and the capital letters without {@code I},
+     * {@code L}, {@code O} and {@code U}: {@code ^[0-9A-HJKMNP-TV-Z]{26}$} (the {@code Ulid} of
+     * {@code pack-descriptor.schema.json}).
+     */
+    public static final String ULID = "[0-9A-HJKMNP-TV-Z]{26}+";
+
+    /** The length of a {@link #ULID}. */
+    public static final int ULID_LENGTH = 26;
+
+    private static final Pattern ULID_PATTERN = Pattern.compile(ULID);
     private static final Pattern SLUG_PATTERN = Pattern.compile(SLUG);
     private static final Pattern LETTER_FIRST_SLUG_PATTERN = Pattern.compile(LETTER_FIRST_SLUG);
     private static final Pattern DOTTED_KEY_PATTERN = Pattern.compile(DOTTED_KEY);
@@ -96,6 +107,28 @@ public final class IdentifierGrammar {
         return text != null
                 && text.length() <= MAX_PATH_LENGTH
                 && RELATIVE_PATH_PATTERN.matcher(text).matches();
+    }
+
+    /**
+     * Whether a text is a {@link #ULID}.
+     *
+     * @param text the candidate, possibly {@code null}
+     * @return {@code true} when it is
+     */
+    public static boolean isUlid(@Nullable String text) {
+        return text != null
+                && text.length() == ULID_LENGTH
+                && ULID_PATTERN.matcher(text).matches();
+    }
+
+    /**
+     * The rule that a text is a {@link #ULID} (ADR-0075 decision 2, #583).
+     *
+     * @return the rule; its detail names the grammar
+     */
+    public static Constraint<String> ulid() {
+        return Constraints.of(
+                "must be a ULID: 26 characters of upper-case Crockford base32", IdentifierGrammar::isUlid);
     }
 
     /**

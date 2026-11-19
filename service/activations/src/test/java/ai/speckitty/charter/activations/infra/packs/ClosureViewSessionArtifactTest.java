@@ -17,6 +17,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -36,6 +37,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -387,7 +389,7 @@ class ClosureViewSessionArtifactTest {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
-        private final Map<String, MutabilityPolicySource> policies = new LinkedHashMap<>();
+        private final Map<PackUlid, MutabilityPolicySource> policies = new LinkedHashMap<>();
         private final List<String> reads = new ArrayList<>();
         private ClosureView.WinnerSource source = (pack, kind, id) -> {
             reads.add(pack.value() + ":" + kind.token() + ":" + id);
@@ -395,7 +397,7 @@ class ClosureViewSessionArtifactTest {
         };
 
         Closure pack(String name, PackLevel level, List<String> dependsOn, List<String> held, Relationship... edges) {
-            String id = "id-" + name;
+            String id = FixtureUlids.of(name);
             PackDescriptor descriptor = new PackDescriptor(
                     id,
                     "1.0.0",
@@ -405,7 +407,7 @@ class ClosureViewSessionArtifactTest {
                     Optional.empty(),
                     PackPaths.none(),
                     dependsOn.stream()
-                            .map(other -> new PackDependency("id-" + other, ">=0"))
+                            .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                             .toList());
             packs.add(new PackUnderResolution(
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), held));
@@ -414,7 +416,7 @@ class ClosureViewSessionArtifactTest {
                     name,
                     new PackCompositionFacts(
                             List.of(), held, List.of(), policy, List.of(), Arrays.asList(edges), Map.of()));
-            policies.put(id, policy);
+            policies.put(new PackUlid(id), policy);
             return this;
         }
 
@@ -425,7 +427,7 @@ class ClosureViewSessionArtifactTest {
                     Map.of(),
                     new RequiredFloor(Map.of()),
                     new PerPackPolicy(policies),
-                    packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                    packs.stream().map(PackUnderResolution::descriptorId).toList(),
                     List.of(),
                     Map.of(),
                     "sha256:merged",
