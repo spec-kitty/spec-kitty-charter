@@ -1,0 +1,318 @@
+{
+  "version": 1,
+  "mission_slug": "serve-tensions-01M7RDX1",
+  "mission_id": "01M7RDX1S8Y46WAKCP9M29PF9C",
+  "mission_branch": "kitty/mission-serve-tensions-01M7RDX1",
+  "target_branch": "feat/602-tensions",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/KindTaxonomy.model.yaml",
+        "contracts/charter/paths/offering_kinds.yaml",
+        "contracts/charter/scenarios/effective-references.feature",
+        "contracts/charter/scenarios/offering.feature",
+        "contracts/charter/schemas/KindTaxonomy.yaml",
+        "contracts/charter/schemas/Relation.yaml",
+        "contracts/charter/schemas/RelationRow.yaml",
+        "contracts/charter/schemas/TaxonomyRelation.yaml",
+        "contracts/packs/schemas/graph-shard.schema.json",
+        "contracts/packs/schemas/org-fragment.schema.json",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/DoctrineGraph.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointRule.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/EndpointTable.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Tension.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/DoctrineGraphTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/EndpointRuleTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/RelationTypeTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/RelationshipTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/TensionTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/KindTaxonomyReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackEdgeRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/RelationshipEndpointRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/GraphBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompositionFactsBuilder.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriter.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RelationshipShard.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/TensionIsNotWalkedTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/RelationshipEndpointRuleTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/GraphBindingTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WireTokenParityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/EndpointTableAdrTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphDocumentReaderTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriterTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackEdgeAdapterTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/RelationshipShardRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java",
+        "service/packs/src/test/resources/load-fixtures/shard-in-tension-with-is-unknown/**",
+        "service/packs/src/test/resources/load-fixtures/shard-tension-binds-as-tension/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/pack-validation/src/test/resources/golden/validate.json",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCodes.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/GraphRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCodesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/GraphRulesTest.java",
+        "service/packs/src/test/resources/load-fixtures/shard-tension-canonical/**",
+        "service/packs/src/test/resources/load-fixtures/shard-tension-duplicated/**",
+        "service/packs/src/test/resources/load-fixtures/shard-tension-orientation-reversed/**",
+        "service/packs/src/test/resources/load-fixtures/shard-tension-self/**",
+        "service/packs/src/test/resources/load-fixtures/shard-tension-source-not-owned/**",
+        "service/packs/src/testFixtures/resources/planted/tension-duplicated/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/RelationshipRegistered.tension.yaml",
+        "contracts/charter/examples/RelationshipRegistration.tension.yaml",
+        "contracts/charter/paths/packs_packId_relationships.yaml",
+        "contracts/charter/scenarios/pack-removal.feature",
+        "contracts/charter/scenarios/relationships.feature",
+        "contracts/charter/schemas/RelationshipRegistered.yaml",
+        "contracts/charter/schemas/RelationshipRegistration.yaml",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactRemovalService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/InboundReferences.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipDraft.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipMerge.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRemovalService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PackRemovalController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactRemovalServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/InboundReferencesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipMergeTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRemovalServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RelationshipWireTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "docs/plans/charter-example-packs.md",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyInForceTest.java",
+        "service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyReadTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileCorpusTest.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackExpectation.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackRoundTripTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/GraphProjection.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/TensionsInForce.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphProjectionTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/TensionsInForceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ExamplePacksComposeTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ExamplePacksTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ManifestMembershipTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionTypeCorpusTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDigestBaselineTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ResolvedProfileCorpusTest.java",
+        "service/packs/src/testFixtures/java/ai/speckitty/charter/packs/examples/ExamplePacks.java",
+        "service/packs/src/testFixtures/resources/example-packs/tensions/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/EffectiveActionContext.implement.yaml",
+        "contracts/charter/examples/EffectiveActionContext.tension.yaml",
+        "contracts/charter/examples/EffectiveGraph.layer-override.yaml",
+        "contracts/charter/examples/EffectiveGraph.one-edge.yaml",
+        "contracts/charter/examples/EffectiveGraph.tension.yaml",
+        "contracts/charter/headers/EffectiveETag.yaml",
+        "contracts/charter/schemas/ContextTension.yaml",
+        "contracts/charter/schemas/EffectiveActionContext.yaml",
+        "contracts/charter/schemas/EffectiveGraph.yaml",
+        "contracts/charter/schemas/EffectiveGraphEdge.yaml",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveReadService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/PacksSession.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveContext.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/GraphSnapshot.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionSnapshot.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapper.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSession.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadOperationBudgetTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveContextTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveTagTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapperTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/Activation.minimal.yaml",
+        "contracts/charter/examples/ActivationTensions.empty.yaml",
+        "contracts/charter/examples/ActivationTensions.unreconciled.yaml",
+        "contracts/charter/examples/_index.yaml",
+        "contracts/charter/headers/CharterSourceFingerprint.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/paths/activations_activationId_tensions.yaml",
+        "contracts/charter/scenarios/activation-links.feature",
+        "contracts/charter/scenarios/every-operation.feature",
+        "contracts/charter/scenarios/read-refusals.feature",
+        "contracts/charter/scenarios/switch-gate.yaml",
+        "contracts/charter/scenarios/unexpected-failure.feature",
+        "contracts/charter/schemas/Activation.yaml",
+        "contracts/charter/schemas/ActivationTensions.yaml",
+        "contracts/charter/schemas/TensionFinding.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "contracts/lint/ruleset.yaml",
+        "docs/development/hypermedia-hateoas.md",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/application/TensionReadService.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionFinding.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationController.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/TensionReadMapper.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/TensionReadServiceTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/TensionFindingTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationControllerTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationMapperLinksTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/TensionReadMapperTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/tensions.feature",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveGraphSteps.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/TensionSteps.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-e",
+        "lane-f"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-19-tension-is-a-relation.md",
+        "contracts/charter/changes/2026-11-19-tensions-are-served.md",
+        "contracts/packs/README.md",
+        "docs/_meta/terminology.yaml",
+        "docs/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse.md",
+        "docs/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship.md",
+        "docs/adr/0077-kind-taxonomy-and-step-authority.md",
+        "docs/api/service-contract.md",
+        "docs/changelog/2026-11-19-tensions.md",
+        "docs/conformance/divergence-register.md",
+        "docs/conformance/divergences.yaml",
+        "site/.contextive/definitions.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-g"
+      ],
+      "parallel_group": 6
+    }
+  ],
+  "computed_at": "2026-11-19T06:46:36.680390+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "05796e7d35f09932b3328d70733793358138cd64"
+}
