@@ -73,7 +73,7 @@
       "wp": null
     },
     "#597": {
-      "evidence_ref": "WP01 commits 89c6da5e..92408ae7: LinkRules (pack_entry_linked) in StorageRulesets.HOLDING; PackRegistrationLinkTest covers #597's three cases; mutant without LinkRules fails it",
+      "evidence_ref": "WP01 commits ed662d8d..1fc6004d (lane-a, after the cycle-1 rebase): LinkRules (pack_entry_linked) in StorageRulesets.HOLDING; PackRegistrationLinkTest covers #597's three cases; mutant without LinkRules fails it",
       "fr": null,
       "nfr": null,
       "repo": null,
