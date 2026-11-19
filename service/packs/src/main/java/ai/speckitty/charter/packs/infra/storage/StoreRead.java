@@ -107,8 +107,9 @@ record StoreRead(
 
     /**
      * Reads the DSO half of a pack directory known only by a name (its directory name, or the name a validate-mode
-     * caller passed): the name is the id the pack is assembled under when it is a pack id
-     * ({@link PackIdentifier#isPackId}).
+     * caller passed). The name is the id the pack is assembled under, so it must be a pack id
+     * ({@link PackIdentifier#isPackId}); a name that is not one is refused whole, {@code PACK_UNREADABLE} with the
+     * {@link StorageCodes#PACK_ID_INVALID} detail ({@link #notAPackId}), and nothing is read (#583, D5).
      *
      * @param directory the pack directory
      * @param name the name the pack is known by
@@ -125,23 +126,38 @@ record StoreRead(
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
-        return read(directory, registeredIdOf(name).orElse(null), walk, strategy, bindings, companionRules);
+        if (!PackIdentifier.isPackId(name)) {
+            return refused(List.of(), RefusalCode.PACK_UNREADABLE, packIdInvalid(name), false, false);
+        }
+        return read(directory, new PackIdentifier(name), walk, strategy, bindings, companionRules);
     }
 
     /**
-     * The id a pack known only by a name is assembled under: the name, when it is a pack id.
+     * Why a pack known by {@code name} is not read: the name is not a pack id. The one wording of the
+     * {@link StorageCodes#PACK_ID_INVALID} fault, which the reader states and a whole-pack load refuses with.
      *
      * @param name the name the pack is known by
-     * @return the id; empty when the name is not a pack id
+     * @return the detail, naming the name and the pack id grammar
      */
-    static Optional<PackIdentifier> registeredIdOf(String name) {
-        // TODO(#583 WP03): refuse with pack_id_invalid
-        return PackIdentifier.isPackId(name) ? Optional.of(new PackIdentifier(name)) : Optional.empty();
+    static String notAPackId(String name) {
+        return "pack directory '" + name + "' is not a pack id. " + PackIdentifier.GRAMMAR_DETAIL;
+    }
+
+    /**
+     * The reason a refusal of a pack directory not named by a pack id gives where no code travels beside it (a log
+     * line, a refusal message, a refused file): the {@link StorageCodes#PACK_ID_INVALID} token, then
+     * {@link #notAPackId}.
+     *
+     * @param name the directory's name
+     * @return the reason, naming the code, the name and the pack id grammar
+     */
+    static String packIdInvalid(String name) {
+        return StorageCodes.PACK_ID_INVALID.value() + ": " + notAPackId(name);
     }
 
     private static StoreRead read(
             Path directory,
-            @Nullable PackIdentifier registered,
+            PackIdentifier id,
             PackFileSet.Walk walk,
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
@@ -155,10 +171,6 @@ record StoreRead(
         }
         FilesystemPackStore.GraphRead graphs = dso.graphs();
         FilesystemPackStore.PackRead read = dso.read();
-        // TODO(#583 WP03): refuse with pack_id_invalid instead of assembling under the descriptor's pack_id
-        PackIdentifier id = registered != null
-                ? registered
-                : new PackIdentifier(read.descriptor().packId());
         Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
         List<Reason> warnings = new ArrayList<>();

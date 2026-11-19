@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 /**
  * The read of one stored pack's document (#451): its {@code README.md}, with the pack revision it was read at, verified
  * against the source fingerprint as every read is. The pack is resolved as {@link PackSummaryQuery} resolves it (a
- * configured name or the declared {@code pack_id}; a built-in pack is {@code pack_not_found}; a pack whose
+ * configured name, its registered id; a built-in pack is {@code pack_not_found}; a pack whose
  * {@code pack.yaml} cannot be read is {@code pack_unreadable}, as {@code getPack} answers it), and the document and
  * the revision are taken inside the one verified read, as {@link ProcedureReadService} takes an item and its revision,
  * so the {@code ETag} names the state the body came from.
@@ -74,7 +74,7 @@ public final class PackDocumentQuery {
     /**
      * The document of a stored pack and the revision it was read at.
      *
-     * @param identifier the configured name, or the declared {@code pack_id}
+     * @param identifier the registered id, the configured name
      * @return the document, the pack it belongs to and the pack revision, and the fingerprint the read verified
      * @throws CharterRefusal {@code PACK_NOT_FOUND} when no configured pack has the identifier, the pack is a built-in
      *     one, or the pack cannot be resolved; {@code PACK_UNREADABLE} when the pack's {@code pack.yaml} cannot be read,

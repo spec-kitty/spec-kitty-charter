@@ -82,13 +82,12 @@ class SwapWindowReadTest {
             String digest,
             List<String> toolguides,
             List<PackLocation> listed,
-            String descriptorById,
+            String descriptorName,
             String fingerprint) {}
 
     private Answers answers() {
         CommitStorePackWriteStore reader =
                 new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy));
-        String packId = repository.get(PACK).packId();
         return new Answers(
                 reader.currentRevision(PACK),
                 reader.digestOf(PACK),
@@ -97,7 +96,7 @@ class SwapWindowReadTest {
                         .sorted()
                         .toList(),
                 locations.all(),
-                repository.get(new PackIdentifier(packId)).name(),
+                repository.get(PACK).name(),
                 new FileSystemPackSources(locations).fingerprint());
     }
 

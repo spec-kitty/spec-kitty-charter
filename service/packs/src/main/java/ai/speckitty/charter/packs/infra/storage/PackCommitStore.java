@@ -921,7 +921,7 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /** The pack's store and directory, at the location {@link PackLocator} resolves. */
     private Resolved resolve(PackIdentifier pack) {
-        return over(PackLocator.locate(locations, strategy, pack));
+        return over(PackLocator.locate(locations, pack));
     }
 
     private Resolved over(PackLocation location) {

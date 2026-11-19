@@ -242,6 +242,36 @@ class PackCheckTest {
                 .containsExactly(tuple("pack_unreadable", "pack qa has no pack.yaml"));
     }
 
+    /** Validate mode over the project example pack, copied into a directory named {@code name} and read under it. */
+    private static List<Reason> violationsNamed(Path dir, String name) throws IOException {
+        Path pack = Files.move(ExamplePacks.copyOf(ExamplePacks.PROJECT, dir), dir.resolve(name));
+        return new PackCheck(new FileSystemPackInspector())
+                        .validate(new PackRoot(
+                                name, Optional.of(ExamplePacks.level(ExamplePacks.PROJECT)), pack.toString()))
+                        .findings()
+                        .stream()
+                        .filter(finding -> finding.severity() == Severity.VIOLATION)
+                        .toList();
+    }
+
+    @Test
+    void aPackDirectoryWhoseNameIsNotAPackIdIsOnePackIdInvalidViolationNotAnException(@TempDir Path dir)
+            throws IOException {
+        assertThat(violationsNamed(dir, "My_Pack"))
+                .as("#583 D5: the read refuses a name that is not a pack id, and says so at the pack")
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code().value()).isEqualTo("pack_id_invalid");
+                    assertThat(finding.location().file()).isEqualTo("pack");
+                    assertThat(finding.detail()).contains("My_Pack");
+                });
+    }
+
+    @Test
+    void theSamePackUnderAPackIdHasNoViolation(@TempDir Path dir) throws IOException {
+        assertThat(violationsNamed(dir, "my-pack")).isEmpty();
+    }
+
     private static final String MANIFEST = "pack-manifest.yaml";
 
     /** Validate mode's findings on a copy of the project example pack, changed first. */

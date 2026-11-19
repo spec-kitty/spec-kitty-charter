@@ -45,13 +45,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The domain ports realized by {@link DomainRepositoryService}, driven at entity level over a fixture pack. The pack
- * directory is {@code pack-a} but its real {@code pack_id} is a ULID, so every test also proves that identifiers are
- * resolved through the configured locations rather than taken as directory names.
+ * directory is {@code pack-a}, its registered id, and its {@code pack_id} is a ULID: a pack is addressed by its registered
+ * id alone (#583, D3).
  */
 class DomainRepositoryServiceTest {
 
-    private static final PackIdentifier BY_ID = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A");
-    private static final PackIdentifier BY_NAME = new PackIdentifier("pack-a");
+    /** The registered id: the configured name, the only identifier a pack is addressed by. */
+    private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+    /** The {@code pack_id} the fixture's {@code pack.yaml} declares: the descriptor's identity, never an address. */
+    private static final String DECLARED_ULID = "01M5DEH8R0VNDTR1PF1XTVRE0A";
+
     private static final TacticIdentifier ALPHA = new TacticIdentifier("alpha-tactic");
 
     private DomainRepositoryService service;
@@ -66,10 +69,10 @@ class DomainRepositoryServiceTest {
     /** FR-003 positive control: the present id on the same fixture returns a populated entity. */
     @Test
     void aPresentTacticLoadsAsAPopulatedEntity() {
-        Tactic alpha = service.load(BY_ID, ALPHA).orElseThrow();
+        Tactic alpha = service.load(PACK, ALPHA).orElseThrow();
 
         assertThat(alpha.id()).isEqualTo(ALPHA);
-        assertThat(alpha.packId()).isEqualTo(BY_ID);
+        assertThat(alpha.packId()).isEqualTo(PACK);
         assertThat(alpha.name()).isEqualTo("Alpha tactic");
         assertThat(alpha.steps()).hasSize(2);
         assertThat(alpha.steps().get(0).examples()).containsExactly("first example", "second example");
@@ -79,16 +82,20 @@ class DomainRepositoryServiceTest {
     /** FR-003: an absent id is empty, never thrown; paired with the present control above on the same fixture. */
     @Test
     void anAbsentTacticIsEmptyNotThrown() {
-        assertThat(service.load(BY_ID, new TacticIdentifier("no-such-tactic"))).isEmpty();
-        assertThat(service.load(BY_ID, ALPHA)).isPresent();
+        assertThat(service.load(PACK, new TacticIdentifier("no-such-tactic"))).isEmpty();
+        assertThat(service.load(PACK, ALPHA)).isPresent();
     }
 
-    /** The configured name and the declared pack_id both resolve to the same directory. */
+    /** The registered id resolves the pack; the pack_id its descriptor declares is no address (#583, D3). */
     @Test
-    void theConfiguredNameAndTheDeclaredIdResolveTheSamePack() {
-        assertThat(service.load(BY_NAME, ALPHA)).isPresent();
-        assertThat(service.load(BY_ID, ALPHA)).isPresent();
-        assertThat(service.get(BY_ID)).isEqualTo(service.get(BY_NAME));
+    void theRegisteredIdResolvesThePackAndTheDeclaredUlidIsNotFound() {
+        assertThat(service.get(PACK).packId()).isEqualTo(DECLARED_ULID);
+        assertThat(service.load(PACK, ALPHA)).isPresent();
+        assertThatThrownBy(() -> service.load(new PackIdentifier(DECLARED_ULID), ALPHA))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getMessage()).isEqualTo("Pack " + DECLARED_ULID + " was not found.");
+                });
     }
 
     /** Resolution refuses an identifier no configured location answers to as not found, like the write side. */
@@ -104,10 +111,10 @@ class DomainRepositoryServiceTest {
     /** Entity-level round-trip: save then load returns an equal entity, down to every field. */
     @Test
     void aSavedTacticReloadsEqualToTheEntitySaved() {
-        Tactic original = service.load(BY_ID, ALPHA).orElseThrow();
+        Tactic original = service.load(PACK, ALPHA).orElseThrow();
 
         service.save(original);
-        Tactic reloaded = service.load(BY_ID, ALPHA).orElseThrow();
+        Tactic reloaded = service.load(PACK, ALPHA).orElseThrow();
 
         assertThat(reloaded).isEqualTo(original);
         assertThat(reloaded.packId()).isEqualTo(original.packId());
@@ -123,7 +130,7 @@ class DomainRepositoryServiceTest {
     /** Mutation control: a change written through the port is visible on reload, so the round-trip is not vacuous. */
     @Test
     void aMutationWrittenThroughThePortIsVisibleOnReload() {
-        Tactic original = service.load(BY_ID, ALPHA).orElseThrow();
+        Tactic original = service.load(PACK, ALPHA).orElseThrow();
         Tactic renamed = Tactic.builder()
                 .id(original.id())
                 .packId(original.packId())
@@ -133,7 +140,7 @@ class DomainRepositoryServiceTest {
                 .build();
 
         service.save(renamed);
-        Tactic reloaded = service.load(BY_ID, ALPHA).orElseThrow();
+        Tactic reloaded = service.load(PACK, ALPHA).orElseThrow();
 
         assertThat(reloaded.name()).isEqualTo("Alpha tactic, renamed");
         assertThat(reloaded.steps()).hasSize(1);
@@ -143,7 +150,7 @@ class DomainRepositoryServiceTest {
     /** The descriptor port: get maps the declared fields, and a changed level written back is read back changed. */
     @Test
     void aDescriptorMutationWrittenThroughThePortIsVisibleOnReload() {
-        PackDescriptor before = service.get(BY_ID);
+        PackDescriptor before = service.get(PACK);
         assertThat(before.declaredLevel()).contains(PackLevel.ORG);
         assertThat(before.paths().packDrg()).contains("drg/fragment.yaml");
 
@@ -155,9 +162,9 @@ class DomainRepositoryServiceTest {
                 java.util.Optional.of(PackLevel.PROJECT),
                 before.requiresCore(),
                 before.paths());
-        service.save(BY_ID, changed);
+        service.save(PACK, changed);
 
-        PackDescriptor after = service.get(BY_ID);
+        PackDescriptor after = service.get(PACK);
         assertThat(after).isEqualTo(changed);
         assertThat(after.declaredLevel()).contains(PackLevel.PROJECT);
         assertThat(after.paths()).isEqualTo(before.paths());
@@ -166,18 +173,18 @@ class DomainRepositoryServiceTest {
     /** The aggregating load assembles descriptor and readable tactics; the broken file is left out, not thrown. */
     @Test
     void theAggregatingLoadAssemblesThePackAndLeavesTheBrokenFileOut() {
-        Pack pack = service.load(BY_ID);
+        Pack pack = service.load(PACK);
 
-        assertThat(pack.id()).isEqualTo(BY_ID);
+        assertThat(pack.id()).isEqualTo(PACK);
         assertThat(pack.descriptor().name()).isEqualTo("roundtrip-a");
         assertThat(pack.tactics()).extracting(t -> t.id().value()).containsExactly("alpha-tactic", "beta-tactic");
-        assertThat(pack.tactics()).allMatch(t -> t.packId().equals(BY_ID));
+        assertThat(pack.tactics()).allMatch(t -> t.packId().equals(PACK));
     }
 
     /** FR-004: the broken file is reported by Pack.violations(), and it is empty on a clean pack. */
     @Test
     void aBrokenFileSurfacesThroughTheInspectionQuery(@TempDir Path cleanHost) throws IOException {
-        List<PackElementViolation> violations = service.load(BY_ID).violations();
+        List<PackElementViolation> violations = service.load(PACK).violations();
 
         assertThat(violations).isNotEmpty();
         assertThat(violations).allMatch(v -> v.file().equals(BROKEN_FILE));
@@ -191,7 +198,7 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * NFR-001: resolving a pack by its declared id reads descriptors only, and a point-read opens only the target
+     * NFR-001: resolving a pack by its registered id reads descriptors only, and a point-read opens only the target
      * pack's tactic file. The decoy pack (three tactic files) is scanned for its id but none of its tactics is opened.
      */
     @Test
@@ -208,7 +215,7 @@ class DomainRepositoryServiceTest {
                         new PackLocation("pack-a", PackLevel.ORG, decoy),
                         new PackLocation("pack-descriptor-only", PackLevel.PROJECT, target)),
                 counting);
-        PackIdentifier targetId = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0B");
+        PackIdentifier targetId = new PackIdentifier("pack-descriptor-only");
 
         assertThat(counted.get(targetId).name()).isEqualTo("roundtrip-descriptor-only");
         assertThat(tacticFilesOpened)
@@ -280,8 +287,8 @@ class DomainRepositoryServiceTest {
     /** The storage-level {@code tacticsOf} override returns the same readable tactics as the aggregate, no more. */
     @Test
     void tacticsOfIsThePointWiseEquivalentOfTheAggregatesTactics() {
-        assertThat(service.tacticsOf(BY_ID)).isEqualTo(service.load(BY_ID).tactics());
-        assertThat(service.tacticsOf(BY_ID)).hasSize(2);
+        assertThat(service.tacticsOf(PACK)).isEqualTo(service.load(PACK).tactics());
+        assertThat(service.tacticsOf(PACK)).hasSize(2);
     }
 
     // ---- asset files and templates (FR-002 to FR-007) -----------------------------------------------------------
@@ -310,7 +317,7 @@ class DomainRepositoryServiceTest {
     /** The live load path assembles the sidecar, both asset files and the template into one valid aggregate. */
     @Test
     void theLoadHoldsAssetsAssetFilesAndTemplates(@TempDir Path host) throws IOException {
-        Pack pack = serviceOver(withAssetsAndTemplates(host)).load(BY_ID);
+        Pack pack = serviceOver(withAssetsAndTemplates(host)).load(PACK);
 
         assertThat(pack.violations()).isEmpty();
         assertThat(pack.assets()).singleElement().satisfies(asset -> {
@@ -335,7 +342,7 @@ class DomainRepositoryServiceTest {
         Path source = withAssetsAndTemplates(host);
         Files.delete(source.resolve("assets/debrief/logo.png"));
 
-        Pack pack = serviceOver(source).load(BY_ID);
+        Pack pack = serviceOver(source).load(PACK);
 
         assertThat(pack.assets()).isEmpty();
         assertThat(pack.violations())
@@ -350,7 +357,7 @@ class DomainRepositoryServiceTest {
     @Test
     void saveArtifactAndWriteAssetFileWriteByteIdenticalFiles(@TempDir Path host) throws IOException {
         Path source = withAssetsAndTemplates(host);
-        Pack loaded = serviceOver(source).load(BY_ID);
+        Pack loaded = serviceOver(source).load(PACK);
         Path target = PackFixtures.copyOf("pack-descriptor-only", host.resolve("target"));
         DomainRepositoryService into = new DomainRepositoryService(
                 () -> List.of(new PackLocation("target", PackLevel.ORG, target)), new YamlSerializationStrategy());
@@ -411,8 +418,7 @@ class DomainRepositoryServiceTest {
     /** A pack with a readable pack.yaml is found, as the descriptor get answers it (the positive control). */
     @Test
     void aReadableDescriptorIsFound() {
-        assertThat(service.find(BY_NAME)).contains(service.get(BY_NAME));
-        assertThat(service.find(BY_ID)).contains(service.get(BY_NAME));
+        assertThat(service.find(PACK)).contains(service.get(PACK));
     }
 
     /** A pack without pack.yaml has no descriptor to find: empty, where get refuses. */
@@ -499,8 +505,7 @@ class DomainRepositoryServiceTest {
         Path pack = PackFixtures.copyOf("pack-a", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), "edges: [\n");
 
-        assertThatThrownBy(
-                        () -> overOne("pack-a", pack).compositionFacts(BY_NAME).changed())
+        assertThatThrownBy(() -> overOne("pack-a", pack).compositionFacts(PACK).changed())
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
@@ -570,9 +575,9 @@ class DomainRepositoryServiceTest {
     /** A reference list that skipped an unreadable file would pass a reference it never saw: it fails closed. */
     @Test
     void aPackWithAnUnreadableArtifactRefusesItsReferencesAndHeldArtifactsWhileItsLoadStillAnswers() {
-        assertThat(service.load(BY_ID).violations()).isNotEmpty();
+        assertThat(service.load(PACK).violations()).isNotEmpty();
 
-        assertThatThrownBy(() -> service.compositionFacts(BY_NAME))
+        assertThatThrownBy(() -> service.compositionFacts(PACK))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refused.getMessage()).contains(BROKEN_FILE);
@@ -855,7 +860,7 @@ class DomainRepositoryServiceTest {
     /**
      * The real stack (ADR-0063 D3, D4): pack {@code p} depends on {@code q}, and {@code q}'s policy file locks
      * {@code directive:X}, which {@code q} holds. The production gate composes {@code p}'s closure through the offering and refuses the write,
-     * naming {@code q}, whether {@code p} is addressed by its configured name or its {@code pack_id}. With {@code q}'s
+     * naming {@code q}; {@code p} is addressed by its registered id, the configured name. With {@code q}'s
      * named file gone, the offering and the gate both refuse {@code pack_unreadable} naming {@code q}.
      */
     @Test
@@ -872,17 +877,14 @@ class DomainRepositoryServiceTest {
                 offerings, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
         Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
 
-        for (PackIdentifier addressed : List.of(new PackIdentifier("p"), new PackIdentifier(pId))) {
-            Pack target = over.load(addressed);
-            assertThatThrownBy(() -> gate.authorize(target, Operation.REGISTER, locked))
-                    .as("addressed as %s", addressed.value())
-                    .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                        assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
-                        assertThat(refused.getMessage()).contains(qId).contains("locked");
-                    });
-            assertThatCode(() -> gate.authorize(target, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
-                    .doesNotThrowAnyException();
-        }
+        Pack target = over.load(new PackIdentifier("p"));
+        assertThatThrownBy(() -> gate.authorize(target, Operation.REGISTER, locked))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+                    assertThat(refused.getMessage()).contains(qId).contains("locked");
+                });
+        assertThatCode(() -> gate.authorize(target, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                .doesNotThrowAnyException();
 
         Files.delete(q.resolve("policy.yaml"));
         assertThatThrownBy(offerings::offering).isInstanceOfSatisfying(CharterRefusal.class, refused -> {

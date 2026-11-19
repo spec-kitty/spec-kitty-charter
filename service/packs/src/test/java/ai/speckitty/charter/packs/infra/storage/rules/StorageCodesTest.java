@@ -45,4 +45,17 @@ class StorageCodesTest {
         assertThat(StorageCodes.ASSEMBLY_REFUSED.value()).isEqualTo(RefusalCode.VALIDATION_FAILED.token());
         assertThat(StorageCodes.FILE_NOT_HELD.value()).isEqualTo(Diagnostic.Code.FILE_NOT_HELD.token());
     }
+
+    @Test
+    @DisplayName(
+            "pack_id_invalid is a storage violation, in the vocabulary once, and no contract or domain token (#583)")
+    void packIdInvalidIsAStorageViolation() {
+        assertThat(StorageCodes.PACK_ID_INVALID.value()).isEqualTo("pack_id_invalid");
+        assertThat(StorageCodes.PACK_ID_INVALID.severity()).isEqualTo(Severity.VIOLATION);
+        assertThat(StorageCodes.ORDERED).containsOnlyOnce(StorageCodes.PACK_ID_INVALID);
+        assertThat(StorageCodes.ALL).contains(StorageCodes.PACK_ID_INVALID);
+        assertThat(RefusalCode.values())
+                .extracting(RefusalCode::token)
+                .doesNotContain(StorageCodes.PACK_ID_INVALID.value());
+    }
 }

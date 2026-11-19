@@ -123,7 +123,7 @@ public interface PackWriteStore extends PackRevisions {
      * @param <T> the outcome type
      * @return what {@code work} returns
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_NOT_FOUND} when the identifier names no
-     *     configured pack (neither by configured name nor by declared {@code pack_id}); a configured pack that cannot be
+     *     configured pack (by its registered id, the configured name); a configured pack that cannot be
      *     read is not "not found", and its {@code PACK_UNREADABLE} surfaces from {@code work}
      */
     <T> T exclusively(PackIdentifier pack, Supplier<T> work);
