@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
@@ -242,16 +243,60 @@ class PackCheckTest {
                 .containsExactly(tuple("pack_unreadable", "pack qa has no pack.yaml"));
     }
 
-    /** Validate mode over the project example pack, copied into a directory named {@code name} and read under it. */
+    /** The project example pack, copied into a directory named {@code name}. */
+    private static Path projectCopiedTo(Path dir, String name) throws IOException {
+        return Files.move(ExamplePacks.copyOf(ExamplePacks.PROJECT, dir), dir.resolve(name));
+    }
+
+    private static List<Reason> violations(PackVerdict verdict) {
+        return verdict.findings().stream()
+                .filter(finding -> finding.severity() == Severity.VIOLATION)
+                .toList();
+    }
+
+    /** Validate mode over the project example pack in a directory named {@code name}, which names no id: read under it. */
     private static List<Reason> violationsNamed(Path dir, String name) throws IOException {
-        Path pack = Files.move(ExamplePacks.copyOf(ExamplePacks.PROJECT, dir), dir.resolve(name));
-        return new PackCheck(new FileSystemPackInspector())
-                        .validate(new PackRoot(
-                                name, Optional.of(ExamplePacks.level(ExamplePacks.PROJECT)), pack.toString()))
-                        .findings()
-                        .stream()
-                        .filter(finding -> finding.severity() == Severity.VIOLATION)
-                        .toList();
+        return violations(new PackCheck(new FileSystemPackInspector())
+                .validate(Optional.of(ExamplePacks.level(ExamplePacks.PROJECT)), projectCopiedTo(dir, name)));
+    }
+
+    @Test
+    void aCheckWithNoIdReadsThePackUnderItsDirectoryName() {
+        FakeReading reading = new FakeReading(
+                readout(root(Optional.empty()), new FileRead.Read<>(PACK_YAML, DESCRIPTOR), EMPTY_FRAGMENT, List.of()));
+        Path directory = Path.of("packs", "qa-pack");
+
+        new PackCheck(reading).validate(Optional.of(PackLevel.ORG), directory);
+
+        assertThat(reading.roots)
+                .as("#583 D2b: no id named, the directory's name")
+                .containsExactly(new PackRoot("qa-pack", Optional.of(PackLevel.ORG), directory.toString()));
+    }
+
+    @Test
+    void aCheckUnderAnIdReadsThePackUnderThatIdWhateverTheDirectoryIsCalled() {
+        FakeReading reading = new FakeReading(
+                readout(root(Optional.empty()), new FileRead.Read<>(PACK_YAML, DESCRIPTOR), EMPTY_FRAGMENT, List.of()));
+        Path directory = Path.of("packs", "My_Pack");
+
+        new PackCheck(reading).validate(new PackIdentifier("qa"), Optional.empty(), directory);
+
+        assertThat(reading.roots)
+                .as("#583 D2b: the caller's registered id, not the directory's name")
+                .containsExactly(new PackRoot("qa", Optional.empty(), directory.toString()));
+    }
+
+    @Test
+    void aPackInADirectoryWhoseNameIsNotAPackIdHasNoViolationUnderAnIdItsCallerNames(@TempDir Path dir)
+            throws IOException {
+        Path pack = projectCopiedTo(dir, "My_Pack");
+
+        PackVerdict verdict = new PackCheck(new FileSystemPackInspector())
+                .validate(new PackIdentifier("my-pack"), Optional.of(ExamplePacks.level(ExamplePacks.PROJECT)), pack);
+
+        assertThat(violations(verdict))
+                .as("#583 D2b: assembled under the caller's id, the directory's name is not judged")
+                .isEmpty();
     }
 
     @Test
