@@ -1078,9 +1078,9 @@ public final class RegistrationJobs implements AutoCloseable {
             try {
                 owner.dependencies.room().requireForRun(archiveBytes);
                 Staged staged = Objects.requireNonNull(stager).stage(directory);
-                RegistrationOutcome outcome =
-                        owner.dependencies.service()
-                                .register(packId, staged.pack(), preconditions, this::beginCommit, origin.mode());
+                RegistrationOutcome outcome = owner.dependencies
+                        .service()
+                        .register(packId, staged.pack(), preconditions, this::beginCommit, origin.mode());
                 return new Succeeded(outcome, staged.source());
             } catch (CharterRefusal refusal) {
                 return new Refused(Kind.CODED, refusal, detail(refusal));

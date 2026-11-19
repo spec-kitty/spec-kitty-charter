@@ -152,7 +152,12 @@ public final class PackUninstallService {
                 throw refused;
             }
             return new Outcome(
-                    name, descriptor.packVersion(), revision, RegistrationImpact.Notices.NONE, true, Optional.of(refused));
+                    name,
+                    descriptor.packVersion(),
+                    revision,
+                    RegistrationImpact.Notices.NONE,
+                    true,
+                    Optional.of(refused));
         }
         if (!dryRun) {
             store.removeWhole(name);
@@ -162,7 +167,10 @@ public final class PackUninstallService {
 
     /** The dependents, then the closures left: the judgement a dry run answers as a body (ADR-0081 D5, P6). */
     private RegistrationImpact.Notices judge(
-            StagedPackViews.Session session, ConfiguredPack configured, PackDescriptor descriptor, PackIdentifier name) {
+            StagedPackViews.Session session,
+            ConfiguredPack configured,
+            PackDescriptor descriptor,
+            PackIdentifier name) {
         PackDependents.Removed removed = new PackDependents.Removed(configured, descriptor, heldBy(name));
         List<PackDependents.Dependent> found = dependents.of(session.stored(), removed);
         if (!found.isEmpty()) {

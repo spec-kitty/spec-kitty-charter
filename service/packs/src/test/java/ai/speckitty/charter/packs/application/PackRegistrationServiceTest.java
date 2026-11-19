@@ -121,12 +121,16 @@ class PackRegistrationServiceTest {
         StagedPack older =
                 rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "Old"));
 
-        CharterRefusal refusal = catchThrowableOfType(
-                CharterRefusal.class, () -> rig.register("pack-x", older, Preconditions.none()));
+        CharterRefusal refusal =
+                catchThrowableOfType(CharterRefusal.class, () -> rig.register("pack-x", older, Preconditions.none()));
 
-        assertThat(refusal.code()).as("a replacement moves the version forward").isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+        assertThat(refusal.code())
+                .as("a replacement moves the version forward")
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
         assertThat(refusal.getMessage()).contains("2.0.0").contains("1.0.0").contains("not newer");
-        assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).as("nothing changed").isEqualTo(before);
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x")))
+                .as("nothing changed")
+                .isEqualTo(before);
     }
 
     @Test
@@ -139,7 +143,8 @@ class PackRegistrationServiceTest {
         assertThat(refusalOf(() -> rig.register("pack-x", local, Preconditions.none())))
                 .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
 
-        StagedPack post = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0.post1", "org").directive("DIRECTIVE_001", "Other"));
+        StagedPack post =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0.post1", "org").directive("DIRECTIVE_001", "Other"));
         RegistrationOutcome moved = rig.register("pack-x", post, Preconditions.none());
         assertThat(moved.outcome()).isEqualTo(Outcome.REPLACED);
         assertThat(moved.previousVersion()).contains("1.0.0+a");
@@ -1161,26 +1166,26 @@ class PackRegistrationServiceTest {
             WritePolicyGate gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
             this.activationPort = new ActivationImpact() {
-                        @Override
-                        public List<ActivationRoots> activationRoots() {
-                            List<ActivationRoots> roots = new ArrayList<>();
-                            for (int i = 0; i < activations.size(); i++) {
-                                roots.add(new ActivationRoots("activation-" + i, activations.get(i)));
-                            }
-                            return roots;
-                        }
+                @Override
+                public List<ActivationRoots> activationRoots() {
+                    List<ActivationRoots> roots = new ArrayList<>();
+                    for (int i = 0; i < activations.size(); i++) {
+                        roots.add(new ActivationRoots("activation-" + i, activations.get(i)));
+                    }
+                    return roots;
+                }
 
-                        @Override
-                        public void registered(String packId, RegistrationImpact.Notices notices) {
-                            registered.add(packId);
-                        }
+                @Override
+                public void registered(String packId, RegistrationImpact.Notices notices) {
+                    registered.add(packId);
+                }
 
-                        @Override
-                        public List<String> activationsAffected(ActivationImpact.ClosureChanges closures) {
-                            asked.add(closures);
-                            return List.copyOf(affected);
-                        }
-                    };
+                @Override
+                public List<String> activationsAffected(ActivationImpact.ClosureChanges closures) {
+                    asked.add(closures);
+                    return List.copyOf(affected);
+                }
+            };
             this.impact = new RegistrationImpact(new StagedPackViewFactory(locations, strategy), activationPort);
             this.service = new PackRegistrationService(
                     reading,

@@ -66,7 +66,6 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackRegistrationMapper mapper;
     private final PackSourceIntake intake;
     private final PackRemovalController removals;
-    private final PackUninstallController uninstalls;
     private final PackDocumentController documents;
 
     /**
@@ -77,8 +76,7 @@ public class PackRegistrationController implements RegistrationApi {
      * @param archives the archive extractor
      * @param mapper the contract shapes
      * @param intake what takes a registration from a source
-     * @param removals the adapter of the two {@code DELETE}s under a pack
-     * @param uninstalls the adapter of the {@code DELETE} of a pack
+     * @param removals the adapter of the three {@code DELETE}s: of a pack, and of an artifact or a relationship of one
      * @param documents the adapter of the document read, in both its forms
      */
     @Autowired
@@ -89,7 +87,6 @@ public class PackRegistrationController implements RegistrationApi {
             PackRegistrationMapper mapper,
             PackSourceIntake intake,
             PackRemovalController removals,
-            PackUninstallController uninstalls,
             PackDocumentController documents) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
@@ -97,13 +94,12 @@ public class PackRegistrationController implements RegistrationApi {
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.intake = Objects.requireNonNull(intake, "intake");
         this.removals = Objects.requireNonNull(removals, "removals");
-        this.uninstalls = Objects.requireNonNull(uninstalls, "uninstalls");
         this.documents = Objects.requireNonNull(documents, "documents");
     }
 
     @Override
     public ResponseEntity<PackImpact> deletePack(String packId, @Nullable String ifMatch, Boolean dryRun) {
-        return uninstalls.delete(packId, ifMatch, Boolean.TRUE.equals(dryRun));
+        return removals.deletePack(packId, ifMatch, Boolean.TRUE.equals(dryRun));
     }
 
     @Override
@@ -264,7 +260,9 @@ public class PackRegistrationController implements RegistrationApi {
                 "registerPackFromSource",
                 source.kind().wire(),
                 locator,
-                Boolean.TRUE.equals(dryRun) ? PackRegistrationService.Mode.DRY_RUN : PackRegistrationService.Mode.COMMIT);
+                Boolean.TRUE.equals(dryRun)
+                        ? PackRegistrationService.Mode.DRY_RUN
+                        : PackRegistrationService.Mode.COMMIT);
         RegistrationJobs.Reservation reservation =
                 jobs.reserve(packSource.getPackId(), RegistrationAdmission.admittedPreconditions(request), origin);
         try {

@@ -3,8 +3,8 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationService;
+import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.web.InvalidParameter;
@@ -128,12 +128,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         request.setAttribute(
                 ORIGIN,
                 new RegistrationJobs.Origin(
-                        info.worktree(),
-                        AuditContext.credentialOf(request),
-                        UPLOAD,
-                        "archive",
-                        "",
-                        modeOf(request)));
+                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", "", modeOf(request)));
     }
 
     /**
