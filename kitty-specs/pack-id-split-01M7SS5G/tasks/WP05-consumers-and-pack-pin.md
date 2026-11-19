@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: feat/583-pack-id-split
 merge_target_branch: feat/583-pack-id-split
 branch_strategy: Planning artifacts for this mission were generated on feat/583-pack-id-split. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/583-pack-id-split unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-pack-id-split-01M7SS5G
+base_commit: 627315e5a5e0e29cbd7754bc8bed05d9b3b81a27
+created_at: '2026-11-19T16:21:08.384989+00:00'
 subtasks:
 - T021
 - T022
