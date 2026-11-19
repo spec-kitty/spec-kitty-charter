@@ -8,7 +8,11 @@ filed from the Mission. Written 2026-11-19 by WP08 of mission `pack-check-cli-01
 **Title:** `pack_entry_linked`: charter refuses a symbolic link inside a pack; teach `validate_pack_schemas.py` the code,
 or retire it for `pack-check` (open-packs#252)
 
+**Type:** `Task`
+
 **Labels:** `follow-up`, `priority:P3`
+
+**Milestone:** none (issue-tracker Rule 3: an auto-filed follow-up has no milestone until the operator schedules it)
 
 **Refs:** spec-kitty-charter#478 (rulings D1 and D6), spec-kitty-charter#597, open-packs#252.
 
@@ -31,8 +35,8 @@ The pack root itself may still be a link. Hard links and Windows junctions are n
 rule.
 
 The charter's record of the change is the contract fragment
-`contracts/charter/changes/2026-11-19-pack-entry-linked.md` (`### Breaking`) and the `pack_entry_linked` entry of
-`contracts/charter/schemas/CharterRefusalCode.yaml`. In the service, the rule is `LinkRules` and the code is
+`contracts/charter/changes/2026-11-19-pack-entry-linked.md` (`### Breaking`) and the code `pack_entry_linked`, named under
+`validation_failed` in `contracts/charter/schemas/CharterRefusalCode.yaml`. In the service, the rule is `LinkRules` and the code is
 `StorageCodes.PACK_ENTRY_LINKED`.
 
 open-packs' Python mirror of the charter's classification and schema pre-check, `validate_pack_schemas.py`, does not

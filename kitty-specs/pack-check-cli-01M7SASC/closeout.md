@@ -27,7 +27,8 @@ Refs #478
 `PackRegistrationService` accepted a staged tree whose symbolic link pointed outside the pack. Rulings D1 and D6: no
 read follows a link, and every link inside a pack root is refused with `pack_entry_linked`.
 
-**Code** (WP01, branch `kitty/mission-pack-check-cli-01M7SASC-lane-a`, commits `ed662d8d`..`1fc6004d`):
+**Code** (WP01's commits as merged in #608, **to confirm at closeout**; on 2026-11-19, before the merge, lane-a held
+them as `da2a9a16..6741fa29`, a range a rebase or a re-sign changes, so cite the merged commits):
 
 - **The code:** `pack_entry_linked`, `StorageCodes.PACK_ENTRY_LINKED`, in
   `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageCodes.java`.
@@ -37,7 +38,8 @@ read follows a link, and every link inside a pack root is refused with `pack_ent
 - **The reads that never follow a link:** `PackFileSet.unlinkedFile` and `PackFileSet.unlinkedBytes`, in
   `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java`.
 - **The contract:** the `### Breaking` fragment `contracts/charter/changes/2026-11-19-pack-entry-linked.md` and the
-  `pack_entry_linked` entry in `contracts/charter/schemas/CharterRefusalCode.yaml`.
+  code `pack_entry_linked`, named under `validation_failed` in
+  `contracts/charter/schemas/CharterRefusalCode.yaml`.
 
 **Tests:**
 
@@ -62,8 +64,8 @@ HTTP, every stager refuses a link before the reader runs, so no request can reac
 - `LocalSourceReader`, line 224;
 - `GitSourceFetcher`, lines 395 to 401.
 
-**Issue matrix.** The `#597` row of `issue-matrix.json` cites the pre-rebase range `89c6da5e..92408ae7`. The commits
-on lane-a are `ed662d8d..1fc6004d`. Correct the row, or cite the merged commits, before #608 merges.
+**Issue matrix.** The `#597` row of `issue-matrix.json` on the mission branch cites lane-a's current range. At
+closeout, cite WP01's commits as merged in #608.
 
 ### #478: the pack-check CLI and its release (`Refs` until the rc.2 release exists)
 
@@ -119,7 +121,7 @@ No pack in either repository holds a link, so ruling D6 refuses no pack that exi
 ## For the orchestrator
 
 1. File the open-packs draft. Replace `open-packs#TBD-pack-entry-linked` here and in the draft.
-2. Fill every **to confirm at closeout** above from the merged code, and correct the `#597` row of `issue-matrix.json`.
+2. Fill every **to confirm at closeout** above from the merged code, WP01's merged commits among them.
 3. Put "For the PR body" into #608's body (`Closes #597`, `Refs #478`).
 4. At the merge of #608, comment on #478 that only the release step remains.
 5. Run `release-runbook.md`. The operator pushes the tag.
