@@ -24,6 +24,7 @@ operations:
     switch: held
     statuses: [500]
     reason: its declared 500 is a failure of the activation storage alone (a quoted revision or * reads no packs), and the scenarios hold activations in memory with no seam to fail it
+  deletePack: {switch: ready}
   deletePackArtifact: {switch: ready}
   deletePackRelationship: {switch: ready}
   getActivation: {switch: ready}

@@ -73,7 +73,7 @@ Feature: A registration can be judged without being made
     When I PUT "/packs/acme" with the archive "v1"
     And I poll the registration until it ends
     And I GET "/packs/acme"
-    And I remember the field "/revision" of the response body
+    And I remember the field "revision" of the response body
     And I PUT "/packs/acme?dryRun=true" with the archive "newer"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -82,7 +82,7 @@ Feature: A registration can be judged without being made
     And the field at "/result/dryRun" is true
     When I GET "/packs/acme"
     Then the field at "/version" is "1.1.0"
-    And the field at "/revision" is the remembered one
+    And the field "revision" of the response body is the remembered one
 
   Scenario: The dry run of an older version is refused as the registration is
     When I PUT "/packs/acme" with the archive "v1"

@@ -388,6 +388,9 @@ public final class PackRegistrationService {
             return unchanged.get();
         }
         checkPreconditions(upload.preconditions(), stored);
+        // The order runs after the preconditions: a client that named what it replaces, and lost a race to another
+        // writer, learns that from its precondition (412), not from the version the winner left (ADR-0081 D2).
+        stored.ifPresent(replaced -> requireNewer(upload, replaced.descriptor().packVersion()));
         Before before = beforeOf(stored);
         gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
         requireNoInboundReference(upload, stored, before, view);
@@ -520,16 +523,19 @@ public final class PackRegistrationService {
     // ---- steps 5 and 6: the version rule and the preconditions ---------------------------------------------------
 
     /**
-     * The same revision is a no-op, whatever the precondition says. A replacement must then move the version forward
-     * (ADR-0081 D2): a {@code pack_version} that is not newer than the stored one by PEP 440 precedence is a conflict,
-     * the same version included. A version the name was registered at before with another revision is a conflict too,
-     * stored or not (IC-16, ADR-0065 D9); any other version goes on.
+     * The same revision is a no-op, whatever the precondition says. The stored version with another revision is a
+     * conflict, and so is a version the name was registered at before with another revision, stored or not (IC-16,
+     * ADR-0065 D9): a label never names two contents, and that is judged before the preconditions. That a replacement
+     * moves the version forward (ADR-0081 D2) is judged after them ({@link #requireNewer}).
      */
     private Optional<RegistrationOutcome> applyVersionRule(Upload upload, Optional<Stored> stored) {
         if (stored.isPresent() && stored.get().revision().equals(upload.revision())) {
             return Optional.of(outcome(Outcome.UNCHANGED, upload, upload.revision()));
         }
-        if (stored.isPresent()) {
+        if (stored.isPresent()
+                && PackVersionHistory.sameLabel(
+                        stored.get().descriptor().packVersion(),
+                        upload.descriptor().packVersion())) {
             requireNewer(upload, stored.get().descriptor().packVersion());
         }
         PackVersionHistory.requireNotReused(

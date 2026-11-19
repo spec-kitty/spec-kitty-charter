@@ -297,7 +297,8 @@ Feature: Failures outside the charter's refusals
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
     preset_not_found. The effective prompt read adds mission_type_not_in_force (OD-5). The model recommendation adds
-    routing_catalog_not_in_force, routing_catalog_conflict and task_type_not_found (ADR-0080 decision 9).
+    routing_catalog_not_in_force, routing_catalog_conflict and task_type_not_found (ADR-0080 decision 9). The removal
+    of a pack whole (deletePack) adds pack_has_dependents (ADR-0081 D7).
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable             |
       | internal_error              |
@@ -367,3 +368,4 @@ Feature: Failures outside the charter's refusals
       | routing_catalog_not_in_force |
       | routing_catalog_conflict    |
       | task_type_not_found         |
+      | pack_has_dependents         |

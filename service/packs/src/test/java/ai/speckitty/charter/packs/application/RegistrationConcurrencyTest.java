@@ -97,11 +97,21 @@ class RegistrationConcurrencyTest {
             uploads.add(rig.stage(version(run, upload, "m-" + run + "-" + upload)));
         }
         CyclicBarrier start = new CyclicBarrier(UPLOADS + READERS);
+        AtomicInteger notNewer = new AtomicInteger();
         List<Callable<RegistrationOutcome>> tasks = new ArrayList<>();
         for (StagedPack upload : uploads) {
             tasks.add(() -> {
                 start.await(30, TimeUnit.SECONDS);
-                return rig.register(PACK, upload, Preconditions.none());
+                try {
+                    return rig.register(PACK, upload, Preconditions.none());
+                } catch (ai.speckitty.charter.kernel.domain.CharterRefusal refused) {
+                    if (refused.code() != ai.speckitty.charter.kernel.domain.RefusalCode.PACK_VERSION_CONFLICT) {
+                        throw refused;
+                    }
+                    // A newer upload of the run was stored first: a replacement moves the version forward (ADR-0081).
+                    notNewer.incrementAndGet();
+                    return null;
+                }
             });
         }
         for (int reader = 0; reader < READERS; reader++) {
@@ -115,13 +125,14 @@ class RegistrationConcurrencyTest {
         }
         List<RegistrationOutcome> outcomes =
                 invokeAll(tasks).stream().filter(o -> o != null).toList();
-        if (outcomes.size() != UPLOADS || outcomes.stream().anyMatch(o -> o.outcome() != Outcome.REPLACED)) {
-            failures.add("run " + run + ": an upload was not a replace: " + outcomes);
+        if (outcomes.isEmpty()
+                || outcomes.size() + notNewer.get() != UPLOADS
+                || outcomes.stream().anyMatch(o -> o.outcome() != Outcome.REPLACED)) {
+            failures.add("run " + run + ": an upload was neither a replace nor refused as not newer: " + outcomes);
         }
-        boolean oneOfTheUploads = uploads.stream()
-                .anyMatch(upload -> rig.filesOf(upload.directory()).equals(rig.filesOf(rig.packs.resolve(PACK))));
-        if (!oneOfTheUploads) {
-            failures.add("run " + run + ": the stored pack is none of the uploaded trees");
+        StagedPack newest = uploads.getLast();
+        if (!rig.filesOf(newest.directory()).equals(rig.filesOf(rig.packs.resolve(PACK)))) {
+            failures.add("run " + run + ": the stored pack is not the newest upload, which nothing can refuse");
         }
     }
 
