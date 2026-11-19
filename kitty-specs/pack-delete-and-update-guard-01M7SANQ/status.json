@@ -81,7 +81,7 @@
     },
     "WP03": {
       "actor": "reviewer-claude",
-      "agent": null,
+      "agent": "reviewer-claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 3,
@@ -91,7 +91,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25",
-        "Review cycle 1 findings folded in commits 9308057, 6482c34 and f8ed08d (after the reviewer's 548832d); forced because the implement claim could not be re-taken on this single-branch mission. Packs and deployable suites green. WP04 R4-1 awaits the operator ruling."
+        "Review cycle 1 findings folded in commits 9308057, 6482c34 and f8ed08d (after the reviewer's 548832d); forced because the implement claim could not be re-taken on this single-branch mission. Packs and deployable suites green. WP04 R4-1 awaits the operator ruling.",
+        "Independent review cycle 2 @ a548857: verifyAll green (reviewer run). Cycle-1 findings folded and verified."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
