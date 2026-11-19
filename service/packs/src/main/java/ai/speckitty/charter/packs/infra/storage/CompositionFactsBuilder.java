@@ -82,10 +82,7 @@ final class CompositionFactsBuilder {
                 strategy,
                 KindBindings.all(),
                 Companions.Rules.bundled());
-        PackReadout.Built built = built(pack, read);
-        PackCompositionFacts facts = built.facts();
-        return new PackUnderResolution(
-                configured, built.descriptor(), facts.changed(), facts.defined(), Set.copyOf(facts.terms()));
+        return built(pack, read).underResolution(configured);
     }
 
     /**

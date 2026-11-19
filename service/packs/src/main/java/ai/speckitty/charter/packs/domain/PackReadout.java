@@ -3,8 +3,10 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Rationale;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * What {@link PackReading} returns for one read of a pack (#554, S6): kernel and domain values only.
@@ -63,6 +65,19 @@ public record PackReadout(
         public Built {
             Objects.requireNonNull(descriptor, "descriptor");
             Objects.requireNonNull(facts, "facts");
+        }
+
+        /**
+         * What {@code CLOSURE} judges of the pack, configured as a set configures it: its descriptor, the artifacts its
+         * {@code overrides} edges change, the artifacts it holds and the terms it holds. The one mapping of the facts to
+         * a {@link PackUnderResolution}, for the facts builder and the pack-set check alike.
+         *
+         * @param configured how the set configures the pack: its id and level
+         * @return the pack under resolution
+         */
+        public PackUnderResolution underResolution(ConfiguredPack configured) {
+            return new PackUnderResolution(
+                    configured, descriptor, facts.changed(), facts.defined(), Set.copyOf(facts.terms()));
         }
     }
 

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -10,6 +11,7 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +73,33 @@ class PackRulesetsClosureTest {
         assertThat(PackRulesets.closure().apply(List.of(LEFT, RIGHT))).isEmpty();
         assertThat(PackRulesets.closure(EACH_HOLDS_TEAM).apply(List.of(LEFT, RIGHT)))
                 .isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("one derivation: closure(presetIdsOf)'s reasons are closureFaults', code, detail and phase, in order")
+    void theRulesetsReasonsAreItsFaults() {
+        PackUnderResolution orphan = pack("01ORPHAN", "orphan", Optional.of("01NONE"));
+        List<PackUnderResolution> set = List.of(LEFT, RIGHT, orphan);
+
+        List<CompositionFault> faults = PackRulesets.closureFaults(set, EACH_HOLDS_TEAM);
+        List<Reason> reasons = PackRulesets.closure(EACH_HOLDS_TEAM).apply(set);
+
+        assertThat(faults)
+                .extracting(fault -> fault.code().value())
+                .containsExactly(RefusalCode.PACK_PARENT_UNRESOLVED.token(), RefusalCode.PACK_SIBLING_CONFLICT.token());
+        assertThat(faults).allSatisfy(fault -> assertThat(fault.packs()).isNotEmpty());
+        assertThat(reasons)
+                .extracting(Reason::code, Reason::detail, Reason::rule)
+                .containsExactly(
+                        tuple(faults.get(0).code(), faults.get(0).detail(), CompositionRules.RULE),
+                        tuple(faults.get(1).code(), faults.get(1).detail(), CompositionRules.PRESETS_RULE));
+    }
+
+    @Test
+    @DisplayName("a set that resolves with no preset contest has no fault")
+    void aResolvedSetHasNoFault() {
+        assertThat(PackRulesets.closureFaults(List.of(LEFT, CHILD), EACH_HOLDS_TEAM))
+                .isEmpty();
     }
 
     @Test
