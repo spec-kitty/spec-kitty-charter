@@ -336,7 +336,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     @Override
     public PackIdentifier configuredName(PackIdentifier pack) {
-        return new PackIdentifier(location(pack).name());
+        return location(pack).id();
     }
 
     @Override
