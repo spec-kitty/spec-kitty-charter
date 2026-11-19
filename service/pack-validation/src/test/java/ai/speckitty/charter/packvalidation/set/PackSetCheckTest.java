@@ -530,6 +530,42 @@ class PackSetCheckTest {
                     .isEmpty();
         }
 
+        /**
+         * Error handling, as {@code unreadableFactsFailAPackWithNoViolation}: the readout of a real read of org-base is
+         * given facts that cannot be read, so its verdict holds no violation and its refusal is its one problem. A
+         * refused round trip then adds no {@code round_trip_red} (#478, WP04: one problem per pack).
+         */
+        @Test
+        @DisplayName(
+                "a refused round trip of a pack whose facts cannot be read adds nothing: its refusal is its problem")
+        void aRefusedRoundTripOfAnUnreadablePackAddsNoRed() {
+            FileSystemPackInspector inspector = new FileSystemPackInspector();
+            PackReading noAssembly = root -> {
+                PackReadout read = inspector.read(root);
+                return new PackReadout(
+                        read.contents(),
+                        read.files(),
+                        read.notHeld(),
+                        read.rationale(),
+                        PackReadout.Unreadable.noAssembly(root.name()));
+            };
+            RoundTripping refusing = root -> {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the pack " + root.name() + " cannot be read");
+            };
+
+            PackSetVerdict verdict =
+                    new PackSetCheck(noAssembly).checkWithRoundTrip(examples(ExamplePacks.ORG), refusing);
+
+            PackResult result = verdict.packs().getFirst();
+            assertThat(hasViolation(result.verdict().findings())).isFalse();
+            assertThat(result.roundTrip())
+                    .as("the refusal is the pack's one problem")
+                    .isEmpty();
+            assertThat(result.unreportedRefusal()).contains(PackReadout.Unreadable.noAssembly(ExamplePacks.ORG));
+            assertThat(result.failing()).isTrue();
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.ROUND_TRIP);
+        }
+
         @Test
         @DisplayName("an I/O failure of the round trip propagates: it is no fault of the pack")
         void anIoFailurePropagates() {

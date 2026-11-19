@@ -148,12 +148,14 @@ public final class PackSetCheck {
 
     /**
      * The round-trip reasons of a pack the flow refused, so the pack has exactly one problem for the fault: none when
-     * validate mode already reports a violation, which is that problem; otherwise one {@code round_trip_red}
-     * ({@link WholePackRoundTripRule#refused}) carrying the refusal's code and detail.
+     * validate mode already reports a violation, or when the pack's facts are {@link PackReadout.Unreadable}, whose
+     * refusal is then its one problem ({@link PackSetVerdict.PackResult#unreportedRefusal}); otherwise one
+     * {@code round_trip_red} ({@link WholePackRoundTripRule#refused}) carrying the refusal's code and detail.
      */
     private static List<Reason> refused(PackCheck.Checked checked, CharterRefusal refusal) {
         boolean reported =
-                checked.verdict().findings().stream().anyMatch(finding -> finding.isFailing(Severity.VIOLATION));
+                checked.verdict().findings().stream().anyMatch(finding -> finding.isFailing(Severity.VIOLATION))
+                        || checked.readout().facts() instanceof PackReadout.Unreadable;
         if (reported) {
             return List.of();
         }
