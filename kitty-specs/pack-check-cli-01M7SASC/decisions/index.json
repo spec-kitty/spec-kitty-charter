@@ -1,0 +1,103 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-19T07:20:34.313623Z",
+      "decision_id": "01M7SAVER9SWCFMSB7DWRW20J2",
+      "final_answer": null,
+      "input_key": "linked_entries_rule",
+      "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+      "mission_slug": "pack-check-cli-01M7SASC",
+      "opened_by": "cli",
+      "options": [
+        "Refuse every link inside the pack root (new violation code), fold #597",
+        "Refuse only a link resolving outside the pack root",
+        "Follow links, warn file_linked",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How does the one reader judge a symbolic link inside a pack directory (pack-check over a local directory, and registration via #597)?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.symlinks.rule",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:20:36.142537Z",
+      "decision_id": "01M7SAVGHEMDTVM6W5V9BGJF0N",
+      "final_answer": null,
+      "input_key": "output_shape",
+      "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+      "mission_slug": "pack-check-cli-01M7SASC",
+      "opened_by": "cli",
+      "options": [
+        "A PackCheckReport envelope (checks run, packs, problems[] each a contract Problem), schema in contracts",
+        "A bare JSON array of Problems, checks-run on stderr",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "What does pack-check write on stdout?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.output.shape",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:20:38.272435Z",
+      "decision_id": "01M7SAVJM0NTHXGQAYHDMZ1ZW5",
+      "final_answer": null,
+      "input_key": "closure_when_unreadable",
+      "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+      "mission_slug": "pack-check-cli-01M7SASC",
+      "opened_by": "cli",
+      "options": [
+        "CLOSURE is reported as not run; the unreadable pack is a violation (exit 1)",
+        "CLOSURE runs over the readable packs",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "When a pack of the set cannot be read into composition facts, does CLOSURE still run over the rest?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.closure.partial",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T07:20:40.136753Z",
+      "decision_id": "01M7SAVME8G11194RPTV7EX95G",
+      "final_answer": null,
+      "input_key": "release_version",
+      "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+      "mission_slug": "pack-check-cli-01M7SASC",
+      "opened_by": "cli",
+      "options": [
+        "service-v0.1.0-rc.2, via a separate release PR after this lands",
+        "service-v0.2.0-rc.1 (minor: new capability)",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which service release carries pack-check first?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.release.version",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+  "version": 1
+}
