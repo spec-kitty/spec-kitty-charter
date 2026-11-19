@@ -95,14 +95,16 @@ class LinkedEntriesTest {
 
         assertThat(walk.regular()).containsExactly("directives/A.directive.yaml", "pack.yaml");
         assertThat(walk.links()).isEmpty();
-        List<Reason> throughLink = new FileSystemPackInspector()
-                .read(root(linkedRoot))
-                .rationale()
-                .details();
-        assertThat(throughLink).filteredOn(reason -> reason.isFailing(Severity.VIOLATION))
+        List<Reason> throughLink =
+                new FileSystemPackInspector().read(root(linkedRoot)).rationale().details();
+        assertThat(throughLink)
+                .filteredOn(reason -> reason.isFailing(Severity.VIOLATION))
                 .isEmpty();
         assertThat(throughLink)
-                .isEqualTo(new FileSystemPackInspector().read(root(real)).rationale().details());
+                .isEqualTo(new FileSystemPackInspector()
+                        .read(root(real))
+                        .rationale()
+                        .details());
     }
 
     @Test
@@ -192,11 +194,17 @@ class LinkedEntriesTest {
         FileSystemPackInspector.OneRead one = inspector.readWithStore(root(pack));
         outputs.add(one.toString());
         inspector.read(root(pack)).rationale().details().forEach(reason -> outputs.add(reason.toString()));
-        outputs.add(StoreRead.of(pack, PACK, PackFileSet.walk(pack, PACK), STRATEGY, KindBindings.all(),
+        outputs.add(StoreRead.of(
+                        pack,
+                        PACK,
+                        PackFileSet.walk(pack, PACK),
+                        STRATEGY,
+                        KindBindings.all(),
                         Companions.Rules.bundled())
                 .toString());
         outputs.add(String.valueOf(PackFileSet.digested(pack, PACK)));
-        outputs.add(messageOf(() -> new WholePackStore(STRATEGY).load(pack).pack().violations()));
+        outputs.add(
+                messageOf(() -> new WholePackStore(STRATEGY).load(pack).pack().violations()));
         outputs.add(messageOf(() -> new DomainRepositoryService(new StorageRootLocations(pack.getParent()), STRATEGY)
                 .compositionFacts(new PackIdentifier(PACK))));
 
@@ -226,7 +234,8 @@ class LinkedEntriesTest {
     // ---- one pack_entry_linked per link (T002) -------------------------------------------------------------------
 
     @Test
-    @DisplayName("the verdict states one pack_entry_linked per link, at the link, in the one wording, and no other fault")
+    @DisplayName(
+            "the verdict states one pack_entry_linked per link, at the link, in the one wording, and no other fault")
     void oneViolationPerLink(@TempDir Path host) throws IOException {
         Path pack = pack(host);
         Path outside = host.resolve("outside");
@@ -236,15 +245,18 @@ class LinkedEntriesTest {
         link(pack.resolve("directives/more"), outside);
         link(pack.resolve("NOTES.txt"), outside.resolve("NOTES.txt"));
 
-        List<Reason> verdict = new FileSystemPackInspector().read(root(pack)).rationale().details();
+        List<Reason> verdict =
+                new FileSystemPackInspector().read(root(pack)).rationale().details();
 
         assertThat(verdict)
                 .filteredOn(reason -> reason.isFailing(Severity.VIOLATION))
                 .as("exactly one statement per link, and nothing else refused")
-                .extracting(reason -> reason.code().value() + " " + reason.location().file() + " " + reason.detail())
+                .extracting(reason ->
+                        reason.code().value() + " " + reason.location().file() + " " + reason.detail())
                 .containsExactly(
                         "pack_entry_linked NOTES.txt NOTES.txt: " + LinkRules.LINKED,
-                        "pack_entry_linked directives/B.directive.yaml directives/B.directive.yaml: " + LinkRules.LINKED,
+                        "pack_entry_linked directives/B.directive.yaml directives/B.directive.yaml: "
+                                + LinkRules.LINKED,
                         "pack_entry_linked directives/more directives/more: " + LinkRules.LINKED);
     }
 
@@ -277,24 +289,25 @@ class LinkedEntriesTest {
     // ---- the store half states it, so the configured load refuses the pack (T003, D6) ----------------------------
 
     @Test
-    @DisplayName("the load of a configured pack holding a link records one pack_entry_linked and the compose refuses it")
+    @DisplayName(
+            "the load of a configured pack holding a link records one pack_entry_linked and the compose refuses it")
     void theConfiguredLoadRefusesALinkedPack(@TempDir Path host) throws IOException {
         Path pack = pack(host);
         Path outside = host.resolve("outside/B.directive.yaml");
         write(outside, directive("B", "B"));
         link(pack.resolve("directives/B.directive.yaml"), outside);
 
-        StoreRead read =
-                StoreRead.of(pack, PACK, PackFileSet.walk(pack, PACK), STRATEGY, KindBindings.all(), Companions.Rules.bundled());
+        StoreRead read = StoreRead.of(
+                pack, PACK, PackFileSet.walk(pack, PACK), STRATEGY, KindBindings.all(), Companions.Rules.bundled());
         assertThat(read.assembly()).isInstanceOfSatisfying(Assembly.Assembled.class, held -> {
-            assertThat(held.violations())
-                    .singleElement()
-                    .satisfies(violation -> {
-                        assertThat(violation.kind()).isEqualTo(StorageCodes.PACK_ENTRY_LINKED);
-                        assertThat(violation.file()).isEqualTo("directives/B.directive.yaml");
-                        assertThat(violation.reason()).isEqualTo(LinkRules.detail("directives/B.directive.yaml"));
-                    });
-            assertThat(held.storeOnly()).as("never a store-only fault, so the verdict states it once").isEmpty();
+            assertThat(held.violations()).singleElement().satisfies(violation -> {
+                assertThat(violation.kind()).isEqualTo(StorageCodes.PACK_ENTRY_LINKED);
+                assertThat(violation.file()).isEqualTo("directives/B.directive.yaml");
+                assertThat(violation.reason()).isEqualTo(LinkRules.detail("directives/B.directive.yaml"));
+            });
+            assertThat(held.storeOnly())
+                    .as("never a store-only fault, so the verdict states it once")
+                    .isEmpty();
             assertThat(held.artifacts())
                     .extracting(placed -> placed.file())
                     .containsExactly("directives/A.directive.yaml");
@@ -311,9 +324,7 @@ class LinkedEntriesTest {
         assertThat(refused.code())
                 .as("as it refuses a pack with another store-half content fault")
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);
-        assertThat(refused.getMessage())
-                .contains("directives/B.directive.yaml")
-                .contains(LinkRules.LINKED);
+        assertThat(refused.getMessage()).contains("directives/B.directive.yaml").contains(LinkRules.LINKED);
     }
 
     @Test
