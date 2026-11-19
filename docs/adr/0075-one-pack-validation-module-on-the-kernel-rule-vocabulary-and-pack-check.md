@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-18T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554)
+updated: 2026-11-19T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554); decision 9 landed (2026-11-19, #478)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -205,6 +205,63 @@ and that the service shares. After this amendment the checks live in the packs d
 `pack-validation` is the validation edge that `pack-check` packages. The operator has not ruled on a new title, so the
 title and description stand, and this amendment governs where they differ.
 
+### Landing note 2026-11-19 (#478): the pack-check CLI ships
+
+Slice 8 ([#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478), mission `pack-check-cli-01M7SASC`)
+landed decision 9 under the amendments above, with the operator's rulings D1 to D6 of 2026-11-19. It changes no
+decision; this note records what was built and the calls made on the way.
+
+- **The CLI.** `service/pack-check` is a thin `main`, `PackCheckMain`, with no CLI framework. It takes
+  `--config-root <dir>` or a repeated `--pack <dir>[:<level>]`, plus `--round-trip`. Per pack it runs validate mode
+  (`PackCheck.validate`), then `CLOSURE` over the set, then the round trip when asked. Its exit codes are those of
+  decision 9: `0` valid (warnings allowed, on standard error as `warning:` lines), `1` a problem, and `2` a usage or
+  I/O failure. An internal error exits `2` too, with nothing on standard output, so `1` always comes with a report.
+  `--config-root` lists the names the service would serve through `PackEntryNames`, the one entry rule in
+  `packs.domain` that the service's listing and the CLI share.
+- **The composition root names two adapters, with a control.** `PackCheckMain`, named by its fully qualified name,
+  alone may name `FileSystemPackInspector` (the one reader) and `PackRoundTrip` (the production round trip): it is
+  exempt from `ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS` and from the direct half of
+  `PACK_VALIDATION_IS_FRAMEWORK_FREE`, and `ONION_THE_PACK_CHECK_MAIN_COMPOSES_TWO_ADAPTERS` holds it to those two.
+  The known-good control is a fixture class of `packcheck` other than the main that names the reader: both rules
+  still refuse it. No other rule is widened.
+- **The facts ride on the one read.** `PackReadout` carries the pack's composition facts, built in
+  `FileSystemPackInspector.read` from the same read: `Built(PackCompositionFacts)`, or `Unreadable` with the read's own
+  refusal code. No second read or derivation exists. When a pack has no facts, `CLOSURE` is skipped, the report says
+  so, and the pack's problem carries the refusal (ruling D3).
+- **One definition of `CLOSURE` with presets.** `PackRulesets.closureFaults(packs, presetIdsOf)` and
+  `PackRulesets.closure(presetIdsOf)` both come from one private `phases()` list, the composition faults then the
+  preset contests, so the CLI's pack-set check (`PackSetCheck`) and the ruleset cannot drift.
+  `CompositionRules.presets` was deleted.
+- **A pack with no level** in a set is the violation `pack_level_missing`: none is configured and its `pack.yaml`
+  declares none, so `CLOSURE` cannot place it. It is the `VIOLATION` twin (`PlacementCodes.PACK_LEVEL_MISSING_VIOLATION`)
+  of the placement warning with the same token, as `PackCodes` pairs a violation with its warning.
+- **The report is a contract schema.** `contracts/charter/schemas/PackCheckReport.yaml` holds the checks that ran,
+  the packs checked, any check skipped, and the problems, each the contract's `Problem` with the code and the shape
+  the registration answers for the same fault (ruling D2). No operation serves it, so it is the one `STANDALONE`
+  entry of `ReachableContractFilesTest`, whose own test proves that it exists and that no operation reaches it. A
+  pack's problem has as its `instance` the `file:` URI of the pack's directory. The round trip, which the
+  registration does not run, has its own lead sentence, and its violations use the registration's wording.
+  `PackCheckReportContractTest` (`deployable`) compares each problem with what `RefusalHandler` renders.
+- **Links are refused everywhere (rulings D1 and D6, [#597](https://github.com/spec-kitty/spec-kitty-charter/issues/597)).**
+  No read follows a symbolic link inside a pack root, on any surface. The one reader states `pack_entry_linked`
+  (a `VIOLATION`) for each link, so `pack-check`, a registration and the service's load of a configured pack refuse
+  it alike. The pack root itself may be a link. Hard links and Windows junctions are not judged.
+- **The set as given (ruling D5).** `CLOSURE` runs over the packs given, never fetching others. A pack is checked
+  together with the packs it depends on; alone, its dependencies are `pack_dependency_unknown`.
+- **The round trip is Spring-free.** `pack-check --round-trip` runs `PackRoundTrip` and `WholePackRoundTripRule`
+  with no expected-red baseline. To keep Spring out of the flow, `DomainRepositoryService` lost its Spring
+  annotation and is registered as a `@Bean` in the storage configuration of `packs`.
+- **Spring is off the jar, proven by `jarTest`.** The 2026-11-13 amendment's obligation is met.
+  `build/pack-check/pack-check-<version>.jar` is built by the build-logic convention `charter.pack-check-jar` from
+  `runtimeClasspath` minus three modules, excluded by module (`spring-boot-starter-webmvc`, `:web-transport`,
+  `:charter-api`). `jarTest` (in `check`, so in `verifyAll`) runs the jar in a child JVM on the toolchain's Java over
+  every path. It also proves that the jar holds no Spring, Tomcat, Jakarta, logging backend or `module-info` entry, that its
+  libraries have the versions of `runtimeClasspath` and carry their license files, that it is under 40 MB, and that two
+  builds are equal byte for byte.
+- **The release.** The jar ships on the `service-v*` release as `pack-check-<version>.jar`, with its checksum and
+  attestation ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/), amendment of 2026-11-19). It is a
+  jar only, and it needs Java 25. The pack-author guide is [Check packs](/guides/check-packs/).
+
 ## Context
 
 - **The kernel's validator is a port of `modular-validators`.** `ai.speckitty.charter.kernel.validation` is a lean
@@ -353,7 +410,7 @@ title and description stand, and this amendment governs where they differ.
   of the codecs in `packs.infra.storage`, whose findings reach the `PACK` ruleset through `PackContents`.
 - **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`; as amended on
   2026-11-15 (#555), the flow in `packs` and the verdict in `pack-validation`. Done in #555.
-- **ADR-0046:** the release carries `pack-check`.
+- **ADR-0046:** the release carries `pack-check`. Done in #478 (ADR-0046's amendment of 2026-11-19).
 - **ADR-0068:** the fallback-profile rule runs behind `ClosureWalk`.
 - **ADR-0070:** builds on the amendment of decision 4 in PR #548. open-packs gates on `pack-check` at its pin. Charter's `open-packs-drift.yml` is removed.
 

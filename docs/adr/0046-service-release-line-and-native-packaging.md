@@ -2,8 +2,8 @@
 title: "ADR-0046: The service releases on its own service-v* line, native per OS with the jar as fallback"
 description: A service-v tag line apart from the contract's; the service's own SemVer; four native executables and the jar under names core pins, with SHA256SUMS and provenance.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0060 (2026-11-05)
+updated: 2026-11-19T00:00:00Z
+decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0060 (2026-11-05); decision 4's asset set amended to add the pack-check jar (2026-11-19, #478)
 decision_date: '2026-10-31'
 type: ADR
 kind: ADR
@@ -11,6 +11,7 @@ related:
   - adr/0060-native-build-runs-nightly-and-per-release
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0022-contract-versions-start-at-0-x
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
   - adr/0041-containerized-configuration-model
   - architecture/service-lifecycle
   - guides/service-build
@@ -43,6 +44,30 @@ time").
 
 Core's requests that follow from it are
 [spec-kitty#6909](https://github.com/spec-kitty/spec-kitty/issues/6909). None of them blocks a release here.
+
+### Amendment 2026-11-19 (#478): the pack-check jar joins the asset set
+
+[#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478) ships `pack-check`, the pack checker of
+[ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 9, on this
+line. Decision 4's table gains one asset, and nothing is renamed or removed, so the change is additive under decision
+4's own rule ("Adding a target is additive"):
+
+- **`pack-check-<ver>.jar`:** the pack checker, a Spring-free executable jar that needs Java 25. It has no native
+  build: decision 5's native targets are the service's alone.
+- **Its `pack-check-<ver>.jar.sha256`,** in the same format as the others.
+- **Its line in `SHA256SUMS`,** which lists six assets. A release therefore holds 13 files.
+- **Its attestation:** the release attests every asset `SHA256SUMS` lists (decision 6), the pack-check jar with them.
+
+The CI build (`service.yml`, the `jar` job) builds the jar, runs it over the charter's example packs with
+`--round-trip` and uploads it as the `pack-check-jar` artifact. `scripts/release/service-release-assets.sh` assembles
+exactly these 13 files and refuses any other set, and `scripts/release/rehearse-service-release.sh` rehearses the set
+and a refusal without the pack-check jar.
+
+**Core's pin is unaffected.** Core's vendor of a service release (`src/specify_cli/services/vendor.py`, `map_assets`,
+at spec-kitty `4890242`) maps the names in `SHA256SUMS` to the assets it knows by exact match, and ignores and lists
+back every other name. The only extras it takes are the `*.tar.gz` stems, so a `.jar` line it does not know is not one
+of them, and the pin of the service's own assets reads as before. Decision 4's bullet on extras still holds: no
+`*.tar.gz` archive is attached.
 
 ## Context
 
@@ -99,8 +124,9 @@ Core's requests that follow from it are
    | `spec-kitty-charter-service-<ver>-macos-arm64` | GraalVM native executable |
    | `spec-kitty-charter-service-<ver>-windows-x64.exe` | GraalVM native executable |
    | `spec-kitty-charter-service-<ver>.jar` | Spring Boot executable jar, the fallback (Java 25) |
+   | `pack-check-<ver>.jar` | The pack-check CLI, ADR-0075 decision 9 (Java 25); added 2026-11-19, #478 |
    | `<asset>.sha256` | One per asset above: `<64 lowercase hex>  <asset>` |
-   | `SHA256SUMS` | The five assets above (not the `.sha256` files), in `sha256sum` format, bare names, sorted with `LC_ALL=C` |
+   | `SHA256SUMS` | The six assets above (not the `.sha256` files), in `sha256sum` format, bare names, sorted with `LC_ALL=C` |
 
    - The prefix `spec-kitty-charter-service` is no longer provisional.
    - The native executables are raw files, not archives: core runs them directly.
@@ -222,9 +248,11 @@ It would cost a core change and gain nothing.
 - [ADR-0022](/adr/0022-contract-versions-start-at-0-x/): the contract's release line
 - [ADR-0041](/adr/0041-containerized-configuration-model/): the container profile
 - Core: `kernel/service_pin.py` (the tag rule and asset prefix), `kernel/service_hosts.py` (the targets),
-  `services/resolution.py` (the jar fallback) and core ADR 2026-10-29-1
+  `services/resolution.py` (the jar fallback), `services/vendor.py` (`map_assets`, which maps `SHA256SUMS` names by
+  exact match; spec-kitty `4890242`) and core ADR 2026-10-29-1
 - spec-kitty-events ADR-0003: the reference pipeline
 - Issues [#241](https://github.com/spec-kitty/spec-kitty-charter/issues/241),
   [#71](https://github.com/spec-kitty/spec-kitty-charter/issues/71),
-  [#234](https://github.com/spec-kitty/spec-kitty-charter/issues/234) and
+  [#234](https://github.com/spec-kitty/spec-kitty-charter/issues/234),
+  [#478](https://github.com/spec-kitty/spec-kitty-charter/issues/478) and
   [spec-kitty#6909](https://github.com/spec-kitty/spec-kitty/issues/6909)
