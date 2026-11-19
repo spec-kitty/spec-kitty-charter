@@ -47,13 +47,22 @@ properties:
   version:
     type: string
     minLength: 1
-    description: 'The pack_version the pack''s pack.yaml declares. The version is a label, not an order (ADR-0065 D2): any
-      version replaces, the same version with the same revision is unchanged, and the same version with another revision is
-      refused.'
+    description: 'The pack_version the pack''s pack.yaml declares, a PEP 440 version. A replacement moves it forward
+      (ADR-0081 D2): a replacement whose version is not newer than the stored one by PEP 440 precedence, the same version
+      included, is refused pack_version_conflict unless it sends the stored content, which is unchanged.'
     x-derived:
       rule: The pack_version of the pack's descriptor.
       inputs:
       - the pack.yaml of the pack
+  previousVersion:
+    type: string
+    minLength: 1
+    description: 'Only in the result of a registration whose outcome is replaced: the pack_version of the stored pack it
+      replaced, the version it moved from (ADR-0081 D4). Absent when the outcome is created or unchanged, and on getPack.'
+    x-derived:
+      rule: The pack_version of the stored pack's descriptor, read under the locks before the replace.
+      inputs:
+      - the stored pack
   level:
     type: string
     enum:
@@ -90,6 +99,16 @@ properties:
       - the version history of the pack
   source:
     $ref: PackSourceRecord.yaml
+  dryRun:
+    type: boolean
+    description: 'Only in the result of a registration sent with dryRun=true (ADR-0081 D5), and then true: the job judged
+      the pack as the registration would and wrote nothing. outcome is the outcome the registration would have had,
+      revision the revision the staged tree would have had, and _links.self the pack the write would have stored, which a
+      would-be create leaves absent (404). Absent on every other answer, getPack included.'
+    x-derived:
+      rule: The dryRun query parameter of the registration request.
+      inputs:
+      - parameters/DryRun.yaml
   notices:
     $ref: PackRegistrationNotices.yaml
   diagnostics:
