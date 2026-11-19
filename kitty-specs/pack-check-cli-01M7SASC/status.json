@@ -122,9 +122,9 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -132,7 +132,8 @@
       "last_transition_at": "2026-11-19T18:53:03.618861+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP04 done: CLI module (T014-T018), orchestrator ruling A folded (round trip Spring-free, read helpers moved, one problem per pack); verifyAll green"
+        "WP04 done: CLI module (T014-T018), orchestrator ruling A folded (round trip Spring-free, read helpers moved, one problem per pack); verifyAll green",
+        "Review cycle 1 addressed: MEDIUM-1 internal error exits 2; MEDIUM-2 shared PackEntryNames rule, dangling entry exit 2; LOW 1, 3, 4, 5 folded; verifyAll green"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
