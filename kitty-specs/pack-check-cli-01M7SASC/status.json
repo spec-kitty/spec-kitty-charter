@@ -54,7 +54,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -65,7 +65,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: facts on the one read, closure(presetIdsOf), PackRefusalMapping; verifyAll green",
-        "Cycle 1 fixed: F1 readoutFacts unit tests (other codes, Assembly.None; hardcode mutant killed), F2 planted readouts from the one reader; noAssembly is one factory; verifyAll green"
+        "Cycle 1 fixed: F1 readoutFacts unit tests (other codes, Assembly.None; hardcode mutant killed), F2 planted readouts from the one reader; noAssembly is one factory; verifyAll green",
+        "Cycle 2 approved (reviewer-renata). Rebased commits 771190584/a430d1bee/f39e525e8 are range-diff identical to cycle 1. F1 fixed: readoutFacts unit tests cover validation_failed, drg_schema_error (StoreRead.breached too) and Assembly.None; re-planted the hardcoded-pack_unreadable mutant (fails 3 tests) and the None-branch deletion (fails 1, IllegalStateException). F2 fixed: Planted subjects carry the one reader's readout via TreeReads.withReadout (READER.readWithStore once, then static FileSystemPackInspector.readout(root, one), the same path read() uses, no second read); NOT_COMPOSED deleted; example subjects asserted Built. Folds: noAssembly is one wording on PackReadout.Unreadable; underResolution javadoc limits it to tests and parity. :packs:test 6824 and :pack-validation:test 413 green. 5 commits signed, no trailers."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
