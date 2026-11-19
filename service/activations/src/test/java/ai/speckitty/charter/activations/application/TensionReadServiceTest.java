@@ -18,6 +18,7 @@ import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.util.List;
 import java.util.Optional;
@@ -67,7 +68,7 @@ class TensionReadServiceTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("main")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                                 .selected(ArtifactKind.DIRECTIVE, List.of("D", "D2", "LK", "RQ"))
                                 .build()
                                 .document())
