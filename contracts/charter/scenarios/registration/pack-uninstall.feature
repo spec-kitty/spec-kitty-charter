@@ -15,7 +15,7 @@ Feature: A registered pack is removed whole, or not at all
 
   Background:
     Given registration is switched on
-    And the org pack "qa" with the file "pack.yaml":
+    And the archive "qa" holds the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
       pack_version: 1.0.0
@@ -23,7 +23,7 @@ Feature: A registered pack is removed whole, or not at all
       name: qa
       pack_level: org
       """
-    And the org pack "qa" with the file "directives/D1.directive.yaml":
+    And the archive "qa" holds the file "directives/D1.directive.yaml":
       """
       schema_version: '1.0'
       id: D1
@@ -31,6 +31,27 @@ Feature: A registered pack is removed whole, or not at all
       intent: The directive another pack may require
       enforcement: required
       """
+    And the archive "other" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0'
+      """
+    And the archive "other" holds the file "directives/R.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: R
+      title: R
+      intent: A directive of another pack that may require qa's D1
+      enforcement: required
+      """
+    And I PUT "/packs/qa" with the archive "qa"
+    And I poll the registration until it ends
 
   Scenario: A pack nothing depends on is removed, and a repeated removal finds nothing
     When I GET "/packs/qa"
@@ -76,17 +97,9 @@ Feature: A registered pack is removed whole, or not at all
     Then the response status is 204
 
   Scenario: A pack another pack depends on is not removed, the refusal names it, and its dry run says the same
-    Given the org pack "other" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.0.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      depends_on:
-        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-          range: '>=1.0'
-      """
+    When I PUT "/packs/other" with the archive "other"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
     When I GET "/packs/qa"
     And I remember the field "revision" of the response body
     And I DELETE "/packs/qa?dryRun=true" with the header "If-Match": "*"
@@ -111,26 +124,10 @@ Feature: A registered pack is removed whole, or not at all
     Then the response status is 204
 
   Scenario: Every dependent is named: the pack that depends on it, the artifact that refers to it, and the activation
-    Given the org pack "other" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.0.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      depends_on:
-        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-          range: '>=1.0'
-      """
-    And the org pack "other" with the file "directives/R.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: R
-      title: R
-      intent: A directive of another pack that requires qa's D1
-      enforcement: required
-      """
-    And the activation "team" holds:
+    When I PUT "/packs/other" with the archive "other"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    Given the activation "team" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "qa"}]}
       """
@@ -279,3 +276,20 @@ Feature: A registered pack is removed whole, or not at all
     Then the response status is 204
     When I DELETE "/packs/qa" with the header "If-Match": "*"
     Then the response status is 204
+
+  Scenario: A pack in a fixed, read-only location is not removed, and nothing changes
+    Given the org pack "fixed" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943V
+      pack_version: 1.0.0
+      parent_pack: null
+      name: fixed
+      pack_level: org
+      """
+    When I DELETE "/packs/fixed" with the header "If-Match": "*"
+    Then the response status is 409
+    And the problem code is "registration_conflict"
+    When I DELETE "/packs/fixed?dryRun=true" with the header "If-Match": "*"
+    Then the response status is 409
+    When I GET "/packs/fixed"
+    Then the response status is 200
