@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
  * an unknown option, a missing value, an unknown level, a directory that does not exist, a config root with no pack, and
  * a {@code --pack} value that could name two directories ({@code x:org} and {@code x} both exist), two packs with one
  * directory (by real path), one inside another or one name, and an entry of the config root's {@code packs/} that is a
- * link resolving to nothing. A value that starts with {@code --} is a missing value, unless it follows {@code --}, which
- * ends the options. It judges the command line and the directories it names,
- * never a pack's content: that is {@code pack-validation}'s.
+ * link resolving to no directory (to nothing, or to a file). A value that starts with {@code --} is a missing value,
+ * unless it follows {@code --}, which ends the options. It judges the command line and the directories it names, never
+ * a pack's content: that is {@code pack-validation}'s.
  */
 final class Arguments {
 
@@ -179,11 +179,11 @@ final class Arguments {
         } catch (IOException failure) {
             return new UsageFault("cannot list " + directory.resolve(ConfigRoot.PACKS) + ": " + failure.getMessage());
         }
-        if (!listing.dangling().isEmpty()) {
+        if (!listing.strayLinks().isEmpty()) {
             return new UsageFault(
-                    listing.dangling().stream().map(Path::toString).collect(Collectors.joining(", "))
-                            + (listing.dangling().size() == 1 ? " is a link" : " are links")
-                            + " to nothing; a pack entry must resolve to a directory");
+                    listing.strayLinks().stream().map(Path::toString).collect(Collectors.joining(", "))
+                            + (listing.strayLinks().size() == 1 ? " is a link" : " are links")
+                            + " to no directory; a pack entry must resolve to a directory");
         }
         List<PackRoot> roots = listing.packs();
         if (roots.isEmpty()) {
@@ -221,7 +221,8 @@ final class Arguments {
     /**
      * One {@code --pack <dir>[:<level>]}. The level is the text after the last {@code :} when it is a level token, so a
      * path that holds a {@code :} ({@code C:\packs\x}) parses; a suffix that is a bare word but no level, on a path that
-     * is not a directory, is an unknown level.
+     * is not a directory, is an unknown level. When the whole value is a directory and the text before the colon is
+     * not, the whole value is the directory, at no configured level; when both are, the value is ambiguous.
      */
     private static Given packRoot(String value) {
         int colon = value.lastIndexOf(':');
@@ -236,6 +237,15 @@ final class Arguments {
             return Given.refused("unknown level " + suffix + " in " + PACK + " " + value + "; the levels are "
                     + Arrays.stream(PackLevel.values()).map(PackLevel::token).collect(Collectors.joining(", ")));
         }
+        if (level.isPresent() && Files.isDirectory(Path.of(value)) && !Files.isDirectory(Path.of(path))) {
+            // x:org is a directory and x is not: the value names the directory x:org, at no configured level.
+            return directoryOf(value, Optional.empty());
+        }
+        return directoryOf(path, level);
+    }
+
+    /** The pack in {@code path}, at {@code level} when one is given; refused when {@code path} is no pack directory. */
+    private static Given directoryOf(String path, Optional<PackLevel> level) {
         Path directory = Path.of(path);
         if (!Files.isDirectory(directory)) {
             return Given.refused(PACK + " " + path + " is not a directory");

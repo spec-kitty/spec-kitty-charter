@@ -27,19 +27,20 @@ final class ConfigRoot {
      * What a config root's {@code packs/} holds for pack-check.
      *
      * @param packs the packs, in name order
-     * @param dangling the entries that can be packs but are links resolving to nothing, in name order; a pack the
-     *     author expects to be checked, so the run refuses them rather than dropping them
+     * @param strayLinks the entries that can be packs but are links resolving to no directory (to nothing, or to a
+     *     file), in name order; a pack the author expects to be checked, so the run refuses them rather than dropping
+     *     them
      */
-    record Listing(List<PackRoot> packs, List<Path> dangling) {
+    record Listing(List<PackRoot> packs, List<Path> strayLinks) {
         /**
          * Copies the lists.
          *
          * @param packs the packs
-         * @param dangling the dangling entries
+         * @param strayLinks the links that resolve to no directory
          */
         Listing {
             packs = List.copyOf(packs);
-            dangling = List.copyOf(dangling);
+            strayLinks = List.copyOf(strayLinks);
         }
     }
 
@@ -47,7 +48,7 @@ final class ConfigRoot {
      * The packs of a config root: the entries directly under {@code root/packs} that can be packs (not hidden, not an
      * aside copy) and are directories, in name order, each named by its entry and with no configured level, so the level
      * its {@code pack.yaml} declares applies. A link to a directory is a pack (#174); a plain file is not; a link that
-     * resolves to nothing is listed as dangling.
+     * resolves to nothing or to a file is listed as a stray link, never dropped.
      *
      * @param root the config root
      * @return the listing; no pack when {@code root/packs} is absent or holds no directory
@@ -65,15 +66,15 @@ final class ConfigRoot {
                     .toList();
         }
         List<PackRoot> roots = new ArrayList<>();
-        List<Path> dangling = new ArrayList<>();
+        List<Path> strayLinks = new ArrayList<>();
         for (Path entry : entries) {
             if (Files.isDirectory(entry)) {
                 roots.add(new PackRoot(nameOf(entry), Optional.empty(), entry.toString()));
-            } else if (Files.isSymbolicLink(entry) && !Files.exists(entry)) {
-                dangling.add(entry);
+            } else if (Files.isSymbolicLink(entry)) {
+                strayLinks.add(entry);
             }
         }
-        return new Listing(roots, dangling);
+        return new Listing(roots, strayLinks);
     }
 
     private static String nameOf(Path entry) {

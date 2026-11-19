@@ -115,6 +115,44 @@ class ArgumentsTest {
         }
 
         @Test
+        void aValueWhoseWholePathIsADirectoryAndWhosePrefixIsNotIsTheWholePathAtNoLevel() throws IOException {
+            Path colon = pack("x:org");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", colon.toString()}));
+
+            assertThat(parsed.packs()).singleElement().satisfies(entry -> {
+                assertThat(entry.root().locator()).isEqualTo(colon.toString());
+                assertThat(entry.name()).isEqualTo("x:org");
+                assertThat(entry.root().configuredLevel()).isEmpty();
+            });
+        }
+
+        @Test
+        void aValueWhosePrefixIsAFileIsTheWholePathAtNoLevel() throws IOException {
+            Path colon = pack("y:project");
+            Files.writeString(temp.resolve("y"), "a file, not a pack\n");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", colon.toString()}));
+
+            assertThat(parsed.packs()).singleElement().satisfies(entry -> {
+                assertThat(entry.root().locator()).isEqualTo(colon.toString());
+                assertThat(entry.root().configuredLevel()).isEmpty();
+            });
+        }
+
+        @Test
+        void aWholePathDirectoryTakesALevelOfItsOwn() throws IOException {
+            Path colon = pack("x:org");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", colon + ":project"}));
+
+            assertThat(parsed.packs()).singleElement().satisfies(entry -> {
+                assertThat(entry.root().locator()).isEqualTo(colon.toString());
+                assertThat(entry.root().configuredLevel()).contains(PackLevel.PROJECT);
+            });
+        }
+
+        @Test
         void theRoundTripMayComeFirst() throws IOException {
             Path a = pack("a");
 
@@ -339,7 +377,27 @@ class ArgumentsTest {
             }
 
             assertThat(fault(Arguments.parse(new String[] {"--config-root", temp.toString()})))
-                    .isEqualTo(gone + " is a link to nothing; a pack entry must resolve to a directory");
+                    .isEqualTo(gone + " is a link to no directory; a pack entry must resolve to a directory");
+        }
+
+        @Test
+        void anEntryUnderTheConfigRootThatLinksToAFile() throws IOException {
+            Files.createDirectories(temp.resolve("packs/a"));
+            Path file = Files.writeString(temp.resolve("notes.md"), "not a pack\n");
+            Path filed = temp.resolve("packs/filed");
+            Path gone = temp.resolve("packs/gone");
+            try {
+                Files.createSymbolicLink(filed, file);
+                Files.createSymbolicLink(gone, temp.resolve("nowhere"));
+            } catch (IOException | UnsupportedOperationException noLinks) {
+                org.junit.jupiter.api.Assumptions.assumeTrue(
+                        Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+                throw noLinks;
+            }
+
+            assertThat(fault(Arguments.parse(new String[] {"--config-root", temp.toString()})))
+                    .isEqualTo(filed + ", " + gone
+                            + " are links to no directory; a pack entry must resolve to a directory");
         }
 
         @Test

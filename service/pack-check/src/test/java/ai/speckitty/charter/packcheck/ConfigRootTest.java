@@ -47,7 +47,7 @@ class ConfigRootTest {
                     .isEqualTo(
                             temp.resolve(ConfigRoot.PACKS).resolve(root.name()).toString());
         });
-        assertThat(listing.dangling()).isEmpty();
+        assertThat(listing.strayLinks()).isEmpty();
     }
 
     @Test
@@ -83,14 +83,26 @@ class ConfigRootTest {
     }
 
     @Test
-    void aDanglingLinkIsListedAsDanglingNotDropped() throws IOException {
+    void aDanglingLinkIsAStrayLinkNotDropped() throws IOException {
         Files.createDirectories(packs().resolve("a-pack"));
         link(packs().resolve("gone"), temp.resolve("nowhere"));
 
         ConfigRoot.Listing listing = ConfigRoot.packs(temp);
 
         assertThat(listing.packs()).extracting(PackRoot::name).containsExactly("a-pack");
-        assertThat(listing.dangling()).containsExactly(packs().resolve("gone"));
+        assertThat(listing.strayLinks()).containsExactly(packs().resolve("gone"));
+    }
+
+    @Test
+    void aLinkToAFileIsAStrayLinkNotDropped() throws IOException {
+        Files.createDirectories(packs().resolve("a-pack"));
+        Path file = Files.writeString(temp.resolve("notes.md"), "not a pack\n");
+        link(packs().resolve("filed"), file);
+
+        ConfigRoot.Listing listing = ConfigRoot.packs(temp);
+
+        assertThat(listing.packs()).extracting(PackRoot::name).containsExactly("a-pack");
+        assertThat(listing.strayLinks()).containsExactly(packs().resolve("filed"));
     }
 
     @Test
@@ -98,7 +110,7 @@ class ConfigRootTest {
         Files.createDirectories(packs().resolve("a-pack"));
         link(packs().resolve(".gone"), temp.resolve("nowhere"));
 
-        assertThat(ConfigRoot.packs(temp).dangling()).isEmpty();
+        assertThat(ConfigRoot.packs(temp).strayLinks()).isEmpty();
     }
 
     @Test
@@ -106,6 +118,6 @@ class ConfigRootTest {
         ConfigRoot.Listing listing = ConfigRoot.packs(temp);
 
         assertThat(listing.packs()).isEmpty();
-        assertThat(listing.dangling()).isEmpty();
+        assertThat(listing.strayLinks()).isEmpty();
     }
 }
