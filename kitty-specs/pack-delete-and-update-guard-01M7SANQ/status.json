@@ -29,6 +29,9 @@
       "last_event_id": "01M7SCSNTRSRPHGHZV1QW4YKCM",
       "last_transition_at": "2026-11-19T07:54:33.176089+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Contract, ADR-0081 and records; contracts:check and check_docs green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 8940,
