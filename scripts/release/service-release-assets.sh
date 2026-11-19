@@ -6,11 +6,13 @@
 # <in-dir> holds the downloaded artifacts, one directory each (actions/download-artifact without merge-multiple):
 #   native-linux-x64/spec-kitty-charter-service       native-linux-arm64/spec-kitty-charter-service
 #   native-macos-arm64/spec-kitty-charter-service     native-windows-x64/spec-kitty-charter-service.exe
-#   service-jar/deployable-<version>.jar
-# <out-dir> receives exactly the ADR's asset set, nothing else:
+#   service-jar/deployable-<version>.jar              pack-check-jar/pack-check-<version>.jar
+# <out-dir> receives exactly the ADR's asset set (as amended 2026-11-19, #478), nothing else, 13 files:
 #   spec-kitty-charter-service-<version>-{linux-x64,linux-arm64,macos-arm64}, -windows-x64.exe, and -<version>.jar;
-#   one <asset>.sha256 per asset; SHA256SUMS over the five assets (not the .sha256 files), in sha256sum format with
-#   bare names, sorted with LC_ALL=C, the file core's service pin reads.
+#   pack-check-<version>.jar, the pack checker (ADR-0075 decision 9; Java 25);
+#   one <asset>.sha256 per asset; SHA256SUMS over the six assets (not the .sha256 files), in sha256sum format with
+#   bare names, sorted with LC_ALL=C, the file core's service pin reads. Core's pin maps the names it knows and ignores
+#   the rest, so the pack-check line does not disturb it.
 # A missing input, an extra output, or a checksum that does not verify fails the run and leaves the cause on stderr.
 set -euo pipefail
 
@@ -42,6 +44,7 @@ take "$in/native-linux-arm64/$prefix" "$prefix-$version-linux-arm64"
 take "$in/native-macos-arm64/$prefix" "$prefix-$version-macos-arm64"
 take "$in/native-windows-x64/$prefix.exe" "$prefix-$version-windows-x64.exe"
 take "$in/service-jar/deployable-$version.jar" "$prefix-$version.jar"
+take "$in/pack-check-jar/pack-check-$version.jar" "pack-check-$version.jar"
 # The executables keep their mode across the artifact round trip only on some runners; a download sets it again.
 chmod 0755 "$out/$prefix-$version-linux-x64" "$out/$prefix-$version-linux-arm64" "$out/$prefix-$version-macos-arm64"
 
@@ -63,11 +66,13 @@ expected="$(
     echo "$prefix-$version-windows-x64.exe.sha256"
     echo "$prefix-$version.jar"
     echo "$prefix-$version.jar.sha256"
+    echo "pack-check-$version.jar"
+    echo "pack-check-$version.jar.sha256"
     echo SHA256SUMS
   } | LC_ALL=C sort
 )"
 if ! diff -u <(printf '%s\n' "$expected") <(ls | LC_ALL=C sort); then
-  echo "error: the release's files are not exactly the ADR-0046 asset set (diff above: - expected, + present)" >&2
+  echo "error: the release's files are not exactly the ADR-0046 asset set of 13 files (diff above: - expected, + present)" >&2
   exit 1
 fi
 # Core reads SHA256SUMS line by line as <64 lowercase hex><space><space or *><bare name>.

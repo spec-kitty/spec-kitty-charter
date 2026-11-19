@@ -46,6 +46,15 @@ class PlacementCodesCoverageTest {
             PlacementCodes.ORG_FRAGMENT_MISSING,
             new Fixture(Placements.of(ORG, declaring(ORG), NO_FRAGMENT), Placements.of(ORG, declaring(ORG), FRAGMENT)));
 
+    /**
+     * The codes no placement states, each with the test that fires it and proves its twin does not: the pack-set
+     * check's {@code pack_level_missing} violation, which needs a set with no level, not a placement (#478, WP03 review
+     * M3). Each entry names a real test method, so the list cannot rot.
+     */
+    private static final Map<ReasonCode, String> STATED_ELSEWHERE = Map.of(
+            PlacementCodes.PACK_LEVEL_MISSING_VIOLATION,
+            "ai.speckitty.charter.packvalidation.set.PackSetCheckTest$Skipped#anUnknownLevelSkipsClosure");
+
     /** What the placement rules state, in the order validate mode composes them: the level rules, then the fragment. */
     private static List<Reason> judge(Placement placement) {
         List<Reason> reasons = new ArrayList<>(LevelRules.RULES.apply(placement));
@@ -54,7 +63,21 @@ class PlacementCodesCoverageTest {
     }
 
     static List<ReasonCode> codes() {
-        return List.copyOf(PlacementCodes.ALL);
+        return PlacementCodes.ALL.stream()
+                .filter(code -> !STATED_ELSEWHERE.containsKey(code))
+                .toList();
+    }
+
+    @Test
+    @DisplayName("every code stated outside the placement rules names a test method that exists")
+    void everyCodeStatedElsewhereNamesARealTest() throws ReflectiveOperationException {
+        for (String test : STATED_ELSEWHERE.values()) {
+            String[] parts = test.split("#", 2);
+            Class<?> owner = Class.forName(parts[0]);
+            assertThat(java.util.Arrays.stream(owner.getDeclaredMethods()).map(java.lang.reflect.Method::getName))
+                    .as(test)
+                    .contains(parts[1]);
+        }
     }
 
     @Test
@@ -75,7 +98,10 @@ class PlacementCodesCoverageTest {
             }
         }
 
-        assertThat(FIXTURES.keySet()).containsExactlyInAnyOrderElementsOf(declared);
+        Set<ReasonCode> covered = new LinkedHashSet<>(FIXTURES.keySet());
+        covered.addAll(STATED_ELSEWHERE.keySet());
+        assertThat(covered).containsExactlyInAnyOrderElementsOf(declared);
+        assertThat(FIXTURES.keySet()).doesNotContainAnyElementsOf(STATED_ELSEWHERE.keySet());
         assertThat(PlacementCodes.ALL).containsExactlyInAnyOrderElementsOf(declared);
     }
 

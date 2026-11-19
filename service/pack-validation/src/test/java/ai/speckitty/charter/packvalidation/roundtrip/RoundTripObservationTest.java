@@ -239,7 +239,7 @@ class RoundTripObservationTest {
                     .containsExactly(
                             tuple(
                                     WholePackRoundTripRule.RED,
-                                    Location.NOWHERE,
+                                    Location.in("drg/fragment.yaml"),
                                     "UNEXPECTED_RED drg/fragment.yaml (org-fragment): no adapter models kind org-fragment"),
                             tuple(
                                     WholePackRoundTripRule.UNPAIRED,
@@ -247,6 +247,20 @@ class RoundTripObservationTest {
                                     "written but unpaired extra.yaml"));
             assertThat(reasons)
                     .allSatisfy(reason -> assertThat(reason.severity()).isEqualTo(Severity.VIOLATION));
+        }
+
+        @Test
+        void aProblemIsPlacedAtTheCensusFileItNamesAndAProblemOfTheRunIsNot() {
+            Set<String> census = Set.of("pack.yaml", "tactics/a.tactic.yaml");
+
+            assertThat(WholePackRoundTripRule.locationOf("UNEXPECTED_RED tactics/a.tactic.yaml (tactic): x", census))
+                    .isEqualTo(Location.in("tactics/a.tactic.yaml"));
+            assertThat(WholePackRoundTripRule.locationOf(
+                            "STALE_BASELINE built-in/x.yaml: names no example pack", census))
+                    .isEqualTo(Location.NOWHERE);
+            assertThat(WholePackRoundTripRule.locationOf("UNEXPECTED_RED tactics/b.tactic.yaml (tactic): x", census))
+                    .isEqualTo(Location.NOWHERE);
+            assertThat(WholePackRoundTripRule.locationOf("ALONE", census)).isEqualTo(Location.NOWHERE);
         }
 
         @Test

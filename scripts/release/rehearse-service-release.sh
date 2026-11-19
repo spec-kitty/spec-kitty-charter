@@ -12,7 +12,8 @@
 #   contract, which the gate marks as such; then a final release over a contract release candidate, refused, and a
 #   pre-release over one, let through (operator ruling R1).
 # It then assembles the asset set from placeholder build outputs (scripts/release/service-release-assets.sh) and
-# expects exactly the ADR's 11 files with checksums that verify, and a refusal when a target is missing.
+# expects exactly the ADR's 13 files (ADR-0046 as amended 2026-11-19, #478: the pack-check jar joins), 6 lines in
+# SHA256SUMS and checksums that verify, a refusal when the pack-check jar is missing, and one when a target is missing.
 # Not rehearsed here, because they need the remote: the tagged commit being on main, and the tag still naming the
 # built commit when publishing; service-release.yml checks both. The clone has no remote, so nothing can be pushed.
 # service.yml runs it with the other release rehearsals.
@@ -107,20 +108,37 @@ for target in linux-x64 linux-arm64 macos-arm64; do
   mkdir -p "$in/native-$target"
   printf 'placeholder %s\n' "$target" > "$in/native-$target/$prefix"
 done
-mkdir -p "$in/native-windows-x64" "$in/service-jar"
+mkdir -p "$in/native-windows-x64" "$in/service-jar" "$in/pack-check-jar"
 printf 'placeholder windows-x64\n' > "$in/native-windows-x64/$prefix.exe"
 printf 'placeholder jar\n' > "$in/service-jar/deployable-0.2.0-rc.1.jar"
+printf 'placeholder pack-check jar\n' > "$in/pack-check-jar/pack-check-0.2.0-rc.1.jar"
 "$root/scripts/release/service-release-assets.sh" 0.2.0-rc.1 "$in" "$work/assets"
 count="$(ls "$work/assets" | wc -l | tr -d ' ')"
-if [[ "$count" != 11 ]]; then
-  echo "error: the release has $count files, not 11" >&2
+if [[ "$count" != 13 ]]; then
+  echo "error: the release has $count files, not 13" >&2
   exit 1
 fi
 (cd "$work/assets" && sha256sum --check --strict --quiet SHA256SUMS)
-if [[ "$(wc -l < "$work/assets/SHA256SUMS" | tr -d ' ')" != 5 ]]; then
-  echo "error: SHA256SUMS does not list exactly the five assets" >&2
+if [[ "$(wc -l < "$work/assets/SHA256SUMS" | tr -d ' ')" != 6 ]]; then
+  echo "error: SHA256SUMS does not list exactly the six assets" >&2
   exit 1
 fi
+if ! grep -qE '^[0-9a-f]{64}  pack-check-0\.2\.0-rc\.1\.jar$' "$work/assets/SHA256SUMS"; then
+  echo "error: SHA256SUMS does not list pack-check-0.2.0-rc.1.jar" >&2
+  exit 1
+fi
+mv "$in/pack-check-jar/pack-check-0.2.0-rc.1.jar" "$work/pack-check.jar"
+if "$root/scripts/release/service-release-assets.sh" 0.2.0-rc.1 "$in" "$work/no-pack-check" 2> "$work/no-pack-check.log"; then
+  echo "error: a release without its pack-check jar was assembled" >&2
+  exit 1
+fi
+if ! grep -q "no .*pack-check-jar/pack-check-0\.2\.0-rc\.1\.jar" "$work/no-pack-check.log"; then
+  echo "error: the assets script refused a release without its pack-check jar, but did not name it:" >&2
+  cat "$work/no-pack-check.log" >&2
+  exit 1
+fi
+echo "refused, as expected: an asset set without the pack-check jar"
+mv "$work/pack-check.jar" "$in/pack-check-jar/pack-check-0.2.0-rc.1.jar"
 rm "$in/native-macos-arm64/$prefix"
 if "$root/scripts/release/service-release-assets.sh" 0.2.0-rc.1 "$in" "$work/partial" 2> "$work/partial.log"; then
   echo "error: a release without its macos-arm64 executable was assembled" >&2

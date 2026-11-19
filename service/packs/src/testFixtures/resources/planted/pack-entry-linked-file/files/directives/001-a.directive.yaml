@@ -1,0 +1,5 @@
+schema_version: "1.0"
+id: DIRECTIVE_001
+title: A
+intent: Intent of DIRECTIVE_001.
+enforcement: required

@@ -139,9 +139,7 @@ class CompositionRulesTest {
             Map<String, List<String>> presets =
                     Map.of(ordered("LEFT"), List.of("team"), ordered("RIGHT"), List.of("team"));
 
-            List<Reason> reasons = CompositionRules.closure()
-                    .must(CompositionRules.presets(holding(presets)))
-                    .apply(List.of(left, right));
+            List<Reason> reasons = PackRulesets.closure(holding(presets)).apply(List.of(left, right));
 
             assertThat(reasons).singleElement().satisfies(reason -> {
                 assertThat(reason.rule()).isEqualTo(CompositionRules.PRESETS_RULE);
@@ -151,7 +149,7 @@ class CompositionRulesTest {
                                 "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both hold the preset `team`,"
                                         + " and neither extends the other by parent_pack");
             });
-            assertThat(CompositionRules.presets(holding(Map.of())).apply(List.of(left, right)))
+            assertThat(PackRulesets.closure(holding(Map.of())).apply(List.of(left, right)))
                     .isEmpty();
         }
 
@@ -1204,7 +1202,7 @@ class CompositionRulesTest {
                                     "packs `z` (01ZZZ000000000000000000000) and `a` (01AAA000000000000000000000) at org");
                 });
                 assertThat(check(last, first)).isEqualTo(given);
-                assertThat(CompositionRules.presets(holding(presetIds)).apply(List.of(first, last)))
+                assertThat(PackRulesets.closure(holding(presetIds)).apply(List.of(first, last)))
                         .extracting(Reason::detail)
                         .containsExactly(given.getFirst().detail());
             }

@@ -97,7 +97,9 @@ class PackCheckTest {
                 List.of(),
                 List.of(),
                 List.of());
-        return new PackReadout(contents, FILES, List.of(), new Rationale(reasons));
+        // Hand-written facts carry no assembly input: the one reader answers such a read pack_unreadable.
+        return new PackReadout(
+                contents, FILES, List.of(), new Rationale(reasons), PackReadout.Unreadable.noAssembly(root.name()));
     }
 
     private static Reason failing(ReasonCode code, String file, String pointer, String detail) {

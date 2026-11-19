@@ -7,7 +7,9 @@ name: service
 # The git-source job runs the real-git tests of the git source (:packs:gitHostTest, tag `git-host`) on a git of 2.50.1 or
 # later, which verifyAll leaves out.
 # The jar job builds the service's jar, starts it with scripts/release/smoke-service.sh and uploads it as
-# `service-jar`, which a service release attaches (ADR-0046); the native executables are service-native.yml's.
+# `service-jar`; then it builds the pack-check jar, times a run of it over the example packs (NFR-002 of #478: under
+# 20 s) and uploads it as `pack-check-jar`. A service release attaches both (ADR-0046, as amended 2026-11-19); the
+# native executables are service-native.yml's.
 # The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
 # Mutation testing is not here: it runs only on its schedule (mutation-testing.yml). Nor are the CPU-time budgets
@@ -203,7 +205,8 @@ jobs:
         run: ./gradlew :packs:gitHostTest -PrequireGitHost=true
 
   # The service's jar, the fallback a release attaches beside the native executables (ADR-0046 decision 5), started
-  # and checked like them before it is uploaded.
+  # and checked like them before it is uploaded. Then the pack-check jar (ADR-0075 decision 9, #478), which a release
+  # attaches too: run over the example packs and timed, then uploaded.
   jar:
     if: github.workflow != 'Docs site'
     runs-on: ubuntu-24.04
@@ -243,6 +246,48 @@ jobs:
         with:
           name: service-jar
           path: ${{ steps.smoke.outputs.jar }}
+          if-no-files-found: error
+          retention-days: 7
+
+      # The jar's own tests (jarTest, in verifyAll) run it on every path; this builds the file a release attaches.
+      - name: Build the pack-check jar
+        run: ./gradlew :pack-check:packCheckJar
+
+      # NFR-002 (#478): every example pack as one set, each at its declared level, with the round trip, in under 20 s
+      # of wall time. The time goes to the step summary; a slower run, or any exit but 0, fails the job.
+      - name: Check the example packs with the pack-check jar, timed
+        id: pack-check
+        run: |
+          set -euo pipefail
+          version="$(awk -F= '$1 == "version" { print $2; exit }' gradle.properties)"
+          jar="service/pack-check/build/pack-check/pack-check-${version}.jar"
+          examples=service/packs/src/testFixtures/resources/example-packs
+          args=()
+          # Each pack is given without a level, so the level its pack.yaml declares applies.
+          for pack in "$examples"/*/; do
+            args+=(--pack "${pack%/}")
+          done
+          started="$(date +%s%N)"
+          java -jar "$jar" "${args[@]}" --round-trip > "$RUNNER_TEMP/pack-check-report.json"
+          elapsed_ms=$(( ($(date +%s%N) - started) / 1000000 ))
+          seconds="$(printf '%d.%03d' $((elapsed_ms / 1000)) $((elapsed_ms % 1000)))"
+          {
+            echo "### pack-check over the example packs"
+            echo
+            echo "\`java -jar pack-check-${version}.jar\` over $(( ${#args[@]} / 2 )) packs with \`--round-trip\`: ${seconds} s"
+            echo "(NFR-002: under 20 s)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if (( elapsed_ms >= 20000 )); then
+            echo "::error::pack-check took ${seconds} s over the example packs; NFR-002 allows under 20 s"
+            exit 1
+          fi
+          echo "jar=$jar" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the pack-check jar
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pack-check-jar
+          path: ${{ steps.pack-check.outputs.jar }}
           if-no-files-found: error
           retention-days: 7
 
