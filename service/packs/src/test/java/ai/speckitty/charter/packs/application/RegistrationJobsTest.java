@@ -53,8 +53,13 @@ import org.junit.jupiter.api.io.TempDir;
 class RegistrationJobsTest {
 
     private static final Instant START = Instant.parse("2026-11-07T10:00:00Z");
-    private static final Origin ORIGIN =
-            new Origin("worktree-1", Credential.WORKTREE_TOKEN, "registerPackFromArchive", "archive", "");
+    private static final Origin ORIGIN = new Origin(
+            "worktree-1",
+            Credential.WORKTREE_TOKEN,
+            "registerPackFromArchive",
+            "archive",
+            "",
+            ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
 
     private final List<Harness> opened = new ArrayList<>();
 
@@ -141,6 +146,36 @@ class RegistrationJobsTest {
             assertThat(why.kind()).isEqualTo(Kind.CODED);
             assertThat(why.refusal().code()).isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
         });
+    }
+
+    @Test
+    void aDryRunJobEndsAsTheRegistrationWouldAndIsNeitherStoredNorAudited(@TempDir Path host) {
+        Harness h = new Harness(host);
+        Origin dryRun = new Origin(
+                "worktree-1",
+                Credential.WORKTREE_TOKEN,
+                "registerPackFromArchive",
+                "archive",
+                "",
+                PackRegistrationService.Mode.DRY_RUN);
+        Reservation reservation = h.jobs.reserve("pack-x", Preconditions.none(), dryRun);
+        reservation.start(h.stage(h.pack("pack-x", "1.0.0")));
+
+        Status ended = h.awaitEnd(reservation);
+
+        assertThat(ended.state()).isEqualTo(State.SUCCEEDED);
+        assertThat(ended.ending()).isInstanceOfSatisfying(Succeeded.class, done -> {
+            assertThat(done.outcome().dryRun()).isTrue();
+            assertThat(done.outcome().outcome()).isEqualTo(Outcome.CREATED);
+        });
+        assertThat(h.rig.packs.resolve("pack-x")).as("a dry run stores nothing").doesNotExist();
+        assertThat(h.audit.entries())
+                .as("a dry run is not audited (NFR-002, review R5-2)")
+                .isEmpty();
+
+        Status written = h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        assertThat(written.state()).as("the control: the write itself").isEqualTo(State.SUCCEEDED);
+        assertThat(h.audit.entries()).as("the control is audited").hasSize(1);
     }
 
     @Test
@@ -721,7 +756,8 @@ class RegistrationJobsTest {
                 Credential.NONE,
                 "registerPackFromSource",
                 "https_archive",
-                "https://packs.example.org/a.tgz");
+                "https://packs.example.org/a.tgz",
+                ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
 
         Reservation created = h.jobs.reserve("pack-x", Preconditions.none(), origin);
         created.start(h.stage(h.pack("pack-x", "1.0.0")));
@@ -877,7 +913,8 @@ class RegistrationJobsTest {
             Credential.NONE,
             "registerPackFromSource",
             "https_archive",
-            "https://packs.example.org/a.tgz");
+            "https://packs.example.org/a.tgz",
+            ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
 
     /** An audit log that keeps what it is given. */
     static final class RecordingAudit implements AuditLog {

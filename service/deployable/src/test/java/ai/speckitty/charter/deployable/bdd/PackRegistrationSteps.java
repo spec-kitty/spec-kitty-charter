@@ -317,7 +317,12 @@ public class PackRegistrationSteps {
     @Given("the registration queue is full")
     public void queueFull() {
         RegistrationJobs.Origin origin = new RegistrationJobs.Origin(
-                "scenario-worktree", AuditLog.Credential.WORKTREE_TOKEN, "registerPackFromArchive", "archive", "");
+                "scenario-worktree",
+                AuditLog.Credential.WORKTREE_TOKEN,
+                "registerPackFromArchive",
+                "archive",
+                "",
+                ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
         for (int i = 0; i < FILLERS; i++) {
             RegistrationJobs.Reservation filler = jobs.reserve("filler-" + i, Preconditions.none(), origin);
             filler.start(directory -> {

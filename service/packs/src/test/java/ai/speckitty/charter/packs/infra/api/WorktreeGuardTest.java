@@ -460,6 +460,19 @@ class WorktreeGuardTest {
     }
 
     @Test
+    void aDryRunWithoutTheTokenIsEnteredAsRefusedSoTheFlagCannotHideAProbe() throws Exception {
+        MockHttpServletRequest probe = attempt("DELETE", "/api/v1/packs/acme");
+        probe.setParameter("dryRun", "true");
+
+        assertUnauthorized(run(auditing, probe));
+
+        assertThat(audited).singleElement().satisfies(entry -> {
+            assertThat(entry.outcome()).isEqualTo("refused:401");
+            assertThat(entry.operation()).isEqualTo("deletePack");
+        });
+    }
+
+    @Test
     void aRegistrationWithoutTheTokenIsEnteredOnceAsRefused401() throws Exception {
         assertUnauthorized(run(auditing, attempt("PUT", "/api/v1/packs/acme")));
 

@@ -211,4 +211,40 @@ class PackUninstallServiceTest {
         assertThat(rig.packs.resolve("qa")).doesNotExist();
         assertThat(stale).as("the stale copy was hidden before the removal").doesNotExist();
     }
+
+    @Test
+    void anActivationThatCannotBeReadFailsTheRemovalClosed(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa()), Preconditions.none());
+        ActivationImpact unreadable = new ActivationImpact() {
+            @Override
+            public List<ActivationRoots> activationRoots() {
+                return List.of();
+            }
+
+            @Override
+            public List<String> unreadableActivations() {
+                return List.of("lost");
+            }
+        };
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackUninstallService service = new PackUninstallService(
+                rig.writeStore,
+                rig.commits,
+                new WholePackStore(strategy),
+                new StagedPackViewFactory(rig.locations, strategy),
+                new ClosurePackDependents(
+                        new InboundReferences(rig.repository, rig.repository, rig.repository), unreadable),
+                rig.impact);
+
+        IllegalStateException failed = catchThrowableOfType(
+                IllegalStateException.class,
+                () -> service.uninstall(new PackIdentifier("qa"), "*", Mode.DRY_RUN, RevisionTrail.NONE));
+
+        assertThat(failed)
+                .as("an activation that cannot be read might name qa (review R3-1)")
+                .isNotNull();
+        assertThat(failed.getMessage()).contains("lost");
+        assertThat(rig.packs.resolve("qa")).isDirectory();
+    }
 }
