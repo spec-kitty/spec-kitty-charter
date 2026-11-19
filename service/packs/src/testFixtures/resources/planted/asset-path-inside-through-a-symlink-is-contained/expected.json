@@ -8,6 +8,12 @@
       "severity": "violation",
       "file": "assets/a.asset.yaml",
       "place": []
+    },
+    {
+      "code": "pack_entry_linked",
+      "severity": "violation",
+      "file": "assets/in",
+      "place": []
     }
   ],
   "symlinks": [
