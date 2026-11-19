@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: links refused on every surface (D1, D6, #597); verifyAll green with -PrequireSymlinks=true. No contract scenario: every registration stager refuses a link before the reader.",
-        "Review cycle 1 folded: items 1-7 fixed, each with a test red before the fix; verifyAll green with -PrequireSymlinks=true."
+        "Review cycle 1 folded: items 1-7 fixed, each with a test red before the fix; verifyAll green with -PrequireSymlinks=true.",
+        "Cycle-2 review passed (reviewer-renata): delta a5be4852..1fc6004d folds all 7 cycle-1 items; nothing at MEDIUM or above. 92408ae7..a5be4852 is the rebase only (range-diff identical; only kitty-specs status files differ). Each new test is red on the pre-fix main code (7 failures incl. golden composeRead line) and green after. unlinkedBytes: segment-wise unlinkedFile probe then newInputStream(NOFOLLOW_LINKS), so the final component is opened O_NOFOLLOW (a swap after the check fails ELOOP, never followed); both callers are root-level single-segment paths, so there is no intermediate-directory gap today (LOW: document the single-segment use or open via SecureDirectoryStream if a multi-segment caller appears). copyTree refuses any link (file, dir, dangling) with pack_unreadable '<rel>: is a symbolic link; a pack holds no links' and copies NOFOLLOW; commitEdited deletes staging and rethrows. surfaces.json: one composeRead line, path stated once. DomainRepositoryService.load: one walk per load, as before (store.read with walk=null walked once via listing; now the walk is made once and passed to read and to StoreRead.linked). :packs:test --rerun -PrequireSymlinks=true green (6843, 0 failures); MixedReadConcurrencyTest --rerun green (6/6, 57.8s). Commits signed, no trailers or model names."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
