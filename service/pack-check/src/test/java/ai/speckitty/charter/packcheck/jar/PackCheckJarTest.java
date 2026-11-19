@@ -96,13 +96,32 @@ class PackCheckJarTest {
 
         List<String> violationCodes() {
             List<String> codes = new ArrayList<>();
-            report().get("problems").forEach(problem -> {
-                JsonNode violations = problem.get("violations");
-                if (violations != null) {
-                    violations.forEach(
-                            violation -> codes.add(violation.get("code").asString()));
-                }
-            });
+            report().get("problems").forEach(problem -> codes.addAll(violationCodes(problem)));
+            return codes;
+        }
+
+        /** The violation codes of the problem at {@code index}, in order. */
+        List<String> violationCodes(int index) {
+            return violationCodes(report().get("problems").get(index));
+        }
+
+        /** The violation pointers of the problem at {@code index}, in order. */
+        List<String> violationPointers(int index) {
+            List<String> pointers = new ArrayList<>();
+            JsonNode violations = report().get("problems").get(index).get("violations");
+            if (violations != null) {
+                violations.forEach(
+                        violation -> pointers.add(violation.get("pointer").asString()));
+            }
+            return pointers;
+        }
+
+        private static List<String> violationCodes(JsonNode problem) {
+            List<String> codes = new ArrayList<>();
+            JsonNode violations = problem.get("violations");
+            if (violations != null) {
+                violations.forEach(violation -> codes.add(violation.get("code").asString()));
+            }
             return codes;
         }
     }
@@ -184,18 +203,28 @@ class PackCheckJarTest {
         assertThat(lines(run.err())).allSatisfy(line -> assertThat(line).startsWith("warning: "));
     }
 
-    // Case 2.
+    /** Every line of a run's standard error is a warning: a fault is in the report, never on standard error. */
+    private static void onlyWarningsOnStandardError(Run run) {
+        assertThat(lines(run.err()))
+                .as("standard error")
+                .allSatisfy(line -> assertThat(line).startsWith("warning: "));
+    }
+
+    // Case 2, with the round trip (squad J3).
     @Test
     void aPlantedPackFaultExitsOneWithItsCode() throws Exception {
         Path pack = GoldenSubjects.copy(
                 subject("planted/duplicate-artifact-id" + GoldenSubjects.WITH_DESCRIPTOR), temp.resolve("plant"));
 
-        Run run = run("--pack", pack.toString());
+        Run run = run("--pack", pack.toString(), "--round-trip");
 
         assertThat(run.exit()).as(run.err()).isEqualTo(1);
-        assertThat(run.checks()).containsExactly("PACK");
-        assertThat(run.codes()).as(run.out()).containsExactly("validation_failed");
-        assertThat(run.violationCodes()).containsExactly("org_fragment_missing", "duplicate_artifact_id");
+        // CLOSURE is skipped: the plant's composition facts cannot be read (D3).
+        assertThat(run.checks()).containsExactly("PACK", "ROUND_TRIP");
+        assertThat(run.codes()).as(run.out()).containsExactly("validation_failed", "validation_failed");
+        assertThat(run.violationCodes(0)).containsExactly("org_fragment_missing", "duplicate_artifact_id");
+        // The round trip refuses the other holder of the id, and writes the one tactic under its id's name.
+        assertThat(run.violationCodes(1)).containsExactly("round_trip_red", "round_trip_written_unpaired");
         assertThat(run.err()).isEmpty();
     }
 
@@ -212,7 +241,9 @@ class PackCheckJarTest {
         assertThat(run.err()).isEmpty();
     }
 
-    // Case 4 (squad S2): nothing reads through the link, so its target's text reaches neither stream.
+    // Case 4 (squad S2), with the round trip: nothing reads through the link, so its target's text reaches neither
+    // stream. The link is one problem: the round trip's reason at a file validate mode already refuses is dropped
+    // (WP05), so pack_entry_linked stands alone.
     @Test
     void aPlantedLinkIsRefusedAndItsTargetNeverRead() throws Exception {
         String marker = "pack-check-marker-" + UUID.randomUUID();
@@ -229,13 +260,14 @@ class PackCheckJarTest {
         Run run = run("--pack", builtIn + ":built-in", "--round-trip");
 
         assertThat(run.exit()).as(run.err()).isEqualTo(1);
-        assertThat(run.codes()).as(run.out()).containsExactly("validation_failed", "validation_failed");
-        assertThat(run.violationCodes()).containsExactly("pack_entry_linked", "round_trip_red");
+        assertThat(run.codes()).as(run.out()).containsExactly("validation_failed");
+        assertThat(run.violationCodes()).containsExactly("pack_entry_linked");
         assertThat(run.out()).contains("tactics/linked.tactic.yaml").doesNotContain(marker);
         assertThat(run.err()).doesNotContain(marker);
+        onlyWarningsOnStandardError(run);
     }
 
-    // Case 5: the networknt schema validation and the commons paths run in the jar.
+    // Case 5, with the round trip (squad J3): the networknt schema validation and the commons paths run in the jar.
     @Test
     void aTacticWithAnUnknownKeyExitsOneWithItsSchemaCode() throws Exception {
         Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
@@ -245,15 +277,25 @@ class PackCheckJarTest {
                 Files.readString(tactic, StandardCharsets.UTF_8) + "not_a_tactic_key: true\n",
                 StandardCharsets.UTF_8);
 
-        Run run = run("--pack", builtIn + ":built-in");
+        Run run = run("--pack", builtIn + ":built-in", "--round-trip");
 
         assertThat(run.exit()).as(run.err()).isEqualTo(1);
-        assertThat(run.codes()).containsExactly("validation_failed");
+        assertThat(run.codes()).as(run.out()).containsExactly("validation_failed", "validation_failed");
         // The schema's code for the tactic, beside the step that delegates to the tactic the pack no longer holds.
-        assertThat(run.violationCodes())
+        assertThat(run.violationCodes(0))
                 .as(run.out())
                 .containsExactly("substep_delegation_unresolved", "artifact_schema_error");
+        // The round trip refuses the mission type that delegates to the missing tactic: each of its other files is
+        // red, and what the write then holds is unpaired. The two files validate mode refuses get no second reason.
+        assertThat(run.violationCodes(1))
+                .as(run.out())
+                .contains("round_trip_red", "round_trip_written_unpaired")
+                .containsOnly("round_trip_red", "round_trip_written_unpaired");
+        assertThat(run.violationPointers(1))
+                .doesNotContainAnyElementsOf(run.violationPointers(0))
+                .isNotEmpty();
         assertThat(run.out()).contains("tactics/usage-examples-sync.tactic.yaml: unknown key 'not_a_tactic_key'");
+        onlyWarningsOnStandardError(run);
     }
 
     // Case 6.
