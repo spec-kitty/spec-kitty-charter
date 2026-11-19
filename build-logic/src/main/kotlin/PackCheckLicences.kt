@@ -70,74 +70,14 @@ abstract class PackCheckLicences : DefaultTask() {
 
     @TaskAction
     fun relocate() {
-        val out = outputDirectory.get().asFile
-        out.deleteRecursively()
-        val licences = File(out, LICENCES)
-        licences.mkdirs()
-        projectLicence.get().asFile.copyTo(File(out, "META-INF/LICENSE"))
-
-        val checkedInRoot = checkedIn.get().asFile
-        val available = checkedInRoot.listFiles { file -> file.isDirectory }.orEmpty().associateBy { it.name }
-        val used = mutableSetOf<String>()
-        val unlicensed = mutableListOf<String>()
-        val libraries = mutableListOf<String>()
-
-        for (artifact in artifacts.get().sortedBy { it.id.componentIdentifier.displayName }) {
+        val libraries = artifacts.get().sortedBy { it.id.componentIdentifier.displayName }.mapNotNull { artifact ->
             when (val id = artifact.id.componentIdentifier) {
-                is ProjectComponentIdentifier -> continue
-                is ModuleComponentIdentifier -> {
-                    val name = directoryName(id.group, id.module)
-                    libraries.add("${id.group}:${id.module}:${id.version}")
-                    val target = File(licences, name)
-                    copyShipped(artifact.file, target)
-                    val texts = available[name]
-                    if (texts != null) {
-                        used.add(name)
-                        texts.listFiles { file -> file.isFile }.orEmpty().forEach { it.copyTo(File(target, it.name)) }
-                    }
-                    // A notice or a third-party note is not a licence: one file named LICENSE* must be there.
-                    if (target.listFiles().orEmpty().none { it.name.contains("LICENSE") }) {
-                        unlicensed.add("${id.group}:${id.module}:${id.version}")
-                    }
-                }
+                is ProjectComponentIdentifier -> null
+                is ModuleComponentIdentifier -> Library(id.group, id.module, id.version, artifact.file)
                 else -> throw GradleException("pack-check jar: cannot name the licence of ${id.displayName} (#478)")
             }
         }
-
-        val stale = available.keys - used
-        if (unlicensed.isNotEmpty() || stale.isNotEmpty()) {
-            throw GradleException(
-                buildList {
-                    if (unlicensed.isNotEmpty()) {
-                        add(
-                            "pack-check jar: no licence file for ${unlicensed.sorted()}; check one in at " +
-                                "service/pack-check/licenses/<group>-<module>/LICENSE with its SOURCE (#478)",
-                        )
-                    }
-                    if (stale.isNotEmpty()) {
-                        add("pack-check jar: service/pack-check/licenses holds ${stale.sorted()}, no library of the jar (#478)")
-                    }
-                }.joinToString("; "),
-            )
-        }
-        File(out, LIBRARIES).apply {
-            parentFile.mkdirs()
-            writeText(libraries.sorted().joinToString("\n", postfix = "\n"))
-        }
-    }
-
-    /** Copies the licence entries of one jar into [target], by their file names. */
-    private fun copyShipped(jar: File, target: File) {
-        ZipFile(jar).use { zip ->
-            for (entry in zip.entries().asSequence().filter { !it.isDirectory && isLicence(it.name) }.sortedBy { it.name }) {
-                target.mkdirs()
-                val file = File(target, entry.name.substringAfterLast('/'))
-                if (file.exists()) {
-                    throw GradleException("pack-check jar: $jar holds two licence files named ${file.name} (#478)")
-                }
-                zip.getInputStream(entry).use { input -> file.outputStream().use { input.copyTo(it) } }
-            }
-        }
+        relocate(libraries, checkedIn.get().asFile, projectLicence.get().asFile, outputDirectory.get().asFile)
     }
 
     companion object {
@@ -157,7 +97,81 @@ abstract class PackCheckLicences : DefaultTask() {
         /** The directory of one library under [LICENCES]. */
         fun directoryName(group: String, module: String): String = "$group-$module"
     }
+
+    /** One library of the jar's classpath: its coordinates and its jar. */
+    data class Library(val group: String, val module: String, val version: String, val file: File)
 }
+
+/**
+ * Moves each library's licence files under [PackCheckLicences.LICENCES] in [out], adds the checked-in texts of
+ * [checkedInRoot] and the project's licence, and writes the library list; fails on a library with no licence and on a
+ * checked-in directory that names no library. The task's action, apart from Gradle, so a unit test reaches its failure
+ * branches.
+ */
+internal fun relocate(libraries: List<PackCheckLicences.Library>, checkedInRoot: File, projectLicence: File, out: File) {
+    out.deleteRecursively()
+    val licences = File(out, PackCheckLicences.LICENCES)
+    licences.mkdirs()
+    projectLicence.copyTo(File(out, "META-INF/LICENSE"))
+
+    val available = checkedInRoot.listFiles { file -> file.isDirectory }.orEmpty().associateBy { it.name }
+    val used = mutableSetOf<String>()
+    val unlicensed = mutableListOf<String>()
+    val listed = mutableListOf<String>()
+
+    for (library in libraries) {
+        val name = PackCheckLicences.directoryName(library.group, library.module)
+        val coordinates = "${library.group}:${library.module}:${library.version}"
+        listed.add(coordinates)
+        val target = File(licences, name)
+        copyShipped(library.file, target)
+        val texts = available[name]
+        if (texts != null) {
+            used.add(name)
+            texts.listFiles { file -> file.isFile }.orEmpty().forEach { it.copyTo(File(target, it.name)) }
+        }
+        // A notice or a third-party note is not a licence: one file named LICENSE* must be there.
+        if (target.listFiles().orEmpty().none { it.name.contains("LICENSE") }) {
+            unlicensed.add(coordinates)
+        }
+    }
+
+    val stale = available.keys - used
+    if (unlicensed.isNotEmpty() || stale.isNotEmpty()) {
+        throw GradleException(
+            buildList {
+                if (unlicensed.isNotEmpty()) {
+                    add(
+                        "pack-check jar: no licence file for ${unlicensed.sorted()}; check one in at " +
+                            "service/pack-check/licenses/<group>-<module>/LICENSE with its SOURCE (#478)",
+                    )
+                }
+                if (stale.isNotEmpty()) {
+                    add("pack-check jar: service/pack-check/licenses holds ${stale.sorted()}, no library of the jar (#478)")
+                }
+            }.joinToString("; "),
+        )
+    }
+    File(out, PackCheckLicences.LIBRARIES).apply {
+        parentFile.mkdirs()
+        writeText(listed.sorted().joinToString("\n", postfix = "\n"))
+    }
+}
+
+/** Copies the licence entries of one jar into [target], by their file names. */
+private fun copyShipped(jar: File, target: File) {
+    ZipFile(jar).use { zip ->
+        for (entry in zip.entries().asSequence().filter { !it.isDirectory && PackCheckLicences.isLicence(it.name) }.sortedBy { it.name }) {
+            target.mkdirs()
+            val file = File(target, entry.name.substringAfterLast('/'))
+            if (file.exists()) {
+                throw GradleException("pack-check jar: $jar holds two licence files named ${file.name} (#478)")
+            }
+            zip.getInputStream(entry).use { input -> file.outputStream().use { input.copyTo(it) } }
+        }
+    }
+}
+
 
 /**
  * The `group:module:version` of every library of a resolved classpath, one per line and sorted (#478, WP06 T023):
