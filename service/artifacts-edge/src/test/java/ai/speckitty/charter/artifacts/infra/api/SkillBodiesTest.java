@@ -153,7 +153,7 @@ class SkillBodiesTest {
     void anIdIsEncodedAsOnePathSegment() {
         SkillView odd = new SkillView(
                 "a b",
-                new PackIdentifier("q/a"),
+                new PackIdentifier("q-a"),
                 "1.0",
                 "T",
                 "D",
@@ -168,7 +168,7 @@ class SkillBodiesTest {
                 Optional.empty());
 
         assertThat(bodies.artifact(odd).getLinks().get("self").getHref())
-                .isEqualTo("/api/v1/packs/q%2Fa/artifacts/skill/a%20b");
+                .isEqualTo("/api/v1/packs/q-a/artifacts/skill/a%20b");
         assertThat(bodies.skill(odd).getExpandsTo().getArgs()).isEqualTo("--y");
     }
 }

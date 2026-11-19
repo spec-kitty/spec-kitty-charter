@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -117,7 +117,7 @@ class SubstepDelegationRuleTest {
 
     private static PackUnderResolution pack(String id, String name, List<PackDependency> dependsOn, String... held) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), PackLevel.ORG),
+                new ConfiguredPack(registeredIdOf(id), PackLevel.ORG),
                 new PackDescriptor(
                         id,
                         "1.0.0",

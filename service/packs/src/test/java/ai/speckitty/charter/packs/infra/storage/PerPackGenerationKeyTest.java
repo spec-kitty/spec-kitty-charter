@@ -3,11 +3,10 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackRemovalStore.Removal;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
@@ -144,8 +143,9 @@ class PerPackGenerationKeyTest {
     }
 
     @Test
-    @DisplayName("a write addressed by the declared pack_id is pack_not_found and moves no generation")
-    void aWriteAddressedByTheDeclaredPackIdIsNotFound(@TempDir Path host) throws IOException {
+    @DisplayName(
+            "a write cannot be addressed by the declared pack_id, which is no pack identifier, and moves no generation")
+    void aWriteCannotBeAddressedByTheDeclaredPackId(@TempDir Path host) throws IOException {
         Rig rig = new Rig(unbrokenPacks(host));
         Pack written = withToolguide(rig.service.load(rig.registered));
         long before = rig.generation.ofPack(CONFIGURED);
@@ -153,8 +153,8 @@ class PerPackGenerationKeyTest {
         assertThatThrownBy(() -> rig.writeStore.commit(
                         new PackIdentifier(DECLARED), null, Change.artifact(written, toolguide())))
                 .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
         assertThat(rig.generation.ofPack(CONFIGURED)).isEqualTo(before);
         assertThat(rig.generation.ofPack(DECLARED)).isZero();
     }

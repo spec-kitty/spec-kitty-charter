@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -94,10 +95,13 @@ class PackDirectoryResolutionTest {
     }
 
     @Test
-    void theDescriptorsPackIdIsNoAddressAndIsNotFound() throws IOException {
-        Path mine = pack("my-pack", ID_A);
+    void theDescriptorsPackIdIsNoAddressBecauseItIsNoPackIdentifier() throws IOException {
+        pack("my-pack", ID_A);
 
-        assertAllRefuse(List.of(at("my-pack", mine)), ID_A, RefusalCode.PACK_NOT_FOUND);
+        assertThatThrownBy(() -> new PackIdentifier(ID_A))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
     }
 
     @Test

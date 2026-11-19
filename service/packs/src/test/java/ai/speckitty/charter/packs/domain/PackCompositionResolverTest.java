@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,6 +17,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -43,7 +45,7 @@ class PackCompositionResolverTest {
     private static PackUnderResolution pack(
             String id, String name, String version, PackLevel level, List<PackDependency> dependencies) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), level),
+                new ConfiguredPack(registeredIdOf(id), level),
                 new PackDescriptor(
                         id,
                         version,
@@ -59,7 +61,7 @@ class PackCompositionResolverTest {
     private static PackUnderResolution refining(
             String id, String name, String version, PackLevel level, String artifact) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), level),
+                new ConfiguredPack(registeredIdOf(id), level),
                 new PackDescriptor(id, version, Optional.empty(), name, Optional.of(level), Optional.empty()),
                 List.of(artifact));
     }
@@ -71,7 +73,7 @@ class PackCompositionResolverTest {
     private static PackUnderResolution settling(
             String id, String name, String version, PackLevel level, String artifact, String member) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), level),
+                new ConfiguredPack(registeredIdOf(id), level),
                 new PackDescriptor(
                         id,
                         version,
@@ -89,7 +91,7 @@ class PackCompositionResolverTest {
     /** A pack that extends another by {@code parent_pack}, with no dependencies. */
     private static PackUnderResolution extending(String id, String name, PackLevel level, String parent) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), level),
+                new ConfiguredPack(registeredIdOf(id), level),
                 new PackDescriptor(id, "1.0.0", Optional.of(parent), name, Optional.of(level), Optional.empty()));
     }
 
@@ -150,7 +152,7 @@ class PackCompositionResolverTest {
 
         private PackUnderResolution holding(String id, String name, PackLevel level, String... urns) {
             return new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(id), level),
+                    new ConfiguredPack(registeredIdOf(id), level),
                     new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
                     List.of(),
                     List.of(urns));
@@ -174,7 +176,9 @@ class PackCompositionResolverTest {
             assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
             assertThat(refusal.packs())
                     .extracting(pack -> pack.packId().value())
-                    .containsExactly("01MENT00000000000000000000", "01HNZKZD000000000000000000");
+                    .containsExactly(
+                            registeredIdOf("01MENT00000000000000000000").value(),
+                            registeredIdOf("01HNZKZD000000000000000000").value());
             assertThat(refusal.detail())
                     .contains("directive:directive_001", "directive:DIRECTIVE_001", "differ only by case");
         }
@@ -276,7 +280,7 @@ class PackCompositionResolverTest {
                         Failure.CYCLE,
                         faults.getFirst().packs(),
                         "pack `loop` (01KZNZNZP00000000000000000) names itself as its parent_pack");
-        assertThat(refusing(List.of(orphan, loop)).packId().value()).isEqualTo("01KZNZNZP00000000000000000");
+        assertThat(refusing(List.of(orphan, loop)).packId()).isEqualTo(registeredIdOf("01KZNZNZP00000000000000000"));
         assertThat(PackCompositionResolver.faults(List.of(base))).isEmpty();
         assertThatCode(() -> PackCompositionResolver.refuseFirst(List.of())).doesNotThrowAnyException();
     }
@@ -326,7 +330,7 @@ class PackCompositionResolverTest {
 
     private static PackUnderResolution defining(String id, String name, PackLevel level, String... artifacts) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), level),
+                new ConfiguredPack(registeredIdOf(id), level),
                 new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
                 List.of(),
                 List.of(artifacts));
@@ -486,11 +490,11 @@ class PackCompositionResolverTest {
                             .containsExactly(
                                     new RefusalPack(
                                             new PackUlid("01REA000000000000000000000"),
-                                            new PackIdentifier("01REA000000000000000000000"),
+                                            registeredIdOf("01REA000000000000000000000"),
                                             "reader"),
                                     new RefusalPack(
                                             new PackUlid("01WRHZ00000000000000000000"),
-                                            new PackIdentifier("01WRHZ00000000000000000000"),
+                                            registeredIdOf("01WRHZ00000000000000000000"),
                                             "writing"));
                     assertThat(refusal.detail())
                             .contains("`reader` (01REA000000000000000000000)")
@@ -520,11 +524,11 @@ class PackCompositionResolverTest {
                             .containsExactly(
                                     new RefusalPack(
                                             new PackUlid("01REA000000000000000000000"),
-                                            new PackIdentifier("01REA000000000000000000000"),
+                                            registeredIdOf("01REA000000000000000000000"),
                                             "reader"),
                                     new RefusalPack(
                                             new PackUlid("01WRHZ00000000000000000000"),
-                                            new PackIdentifier("01WRHZ00000000000000000000"),
+                                            registeredIdOf("01WRHZ00000000000000000000"),
                                             "writing"));
                     assertThat(refusal.detail())
                             .contains("`writing` (01WRHZ00000000000000000000) is outside its depends_on closure");
@@ -581,11 +585,11 @@ class PackCompositionResolverTest {
                             .containsExactly(
                                     new RefusalPack(
                                             new PackUlid("01REA000000000000000000000"),
-                                            new PackIdentifier("01REA000000000000000000000"),
+                                            registeredIdOf("01REA000000000000000000000"),
                                             "reader"),
                                     new RefusalPack(
                                             new PackUlid("01WRHZ00000000000000000000"),
-                                            new PackIdentifier("01WRHZ00000000000000000000"),
+                                            registeredIdOf("01WRHZ00000000000000000000"),
                                             "writing"));
                 });
     }
@@ -703,7 +707,7 @@ class PackCompositionResolverTest {
                     .isEqualTo(whole.packs())
                     .containsExactly(new RefusalPack(
                             new PackUlid("01DEP000000000000000000000"),
-                            new PackIdentifier("01DEP000000000000000000000"),
+                            registeredIdOf("01DEP000000000000000000000"),
                             "dependent"));
             assertThat(rooted.detail()).isEqualTo(whole.detail());
         }
@@ -718,7 +722,8 @@ class PackCompositionResolverTest {
             assertThat(refusal.failure()).isEqualTo(Failure.DUPLICATE_ID);
             assertThat(refusal.packs())
                     .extracting(pack -> pack.packId().value())
-                    .containsExactlyInAnyOrder("01BETA00000000000000000000", "beta-twin");
+                    .containsExactlyInAnyOrder(
+                            registeredIdOf("01BETA00000000000000000000").value(), "beta-twin");
         }
 
         @Test
@@ -768,7 +773,7 @@ class PackCompositionResolverTest {
 
         private PackUnderResolution withParent(String id, String name, String parent) {
             return new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(id), PackLevel.ORG),
+                    new ConfiguredPack(registeredIdOf(id), PackLevel.ORG),
                     new PackDescriptor(
                             id, "1.0.0", Optional.of(parent), name, Optional.of(PackLevel.ORG), Optional.empty()));
         }
@@ -776,7 +781,7 @@ class PackCompositionResolverTest {
         /** A pack configured under one id whose descriptor declares another {@code pack_id}. */
         private PackUnderResolution configuredAs(String configuredId, String packId, String name) {
             return new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(configuredId), PackLevel.ORG),
+                    new ConfiguredPack(registeredIdOf(configuredId), PackLevel.ORG),
                     new PackDescriptor(
                             packId, "1.0.0", Optional.empty(), name, Optional.of(PackLevel.ORG), Optional.empty()));
         }
@@ -789,7 +794,7 @@ class PackCompositionResolverTest {
         }
 
         private Collection<PackIdentifier> configuredIds(String... ids) {
-            return Arrays.stream(ids).map(PackIdentifier::new).toList();
+            return Arrays.stream(ids).map(FixtureUlids::registeredIdOf).toList();
         }
 
         private PackCompositionResolver.Refusal refusalOf(Runnable compose) {
@@ -804,7 +809,7 @@ class PackCompositionResolverTest {
 
     /** The references one pack writes, each with the pack the compose says holds it, checked as the offering checks. */
     private static void check(List<PackUnderResolution> packs, String referring, String... written) {
-        PackIdentifier from = new PackIdentifier(referring);
+        PackIdentifier from = registeredIdOf(referring);
         PackCompositionResolver.checkReferences(
                 packs,
                 referring,

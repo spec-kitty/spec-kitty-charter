@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
@@ -86,16 +87,18 @@ class DomainRepositoryServiceTest {
         assertThat(service.load(PACK, ALPHA)).isPresent();
     }
 
-    /** The registered id resolves the pack; the pack_id its descriptor declares is no address (#583, D3). */
+    /**
+     * The registered id resolves the pack; the pack_id its descriptor declares is no address: it cannot be named as a
+     * pack identifier at all (#583, D3).
+     */
     @Test
-    void theRegisteredIdResolvesThePackAndTheDeclaredUlidIsNotFound() {
+    void theRegisteredIdResolvesThePackAndTheDeclaredUlidIsNoPackIdentifier() {
         assertThat(service.get(PACK).packId()).isEqualTo(DECLARED_ULID);
         assertThat(service.load(PACK, ALPHA)).isPresent();
-        assertThatThrownBy(() -> service.load(new PackIdentifier(DECLARED_ULID), ALPHA))
-                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
-                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-                    assertThat(r.getMessage()).isEqualTo("Pack " + DECLARED_ULID + " was not found.");
-                });
+        assertThatThrownBy(() -> new PackIdentifier(DECLARED_ULID))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
     }
 
     /** Resolution refuses an identifier no configured location answers to as not found, like the write side. */
