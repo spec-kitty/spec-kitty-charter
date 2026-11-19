@@ -173,15 +173,18 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M7TQ3J1H7FS31Y71VPVRC6DB",
       "last_transition_at": "2026-11-19T20:13:57.169057+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Jar 9.0 MB, no Spring, licences; jarTest 14/14 green in verifyAll -PrequireSymlinks=true; floor 90 with ADR-0062 amendment"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 25379,
