@@ -77,7 +77,8 @@ A replace reports the version it moved from as `PackRegistration.previousVersion
 
 `?dryRun=true` on `DELETE /packs/{packId}`, `PUT /packs/{packId}` and `POST /packs` runs the write's own code, through
 every check and under the same locks, with the commit switched off: nothing is stored, no history entry is written and
-the attempt is not audited.
+the attempt is not audited. A dry run the worktree guard refuses (`401`, `403`) is audited as every refused attempt is,
+so the flag cannot hide a probe.
 
 - The registrations stay asynchronous: the job ends `succeeded` with the outcome it would have had and
   `dryRun: true`, or `refused` with the same problem.

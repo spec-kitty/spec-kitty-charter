@@ -2,8 +2,9 @@ description: >-
   If-Match names a revision that is not the pack's current one, or If-None-Match: * names a pack that exists: 412, a
   Problem with no code (RFC 9110 section 13.1.1). On a registration it is judged at acceptance, before any job
   exists, so a stale If-Match is never answered 202; a revision that moves after the 202 ends the registration refused
-  with a 412 problem, not with this answer. On a DELETE it is judged under the registry lock. An If-Match over a pack
-  that does not exist is 412 too, not 404 (no stored revision matches it). The client reads the pack again
+  with a 412 problem, not with this answer. On a DELETE it is judged under the registry lock. On a registration an
+  If-Match over a pack that does not exist is 412 too, not 404 (no stored revision matches it); a DELETE judges the
+  pack first and answers 404 pack_not_found. The client reads the pack again
   (getPack) before it retries.
 headers:
   Charter-Contract-Version:

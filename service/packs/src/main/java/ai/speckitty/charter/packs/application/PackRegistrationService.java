@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -47,6 +48,17 @@ public final class PackRegistrationService {
         REPLACED,
         /** The pack held exactly this content already; nothing was written. */
         UNCHANGED
+    }
+
+    /** Whether a write is made or only judged (ADR-0081 D5). */
+    public enum Mode {
+        /** The write is judged and, when nothing refuses it, made. */
+        COMMIT,
+        /**
+         * The write is judged by the same steps, under the same locks, and never made: nothing is stored, no history
+         * entry is written and nothing is told it was stored.
+         */
+        DRY_RUN
     }
 
     /**
@@ -127,6 +139,10 @@ public final class PackRegistrationService {
      *     load found nothing to warn about
      * @param hasDocument whether the stored pack holds a document ({@code README.md}), which its {@code doc} link is
      *     present for
+     * @param previousVersion the {@code pack_version} of the stored pack a replace moved from (ADR-0081 D4); empty when
+     *     the registration created the pack or changed nothing
+     * @param dryRun whether the registration was only judged ({@link Mode#DRY_RUN}): the outcome is the one it would have
+     *     had, and nothing was written
      */
     public record RegistrationOutcome(
             Outcome outcome,
@@ -136,7 +152,9 @@ public final class PackRegistrationService {
             PackRevision revision,
             RegistrationImpact.Notices notices,
             List<Diagnostic> diagnostics,
-            boolean hasDocument) {
+            boolean hasDocument,
+            Optional<String> previousVersion,
+            boolean dryRun) {
 
         /**
          * Checks the fields and copies the lists.
@@ -149,6 +167,8 @@ public final class PackRegistrationService {
          * @param notices the notices
          * @param diagnostics the load warnings
          * @param hasDocument whether the stored pack holds a document
+         * @param previousVersion the version a replace moved from
+         * @param dryRun whether the registration was only judged
          */
         public RegistrationOutcome {
             Objects.requireNonNull(outcome, "outcome");
@@ -158,6 +178,7 @@ public final class PackRegistrationService {
             Objects.requireNonNull(revision, "revision");
             Objects.requireNonNull(notices, "notices");
             diagnostics = List.copyOf(diagnostics);
+            Objects.requireNonNull(previousVersion, "previousVersion");
         }
     }
 
@@ -210,7 +231,8 @@ public final class PackRegistrationService {
             WholePackWriteStore.Contents contents,
             List<Diagnostic> diagnostics,
             PackRevision revision,
-            Preconditions preconditions) {
+            Preconditions preconditions,
+            Mode mode) {
 
         PackDescriptor descriptor() {
             return contents.pack().descriptor();
@@ -259,6 +281,29 @@ public final class PackRegistrationService {
      */
     public RegistrationOutcome register(
             String packId, StagedPack staged, Preconditions preconditions, Runnable beforeCommit) {
+        return register(packId, staged, preconditions, beforeCommit, Mode.COMMIT);
+    }
+
+    /**
+     * Registers a pack as {@link #register(String, StagedPack, Preconditions, Runnable)} does, or, in
+     * {@link Mode#DRY_RUN}, judges it by the same steps and stops where the commit would begin (ADR-0081 D5): every
+     * refusal is the registration's own, and the outcome is the one the registration would have had, flagged as a dry
+     * run. {@code beforeCommit} runs in both modes, so a deadline ends a dry run as it ends a registration.
+     *
+     * @param packId the name the pack is stored under (the path parameter)
+     * @param staged the extracted upload
+     * @param preconditions the conditional headers
+     * @param beforeCommit called under the locks, after the impact check and before the swap or the end of the dry run
+     * @param mode whether the registration is made or only judged
+     * @return what was done, or would have been done, and the revision
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal a refusal of the flow, with its code
+     * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code STALE} (412) when the precondition
+     *     does not hold
+     * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
+     */
+    public RegistrationOutcome register(
+            String packId, StagedPack staged, Preconditions preconditions, Runnable beforeCommit, Mode mode) {
+        Objects.requireNonNull(mode, "mode");
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(beforeCommit, "beforeCommit");
         Objects.requireNonNull(staged, "staged");
@@ -271,7 +316,7 @@ public final class PackRegistrationService {
         // #110: the manifest the service will hold is derived from the tree and stamped before the revision.
         loader.stampManifest(staged, read.read());
         PackRevision revision = store.revisionOf(staged);
-        Upload upload = new Upload(packId, staged, read.contents(), read.diagnostics(), revision, preconditions);
+        Upload upload = new Upload(packId, staged, read.contents(), read.diagnostics(), revision, preconditions, mode);
         return store.exclusively(packId, () -> decide(upload, beforeCommit));
     }
 
@@ -348,6 +393,14 @@ public final class PackRegistrationService {
         requireNoInboundReference(upload, stored, before, view);
         RegistrationImpact.Notices notices = impact.check(replacementOf(upload, stored));
         beforeCommit.run();
+        if (upload.mode() == Mode.DRY_RUN) {
+            return outcome(
+                    stored.isPresent() ? Outcome.REPLACED : Outcome.CREATED,
+                    upload,
+                    upload.revision(),
+                    notices,
+                    stored.map(replaced -> replaced.descriptor().packVersion()));
+        }
         return commit(upload, stored, notices);
     }
 
@@ -467,24 +520,17 @@ public final class PackRegistrationService {
     // ---- steps 5 and 6: the version rule and the preconditions ---------------------------------------------------
 
     /**
-     * The same revision is a no-op, whatever the precondition says; the same version with another revision is a
-     * conflict, and so is a version the name was registered at before with another revision, stored or not (IC-16);
-     * any other version goes on.
+     * The same revision is a no-op, whatever the precondition says. A replacement must then move the version forward
+     * (ADR-0081 D2): a {@code pack_version} that is not newer than the stored one by PEP 440 precedence is a conflict,
+     * the same version included. A version the name was registered at before with another revision is a conflict too,
+     * stored or not (IC-16, ADR-0065 D9); any other version goes on.
      */
     private Optional<RegistrationOutcome> applyVersionRule(Upload upload, Optional<Stored> stored) {
         if (stored.isPresent() && stored.get().revision().equals(upload.revision())) {
             return Optional.of(outcome(Outcome.UNCHANGED, upload, upload.revision()));
         }
-        if (stored.isPresent()
-                && stored.get()
-                        .descriptor()
-                        .packVersion()
-                        .equals(upload.descriptor().packVersion())) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_VERSION_CONFLICT,
-                    "The pack " + upload.packId() + " is stored at pack_version "
-                            + upload.descriptor().packVersion()
-                            + " with another revision; send a new pack_version, or the content that is stored.");
+        if (stored.isPresent()) {
+            requireNewer(upload, stored.get().descriptor().packVersion());
         }
         PackVersionHistory.requireNotReused(
                 upload.packId(),
@@ -492,6 +538,25 @@ public final class PackRegistrationService {
                 upload.descriptor().packVersion(),
                 upload.revision());
         return Optional.empty();
+    }
+
+    /**
+     * Refuses an upload whose {@code pack_version} is not newer than the stored one (ADR-0081 D2). Both versions passed
+     * the read's PEP 440 check, so they always order; a local segment does not order, so {@code 1.0+a} to
+     * {@code 1.0+b} is not newer.
+     */
+    private static void requireNewer(Upload upload, String storedVersion) {
+        String version = upload.descriptor().packVersion();
+        if (Pep440Range.compareVersions(version, storedVersion) > 0) {
+            return;
+        }
+        String detail = version.equals(storedVersion)
+                ? "The pack " + upload.packId() + " is stored at pack_version " + storedVersion
+                        + " with another revision; send a newer pack_version, or the content that is stored."
+                : "The pack " + upload.packId() + " is stored at pack_version " + storedVersion
+                        + ", and the upload's pack_version " + version
+                        + " is not newer; a replacement moves the version forward, or sends the content that is stored.";
+        throw new CharterRefusal(RefusalCode.PACK_VERSION_CONFLICT, detail);
     }
 
     private static void checkPreconditions(Preconditions preconditions, Optional<Stored> stored) {
@@ -691,15 +756,24 @@ public final class PackRegistrationService {
                 ? store.replaceWhole(stored.get().configured().id(), upload.staged())
                 : store.create(upload.packId(), upload.staged());
         impact.committed(upload.packId(), notices);
-        return outcome(stored.isPresent() ? Outcome.REPLACED : Outcome.CREATED, upload, revision, notices);
+        return outcome(
+                stored.isPresent() ? Outcome.REPLACED : Outcome.CREATED,
+                upload,
+                revision,
+                notices,
+                stored.map(replaced -> replaced.descriptor().packVersion()));
     }
 
     private static RegistrationOutcome outcome(Outcome outcome, Upload upload, PackRevision revision) {
-        return outcome(outcome, upload, revision, RegistrationImpact.Notices.NONE);
+        return outcome(outcome, upload, revision, RegistrationImpact.Notices.NONE, Optional.empty());
     }
 
     private static RegistrationOutcome outcome(
-            Outcome outcome, Upload upload, PackRevision revision, RegistrationImpact.Notices notices) {
+            Outcome outcome,
+            Upload upload,
+            PackRevision revision,
+            RegistrationImpact.Notices notices,
+            Optional<String> previousVersion) {
         return new RegistrationOutcome(
                 outcome,
                 new PackIdentifier(upload.packId()),
@@ -708,6 +782,8 @@ public final class PackRegistrationService {
                 revision,
                 notices,
                 upload.diagnostics(),
-                upload.contents().pack().document().isPresent());
+                upload.contents().pack().document().isPresent(),
+                previousVersion,
+                upload.mode() == Mode.DRY_RUN);
     }
 }

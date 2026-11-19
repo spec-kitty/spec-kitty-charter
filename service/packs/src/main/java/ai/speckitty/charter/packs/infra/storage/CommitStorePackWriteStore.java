@@ -428,6 +428,46 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         });
     }
 
+    @Override
+    public void requireRemovable(PackIdentifier pack) {
+        requireRemovableEntry(pack, resolve(pack));
+    }
+
+    @Override
+    public void removeWhole(PackIdentifier pack) {
+        exclusivelyAt(pack, location -> {
+            Path directory = PackLocator.directoryOf(location);
+            requireRemovableEntry(pack, directory);
+            return generation.bracket(location.name(), () -> {
+                commitStore.removeWhole(directory, location.name());
+                return directory;
+            });
+        });
+    }
+
+    /**
+     * A pack is removed only as a plain directory directly under the writable root (ADR-0081 P9): a pack in a read-only
+     * location is the operator's, and a linked pack is removed by removing its link, so the service never deletes outside
+     * its writable root.
+     */
+    private void requireRemovableEntry(PackIdentifier pack, Path directory) {
+        Optional<Path> root = locations.writeRoot();
+        Path parent = directory.getParent();
+        boolean underRoot = root.isPresent()
+                && parent != null
+                && parent.toAbsolutePath().normalize().equals(root.get().toAbsolutePath().normalize());
+        if (!underRoot) {
+            throw new CharterRefusal(
+                    RefusalCode.REGISTRATION_CONFLICT,
+                    "The pack " + pack.value() + " is in a read-only location; only a pack the service stores is removed.");
+        }
+        if (Files.isSymbolicLink(directory)) {
+            throw new CharterRefusal(
+                    RefusalCode.REGISTRATION_CONFLICT,
+                    "The pack " + pack.value() + " is a link; remove the link to remove it.");
+        }
+    }
+
     /**
      * Each author-written graph document that holds one of the links a removal drops, written again without them
      * (operator rulings DM-01M7CF9PA1V2DS0P7ZZVANJ1WZ and DM-01M7DTNBMQ6Y88RKJWD3ZFH6G6): a removed mission type goes

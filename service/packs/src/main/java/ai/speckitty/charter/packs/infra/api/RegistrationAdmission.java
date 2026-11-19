@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
+import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.web.InvalidParameter;
@@ -52,6 +53,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     private static final String SOURCE = "registerPackFromSource";
     private static final String DELETE_ARTIFACT = "deletePackArtifact";
     private static final String DELETE_RELATIONSHIP = "deletePackRelationship";
+    private static final String DELETE_PACK = "deletePack";
     private static final Pattern IF_MATCH = Pattern.compile("^(\\*|\"sha256:[0-9a-f]{64}\")$");
 
     private final RegistrationSwitch registration;
@@ -87,7 +89,7 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
             admitSource(request);
         } else if (UPLOAD.equals(name)) {
             admitUpload(request);
-        } else if (DELETE_ARTIFACT.equals(name) || DELETE_RELATIONSHIP.equals(name)) {
+        } else if (DELETE_ARTIFACT.equals(name) || DELETE_RELATIONSHIP.equals(name) || DELETE_PACK.equals(name)) {
             // ADR-0065 D13, FR-037: the pack's writes of this PR are one family under one switch. A removal reads no
             // body
             // and takes no slot, so the switch is the whole of its admission; the revision rules are the services'.
@@ -126,7 +128,12 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         request.setAttribute(
                 ORIGIN,
                 new RegistrationJobs.Origin(
-                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", ""));
+                        info.worktree(),
+                        AuditContext.credentialOf(request),
+                        UPLOAD,
+                        "archive",
+                        "",
+                        modeOf(request)));
     }
 
     /**
@@ -185,6 +192,18 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
             return upload;
         }
         throw new IllegalStateException("the registration was not admitted");
+    }
+
+    /**
+     * Whether a registration request is made or only judged: {@code dryRun=true} is a dry run (ADR-0081 D5).
+     *
+     * @param request the request
+     * @return the mode
+     */
+    static PackRegistrationService.Mode modeOf(HttpServletRequest request) {
+        return RegistrationPaths.isDryRun(request.getParameter("dryRun"))
+                ? PackRegistrationService.Mode.DRY_RUN
+                : PackRegistrationService.Mode.COMMIT;
     }
 
     /**

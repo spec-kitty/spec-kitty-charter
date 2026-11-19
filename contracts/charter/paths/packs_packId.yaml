@@ -3,8 +3,9 @@ parameters:
   in: path
   required: true
   description: >-
-    The identity of the Charter Pack a registration writes to, or that getPack reads: the configured identifier, a
-    lower-case slug of at most 63 characters. A value outside the grammar breaks the parameter's schema and is a 400
+    The identity of the Charter Pack a registration writes to, that getPack reads or that deletePack removes: the
+    configured identifier, a lower-case slug of at most 63 characters; a read and deletePack also resolve it by the
+    pack_id a pack declares. A value outside the grammar breaks the parameter's schema and is a 400
     Problem without a code, before the body is read.
   schema:
     type: string
@@ -149,10 +150,11 @@ delete:
     a built-in pack, a pack in a read-only location or a pack whose entry is a link is 409 registration_conflict, and a
     stale If-Match is 412. Then the pack's dependents: a configured pack whose depends_on or parent_pack names it, a
     stored activation whose packs list names it, and an artifact of another pack that refers to one of its artifacts.
-    Any dependent refuses the removal with 409 pack_has_dependents, whose packs member names the dependent packs and
-    whose violations name every dependent (at most 100; the detail counts the rest), and nothing is written. A
-    configured pack whose descriptor cannot be read cannot be judged, and refuses the removal with 500 pack_unreadable
-    naming it. Then every other closure that holds the pack (an activation that lists no packs) is composed without it,
+    A configured pack whose descriptor cannot be read cannot be judged, so it refuses the removal with 500
+    pack_unreadable naming it, before any dependent is judged; the removed pack's own unreadable pack.yaml does too
+    (replace it with a readable pack first). Any dependent refuses the removal with 409 pack_has_dependents, whose
+    packs member names the dependent packs and whose violations name every dependent (at most 100; the detail counts
+    the rest), and nothing is written. Then every other closure that holds the pack (an activation that lists no packs) is composed without it,
     strictly: one that does not compose or breaks a rule refuses the removal with 422 and its composition code, naming
     the closure, as an artifact DELETE does. An activation that lists no packs and holds a selection of one of the pack's
     artifacts is not a dependent: the selection reads as stale and is dropped on the next write, as after an artifact
@@ -236,7 +238,7 @@ delete:
       $ref: ../responses/PackPreconditionFailed.yaml
     '422':
       description: >-
-        PR A is strict: a closure that holds the pack and that no dependent names (an activation that lists no packs)
+        The compose is strict: a closure that holds the pack and that no dependent names (an activation that lists no packs)
         does not compose without it, or breaks a rule, so the removal is refused with the composition code or one of
         override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, naming the
         packs; or prompt_slot_missing (C38), the activation named in the detail. Nothing is written.

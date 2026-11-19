@@ -67,7 +67,8 @@ public class RefusalHandler {
     /**
      * The operations that judge a write over the closures a pack joins and refuse it synchronously: the per-artifact
      * writes (a directive, a paradigm, a styleguide and a toolguide, each created and put), the relationship write and
-     * the two {@code DELETE}s (IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW).
+     * the three {@code DELETE}s, the pack's own among them (IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW;
+     * ADR-0081 D8).
      */
     private static final List<String> IMPACT_CHECKED_WRITES = List.of(
             "registerPackDirective",
@@ -79,6 +80,7 @@ public class RefusalHandler {
             "registerPackToolguide",
             "putPackToolguide",
             "putPackRelationship",
+            "deletePack",
             "deletePackArtifact",
             "deletePackRelationship");
 

@@ -155,4 +155,29 @@ class Pep440RangeTest {
     void aMalformedSpecifierIsRejected() {
         assertThatThrownBy(() -> Pep440Range.admits("~1.0", "1.0")).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @ParameterizedTest
+    @CsvSource({
+        "1.0.0, 1.0.1, -1",
+        "1.1.0, 1.0.9, 1",
+        "1.0, 1.0.0, 0",
+        "1.0.0rc1, 1.0.0, -1",
+        "1.0.0a2, 1.0.0b1, -1",
+        "1.0.0, 1.0.0.post1, -1",
+        "1.0.0.dev1, 1.0.0a1, -1",
+        "1!0.1, 2.0, 1",
+        "1.0.0+a, 1.0.0+b, 0",
+        "v1.2, 1.2.0, 0",
+    })
+    void comparesVersionsByPublicPrecedence(String left, String right, int expected) {
+        assertThat(Integer.signum(Pep440Range.compareVersions(left, right))).isEqualTo(expected);
+        assertThat(Integer.signum(Pep440Range.compareVersions(right, left))).isEqualTo(-expected);
+    }
+
+    @Test
+    void refusesToCompareATextThatIsNoVersion() {
+        assertThatThrownBy(() -> Pep440Range.compareVersions("1.0", "not-a-version"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not-a-version");
+    }
 }

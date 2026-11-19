@@ -82,10 +82,13 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
 
     private final Stored stored;
     private final Optional<RegistrationImpact.Replacement> replacement;
+    private final Optional<PackIdentifier> removed;
 
-    private StagedPacks(Stored stored, Optional<RegistrationImpact.Replacement> replacement) {
+    private StagedPacks(
+            Stored stored, Optional<RegistrationImpact.Replacement> replacement, Optional<PackIdentifier> removed) {
         this.stored = stored;
         this.replacement = replacement;
+        this.removed = removed;
     }
 
     /**
@@ -103,6 +106,7 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
                         Objects.requireNonNull(catalog, "catalog"),
                         Objects.requireNonNull(descriptors, "descriptors"),
                         Objects.requireNonNull(artifacts, "artifacts")),
+                Optional.empty(),
                 Optional.empty());
     }
 
@@ -113,7 +117,18 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
      * @return the view, which shares what this one has read
      */
     StagedPacks with(RegistrationImpact.Replacement written) {
-        return new StagedPacks(stored, Optional.of(Objects.requireNonNull(written, "written")));
+        return new StagedPacks(stored, Optional.of(Objects.requireNonNull(written, "written")), Optional.empty());
+    }
+
+    /**
+     * The same stored packs without one of them: the view a pack's removal is judged on (ADR-0081 D6). The removed pack
+     * is not configured, and its descriptor is not found.
+     *
+     * @param pack the configured name of the pack removed
+     * @return the view, which shares what this one has read
+     */
+    StagedPacks without(PackIdentifier pack) {
+        return new StagedPacks(stored, Optional.empty(), Optional.of(Objects.requireNonNull(pack, "pack")));
     }
 
     /**
@@ -128,6 +143,7 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
     @Override
     public List<ConfiguredPack> configured() {
         List<ConfiguredPack> packs = new ArrayList<>(stored.configured());
+        removed.ifPresent(gone -> packs.removeIf(pack -> pack.id().equals(gone)));
         if (replacement.isEmpty()) {
             return packs;
         }
@@ -144,6 +160,9 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
 
     @Override
     public Optional<PackDescriptor> find(PackIdentifier pack) {
+        if (isRemoved(pack)) {
+            return Optional.empty();
+        }
         if (isWritten(pack)) {
             return Optional.of(replacement.orElseThrow().descriptor());
         }
@@ -168,7 +187,14 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
 
     @Override
     public PackCompositionFacts compositionFacts(PackIdentifier pack) {
+        if (isRemoved(pack)) {
+            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+        }
         return isWritten(pack) ? replacement.orElseThrow().facts() : stored.facts(pack);
+    }
+
+    private boolean isRemoved(PackIdentifier pack) {
+        return removed.filter(pack::equals).isPresent();
     }
 
     private boolean isWritten(PackIdentifier pack) {

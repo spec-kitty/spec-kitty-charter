@@ -55,7 +55,7 @@ public class RegistrationAuditFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         Optional<RegistrationPaths.Attempt> attempt = paths.classify(request.getMethod(), request.getRequestURI());
-        if (attempt.isEmpty()) {
+        if (attempt.isEmpty() || RegistrationPaths.isDryRun(request.getParameter("dryRun"))) {
             chain.doFilter(request, response);
             return;
         }
