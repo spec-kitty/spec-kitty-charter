@@ -61,7 +61,8 @@ class PackUninstallServiceTest {
     @Test
     void aPackNothingDependsOnIsRemovedWholeAndItsHistoryIsKept(@TempDir Path host) {
         Rig rig = new Rig(host);
-        PackRevision revision = rig.register("qa", rig.stage(qa()), Preconditions.none()).revision();
+        PackRevision revision =
+                rig.register("qa", rig.stage(qa()), Preconditions.none()).revision();
 
         PackUninstallService.Outcome outcome = uninstall(rig, "qa", revision.token(), Mode.COMMIT);
 
@@ -119,8 +120,8 @@ class PackUninstallServiceTest {
         rig.register("qa", rig.stage(qa()), Preconditions.none());
         rig.install(
                 "other",
-                dependingOnQa("depends_on:\n  - pack_id: " + QA_ID + "\n    range: '>=1.0'\nparent_pack: " + QA_ID
-                        + "\n"));
+                dependingOnQa(
+                        "depends_on:\n  - pack_id: " + QA_ID + "\n    range: '>=1.0'\nparent_pack: " + QA_ID + "\n"));
         rig.activations.add(Optional.of(List.of("qa")));
         rig.activations.add(Optional.empty());
         Map<String, String> before = rig.filesOf(rig.packs.resolve("qa"));
@@ -178,7 +179,9 @@ class PackUninstallServiceTest {
         CharterRefusal refused = refusalOf(() -> uninstall(rig, "qa", "*", Mode.COMMIT));
 
         assertThat(refused.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
-        assertThat(target.resolve("pack.yaml")).as("nothing outside the writable root is deleted").exists();
+        assertThat(target.resolve("pack.yaml"))
+                .as("nothing outside the writable root is deleted")
+                .exists();
     }
 
     @Test

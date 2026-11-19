@@ -240,9 +240,10 @@ final class PackRegistrationMapper {
                 outcome.version(),
                 outcome.revision().token(),
                 Map.of());
-        outcome.refused().ifPresentOrElse(
-                refused -> body.setProblem(impactProblem(refusals.registrationProblem(refused))),
-                () -> body.setNotices(notices(outcome.notices())));
+        outcome.refused()
+                .ifPresentOrElse(
+                        refused -> body.setProblem(impactProblem(refusals.registrationProblem(refused))),
+                        () -> body.setNotices(notices(outcome.notices())));
         Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
         own.put(Relation.PACK, links.link(PACKS, outcome.pack().value()));
         body.setLinks(Hypermedia.wire(own));

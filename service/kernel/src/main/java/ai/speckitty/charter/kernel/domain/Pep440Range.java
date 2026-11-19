@@ -103,7 +103,8 @@ public final class Pep440Range {
     }
 
     private static Parsed parsedOrThrow(String version) {
-        return Parsed.parse(version).orElseThrow(() -> new IllegalArgumentException("not a PEP 440 version: " + version));
+        return Parsed.parse(version)
+                .orElseThrow(() -> new IllegalArgumentException("not a PEP 440 version: " + version));
     }
 
     /**
