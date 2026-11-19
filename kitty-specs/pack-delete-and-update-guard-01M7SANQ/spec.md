@@ -115,8 +115,7 @@ An operator removes an org pack that no other pack depends on and no activation 
 ### Edge Cases
 
 - A delete of a built-in pack, or of a pack configured in a read-only location: `409 registration_conflict`.
-- A delete addressed by the declared `pack_id` instead of the configured name: `400` at the `PackId` path pattern (a
-  `pack_id` is a ULID, no pack id), else `404 pack_not_found`; a pack is addressed by its registered id only (#583 D3).
+- A delete addressed by the declared `pack_id` instead of the configured name: resolved as every pack path resolves it.
 - A delete while the registry lock is busy: `503` with `Retry-After`, as the other writes.
 - A stored pack that cannot be read: it can still be deleted when nothing depends on it (its dependents are found
   from the other packs, not from it). A pack whose own `pack.yaml` cannot be read is judged by its configured name
