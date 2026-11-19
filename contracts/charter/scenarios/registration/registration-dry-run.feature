@@ -122,3 +122,23 @@ Feature: A registration can be judged without being made
     And the field at "/result/dryRun" is true
     When I GET "/packs/acme"
     Then the response status is 404
+
+  Scenario: A dryRun that is neither true nor false is 400 on every operation, and nothing is written
+    When I PUT "/packs/acme?dryRun=yes" with the archive "v1"
+    Then the response status is 400
+    And the problem has no code
+    When I GET "/packs/acme"
+    Then the response status is 404
+    Given the filesystem source root holds the directory "packs/acme" with the archive "v1"
+    When I POST "/packs?dryRun=1" as JSON with the body:
+      """
+      {"kind": "filesystem", "packId": "acme", "path": "packs/acme"}
+      """
+    Then the response status is 400
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I DELETE "/packs/acme?dryRun=on" with the header "If-Match": "*"
+    Then the response status is 400
+    When I GET "/packs/acme"
+    Then the response status is 200

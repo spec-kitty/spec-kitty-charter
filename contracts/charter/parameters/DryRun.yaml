@@ -6,7 +6,8 @@ description: >-
   order and under the same locks, and stops before the commit: nothing is stored, no version history entry is written
   and the attempt is not entered in the registration audit log, except a request the worktree guard refuses (401 or
   403), which is entered as every refused attempt is. The answer says what the write would have done or how it would
-  have been refused. Absent or false is the write itself.
+  have been refused. Absent or false is the write itself; any other value (1, yes, on) breaks the parameter's schema
+  and is a 400 Problem without a code, answered before the write is judged, on all three operations alike.
 schema:
   type: boolean
   default: false

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.packs;
 
+import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
@@ -60,6 +61,11 @@ public class ActivationImpactAdapter implements ActivationImpact {
         return stored().stream()
                 .map(activation -> new ActivationRoots(activation.id().value(), rootsOf(activation)))
                 .toList();
+    }
+
+    @Override
+    public List<String> unreadableActivations() {
+        return repository.unreadable().stream().map(ActivationId::value).toList();
     }
 
     @Override

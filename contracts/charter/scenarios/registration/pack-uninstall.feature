@@ -149,16 +149,18 @@ Feature: A registered pack is removed whole, or not at all
     When I GET "/packs/qa/artifacts/directive/D1"
     Then the response status is 200
 
-  Scenario: An activation that lists no packs does not block a removal
+  Scenario: An activation that lists no packs does not block a removal, and its selection of the pack's artifact reads as stale
     Given the activation "everything" holds:
       """
-      {"schemaVersion": 2}
+      {"schemaVersion": 2, "selected": {"directive": ["D1"]}}
       """
     When I DELETE "/packs/qa?dryRun=true" with the header "If-Match": "*"
     Then the response status is 200
     And the field at "/outcome" is "deleted"
     When I DELETE "/packs/qa" with the header "If-Match": "*"
     Then the response status is 204
+    When I GET "/activations/everything"
+    Then the response status is 200
 
   Scenario: A removal answers 503 while registration is switched off, and nothing is removed
     Given registration is switched off

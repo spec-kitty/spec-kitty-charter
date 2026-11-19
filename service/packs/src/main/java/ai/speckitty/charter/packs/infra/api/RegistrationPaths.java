@@ -58,14 +58,16 @@ final class RegistrationPaths {
     }
 
     /**
-     * Whether a request asks for a dry run: its {@code dryRun} query parameter is {@code true}, in any case, as the
-     * contract's boolean binds it. Any other value is the write itself, or a {@code 400} the binding answers.
+     * Whether a request asks for a dry run, as the audit reads it: its {@code dryRun} query parameter is exactly
+     * {@code true}. The admission refuses every value but {@code true} and {@code false} with a {@code 400} before the
+     * write is judged ({@link RegistrationAdmission#modeOf}), so a request this reads as no dry run is the write itself,
+     * or that {@code 400}, and both are audited.
      *
      * @param dryRun the value of the {@code dryRun} query parameter, or null when the request has none
      * @return whether the request is a dry run
      */
     static boolean isDryRun(@Nullable String dryRun) {
-        return "true".equalsIgnoreCase(dryRun);
+        return "true".equals(dryRun);
     }
 
     private static Optional<Attempt> match(Pattern pattern, String path, String operation, String sourceKind) {

@@ -53,6 +53,17 @@ public interface ActivationImpact {
     List<ActivationRoots> activationRoots();
 
     /**
+     * The ids of the stored activations whose document cannot be read, which {@link #activationRoots()} leaves out. A
+     * check that must fail closed asks for them (ADR-0081 D7, review R3-1): an activation it cannot read might name the
+     * pack it judges.
+     *
+     * @return the ids, sorted; the default names none, as a deployment with no activations slice stores no activation
+     */
+    default List<String> unreadableActivations() {
+        return List.of();
+    }
+
+    /**
      * Tells the activations slice that a registration was stored and what it did to the floor and the locks. Called after
      * the commit, under the locks. The default does nothing, and the activations slice has nothing to add: the
      * activations whose in-force set changed were named before the commit, by {@link #activationsAffected}.

@@ -96,6 +96,29 @@ class ActivationImpactAdapterTest {
     }
 
     @Test
+    void anActivationWhoseDocumentDoesNotReadIsNamedAsUnreadable(@TempDir Path root) throws java.io.IOException {
+        FileActivationRepository repository = new FileActivationRepository(root.resolve("activations"));
+        repository.create(new ActivationId("good"), listing(PackRef.of("main")));
+        repository.create(new ActivationId("broken"), listing(PackRef.of("main")));
+        try (java.util.stream.Stream<Path> files = java.nio.file.Files.walk(root.resolve("activations"))) {
+            for (Path file : files.filter(java.nio.file.Files::isRegularFile)
+                    .filter(file -> file.toString().contains("broken"))
+                    .toList()) {
+                java.nio.file.Files.writeString(file, "{ not json");
+            }
+        }
+        ActivationImpactAdapter adapter = new ActivationImpactAdapter(repository);
+
+        assertThat(adapter.activationRoots())
+                .extracting(ActivationImpact.ActivationRoots::id)
+                .as("the listing leaves out what it cannot read")
+                .containsExactly("good");
+        assertThat(adapter.unreadableActivations())
+                .as("so a check that must fail closed can ask for it (review R3-1)")
+                .containsExactly("broken");
+    }
+
+    @Test
     void aListingThatFailsIsLoggedAsTheOperatorsFaultAndNotSwallowed() {
         ActivationRepository unlistable = new ActivationRepository() {
             @Override

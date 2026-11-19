@@ -61,6 +61,40 @@ class RegistrationAuditFilterTest {
     }
 
     @Test
+    void aDryRunIsNotEnteredAndAnyOtherDryRunValueIs() throws ServletException, IOException {
+        MockHttpServletRequest dryRun = new MockHttpServletRequest("DELETE", "/api/v1/packs/acme");
+        dryRun.setParameter("dryRun", "true");
+        MockHttpServletRequest notOne = new MockHttpServletRequest("DELETE", "/api/v1/packs/acme");
+        notOne.setParameter("dryRun", "yes");
+        MockFilterChain answered200 = new MockFilterChain() {
+            @Override
+            public void doFilter(jakarta.servlet.ServletRequest rq, jakarta.servlet.ServletResponse rs) {
+                ((MockHttpServletResponse) rs).setStatus(200);
+            }
+        };
+        MockFilterChain answered400 = new MockFilterChain() {
+            @Override
+            public void doFilter(jakarta.servlet.ServletRequest rq, jakarta.servlet.ServletResponse rs) {
+                ((MockHttpServletResponse) rs).setStatus(400);
+            }
+        };
+
+        filter.doFilter(dryRun, new MockHttpServletResponse(), answered200);
+        assertThat(entries)
+                .as("a dry run writes nothing, the audit log included (NFR-002)")
+                .isEmpty();
+
+        filter.doFilter(notOne, new MockHttpServletResponse(), answered400);
+        assertThat(entries)
+                .as("dryRun=yes is no dry run: the 400 it gets is entered as every refused attempt is")
+                .singleElement()
+                .satisfies(entry -> {
+                    assertThat(entry.operation()).isEqualTo("deletePack");
+                    assertThat(entry.outcome()).isEqualTo("refused:400");
+                });
+    }
+
+    @Test
     void anAttemptTheJobTookOverIsLeftToTheJob() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/v1/packs/acme");
         MockFilterChain chain = new MockFilterChain() {
