@@ -68,15 +68,15 @@ properties:
   problems:
     type: array
     description: >-
-      Per pack, in order: one validation_failed problem when the pack has a violation; otherwise, when its facts could
-      not be read, one problem with the refusal's code (e.g. pack_unreadable); then one validation_failed problem for its
-      round-trip reasons. The registration runs no round trip, so that problem has no registration counterpart: its
-      detail reads "The pack does not round-trip through the charter's model: N fault(s), the first at <file>.", and its
-      violations (round_trip_red, round_trip_written_unpaired) are worded as the registration words a violation. The
-      other problems are what the registration answers for the same fault. Each of a pack's problems has as its instance the absolute file URI of the pack's directory
-      (file:///work/packs/org-base/), so two packs' problems are told apart. Then one problem per composition fault,
-      with its code and packs and no instance. A pack never gets two problems for one cause. Empty when the set is
-      valid.
+      Per pack, in order: one validation_failed problem when the pack has a violation; otherwise, when its facts
+      could not be read, one problem with the refusal's code (e.g. pack_unreadable); then one validation_failed
+      problem for its round-trip reasons. The registration runs no round trip, so that problem has no registration
+      counterpart: its detail reads "The pack does not round-trip through the charter's model: N fault(s), the first
+      at <file>.", and its violations (round_trip_red, round_trip_written_unpaired) are worded as the registration
+      words a violation. The other problems are what the registration answers for the same fault. Each of a pack's
+      problems has as its instance the absolute file URI of the pack's directory (file:///work/packs/org-base/), so
+      two packs' problems are told apart. Then one problem per composition fault, with its code and packs and no
+      instance. A pack never gets two problems for one cause. Empty when the set is valid.
     items:
       $ref: ../../_shared/schemas/Problem.yaml
     x-derived:
