@@ -2061,7 +2061,8 @@ class HexagonalArchitectureTest {
 
     /**
      * Rule C: only the level rules ({@code placement.LevelRules}) and the placement codes name the pack-level codes, so
-     * no class outside the placement rules states a pack-level finding by hand.
+     * no class outside the placement rules states a pack-level finding by hand. The pack-set check's violation twin of
+     * {@code pack_level_missing} is one of them (#478): the set check takes it from {@code LevelRules.unknownLevel}.
      */
     private static ArchRule onlyTheLevelRulesNameThePackLevelFindingsRule() {
         return noClasses()
@@ -2070,7 +2071,9 @@ class HexagonalArchitectureTest {
                 .should()
                 .accessField(PlacementCodes.class, "PACK_LEVEL_MISSING")
                 .orShould()
-                .accessField(PlacementCodes.class, "PACK_LEVEL_MISMATCH");
+                .accessField(PlacementCodes.class, "PACK_LEVEL_MISMATCH")
+                .orShould()
+                .accessField(PlacementCodes.class, "PACK_LEVEL_MISSING_VIOLATION");
     }
 
     @Test
@@ -2084,7 +2087,8 @@ class HexagonalArchitectureTest {
                 new ClassFileImporter().importPackages("ai.speckitty.charter.deployable.packlevelfixture");
         assertThatThrownBy(() -> onlyTheLevelRulesNameThePackLevelFindingsRule().check(outside))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("BuildsFindingDirectly");
+                .hasMessageContaining("BuildsFindingDirectly")
+                .hasMessageContaining("BuildsTwinDirectly");
     }
 
     // ---- where the pack rules live (#554, S1 to S3 and S6, T052) ---------------------------------------------------

@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -237,16 +238,32 @@ public final class FileSystemPackInspector implements PackReading {
     /**
      * Reads one pack root once (S6): its contents, the files it classifies, the files the store does not hold and the
      * storage edge's verdict of the read ({@link StorageRulesets#verdict}: the read faults, the registration's
-     * composition and the manifest gate), in registration's order.
+     * composition and the manifest gate), in registration's order, and the pack's composition facts from the same read
+     * ({@link CompositionFactsBuilder#readoutFacts}, #478 S1): the store half the walk already ran, never a second read.
      *
      * @param root the pack to read; its {@code locator} is the directory
      * @return the readout
      */
     @Override
     public PackReadout read(PackRoot root) {
-        TreeRead tree = readTree(root);
+        return readout(root, readWithStore(root));
+    }
+
+    /**
+     * The readout of one read already made: its contents, census, verdict and composition facts, all from {@code one}.
+     *
+     * @param root the pack read; its name is the pack id the composition facts' refusals name
+     * @param one the one read of {@code root}
+     * @return the readout
+     */
+    static PackReadout readout(PackRoot root, OneRead one) {
+        TreeRead tree = one.tree();
         return new PackReadout(
-                tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
+                tree.contents(),
+                tree.census().files(),
+                tree.census().notHeld(),
+                StorageRulesets.verdict(tree),
+                CompositionFactsBuilder.readoutFacts(new PackIdentifier(root.name()), one.store()));
     }
 
     /**
@@ -335,7 +352,7 @@ public final class FileSystemPackInspector implements PackReading {
     private OneRead readDirectory(PackRoot root, Path directory, String name) {
         FileRead<PackDescriptor> descriptor = new FileRead.Absent<>(PackFileSet.PACK_YAML);
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
-        if (Files.isRegularFile(packYaml)) {
+        if (PackFileSet.unlinkedFile(directory, PackFileSet.PACK_YAML)) {
             descriptor = read(packYaml, PackFileSet.PACK_YAML, name, PackDescriptorReader::read);
         }
         List<FileRead<RawGraph>> shards = new ArrayList<>();
@@ -345,7 +362,7 @@ public final class FileSystemPackInspector implements PackReading {
         }
         FileRead<RawGraph> fragment = new FileRead.Absent<>(PackFileSet.FRAGMENT);
         Path fragmentYaml = directory.resolve("drg").resolve("fragment.yaml");
-        if (Files.isRegularFile(fragmentYaml)) {
+        if (PackFileSet.unlinkedFile(directory, PackFileSet.FRAGMENT)) {
             fragment = read(fragmentYaml, PackFileSet.FRAGMENT, name, FileSystemPackInspector::fragment);
         }
         // One walk of the tree: the census and the DSO half read the files it lists (#554, T028).
@@ -534,7 +551,7 @@ public final class FileSystemPackInspector implements PackReading {
         String prefix = (last == null ? "pack" : last.toString()) + "/";
         Set<String> held = Set.copyOf(PackFileSet.digested(directory, table, walk));
         List<NotHeldFile> out = new ArrayList<>();
-        for (String file : walk.unlinked()) {
+        for (String file : walk.regular()) {
             if (unnamedPolicy && PolicyYaml.FILE.equals(file)) {
                 out.add(NotHeldFile.unnamedPolicy(file));
                 continue;
@@ -1281,7 +1298,7 @@ public final class FileSystemPackInspector implements PackReading {
      * {@code PurePath}: segment by segment, a directory before a sibling that extends its name. {@code PackFileSet}'s
      * listing, which the store and the fingerprint share, orders by {@link String} instead; this validate-mode order
      * mirrors core's pathlib (#115). The walk starts at the directory's real path, so a pack root that is a symbolic
-     * link is entered (#284); a directory link below the root is not entered, and a file link is followed.
+     * link is entered (#284); a link below the root is not a regular file of the walk, and is never read through (D6).
      */
     private static List<Path> packFiles(Path directory, PackFileSet.Walk walk, String suffix) {
         return walk.regular().stream()

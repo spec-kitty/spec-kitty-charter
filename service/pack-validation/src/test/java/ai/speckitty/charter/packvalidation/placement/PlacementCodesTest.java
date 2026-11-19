@@ -14,15 +14,19 @@ import org.junit.jupiter.api.Test;
 class PlacementCodesTest {
 
     @Test
-    void theThreePlacementCodesAndTheirSeverities() {
+    void thePlacementCodesAndTheirSeverities() {
         assertThat(PlacementCodes.ALL)
                 .containsExactlyInAnyOrder(
                         new ReasonCode("pack_level_missing", Severity.WARNING),
+                        new ReasonCode("pack_level_missing", Severity.VIOLATION),
                         new ReasonCode("pack_level_mismatch", Severity.VIOLATION),
                         new ReasonCode("org_fragment_missing", Severity.VIOLATION));
         assertThat(PlacementCodes.PACK_LEVEL_MISMATCH.value())
                 .as("the mismatch speaks the wire refusal's token")
                 .isEqualTo(RefusalCode.PACK_LEVEL_MISMATCH.token());
+        assertThat(PlacementCodes.PACK_LEVEL_MISSING_VIOLATION.value())
+                .as("the set check's twin speaks the warning's token, so the contract is unchanged")
+                .isEqualTo(PlacementCodes.PACK_LEVEL_MISSING.value());
     }
 
     @Test

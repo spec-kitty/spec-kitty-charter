@@ -32,7 +32,8 @@ public final class StorageRulesets {
             .must(AssemblyRules.RULES)
             .must(NotHeldRules.RULES)
             .must(ReservedShardRules.RULES)
-            .must(ManifestRules.RULES);
+            .must(ManifestRules.RULES)
+            .must(LinkRules.RULES);
 
     private static final ModularRuleset<TreeRead> REGISTRATION =
             HOLDING.must(PackRulesets.content().on(TreeRead::contents));
@@ -63,7 +64,8 @@ public final class StorageRulesets {
 
     /**
      * What the tree holds: the store's refusal of the pack as a whole, a {@code file_not_held} warning per file not held,
-     * the reserved shard no registration wrote, and something at the manifest's path that is not a regular file.
+     * the reserved shard no registration wrote, something at the manifest's path that is not a regular file, and a
+     * {@code pack_entry_linked} violation per link in the tree (D1).
      * Collect-all, over the census and the read's assembly fact.
      *
      * @return the composition
@@ -106,7 +108,9 @@ public final class StorageRulesets {
      * as the registration listed them (WP07 review MINOR-3). When the store could not read the named policy file, its
      * fault is stated once, in its words (R2 row 32), and the reader's own fault at that file is not; so is a prompt
      * fragment the store cannot read, at the step enhancement that names it (R2 row 19, as the contract places it),
-     * and then nothing else is stated at the fragment.
+     * and then nothing else is stated at the fragment. At a link's path only {@code pack_entry_linked} is stated: the
+     * link is the cause of what else a read finds missing or irregular there (a {@code pack.yaml} or a manifest that is a
+     * link), and the specific code wins (D1, R2).
      *
      * @param read the one read
      * @return the verdict
@@ -159,9 +163,22 @@ public final class StorageRulesets {
                 .filter(fault -> trailing.contains(fault.location().file()))
                 .forEach(joined::add);
         joined.addAll(orphans);
-        Rationale judged = new Rationale(joined);
+        Rationale judged = new Rationale(atLinksOnlyTheLink(joined));
         Rationale gated = judged.isPassing() ? judged.and(new Rationale(manifestMembership(read))) : judged;
         return inRegistrationOrder(gated);
+    }
+
+    /** The violations, less any other than {@code pack_entry_linked} at a path a {@code pack_entry_linked} names. */
+    private static List<Reason> atLinksOnlyTheLink(List<Reason> reasons) {
+        Set<String> links = new HashSet<>();
+        reasons.stream()
+                .filter(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()))
+                .forEach(reason -> links.add(reason.location().file()));
+        return reasons.stream()
+                .filter(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code())
+                        || !reason.isFailing(Severity.VIOLATION)
+                        || !links.contains(reason.location().file()))
+                .toList();
     }
 
     /**

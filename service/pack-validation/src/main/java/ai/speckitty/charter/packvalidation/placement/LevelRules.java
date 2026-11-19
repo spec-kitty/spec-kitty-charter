@@ -61,6 +61,20 @@ public final class LevelRules {
         return List.of();
     }
 
+    /**
+     * The pack-set check's finding for a pack it cannot place (#478, WP03 review M3): no level is configured and its
+     * {@code pack.yaml} declares none, so {@code CLOSURE} cannot judge it. A violation, the twin of the warning
+     * {@link PlacementCodes#PACK_LEVEL_MISSING}, at {@code pack.yaml}; the level findings keep one home here.
+     *
+     * @param name the pack's configured name
+     * @return the failing reason
+     */
+    public static Reason unknownLevel(String name) {
+        return finding(
+                PlacementCodes.PACK_LEVEL_MISSING_VIOLATION,
+                PACK_YAML + " of " + name + " declares no pack_level and none is configured");
+    }
+
     /** A placement finding: at {@code pack.yaml} as a whole, its rule named by its code's token. */
     static Reason finding(ReasonCode code, String detail) {
         return new Reason(code.value(), Evaluation.FAIL, code, Location.in(PACK_YAML), detail);

@@ -106,6 +106,23 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
         return new Verdict(observation, evaluation, unpaired);
     }
 
+    /**
+     * The reason of a round trip the flow refused before it could observe the pack (#478, M2): the pack cannot be
+     * round-tripped, which is {@link #RED}, worded with the refusal's code and detail.
+     *
+     * @param code the refusal's wire token
+     * @param detail the refusal's detail
+     * @return the failing reason
+     */
+    public static Reason refused(String code, String detail) {
+        return new Reason(
+                RULE,
+                Evaluation.FAIL,
+                RED,
+                Location.NOWHERE,
+                "the round trip refused the pack: " + code + ": " + detail);
+    }
+
     @Override
     public List<Reason> apply(PackRoundTripResult result) {
         return judge(result).reasons();

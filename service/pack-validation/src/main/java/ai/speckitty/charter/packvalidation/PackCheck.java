@@ -49,15 +49,45 @@ public final class PackCheck {
     }
 
     /**
-     * Validates one pack: the pack is read once and every rule runs.
+     * One pack checked: the readout of its one read and the verdict validate mode gives it (#478, T010). The pack-set
+     * check takes the pack's composition facts from the same readout, so a pack is never read twice.
+     *
+     * @param readout what the one read of the pack returned
+     * @param verdict validate mode's verdict of that read
+     */
+    public record Checked(PackReadout readout, PackVerdict verdict) {
+        /**
+         * Checks the fields.
+         *
+         * @param readout the readout
+         * @param verdict the verdict
+         */
+        public Checked {
+            Objects.requireNonNull(readout, "readout");
+            Objects.requireNonNull(verdict, "verdict");
+        }
+    }
+
+    /**
+     * Checks one pack: the pack is read once, every rule runs, and the readout is kept beside the verdict.
+     *
+     * @param root the pack to check
+     * @return the readout and validate mode's verdict of it
+     */
+    public Checked check(PackRoot root) {
+        PackReadout read = reading.read(root);
+        Rationale all = read.rationale().and(placement().check(new Placement(read, root.configuredLevel())));
+        return new Checked(read, PackVerdicts.of(read.files(), all));
+    }
+
+    /**
+     * Validates one pack: the pack is read once and every rule runs ({@link #check}'s verdict).
      *
      * @param root the pack to validate
      * @return the classification of every file and every finding, in precedence order; a pack with no finding is
      *     valid
      */
     public PackVerdict validate(PackRoot root) {
-        PackReadout read = reading.read(root);
-        Rationale all = read.rationale().and(placement().check(new Placement(read, root.configuredLevel())));
-        return PackVerdicts.of(read.files(), all);
+        return check(root).verdict();
     }
 }
