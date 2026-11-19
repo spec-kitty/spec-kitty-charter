@@ -17,10 +17,12 @@ import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.NodeRef;
+import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.api.model.ActionEnhancement;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
 import ai.speckitty.charter.api.model.ArtifactReference;
+import ai.speckitty.charter.api.model.ContextTension;
 import ai.speckitty.charter.api.model.DenyNotApplied;
 import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
@@ -45,6 +47,7 @@ import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.api.model.SkippedReport;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -160,13 +163,7 @@ public class EffectiveReadMapper {
                 read.stored().revision().token(),
                 read.governanceFingerprint(),
                 graph.nodes().stream().map(node -> graphNode(id, node, served)).toList(),
-                graph.edges().stream()
-                        .map(edge -> new EffectiveGraphEdge(
-                                edge.source().urn(),
-                                EffectiveGraphEdge.RelationEnum.fromValue(
-                                        edge.relation().token()),
-                                edge.target().urn()))
-                        .toList(),
+                graph.edges().stream().map(EffectiveReadMapper::graphEdge).toList(),
                 graph.layerOverrides().stream()
                         .map(replaced -> new LayerOverride(
                                 replaced.ref().urn(), side(replaced.winner()), side(replaced.loser())))
@@ -219,8 +216,39 @@ public class EffectiveReadMapper {
                                 node(enhancement.target()),
                                 ActivationChangeMapper.references(enhancement.enhancedBy())))
                         .toList(),
+                context.tensions().stream()
+                        .map(EffectiveReadMapper::contextTension)
+                        .toList(),
                 skipped(context.skipped()),
                 links);
+    }
+
+    /**
+     * An edge of the graph; a tension edge carries its words and its reconcilers, always the reconcilers, and no other
+     * edge carries any (ADR-0045 decision 9).
+     */
+    static EffectiveGraphEdge graphEdge(GraphSnapshot.Edge edge) {
+        EffectiveGraphEdge wire = new EffectiveGraphEdge(
+                edge.source().urn(),
+                EffectiveGraphEdge.RelationEnum.fromValue(edge.relation().token()),
+                edge.target().urn());
+        if (edge.relation() == RelationType.TENSION) {
+            wire.when(edge.when().orElse(null))
+                    .reason(edge.reason().orElse(null))
+                    .reconciledBy(urns(edge.reconciledBy()));
+        }
+        return wire;
+    }
+
+    /** A tension of the context, answered as the graph answers its tension edge (ADR-0045 decision 10). */
+    static ContextTension contextTension(TensionSnapshot tension) {
+        return new ContextTension(tension.source().urn(), tension.target().urn(), urns(tension.reconciledBy()))
+                .when(tension.when().orElse(null))
+                .reason(tension.reason().orElse(null));
+    }
+
+    private static List<String> urns(List<NodeRef> nodes) {
+        return nodes.stream().map(NodeRef::urn).toList();
     }
 
     /**

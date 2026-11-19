@@ -347,8 +347,8 @@ class EffectiveTagTest {
     @Test
     void theGraphTagOfAFixedInputIsAFixedLiteral() {
         assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token())
-                .as("graph, domain v3")
-                .isEqualTo("sha256:2fbffbb0d62e9a547dc75f1adfa62a4aa6dbf5af7a6cef81a54179685ee8412b");
+                .as("graph, domain v4")
+                .isEqualTo("sha256:fa64a657d7dfc9267fa8814bfeff1337b8a7b00f496c719dd3a76276b4081ecc");
     }
 
     @Test
@@ -358,8 +358,8 @@ class EffectiveTagTest {
                                 closure("sha256:one"),
                                 new EffectiveTag.ContextQuery("software-dev", "implement", 0))
                         .token())
-                .as("context, domain v3")
-                .isEqualTo("sha256:e70a49ba757301126af1b78987c6b4a3036178fce258f36bdbe9e048faf0d3e3");
+                .as("context, domain v4")
+                .isEqualTo("sha256:a79c8507ccb766f3bd996d5afe4ab0cfac64964c3139c9d9127d10ba682107d1");
     }
 
     /**
@@ -387,10 +387,38 @@ class EffectiveTagTest {
                                 new EffectiveTag.ContextQuery("software-dev", "implement", 0))
                         .token())
                 .isNotEqualTo(contextV2);
-        assertThat(sha256("charter-effective-read\0v3\ngraph\n" + GOLDEN_REVISION.token() + "\nsha256:one\n"))
-                .as("the control: the v3 recipe over the same inputs is the tag")
+        assertThat(sha256("charter-effective-read\0v4\ngraph\n" + GOLDEN_REVISION.token() + "\nsha256:one\n"))
+                .as("the control: the v4 recipe over the same inputs is the tag")
                 .isEqualTo(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one"))
                         .token());
+    }
+
+    /**
+     * ADR-0045 decisions 9 and 10 (#602): the graph answers each tension in force with its words and reconcilers, and
+     * the context a required tensions member, under an unchanged revision and closure fingerprint. {@code v3} was
+     * released, so the domain moved to {@code v4}, and a tag a client kept from {@code v3} never matches again. The
+     * {@code v3} tokens are the literals the earlier recipe gave for the same inputs.
+     */
+    @Test
+    void aTagOfTheV3RecipeNoLongerMatchesAnyEffectiveRead() {
+        String graphV3 = "sha256:2fbffbb0d62e9a547dc75f1adfa62a4aa6dbf5af7a6cef81a54179685ee8412b";
+        String contextV3 = "sha256:e70a49ba757301126af1b78987c6b4a3036178fce258f36bdbe9e048faf0d3e3";
+
+        assertThat(sha256("charter-effective-read\0v3\ngraph\n" + GOLDEN_REVISION.token() + "\nsha256:one\n"))
+                .as("the v3 literal is the v3 recipe over the same inputs")
+                .isEqualTo(graphV3);
+        assertThat(sha256("charter-effective-read\0v3\ncontext\n" + GOLDEN_REVISION.token()
+                        + "\nsha256:one\nmissionType=software-dev\naction=implement\ndepth=0"))
+                .as("the v3 literal is the v3 recipe over the same inputs")
+                .isEqualTo(contextV3);
+        assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure("sha256:one")).token())
+                .isNotEqualTo(graphV3);
+        assertThat(EffectiveTag.context(
+                                GOLDEN_REVISION,
+                                closure("sha256:one"),
+                                new EffectiveTag.ContextQuery("software-dev", "implement", 0))
+                        .token())
+                .isNotEqualTo(contextV3);
     }
 
     private static String sha256(String preimage) {

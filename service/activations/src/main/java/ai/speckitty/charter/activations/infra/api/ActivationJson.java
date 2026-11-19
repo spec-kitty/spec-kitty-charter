@@ -3,11 +3,13 @@ package ai.speckitty.charter.activations.infra.api;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
+import ai.speckitty.charter.api.model.ContextTension;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.EffectiveArtifactRead;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveContextArtifact;
+import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.EffectiveStepPrompt;
 import ai.speckitty.charter.api.model.ExclusionRequest;
@@ -62,7 +64,9 @@ public class ActivationJson {
                 .setMixInAnnotation(EffectiveArtifactRead.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveArtifactSuggestion.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveContextArtifact.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(EffectiveGraphEdge.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveGraphNode.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(ContextTension.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(EffectiveStepPrompt.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SkippedReport.class, OmitAbsentMembers.class);
     }

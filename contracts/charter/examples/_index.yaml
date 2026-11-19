@@ -28,6 +28,7 @@ files:
   - ActivationChange.selected.yaml
   - ActivationSkippedReport.nothing-skipped.yaml
   - EffectiveActionContext.implement.yaml
+  - EffectiveActionContext.tension.yaml
   - EffectiveAgentProfileRead.java-jenny.yaml
   - ProfileSelectionRead.match.yaml
   - ProfileSelectionRead.tie.yaml
@@ -36,6 +37,7 @@ files:
   - EffectiveArtifactRead.directive.yaml
   - EffectiveArtifactList.first-page.yaml
   - EffectiveGraph.one-edge.yaml
+  - EffectiveGraph.tension.yaml
   - PackDocumentRead.yaml
   - PackDocumentRead.markdown.yaml
   - CharterRefusal.pack_document_not_found.yaml

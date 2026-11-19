@@ -3,6 +3,7 @@ package ai.speckitty.charter.activations.domain;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The effective graph, as the activations slice reads it (IC-11, FR-018, rule E15): the nodes in force, the merged edges
@@ -22,25 +23,72 @@ public record GraphSnapshot(List<NodeRef> nodes, List<Edge> edges, List<MergedSn
     private static final GraphSnapshot EMPTY = new GraphSnapshot(List.of(), List.of(), List.of());
 
     /**
-     * An edge of the graph.
+     * An edge of the graph. Only a tension edge carries words and reconcilers (ADR-0045 decision 9).
      *
      * @param source the node the edge starts at
      * @param relation what the edge means
      * @param target the node it ends at
+     * @param when the authored condition of a tension
+     * @param reason the authored reason of a tension
+     * @param reconciledBy the artifacts in force that reconcile a tension, in URN order; empty for any other edge
      */
-    public record Edge(NodeRef source, RelationType relation, NodeRef target) {
+    public record Edge(
+            NodeRef source,
+            RelationType relation,
+            NodeRef target,
+            Optional<String> when,
+            Optional<String> reason,
+            List<NodeRef> reconciledBy) {
 
         /**
-         * Checks the fields.
+         * Checks and copies the fields.
          *
          * @param source the start
          * @param relation the relation
          * @param target the end
+         * @param when the condition
+         * @param reason the reason
+         * @param reconciledBy the reconcilers
+         * @throws IllegalArgumentException when an edge other than a tension carries words or reconcilers
          */
         public Edge {
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(relation, "relation");
             Objects.requireNonNull(target, "target");
+            Objects.requireNonNull(when, "when");
+            Objects.requireNonNull(reason, "reason");
+            reconciledBy = List.copyOf(Objects.requireNonNull(reconciledBy, "reconciledBy"));
+            if (relation != RelationType.TENSION
+                    && (when.isPresent() || reason.isPresent() || !reconciledBy.isEmpty())) {
+                throw new IllegalArgumentException("only a tension edge carries words or reconcilers: " + relation);
+            }
+        }
+
+        /**
+         * A structural edge, which carries no words.
+         *
+         * @param source the start
+         * @param relation the relation
+         * @param target the end
+         */
+        public Edge(NodeRef source, RelationType relation, NodeRef target) {
+            this(source, relation, target, Optional.empty(), Optional.empty(), List.of());
+        }
+
+        /**
+         * The edge of a tension in force.
+         *
+         * @param tension the tension
+         * @return its edge, from the smaller URN
+         */
+        public static Edge of(TensionSnapshot tension) {
+            return new Edge(
+                    tension.source(),
+                    RelationType.TENSION,
+                    tension.target(),
+                    tension.when(),
+                    tension.reason(),
+                    tension.reconciledBy());
         }
     }
 

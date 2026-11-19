@@ -12,10 +12,11 @@ description: >-
   mission type and action; the skill, asset, payload and glossary context reads' id; the term read's context and term;
   the selection's role, language and framework; the step selection's mission type, step, language and framework); a
   pack outside the closure leaves it unchanged. In double quotes. Opaque to consumers, who compare it and never parse
-  it. The recipe carries a version, bumped whenever a read answers another body for the same inputs (today v3:
-  getActivation's links, its glossaries and vocabulary-* links among them, the links of a skill item, and the action
-  context's ownership rule, its appliesThrough and every overrider in force), so a tag from an earlier version never
-  matches and the read answers 200.
+  it. The recipe carries a version, bumped whenever a read answers another body for the same inputs (today v4: the
+  tensions in force on the effective graph, with their words and reconcilers, and in the action context's tensions;
+  v3 before it: getActivation's links, its glossaries and vocabulary-* links among them, the links of a skill item, and
+  the action context's ownership rule, its appliesThrough and every overrider in force), so a tag from an earlier
+  version never matches and the read answers 200.
 required: true
 schema:
   type: string

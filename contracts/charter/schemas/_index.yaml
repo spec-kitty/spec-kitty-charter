@@ -57,6 +57,10 @@ files:
   - EffectiveGraph.yaml
   - EffectiveGraphEdge.yaml
   - EffectiveGraphNode.yaml
+  - ContextTension.yaml
+  - TensionCondition.yaml
+  - TensionReason.yaml
+  - TensionReconcilers.yaml
   - ExclusionRequest.yaml
   - LanguageToken.yaml
   - LayerOverride.yaml

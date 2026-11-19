@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Optional;
@@ -92,6 +93,18 @@ public interface PacksSession {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #inForce} does
      */
     GraphSnapshot graph(InForceQuery query);
+
+    /**
+     * The tensions in force under a document's request (ADR-0045 decisions 8 to 10): each pair whose two sides are in
+     * force, resolved symmetrically through the layer merge, once, with its first writer's words and the artifacts in
+     * force that reconcile both sides. It answers from this session's read, its merge and its in-force resolution, so
+     * it resolves the closure no second time for one request (NFR-004).
+     *
+     * @param query what the document selects, denies and filters
+     * @return the tensions in (source, target) order; empty for a session that holds no closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #inForce} does
+     */
+    List<TensionSnapshot> tensions(InForceQuery query);
 
     /**
      * What ADR-0018's walk reaches from one action's step over the artifacts in force under a document's request

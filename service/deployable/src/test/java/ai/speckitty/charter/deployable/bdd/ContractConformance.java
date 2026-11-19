@@ -35,7 +35,9 @@ import tools.jackson.databind.JsonNode;
  * shared {@code Problem} response, the only non-2xx body of any module.
  *
  * <p>The validator covers the JSON Schema keywords the contract uses: {@code $ref} (to a whole file),
- * {@code allOf}, {@code oneOf}, {@code type} (one name or a list), {@code properties}, {@code required},
+ * {@code allOf}, {@code oneOf}, {@code anyOf}, {@code not}, {@code if} with {@code then} and {@code else} (the rule
+ * that only a tension edge carries words and reconcilers, ADR-0045 decision 9), {@code const} (a string), {@code type}
+ * (one name or a list), {@code properties}, {@code required},
  * {@code additionalProperties} ({@code false}, or a schema each undeclared member is checked against: a map such as
  * {@code Links}; {@code true}, {@code {}}, a mapping of annotations only and {@code null} are refused, so the contract
  * stays closed),
@@ -59,6 +61,7 @@ final class ContractConformance {
     private static final String SHARED_PROBLEM = "_shared/responses/Problem.yaml";
     private static final Set<String> CONSTRAINTS = Set.of(
             "type",
+            "const",
             "required",
             "enum",
             "pattern",
@@ -175,11 +178,13 @@ final class ContractConformance {
             String key = keyword.getKey();
             Object argument = keyword.getValue();
             switch (key) {
-                case "allOf", "oneOf" -> {
+                case "allOf", "oneOf", "anyOf" -> {
                     for (Object branch : list(argument, schema.file() + " " + key)) {
                         vetNode(new Located(mapping(branch, schema.file() + " " + key), schema.file()), vetted);
                     }
                 }
+                case "not", "if", "then", "else" ->
+                    vetNode(new Located(mapping(argument, schema.file() + " " + key), schema.file()), vetted);
                 case "properties" -> {
                     for (Map.Entry<String, Object> property :
                             mapping(argument, schema.file() + " properties").entrySet()) {
@@ -494,7 +499,8 @@ final class ContractConformance {
                         validate(value, new Located(mapping(branch, at), resolved.file()), at, violations);
                     }
                 }
-                case "oneOf" -> validateOneOf(value, argument, resolved, at, violations);
+                case "oneOf", "anyOf", "not", "if", "then", "else" ->
+                    validateCombination(key, value, argument, resolved, at, violations);
                 case "properties" -> validateProperties(value, argument, resolved, at, violations);
                 case "additionalProperties" -> validateAdditional(value, argument, resolved, at, violations);
                 case "items" -> validateItems(value, argument, resolved, at, violations);
@@ -535,6 +541,54 @@ final class ContractConformance {
                         at + "[" + i + "]",
                         violations);
             }
+        }
+    }
+
+    /** The keywords that combine subschemas: {@code oneOf}, {@code anyOf}, {@code not}, and {@code if} with its branches. */
+    private void validateCombination(
+            String key,
+            JsonNode value,
+            @Nullable Object argument,
+            Located resolved,
+            String at,
+            List<String> violations) {
+        switch (key) {
+            case "oneOf" -> validateOneOf(value, argument, resolved, at, violations);
+            case "anyOf" -> validateAnyOf(value, argument, resolved, at, violations);
+            case "not" -> {
+                if (matches(value, argument, resolved, at)) {
+                    violations.add(at + " matches the schema it must not match");
+                }
+            }
+            case "if" -> validateIf(value, argument, resolved, at, violations);
+            default -> {
+                // then and else are judged with their if; without one, JSON Schema ignores them
+            }
+        }
+    }
+
+    /** Whether the value meets the subschema, with no violation of its own. */
+    private boolean matches(JsonNode value, @Nullable Object argument, Located resolved, String at) {
+        List<String> branchViolations = new ArrayList<>();
+        validate(value, new Located(mapping(argument, at), resolved.file()), at, branchViolations);
+        return branchViolations.isEmpty();
+    }
+
+    private void validateAnyOf(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        if (list(argument, at + " anyOf").stream().noneMatch(branch -> matches(value, branch, resolved, at))) {
+            violations.add(at + " matches none of the anyOf branches");
+        }
+    }
+
+    /** {@code then} applies when the value meets {@code if}, {@code else} when it does not; either may be absent. */
+    private void validateIf(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        Object branch = matches(value, argument, resolved, at)
+                ? resolved.node().get("then")
+                : resolved.node().get("else");
+        if (branch != null) {
+            validate(value, new Located(mapping(branch, at), resolved.file()), at, violations);
         }
     }
 
@@ -610,6 +664,7 @@ final class ContractConformance {
                     }
                 }
             }
+            case "const" -> constant(value, argument, at, violations);
             case "enum" -> {
                 if (list(argument, at + " enum").stream()
                         .noneMatch(v -> value.isString() && value.asString().equals(String.valueOf(v)))) {
@@ -625,6 +680,16 @@ final class ContractConformance {
                 }
             }
             default -> bound(value, key, (Number) argument, at, violations);
+        }
+    }
+
+    /** {@code const}, of a string: the value is that string. */
+    private static void constant(JsonNode value, Object argument, String at, List<String> violations) {
+        if (!(argument instanceof String expected)) {
+            throw new AssertionError(at + ": only a string const is supported, not " + argument);
+        }
+        if (!value.isString() || !value.asString().equals(expected)) {
+            violations.add(at + " is " + value + ", not " + expected);
         }
     }
 

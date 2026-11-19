@@ -19,6 +19,7 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.ProfileResolution;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -35,6 +36,7 @@ import ai.speckitty.charter.packs.application.InForceProfiles;
 import ai.speckitty.charter.packs.application.ProfileGovernance;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
+import ai.speckitty.charter.packs.application.TensionsInForce;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -129,6 +131,11 @@ final class ClosureViewSession implements PacksSession {
     @Override
     public GraphSnapshot graph(InForceQuery query) {
         return graphOf(view.mergedGraph(statesOf(query)));
+    }
+
+    @Override
+    public List<TensionSnapshot> tensions(InForceQuery query) {
+        return tensionsOf(view.tensions(statesOf(query)));
     }
 
     @Override
@@ -360,7 +367,13 @@ final class ClosureViewSession implements PacksSession {
         for (GraphProjection.Edge edge : graph.edges()) {
             NodeRef.of(edge.source())
                     .ifPresent(source -> NodeRef.of(edge.target())
-                            .ifPresent(target -> edges.add(new GraphSnapshot.Edge(source, edge.relation(), target))));
+                            .ifPresent(target -> edges.add(new GraphSnapshot.Edge(
+                                    source,
+                                    edge.relation(),
+                                    target,
+                                    edge.when(),
+                                    edge.reason(),
+                                    nodesOf(edge.reconciledBy())))));
         }
         List<MergedSnapshot.LayerOverride> overrides = new ArrayList<>();
         for (LayerOverride replaced : graph.layerOverrides()) {
@@ -651,6 +664,28 @@ final class ClosureViewSession implements PacksSession {
     /** The artifact a URN names, when it is one of an activatable kind: an action, a template or an asset is none. */
     private static Optional<ArtifactRef> activatable(Urn urn) {
         return ArtifactRef.of(urn).filter(ref -> ref.kind().activatable());
+    }
+
+    /**
+     * The activation domain's tensions for the packs slice's: each pair as values, in the order the packs slice gave
+     * them, which is (source, target).
+     *
+     * @param tensions the tensions in force
+     * @return the tensions, as values
+     */
+    static List<TensionSnapshot> tensionsOf(TensionsInForce tensions) {
+        List<TensionSnapshot> snapshots = new ArrayList<>();
+        for (TensionsInForce.TensionInForce tension : tensions.all()) {
+            NodeRef.of(tension.source())
+                    .ifPresent(source -> NodeRef.of(tension.target())
+                            .ifPresent(target -> snapshots.add(new TensionSnapshot(
+                                    source,
+                                    target,
+                                    tension.when(),
+                                    tension.reason(),
+                                    nodesOf(tension.reconciledBy())))));
+        }
+        return snapshots;
     }
 
     /**

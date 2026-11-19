@@ -4,12 +4,14 @@ import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
+import ai.speckitty.charter.api.model.ContextTension;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.EffectiveArtifactRead;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveContextArtifact;
+import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.EffectivePromptFragment;
 import ai.speckitty.charter.api.model.EffectivePromptSlot;
@@ -60,7 +62,9 @@ public class ActivationRuntimeHints implements RuntimeHintsRegistrar {
                         EffectiveArtifactRead.class,
                         EffectiveArtifactSuggestion.class,
                         EffectiveContextArtifact.class,
+                        EffectiveGraphEdge.class,
                         EffectiveGraphNode.class,
+                        ContextTension.class,
                         EffectiveStepPrompt.class,
                         EffectivePromptSlot.class,
                         EffectivePromptFragment.class,

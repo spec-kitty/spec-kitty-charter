@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,6 +125,93 @@ class ContractConformanceTest {
                 .hasSize(1);
     }
 
+    // ---- ADR-0045 decision 9: only a tension edge carries words and reconcilers, and a tension edge always carries
+    // them
+
+    private static final String GRAPH = "/activations/a-1/graph";
+
+    private static String graph(String edge) {
+        return "{\"activationId\":\"a-1\",\"revision\":\"sha256:" + "a".repeat(64) + "\","
+                + "\"governanceFingerprint\":\"sha256:" + "b".repeat(64) + "\",\"nodes\":[],\"edges\":[" + edge
+                + "],\"layerOverrides\":[],\"_links\":{\"self\":{\"href\":\"/api/v1/activations/a-1/graph\"}}}";
+    }
+
+    @Test
+    void aTensionEdgeWithItsReconcilersAndARequiresEdgeWithoutWordsConform() {
+        String tension = "{\"source\":\"directive:A\",\"relation\":\"tension\",\"target\":\"directive:B\","
+                + "\"when\":\"w\",\"reason\":\"r\",\"reconciledBy\":[\"tactic:R\"]}";
+        String requires = "{\"source\":\"directive:B\",\"relation\":\"requires\",\"target\":\"directive:A\"}";
+
+        assertThat(contract.violations("get", GRAPH, 200, "application/json", json(graph(tension + "," + requires))))
+                .isEmpty();
+    }
+
+    @Test
+    void aTensionEdgeWithoutReconciledByIsAViolation() {
+        String tension = "{\"source\":\"directive:A\",\"relation\":\"tension\",\"target\":\"directive:B\"}";
+
+        assertThat(contract.violations("get", GRAPH, 200, "application/json", json(graph(tension))))
+                .singleElement()
+                .asString()
+                .contains("lacks the required member 'reconciledBy'");
+    }
+
+    @Test
+    void aRequiresEdgeWithWordsOrReconcilersIsAViolation() {
+        for (String extra : List.of("\"when\":\"w\"", "\"reason\":\"r\"", "\"reconciledBy\":[]")) {
+            String requires =
+                    "{\"source\":\"directive:B\",\"relation\":\"requires\",\"target\":\"directive:A\"," + extra + "}";
+
+            assertThat(contract.violations("get", GRAPH, 200, "application/json", json(graph(requires))))
+                    .as(extra)
+                    .singleElement()
+                    .asString()
+                    .contains("matches the schema it must not match");
+        }
+    }
+
+    @Test
+    void anIfThenElseAnAnyOfANotAndAConstAreImplementedAndVetted() throws IOException {
+        write("charter/openapi.yaml", "openapi: 3.1.0\npaths:\n  /x:\n    $ref: paths/x.yaml\n");
+        write("charter/paths/x.yaml", """
+                get:
+                  responses:
+                    '200':
+                      description: d
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+                            if:
+                              required: [kind]
+                              properties:
+                                kind: {const: a}
+                            then:
+                              anyOf:
+                              - required: [x]
+                              - required: [y]
+                            else:
+                              not:
+                                required: [x]
+                """);
+
+        ContractConformance check = new ContractConformance(fixture);
+
+        assertThat(check.violations("get", "/x", 200, "application/json", json("{\"kind\":\"a\",\"y\":1}")))
+                .isEmpty();
+        assertThat(check.violations("get", "/x", 200, "application/json", json("{\"kind\":\"a\"}")))
+                .containsExactly("$ matches none of the anyOf branches");
+        assertThat(check.violations("get", "/x", 200, "application/json", json("{\"kind\":\"b\"}")))
+                .isEmpty();
+        assertThat(check.violations("get", "/x", 200, "application/json", json("{\"kind\":\"b\",\"x\":1}")))
+                .containsExactly("$ matches the schema it must not match");
+
+        write("charter/schemas/Deep.yaml", "type: object\nnot:\n  properties:\n    a: {uniqueItems: true}\n");
+        assertThatThrownBy(() -> new ContractConformance(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("uniqueItems");
+    }
+
     /** The refusal codes as the schema's enum prints, built from the domain's tokens, not kept by hand. */
     private static String codes() {
         return Arrays.stream(RefusalCode.values())
@@ -203,12 +291,12 @@ class ContractConformanceTest {
                     properties:
                       list:
                         type: array
-                        items: {type: string, const: x}
+                        items: {type: string, uniqueItems: true}
                 """);
 
         assertThatThrownBy(() -> new ContractConformance(fixture))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("const");
+                .hasMessageContaining("uniqueItems");
     }
 
     @Test
@@ -297,11 +385,11 @@ class ContractConformanceTest {
     @Test
     void aKeywordInsideAnAdditionalPropertiesSchemaIsVetted() throws IOException {
         minimalContract();
-        write("charter/schemas/Map.yaml", "type: object\nadditionalProperties: {type: string, const: x}\n");
+        write("charter/schemas/Map.yaml", "type: object\nadditionalProperties: {type: string, uniqueItems: true}\n");
 
         assertThatThrownBy(() -> new ContractConformance(fixture))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("uses the keyword 'const'");
+                .hasMessageContaining("uses the keyword 'uniqueItems'");
     }
 
     // A map (R-14): each member a schema-valued additionalProperties admits is checked against that schema.
