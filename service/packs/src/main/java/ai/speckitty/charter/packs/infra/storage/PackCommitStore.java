@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
@@ -71,7 +72,7 @@ import org.springframework.stereotype.Service;
  * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy); for a linked pack the target is
  * missing, its aside copy sits beside it and is named after it, and the link dangles. The next listing of the pack
  * domain repairs it under the pack's write lock ({@link StorageRootLocations}, {@link PackWriteLocks},
- * <a href="https://github.com/spec-kitty/spec-kitty-charter/issues/281">#281</a>): {@link #missingLiveDirectory(Path)}
+ * <a href="https://github.com/spec-kitty/spec-kitty-charter/issues/281">#281</a>): {@link PackDirectories#missingLiveDirectory(Path)}
  * finds the missing directory, following a dangling link to its target, and {@link #restoreInterruptedSwap(Path)} moves
  * a sole aside copy back, which restores the last committed state; the interrupted commit was never acknowledged. A
  * successful swap hides its aside copy ({@code .pack-discard-*}) before deleting it, and an aside copy found beside a
@@ -200,9 +201,6 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     private static final DirectoryRename MOVE_ASIDE = moveAside(SwapPhases.NONE);
-
-    /** The most links a dangling chain is followed through, as the usual {@code ELOOP} bound. */
-    private static final int MAX_LINK_HOPS = 40;
 
     private static final Logger LOG = LoggerFactory.getLogger(PackCommitStore.class);
 
@@ -552,7 +550,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         lock.lock();
         try {
             // A swap a crash interrupted is repaired before the work reads the pack (#281), as on a listing.
-            missingLiveDirectory(entry).ifPresent(PackCommitStore::restoreInterruptedSwap);
+            PackDirectories.missingLiveDirectory(entry).ifPresent(PackCommitStore::restoreInterruptedSwap);
             reclaimInterruptedCreate(entry);
             return work.get();
         } finally {
@@ -644,8 +642,11 @@ public final class PackCommitStore implements WholePackWriteStore {
         }
 
         private static String packVersionOf(Path tree) throws IOException {
-            String text = Files.readString(tree.resolve("pack.yaml"), StandardCharsets.UTF_8);
-            if (PackDescriptorReader.read(text) instanceof FileRead.Read<PackDescriptor> read) {
+            // Never through a link (D6): a pack.yaml that is one is no readable descriptor.
+            Optional<byte[]> bytes = PackFileSet.unlinkedBytes(tree, PackFileSet.PACK_YAML);
+            if (bytes.isPresent()
+                    && PackDescriptorReader.read(new String(bytes.get(), StandardCharsets.UTF_8))
+                            instanceof FileRead.Read<PackDescriptor> read) {
                 return read.value().packVersion();
             }
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the tree to store has no readable pack.yaml");
@@ -797,39 +798,6 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     /**
-     * The directory a crash between the swap's two renames may have left missing for a pack entry: the entry itself
-     * for a plain pack, the final target of its link chain for a linked one. It is written as the real path of its
-     * parent plus its name, which is where the swap left the aside copy, since a commit swaps the real path. Each link
-     * is read with {@link Files#readSymbolicLink} and resolved against the real path of the directory that holds it,
-     * since {@code toRealPath} fails on a dangling link and a lexical {@code ..} under a linked directory goes wrong.
-     *
-     * @param entry the pack's entry under the pack domain
-     * @return the missing directory, or empty when it exists or the chain cannot be followed
-     */
-    static Optional<Path> missingLiveDirectory(Path entry) {
-        Path current = entry;
-        try {
-            for (int hop = 0; hop <= MAX_LINK_HOPS; hop++) {
-                Path parent = current.getParent();
-                Path name = current.getFileName();
-                if (parent == null || name == null) {
-                    return Optional.empty();
-                }
-                if (!Files.isSymbolicLink(current)) {
-                    boolean missing = !Files.exists(current, LinkOption.NOFOLLOW_LINKS)
-                            && !".".equals(name.toString())
-                            && !"..".equals(name.toString());
-                    return missing ? Optional.of(parent.toRealPath().resolve(name)) : Optional.empty();
-                }
-                current = parent.toRealPath().resolve(Files.readSymbolicLink(current));
-            }
-        } catch (IOException unresolved) {
-            // A parent that does not resolve holds no aside copy the service left.
-        }
-        return Optional.empty();
-    }
-
-    /**
      * Repairs a swap a crash interrupted between its two renames: when {@code live} is missing and exactly one
      * {@code <name>.pack-old-*} directory sits beside it, that aside copy (the last committed state) is moved back into
      * place. With zero or several candidates nothing is guessed. The caller must hold the pack's write lock, since a
@@ -844,7 +812,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         if (parent == null || Files.exists(live, LinkOption.NOFOLLOW_LINKS) || !Files.isDirectory(parent)) {
             return false;
         }
-        List<Path> asides = asidesOf(live);
+        List<Path> asides = PackDirectories.asidesOf(live);
         if (asides.size() != 1) {
             return false;
         }
@@ -854,29 +822,6 @@ public final class PackCommitStore implements WholePackWriteStore {
         } catch (IOException failure) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot restore " + live + " after an interrupted commit", failure);
-        }
-    }
-
-    /**
-     * The {@code <name>.pack-old-*} aside copies beside a live directory.
-     *
-     * @param live the pack's live directory, not a link: for a linked pack, its target
-     * @return the aside copies, in no particular order
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the parent cannot be listed
-     */
-    static List<Path> asidesOf(Path live) {
-        Path parent = live.getParent();
-        if (parent == null || !Files.isDirectory(parent)) {
-            return List.of();
-        }
-        String prefix = live.getFileName() + ".pack-old-";
-        try (Stream<Path> siblings = Files.list(parent)) {
-            return siblings.filter(
-                            sibling -> String.valueOf(sibling.getFileName()).startsWith(prefix))
-                    .filter(sibling -> Files.isDirectory(sibling, LinkOption.NOFOLLOW_LINKS))
-                    .toList();
-        } catch (IOException failure) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot inspect the parent of " + live, failure);
         }
     }
 
@@ -895,7 +840,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             return false;
         }
         boolean hidden = false;
-        for (Path aside : asidesOf(live)) {
+        for (Path aside : PackDirectories.asidesOf(live)) {
             hidden |= hidden(aside) != null;
         }
         return hidden;
@@ -949,7 +894,10 @@ public final class PackCommitStore implements WholePackWriteStore {
         return parent;
     }
 
-    /** Copies the whole tree of {@code source} into the existing directory {@code target}, following file links. */
+    /**
+     * Copies the whole tree of {@code source} into the existing directory {@code target}. A link below the root is never
+     * copied through (D6): the copy is refused naming it, so a write never stores what a link led to.
+     */
     private static void copyTree(Path source, Path target) throws IOException {
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
             @Override
@@ -960,11 +908,18 @@ public final class PackCommitStore implements WholePackWriteStore {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String relative = source.relativize(file)
+                        .toString()
+                        .replace(file.getFileSystem().getSeparator(), "/");
+                if (attrs.isSymbolicLink()) {
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, LinkRules.detail(relative));
+                }
                 Files.copy(
                         file,
-                        target.resolve(source.relativize(file).toString()),
+                        target.resolve(relative),
                         StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.COPY_ATTRIBUTES);
+                        StandardCopyOption.COPY_ATTRIBUTES,
+                        LinkOption.NOFOLLOW_LINKS);
                 return FileVisitResult.CONTINUE;
             }
         });

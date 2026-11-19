@@ -37,7 +37,7 @@ final class CensusEntries {
     static List<TreeCensus.Entry> of(
             String packName, PackFileSet.Walk walk, PackFileKind table, Map<String, TreeCensus.Companion> companions) {
         SortedMap<String, TreeCensus.Entry> entries = new TreeMap<>();
-        for (String file : walk.unlinked()) {
+        for (String file : walk.regular()) {
             entries.put(file, entry(packName, file, table, companions));
         }
         for (String link : walk.links()) {

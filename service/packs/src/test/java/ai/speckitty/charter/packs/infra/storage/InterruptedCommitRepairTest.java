@@ -319,7 +319,7 @@ class InterruptedCommitRepairTest {
 
         write(locations, null);
 
-        assertThat(PackCommitStore.asidesOf(target))
+        assertThat(PackDirectories.asidesOf(target))
                 .as("no restore candidate is left beside the target")
                 .isEmpty();
         assertThat(hidden(vendor)).as("it is hidden, not deleted").hasSize(1);

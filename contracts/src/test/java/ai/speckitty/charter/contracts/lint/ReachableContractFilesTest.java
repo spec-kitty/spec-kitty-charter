@@ -23,7 +23,8 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * Every definition file of the charter contract is reached from {@code openapi.yaml} through {@code $ref}s (#312).
  * The bundle holds only what {@code openapi.yaml} reaches, so a file nothing reaches is in no bundle: no check of the
  * bundle ever reads it, and the refusal codes or rules it states are judged nowhere. An {@code _index.yaml} list is not
- * a reference. A file is referenced from an operation, or deleted.
+ * a reference. A file is referenced from an operation, or deleted, or it is one of the {@link #STANDALONE} schemas that
+ * no operation serves by design.
  */
 class ReachableContractFilesTest {
 
@@ -33,14 +34,59 @@ class ReachableContractFilesTest {
 
     private static final String ENTRY = "openapi.yaml";
 
+    /**
+     * The definition files no operation serves by design, each exempt from the walk by name. Today one: the
+     * {@code PackCheckReport} schema, the standard output of the pack-check CLI (ADR-0075 decision 9, #478, ruling D2),
+     * which no operation serves; its contract test validates the CLI's real output against it
+     * ({@code PackCheckReportContractTest} in {@code deployable}). Bundling it under {@code components.schemas} would
+     * generate a DTO and put it under the breaking-change check as if it were served. Each entry must exist and stay
+     * unreached ({@link #eachStandaloneFileExistsAndNoOperationReachesIt}), so the list can neither rot nor hide a
+     * served file.
+     */
+    static final Set<String> STANDALONE = Set.of("schemas/PackCheckReport.yaml");
+
     @Test
     void everyDefinitionFileOfTheCharterContractIsReachedFromItsEntry() {
         Path contract = Path.of(System.getProperty("charter.contractDir"));
         Set<Path> reached = reached(contract.resolve(ENTRY));
         assertThat(reached).as("the files the walk reached").hasSizeGreaterThan(DEFINITIONS.size());
-        assertThat(unreached(contract, reached))
+        assertThat(unreached(contract, reached, STANDALONE))
                 .as("definition files no $ref from %s reaches; reference each from an operation or delete it", ENTRY)
                 .isEmpty();
+    }
+
+    @Test
+    void eachStandaloneFileExistsAndNoOperationReachesIt() {
+        Path contract = Path.of(System.getProperty("charter.contractDir"));
+
+        assertThat(standaloneFaults(contract, reached(contract.resolve(ENTRY)), STANDALONE))
+                .as("STANDALONE entries that are missing or that %s reaches", ENTRY)
+                .isEmpty();
+    }
+
+    @Test
+    void aStandaloneFileThatIsMissingOrReachedIsRefused(@TempDir Path contract) throws IOException {
+        write(contract, ENTRY, "paths:\n  /a:\n    $ref: paths/a.yaml\n");
+        write(contract, "paths/a.yaml", "get:\n  responses:\n    '200':\n      $ref: '../responses/A.yaml#/x'\n");
+        write(contract, "responses/A.yaml", "content:\n  schema:\n    $ref: ../schemas/Served.yaml\n");
+        write(contract, "schemas/Served.yaml", "type: string\n");
+        write(contract, "schemas/Report.yaml", "type: object\n");
+
+        assertThat(standaloneFaults(
+                        contract,
+                        reached(contract.resolve(ENTRY)),
+                        Set.of("schemas/Report.yaml", "schemas/Served.yaml", "schemas/Gone.yaml")))
+                .containsExactly("schemas/Gone.yaml does not exist", "schemas/Served.yaml is reached from " + ENTRY);
+    }
+
+    @Test
+    void aStandaloneFileIsLeftOutOfTheUnreachedOnlyByItsExactName(@TempDir Path contract) throws IOException {
+        write(contract, ENTRY, "paths: {}\n");
+        write(contract, "schemas/Report.yaml", "type: object\n");
+        write(contract, "schemas/ReportPart.yaml", "type: string\n");
+
+        assertThat(unreached(contract, reached(contract.resolve(ENTRY)), Set.of("schemas/Report.yaml")))
+                .containsExactly("schemas/ReportPart.yaml");
     }
 
     @Test
@@ -53,7 +99,7 @@ class ReachableContractFilesTest {
         write(contract, "schemas/OnlyTheOrphanUses.yaml", "type: string\n");
         write(contract, "scenarios/x.yaml", "not: a definition\n");
 
-        assertThat(unreached(contract, reached(contract.resolve(ENTRY))))
+        assertThat(unreached(contract, reached(contract.resolve(ENTRY)), Set.of()))
                 .containsExactly("responses/Orphan.yaml", "schemas/OnlyTheOrphanUses.yaml");
     }
 
@@ -78,8 +124,11 @@ class ReachableContractFilesTest {
         return reached;
     }
 
-    /** The definition files under {@code contract} not in {@code reached}, relative and sorted; no index list. */
-    private static List<String> unreached(Path contract, Set<Path> reached) {
+    /**
+     * The definition files under {@code contract} not in {@code reached}, relative and sorted; no index list, and none
+     * of {@code standalone}.
+     */
+    private static List<String> unreached(Path contract, Set<Path> reached, Set<String> standalone) {
         try (Stream<Path> files = Files.walk(contract)) {
             return files.filter(file -> file.toString().endsWith(".yaml"))
                     .filter(file -> !file.getFileName().toString().equals("_index.yaml"))
@@ -87,11 +136,29 @@ class ReachableContractFilesTest {
                             contract.relativize(file).getName(0).toString()))
                     .filter(file -> !reached.contains(file.normalize()))
                     .map(file -> contract.relativize(file).toString().replace('\\', '/'))
+                    .filter(file -> !standalone.contains(file))
                     .sorted()
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * What is wrong with a list of standalone files, sorted: each that does not exist, and each that {@code reached}
+     * holds, so a file an operation serves cannot hide behind the exemption.
+     */
+    private static List<String> standaloneFaults(Path contract, Set<Path> reached, Set<String> standalone) {
+        return standalone.stream()
+                .sorted()
+                .flatMap(name -> {
+                    Path file = contract.resolve(name).normalize();
+                    if (!Files.isRegularFile(file)) {
+                        return Stream.of(name + " does not exist");
+                    }
+                    return reached.contains(file) ? Stream.of(name + " is reached from " + ENTRY) : Stream.empty();
+                })
+                .toList();
     }
 
     private static void refs(Object node, Set<String> refs) {

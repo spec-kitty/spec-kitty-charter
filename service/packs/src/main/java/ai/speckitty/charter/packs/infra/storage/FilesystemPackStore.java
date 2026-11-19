@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -821,7 +822,7 @@ final class FilesystemPackStore {
         for (Path shard : PackFileSet.rootShards(directory, id.value())) {
             files.add(String.valueOf(shard.getFileName()));
         }
-        boolean hasFragment = Files.isRegularFile(directory.resolve(PackFileSet.FRAGMENT));
+        boolean hasFragment = PackFileSet.unlinkedFile(directory, PackFileSet.FRAGMENT);
         if (hasFragment) {
             files.add(PackFileSet.FRAGMENT);
         }
@@ -862,7 +863,11 @@ final class FilesystemPackStore {
 
     private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
-        if (!Files.isRegularFile(packYaml)) {
+        if (Files.isSymbolicLink(packYaml)) {
+            // Never read through (D6): the refusal names the link, in the storage rules' words.
+            throw descriptorRefusal("pack " + id.value() + ": " + LinkRules.detail(PackFileSet.PACK_YAML));
+        }
+        if (!PackFileSet.unlinkedFile(directory, PackFileSet.PACK_YAML)) {
             throw descriptorRefusal("pack " + id.value() + " has no pack.yaml");
         }
         return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {
@@ -913,8 +918,9 @@ final class FilesystemPackStore {
      * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack, is spelled in another
      * case than the pack lists it ({@link Spellings#of}, #300), is not a regular file there, or is not a template
      * payload, with why. A named file is the artifact's output template (ADR-0044): it must
-     * be a file the pack holds and digests as a template, never a file the table excludes or retires. A link is
-     * followed, as the pack walk follows one, as long as its real place stays in the pack.
+     * be a file the pack holds and digests as a template, never a file the table excludes or retires. The check opens
+     * no file. A link the name resolves through is judged by where it leads, and the pack walk never lists it as a
+     * template, so the storage rules refuse it ({@code pack_entry_linked}, D6).
      *
      * @param directory the pack directory, absolute and normalized (the callers normalize it; #319)
      * @param file the artifact's pack-relative path

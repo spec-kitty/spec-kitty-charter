@@ -20,6 +20,15 @@ public final class PlacementCodes {
     public static final ReasonCode PACK_LEVEL_MISSING =
             new ReasonCode(Diagnostic.Code.PACK_LEVEL_MISSING.token(), Severity.WARNING);
 
+    /**
+     * The pack has no level at all in a pack set: none is configured and its {@code pack.yaml} declares none, so
+     * {@code CLOSURE} cannot place it (#478, WP03 review M3). The same token as {@link #PACK_LEVEL_MISSING}, a
+     * violation, as {@code PackCodes} pairs {@code PROMPT_SLOT_NOT_EMPTY} with its warning: a mapper tells them apart by
+     * the constant. The pack-set check states it, never the level rules.
+     */
+    public static final ReasonCode PACK_LEVEL_MISSING_VIOLATION =
+            new ReasonCode(Diagnostic.Code.PACK_LEVEL_MISSING.token(), Severity.VIOLATION);
+
     /** The pack declares a level other than the one it is configured at (R2 row 36): the wire refusal's token. */
     public static final ReasonCode PACK_LEVEL_MISMATCH =
             new ReasonCode(RefusalCode.PACK_LEVEL_MISMATCH.token(), Severity.VIOLATION);
@@ -28,7 +37,8 @@ public final class PlacementCodes {
     public static final ReasonCode ORG_FRAGMENT_MISSING = new ReasonCode("org_fragment_missing", Severity.VIOLATION);
 
     /** Every placement code: the group the verdict's precedence tests first ({@code Precedence.comparator}). */
-    public static final Set<ReasonCode> ALL = Set.of(PACK_LEVEL_MISSING, PACK_LEVEL_MISMATCH, ORG_FRAGMENT_MISSING);
+    public static final Set<ReasonCode> ALL =
+            Set.of(PACK_LEVEL_MISSING, PACK_LEVEL_MISSING_VIOLATION, PACK_LEVEL_MISMATCH, ORG_FRAGMENT_MISSING);
 
     private PlacementCodes() {}
 }

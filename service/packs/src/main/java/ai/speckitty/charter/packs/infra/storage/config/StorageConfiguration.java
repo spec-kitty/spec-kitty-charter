@@ -5,6 +5,7 @@ import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.infra.storage.AgentProfileEnhancements;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.Locations;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
@@ -27,9 +28,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 /**
- * The persistence edge's configuration: it scans the storage package, which makes the stereotyped
- * {@code DomainRepositoryService} the single bean realizing the pack ports, and supplies the format that service is
- * injected with, the {@link ConfigRoot} ({@code charter.config-root}) and the packs it reads and writes there. A
+ * The persistence edge's configuration: it scans the storage package for its stereotyped beans, registers the plain
+ * {@link DomainRepositoryService} as the single bean realizing the pack ports, and supplies the format that service is
+ * built with, the {@link ConfigRoot} ({@code charter.config-root}) and the packs it reads and writes there. A
  * database-backed sibling would swap the {@link SerializationStrategy} bean, not the service.
  *
  * <p>A test replaces the root with a {@code @Primary} {@link ConfigRoot} of its own (the deployable's
@@ -55,6 +56,19 @@ public class StorageConfiguration {
     @Bean
     SerializationStrategy serializationStrategy() {
         return new YamlSerializationStrategy();
+    }
+
+    /**
+     * The edge concretization of the pack persistence ports, registered here rather than by a stereotype, so the class
+     * stays free of Spring: the production round trip builds it too, and pack-check runs that without Spring (#478).
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format
+     * @return the service realizing every pack port
+     */
+    @Bean
+    DomainRepositoryService domainRepositoryService(Locations locations, SerializationStrategy strategy) {
+        return new DomainRepositoryService(locations, strategy);
     }
 
     /**

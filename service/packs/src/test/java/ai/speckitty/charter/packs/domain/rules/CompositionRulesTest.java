@@ -133,9 +133,7 @@ class CompositionRulesTest {
             PackUnderResolution right = pack("01RIGHT", "right", "1.0.0", PackLevel.ORG);
             Map<String, List<String>> presets = Map.of("01LEFT", List.of("team"), "01RIGHT", List.of("team"));
 
-            List<Reason> reasons = CompositionRules.closure()
-                    .must(CompositionRules.presets(holding(presets)))
-                    .apply(List.of(left, right));
+            List<Reason> reasons = PackRulesets.closure(holding(presets)).apply(List.of(left, right));
 
             assertThat(reasons).singleElement().satisfies(reason -> {
                 assertThat(reason.rule()).isEqualTo(CompositionRules.PRESETS_RULE);
@@ -144,7 +142,7 @@ class CompositionRulesTest {
                         .isEqualTo("packs `left` (01LEFT) and `right` (01RIGHT) at org both hold the preset `team`,"
                                 + " and neither extends the other by parent_pack");
             });
-            assertThat(CompositionRules.presets(holding(Map.of())).apply(List.of(left, right)))
+            assertThat(PackRulesets.closure(holding(Map.of())).apply(List.of(left, right)))
                     .isEmpty();
         }
 
@@ -1112,7 +1110,7 @@ class CompositionRulesTest {
                     assertThat(fault.detail()).startsWith("packs `z` (01ZZZ) and `a` (01AAA) at org");
                 });
                 assertThat(check(last, first)).isEqualTo(given);
-                assertThat(CompositionRules.presets(holding(presetIds)).apply(List.of(first, last)))
+                assertThat(PackRulesets.closure(holding(presetIds)).apply(List.of(first, last)))
                         .extracting(Reason::detail)
                         .containsExactly(given.getFirst().detail());
             }

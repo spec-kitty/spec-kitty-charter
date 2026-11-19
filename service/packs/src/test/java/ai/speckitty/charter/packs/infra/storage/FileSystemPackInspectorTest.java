@@ -894,9 +894,10 @@ class FileSystemPackInspectorTest {
     }
 
     /**
-     * #251: an asset file the store's read does not hold (here, a link that leaves the pack) is refused with the load's
-     * reason, and a sidecar naming it names no payload, in validate mode as in the load. Its path stays inside
-     * {@code assets/} as written, so it is a missing payload, not an escape (#382 judges the path as written).
+     * #251: an asset file the store's read does not hold (here, a link that leaves the pack, which neither read reads
+     * through, D6) is not a payload, and a sidecar naming it names no payload, in validate mode as in the load. Its path
+     * stays inside {@code assets/} as written, so it is a missing payload, not an escape (#382 judges the path as
+     * written). The link itself is the storage rules' {@code pack_entry_linked}.
      */
     @Test
     void anAssetFileTheLoadDoesNotHoldIsRefusedAndNamesNoPayload(@TempDir Path host) throws IOException {
@@ -909,9 +910,7 @@ class FileSystemPackInspectorTest {
         write(dir, "assets/f.asset.yaml", ASSET.formatted("f", "image/png", "out.png"));
         write(host, "outside.png", "png");
         SymbolicLinks.create(dir.resolve("assets/out.png"), host.resolve("outside.png"));
-        List<Tuple> refused = List.of(
-                tuple("assets/out.png", "the file leaves the pack"),
-                tuple("assets/f.asset.yaml", "payload assets/out.png does not exist"));
+        List<Tuple> refused = List.of(tuple("assets/f.asset.yaml", "payload assets/out.png does not exist"));
 
         TreeRead contents = full(dir);
         FilesystemPackStore.PackRead load =
@@ -928,6 +927,10 @@ class FileSystemPackInspectorTest {
         assertThat(load.violations())
                 .extracting(PackElementViolation::file, PackElementViolation::reason)
                 .containsExactlyElementsOf(refused);
+        assertThat(StorageRulesets.verdict(contents).details())
+                .filteredOn(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()))
+                .extracting(reason -> reason.location().file())
+                .containsExactly("assets/out.png");
     }
 
     /**
@@ -1107,15 +1110,19 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
-    void aSymlinkedAssetManifestThatLeavesThePackIsStillOnlyReadAsAFile(@TempDir Path dir) throws IOException {
+    void aSymlinkedAssetSidecarIsNeverReadAndIsRefusedAsALink(@TempDir Path dir) throws IOException {
+        // D6 (#597): a link is never read through, wherever it leads; the storage rules refuse it.
         Path outside = Files.createDirectories(dir.resolve("outside"));
         Files.writeString(outside.resolve("m.asset.yaml"), ASSET.formatted("m", "image/png", "m.png"));
         Path pack = Files.createDirectories(dir.resolve("pack/assets"));
         Files.createSymbolicLink(pack.resolve("m.asset.yaml"), outside.resolve("m.asset.yaml"));
+        TreeRead read = full(dir.resolve("pack"));
 
-        assertThat(full(dir.resolve("pack")).contents().assets())
-                .extracting(PackContents.AssetFacts::id)
-                .containsExactly("m");
+        assertThat(read.contents().assets()).isEmpty();
+        assertThat(StorageRulesets.verdict(read).details())
+                .filteredOn(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()))
+                .extracting(reason -> reason.location().file())
+                .containsExactly("assets/m.asset.yaml");
     }
 
     // ---- the listing of shards ---------------------------------------------------------------------
