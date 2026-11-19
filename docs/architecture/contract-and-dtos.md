@@ -2,7 +2,7 @@
 title: Contract and DTOs
 description: The charter OpenAPI 3.1 contract is the single source of every DTO, generated into the Java service and ingested by the core for its CLI and runtime.
 doc_status: draft
-updated: 2026-11-16T00:00:00Z
+updated: 2026-11-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -134,8 +134,10 @@ The layout:
   - the `impacts` relation, modeled as a signed, authored edge; `in_tension_with` is dropped
     and `reconciles_tension` targets `impacts < 0` pairs (superseded in part by
     [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/): the relation
-    becomes `tension` and `impacts` an artifact's per-value list; the contract shape is not yet
-    decided);
+    becomes `tension` and `impacts` an artifact's per-value list; the contract shape is decided
+    by [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/):
+    the relation `tension`, a graph edge with its words and reconcilers, the context's `tensions`
+    and `getActivationTensions`);
   - the refusal codes `governance_policy_violation` and `stale_input` (both now raised;
     `governance_policy_violation` by the registration writes, #293);
   - an integer `depth` request parameter on the context read that counts `suggests` hops (0 to
@@ -144,8 +146,8 @@ The layout:
     and `Charter-Source-Fingerprint` response headers (the last on 200 answers only);
   - a governance fingerprint on context responses.
 
-  Core aligns to these at the cutover. Until then (current state; superseded by ADR-0028), core's
-  seam maps its `in_tension_with` edges to negative `impacts` edges.
+  Core aligns to these at the cutover. Core still writes `in_tension_with`, which the service no
+  longer reads (ADR-0045 decision 2, DIV-615); core's seam maps it to `tension`.
 - A breaking-change check (`checkContractCompatibility`) compares the bundle with the last
   released version of the same major version. Until the first release there is no baseline,
   and the check says so. How the released version is found, and the release procedure, are in

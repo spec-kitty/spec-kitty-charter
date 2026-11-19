@@ -2,7 +2,7 @@
 title: "ADR-0077: The kind taxonomy is served, and the mission-type step is the one authoring surface"
 description: "Slice F: the kind taxonomy is served; substeps fold into the step and the step contract retires; each relation's endpoint kinds are typed and refused; four shapes retire."
 doc_status: active
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-19T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-13'
 type: ADR
@@ -177,6 +177,10 @@ refuses none of the open-packs edges, and 3 of the example-pack edges before the
    | `rejects` | G → anti_pattern |
    | `implemented_by` | guard → asset (derived, never authored) |
    | tension (`in_tension_with`) | G ↔ G, held beside the relations as a `Tension` (ADR-0028) |
+
+   *Amended 2026-11-19 ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)
+   decision 1, #602): the row is the relation `tension`, G ↔ G, held among the relations in its own pair class; the
+   `Tension` type and the `in_tension_with` spelling are gone, and the taxonomy's relation row is `tension`.*
 
    - **One source.** `RelationType.endpoints()` answers from one table (`EndpointTable`). An agreement test reflects
      over the typed factories and checks that their products equal each row, with a skewed row as the positive

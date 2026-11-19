@@ -23,6 +23,12 @@ The work toward the next packs release, after the release candidate `0.1.0-rc.1`
 
 ### Breaking
 
+- A tension is spelled `tension` (#602, ADR-0045 decision 2): the `Relation` enum of `graph-shard.schema.json` and
+  `org-fragment.schema.json` replaces `in_tension_with` with `tension`, so a pack file that writes `in_tension_with`
+  no longer validates and the service refuses it at load. Each tension is written once, from the side the pack holds,
+  or from the smaller bare URN when it holds both sides or neither; a pack that writes one twice, the other way round
+  or from an artifact to itself is refused (`tension_duplicated`, `tension_orientation`, `tension_self`). A consumer
+  rewrites every `in_tension_with` edge as `tension` (spec-kitty-open-packs #316).
 - The file kinds say what the service holds (#554, open case 6): the `graph-shard` rule narrows from
   `**/*.graph.yaml` to `*/*.graph.yaml`, a shard at the pack root, and the `**/charter.yaml` rule is removed, so no
   pack file kind maps a `charter.yaml`. A shard below the root (`drg/<kind>.graph.yaml`, `graph/a.graph.yaml`) and a
