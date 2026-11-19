@@ -101,6 +101,40 @@ class ModuleDependencyAllowlistEnforcementTest {
     }
 
     @Test
+    fun anExtraConfigurationNamedForJudgingIsJudged() {
+        val module = module()
+        ModuleDependencyAllowlist.judgeAlso(module, "jarClasspath")
+        val jar = module.configurations.create("jarClasspath")
+        jar.dependencies.add(module.dependencies.create("org.springframework:spring-web:7.0.0"))
+        assertThatThrownBy { jar.resolve() }
+            .hasStackTraceContaining(":pack-validation may not declare [org.springframework:spring-web] in jarClasspath (ADR-0075)")
+        assertThat(ModuleDependencyAllowlist.isEnforcedOn(module)).isTrue()
+    }
+
+    @Test
+    fun anExtraConfigurationNamedBeforeTheAllowlistIsEnforcedIsJudgedToo() {
+        val repository = ProjectBuilder.builder().withProjectDir(root).withName("root").build()
+        val module = ProjectBuilder.builder().withParent(repository).withName("pack-check")
+            .withProjectDir(File(root, "pack-check")).build()
+        module.pluginManager.apply("java-library")
+        ModuleDependencyAllowlist.judgeAlso(module, "jarClasspath")
+        val jar = module.configurations.create("jarClasspath")
+        jar.dependencies.add(module.dependencies.create(module.files("spring.jar")))
+        assertThat(ModuleDependencyAllowlist.isEnforcedOn(module)).isFalse()
+        ModuleDependencyAllowlist(projects = emptySet(), modules = emptySet()).enforceOn(module)
+        assertThatThrownBy { jar.resolve() }
+            .hasStackTraceContaining(":pack-check may not declare [files [spring.jar]] in jarClasspath (ADR-0075)")
+    }
+
+    @Test
+    fun aConfigurationNotNamedForJudgingIsNotJudged() {
+        val module = module()
+        val other = module.configurations.create("other")
+        other.dependencies.add(module.dependencies.create(module.files("spring.jar")))
+        assertThatCode { other.resolve() }.doesNotThrowAnyException()
+    }
+
+    @Test
     fun theConventionsJSpecifyIsAllowed() {
         val module = module()
         module.dependencies.add("compileOnly", "org.jspecify:jspecify:1.0.0")

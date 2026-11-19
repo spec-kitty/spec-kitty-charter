@@ -14,6 +14,9 @@ import org.gradle.api.artifacts.ProjectDependency
  * `pack-validation`'s allowed `:packs` brings Spring onto its classpath. `HexagonalArchitectureTest`'s
  * `PACK_VALIDATION_IS_FRAMEWORK_FREE` pins, directly and transitively, that the classes the modules use never touch it.
  *
+ * A convention that adds a resolvable configuration of its own (`charter.pack-check-jar`'s `packCheckJarClasspath`,
+ * #478) names it with [judgeAlso], so a dependency declared on it directly is judged as the main classpaths' are (J6).
+ *
  * @property projects the charter project paths allowed, such as `:kernel`
  * @property modules the external modules allowed, as `group:name`, any version; [CONVENTION_MODULES] are allowed too
  */
@@ -47,11 +50,14 @@ class ModuleDependencyAllowlist(val projects: Set<String>, val modules: Set<Stri
      * Fails the build when a dependency the list does not allow reaches a configuration in [CLASSPATHS] of [project],
      * naming every one and the configuration that declares it. That is every configuration in the classpath's
      * hierarchy, so a custom configuration the main ones `extendsFrom` is judged too. The check runs when the
-     * classpath's dependencies are first read, so a resolution of it fails with this message as its cause.
+     * classpath's dependencies are first read, so a resolution of it fails with this message as its cause. A
+     * configuration named with [judgeAlso] is judged the same way, whether it is named before or after this call.
      */
     fun enforceOn(project: Project) {
         val allowlist = this
-        project.configurations.matching { it.name in CLASSPATHS }.configureEach {
+        val judged = judged(project)
+        judged.enforced = true
+        project.configurations.matching { it.name in CLASSPATHS || it.name in judged.extra }.configureEach {
             val classpath = this
             withDependencies {
                 val refusals = classpath.hierarchy.mapNotNull { declaring ->
@@ -68,9 +74,36 @@ class ModuleDependencyAllowlist(val projects: Set<String>, val modules: Set<Stri
         }
     }
 
+    /** The extra configurations of one project that its allowlist judges, and whether one is enforced on it. */
+    private class Judged {
+        val extra: MutableSet<String> = linkedSetOf()
+        var enforced = false
+    }
+
     companion object {
         /** The resolvable configurations that are the main compile and runtime classpath of a `java-library` module. */
         val CLASSPATHS = setOf("compileClasspath", "runtimeClasspath")
+
+        private const val JUDGED = "charter.moduleDependencyAllowlist.judged"
+
+        private fun judged(project: Project): Judged {
+            val extra = project.extensions.extraProperties
+            if (!extra.has(JUDGED)) {
+                extra.set(JUDGED, Judged())
+            }
+            return extra.get(JUDGED) as Judged
+        }
+
+        /**
+         * Makes the allowlist that is, or will be, enforced on [project] judge [configuration] too, with every
+         * configuration in its hierarchy, as it judges [CLASSPATHS].
+         */
+        fun judgeAlso(project: Project, configuration: String) {
+            judged(project).extra.add(configuration)
+        }
+
+        /** Whether an allowlist has been enforced on [project], so a convention can refuse a module that declares none. */
+        fun isEnforcedOn(project: Project): Boolean = judged(project).enforced
 
         /** What `charter.hand-written` itself declares on every hand-written module: JSpecify, `compileOnly`. */
         val CONVENTION_MODULES = setOf("org.jspecify:jspecify")
