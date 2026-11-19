@@ -27,6 +27,8 @@ files:
   - Activation.minimal.yaml
   - ActivationChange.selected.yaml
   - ActivationSkippedReport.nothing-skipped.yaml
+  - ActivationTensions.empty.yaml
+  - ActivationTensions.unreconciled.yaml
   - EffectiveActionContext.implement.yaml
   - EffectiveActionContext.tension.yaml
   - EffectiveAgentProfileRead.java-jenny.yaml

@@ -1,0 +1,63 @@
+title: TensionFinding
+description: >-
+  An unreconciled_tension finding (ADR-0045 decisions 11 and 12, ruling G3): a tension in force that no artifact in force
+  reconciles, and the ways the activation can resolve it. A finding never refuses.
+
+  _links: effective-source and effective-target, the reads of the two sides under the activation
+  (getEffectiveArtifact), always present; exclude-source and exclude-target, each present only when the exclusion write
+  (deactivateActivationArtifact) would accept that side, that is when it is neither locked nor required on the floor,
+  as that write judges it on the same document and closure. Each exclude link is a concrete href with method PUT: send
+  If-Match with this answer's revision, quoted (a valid If-Match of the write), and an empty ExclusionRequest body.
+type: object
+additionalProperties: false
+required:
+- code
+- source
+- target
+- resolutions
+- _links
+properties:
+  code:
+    type: string
+    enum:
+    - unreconciled_tension
+    description: The finding's code.
+    x-derived:
+      rule: unreconciled_tension, the one finding of this read.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  source:
+    allOf:
+    - $ref: Urn.yaml
+    description: The side of the tension with the smaller URN.
+    x-derived:
+      rule: The source of the tension in force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  target:
+    allOf:
+    - $ref: Urn.yaml
+    description: The side of the tension with the larger URN.
+    x-derived:
+      rule: The target of the tension in force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  resolutions:
+    type: array
+    minItems: 1
+    maxItems: 2
+    items:
+      type: string
+      enum:
+      - reconcile
+      - deactivate_one_side
+    description: >-
+      The ways to resolve the tension, each once, in this order: reconcile, always (select or write an artifact that
+      reconciles both sides); then deactivate_one_side, only when the exclusion write would accept at least one side
+      (ruling G3), with the exclude link of each side it would accept.
+    x-derived:
+      rule: reconcile; and deactivate_one_side when a side is neither locked nor required on the floor.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  _links:
+    $ref: Links.yaml

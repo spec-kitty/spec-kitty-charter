@@ -1,0 +1,36 @@
+summary: >-
+  An activation with two tensions in force: one a tactic in force reconciles, and one nothing reconciles, whose finding
+  offers both resolutions. Its source is required by the governing pack, so only the target has an exclude link;
+  follow it with If-Match set to this answer's revision, quoted, and an empty body.
+value:
+  activationId: a-1
+  revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+  governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+  tensions:
+    - source: directive:TENSION_REC_A
+      target: directive:TENSION_REC_B
+      when: when a change is large enough to need a design
+      reason: Small increments ship sooner; a settled design avoids rework.
+      reconciledBy:
+        - tactic:reconcile-rec
+    - source: directive:TENSION_UNREC_A
+      target: directive:TENSION_UNREC_B
+      reconciledBy: []
+  findings:
+    - code: unreconciled_tension
+      source: directive:TENSION_UNREC_A
+      target: directive:TENSION_UNREC_B
+      resolutions:
+        - reconcile
+        - deactivate_one_side
+      _links:
+        effective-source:
+          href: /api/v1/activations/a-1/artifacts/directive/TENSION_UNREC_A
+        effective-target:
+          href: /api/v1/activations/a-1/artifacts/directive/TENSION_UNREC_B
+        exclude-target:
+          href: /api/v1/activations/a-1/exclusions/directive/TENSION_UNREC_B
+          method: PUT
+  _links:
+    self:
+      href: /api/v1/activations/a-1/tensions

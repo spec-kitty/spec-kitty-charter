@@ -2,7 +2,7 @@
 Feature: An activation is discoverable by links
   A client that knows only the root reaches an activation's reads and writes by links (#409, decision
   DM-01M78RKM6Q23PA9QAC80QJKQFF, FR-013 and FR-014). The root's activations link is followed with POST to create one;
-  the activation answers self, artifacts, offering, packs, graph, skipped, the templated effective-context, its held
+  the activation answers self, artifacts, offering, packs, graph, skipped, tensions, the templated effective-context, its held
   assets, skills, routing catalogs and glossary contexts (assets, the templated asset, skills, routing-catalogs,
   glossaries), its vocabulary
   (vocabulary-terms, vocabulary-contextive, vocabulary-taboos), and its writes with their methods: edit (PUT) and delete
@@ -115,6 +115,7 @@ Feature: An activation is discoverable by links
       | packs                 |
       | graph                 |
       | skipped               |
+      | tensions              |
       | assets                |
       | skills                |
       | routing-catalogs      |
@@ -155,3 +156,23 @@ Feature: An activation is discoverable by links
     Then the response status is 200
     And the response header "Content-Type" is "text/x-python"
     And the response body is the bytes of the file "assets/run.py" of the pack "main"
+
+  # ADR-0045 decision 11 (#602): the tensions read has a tag of its own, never the skipped report's, and an activation
+  # nothing is stored under is 404 on it.
+  Scenario: The tensions read of an activation answers under its own ETag, and an unknown activation is 404
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
+      """
+    When I GET "/activations/a-1/tensions"
+    Then the response status is 200
+    And the field at "/tensions" holds exactly 0 items
+    And the field at "/findings" holds exactly 0 items
+    And the field at "/_links/self/href" is "/api/v1/activations/a-1/tensions"
+    When I remember the header "ETag"
+    And I GET "/activations/a-1/skipped"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+    When I GET "/activations/01ARWG13C000000000000000ZZ/tensions"
+    Then the response status is 404
+    And the problem code is "activation_not_found"

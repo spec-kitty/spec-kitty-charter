@@ -9,6 +9,7 @@ import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.application.FakeAvailablePacks;
+import ai.speckitty.charter.activations.application.TensionReadService;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -94,7 +95,9 @@ public final class StandaloneActivationMvc {
                 new ActivationChangeMapper(mapper),
                 effective,
                 new EffectiveReadMapper(mapper, effective),
-                new EffectiveArtifactMapper("/api/v1"));
+                new EffectiveArtifactMapper("/api/v1"),
+                new TensionReadService(effective),
+                new TensionReadMapper(mapper));
     }
 
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */
