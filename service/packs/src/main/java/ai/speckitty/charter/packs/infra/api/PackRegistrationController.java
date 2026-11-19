@@ -114,8 +114,8 @@ public class PackRegistrationController implements RegistrationApi {
 
     @Override
     public ResponseEntity<Void> deletePackRelationship(
-            String packId, String from, String to, @Nullable String ifMatch) {
-        return removals.deleteRelationship(packId, from, to, ifMatch);
+            String packId, String from, String to, @Nullable String relation, @Nullable String ifMatch) {
+        return removals.deleteRelationship(packId, from, to, relation, ifMatch);
     }
 
     @Override

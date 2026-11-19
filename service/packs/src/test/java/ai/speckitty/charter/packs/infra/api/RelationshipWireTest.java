@@ -7,6 +7,7 @@ import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,7 @@ class RelationshipWireTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"impacts", "replaces", "delegates_to", "no_such_relation"})
+    @ValueSource(strings = {"impacts", "replaces", "delegates_to", "in_tension_with", "no_such_relation"})
     void anUnknownTypeIsOneViolationAtType(String type) {
         assertThatThrownBy(() -> RelationshipWire.fromWire(
                         new RelationshipRegistration("mission_type:research", "directive:D1", type)))
@@ -90,5 +91,36 @@ class RelationshipWireTest {
                             .containsExactly(new RefusalViolation(
                                     "/type", "relationship_type_unknown", "unknown relation type: " + type));
                 });
+    }
+
+    // ---- ADR-0045 decision 1: the wire of a tension ----------------------------------------------------------------
+
+    @Test
+    void aTensionMayNameAQualifiedSourceAndAnyOtherRelationMayNot() {
+        RelationshipDraft tension = RelationshipWire.fromWire(
+                new RelationshipRegistration("core::directive:A", "core::directive:B", "tension"));
+
+        assertThat(tension.type()).isEqualTo(RelationType.TENSION);
+        assertThat(tension.fromReference()).hasToString("core::directive:A");
+        assertThat(tension.toReference()).hasToString("core::directive:B");
+        assertThatThrownBy(() -> RelationshipWire.fromWire(
+                        new RelationshipRegistration("core::directive:A", "core::directive:B", "requires")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
+    }
+
+    @Test
+    void aTensionOfAnArtifactWithAVersionOfItselfIsASelfLoopWhileAStructuralOneIsNot() {
+        assertThatThrownBy(() -> RelationshipWire.fromWire(
+                        new RelationshipRegistration("directive:A", "other::directive:A", "tension")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refused.getMessage()).contains("self-loop");
+                });
+        assertThat(RelationshipWire.fromWire(
+                                new RelationshipRegistration("directive:A", "other::directive:A", "refines"))
+                        .type())
+                .isEqualTo(RelationType.REFINES);
     }
 }

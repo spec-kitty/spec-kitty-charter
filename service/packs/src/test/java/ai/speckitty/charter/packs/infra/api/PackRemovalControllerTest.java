@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.ArtifactRemovalService;
 import ai.speckitty.charter.packs.application.AuditLog;
@@ -33,6 +34,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -91,6 +93,7 @@ class PackRemovalControllerTest {
                         any(PackQualifiedReference.class),
                         any(PackQualifiedReference.class),
                         any(),
+                        any(),
                         any()))
                 .thenThrow(failure);
     }
@@ -141,9 +144,10 @@ class PackRemovalControllerTest {
                         eq(new PackIdentifier("qa")),
                         eq(PackQualifiedReference.parse("directive:D1")),
                         eq(PackQualifiedReference.parse("directive:D2")),
+                        eq(Optional.empty()),
                         eq("*"),
                         any()))
-                .thenAnswer(invocation -> movedFrom(invocation.getArgument(4)));
+                .thenAnswer(invocation -> movedFrom(invocation.getArgument(5)));
 
         mvc.perform(withIfMatch(delete(RELATIONSHIP)))
                 .andExpect(status().isNoContent())
@@ -230,6 +234,28 @@ class PackRemovalControllerTest {
     }
 
     @Test
+    void aRelationThatNamesNoRelationIsA400AndTheServiceIsNotAsked() throws Exception {
+        mvc.perform(withIfMatch(delete(RELATIONSHIP + "&relation=in_tension_with")))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(relationships);
+    }
+
+    @Test
+    void aRelationIsPassedToTheServiceAsTheRelationType() throws Exception {
+        when(relationships.remove(
+                        eq(new PackIdentifier("qa")),
+                        eq(PackQualifiedReference.parse("directive:D1")),
+                        eq(PackQualifiedReference.parse("directive:D2")),
+                        eq(Optional.of(RelationType.TENSION)),
+                        eq("*"),
+                        any()))
+                .thenAnswer(invocation -> movedFrom(invocation.getArgument(5)));
+
+        mvc.perform(withIfMatch(delete(RELATIONSHIP + "&relation=tension"))).andExpect(status().isNoContent());
+    }
+
+    @Test
     void aQueryParameterThatIsNoReferenceIsA400AndNothingIsRemoved() throws Exception {
         mvc.perform(withIfMatch(delete("/api/v1/packs/qa/relationships?from=a::b::c&to=directive:D2")))
                 .andExpect(status().isBadRequest());
@@ -254,8 +280,9 @@ class PackRemovalControllerTest {
                             any(PackQualifiedReference.class),
                             any(PackQualifiedReference.class),
                             any(),
+                            any(),
                             any()))
-                    .thenAnswer(invocation -> refusedAfterFinding(invocation.getArgument(4), refusal));
+                    .thenAnswer(invocation -> refusedAfterFinding(invocation.getArgument(5), refusal));
             entries.clear();
 
             mvc.perform(withIfMatch(delete(ARTIFACT)));

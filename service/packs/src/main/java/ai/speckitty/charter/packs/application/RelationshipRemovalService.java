@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +77,7 @@ public final class RelationshipRemovalService {
      */
     public PackRevision remove(
             PackIdentifier pack, PackQualifiedReference from, PackQualifiedReference to, @Nullable String ifMatch) {
-        return remove(pack, from, to, ifMatch, RevisionTrail.NONE);
+        return remove(pack, from, to, Optional.empty(), ifMatch, RevisionTrail.NONE);
     }
 
     /**
@@ -100,39 +101,84 @@ public final class RelationshipRemovalService {
             PackQualifiedReference to,
             @Nullable String ifMatch,
             RevisionTrail trail) {
+        return remove(pack, from, to, Optional.empty(), ifMatch, trail);
+    }
+
+    /**
+     * Removes the registered edge of the pair of one relation, or of every pair class when {@code relation} is empty
+     * (ADR-0045 decision 5), and tells the trail which revision it found and which it left. Given a relation, the pair
+     * is judged by the edges of that relation only: no registered edge of it is {@code relationship_not_found}, and an
+     * author-written or derived edge of it is {@code relationship_not_registered}. Without one, every registered edge of
+     * the pair goes, and an author-written or derived edge of the pair is {@code relationship_not_registered}, whose
+     * detail names the relation parameter when a registered edge stands beside it.
+     *
+     * @param pack the pack's identity
+     * @param from one end
+     * @param to the other end
+     * @param relation the relation of the edge to remove; empty for every edge of the pair
+     * @param ifMatch the {@code If-Match} precondition, required
+     * @param trail told the revisions found and left
+     * @return the revision after the removal
+     * @throws CharterRefusal as for {@link #remove(PackIdentifier, PackQualifiedReference, PackQualifiedReference,
+     *     String)}
+     * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code MISSING} (428) or {@code STALE} (412)
+     * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
+     */
+    public PackRevision remove(
+            PackIdentifier pack,
+            PackQualifiedReference from,
+            PackQualifiedReference to,
+            Optional<RelationType> relation,
+            @Nullable String ifMatch,
+            RevisionTrail trail) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(from, "from");
         Objects.requireNonNull(to, "to");
+        Objects.requireNonNull(relation, "relation");
         Objects.requireNonNull(trail, "trail");
-        return store.exclusively(pack, () -> removeUnderLocks(pack, from, to, ifMatch, trail));
+        return store.exclusively(pack, () -> removeUnderLocks(pack, from, to, relation, ifMatch, trail));
     }
 
     private PackRevision removeUnderLocks(
             PackIdentifier pack,
             PackQualifiedReference from,
             PackQualifiedReference to,
+            Optional<RelationType> relation,
             @Nullable String ifMatch,
             RevisionTrail trail) {
         Pack current = packs.load(pack);
         PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
+        Predicate<Relationship> asked = edge ->
+                names(edge, from, to) && relation.map(edge.type()::equals).orElse(true);
         List<Relationship> registered = store.registeredRelationships(pack);
-        List<Relationship> named =
-                registered.stream().filter(edge -> names(edge, from, to)).toList();
-        if (named.isEmpty() && !heldOutsideTheShard(pack, current, from, to)) {
+        List<Relationship> named = registered.stream().filter(asked).toList();
+        boolean outside = heldOutsideTheShard(current, store.authored(pack).edges(), asked);
+        if (named.isEmpty() && !outside) {
             throw new CharterRefusal(
                     RefusalCode.RELATIONSHIP_NOT_FOUND,
-                    "Pack " + pack.value() + " holds no relationship between " + from + " and " + to + ".");
+                    "Pack " + pack.value() + " holds no "
+                            + relation.map(type -> type.token() + " ").orElse("") + "relationship between " + from
+                            + " and " + to + ".");
         }
-        if (heldOutsideTheShard(pack, current, from, to)) {
+        if (outside) {
             throw new CharterRefusal(
                     RefusalCode.RELATIONSHIP_NOT_REGISTERED,
-                    "The relationship between " + from + " and " + to
-                            + " is not only in registered.graph.yaml: register the whole pack to change it.");
+                    "The " + relation.map(type -> type.token() + " ").orElse("") + "relationship between " + from
+                            + " and " + to + " is not only in registered.graph.yaml: register the whole pack to change"
+                            + " it"
+                            + (relation.isEmpty() && !named.isEmpty()
+                                    ? ", or name the registered edge's relation in the relation parameter."
+                                    : "."));
         }
-        // The edge goes as a RELATIONSHIP write on its source, as a whole-pack replace that drops it is judged.
-        named.forEach(edge -> gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
-        List<Relationship> retained =
-                registered.stream().filter(edge -> !names(edge, from, to)).toList();
+        // The edge goes as a RELATIONSHIP write on its source, as a whole-pack replace that drops it is judged; a
+        // tension is judged on each side (ADR-0045 decision 1).
+        named.forEach(edge -> {
+            gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.from());
+            if (edge.type() == RelationType.TENSION) {
+                gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.to());
+            }
+        });
+        List<Relationship> retained = registered.stream().filter(asked.negate()).toList();
         refuseUnlinkingAStep(pack, current.descriptor().name(), named, retained);
         refuseUnscopingACandidate(pack, current, named, retained);
         impact.check(pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained));
@@ -226,13 +272,12 @@ public final class RelationshipRemovalService {
                 && (requested.packName().isEmpty() || requested.packName().equals(end.packName()));
     }
 
-    /** Whether an author-written graph document, or a relation a component derives, holds the pair. */
-    private boolean heldOutsideTheShard(
-            PackIdentifier pack, Pack current, PackQualifiedReference from, PackQualifiedReference to) {
-        boolean authored = store.authored(pack).edges().stream().anyMatch(edge -> names(edge, from, to));
-        return authored
+    /** Whether an author-written graph document, or a relation a component derives, holds an edge the request asks for. */
+    private static boolean heldOutsideTheShard(
+            Pack current, List<Relationship> authored, Predicate<Relationship> asked) {
+        return authored.stream().anyMatch(asked)
                 || current.artifacts().stream()
                         .flatMap(artifact -> artifact.derivedRelationships().stream())
-                        .anyMatch(edge -> names(edge, from, to));
+                        .anyMatch(asked);
     }
 }

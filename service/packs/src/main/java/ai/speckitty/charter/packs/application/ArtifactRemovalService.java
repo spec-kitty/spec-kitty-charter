@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
@@ -17,7 +18,9 @@ import ai.speckitty.charter.packs.domain.StepHolding;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -153,8 +156,13 @@ public final class ArtifactRemovalService {
         PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
         String packName = current.descriptor().name();
         List<Relationship> registered = store.registeredRelationships(pack);
+        // A registered edge goes with the artifact it starts at, and a registered tension with either side: a tension
+        // is
+        // bidirectional, so its stored source is no more its owner than its target (ADR-0045 decision 1).
         List<Relationship> outgoing = registered.stream()
-                .filter(edge -> removed.contains(edge.from()) || goesWithAType(packName, removed, edge))
+                .filter(edge -> removed.contains(edge.from())
+                        || (edge.type() == RelationType.TENSION && removed.contains(edge.to()))
+                        || goesWithAType(packName, removed, edge))
                 .toList();
         // A removed mission type's own step links, and the scope edges from its own step actions, go with it from the
         // author-written documents that hold them, so they refer to nothing after the removal (operator rulings
@@ -171,8 +179,11 @@ public final class ArtifactRemovalService {
         }
         requireNotAuthored(authored, removed, packName);
         impact.check(pack, facts -> without(facts, removed, gone));
+        // By identity, not equals: slot equality would also drop another edge of the same pair and class.
+        Set<Relationship> leaving = Collections.newSetFromMap(new IdentityHashMap<>());
+        leaving.addAll(outgoing);
         List<Relationship> retained =
-                registered.stream().filter(edge -> !outgoing.contains(edge)).toList();
+                registered.stream().filter(edge -> !leaving.contains(edge)).toList();
         PackRevision after = store.remove(
                 pack, PackRemovalStore.Removal.ofArtifacts(removed, retained, rewritten(current, removed), dropped));
         trail.moved(before, after);
@@ -217,9 +228,13 @@ public final class ArtifactRemovalService {
         return after;
     }
 
-    /** Whether an edge starts at the artifact, or, for a mission type, at one of its action nodes. */
+    /**
+     * Whether an edge starts at the artifact, or, for a mission type, at one of its action nodes; a tension, which is
+     * bidirectional, starts at either of its sides (ADR-0045 decision 1).
+     */
     private static boolean startsAt(Relationship edge, Urn artifact) {
         return edge.from().equals(artifact)
+                || (edge.type() == RelationType.TENSION && edge.to().equals(artifact))
                 || StepHolding.missionTypeOf(edge.from())
                         .filter(artifact::equals)
                         .isPresent();

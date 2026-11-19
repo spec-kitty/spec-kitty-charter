@@ -44,7 +44,8 @@ final class RelationshipWire {
      * @return the draft
      * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when an endpoint is longer than
      *     {@link #MAX_ENDPOINT_LENGTH} or not a URN of a known kind, the type is unknown (one violation
-     *     {@value #TYPE_UNKNOWN} at {@code /type}), or the edge is a bare self-loop
+     *     {@value #TYPE_UNKNOWN} at {@code /type}), the edge is a bare self-loop or a tension of an artifact with a
+     *     version of itself, or a source other than a tension's is pack-qualified
      */
     static RelationshipDraft fromWire(RelationshipRegistration wire) {
         try {
@@ -74,13 +75,16 @@ final class RelationshipWire {
             String from, String to, String type, @Nullable String when, @Nullable String rationale) {
         capped("from", from);
         capped("to", to);
-        if (parsed(from).qualified()) {
+        boolean tension = RelationType.TENSION.token().equals(type);
+        PackQualifiedReference fromReference = parsed(from);
+        if (fromReference.qualified() && !tension) {
             throw new IllegalArgumentException(
                     "a registered relationship is authored from an artifact of the pack, so its source is not"
                             + " pack-qualified: " + from);
         }
-        Urn fromUrn =
-                Urn.parse(from).orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + from));
+        Urn fromUrn = fromReference
+                .asUrn()
+                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + from));
         PackQualifiedReference toReference = parsed(to);
         Urn toUrn =
                 toReference.asUrn().orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
@@ -97,11 +101,15 @@ final class RelationshipWire {
         if (!fromUrn.kind().edgeSource() || !toUrn.kind().edgeTargetOf(relationType)) {
             throw new IllegalArgumentException(GraphBinding.TERM_ENDPOINT + from + " " + type + " " + to);
         }
-        if (fromUrn.equals(toUrn) && toReference.packName().isEmpty()) {
+        boolean bare =
+                fromReference.packName().isEmpty() && toReference.packName().isEmpty();
+        if (fromUrn.equals(toUrn) && (bare || relationType == RelationType.TENSION)) {
+            // A tension of an artifact with another version of itself is no tension of two rules (ADR-0045 d1).
             throw new IllegalArgumentException("A relationship cannot be a self-loop: " + fromUrn);
         }
         return new RelationshipDraft(
                 fromUrn,
+                fromReference.packName(),
                 toUrn,
                 toReference.packName(),
                 relationType,

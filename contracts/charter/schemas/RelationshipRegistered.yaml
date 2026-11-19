@@ -1,9 +1,10 @@
 title: RelationshipRegistered
 description: >-
-  The answer of PUT /packs/{packId}/relationships (R-13): the registered relationship, unchanged, and the links
+  The answer of PUT /packs/{packId}/relationships (R-13): the relationship as the request wrote it, and the links
   of what a client can read next. _links holds artifacts, the list of the pack's artifacts. It holds no self: the
   relationships path has no GET. It is a response schema only; the request body stays RelationshipRegistration,
-  which carries no _links.
+  which carries no _links. A tension is stored in its stored orientation (ADR-0045 decision 1), which may be the
+  other way round from the request, so the answer can differ from the stored edge in orientation only.
 type: object
 additionalProperties: false
 required:
