@@ -265,32 +265,13 @@ public final class RegistrationImpact {
         return check(session, written, false);
     }
 
-    /** The configured pack an identifier names: by configured name first, otherwise by the {@code pack_id} it declares. */
+    /** The configured pack a registered id names (#583 D3: by the registered id only). */
     private static ConfiguredPack configuredAs(StagedPackViews.View stored, PackIdentifier pack) {
-        List<ConfiguredPack> configured = stored.catalog().configured();
-        Optional<ConfiguredPack> named = configured.stream()
+        return stored.catalog().configured().stream()
                 .filter(candidate -> candidate.id().equals(pack))
-                .findFirst();
-        if (named.isPresent()) {
-            return named.get();
-        }
-        for (ConfiguredPack candidate : configured) {
-            if (declares(stored, candidate, pack)) {
-                return candidate;
-            }
-        }
-        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
-    }
-
-    private static boolean declares(StagedPackViews.View stored, ConfiguredPack candidate, PackIdentifier pack) {
-        try {
-            return stored.descriptors()
-                    .find(candidate.id())
-                    .filter(descriptor -> descriptor.packId().equals(pack.value()))
-                    .isPresent();
-        } catch (CharterRefusal unreadable) {
-            return false;
-        }
+                .findFirst()
+                .orElseThrow(() ->
+                        new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found."));
     }
 
     /**
