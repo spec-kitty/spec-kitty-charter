@@ -1,0 +1,21 @@
+{
+  "create_return_branch": "feat/478-pack-check",
+  "created_at": "2026-11-19T07:19:26.790912+00:00",
+  "flattened": false,
+  "friendly_name": "pack-check CLI and its service release",
+  "mid8": "01M7SASC",
+  "mission_base_sha": "c910a9fac9fb535de6b7256f773dea27e70e9742",
+  "mission_branch": "kitty/mission-pack-check-cli-01M7SASC",
+  "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+  "mission_number": null,
+  "mission_slug": "pack-check-cli-01M7SASC",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Issue #478, slice 8 of epic #549 (ADR-0075 decision 9). Today a consumer must build and start the whole charter service to validate packs. This mission ships pack-check: a standalone, Spring-free jar over pack-validation that checks one pack or a set of packs (per-pack PACK checks, the CLOSURE pack-set check, and optionally the round trip), answers in the API's problem JSON and codes with defined exit codes, and is published with its checksum on the service-v* release line (ADR-0046).",
+  "purpose_tldr": "Pack authors and spec-kitty-open-packs check packs with a released pack-check jar that runs the service's own checks, without running the service.",
+  "slug": "pack-check-cli-01M7SASC",
+  "target_branch": "feat/478-pack-check",
+  "topology": "single_branch",
+  "topology_settled": false,
+  "topology_source": "default"
+}
