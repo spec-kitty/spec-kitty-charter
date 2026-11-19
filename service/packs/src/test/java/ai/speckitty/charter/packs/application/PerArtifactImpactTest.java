@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -99,7 +98,7 @@ class PerArtifactImpactTest {
                 .isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
         assertThat(refused.packs())
                 .as("the packs involved, so the caller knows whom to talk to")
-                .extracting(RefusalPack::packId)
+                .extracting(pack -> pack.packId().value())
                 .contains("base", "mid");
         assertThat(rig.filesOf(rig.packs.resolve("mid"))).as("nothing changed").isEqualTo(before);
 
@@ -125,7 +124,7 @@ class PerArtifactImpactTest {
         assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
         assertThat(refused.packs())
                 .as("the pack that breaks the rule first, then the pack that holds the level")
-                .extracting(RefusalPack::packId)
+                .extracting(pack -> pack.packId().value())
                 .startsWith("derived")
                 .contains("base");
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
@@ -209,7 +208,7 @@ class PerArtifactImpactTest {
         assertThat(refused.code())
                 .as("the preset names directive:guard and the pack would hold directive:GUARD")
                 .isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
-        assertThat(refused.packs()).extracting(RefusalPack::packId).contains("alpha");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("alpha");
         assertThat(rig.filesOf(rig.packs.resolve("alpha")))
                 .as("nothing changed")
                 .isEqualTo(before);

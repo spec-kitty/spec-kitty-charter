@@ -40,6 +40,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -724,7 +725,7 @@ class EffectiveSetTest {
     private static EffectiveSet effectiveSetOverAStepEnhancer(List<String> selectedMissionTypes) {
         ConfiguredPack configured = new ConfiguredPack(new PackIdentifier("alpha"), PackLevel.ORG);
         PackDescriptor descriptor = new PackDescriptor(
-                "id-alpha",
+                FixtureUlids.of("alpha"),
                 "1.0.0",
                 Optional.empty(),
                 "alpha",

@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceResolution.Edges;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
 import ai.speckitty.charter.packs.domain.InForceStates.Reason;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -437,8 +438,9 @@ class InForceResolutionPropertyTest {
                 roll == 0 ? MutabilityLevel.LOCKED : roll == 1 ? MutabilityLevel.EXTENDABLE : MutabilityLevel.OPEN;
         PerPackPolicy.Level policy = level == MutabilityLevel.OPEN
                 ? PerPackPolicy.Level.OPEN
-                : new PerPackPolicy.Level(level, Optional.of("id-pack"));
-        return new MergedClosure.Winner(urn, new PackIdentifier("pack"), "id-pack", PackLevel.ORG, policy);
+                : new PerPackPolicy.Level(level, Optional.of(FixtureUlids.ulid("pack")));
+        return new MergedClosure.Winner(
+                urn, new PackIdentifier("pack"), FixtureUlids.ulid("pack"), PackLevel.ORG, policy);
     }
 
     /** Fills the edges; answers whether a back edge was added that may close an override cycle. */
@@ -469,9 +471,11 @@ class InForceResolutionPropertyTest {
 
     private static void floor(
             Random random, List<Urn> urns, Map<Urn, List<String>> required, Map<Urn, List<String>> unheld) {
-        urns.stream().filter(urn -> random.nextInt(4) == 0).forEach(urn -> required.put(urn, List.of("id-pack")));
+        urns.stream()
+                .filter(urn -> random.nextInt(4) == 0)
+                .forEach(urn -> required.put(urn, List.of(FixtureUlids.of("pack"))));
         if (random.nextInt(5) == 0) {
-            unheld.put(new Urn(NodeKind.TACTIC, "ghost" + random.nextInt(3)), List.of("id-pack"));
+            unheld.put(new Urn(NodeKind.TACTIC, "ghost" + random.nextInt(3)), List.of(FixtureUlids.of("pack")));
         }
     }
 

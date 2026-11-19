@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Asset entity")
 class AssetEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01ASSETPACK");
+    private static final PackIdentifier PACK = new PackIdentifier("assetpack");
 
     /** A fully valid builder; each invariant test mutates exactly one field, so the valid case is the positive control. */
     private static Asset.Builder valid() {

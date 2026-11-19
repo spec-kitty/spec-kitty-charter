@@ -18,9 +18,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Pack asset files (R1, P3)")
 class PackAssetFilesTest {
 
-    private static final PackIdentifier ID = new PackIdentifier("01PACK");
-    private static final PackDescriptor DESCRIPTOR =
-            new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
+    private static final PackIdentifier ID = new PackIdentifier("pack");
+    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
+            "01PACK00000000000000000000", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     private static final AssetFile LOGO = new AssetFile("debrief/logo.png", Payload.of(new byte[] {0, 1, 2}));
     private static final AssetFile CONFIG = new AssetFile("tooling/lint.config.yaml", Payload.of(new byte[] {'a'}));

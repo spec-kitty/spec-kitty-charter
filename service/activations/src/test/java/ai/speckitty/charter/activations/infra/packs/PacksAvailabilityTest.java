@@ -29,6 +29,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -55,6 +56,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import java.io.IOException;
@@ -125,10 +127,10 @@ class PacksAvailabilityTest {
         Map<ArtifactKind, Set<String>> held = new EnumMap<>(ArtifactKind.class);
         held.put(ArtifactKind.DIRECTIVE, Set.of("D1", "D2"));
         held.put(ArtifactKind.MISSION_TYPE, Set.of("software-dev"));
-        Map<Urn, String> holderOf = new LinkedHashMap<>();
-        holderOf.put(d1, BETA);
-        holderOf.put(d2, BETA);
-        holderOf.put(Urn.missionType("software-dev"), BETA);
+        Map<Urn, PackUlid> holderOf = new LinkedHashMap<>();
+        holderOf.put(d1, new PackUlid(BETA));
+        holderOf.put(d2, new PackUlid(BETA));
+        holderOf.put(Urn.missionType("software-dev"), new PackUlid(BETA));
         Preset governing = new Preset(
                 "governing",
                 "D2 is required.",
@@ -140,10 +142,15 @@ class PacksAvailabilityTest {
         return new ClosureView(
                 List.of(
                         new OfferingEntry(
-                                new PackIdentifier("beta"), BETA, PackLevel.BUILT_IN, "beta-pack", "1.0.0", List.of()),
+                                new PackIdentifier("beta"),
+                                new PackUlid(BETA),
+                                PackLevel.BUILT_IN,
+                                "beta-pack",
+                                "1.0.0",
+                                List.of()),
                         new OfferingEntry(
                                 new PackIdentifier("alpha"),
-                                ALPHA,
+                                new PackUlid(ALPHA),
                                 PackLevel.ORG,
                                 "alpha-pack",
                                 "2.0.0",
@@ -152,17 +159,17 @@ class PacksAvailabilityTest {
                 holderOf,
                 new RequiredFloor(Map.of(d2, List.of(ALPHA))),
                 new PerPackPolicy(Map.of(
-                        ALPHA,
+                        new PackUlid(ALPHA),
                                 MutabilityPolicySource.builder()
                                         .entry(d1, MutabilityLevel.LOCKED)
                                         .build(),
-                        BETA,
+                        new PackUlid(BETA),
                                 MutabilityPolicySource.builder()
                                         .entry(d2, MutabilityLevel.EXTENDABLE)
                                         .build())),
-                List.of(BETA, ALPHA),
-                List.of(new ClosureView.HeldPreset(governing, ALPHA)),
-                Map.of(ALPHA, BETA),
+                List.of(new PackUlid(BETA), new PackUlid(ALPHA)),
+                List.of(new ClosureView.HeldPreset(governing, new PackUlid(ALPHA))),
+                Map.of(new PackUlid(ALPHA), new PackUlid(BETA)),
                 "sha256:fingerprint",
                 EdgeIndex.empty(),
                 mergeInputs(governing));
@@ -427,7 +434,7 @@ class PacksAvailabilityTest {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
-        private final Map<String, MutabilityPolicySource> policies = new LinkedHashMap<>();
+        private final Map<PackUlid, MutabilityPolicySource> policies = new LinkedHashMap<>();
         private final Map<String, String> ids;
 
         Merging() {
@@ -466,7 +473,7 @@ class PacksAvailabilityTest {
                     name,
                     new PackCompositionFacts(
                             List.of(), held, List.of(), policy, presets, Arrays.asList(edges), languages));
-            policies.put(descriptorId(name), policy);
+            policies.put(new PackUlid(descriptorId(name)), policy);
             return this;
         }
 
@@ -496,7 +503,7 @@ class PacksAvailabilityTest {
                     Map.of(),
                     new RequiredFloor(Map.of()),
                     policy,
-                    packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                    packs.stream().map(PackUnderResolution::descriptorId).toList(),
                     List.of(),
                     Map.of(),
                     "sha256:merged",
@@ -510,7 +517,7 @@ class PacksAvailabilityTest {
             return packs.stream()
                     .map(pack -> new OfferingEntry(
                             pack.configured().id(),
-                            pack.descriptor().packId(),
+                            pack.descriptorId(),
                             pack.configured().level(),
                             pack.descriptor().name(),
                             "1.0.0",
@@ -519,7 +526,7 @@ class PacksAvailabilityTest {
         }
 
         private String descriptorId(String name) {
-            return ids.getOrDefault(name, "id-" + name);
+            return ids.getOrDefault(name, FixtureUlids.of(name));
         }
     }
 
@@ -730,14 +737,16 @@ class PacksAvailabilityTest {
                 .forEach(name -> descriptors.put(
                         name,
                         new PackDescriptor(
-                                name,
+                                FixtureUlids.of(name),
                                 "1.0.0",
                                 Optional.empty(),
                                 name + " pack",
                                 Optional.empty(),
                                 Optional.empty(),
                                 PackPaths.none(),
-                                name.equals("alpha") ? List.of(new PackDependency("beta", ">=1.0")) : List.of())));
+                                name.equals("alpha")
+                                        ? List.of(new PackDependency(FixtureUlids.of("beta"), ">=1.0"))
+                                        : List.of())));
         PackDescriptorRepository repository = new PackDescriptorRepository() {
             @Override
             public PackDescriptor get(PackIdentifier pack) {

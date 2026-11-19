@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,7 @@ class PresetReadServiceTest {
 
     private static PackDescriptor descriptor(String name) {
         return new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,

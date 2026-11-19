@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
 import ai.speckitty.charter.profiles.application.ProfileFixtures;
@@ -83,7 +84,7 @@ class PacksProfileSourceTest {
             Relationship... edges) {
         configured.add(new ConfiguredPack(new PackIdentifier(name), level));
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -91,7 +92,7 @@ class PacksProfileSourceTest {
                 Optional.empty(),
                 PackPaths.none(),
                 dependsOn.stream()
-                        .map(other -> new PackDependency("id-" + other, ">=0"))
+                        .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                         .toList());
         descriptors.put(name, descriptor);
         facts.put(

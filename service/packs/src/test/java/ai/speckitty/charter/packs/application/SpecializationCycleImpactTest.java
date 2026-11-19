@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
@@ -66,7 +65,9 @@ class SpecializationCycleImpactTest {
         assertThat(refused.getMessage())
                 .contains("closure rooted at org-base")
                 .contains("spring-sam -> java-jenny -> implementer-ivan -> spring-sam");
-        assertThat(refused.packs()).extracting(RefusalPack::descriptorPackId).containsExactly(ORG_ID);
+        assertThat(refused.packs())
+                .extracting(pack -> pack.descriptorPackId().value())
+                .containsExactly(ORG_ID);
         assertThat(rig.packs.resolve("org-base")).as("nothing was stored").doesNotExist();
     }
 

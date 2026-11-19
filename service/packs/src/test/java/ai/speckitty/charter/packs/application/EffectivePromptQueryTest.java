@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,7 +58,9 @@ class EffectivePromptQueryTest {
     }
 
     private void win(Urn urn, String pack, PackLevel level) {
-        winners.put(urn, new MergedClosure.Winner(urn, new PackIdentifier(pack), "id-" + pack, level, levelOpen()));
+        winners.put(
+                urn,
+                new MergedClosure.Winner(urn, new PackIdentifier(pack), FixtureUlids.ulid(pack), level, levelOpen()));
     }
 
     private static PerPackPolicy.Level levelOpen() {

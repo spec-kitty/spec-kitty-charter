@@ -2,9 +2,11 @@ package ai.speckitty.charter.packs.application;
 
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.ORG_PACK;
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.OTHER_PACK;
+import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.refusal;
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.refusalOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
@@ -102,6 +104,27 @@ class PackIdRulesTest {
         assertThat(rig.repository.configured())
                 .extracting(configured -> configured.id().value())
                 .containsExactly("legacy-two");
+    }
+
+    @Test
+    void anIdThatFoldsToAHandSeededDirectoryIsAConflict(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("Legacy", Packs.of(ORG_PACK, "legacy", "1.0.0", "org"));
+        StagedPack upload = rig.stage(Packs.of(OTHER_PACK, "legacy-two", "1.0.0", "org"));
+
+        CharterRefusal refused = refusal(() -> rig.register("legacy", upload, Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("on a file system that folds case, legacy and Legacy are one directory")
+                .isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
+        assertThat(refused.getMessage()).contains("Legacy");
+        assertThat(rig.filesOf(rig.packs.resolve("Legacy")))
+                .as("the hand-seeded directory is untouched")
+                .containsKey("pack.yaml");
+        assertThat(rig.packs.resolve("legacy")).doesNotExist();
+        assertThat(rig.register("legacy-two", upload, Preconditions.none()).outcome())
+                .as("the control: an id that folds to no entry of the pack domain")
+                .isEqualTo(Outcome.CREATED);
     }
 
     @Test

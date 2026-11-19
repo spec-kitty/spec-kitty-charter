@@ -371,7 +371,9 @@ class RefusalHandlerTest {
             "the problem of a refused registration carries the status its x-refusal entry gives getPackRegistration")
     void aRefusedRegistrationCarriesTheStatusOfItsEntryForTheStatusResource(RefusalCode code, int expectedStatus) {
         ai.speckitty.charter.kernel.domain.RefusalPack pack = new ai.speckitty.charter.kernel.domain.RefusalPack(
-                "01M6R0WP14AAAAAAAAAAAAAAAA", "dependent", "dependent");
+                new ai.speckitty.charter.kernel.domain.PackUlid("01M6R0WP14AAAAAAAAAAAAAAAA"),
+                new ai.speckitty.charter.kernel.domain.PackIdentifier("dependent"),
+                "dependent");
         ai.speckitty.charter.api.model.PackRegistrationProblem problem = handler.registrationProblem(
                 new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "detail", java.util.List.of(pack)));
 
@@ -404,7 +406,9 @@ class RefusalHandlerTest {
     void packsAreCapped() {
         List<ai.speckitty.charter.kernel.domain.RefusalPack> packs = java.util.stream.IntStream.range(0, 150)
                 .mapToObj(index -> new ai.speckitty.charter.kernel.domain.RefusalPack(
-                        "01M6R0WP14" + String.format("%016d", index), "pack-" + index, "name-" + index))
+                        new ai.speckitty.charter.kernel.domain.PackUlid("01M6R0WP14" + String.format("%016d", index)),
+                        new ai.speckitty.charter.kernel.domain.PackIdentifier("pack-" + index),
+                        "name-" + index))
                 .toList();
 
         CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withPacksAndViolations(

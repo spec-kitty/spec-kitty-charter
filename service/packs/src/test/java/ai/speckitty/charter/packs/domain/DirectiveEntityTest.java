@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Directive entity")
 class DirectiveEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     private static Directive.Builder valid(String id) {
         return Directive.builder()

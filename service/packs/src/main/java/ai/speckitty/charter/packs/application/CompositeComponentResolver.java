@@ -94,7 +94,8 @@ public final class CompositeComponentResolver {
                 .filter(pack -> pack.configured().id().equals(referringPack))
                 .map(pack -> pack.descriptor().packId())
                 .findFirst()
-                .orElse(referringPack.value());
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "the referring pack " + referringPack.value() + " is no pack of the compose"));
         checked(
                 closure,
                 referringId,

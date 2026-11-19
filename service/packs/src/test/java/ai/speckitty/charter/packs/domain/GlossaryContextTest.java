@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Glossary context entity")
 class GlossaryContextTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     static GlossaryTerm term(String id) {
         return new GlossaryTerm(
@@ -76,7 +76,7 @@ class GlossaryContextTest {
                 .as("no term names another, so the context derives nothing")
                 .isEmpty();
         assertThat(context.writtenReferences()).isEmpty();
-        assertThat(context).hasToString("GlossaryContext[spec-kitty-core of pack 01PACK]");
+        assertThat(context).hasToString("GlossaryContext[spec-kitty-core of pack pack]");
     }
 
     private static GlossaryTerm seeing(String id, String... seeAlso) {

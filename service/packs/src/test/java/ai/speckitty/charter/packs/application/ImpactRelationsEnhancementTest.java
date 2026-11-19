@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,7 +47,7 @@ class ImpactRelationsEnhancementTest {
             List<String> held,
             Relationship... edges) {
         PackDescriptor descriptor = new PackDescriptor(
-                "id-" + name,
+                FixtureUlids.of(name),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -54,7 +55,7 @@ class ImpactRelationsEnhancementTest {
                 Optional.empty(),
                 PackPaths.none(),
                 dependsOn.stream()
-                        .map(other -> new PackDependency("id-" + other, ">=0"))
+                        .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                         .toList());
         packs.add(new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier(name), PackLevel.ORG), descriptor, List.of(), held));

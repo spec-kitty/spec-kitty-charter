@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Toolguide entity")
 class ToolguideEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01TOOLPACK");
+    private static final PackIdentifier PACK = new PackIdentifier("toolpack");
     private static final Guide GUIDE = Guide.of("ripgrep searches files by regular expression.");
 
     /** A fully valid builder; each invariant test mutates exactly one field, so the valid case is the positive control. */

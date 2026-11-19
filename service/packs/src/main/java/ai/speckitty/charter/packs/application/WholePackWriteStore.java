@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -178,6 +179,17 @@ public interface WholePackWriteStore {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code VALIDATION_FAILED} (422) when it would not
      */
     void requireWritableLocation(String packId);
+
+    /**
+     * The directory entry under the writable root whose name is {@code packId} once case is folded and is not
+     * {@code packId} itself: on a file system that folds case the two are one directory. Every entry counts, a directory
+     * the listing does not serve as a pack (a name that is no pack id) included.
+     *
+     * @param packId the name the pack is stored under
+     * @return the entry's name; empty when no entry folds to {@code packId}
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the root cannot be listed
+     */
+    Optional<String> caseTwinOf(String packId);
 
     /**
      * Runs a registration's decisive steps holding the registry write lock and then the pack's own lock, in that order.

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Styleguide entity")
 class StyleguideEntityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01PACK");
+    private static final PackIdentifier PACK = new PackIdentifier("pack");
 
     private static Styleguide.Builder valid() {
         return Styleguide.builder()
