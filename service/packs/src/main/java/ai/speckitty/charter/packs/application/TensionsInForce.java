@@ -1,7 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -130,7 +130,7 @@ public record TensionsInForce(List<TensionInForce> all) {
         Objects.requireNonNull(effective, "effective");
         Map<Set<Urn>, Kept> firstByPair = new LinkedHashMap<>();
         for (PackUnderResolution pack : packs) {
-            PackIdentifier writer = new PackIdentifier(pack.descriptor().packId());
+            PackUlid writer = pack.descriptorId();
             for (Relationship edge : facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
                     .edges()) {
                 if (edge.type() != RelationType.TENSION) {
@@ -193,16 +193,16 @@ public record TensionsInForce(List<TensionInForce> all) {
             Urn urn,
             PackQualifiedReference side,
             PackUnderResolution pack,
-            PackIdentifier writer,
+            PackUlid writer,
             EdgeIndex edges,
             MergedClosure merged) {
         MergedClosure.Winner winner = merged.winners().get(urn);
         if (winner == null) {
             return Optional.empty();
         }
-        Optional<PackIdentifier> holder = side.qualified() ? edges.holdingPack(side, writer) : Optional.of(writer);
+        Optional<PackUlid> holder = side.qualified() ? edges.holdingPack(side, writer) : Optional.of(writer);
         boolean ownVersion = holder.filter(writer::equals).isPresent() && pack.holds(urn.toString());
-        if (ownVersion && !winner.descriptorPackId().equals(writer.value())) {
+        if (ownVersion && !winner.descriptorPackId().equals(writer)) {
             return Optional.empty();
         }
         return Optional.of(urn);
