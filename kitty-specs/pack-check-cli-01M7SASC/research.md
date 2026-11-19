@@ -157,3 +157,9 @@ All three returned **PLAN SOUND WITH CHANGES**. Each finding is dispositioned be
 | J10 | jenny | MED | `verifyAll` must run the jar test; no timing in `check` | **A.** A tagged `Test` task over the `test` source set, wired into `check`. NFR-002's 20 s is timed in the CI jar job only |
 | J11 | jenny | LOW | Release scripts and notes | **A.** Folded into IC-07; a refused case without the pack-check jar; the release notes name both jars |
 | J12 | jenny | LOW | Reproducibility | **A.** Gradle 9.8.1's reproducible-archive defaults are kept, and a byte-identical check on two builds goes in `jarTest` |
+
+### D6 landing risk (checked 2026-11-19)
+
+Charter commits no symlink (`git ls-files -s`, mode 120000: 0). spec-kitty-open-packs at its `main` HEAD commits 76,
+all outside its packs: 72 under `.agents/`, 2 under `.github/`, plus `CHANGELOG.md` and `CONTRIBUTING.md` at the root.
+So refusing links inside a pack root turns no open-packs pack red, and no charter example pack either.

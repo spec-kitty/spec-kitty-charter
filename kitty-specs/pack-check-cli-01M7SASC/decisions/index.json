@@ -96,6 +96,55 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T08:02:15.766461Z",
+      "decision_id": "01M7SD7SJPW58ZYV9XJ1Z6D7KD",
+      "final_answer": null,
+      "input_key": "closure_set_scope",
+      "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+      "mission_slug": "pack-check-cli-01M7SASC",
+      "opened_by": "cli",
+      "options": [
+        "A: always over the set as given",
+        "B: only with --config-root or two or more --pack",
+        "C: unknown dependency outside the set is a warning",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Does CLOSURE run over the set as given, so a dependent pack must be checked with its dependencies?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.closure.set-scope",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-19T08:02:18.027134Z",
+      "decision_id": "01M7SD7VSBW8V4EYYGK2E0MWG6",
+      "final_answer": null,
+      "input_key": "links_configured_load",
+      "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
+      "mission_slug": "pack-check-cli-01M7SASC",
+      "opened_by": "cli",
+      "options": [
+        "A: no read follows a link; store half states pack_entry_linked",
+        "B: no read follows a link; only registration and pack-check refuse",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Does the service's load of a configured pack refuse a link too, and does any read follow a link?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.links.configured-load",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7SASC846P4Q3TTGZZG35HST",
