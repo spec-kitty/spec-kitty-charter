@@ -10,15 +10,15 @@ Charter's model now holds a tension as the relation `tension` (ADR-0045 decision
 
 - no longer reads `in_tension_with`: a graph document that writes it names an unknown relation and the pack is refused;
 - refuses a pack that holds two tensions on one unordered pair (`tension_duplicated`);
-- refuses a pack whose tension's `source` is not an artifact the pack owns, or, when the pack owns both sides, is not
-  the lexicographically smaller bare URN (`tension_orientation`);
+- refuses a pack whose tension has the side it owns as the target, or, when the pack owns both sides or neither, a
+  `source` that is not the lexicographically smaller bare URN (`tension_orientation`);
 - refuses a tension whose two sides have the same bare URN (`tension_self`).
 
 ## What
 
 1. In every `*.graph.yaml` shard and `drg/fragment.yaml`, rename `relation: in_tension_with` to `relation: tension`.
-2. Write each tension with the side the pack owns as `source`; when the pack owns both sides, the smaller bare URN
-   (pack qualifier ignored) is the `source`.
+2. Write each tension with the side the pack owns as `source`; when the pack owns both sides, or neither, the smaller
+   bare URN (pack qualifier ignored) is the `source`.
 3. Keep at most one tension per unordered pair in a pack; a `requires` (or any one structural relationship) beside it
    stays.
 4. Bump the charter pin to the release that carries #602, in the same pull request, so open-packs CI validates

@@ -172,8 +172,7 @@ public final class RelationshipEndpointRule {
                     Optional.empty());
         } catch (IllegalArgumentException malformed) {
             // A qualifier that breaks the pack-name grammar, or a tension of an artifact with another version of
-            // itself:
-            // the graph rules refuse the edge on their own.
+            // itself: the graph rules refuse the edge on their own.
             return Optional.empty();
         }
         return binding instanceof EndpointRule.Fault fault ? Optional.of(fault.message()) : Optional.empty();

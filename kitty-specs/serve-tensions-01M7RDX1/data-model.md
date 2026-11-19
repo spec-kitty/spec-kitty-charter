@@ -16,7 +16,8 @@
 - At most one structural relationship and at most one tension per unordered pair (per pack: refusal, FR-004; on a
   write: upsert on the slot, or 422 `tension_duplicated` against another document, FR-005; across packs: collapse,
   FR-006).
-- Stored orientation (G1): the pack owns the `source`; when it owns both sides, `source < target` on the bare URNs.
+- Stored orientation (G1, extended): an owned side is the `source`; when the pack owns both sides, or neither,
+  `source < target` on the bare URNs.
 - The two sides of a tension have different bare URNs.
 
 ## Packs
