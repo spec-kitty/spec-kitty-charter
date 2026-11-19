@@ -2,8 +2,8 @@
 title: "ADR-0070: Charter tests its own example packs; open-packs proves its content against a pinned charter"
 description: "The contract tests stop reading pinned open-packs content: charter-owned example packs carry the round trip, and open-packs validates its packs against a charter release."
 doc_status: active
-updated: 2026-11-13T00:00:00Z
-decision_status: 'Accepted; decision 4 amended 2026-11-13 (the round trip over open-packs content runs in open-packs, #509)'
+updated: 2026-11-19T00:00:00Z
+decision_status: 'Accepted; decision 4 amended 2026-11-13 (the round trip over open-packs content runs in open-packs, #509); charter''s drift watch removed 2026-11-19 (#604)'
 decision_date: '2026-11-11'
 type: ADR
 kind: ADR
@@ -51,10 +51,23 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
   - Charter owns the test code: the round trip, `OpenPacksDriftTest` and its `-PopenPacksDir` entry point.
   - The test fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)),
     so the gate in open-packs cannot pass over a kind silently. #547 lands before the gate's first pin.
-  - `open-packs-drift.yml` is removed once the open-packs gate is required. It is not kept beside the gate.
-- **Drift from charter `main` is watched in open-packs.** A nightly, non-blocking open-packs run against charter `main`
-  takes over what the charter watch did. It files in open-packs on red, and on green proposes the bump of
-  `charter.lock.yaml` ([spec-kitty-open-packs#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)).
+  - `open-packs-drift.yml` was removed on 2026-11-19 ([#604](https://github.com/spec-kitty/spec-kitty-charter/issues/604)),
+    once the open-packs gate was required and its charter track had landed. It is not kept beside the gate.
+- **Drift from charter is watched in open-packs.** open-packs' `.github/workflows/charter-track.yml`
+  ([spec-kitty-open-packs#308](https://github.com/spec-kitty/spec-kitty-open-packs/pull/308), closing
+  [#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)) takes over what the charter watch did. It
+  runs the whole required gate, `:pack-validation:driftTest` included, in two tracks:
+  - **Daily release track.** It checks the packs against the newest charter `service-v*` release or pre-release when
+    that release is newer than the pin in `charter.lock.yaml`. On green it opens one pull request that bumps the pin;
+    on red it opens one `charter:release-red` issue in open-packs.
+  - **On-demand charter `main`.** A `workflow_dispatch` with `charter_ref` (default `main`), or the `charter:head` label
+    on an open-packs pull request, builds charter from source at that ref and runs the same checks. It reports in the
+    job summary and never bumps the pin.
+  - **Nightly charter `main` (follow-up).** Neither track checks charter `main` on a schedule, so until open-packs adds
+    a nightly scheduled run against charter `main`
+    ([spec-kitty-open-packs#311](https://github.com/spec-kitty/spec-kitty-open-packs/issues/311)), an unreleased
+    charter change that breaks open-packs content shows at the next release or on demand. #311 restores the nightly
+    `main` signal.
 - **The first pin of the gate.** It must hold #545 (the `org-fragment` round trip). Charter after #542 refuses the
   hand-written manifests of `built-in`, `foundation` and `writing`, so the pull request that moves the lock past #542
   also regenerates or drops them (spec-kitty-open-packs#250). Charter's model is canonical, so the pack follows it.
@@ -91,8 +104,9 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
    `main` (as ADR-0057 and ADR-0060 do for other slow or external checks). It opens an issue on red and never blocks a
    pull request.
    *Amended 2026-11-13: the round trip over open-packs content is a gate in open-packs, at its pin. The nightly
-   watch of the other repository moves to open-packs, against charter `main`, and charter's watch is removed once
-   that gate is required (amendment above).*
+   watch of the other repository moves to open-packs, and charter's watch is removed once that gate is required
+   (amendment above). Removed 2026-11-19 (#604): open-packs' charter track checks each new charter release daily and
+   charter `main` on demand; a nightly run against charter `main` follows in spec-kitty-open-packs#311.*
 5. **The governance sync stays.** `syncPacks` keeps feeding `packs/internal` and `packs/qa` to this repository's own
    governance from the pin; it is not a test input, and its pin may lag a contract change without blocking it.
 
