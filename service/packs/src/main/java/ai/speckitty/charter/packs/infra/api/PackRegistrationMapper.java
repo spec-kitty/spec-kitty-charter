@@ -2,6 +2,8 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.PackDocumentRead;
+import ai.speckitty.charter.api.model.PackImpact;
+import ai.speckitty.charter.api.model.PackImpactProblem;
 import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationNotices;
 import ai.speckitty.charter.api.model.PackRegistrationProblem;
@@ -16,6 +18,7 @@ import ai.speckitty.charter.packs.application.PackDocumentQuery;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
+import ai.speckitty.charter.packs.application.PackUninstallService;
 import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.domain.Diagnostic;
@@ -90,7 +93,10 @@ final class PackRegistrationMapper {
         }
         if (status.ending() instanceof RegistrationJobs.Succeeded done) {
             body.setResult(result(done.outcome(), done.source()));
-            own.put(Relation.PACK, links.link(PACKS, done.outcome().pack().value()));
+            if (!done.outcome().dryRun()) {
+                // A dry run stored nothing, so there is no pack to link to (ADR-0081 D5).
+                own.put(Relation.PACK, links.link(PACKS, done.outcome().pack().value()));
+            }
         } else if (status.ending() instanceof RegistrationJobs.Refused refused) {
             body.setProblem(problem(refused));
         }
@@ -110,6 +116,10 @@ final class PackRegistrationMapper {
         }
         body.setOutcome(
                 PackRegistration.OutcomeEnum.fromValue(outcome.outcome().name().toLowerCase(Locale.ROOT)));
+        outcome.previousVersion().ifPresent(body::setPreviousVersion);
+        if (outcome.dryRun()) {
+            body.setDryRun(true);
+        }
         body.setNotices(notices(outcome.notices()));
         body.setDiagnostics(outcome.diagnostics().stream()
                 .map(PackRegistrationMapper::diagnostic)
@@ -213,6 +223,42 @@ final class PackRegistrationMapper {
         } catch (IllegalArgumentException unlisted) {
             return java.util.Optional.empty();
         }
+    }
+
+    /**
+     * The answer of a dry run of a pack's removal (ADR-0081 D5): what the removal would do, or the refusal it would
+     * answer, with a {@code pack} link to the pack it judged.
+     *
+     * @param outcome what the removal's checks reached
+     * @return the body
+     */
+    PackImpact impact(PackUninstallService.Outcome outcome) {
+        PackImpact body = new PackImpact(
+                outcome.pack().value(),
+                PackImpact.OperationEnum.DELETE,
+                outcome.refused().isPresent() ? PackImpact.OutcomeEnum.REFUSED : PackImpact.OutcomeEnum.DELETED,
+                outcome.version(),
+                outcome.revision().token(),
+                Map.of());
+        outcome.refused().ifPresentOrElse(
+                refused -> body.setProblem(impactProblem(refusals.registrationProblem(refused))),
+                () -> body.setNotices(notices(outcome.notices())));
+        Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
+        own.put(Relation.PACK, links.link(PACKS, outcome.pack().value()));
+        body.setLinks(Hypermedia.wire(own));
+        return body;
+    }
+
+    /** The removal's own refusal, in the shape the PackImpact carries it. */
+    private static PackImpactProblem impactProblem(PackRegistrationProblem problem) {
+        PackImpactProblem body = new PackImpactProblem(
+                problem.getTitle(),
+                problem.getStatus(),
+                PackImpactProblem.CodeEnum.fromValue(Objects.requireNonNull(problem.getCode(), "code")));
+        body.setDetail(problem.getDetail());
+        body.setPacks(problem.getPacks());
+        body.setViolations(problem.getViolations());
+        return body;
     }
 
     private PackRegistrationProblem problem(RegistrationJobs.Refused refused) {

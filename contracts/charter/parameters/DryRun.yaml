@@ -4,8 +4,9 @@ required: false
 description: >-
   true to judge the write without making it (ADR-0081 D5). The request runs every check the write runs, in the same
   order and under the same locks, and stops before the commit: nothing is stored, no version history entry is written
-  and the attempt is not entered in the registration audit log. The answer says what the write would have done or
-  how it would have been refused. Absent or false is the write itself.
+  and the attempt is not entered in the registration audit log, except a request the worktree guard refuses (401 or
+  403), which is entered as every refused attempt is. The answer says what the write would have done or how it would
+  have been refused. Absent or false is the write itself.
 schema:
   type: boolean
   default: false

@@ -3,7 +3,7 @@ title: "ADR-0065: Registering a pack replaces the whole pack"
 description: Registering a whole pack replaces the known pack, removals included; per-artifact writes are helpers; removal is by DELETE; registration is asynchronous and impact-checked.
 doc_status: active
 updated: 2026-11-19T00:00:00Z
-decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490); D1 extended 2026-11-15 (an unmodelled file is not held, #554)
+decision_status: Accepted; D1 and D12 amended 2026-11-11 (excluded files are not held; readers read the aside copy during a swap, #451, #490); D1 extended 2026-11-15 (an unmodelled file is not held, #554); D2, D4 and D9 amended 2026-11-19 (ADR-0081, #517)
 decision_date: '2026-11-07'
 type: ADR
 kind: ADR
@@ -136,6 +136,9 @@ changes. A registration of a pack that does not exist yet creates it.
 is not held. See the amendment under Status.)*
 
 ### D2. The version rule
+
+*(Amended 2026-11-19, ADR-0081: a replacement moves the version forward by PEP 440 precedence; the first bullet below
+no longer holds. See the amendment under Status.)*
 
 - Any `pack_version` replaces the stored pack, an older one included. The version is a label, not an order.
 - A re-send of the same content (the same revision) is a no-op: the job ends `succeeded` with outcome `unchanged`.

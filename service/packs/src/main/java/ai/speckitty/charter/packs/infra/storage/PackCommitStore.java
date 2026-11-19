@@ -688,6 +688,44 @@ public final class PackCommitStore implements WholePackWriteStore {
         }
     }
 
+    /**
+     * Removes a pack's live directory whole (ADR-0081 D8, D9). The caller holds the registry lock and the pack's own,
+     * and brackets the call with the write generation. The version history is kept, with the pair the stored pack has
+     * now healed into it, so its label is never free to take other content. Any stale aside copy is hidden first, and
+     * the live directory is renamed straight to a hidden discard name in one step, so a concurrent read sees the pack or
+     * no pack, and the crash repair of #281 finds no aside copy to restore. The discarded tree is then deleted; a delete
+     * that fails half-way leaves inert hidden residue, as a swap's does.
+     *
+     * @param live the pack's live directory, a plain directory under the writable root
+     * @param packId the name the pack is stored under, which keys its history
+     * @throws CharterRefusal {@code pack_unreadable} when the rename fails; the pack is then whole
+     */
+    void removeWhole(Path live, String packId) {
+        healHistory(live, packId);
+        hideStaleAsides(live);
+        Path discard = live.resolveSibling(".pack-discard-" + unique());
+        try {
+            moveDirectory(live, discard);
+        } catch (IOException failure) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot remove pack " + packId, failure);
+        }
+        deleteTree(discard);
+    }
+
+    /** Puts the stored pair into the history when the history knows nothing of its version (IC-16, ADR-0081 D9). */
+    private void healHistory(Path live, String packId) {
+        VersionHistoryStore history = new VersionHistoryStore(writableRoot());
+        Optional<PackVersionHistory.Entry> stored = HistoryWrite.storedPair(live, packId);
+        if (stored.isEmpty()) {
+            return;
+        }
+        List<PackVersionHistory.Entry> before = history.read(packId);
+        List<PackVersionHistory.Entry> healed = PackVersionHistory.healed(before, stored.get());
+        if (!healed.equals(before)) {
+            history.publish(packId, history.stage(packId, healed));
+        }
+    }
+
     /** The write generation is odd for the swap alone: the copy and the revision, which are slow, run outside it. */
     private void swapBracketed(String name, Path staging, Path live) throws IOException {
         generation.begin(name);

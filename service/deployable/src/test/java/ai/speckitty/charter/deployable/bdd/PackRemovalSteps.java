@@ -34,4 +34,9 @@ public class PackRemovalSteps {
         }
         http.perform("DELETE", path, Map.of(HttpHeaders.IF_MATCH, remembered), null);
     }
+
+    @When("I DELETE {string} without If-Match")
+    public void deleteWithoutIfMatch(String path) throws Exception {
+        http.perform("DELETE", path, Map.of(), null);
+    }
 }

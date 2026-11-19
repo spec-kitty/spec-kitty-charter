@@ -114,17 +114,35 @@ class PackRegistrationServiceTest {
     }
 
     @Test
-    void anOlderPackVersionReplacesToo(@TempDir Path host) {
+    void anOlderPackVersionWithOtherContentIsAVersionConflict(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("pack-x", rig.stage(Packs.of(ORG_PACK, "pack-x", "2.0.0", "org")), Preconditions.none());
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("pack-x"));
+        StagedPack older =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "Old"));
 
-        RegistrationOutcome outcome = rig.register(
-                "pack-x",
-                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "Old")),
-                Preconditions.none());
+        CharterRefusal refusal = catchThrowableOfType(
+                CharterRefusal.class, () -> rig.register("pack-x", older, Preconditions.none()));
 
-        assertThat(outcome.outcome()).as("the version is a label, not an order").isEqualTo(Outcome.REPLACED);
-        assertThat(rig.filesOf(rig.packs.resolve("pack-x")).get("pack.yaml")).contains("pack_version: 1.0.0");
+        assertThat(refusal.code()).as("a replacement moves the version forward").isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+        assertThat(refusal.getMessage()).contains("2.0.0").contains("1.0.0").contains("not newer");
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).as("nothing changed").isEqualTo(before);
+    }
+
+    @Test
+    void aLocalSegmentDoesNotMoveTheVersionForward(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("pack-x", rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0+a", "org")), Preconditions.none());
+        StagedPack local =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0+b", "org").directive("DIRECTIVE_001", "Other"));
+
+        assertThat(refusalOf(() -> rig.register("pack-x", local, Preconditions.none())))
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+
+        StagedPack post = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0.post1", "org").directive("DIRECTIVE_001", "Other"));
+        RegistrationOutcome moved = rig.register("pack-x", post, Preconditions.none());
+        assertThat(moved.outcome()).isEqualTo(Outcome.REPLACED);
+        assertThat(moved.previousVersion()).contains("1.0.0+a");
     }
 
     // ---- a fault in the upload is a 422 that names the file, whatever refuses it ---------------------------------
@@ -1103,6 +1121,9 @@ class PackRegistrationServiceTest {
         final PackRegistrationService service;
         final RegistrationImpact impact;
 
+        /** The activations port the impact check asks, over {@link #activations}. */
+        final ActivationImpact activationPort;
+
         /** The root sets of the stored activations a test plants: an empty optional is an activation with no packs. */
         final List<Optional<List<String>>> activations = new ArrayList<>();
 
@@ -1139,11 +1160,14 @@ class PackRegistrationServiceTest {
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations), generation);
             WritePolicyGate gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
-            this.impact =
-                    new RegistrationImpact(new StagedPackViewFactory(locations, strategy), new ActivationImpact() {
+            this.activationPort = new ActivationImpact() {
                         @Override
-                        public List<Optional<List<String>>> activationRoots() {
-                            return List.copyOf(activations);
+                        public List<ActivationRoots> activationRoots() {
+                            List<ActivationRoots> roots = new ArrayList<>();
+                            for (int i = 0; i < activations.size(); i++) {
+                                roots.add(new ActivationRoots("activation-" + i, activations.get(i)));
+                            }
+                            return roots;
                         }
 
                         @Override
@@ -1156,7 +1180,8 @@ class PackRegistrationServiceTest {
                             asked.add(closures);
                             return List.copyOf(affected);
                         }
-                    });
+                    };
+            this.impact = new RegistrationImpact(new StagedPackViewFactory(locations, strategy), activationPort);
             this.service = new PackRegistrationService(
                     reading,
                     new WholePackStore(strategy),

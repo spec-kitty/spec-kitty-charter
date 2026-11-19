@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.FileActivationRepository;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -80,7 +81,9 @@ class ActivationImpactAdapterTest {
         repository.create(new ActivationId("two"), listingNone());
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
-                .containsExactlyInAnyOrder(Optional.of(List.of("beta", "alpha")), Optional.empty());
+                .containsExactlyInAnyOrder(
+                        new ActivationImpact.ActivationRoots("one", Optional.of(List.of("beta", "alpha"))),
+                        new ActivationImpact.ActivationRoots("two", Optional.empty()));
     }
 
     @Test
@@ -89,7 +92,7 @@ class ActivationImpactAdapterTest {
         repository.create(new ActivationId("file-one"), listing(PackRef.of("main")));
 
         assertThat(new ActivationImpactAdapter(repository).activationRoots())
-                .containsExactly(Optional.of(List.of("main")));
+                .containsExactly(new ActivationImpact.ActivationRoots("file-one", Optional.of(List.of("main"))));
     }
 
     @Test

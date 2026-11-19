@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -59,6 +60,14 @@ public interface StagedPackViews {
          * @return the view, which shares what this session has read
          */
         View with(RegistrationImpact.Replacement written);
+
+        /**
+         * The same stored packs without one of them, as a pack's removal would leave them (ADR-0081 D6).
+         *
+         * @param pack the configured name of the pack removed
+         * @return the view, which shares what this session has read
+         */
+        View without(PackIdentifier pack);
 
         /**
          * The stored packs' aggregates, for a rule that reads an entity (ADR-0068); empty when the session cannot load

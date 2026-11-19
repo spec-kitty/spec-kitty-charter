@@ -276,6 +276,8 @@ A replacement moves the version forward ([ADR-0081](/adr/0081-pack-uninstall-and
   registration. It restores only a `pack_version` the history does not hold at all.
 
 To go back to older content, publish it under a newer version, or remove the pack and register the older version.
+The history still holds that version, so the older version is accepted only with the very content it was registered
+with.
 
 ## Removing a pack
 

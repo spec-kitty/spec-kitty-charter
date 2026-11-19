@@ -242,7 +242,12 @@ public final class RegistrationJobs implements AutoCloseable {
      * @param locator the locator with its query cut
      */
     public record Origin(
-            String worktree, AuditLog.Credential credential, String operation, String sourceKind, String locator) {
+            String worktree,
+            AuditLog.Credential credential,
+            String operation,
+            String sourceKind,
+            String locator,
+            PackRegistrationService.Mode mode) {
 
         /**
          * Checks the fields.
@@ -252,6 +257,8 @@ public final class RegistrationJobs implements AutoCloseable {
          * @param operation the operation
          * @param sourceKind the source kind
          * @param locator the locator with its query cut
+         * @param mode whether the request asked for the write or only a dry run of it ({@code dryRun=true}, ADR-0081
+         *     D5); a dry run is judged and never written, and its end is not entered in the audit log
          */
         public Origin {
             Objects.requireNonNull(worktree, "worktree");
@@ -259,6 +266,21 @@ public final class RegistrationJobs implements AutoCloseable {
             Objects.requireNonNull(operation, "operation");
             Objects.requireNonNull(sourceKind, "sourceKind");
             Objects.requireNonNull(locator, "locator");
+            Objects.requireNonNull(mode, "mode");
+        }
+
+        /**
+         * The origin of a registration that writes.
+         *
+         * @param worktree the worktree identity
+         * @param credential what the request carried
+         * @param operation the operation
+         * @param sourceKind the source kind
+         * @param locator the locator with its query cut
+         */
+        public Origin(
+                String worktree, AuditLog.Credential credential, String operation, String sourceKind, String locator) {
+            this(worktree, credential, operation, sourceKind, locator, PackRegistrationService.Mode.COMMIT);
         }
     }
 
@@ -1057,7 +1079,8 @@ public final class RegistrationJobs implements AutoCloseable {
                 owner.dependencies.room().requireForRun(archiveBytes);
                 Staged staged = Objects.requireNonNull(stager).stage(directory);
                 RegistrationOutcome outcome =
-                        owner.dependencies.service().register(packId, staged.pack(), preconditions, this::beginCommit);
+                        owner.dependencies.service()
+                                .register(packId, staged.pack(), preconditions, this::beginCommit, origin.mode());
                 return new Succeeded(outcome, staged.source());
             } catch (CharterRefusal refusal) {
                 return new Refused(Kind.CODED, refusal, detail(refusal));
@@ -1152,6 +1175,9 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         private void record(Instant now, Ending result) {
+            if (origin.mode() == PackRegistrationService.Mode.DRY_RUN) {
+                return; // a dry run writes nothing, the audit log included (ADR-0081 D5, NFR-002)
+            }
             try {
                 owner.dependencies.audit().record(auditEntry(now, result));
             } catch (RuntimeException lost) {

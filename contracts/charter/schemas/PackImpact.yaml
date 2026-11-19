@@ -6,7 +6,7 @@ description: >-
   pack_has_dependents naming every dependent, or a 422 of the strict compose of a closure that holds the pack). A
   request the removal answers before it judges anything (503, 404, 428, a 409 registration_conflict of the pack's
   identity, a stale If-Match 412) or that infrastructure refuses (500) keeps its status on a dry run and has no
-  PackImpact.
+  PackImpact. _links holds pack, the pack the dry run judged (getPack).
 type: object
 additionalProperties: false
 required:

@@ -46,12 +46,15 @@ class PackRegistrationMapperNoticesTest {
                                 Optional.empty(),
                                 "acme",
                                 Optional.of(PackLevel.ORG),
-                                Optional.empty()),
+                                Optional.empty(),
+                                false),
                         PackLevel.ORG,
                         PackRevision.compute(List.of("x")),
                         notices,
                         List.of(),
-                        hasDocument),
+                        hasDocument,
+                        Optional.empty(),
+                        false),
                 Map.of());
     }
 

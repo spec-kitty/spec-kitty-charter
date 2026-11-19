@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -11,13 +12,45 @@ import java.util.Optional;
 public interface ActivationImpact {
 
     /**
-     * The root set of every stored activation: its {@code packs} list as the configured identifiers it names, in the
-     * order written, or an empty optional for an activation that lists no packs, which roots at every configured pack
-     * (FR-008). An activation whose document cannot be read has no root set to give and is left out.
+     * A stored activation's root set (ADR-0081 P1): its id, and its {@code packs} list as the configured identifiers it
+     * names, in the order written, or an empty optional for an activation that lists no packs, which roots at every
+     * configured pack (FR-008).
+     *
+     * @param id the activation's id
+     * @param packs the packs it names, or empty when it names none
+     */
+    record ActivationRoots(String id, Optional<List<String>> packs) {
+
+        /**
+         * Checks the fields and copies the list.
+         *
+         * @param id the activation's id
+         * @param packs the packs it names
+         */
+        public ActivationRoots {
+            Objects.requireNonNull(id, "id");
+            packs = Objects.requireNonNull(packs, "packs").map(List::copyOf);
+        }
+
+        /**
+         * Whether the activation names a pack in its {@code packs} list (ADR-0081 D6): an activation that lists no packs
+         * names none.
+         *
+         * @param configuredName the pack's configured name
+         * @return whether it names it
+         */
+        public boolean names(String configuredName) {
+            return packs.filter(listed -> listed.contains(configuredName)).isPresent();
+        }
+    }
+
+    /**
+     * The root set of every stored activation, with its id. An activation whose document cannot be read has no root set
+     * to give and is left out.
      *
      * @return one entry per stored activation
      */
-    List<Optional<List<String>>> activationRoots();
+    List<ActivationRoots> activationRoots();
 
     /**
      * Tells the activations slice that a registration was stored and what it did to the floor and the locks. Called after

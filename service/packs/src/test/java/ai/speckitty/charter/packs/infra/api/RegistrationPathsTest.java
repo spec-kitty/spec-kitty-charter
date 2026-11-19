@@ -17,6 +17,7 @@ class RegistrationPathsTest {
         "POST, /api/v1/packs, registerPackFromSource, '', ''",
         "DELETE, /api/v1/packs/acme/artifacts/directive/A, deletePackArtifact, '', acme",
         "DELETE, /api/v1/packs/acme/relationships, deletePackRelationship, '', acme",
+        "DELETE, /api/v1/packs/acme, deletePack, '', acme",
         "PUT, /api/v1/packs/Not-A-Grammar-Id, registerPackFromArchive, archive, Not-A-Grammar-Id",
     })
     void aRegistrationOrDeleteAttemptIsClassified(
@@ -31,10 +32,10 @@ class RegistrationPathsTest {
         "PUT, /api/v1/packs/acme/artifacts/directive/A",
         "PUT, /api/v1/packs/acme/relationships",
         "POST, /api/v1/packs/acme",
-        "DELETE, /api/v1/packs/acme",
         "PUT, /other/packs/acme",
         "PUT, /api/v1/packs",
         "PUT, /api/v1/packs/acme/",
+        "DELETE, /api/v1/packs",
     })
     void anyOtherRequestIsNotAnAttempt(String method, String uri) {
         assertThat(paths.classify(method, uri)).isEmpty();
@@ -44,5 +45,13 @@ class RegistrationPathsTest {
     void aBasePathWithATrailingSlashIsTheSameBasePath() {
         assertThat(new RegistrationPaths("/api/v1/").classify("PUT", "/api/v1/packs/acme"))
                 .isPresent();
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            value = {"true, true", "TRUE, true", "false, false", "yes, false", "NULL, false"},
+            nullValues = "NULL")
+    void onlyDryRunTrueIsADryRun(String value, boolean dryRun) {
+        assertThat(RegistrationPaths.isDryRun(value)).isEqualTo(dryRun);
     }
 }
