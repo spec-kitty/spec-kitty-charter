@@ -1,0 +1,8 @@
+summary: >-
+  The org pack acme registers a tension between two built-in directives it holds neither of, so from names the built-in
+  pack; the response answers it in its stored orientation (ADR-0045 decision 1).
+value:
+  from: core::directive:DIRECTIVE_024
+  to: core::directive:DIRECTIVE_025
+  type: tension
+  rationale: a change that grows beyond its goal against the smallest viable diff

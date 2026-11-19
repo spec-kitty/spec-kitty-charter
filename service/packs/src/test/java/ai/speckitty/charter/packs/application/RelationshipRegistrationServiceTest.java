@@ -174,6 +174,43 @@ class RelationshipRegistrationServiceTest {
     }
 
     @Test
+    void aTensionRegisteredInTheReverseOrientationReplacesTheTensionOfThePair() {
+        seedDirective("DIR_A");
+        seedDirective("DIR_B");
+        service.registerRelationship(
+                PACK,
+                new RelationshipDraft(
+                        DIR_A,
+                        Optional.empty(),
+                        DIR_B,
+                        Optional.empty(),
+                        RelationType.TENSION,
+                        Optional.empty(),
+                        Optional.of("first")),
+                store.currentRevision(PACK).token());
+
+        RelationshipRegistrationService.Registered reverse = service.registerRelationship(
+                PACK,
+                new RelationshipDraft(
+                        DIR_B,
+                        Optional.empty(),
+                        DIR_A,
+                        Optional.empty(),
+                        RelationType.TENSION,
+                        Optional.empty(),
+                        Optional.of("second")),
+                store.currentRevision(PACK).token());
+
+        assertThat(reverse.created()).isFalse();
+        assertThat(store.relationships(PACK)).singleElement().satisfies(stored -> {
+            assertThat(stored.type()).isEqualTo(RelationType.TENSION);
+            assertThat(stored.from()).isEqualTo(DIR_A);
+            assertThat(stored.to()).isEqualTo(DIR_B);
+            assertThat(stored.rationale()).contains("second");
+        });
+    }
+
+    @Test
     void aTensionTheHeldSideNamesAsTargetIsStoredWithTheHeldSideAsSource() {
         seedDirective("DIR_B");
         Urn outside = new Urn(NodeKind.DIRECTIVE, "AAA_OUTSIDE");
@@ -194,6 +231,61 @@ class RelationshipRegistrationServiceTest {
         assertThat(store.relationships(PACK)).singleElement().satisfies(stored -> {
             assertThat(stored.from()).isEqualTo(DIR_B);
             assertThat(stored.to()).isEqualTo(outside);
+        });
+    }
+
+    /**
+     * Neither side held: the stored source is the smaller bare URN, and it must resolve in the compose as the target
+     * does. A bare {@code directive:A} that another pack holds is unqualified; its qualified twin registers.
+     */
+    @Test
+    void theStoredSourceOfATensionOnTwoUnheldSidesMustResolveAsTheTargetDoes() {
+        Urn a = new Urn(NodeKind.DIRECTIVE, "A");
+        Urn z = new Urn(NodeKind.DIRECTIVE, "Z");
+        List<String> required = new ArrayList<>();
+        RelationshipTargetCheck compose = (source, target) -> {
+            required.add(target.toString());
+            if (target.packName().isEmpty() && target.urn().equals(a.toString())) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_REFERENCE_UNQUALIFIED, "directive:A is held by core: write core::directive:A");
+            }
+        };
+        RelationshipRegistrationService checked =
+                new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate(), compose);
+        seedDirective("DIR_A");
+
+        assertThatThrownBy(() -> checked.registerRelationship(
+                        PACK,
+                        new RelationshipDraft(
+                                a,
+                                Optional.empty(),
+                                z,
+                                Optional.empty(),
+                                RelationType.TENSION,
+                                Optional.empty(),
+                                Optional.empty()),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED));
+        assertThat(store.relationships(PACK)).isEmpty();
+
+        required.clear();
+        checked.registerRelationship(
+                PACK,
+                new RelationshipDraft(
+                        a,
+                        Optional.of("core"),
+                        z,
+                        Optional.empty(),
+                        RelationType.TENSION,
+                        Optional.empty(),
+                        Optional.empty()),
+                store.currentRevision(PACK).token());
+        assertThat(required).containsExactly("core::directive:A", "directive:Z");
+        assertThat(store.relationships(PACK)).singleElement().satisfies(stored -> {
+            assertThat(stored.fromReference()).hasToString("core::directive:A");
+            assertThat(stored.to()).isEqualTo(z);
         });
     }
 

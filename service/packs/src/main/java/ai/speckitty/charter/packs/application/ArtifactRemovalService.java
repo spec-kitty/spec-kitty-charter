@@ -156,9 +156,8 @@ public final class ArtifactRemovalService {
         PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
         String packName = current.descriptor().name();
         List<Relationship> registered = store.registeredRelationships(pack);
-        // A registered edge goes with the artifact it starts at, and a registered tension with either side: a tension
-        // is
-        // bidirectional, so its stored source is no more its owner than its target (ADR-0045 decision 1).
+        // A registered edge goes with the artifact it starts at, and a registered tension with either side: a
+        // tension is bidirectional, so its stored source is no more its owner than its target (ADR-0045 decision 1).
         List<Relationship> outgoing = registered.stream()
                 .filter(edge -> removed.contains(edge.from())
                         || (edge.type() == RelationType.TENSION && removed.contains(edge.to()))
