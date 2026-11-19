@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
@@ -18,6 +19,7 @@ import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -536,9 +538,8 @@ public final class PackRegistrationService {
         }
 
         static Before of(WholePackWriteStore.Remains remains) {
-            Map<String, Relationship> edges = new LinkedHashMap<>();
-            remains.edges().forEach(edge -> edges.putIfAbsent(edgeKey(edge), edge));
-            return new Before(remains.defined(), remains.digests(), edges, remains.looseEdges(), Set.of());
+            return new Before(
+                    remains.defined(), remains.digests(), keyed(remains.edges()), remains.looseEdges(), Set.of());
         }
     }
 
@@ -569,11 +570,7 @@ public final class PackRegistrationService {
     }
 
     private static Map<String, Relationship> edgesOf(WholePackWriteStore.Contents contents) {
-        Map<String, Relationship> edges = new LinkedHashMap<>();
-        for (Relationship edge : contents.facts().edges()) {
-            edges.putIfAbsent(edgeKey(edge), edge);
-        }
-        return edges;
+        return keyed(contents.facts().edges());
     }
 
     /** The writes of the diff: what the upload adds, changes and removes, and each edge it adds or drops. */
@@ -600,20 +597,14 @@ public final class PackRegistrationService {
         return List.copyOf(writes);
     }
 
-    /** Each edge the upload adds or drops, on its source; a stored entry that cannot be typed is dropped unless the upload has the pair. */
+    /**
+     * Each edge the upload adds or drops, on its source, and a tension on each side (ADR-0045 decision 1); a stored
+     * entry that cannot be typed is dropped unless the upload has the pair.
+     */
     private static void edgeWrites(
             WholePackWriteStore.Contents upload, Before before, Set<WritePolicyGate.Write> writes) {
         Map<String, Relationship> edges = edgesOf(upload);
-        edges.forEach((key, edge) -> {
-            if (!before.edges().containsKey(key)) {
-                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
-            }
-        });
-        before.edges().forEach((key, edge) -> {
-            if (!edges.containsKey(key)) {
-                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
-            }
-        });
+        changedEdges(edges, before.edges()).forEach(edge -> writes.addAll(writesOn(edge)));
         Set<String> pairs = new TreeSet<>();
         edges.values().forEach(edge -> pairs.add(edge.fromReference() + "|" + edge.toReference()));
         before.loose().forEach((pair, source) -> {
@@ -621,6 +612,56 @@ public final class PackRegistrationService {
                 writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, source));
             }
         });
+    }
+
+    /**
+     * The edges one side holds and the other does not, the upload's added edges first. An edge is keyed on its written
+     * source, relation and target, so a tension and a structural relation on one pair are two edges: storage is
+     * canonical (ADR-0045 ruling G1), and a pair holds at most one of each class.
+     *
+     * @param upload the upload's edges, by key
+     * @param before the stored edges, by key
+     * @return the added edges, then the dropped ones
+     */
+    static List<Relationship> changedEdges(Map<String, Relationship> upload, Map<String, Relationship> before) {
+        List<Relationship> changed = new ArrayList<>();
+        upload.forEach((key, edge) -> {
+            if (!before.containsKey(key)) {
+                changed.add(edge);
+            }
+        });
+        before.forEach((key, edge) -> {
+            if (!upload.containsKey(key)) {
+                changed.add(edge);
+            }
+        });
+        return changed;
+    }
+
+    /**
+     * The edges by key, the first of a key kept.
+     *
+     * @param edges the edges in document order
+     * @return them by key
+     */
+    static Map<String, Relationship> keyed(List<Relationship> edges) {
+        Map<String, Relationship> keyed = new LinkedHashMap<>();
+        edges.forEach(edge -> keyed.putIfAbsent(edgeKey(edge), edge));
+        return keyed;
+    }
+
+    /**
+     * What the gate judges for an added or dropped edge: its source, and for a tension its target too, since a tension
+     * names two rules and neither side is privileged (ADR-0045 decision 1).
+     *
+     * @param edge the edge
+     * @return the writes, the source first
+     */
+    static List<WritePolicyGate.Write> writesOn(Relationship edge) {
+        WritePolicyGate.Write source = new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from());
+        return edge.type() == RelationType.TENSION
+                ? List.of(source, new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.to()))
+                : List.of(source);
     }
 
     private static void write(Set<WritePolicyGate.Write> writes, WritePolicyGate.Operation operation, String urn) {

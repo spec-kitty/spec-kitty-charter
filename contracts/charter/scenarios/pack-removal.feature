@@ -555,6 +555,69 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 404
     And the problem code is "relationship_not_found"
 
+  Scenario: A later registration of another relationship keeps the tension in the shard
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "tension"}
+      """
+    Then the response status is 201
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D2", "to": "directive:D3", "type": "requires"}
+      """
+    Then the response status is 201
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: tension"
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: requires"
+
+  Scenario: Removing the requires of a pair that also holds a registered tension leaves the tension
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "requires"}
+      """
+    Then the response status is 201
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "tension"}
+      """
+    Then the response status is 201
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2&relation=requires" with the header "If-Match": "*"
+    Then the response status is 204
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: tension"
+    And the file "registered.graph.yaml" of the pack "qa" does not contain "relation: requires"
+
+  Scenario: A pair with an author-written requires and a registered tension is removed only by naming the relation
+    Given the org pack "qa" with the file "lineage.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'directive:D1', target: 'directive:D2', relation: requires}
+      """
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "tension"}
+      """
+    Then the response status is 201
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2" with the header "If-Match": "*"
+    Then the response status is 409
+    And the problem code is "relationship_not_registered"
+    And the field at "/detail" contains "relation parameter"
+    And the file "registered.graph.yaml" of the pack "qa" contains "relation: tension"
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2&relation=tension" with the header "If-Match": "*"
+    Then the response status is 204
+    And the file "registered.graph.yaml" of the pack "qa" does not contain "relation: tension"
+
   Scenario: The old spelling in_tension_with is an unknown relation type, and nothing is written
     When I GET "/packs/qa"
     And I remember the ETag

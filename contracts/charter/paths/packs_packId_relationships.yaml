@@ -38,6 +38,9 @@ put:
       application/json:
         schema:
           $ref: ../schemas/RelationshipRegistration.yaml
+        examples:
+          tension:
+            $ref: ../examples/RelationshipRegistration.tension.yaml
   responses:
     '200':
       description: The relationship replaced the one already registered in its slot, the same unordered pair and pair class.
