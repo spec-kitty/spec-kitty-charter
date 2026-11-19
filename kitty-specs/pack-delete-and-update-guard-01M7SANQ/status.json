@@ -1,7 +1,7 @@
 {
-  "event_count": 24,
-  "last_event_id": "01M7SQKR9JVRTAC02HK92CMT05",
-  "materialized_at": "2026-11-19T11:03:33.427057+00:00",
+  "event_count": 25,
+  "last_event_id": "01M7SQKYQTNXEXNF05CRMGY488",
+  "materialized_at": "2026-11-19T11:03:40.026270+00:00",
   "mission_number": "",
   "mission_slug": "pack-delete-and-update-guard-01M7SANQ",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 3,
+    "for_review": 2,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
@@ -80,16 +80,20 @@
       }
     },
     "WP03": {
-      "actor": "user",
+      "actor": "reviewer-claude",
       "agent": null,
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 3,
-      "lane": "for_review",
-      "last_event_id": "01M7SPFJQGEYTRNC71N7ZSNS7H",
-      "last_transition_at": "2026-11-19T10:43:48.080144+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7SQKYQTNXEXNF05CRMGY488",
+      "last_transition_at": "2026-11-19T11:03:40.026270+00:00",
+      "model": "__resolved_model_absent__",
       "notes": [
         "Implemented on feat/517-pack-delete-and-update-guard (commits 7fdd9df..HEAD, re-signed); forced because the signing rebase moved the planning commit past the implementation commits; verifyAll green on Java 25",
         "Review cycle 1 findings folded in commits 9308057, 6482c34 and f8ed08d (after the reviewer's 548832d); forced because the implement claim could not be re-taken on this single-branch mission. Packs and deployable suites green. WP04 R4-1 awaits the operator ruling."
       ],
+      "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/pack-delete-and-update-guard-01M7SANQ/tasks/WP03-dependents-and-removal-compose/review-cycle-1.md",
@@ -97,6 +101,7 @@
         "reviewer": "reviewer-claude",
         "verdict": "changes_requested"
       },
+      "role": "reviewer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
