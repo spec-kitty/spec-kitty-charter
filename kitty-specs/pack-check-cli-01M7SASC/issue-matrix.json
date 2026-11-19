@@ -1,5 +1,17 @@
 {
   "rows": {
+    "#174": {
+      "evidence_ref": "Context: a pack root given through a link stays allowed; LinkedEntriesTest.aRootGivenThroughALinkIsReadWhole",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP01"
+    },
     "#478": {
       "evidence_ref": "WP01 delivers D1/D6 (links refused); pack-check CLI lands in later WPs",
       "fr": null,
