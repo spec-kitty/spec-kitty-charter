@@ -183,6 +183,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     @Override
     public Map<String, Outcome> roundTrip(Path source, Path target, Map<String, String> kindOf) {
         String name = String.valueOf(source.getFileName());
+        if (!PackIdentifier.isPackId(name)) {
+            // The source directory's name is the registered id the round trip configures and loads under (D2b), so a
+            // name that is no pack id refuses every modelled file instead of posing as one.
+            // TODO(#583 WP03): refuse with pack_id_invalid
+            return refusedAsNoPackId(name, kindOf);
+        }
         PackIdentifier id = new PackIdentifier(name);
         createDirectories(target);
         DomainRepositoryService from = service(name, source);
@@ -234,6 +240,18 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         companions.forEach((path, companion) -> {
             if (kindOf.containsKey(path)) {
                 outcomes.put(path, companion(target, companion, outcomes, writtenCompanions));
+            }
+        });
+        return outcomes;
+    }
+
+    /** Every modelled source file refused, because the source directory's name is no pack id. */
+    private static Map<String, Outcome> refusedAsNoPackId(String name, Map<String, String> kindOf) {
+        Refused refused = new Refused("source directory " + name + " is no pack id: " + PackIdentifier.GRAMMAR_DETAIL);
+        SortedMap<String, Outcome> outcomes = new TreeMap<>();
+        kindOf.forEach((path, kind) -> {
+            if (MODELLED.contains(kind)) {
+                outcomes.put(path, refused);
             }
         });
         return outcomes;
