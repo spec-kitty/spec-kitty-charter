@@ -76,7 +76,7 @@ MissionTypeController:47,56,63. Each is `new PackIdentifier(packId)` on the gene
   CompositionFactsBuilder:73, the directory name from WholePackStore, PackManifestDerivation:90 and FileSystemPackInspector.
   It is used for facts and messages.
 - DIR: PackLocator:116 `name.toString()` of the location directory or aside copy, as the reader key for `readDescriptor`.
-- OTHER: DomainRoundTrip:186, the name of the round-trip source directory (pack-validation tool).
+- REG (D2b), reclassified in WP02 review-cycle-1: DomainRoundTrip:186, the name of the round-trip source directory. It is the registered id the round trip configures and loads under. It is built only when `PackIdentifier.isPackId(name)`; otherwise every modelled file is refused.
 
 Tally: REG 43 (30 controllers, 6 activation adapters, ClosureView:886, ProfileEnhancementRule:95, RegistrationJobs:719,
 PackRegistrationService:679,705, PackCommitStore:622,711, DomainRepositoryService:348, CommitStorePackWriteStore:339 = 45;

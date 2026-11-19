@@ -11,7 +11,7 @@ categories:
       (EdgeIndex:218/649, ClosureView:365, ClosureViewSession:540, ArtifactFiles:42, StoreRead:113) become PackUlid or
       take the caller's registered id. The STAGING and DIRECTORY sites (PackCommitStore:303/494/938, WholePackStore:295/
       385/416, DomainRepositoryService:650/677, CommitStorePackWriteStore:359/375/443, ArtifactFiles:40, StoreRead:199/
-      260, PackLocator:116, DomainRoundTrip:186) become PackDirectory. InboundReferences:214 takes the upload id.
+      260, PackLocator:116) become PackDirectory. DomainRoundTrip:186 is REG (D2b): built only from a name that is a pack id. InboundReferences:214 takes the upload id.
       ClosureView:886 and ProfileEnhancementRule:95 lose the rewrap.
   import_paths:
     action: rename
