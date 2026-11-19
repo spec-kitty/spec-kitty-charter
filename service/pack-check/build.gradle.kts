@@ -53,4 +53,12 @@ val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false"
 tasks.test {
     inputs.property("requireSymlinks", requireSymlinks)
     systemProperty("charter.requireSymlinks", requireSymlinks.get())
+    // PlantedParityTest reads the two golden files of its neighbours by path (NFR-003), so a changed golden file reruns
+    // it rather than leaving a stale pass in the build cache (WP06 review).
+    inputs.file(layout.projectDirectory.file("../packs/src/test/resources/golden/surfaces.json"))
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("surfacesGolden")
+    inputs.file(layout.projectDirectory.file("../pack-validation/src/test/resources/golden/validate.json"))
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("validateGolden")
 }
