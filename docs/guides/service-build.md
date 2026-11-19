@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-16T00:00:00Z
+updated: 2026-11-19T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -15,6 +15,8 @@ related:
   - guides/generate-a-client
   - adr/0062-nightly-mutation-floor
   - guides/compose-packs
+  - guides/check-packs
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
   - guides/run-in-a-container
   - conformance/divergence-register
   - changelog/2026-11-07-a-pack-registration
@@ -557,7 +559,10 @@ The service releases on its own line, `service-v<version>`, separate from the co
 
 - a native executable for each of linux-x64, linux-arm64, macos-arm64 and windows-x64;
 - the jar, for every other host with Java 25;
-- one `.sha256` file per asset, and `SHA256SUMS`;
+- `pack-check-<version>.jar`, the pack checker
+  ([ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 9), a jar
+  only, which needs Java 25 ([Check packs](/guides/check-packs/));
+- one `.sha256` file per asset, and `SHA256SUMS`, which lists the six assets: 13 files in all;
 - a build-provenance attestation of every asset.
 
 Core's service pin fetches and verifies these assets by name.
@@ -604,6 +609,7 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - runs `verifyAll`;
   - builds the jar and the four native executables, and starts each one with
     `scripts/release/smoke-service.sh`;
+  - builds the pack-check jar and runs it over the example packs with `--round-trip`, in under 20 s;
   - assembles the assets with `scripts/release/service-release-assets.sh`;
   - checks them, attests them, and creates a GitHub release that is never marked latest. A tag with a
     pre-release suffix makes a pre-release.
@@ -619,7 +625,7 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - A manual run of the workflow with a tag name builds the assets as a workflow artifact and publishes
     nothing.
   - `scripts/release/rehearse-service-release.sh` rehearses every gate refusal and the asset set without
-    any remote. It runs in CI on every change.
+    any remote, including the refusal of a set without the pack-check jar. It runs in CI on every change.
   - **Before the very first `service-v*` tag,** do one manual `workflow_dispatch` run against a candidate
     tag name. The publish job and the two remote gate-checks (on-main, tag-still-names-the-commit) run only
     on a real tag push, so a dispatch run is their first exercise end to end, while still publishing nothing.
@@ -636,6 +642,9 @@ To check a download:
 ```bash
 sha256sum --check --ignore-missing SHA256SUMS
 gh attestation verify spec-kitty-charter-service-0.2.0-linux-x64 --repo spec-kitty/spec-kitty-charter \
+  --signer-workflow spec-kitty/spec-kitty-charter/.github/workflows/service-release.yml \
+  --source-ref refs/tags/service-v0.2.0
+gh attestation verify pack-check-0.2.0.jar --repo spec-kitty/spec-kitty-charter \
   --signer-workflow spec-kitty/spec-kitty-charter/.github/workflows/service-release.yml \
   --source-ref refs/tags/service-v0.2.0
 ```

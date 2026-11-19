@@ -285,6 +285,12 @@
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
       "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+    }, {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "assets/out",
+      "place" : [ ],
+      "detail" : "assets/out: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/asset-path-escape-through-a-symlink+pack.yaml" : {
@@ -300,6 +306,12 @@
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
       "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+    }, {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "assets/out",
+      "place" : [ ],
+      "detail" : "assets/out: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/asset-path-escape-windows-drive" : {
@@ -345,6 +357,12 @@
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
       "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
+    }, {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "assets/in",
+      "place" : [ ],
+      "detail" : "assets/in: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/asset-path-inside-through-a-symlink-is-contained+pack.yaml" : {
@@ -360,6 +378,12 @@
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
       "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
+    }, {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "assets/in",
+      "place" : [ ],
+      "detail" : "assets/in: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/asset-path-symlink-loop" : {
@@ -375,6 +399,12 @@
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
       "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+    }, {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "assets/loop",
+      "place" : [ ],
+      "detail" : "assets/loop: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/asset-path-symlink-loop+pack.yaml" : {
@@ -390,6 +420,12 @@
       "file" : "assets/a.asset.yaml",
       "place" : [ ],
       "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+    }, {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "assets/loop",
+      "place" : [ ],
+      "detail" : "assets/loop: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/asset-repeated-id-only-the-first-owner-is-checked" : {
@@ -1368,6 +1404,15 @@
       "file" : "pack.yaml",
       "place" : [ ],
       "detail" : "org pack qa has no drg/fragment.yaml"
+    } ]
+  },
+  "planted/pack-entry-linked-file" : {
+    "findings" : [ {
+      "code" : "pack_entry_linked",
+      "severity" : "violation",
+      "file" : "directives/002-b.directive.yaml",
+      "place" : [ ],
+      "detail" : "directives/002-b.directive.yaml: is a symbolic link; a pack holds no links"
     } ]
   },
   "planted/pack-yaml-tilde-is-null" : {

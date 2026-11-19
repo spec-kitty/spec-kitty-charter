@@ -6,7 +6,6 @@ import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
-import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
@@ -38,7 +37,7 @@ public final class CompositionRules {
     /** The rule name every {@code CLOSURE} reason carries. */
     public static final String RULE = "closure";
 
-    /** The rule name of the preset phase's reasons. */
+    /** The rule name of the preset phase's reasons ({@link #presetFaults}, as {@code PackRulesets} states them). */
     public static final String PRESETS_RULE = "closure.presets";
 
     private CompositionRules() {}
@@ -96,20 +95,6 @@ public final class CompositionRules {
      */
     public static ModularRuleset<List<PackUnderResolution>> closure() {
         return ModularRuleset.<List<PackUnderResolution>>emptyRules().must(packs -> reasons(faults(packs), RULE));
-    }
-
-    /**
-     * The preset phase of {@code CLOSURE}: the preset ids are composition facts the {@link PackUnderResolution} does
-     * not carry, so the caller names them. It judges the packs in merge order ({@link #presetFaults}), whatever order
-     * they are given in.
-     *
-     * @param presetIdsOf the ids of the presets a pack holds
-     * @return the rule
-     */
-    public static Rule<List<PackUnderResolution>> presets(
-            Function<PackUnderResolution, Collection<String>> presetIdsOf) {
-        Objects.requireNonNull(presetIdsOf, "presetIdsOf");
-        return packs -> reasons(presetFaults(packs, presetIdsOf), PRESETS_RULE);
     }
 
     /**

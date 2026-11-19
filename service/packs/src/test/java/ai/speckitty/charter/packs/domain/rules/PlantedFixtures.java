@@ -16,7 +16,6 @@ import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
 import ai.speckitty.charter.packs.infra.storage.TreeReads;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -85,10 +84,23 @@ final class PlantedFixtures {
      *
      * @param key {@code planted/<plant>}, {@code planted/<plant>+pack.yaml} or {@code example-packs/<name>}
      * @param tree the one read
+     * @param readout what the domain port gives for the same read: its facts, the storage edge's verdict and the
+     *     composition facts the one reader built
      * @param expected the findings the plant's {@code expected.json} names; empty for a plant judged with a descriptor
      *     of the test's own, and for an example pack
      */
-    record Planted(String key, TreeRead tree, Optional<List<Expected>> expected) {
+    record Planted(String key, TreeRead tree, PackReadout readout, Optional<List<Expected>> expected) {
+
+        /**
+         * A subject read once by the one reader.
+         *
+         * @param key the subject's key
+         * @param read the one read and its readout
+         * @param expected the findings the plant names
+         */
+        Planted(String key, TreeReads.WithReadout read, Optional<List<Expected>> expected) {
+            this(key, read.tree(), read.readout(), expected);
+        }
 
         /**
          * The facts of the read.
@@ -97,16 +109,6 @@ final class PlantedFixtures {
          */
         PackContents contents() {
             return tree.contents();
-        }
-
-        /**
-         * What the domain port gives for the read: its facts and the storage edge's verdict.
-         *
-         * @return the readout
-         */
-        PackReadout readout() {
-            return new PackReadout(
-                    tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
         }
 
         @Override
@@ -230,7 +232,7 @@ final class PlantedFixtures {
                 Path pack = plantAt(plant, scratch.resolve(Integer.toString(n++)), symlinks);
                 subjects.add(new Planted(
                         "planted/" + plant,
-                        TreeReads.of(new PackRoot(PLANT_NAME, level, pack.toString())),
+                        TreeReads.withReadout(new PackRoot(PLANT_NAME, level, pack.toString())),
                         Optional.of(findings(expected))));
                 if (!Files.exists(files.resolve(PACK_YAML))) {
                     Path described = plantAt(plant, scratch.resolve(Integer.toString(n++)), symlinks);
@@ -242,7 +244,7 @@ final class PlantedFixtures {
                             StandardCharsets.UTF_8);
                     subjects.add(new Planted(
                             "planted/" + plant + "+pack.yaml",
-                            TreeReads.of(new PackRoot(PLANT_NAME, level, described.toString())),
+                            TreeReads.withReadout(new PackRoot(PLANT_NAME, level, described.toString())),
                             Optional.empty()));
                 }
             }
@@ -254,7 +256,8 @@ final class PlantedFixtures {
                 }
                 subjects.add(new Planted(
                         "example-packs/" + name,
-                        TreeReads.of(new PackRoot(name, Optional.of(ExamplePacks.level(name)), named.toString())),
+                        TreeReads.withReadout(
+                                new PackRoot(name, Optional.of(ExamplePacks.level(name)), named.toString())),
                         Optional.empty()));
             }
             return List.copyOf(subjects);

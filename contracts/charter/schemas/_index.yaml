@@ -15,6 +15,7 @@ files:
   - HoldingPack.yaml
   - Offering.yaml
   - OfferingPack.yaml
+  - PackCheckReport.yaml
   - PackLevel.yaml
   - PackQualifiedReference.yaml
   - PackQualifiedReferenceWrite.yaml

@@ -1,0 +1,89 @@
+{
+  "rows": {
+    "#174": {
+      "evidence_ref": "Context: a pack root given through a link stays allowed; LinkedEntriesTest.aRootGivenThroughALinkIsReadWhole",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP01"
+    },
+    "#478": {
+      "evidence_ref": "WP01 delivers D1/D6 (links refused); pack-check CLI lands in later WPs",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": "WP01"
+    },
+    "#549": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#554": {
+      "evidence_ref": "Context only: the one reader #554 delivered (via #594) is the base this mission builds on",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#556": {
+      "evidence_ref": "Context only: spec says #556 is not waited for (C-006)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#594": {
+      "evidence_ref": "Context only: the PR that delivered #554",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#597": {
+      "evidence_ref": "WP01 commits da2a9a16..6741fa29 (lane-a, after the cycle-1 rebase and re-signing): LinkRules (pack_entry_linked) in StorageRulesets.HOLDING; PackRegistrationLinkTest covers #597's three cases; mutant without LinkRules fails it",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "PackRegistrationService accepts a staged tree whose symlink points outside the pack",
+      "verdict": "fixed",
+      "wp": "WP01"
+    }
+  },
+  "schema_version": 1
+}

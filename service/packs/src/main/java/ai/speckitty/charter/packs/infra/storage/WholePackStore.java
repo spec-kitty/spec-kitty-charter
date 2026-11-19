@@ -424,7 +424,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         }
         listing.templates().forEach(file -> salvageTemplate(packDir, file, salvage));
         List<Path> graphs = new ArrayList<>(PackFileSet.rootShards(packDir, name));
-        if (Files.isRegularFile(packDir.resolve(PackFileSet.FRAGMENT))) {
+        if (PackFileSet.unlinkedFile(packDir, PackFileSet.FRAGMENT)) {
             graphs.add(packDir.resolve(PackFileSet.FRAGMENT));
         }
         graphs.forEach(graph -> salvageGraph(graph, salvage));

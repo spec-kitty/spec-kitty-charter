@@ -339,11 +339,12 @@ class AssetStoreTest {
     }
 
     /**
-     * F8: the walk follows a file link, so an asset file passes the companions' containment rule on its real path. A
-     * link that leaves the pack is a violation and is not read; a link to a file inside the pack, beside it, loads.
+     * D6 (#597): the walk lists no link as a file, so an asset file link is never read, whether it leaves the pack or
+     * leads to a file inside it; the asset file beside them loads. The storage rules refuse the links
+     * ({@code pack_entry_linked}), not the store's read.
      */
     @Test
-    void anAssetFileLinkThatLeavesThePackIsAViolationWhileOneInsideLoads(@TempDir Path host) throws IOException {
+    void anAssetFileLinkIsNeverReadWhereverItLeads(@TempDir Path host) throws IOException {
         Path source = pack(host, "source");
         Path outside = host.resolve("outside.bin");
         Files.write(outside, BINARY);
@@ -353,10 +354,8 @@ class AssetStoreTest {
 
         FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
-        assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("inside.bin", "real.bin");
-        assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
-                        "assets/leak.bin", StorageCodes.UNREADABLE, "the file leaves the pack"));
+        assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("real.bin");
+        assertThat(read.violations()).isEmpty();
     }
 
     /**

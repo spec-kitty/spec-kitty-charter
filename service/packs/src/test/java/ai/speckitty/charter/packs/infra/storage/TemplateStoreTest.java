@@ -14,7 +14,6 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -157,11 +156,11 @@ class TemplateStoreTest {
     }
 
     /**
-     * F8: a template reached through a link that leaves the pack is a violation and is not read; a link to a file
-     * inside the pack, beside it, loads.
+     * D6 (#597): a template link is never read, whether it leaves the pack or leads to a file inside it; the template
+     * beside them loads. The storage rules refuse the links ({@code pack_entry_linked}), not the store's read.
      */
     @Test
-    void aTemplateLinkThatLeavesThePackIsAViolationWhileOneInsideLoads(@TempDir Path host) throws IOException {
+    void aTemplateLinkIsNeverReadWhereverItLeads(@TempDir Path host) throws IOException {
         Path source = pack(host, "source");
         Path outside = host.resolve("outside.md");
         Files.write(outside, TEMPLATE);
@@ -173,10 +172,8 @@ class TemplateStoreTest {
 
         assertThat(read.templates())
                 .extracting(FilesystemPackStore.TemplateFile::path)
-                .containsExactly("inside.md", "real.md");
-        assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
-                        "templates/leak.md", StorageCodes.UNREADABLE, "the file leaves the pack"));
+                .containsExactly("real.md");
+        assertThat(read.violations()).isEmpty();
     }
 
     /**

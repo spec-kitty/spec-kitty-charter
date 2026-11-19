@@ -69,19 +69,38 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
         }
 
         /**
-         * Every reason the run fails, the evaluation's problems first.
+         * Every reason the run fails, the evaluation's problems first. A problem about one census file
+         * ({@code UNEXPECTED_RED <path> (<kind>): ...}, as {@link WholePackExpectation} words it) is placed at that
+         * file, so a surface that reports violations by file (pack-check, #478) points at it; a problem about the run
+         * as a whole (a stale entry, an unmodelled schema) stays unplaced.
          *
          * @return the failing reasons; empty when the run passes
          */
         public List<Reason> reasons() {
+            Set<String> census = evaluation.files().stream()
+                    .map(WholePackExpectation.FileResult::path)
+                    .collect(Collectors.toSet());
             List<Reason> reasons = new ArrayList<>();
             evaluation
                     .problems()
-                    .forEach(problem -> reasons.add(new Reason(RULE, Evaluation.FAIL, RED, Location.NOWHERE, problem)));
+                    .forEach(problem ->
+                            reasons.add(new Reason(RULE, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
             unpaired.forEach(file -> reasons.add(
                     new Reason(RULE, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
             return List.copyOf(reasons);
         }
+    }
+
+    /**
+     * Where a problem of the evaluation lies: the census file its second word names, else nowhere.
+     *
+     * @param problem the problem, {@code <TOKEN> <subject> ...}
+     * @param census the census files' paths
+     * @return the file's location, or {@link Location#NOWHERE}
+     */
+    static Location locationOf(String problem, Set<String> census) {
+        String[] words = problem.split(" ", 3);
+        return words.length > 1 && census.contains(words[1]) ? Location.in(words[1]) : Location.NOWHERE;
     }
 
     /**
@@ -104,6 +123,23 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
                 .filter(file -> !refusedAsExpected.contains(file))
                 .toList();
         return new Verdict(observation, evaluation, unpaired);
+    }
+
+    /**
+     * The reason of a round trip the flow refused before it could observe the pack (#478, M2): the pack cannot be
+     * round-tripped, which is {@link #RED}, worded with the refusal's code and detail.
+     *
+     * @param code the refusal's wire token
+     * @param detail the refusal's detail
+     * @return the failing reason
+     */
+    public static Reason refused(String code, String detail) {
+        return new Reason(
+                RULE,
+                Evaluation.FAIL,
+                RED,
+                Location.NOWHERE,
+                "the round trip refused the pack: " + code + ": " + detail);
     }
 
     @Override

@@ -386,7 +386,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -395,6 +395,10 @@
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+        }, {
+          "pointer" : "assets/out",
+          "code" : "pack_entry_linked",
+          "detail" : "assets/out: is a symbolic link; a pack holds no links"
         } ]
       }
     },
@@ -409,11 +413,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/out/etc/hostname does not exist"
+        }, {
+          "pointer" : "assets/out",
+          "code" : "pack_entry_linked",
+          "detail" : "assets/out: is a symbolic link; a pack holds no links"
         } ]
       }
     },
@@ -470,7 +478,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -479,6 +487,10 @@
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
+        }, {
+          "pointer" : "assets/in",
+          "code" : "pack_entry_linked",
+          "detail" : "assets/in: is a symbolic link; a pack holds no links"
         } ]
       }
     },
@@ -493,11 +505,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/in/keep.txt does not exist"
+        }, {
+          "pointer" : "assets/in",
+          "code" : "pack_entry_linked",
+          "detail" : "assets/in: is a symbolic link; a pack holds no links"
         } ]
       }
     },
@@ -512,7 +528,7 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at pack.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at pack.yaml.",
         "violations" : [ {
           "pointer" : "pack.yaml",
           "code" : "pack_unreadable",
@@ -521,6 +537,10 @@
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+        }, {
+          "pointer" : "assets/loop",
+          "code" : "pack_entry_linked",
+          "detail" : "assets/loop: is a symbolic link; a pack holds no links"
         } ]
       }
     },
@@ -535,11 +555,15 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/a.asset.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at assets/a.asset.yaml.",
         "violations" : [ {
           "pointer" : "assets/a.asset.yaml",
           "code" : "asset",
           "detail" : "assets/a.asset.yaml: payload assets/loop/x.txt does not exist"
+        }, {
+          "pointer" : "assets/loop",
+          "code" : "pack_entry_linked",
+          "detail" : "assets/loop: is a symbolic link; a pack holds no links"
         } ]
       }
     },
@@ -1902,6 +1926,25 @@
       }
     },
     "composeRead" : "readable"
+  },
+  "planted/pack-entry-linked-file" : {
+    "registration" : {
+      "refused" : {
+        "code" : "validation_failed",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at directives/002-b.directive.yaml.",
+        "violations" : [ {
+          "pointer" : "directives/002-b.directive.yaml",
+          "code" : "pack_entry_linked",
+          "detail" : "directives/002-b.directive.yaml: is a symbolic link; a pack holds no links"
+        } ]
+      }
+    },
+    "composeRead" : {
+      "refused" : {
+        "code" : "pack_unreadable",
+        "detail" : "the file directives/002-b.directive.yaml of qa cannot be read: is a symbolic link; a pack holds no links"
+      }
+    }
   },
   "planted/pack-yaml-tilde-is-null" : {
     "registration" : {

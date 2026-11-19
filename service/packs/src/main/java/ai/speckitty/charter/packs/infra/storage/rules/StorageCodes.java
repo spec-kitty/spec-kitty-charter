@@ -10,7 +10,8 @@ import java.util.Set;
 
 /**
  * The codes only the storage edge emits (#554, R2, S3): the read faults of a pack tree, the format prechecks of its
- * descriptor and assets (S2), and the holding codes of the tree (not held, the reserved shard, manifest membership).
+ * descriptor and assets (S2), and the holding codes of the tree (not held, the reserved shard, manifest membership, a
+ * link in the tree).
  * Each is a kernel {@link ReasonCode} that owns its severity, and each token is built exactly once: a token a core rule
  * emits is a {@link PackCodes} constant, which the storage edge names where it reports the same fault. The wording of a
  * fault is {@link PackCodes#detail}, the one wording of every surface.
@@ -63,6 +64,12 @@ public final class StorageCodes {
     /** The manifest lists files the tree does not hold, or misses some (#110). */
     public static final ReasonCode MANIFEST_MEMBERSHIP = violation("manifest_membership");
 
+    /**
+     * A symbolic link below the pack root (D1, D6, #597): never read through, and refused on every surface. The pack root
+     * itself may be a link (#174).
+     */
+    public static final ReasonCode PACK_ENTRY_LINKED = violation("pack_entry_linked");
+
     /** A file of the tree that is not held, excluded or unmodelled (Q1): a warning, never a violation. */
     public static final ReasonCode FILE_NOT_HELD =
             new ReasonCode(Diagnostic.Code.FILE_NOT_HELD.token(), Severity.WARNING);
@@ -81,6 +88,7 @@ public final class StorageCodes {
             ASSET_MIME_INVALID,
             RESERVED_SHARD,
             MANIFEST_MEMBERSHIP,
+            PACK_ENTRY_LINKED,
             FILE_NOT_HELD);
 
     /** Every code this class builds. */

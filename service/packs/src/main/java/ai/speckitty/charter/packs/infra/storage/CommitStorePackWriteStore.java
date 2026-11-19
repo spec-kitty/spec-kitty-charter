@@ -203,13 +203,14 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     }
 
     private static List<Relationship> registeredRelationships(PackIdentifier pack, Path directory) {
-        Path shard = directory.resolve(RelationshipShard.SHARD_PATH);
-        if (!Files.isRegularFile(shard)) {
-            return List.of(); // a pack nothing has been registered into yet
-        }
         String text;
         try {
-            text = Files.readString(shard, StandardCharsets.UTF_8);
+            // Never through a link (D6): a shard that is one is no registered shard; the storage rules refuse the link.
+            Optional<byte[]> bytes = PackFileSet.unlinkedBytes(directory, RelationshipShard.SHARD_PATH);
+            if (bytes.isEmpty()) {
+                return List.of(); // a pack nothing has been registered into yet
+            }
+            text = new String(bytes.get(), StandardCharsets.UTF_8);
         } catch (IOException failure) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot read the relationship shard of pack " + pack.value(), failure);
@@ -259,7 +260,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             // self-contained set with no outside-link or cross-pack adversary, and this only ever repairs that one
             // pack's own directory. On the listing path, all() has already repaired or refused the pack before
             // resolve(pack) reaches this line, so for StorageRootLocations this is a no-op.
-            PackCommitStore.missingLiveDirectory(directory).ifPresent(PackCommitStore::restoreInterruptedSwap);
+            PackDirectories.missingLiveDirectory(directory).ifPresent(PackCommitStore::restoreInterruptedSwap);
             return work.get();
         } finally {
             lock.unlock();
