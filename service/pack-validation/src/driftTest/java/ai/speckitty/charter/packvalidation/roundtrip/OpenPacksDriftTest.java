@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The nightly open-packs drift watch (ADR-0070): every pack of a spec-kitty-open-packs checkout ({@code
+ * The open-packs drift test (ADR-0070): every pack of a spec-kitty-open-packs checkout ({@code
  * charter.openPacksDir}, usually {@code main}) goes through the production round trip ({@link PackRoundTrip}, in
  * {@code packs} main), as the gate does: it loads through the production store, is written to a fresh directory, and
  * {@link WholePackRoundTripRule} judges it with no expectation, so every modelled file must mean the same as its source
@@ -23,8 +23,9 @@ import org.junit.jupiter.api.io.TempDir;
  * kind the round trip does not model is red, naming its kind and path (#547). It also reports the files nothing models,
  * which the store does not hold ({@code notHeld()}, operator ruling Q1), and the load warnings ({@code warnings()}). It
  * has no expected-red baseline, so any of
- * these is red ({@link WholePackDrift}). Charter's nightly watch runs it as a signal; spec-kitty-open-packs runs it as a
- * required gate from its pinned charter checkout (ADR-0070 decision 4).
+ * these is red ({@link WholePackDrift}). spec-kitty-open-packs runs it as a required gate from its pinned charter checkout
+ * (ADR-0070 decision 4), and against charter releases and charter {@code main} from its charter track; no charter
+ * workflow runs it (#604).
  */
 class OpenPacksDriftTest {
 

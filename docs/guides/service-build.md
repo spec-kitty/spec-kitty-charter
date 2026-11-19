@@ -36,8 +36,8 @@ How to build the charter service and run every check CI runs.
   in `service/packs/src/testFixtures/resources/example-packs` ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)).
   A `spec-kitty-open-packs` checkout (by default beside this repository, `../spec-kitty-open-packs`, or anywhere with
   `-PopenPacksDir=<path>`, absolute or relative to the repository root) is needed only for two things:
-  `./gradlew syncPacks`, for this repository's own Spec Kitty governance, and the nightly
-  [open-packs drift watch](#the-open-packs-drift-watch) (`.github/workflows/open-packs-drift.yml`).
+  `./gradlew syncPacks`, for this repository's own Spec Kitty governance, and a local run of the
+  [open-packs drift test](#the-open-packs-drift-test).
 - **The synced packs**, once per worktree, for governance only: `./gradlew syncPacks`. `packs/internal` and `packs/qa`
   are not committed; they are copied from the open-packs checkout at the `openPacksRef` pin in `gradle.properties` and
   checked against `packs/open-packs.lock.yaml`. They are needed for this repository's own Spec Kitty governance
@@ -82,7 +82,7 @@ How to build the charter service and run every check CI runs.
 | `:deployable:test` (switch gate) | After the last scenario, the switch gate ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1, amended 2026-11-12) holds `contracts/charter/scenarios/switch-gate.yaml` to the run: it fails when an operation has no entry, when a `ready` operation has a declared status no scenario asserts on it, when a `held` one would pass, or when a success answer is exercised by no scenario (R-20). The scenarios of each answer are written to `service/deployable/build/reports/switch-gate/switch-gate.md` |
 | `:packs:test`, `:deployable:test` (example packs) | The corpus tests over the charter-owned example packs ([ADR-0070](/adr/0070-charter-tests-own-example-packs-not-open-packs-content/)): every artifact file reads back equal after a write, and the coverage tests (`ExamplePackCoverageTest`, `ExampleCoverageTest`) fail when the examples stop exercising a kind, field or edge the model has |
 | `:pack-validation:wholePackRoundTrip` | The whole-pack round-trip gate over the example packs (not part of `check`; CI requires it, see [below](#the-whole-pack-round-trip-gate)) |
-| `:pack-validation:driftTest` | Not required and not run by `check` (which only compiles and lints it): the nightly [open-packs drift watch](#the-open-packs-drift-watch) |
+| `:pack-validation:driftTest` | Not required and not run by `check` (which only compiles and lints it): the [open-packs drift test](#the-open-packs-drift-test), run by spec-kitty-open-packs |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
@@ -241,7 +241,7 @@ Bumping the pin is one commit:
 
 Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-kitty-open-packs and arrives with a pin bump.
 
-## The open-packs drift watch
+## The open-packs drift test
 
 ```bash
 ./gradlew :pack-validation:driftTest -PopenPacksDir=<path>   # any spec-kitty-open-packs checkout, usually main
@@ -252,8 +252,10 @@ Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-ki
 through the whole-pack round trip below, with no expected-red baseline, and also reports the files the store does not
 model and the load warnings. Every file of a pack that is not excluded needs a round-trip outcome: a file of a kind
 the round trip does not model fails it, naming the kind and the path (#547). spec-kitty-open-packs runs the same task
-as a required gate from its pinned charter checkout (ADR-0070 decision 4). The nightly `.github/workflows/open-packs-drift.yml` runs it against open-packs `main` and
-opens or comments on an `open-packs-drift` issue when it is red.
+as a required gate from its pinned charter checkout (ADR-0070 decision 4), and its `charter-track.yml` runs it
+against each new charter release daily and against charter `main` on demand. Charter runs it in no workflow: the
+nightly `open-packs-drift.yml` was removed (#604), and a nightly run against charter `main` follows in
+spec-kitty-open-packs#311.
 
 ## The whole-pack round-trip gate
 

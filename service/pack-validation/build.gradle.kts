@@ -103,9 +103,10 @@ tasks.register<Test>("wholePackRoundTrip") {
     systemProperty("charter.wholePackReportDir", reports.get().asFile.absolutePath)
 }
 
-// The nightly open-packs drift watch (ADR-0070, .github/workflows/open-packs-drift.yml): the driftTest source set runs
-// every pack of a spec-kitty-open-packs checkout through the production round trip and the gate's rule, with no
-// expectation (its helpers come from the test source set). `check` (so verifyAll) compiles and lints the source set but
+// The open-packs drift test (ADR-0070): spec-kitty-open-packs runs it as a gate at its charter pin, and its
+// charter-track.yml against charter releases and charter main; no charter workflow runs it (#604). The driftTest
+// source set runs every pack of a spec-kitty-open-packs checkout through the production round trip and the gate's
+// rule, with no expectation (its helpers come from the test source set). `check` (so verifyAll) compiles and lints the source set but
 // never runs it, and no required job runs the driftTest task; -PopenPacksDir points at the checkout (default: the sibling
 // ../spec-kitty-open-packs).
 val driftTestSourceSet = sourceSets.create("driftTest") {
@@ -124,7 +125,7 @@ val openPacksDir = providers.gradleProperty("openPacksDir")
     .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
 tasks.register<Test>("driftTest") {
     group = "verification"
-    description = "Round-trips every pack of a spec-kitty-open-packs checkout by meaning (nightly drift watch); not run by check."
+    description = "Round-trips every pack of a spec-kitty-open-packs checkout by meaning (open-packs CI); not run by check."
     testClassesDirs = driftTestSourceSet.output.classesDirs
     classpath = driftTestSourceSet.runtimeClasspath
     useJUnitPlatform()
