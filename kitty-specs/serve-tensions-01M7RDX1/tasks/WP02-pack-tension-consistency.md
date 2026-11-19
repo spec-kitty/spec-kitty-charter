@@ -88,7 +88,7 @@ section). Within one pack, across every root `*.graph.yaml` shard and `drg/fragm
 | Code | Fault | Reported at |
 | --- | --- | --- |
 | `tension_duplicated` | a second tension on the same unordered bare pair | the second edge (`/edges/<n>` of its file), naming the first's file and index |
-| `tension_orientation` | the edge's `source` is not an artifact the pack owns; or both sides are owned and `source` is not the smaller bare URN | the edge |
+| `tension_orientation` | the pack owns one side and the `source` is the other; or the pack owns both sides, or neither, and `source` is not the smaller bare URN | the edge |
 | `tension_self` | both sides have the same bare URN (for example `directive:A` and `other::directive:A`) | the edge |
 
 All three are `VIOLATION`. Across packs nothing is a fault: the merge collapses (WP04).
@@ -121,8 +121,10 @@ their wording functions, and to `CONTENT`. `PackCodesTest` covers them.
 A third `.must(...)` in `GraphRules`: `TENSION_CONSISTENCY`.
 1. Collect every tension edge of the pack in reading order (shards in file-name order, then the fragment; document
    order within a file), with its file and index.
-2. For each: bare source and target (strip the qualifier). Self → `tension_self`. Else if the source is not owned →
-   `tension_orientation`. Else if the target is owned and `bare(source) > bare(target)` → `tension_orientation`.
+2. For each: bare source and target (strip the qualifier). Self → `tension_self`. Else if exactly one side is owned
+   and it is not the source → `tension_orientation`. Else (both owned, or neither) if `bare(source) > bare(target)` →
+   `tension_orientation`. A tension between two artifacts the pack owns neither of is allowed (operator ruling of
+   2026-11-19, extending G1).
 3. Key on the unordered bare pair; a second edge on a seen key → `tension_duplicated`, naming the first.
 4. The wording names the pair in canonical order, and for orientation the expected source.
 
@@ -132,7 +134,10 @@ A third `.must(...)` in `GraphRules`: `TENSION_CONSISTENCY`.
   the positive control: a tension `directive:A tension directive:B` beside `directive:B requires directive:A`, which
   loads clean.
 - `shard-tension-duplicated` puts the two tensions in two different shards (the rule is pack-wide).
-- `shard-tension-source-not-owned`: the source is `other::directive:A`, qualified to another pack.
+- `shard-tension-source-not-owned`: the pack owns `directive:B`, and the source is `other::directive:A`, qualified to
+  another pack (the owned side must be the source).
+- Positive control `shard-tension-canonical` also holds a fully foreign tension, `base::directive:X tension
+  base::directive:Y`, smaller first, which loads clean; its reversed twin is refused.
 - Update `golden/validate.json` if validate mode enumerates the codes; add planted cases under
   `testFixtures/resources/planted/tension-*` if the planted suite is how validate mode is proven (follow the existing
   planted pattern and `core-verdicts.json` only if a core verdict exists; otherwise mark it charter-only as the

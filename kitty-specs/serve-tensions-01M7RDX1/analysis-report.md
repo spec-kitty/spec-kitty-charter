@@ -4,12 +4,12 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: serve-tensions-01M7RDX1
 mission_id: 01M7RDX1S8Y46WAKCP9M29PF9C
-generated_at: '2026-11-19T06:47:10.014802+00:00'
+generated_at: '2026-11-19T07:26:11.389783+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
     path: .worktrees/serve-tensions-01M7RDX1-coord/kitty-specs/serve-tensions-01M7RDX1/spec.md
-    sha256: c3729258875e1a3829627f887c7990ac222865a099087131e1971013f980217f
+    sha256: bae921aef2082a7b47678f74cf856d9fc4e05cb6a177b1e97e8d2c3f9ac4cd17
   plan.md:
     path: .worktrees/serve-tensions-01M7RDX1-coord/kitty-specs/serve-tensions-01M7RDX1/plan.md
     sha256: 8cc6a0e21ac726e5f5e98e147a7b3b038c4e8728603aa4c86eeb7f599b99b27d
@@ -21,9 +21,9 @@ input_artifacts:
     sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
 verdict: ready
 issue_counts:
+  high: 0
   medium: 3
   low: 2
-  high: 0
   critical: 0
   info: 0
 findings:

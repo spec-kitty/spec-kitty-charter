@@ -8,14 +8,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.EdgeIndexTest.Closure;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * A tension is a relation of the catalogue, but no walk follows it (ADR-0045 decisions 10 and 13): it never brings an
- * artifact into an action context or a governance read. The cascade's relations are an explicit set
- * ({@code CascadeRules.CASCADE_RELATIONS}) that does not name it. Each case has a twin where a {@code requires} on the
+ * artifact into an action context, a governance read or a reach. The activations module pins that the cascade's
+ * relation set does not name it ({@code TensionIsNotCascadedTest}). Each case has a twin where a {@code requires} on the
  * same pair does reach the other side, so the assertion cannot pass vacuously.
  */
 @DisplayName("No walk follows a tension (ADR-0045)")
@@ -74,6 +77,27 @@ class TensionIsNotWalkedTest {
         assertThat(context(requires)).contains(A, B);
     }
 
+    @Test
+    void theReachFromASideOverTheCascadesRelationsDoesNotListTheOtherSide() {
+        // The cascade's relations (CascadeRules.CASCADE_RELATIONS in the activations module): core's five and enhances.
+        Set<RelationType> cascade = EnumSet.of(
+                RelationType.REQUIRES,
+                RelationType.SUGGESTS,
+                RelationType.REFINES,
+                RelationType.SCOPE,
+                RelationType.INSTANTIATES,
+                RelationType.ENHANCES);
+        EdgeIndex tension = new Closure()
+                .pack("alpha", List.of(A, B), edge(A, RelationType.TENSION, B))
+                .merged();
+        EdgeIndex requires = new Closure()
+                .pack("alpha", List.of(A, B), edge(A, RelationType.REQUIRES, B))
+                .merged();
+
+        assertThat(reached(tension, cascade)).doesNotContain(urn(B));
+        assertThat(reached(requires, cascade)).contains(urn(B));
+    }
+
     private static List<String> governance(Closure closure) {
         return GovernanceWalk.over(closure.merged())
                 .walk(urn(PROFILE), 1, TensionIsNotWalkedTest::everything)
@@ -88,5 +112,11 @@ class TensionIsNotWalkedTest {
                 .walk("M", "a", 1, TensionIsNotWalkedTest::everything).entries().stream()
                         .map(entry -> entry.urn().toString())
                         .toList();
+    }
+
+    private static Set<Urn> reached(EdgeIndex index, Set<RelationType> relations) {
+        return Reachability.reach(index, new ReachRequest(Set.of(urn(A)), relations, urn -> false, Optional.empty()))
+                .reached()
+                .keySet();
     }
 }

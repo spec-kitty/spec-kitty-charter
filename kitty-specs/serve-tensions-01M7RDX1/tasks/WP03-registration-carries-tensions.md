@@ -118,11 +118,14 @@ decisions 1 and 5, ruling G1; spec FR-005, US3 AS5 and AS6; plan IC-03 and the R
 
 ### T013: The wire
 
-1. `type: tension` resolves through `fromToken` (WP01). Keep `from` in the pack, `to` optionally qualified.
+1. `type: tension` resolves through `fromToken` (WP01). Keep `from` in the pack, `to` optionally qualified, except for
+   a tension the pack owns neither side of: then `from` may be pack-qualified too (operator ruling of 2026-11-19).
+   The contract's `RelationshipRegistration.from` and `RelationshipRegistered` widen to a `PackQualifiedReference`
+   for that case, with an example.
 2. A tension whose two sides have the same bare URN is refused as a self-loop (today's code and pointer), even when
    `to` is qualified.
-3. Stored orientation (G1): when both sides are in the pack and `bare(from) > bare(to)`, store `to → from`. When `to`
-   is qualified to another pack, store as written (`from` is the owned side).
+3. Stored orientation (G1, extended): the owned side is the source; when both sides are in the pack, or neither, and
+   `bare(from) > bare(to)`, store `to → from`.
 4. The answer (`RelationshipRegistered.relationship`) echoes the request as written; its description says the stored
    orientation may differ for a tension and why. Add the two `.tension.yaml` examples.
 5. `RelationshipWireTest`: `tension` accepted; `in_tension_with` → `relationship_type_unknown`; qualified self-tension
@@ -139,8 +142,10 @@ decisions 1 and 5, ruling G1; spec FR-005, US3 AS5 and AS6; plan IC-03 and the R
    refuse with `validation_failed` carrying one violation `tension_duplicated` (WP02's code) at that document, and
    write nothing. Find where the registration runs the pack's full read (the strict closure check); if the rewritten
    pack is already re-judged by `PackRulesets.CONTENT`, this falls out of WP02's rule; prove it with a test either way.
-4. The governance gate and the answer key on the owned side: after T013, `from` is always owned, so confirm with a
-   test that a tension to a qualified foreign `to` is gated on the pack's own `from`.
+4. The governance gate judges a tension on **each side** (`policy.authorize` once per side), not on its source alone,
+   so a fully foreign tension is judged by the policies of the artifacts it names. Tests: a tension to a foreign `to`
+   whose level forbids relationship writes is refused; a fully foreign tension is gated on both sides; a structural
+   relationship keeps today's single check on `from`.
 
 ### T015: Guards and keys per class
 
@@ -178,9 +183,12 @@ decisions 1 and 5, ruling G1; spec FR-005, US3 AS5 and AS6; plan IC-03 and the R
 1. `ArtifactRemovalService`: removing an artifact drops every registered tension where it is either side (a tension
    is bidirectional); replace `:175`'s `contains` with an identity filter so a reverse structural edge of another
    source is no longer dropped by accident (test the old defect).
-2. `InboundReferences.referencesOf`: a tension does not count as a reference that blocks removing its target (a
-   tension is not a dependency). Test: removing `B` of `A tension B` succeeds and drops the tension; removing `B` of
-   `A requires B` is still refused (positive control).
+2. `InboundReferences.referencesOf`: within the pack, a tension does not block removing one of its sides (the
+   registered tension goes with it). A tension **in another pack** that names the artifact, as a source or a target,
+   is a reference that blocks the removal, as any cross-pack reference does, so a pack never keeps a tension to a
+   removed artifact (ruling of 2026-11-19). Count a qualified `fromReference` too. Tests: removing `B` of an in-pack
+   `A tension B` succeeds and drops it; removing `B` while another pack holds `base::A tension base::B` is refused;
+   removing `B` of `A requires B` is still refused (positive control).
 
 ### T018: Scenarios
 
