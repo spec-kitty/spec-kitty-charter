@@ -101,7 +101,8 @@ final class ManifestMembership {
     }
 
     private static Optional<byte[]> bytesAt(Path directory, String path) {
-        if (Companions.inPack(directory, path) instanceof Companions.Inside at && Files.isRegularFile(at.file())) {
+        if (Companions.inPack(directory, path) instanceof Companions.Inside at
+                && PackFileSet.unlinkedFile(directory, at.packRelative())) {
             return FilesystemPackStore.readBytes(at.file());
         }
         return Optional.empty();

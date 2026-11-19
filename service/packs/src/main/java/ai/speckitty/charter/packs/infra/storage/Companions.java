@@ -262,6 +262,10 @@ final class Companions {
         if (!FilesystemPackStore.realPathContained(packDir, at.file())) {
             return new Refused("leaves the pack");
         }
+        if (!PackFileSet.unlinkedFile(packDir, at.packRelative())) {
+            // A linked directory that stays in the pack: never read through (D6); the link itself is refused.
+            return new Refused("is reached through a link");
+        }
         Optional<byte[]> bytes = FilesystemPackStore.readBytes(at.file());
         Optional<String> text = bytes.flatMap(FilesystemPackStore::decodeUtf8);
         if (text.isEmpty()) {

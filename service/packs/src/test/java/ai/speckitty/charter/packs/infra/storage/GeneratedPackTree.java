@@ -52,7 +52,8 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (the kind's rule comes before the preset rule, and the first match wins;
  *     {@code PackFileKindTest} pins it)</td><td>loaded</td></tr>
  * <tr><td>{@code <stem>.config.<kind>.yaml}</td><td>loaded</td></tr>
- * <tr><td>a file symlink inside the pack to an external valid tactic</td><td>loaded</td></tr>
+ * <tr><td>a file symlink inside the pack to an external valid tactic</td><td>decoy: a link is never read through, and
+ *     the storage rules refuse it (D6, #597)</td></tr>
  * <tr><td>root {@code a.graph.yaml}, hidden root {@code .b.graph.yaml}, {@code drg/fragment.yaml}</td>
  *     <td>graph input</td></tr>
  * <tr><td>root {@code mission_type.graph.yaml}, part of the row of each valid mission type: the {@code requires} edge
@@ -146,7 +147,7 @@ final class GeneratedPackTree {
         LOADED_HIDDEN_DIR(Verdict.LOADED),
         LOADED_PRESETS(Verdict.LOADED),
         LOADED_CONFIG_STEM(Verdict.LOADED),
-        LOADED_FILE_SYMLINK(Verdict.LOADED),
+        DECOY_FILE_SYMLINK(Verdict.DECOY),
         GRAPH_ROOT(Verdict.GRAPH_INPUT),
         GRAPH_HIDDEN_ROOT(Verdict.GRAPH_INPUT),
         GRAPH_FRAGMENT(Verdict.GRAPH_INPUT),
@@ -472,7 +473,7 @@ final class GeneratedPackTree {
         return switch (shape) {
             case GRAPH_ROOT, GRAPH_HIDDEN_ROOT, GRAPH_FRAGMENT -> chance(1, 2);
             case LOADED_PLAIN -> chance(1, 4);
-            case LOADED_HIDDEN_STEM, LOADED_HIDDEN_DIR, LOADED_PRESETS, LOADED_CONFIG_STEM, LOADED_FILE_SYMLINK ->
+            case LOADED_HIDDEN_STEM, LOADED_HIDDEN_DIR, LOADED_PRESETS, LOADED_CONFIG_STEM, DECOY_FILE_SYMLINK ->
                 chance(1, 5);
             default -> chance(1, 10);
         };
@@ -487,7 +488,7 @@ final class GeneratedPackTree {
         switch (shape) {
             case LOADED_PLAIN, LOADED_HIDDEN_STEM, LOADED_HIDDEN_DIR, LOADED_PRESETS, LOADED_CONFIG_STEM ->
                 plantLoaded(pack, shape, randomKind(true));
-            case LOADED_FILE_SYMLINK -> plantSymlink(pack);
+            case DECOY_FILE_SYMLINK -> plantSymlink(pack);
             case PRESET -> plantPreset(pack);
             case PACK_DOCUMENT -> plantPackDocument(pack);
             case ASSET_WITH_PAYLOAD -> plantAssetBesideItsPayload(pack);
@@ -714,7 +715,9 @@ final class GeneratedPackTree {
         Path link = pack.directory().resolve(path);
         Files.createDirectories(link.getParent());
         Files.createSymbolicLink(link, target);
-        remember(pack, Shape.LOADED_FILE_SYMLINK, new Planted(path, Verdict.LOADED, Kind.TACTIC, id, link, target));
+        // A link is never read through (D6): neither the link nor its target is loaded or digested.
+        pack.externalDecoys.add(new Target(path + " -> " + target.getFileName(), target, false));
+        remember(pack, Shape.DECOY_FILE_SYMLINK, new Planted(path, Verdict.DECOY, null, null, link, null));
     }
 
     private void plantDirectory(Pack pack) throws IOException {

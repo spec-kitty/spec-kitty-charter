@@ -8,7 +8,6 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +67,7 @@ final class PolicyYaml {
      */
     static Named readNamed(Path directory, String named) {
         Path file = directory.resolve(named);
-        if (!Files.isRegularFile(file)) {
+        if (!PackFileSet.unlinkedFile(directory, named)) {
             throw new Unreadable("is missing");
         }
         String text = FilesystemPackStore.readText(file).orElseThrow(() -> new Unreadable("is not UTF-8 text"));

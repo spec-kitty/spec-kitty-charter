@@ -139,6 +139,41 @@ class StorageRulesetsTest {
         }
 
         @Test
+        @DisplayName("each link the census lists is one pack_entry_linked at it, in the one wording; no other entry is")
+        void eachLinkIsOneFault() {
+            TreeCensus linked = new TreeCensus(
+                    List.of(),
+                    List.of(),
+                    TreeCensus.Manifest.ABSENT,
+                    TreeCensus.ReservedShard.ABSENT,
+                    List.of(
+                            new TreeCensus.Entry(
+                                    "directives/a.directive.yaml",
+                                    TreeCensus.Standing.MAPPED,
+                                    "directive",
+                                    Optional.of("yaml")),
+                            new TreeCensus.Entry("directives/more", TreeCensus.Standing.LINK, "", Optional.empty()),
+                            new TreeCensus.Entry("pack.yaml", TreeCensus.Standing.LINK, "", Optional.empty())),
+                    List.of());
+
+            assertThat(LinkRules.RULES.apply(read(contents(), linked)))
+                    .extracting(Reason::code, Reason::location, Reason::detail)
+                    .containsExactly(
+                            tuple(
+                                    StorageCodes.PACK_ENTRY_LINKED,
+                                    Location.in("directives/more"),
+                                    "directives/more: is a symbolic link; a pack holds no links"),
+                            tuple(
+                                    StorageCodes.PACK_ENTRY_LINKED,
+                                    Location.in("pack.yaml"),
+                                    "pack.yaml: is a symbolic link; a pack holds no links"));
+            assertThat(LinkRules.RULES.apply(read(
+                            contents(),
+                            census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT))))
+                    .isEmpty();
+        }
+
+        @Test
         @DisplayName("something at the manifest's path that is not a regular file is one unreadable at the manifest")
         void aManifestThatIsNotARegularFileIsOneFault() {
             TreeCensus.Manifest directory = new TreeCensus.Manifest(true, false, Optional.empty(), Optional.empty());
@@ -284,18 +319,25 @@ class StorageRulesetsTest {
         }
 
         @Test
-        @DisplayName("holding() is the not-held, reserved-shard and manifest rules, in that order")
+        @DisplayName("holding() is the not-held, reserved-shard, manifest and link rules, in that order")
         void holdingIsTheStorageRules() {
             TreeRead read = read(
                     contents(),
-                    census(
+                    new TreeCensus(
+                            List.of(),
                             List.of(NotHeldFile.unmodelled("notes.txt")),
                             new TreeCensus.Manifest(true, false, Optional.empty(), Optional.empty()),
-                            TreeCensus.ReservedShard.UNSTAMPED));
+                            TreeCensus.ReservedShard.UNSTAMPED,
+                            List.of(new TreeCensus.Entry("loop", TreeCensus.Standing.LINK, "", Optional.empty())),
+                            List.of()));
 
             assertThat(StorageRulesets.holding().apply(read))
                     .extracting(Reason::code)
-                    .containsExactly(StorageCodes.FILE_NOT_HELD, StorageCodes.RESERVED_SHARD, StorageCodes.UNREADABLE);
+                    .containsExactly(
+                            StorageCodes.FILE_NOT_HELD,
+                            StorageCodes.RESERVED_SHARD,
+                            StorageCodes.UNREADABLE,
+                            StorageCodes.PACK_ENTRY_LINKED);
         }
 
         @Test

@@ -1,0 +1,20 @@
+{
+  "covers": [
+    "D1"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "pack_entry_linked",
+      "severity": "violation",
+      "file": "directives/002-b.directive.yaml",
+      "place": []
+    }
+  ],
+  "symlinks": [
+    {
+      "link": "directives/002-b.directive.yaml",
+      "target": "001-a.directive.yaml"
+    }
+  ]
+}

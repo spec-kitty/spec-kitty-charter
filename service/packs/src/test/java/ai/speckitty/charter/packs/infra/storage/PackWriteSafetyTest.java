@@ -79,12 +79,16 @@ class PackWriteSafetyTest {
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
     }
 
-    /** A symlink that resolves outside the pack is refused before any write; the in-root control succeeds. */
+    /**
+     * A symlink that resolves outside the pack is refused before any write; the in-root control succeeds. The link
+     * stands where the new element's file would go: the read never reads through it (D6), so the write does not find
+     * the element there, and its own containment check refuses the target.
+     */
     @Test
     void aTargetThatEscapesThePackIsRefusedWhileAnInRootTargetIsWritten(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-a", host);
         Path outside = Files.writeString(host.resolve("outside.tactic.yaml"), "id: escape-tactic\n");
-        Files.createSymbolicLink(pack.resolve("escape.tactic.yaml"), outside);
+        Files.createSymbolicLink(pack.resolve(TacticBinding.INSTANCE.fileName("escape-tactic")), outside);
         List<String> namesBefore = fileNames(pack);
         FilesystemPackStore store = store(host);
 
