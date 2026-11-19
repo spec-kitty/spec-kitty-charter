@@ -205,7 +205,7 @@ A pack named in the configuration, built-in, an org pack under `charter_packs.or
 
 ## Configured pack id
 
-The identifier a pack is configured under: `built-in`, an org pack's configured name, or `project` (the `charter_pack_id`). It is `OfferingPack.packId` on the wire. Not the descriptor's pack id, which is a ULID and is `OfferingPack.descriptorPackId`.
+The identifier a pack is configured under: `built-in`, an org pack's configured name, or `project` (the `charter_pack_id`). It is `OfferingPack.packId` on the wire and the `packId` path parameter. It is a kebab slug of at most 63 characters (ADR-0075 decision 2): the service holds it as `PackIdentifier`, and refuses a stored pack directory whose name is not one with `pack_id_invalid` (#583). Not the descriptor's pack id, which is a ULID and is `OfferingPack.descriptorPackId`.
 
 **Meta:**
 

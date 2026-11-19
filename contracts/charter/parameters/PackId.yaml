@@ -1,7 +1,9 @@
 name: packId
 in: path
 required: true
-description: The identity of the Charter Pack, as the pack declares it.
+description: >-
+  The id the Charter Pack is registered under: the name the service's pack registry gives it, a kebab slug of at most
+  63 characters (ADR-0075 decision 2). It is not the pack.yaml's pack_id.
 schema:
   type: string
   minLength: 1
