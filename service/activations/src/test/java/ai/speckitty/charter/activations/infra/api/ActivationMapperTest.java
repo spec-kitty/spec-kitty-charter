@@ -127,6 +127,7 @@ class ActivationMapperTest {
                         "packs",
                         "graph",
                         "skipped",
+                        "tensions",
                         "effective-context",
                         "assets",
                         "asset",

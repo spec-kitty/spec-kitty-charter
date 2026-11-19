@@ -144,7 +144,13 @@ public record EffectiveTag(String token) {
          * one profile's model (ADR-0080 decisions 7 to 13). The closure fingerprint digests the catalog, the profile and
          * the step that offers a tier, so the query names the task type, the profile, the step and the asked tier.
          */
-        RECOMMENDATION
+        RECOMMENDATION,
+        /**
+         * {@code getActivationTensions}: the tensions in force and the findings of those nothing reconciles (ADR-0045
+         * decision 11). Its inputs are the skipped report's, the revision and the closure fingerprint, and its own read
+         * name, so its tag never matches the skipped report's.
+         */
+        TENSIONS
     }
 
     /**
@@ -440,6 +446,17 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag skipped(Revision revision, ClosureSnapshot closure) {
         return of(Read.SKIPPED, revision, closure, NO_QUERY);
+    }
+
+    /**
+     * The tag of the tensions read (ADR-0045 decision 11).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @return the tag, never the skipped report's for the same inputs
+     */
+    public static EffectiveTag tensions(Revision revision, ClosureSnapshot closure) {
+        return of(Read.TENSIONS, revision, closure, NO_QUERY);
     }
 
     /**

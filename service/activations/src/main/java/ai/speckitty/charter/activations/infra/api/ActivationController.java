@@ -7,6 +7,7 @@ import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.application.EffectiveArtifactAnswer;
 import ai.speckitty.charter.activations.application.EffectiveReadService;
+import ai.speckitty.charter.activations.application.TensionReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
@@ -18,6 +19,7 @@ import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ActivationPackList;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
+import ai.speckitty.charter.api.model.ActivationTensions;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactRead;
@@ -55,7 +57,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The faults
  * {@link ActivationBodyAdvice} found in a write's body ({@link DeferredBody}) go to the use case, which refuses them
  * once the preconditions hold. {@code getActivation} and the effective reads ({@code listEffectiveArtifacts},
- * {@code getActivationSkippedReport}, {@code getEffectiveGraph}, {@code getEffectiveActionContext} and
+ * {@code getActivationSkippedReport}, {@code getActivationTensions} (through {@link TensionReadService}),
+ * {@code getEffectiveGraph}, {@code getEffectiveActionContext} and
  * {@code getEffectiveStepPrompt}) answer through {@link EffectiveReadService}. Every operation is built, so none carries a {@code ReservedOperation} mark
  * (ADR-0020 D8); an operation reserved later is marked on its method alone, and the composition root's
  * {@code ReservedOperationInterceptor} answers a marked one {@code 501} before the request is bound. A marked method reads
@@ -84,6 +87,8 @@ public class ActivationController implements ActivationApi {
     private final EffectiveReadService effective;
     private final EffectiveReadMapper reads;
     private final EffectiveArtifactMapper artifacts;
+    private final TensionReadService tensions;
+    private final TensionReadMapper tensionReads;
 
     /**
      * A controller over the activation register and its per-artifact writes.
@@ -97,6 +102,8 @@ public class ActivationController implements ActivationApi {
      * @param effective the effective reads and the document read
      * @param reads the effective reads' wire mapper
      * @param artifacts the wire mapper of the read of one artifact
+     * @param tensions the tensions read
+     * @param tensionReads the tensions read's wire mapper
      */
     @Autowired
     public ActivationController(
@@ -108,7 +115,9 @@ public class ActivationController implements ActivationApi {
             ActivationChangeMapper changes,
             EffectiveReadService effective,
             EffectiveReadMapper reads,
-            EffectiveArtifactMapper artifacts) {
+            EffectiveArtifactMapper artifacts,
+            TensionReadService tensions,
+            TensionReadMapper tensionReads) {
         this.activations = Objects.requireNonNull(activations, "activations");
         this.selections = Objects.requireNonNull(selections, "selections");
         this.exclusions = Objects.requireNonNull(exclusions, "exclusions");
@@ -118,6 +127,8 @@ public class ActivationController implements ActivationApi {
         this.effective = Objects.requireNonNull(effective, "effective");
         this.reads = Objects.requireNonNull(reads, "reads");
         this.artifacts = Objects.requireNonNull(artifacts, "artifacts");
+        this.tensions = Objects.requireNonNull(tensions, "tensions");
+        this.tensionReads = Objects.requireNonNull(tensionReads, "tensionReads");
     }
 
     @Override
@@ -173,6 +184,14 @@ public class ActivationController implements ActivationApi {
                 effective.skipped(new ActivationId(activationId), ifNoneMatch),
                 EffectiveReadService.Report::sourceFingerprint,
                 reads::toSkipped);
+    }
+
+    @Override
+    public ResponseEntity<ActivationTensions> getActivationTensions(String activationId, @Nullable String ifNoneMatch) {
+        return verified(
+                tensions.tensions(new ActivationId(activationId), ifNoneMatch),
+                TensionReadService.Tensions::sourceFingerprint,
+                tensionReads::toTensions);
     }
 
     @Override

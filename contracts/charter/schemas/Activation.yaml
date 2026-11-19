@@ -15,7 +15,8 @@ description: >-
   DM-01M78RKM6Q23PA9QAC80QJKQFF). Its reads: self (the activation); artifacts, the effective artifact list as an RFC
   6570 template (/api/v1/activations/{activationId}/artifacts{?kind,state}, templated true; listEffectiveArtifacts);
   packs, its closure (listActivationPacks); graph, its effective graph (getEffectiveGraph); skipped, its skipped report
-  (getActivationSkippedReport); and effective-context, the action context as a template
+  (getActivationSkippedReport); tensions, its tensions in force and the findings of the unreconciled ones
+  (getActivationTensions); and effective-context, the action context as a template
   (/api/v1/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}, templated true;
   getEffectiveActionContext); assets, the assets its closure holds (listEffectiveAssets); asset, one of them as a
   template (/api/v1/activations/{activationId}/artifacts/asset/{artifactId}, templated true; getEffectiveAsset), which a

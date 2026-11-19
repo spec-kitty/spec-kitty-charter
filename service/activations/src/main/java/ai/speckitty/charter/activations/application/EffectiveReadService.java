@@ -1410,8 +1410,11 @@ public class EffectiveReadService {
                         read + ": the merged closure holds " + ref.urn() + ", and the session read no winner of it."));
     }
 
-    /** One verified read of the closure the document names, refused when a pack it names is no longer configured. */
-    private PacksSession open(StoredActivation stored) {
+    /**
+     * One verified read of the closure the document names, refused when a pack it names is no longer configured; the
+     * tensions read opens its session through it too ({@link TensionReadService}).
+     */
+    PacksSession open(StoredActivation stored) {
         PacksSession session = packs.session(stored.document()
                 .packs()
                 .map(list -> list.stream().map(PackRef::packId).toList()));
@@ -1425,7 +1428,8 @@ public class EffectiveReadService {
         return session;
     }
 
-    private StoredActivation found(ActivationId id) {
+    /** The stored activation, or {@code activation_not_found}; the tensions read finds it through it too. */
+    StoredActivation found(ActivationId id) {
         return repository
                 .find(id)
                 .orElseThrow(() -> new CharterRefusal(

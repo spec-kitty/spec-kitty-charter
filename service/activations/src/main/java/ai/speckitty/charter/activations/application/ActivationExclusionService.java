@@ -157,15 +157,35 @@ public class ActivationExclusionService {
      * unsatisfied ({@link ActivationWrites#commit} judges only the entries a write adds, and this one is not added).
      */
     private static void refuseFloor(ActivationDocument judged, ArtifactRef target, PacksSession session) {
-        DocumentRules.checkWrite(
-                        judged.withoutDeny(target.kind(), target.id()),
-                        judged.withDeny(target.kind(), target.id()),
-                        session.snapshot(),
-                        session::inForce)
+        floorRefusal(judged, target, session)
                 .filter(refusal -> refusal.violations().isEmpty())
                 .ifPresent(refusal -> {
                     throw refusal;
                 });
+    }
+
+    /**
+     * Whether this write, with an empty body (no cascade), would accept the target: the floor check it runs refuses
+     * nothing (ADR-0045 ruling G3: the tensions read offers a side's exclusion only then). With no cascade the document
+     * after the walk is the document with the target denied, so the second check of {@link #deactivate} judges what the
+     * first does.
+     *
+     * @param judged the activation document as stored, its stale ids dropped
+     * @param target the artifact to deny, as the closure declares it
+     * @param session the session over the document's closure
+     * @return true when neither a lock nor an unsatisfied requirement keeps the target
+     */
+    static boolean excludable(ActivationDocument judged, ArtifactRef target, PacksSession session) {
+        return floorRefusal(judged, target, session).isEmpty();
+    }
+
+    private static Optional<CharterRefusal> floorRefusal(
+            ActivationDocument judged, ArtifactRef target, PacksSession session) {
+        return DocumentRules.checkWrite(
+                judged.withoutDeny(target.kind(), target.id()),
+                judged.withDeny(target.kind(), target.id()),
+                session.snapshot(),
+                session::inForce);
     }
 
     /** The artifacts the governing packs require or lock. */

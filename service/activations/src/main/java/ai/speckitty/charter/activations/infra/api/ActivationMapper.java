@@ -114,7 +114,8 @@ public class ActivationMapper {
 
     /**
      * The links of an activation answer (#409, ruling {@code DM-01M78RKM6Q23PA9QAC80QJKQFF}): its reads ({@code self},
-     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code effective-context}, the held assets,
+     * {@code artifacts}, {@code packs}, {@code graph}, {@code skipped}, {@code tensions}, {@code effective-context}, the
+     * held assets,
      * skills and glossary contexts: {@code assets}, the templated {@code asset}, {@code skills} and {@code glossaries},
      * and the vocabulary: {@code vocabulary-terms}, {@code vocabulary-contextive} and {@code vocabulary-taboos}), the
      * {@code offering} it chooses from, and its writes ({@code edit}, {@code delete}, {@code select}, {@code exclude},
@@ -154,6 +155,7 @@ public class ActivationMapper {
         links.put("packs", link(under(ActivationApi.PATH_LIST_ACTIVATION_PACKS, activationId)));
         links.put("graph", link(under(ActivationApi.PATH_GET_EFFECTIVE_GRAPH, activationId)));
         links.put("skipped", link(under(ActivationApi.PATH_GET_ACTIVATION_SKIPPED_REPORT, activationId)));
+        links.put("tensions", link(tensions(activationId)));
         links.put(
                 "effective-context",
                 templated(under(ActivationApi.PATH_GET_EFFECTIVE_ACTION_CONTEXT, activationId) + "{?depth}"));
@@ -225,6 +227,29 @@ public class ActivationMapper {
      */
     public String self(String activationId) {
         return under(ActivationApi.PATH_GET_ACTIVATION, activationId);
+    }
+
+    /**
+     * The path of the tensions read of an activation ({@code getActivationTensions}, ADR-0045 decision 11).
+     *
+     * @param activationId the activation's id
+     * @return the path, with the base path
+     */
+    public String tensions(String activationId) {
+        return under(ActivationApi.PATH_GET_ACTIVATION_TENSIONS, activationId);
+    }
+
+    /**
+     * The path of the exclusion write of one artifact of an activation ({@code deactivateActivationArtifact}), from the
+     * contract's path template, every variable filled in.
+     *
+     * @param activationId the activation's id
+     * @param kindToken the artifact's kind token
+     * @param artifactId the artifact's id
+     * @return the path, with the base path
+     */
+    public String exclusion(String activationId, String kindToken, String artifactId) {
+        return expand(ActivationApi.PATH_DEACTIVATE_ACTIVATION_ARTIFACT, activationId, kindToken, artifactId);
     }
 
     /**

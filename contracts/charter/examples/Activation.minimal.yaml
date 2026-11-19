@@ -38,6 +38,8 @@ value:
       href: /api/v1/activations/a-1/graph
     skipped:
       href: /api/v1/activations/a-1/skipped
+    tensions:
+      href: /api/v1/activations/a-1/tensions
     effective-context:
       href: /api/v1/activations/a-1/mission-types/{missionType}/actions/{action}/context{?depth}
       templated: true

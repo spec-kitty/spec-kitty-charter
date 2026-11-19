@@ -85,6 +85,7 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveArtifact              | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
       | listEffectiveArtifactReferences   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport        | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
+      | getActivationTensions             | GET    | /activations/01ARWG13C000000000000000AC/tensions                                              |
       | listActivationVocabularyTerms     | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/terms                                      |
       | getActivationVocabularyContextive | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/contextive                                 |
       | listActivationVocabularyTaboos    | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/taboos                                     |
@@ -172,6 +173,7 @@ Feature: The worktree guard answers in front of every operation
       | getEffectiveArtifact              | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse                          |
       | listEffectiveArtifactReferences   | GET    | /activations/01ARWG13C000000000000000AC/artifacts/directive/rehearse/references               |
       | getActivationSkippedReport        | GET    | /activations/01ARWG13C000000000000000AC/skipped                                               |
+      | getActivationTensions             | GET    | /activations/01ARWG13C000000000000000AC/tensions                                              |
       | listActivationVocabularyTerms     | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/terms                                      |
       | getActivationVocabularyContextive | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/contextive                                 |
       | listActivationVocabularyTaboos    | GET    | /activations/01ARWG13C000000000000000AC/vocabulary/taboos                                     |
