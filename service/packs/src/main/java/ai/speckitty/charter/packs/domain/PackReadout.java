@@ -84,5 +84,18 @@ public record PackReadout(
             Objects.requireNonNull(code, "code");
             Objects.requireNonNull(detail, "detail");
         }
+
+        /**
+         * The facts of a read with no assembly input ({@code PackContents.Assembly.None}, facts written by hand): the
+         * pack cannot be composed, {@code pack_unreadable}. The one wording of that answer, for the reader and for a
+         * test's hand-written readout.
+         *
+         * @param pack the pack's configured name
+         * @return the facts
+         */
+        public static Unreadable noAssembly(String pack) {
+            return new Unreadable(
+                    RefusalCode.PACK_UNREADABLE, "the pack " + pack + " cannot be read: it has no assembly");
+        }
     }
 }

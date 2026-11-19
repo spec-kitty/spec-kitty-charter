@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -85,8 +88,8 @@ class ReadoutFactsTest {
     }
 
     @Test
-    @DisplayName("a file the load refuses: Unreadable with the load's code, naming the file")
-    void aRefusedFileIsUnreadable(@TempDir Path host) throws IOException {
+    @DisplayName("a file the composing read cannot read: Unreadable(pack_unreadable), naming the file")
+    void anUnreadableFileIsUnreadable(@TempDir Path host) throws IOException {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
         Files.writeString(pack.resolve("tactics/broken.tactic.yaml"), "id: [\n", StandardCharsets.UTF_8);
 
@@ -97,6 +100,50 @@ class ReadoutFactsTest {
             assertThat(unreadable.detail())
                     .startsWith("the file tactics/broken.tactic.yaml of built-in cannot be read");
         });
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = RefusalCode.class,
+            names = {"VALIDATION_FAILED", "DRG_SCHEMA_ERROR"})
+    @DisplayName("a load refused with another code: Unreadable carries that code and the refusal's detail (S10)")
+    void aLoadRefusedWithAnotherCodeKeepsItsCode(RefusalCode code) {
+        StoreRead refused = new StoreRead(
+                new Assembly.Refused(List.of(), code, "the aggregate of built-in breaks an invariant", false),
+                new PackLayout(Map.of()),
+                List.of(),
+                Optional.empty(),
+                Optional.empty(),
+                false);
+
+        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts(new PackIdentifier("built-in"), refused);
+
+        assertThat(facts).isEqualTo(new PackReadout.Unreadable(code, "the aggregate of built-in breaks an invariant"));
+    }
+
+    @Test
+    @DisplayName("an aggregate breach (StoreRead.breached): Unreadable(validation_failed), not pack_unreadable")
+    void anAggregateBreachIsValidationFailed() {
+        StoreRead breached = StoreRead.breached(List.of(), "two artifacts share the id x", Optional.empty());
+
+        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts(new PackIdentifier("built-in"), breached);
+
+        assertThat(facts)
+                .isEqualTo(new PackReadout.Unreadable(RefusalCode.VALIDATION_FAILED, "two artifacts share the id x"));
+    }
+
+    @Test
+    @DisplayName("a read with no assembly input: Unreadable(pack_unreadable) in the one wording, not an exception")
+    void aReadWithNoAssemblyIsUnreadable() {
+        StoreRead none = new StoreRead(
+                new Assembly.None(), new PackLayout(Map.of()), List.of(), Optional.empty(), Optional.empty(), false);
+
+        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts(new PackIdentifier("built-in"), none);
+
+        assertThat(facts)
+                .isEqualTo(new PackReadout.Unreadable(
+                        RefusalCode.PACK_UNREADABLE, "the pack built-in cannot be read: it has no assembly"))
+                .isEqualTo(PackReadout.Unreadable.noAssembly("built-in"));
     }
 
     @Test

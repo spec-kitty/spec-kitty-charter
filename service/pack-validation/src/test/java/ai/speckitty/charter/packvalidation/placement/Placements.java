@@ -2,7 +2,6 @@ package ai.speckitty.charter.packvalidation.placement;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -53,8 +52,7 @@ final class Placements {
                 List.of(),
                 List.of());
         // Hand-written facts carry no assembly input: the one reader answers such a read pack_unreadable.
-        PackReadout.Unreadable facts = new PackReadout.Unreadable(
-                RefusalCode.PACK_UNREADABLE, "the pack qa cannot be read: it has no assembly");
+        PackReadout.Unreadable facts = PackReadout.Unreadable.noAssembly("qa");
         return new Placement(
                 new PackReadout(contents, List.of(), List.of(), new Rationale(List.of()), facts), configured);
     }

@@ -58,8 +58,12 @@ final class CompositionFactsBuilder {
     /**
      * The pack under resolution of a pack directory, read without the service (#554, FR-015, T027): what {@code CLOSURE}
      * judges of one pack of a set (its descriptor, the artifacts its {@code overrides} edges change, the artifacts it
-     * holds and the terms it holds), read and judged as the composing read reads a stored pack, so pack-check (#478)
-     * judges the facts the service judges.
+     * holds and the terms it holds), read and judged as the composing read reads a stored pack, so a pack read
+     * without the service is judged on the facts the service judges.
+     *
+     * <p>It makes a read of its own, so it is for tests and for the composing read's parity checks. pack-check (#478)
+     * takes a pack's facts from the readout of its one read ({@code PackReadout.facts}, {@link #readoutFacts}), never
+     * from here: both build through {@link #built}, so the facts are the same.
      *
      * @param configured how the set configures the pack: its id and level
      * @param directory the pack's directory
@@ -96,8 +100,7 @@ final class CompositionFactsBuilder {
      */
     static PackReadout.Facts readoutFacts(PackIdentifier pack, StoreRead read) {
         if (read.assembly() instanceof Assembly.None) {
-            return new PackReadout.Unreadable(
-                    RefusalCode.PACK_UNREADABLE, "the pack " + pack.value() + " cannot be read: it has no assembly");
+            return PackReadout.Unreadable.noAssembly(pack.value());
         }
         try {
             return built(pack, read);
