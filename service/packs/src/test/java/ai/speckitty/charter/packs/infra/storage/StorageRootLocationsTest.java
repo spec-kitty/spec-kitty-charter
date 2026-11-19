@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ch.qos.logback.classic.Level;
@@ -142,17 +143,16 @@ class StorageRootLocationsTest {
     }
 
     @Test
-    void theLocatorFindsAPackByItsRegisteredIdAndNotByItsDescriptorUlid() throws IOException {
+    void theLocatorFindsAPackByItsRegisteredIdAndItsDescriptorUlidIsNoPackIdentifier() throws IOException {
         declaredPack("good-pack");
         StorageRootLocations locations = new StorageRootLocations(packs);
 
         assertThat(PackLocator.locate(locations, new PackIdentifier("good-pack")))
                 .isEqualTo(new PackLocation("good-pack", PackLevel.ORG, packs.resolve("good-pack")));
         assertThatThrownBy(() -> PackLocator.locate(locations, new PackIdentifier(ULID)))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-                    assertThat(refusal.getMessage()).isEqualTo("Pack " + ULID + " was not found.");
-                });
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
     }
 
     @Test

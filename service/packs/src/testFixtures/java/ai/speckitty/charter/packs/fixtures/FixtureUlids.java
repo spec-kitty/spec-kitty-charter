@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.fixtures;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import java.util.Locale;
 
@@ -88,6 +89,19 @@ public final class FixtureUlids {
             text.append('0');
         }
         return text.toString();
+    }
+
+    /**
+     * The registered id a fixture configures a pack under when the test knows the pack by its descriptor ULID: the
+     * ULID in lower case. It is a pack id, distinct from the ULID, and it sorts as the ULID does, so an order by
+     * registered id is the order the test wrote by descriptor id. A text that is already a pack id is its own
+     * registered id.
+     *
+     * @param descriptorPackId the descriptor's {@code pack_id}, or a pack id
+     * @return the registered id
+     */
+    public static PackIdentifier registeredIdOf(String descriptorPackId) {
+        return new PackIdentifier(descriptorPackId.toLowerCase(Locale.ROOT));
     }
 
     private static char crockford(char c) {

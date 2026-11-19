@@ -73,29 +73,30 @@ class OfferingReadServiceTest {
 
     @Test
     void theOrderIsByConfiguredLevelThenByIdInCodePointOrder() {
-        // Configured out of order: project first, and the lower-case id before the upper-case one at every level.
+        // Configured out of order: project first, and the later id before the earlier one at every level.
         List<ConfiguredPack> packs = List.of(
+                configured("kilo", PackLevel.PROJECT),
                 configured("charlie", PackLevel.PROJECT),
-                configured("Kilo", PackLevel.PROJECT),
+                configured("omega", PackLevel.ORG),
                 configured("bravo", PackLevel.ORG),
-                configured("Omega", PackLevel.ORG),
-                configured("alpha", PackLevel.BUILT_IN),
-                configured("Zeta", PackLevel.BUILT_IN));
+                configured("zeta", PackLevel.BUILT_IN),
+                configured("alpha", PackLevel.BUILT_IN));
 
         assertThat(service(packs).offering().value())
                 .extracting(entry -> entry.id().value() + "@" + entry.level().token())
                 .containsExactly(
-                        "Zeta@built-in", "alpha@built-in", "Omega@org", "bravo@org", "Kilo@project", "charlie@project");
+                        "alpha@built-in", "zeta@built-in", "bravo@org", "omega@org", "charlie@project", "kilo@project");
     }
 
     @Test
-    void theIdOrderComparesCodePointsNotUtf16Units() {
-        // U+1F600 is a surrogate pair, which String.compareTo puts before U+FB01; code-point order puts it after.
-        List<ConfiguredPack> packs = List.of(configured("😀", PackLevel.ORG), configured("ﬁ", PackLevel.ORG));
+    void theIdOrderComparesCodePointsSoAHyphenSortsBeforeADigitAndADigitBeforeALetter() {
+        // U+002D before U+0030 before U+0061: a collation that ignores the hyphen would put a-b after a0.
+        List<ConfiguredPack> packs = List.of(
+                configured("ab", PackLevel.ORG), configured("a0", PackLevel.ORG), configured("a-b", PackLevel.ORG));
 
         assertThat(service(packs).offering().value())
                 .extracting(entry -> entry.id().value())
-                .containsExactly("ﬁ", "😀");
+                .containsExactly("a-b", "a0", "ab");
     }
 
     @Test

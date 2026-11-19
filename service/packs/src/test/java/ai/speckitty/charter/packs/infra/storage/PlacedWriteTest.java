@@ -173,11 +173,10 @@ class PlacedWriteTest {
     void theRepositoryOverloadRefusesAKindPlacedById() throws IOException {
         DomainRepositoryService service =
                 new DomainRepositoryService(() -> List.of(new PackLocation("pack-a", PackLevel.ORG, pack)), strategy);
-        StepEnhancement entity = StepEnhancementBinding.INSTANCE.toEntity(
-                new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A"), enhancement("spdd-plan", "Fill the slot."));
+        StepEnhancement entity =
+                StepEnhancementBinding.INSTANCE.toEntity(PACK, enhancement("spdd-plan", "Fill the slot."));
 
-        Paradigm paradigm = ParadigmBinding.INSTANCE.toEntity(
-                new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A"), new ParadigmDso("x", "1.0", "X", "A paradigm."));
+        Paradigm paradigm = ParadigmBinding.INSTANCE.toEntity(PACK, new ParadigmDso("x", "1.0", "X", "A paradigm."));
 
         service.saveArtifact(PACK, entity, PLACE);
 

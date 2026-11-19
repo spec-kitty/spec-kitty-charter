@@ -290,7 +290,7 @@ class KindBindingsTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("step-enhancement");
         StepEnhancement enhancement =
-                new StepEnhancement("x", new PackIdentifier("01M6ZRYK0000000000000000E1"), "1.0", java.util.List.of());
+                new StepEnhancement("x", new PackIdentifier("enhancing-pack"), "1.0", java.util.List.of());
         assertThatThrownBy(() -> PackLayout.canonical().pathOf(enhancement))
                 .isInstanceOf(IllegalArgumentException.class);
     }

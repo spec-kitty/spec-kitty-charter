@@ -177,12 +177,12 @@ class EffectiveProfileDtosTest {
         EffectiveAgentProfileRead wire = new EffectiveProfileDtos("/charter/")
                 .read(
                         new EffectiveProfileRead(
-                                ProfileFixtures.leanProfile("a b", "P Q"),
+                                ProfileFixtures.leanProfile("a-b", "P Q"),
                                 "act 1",
                                 "r",
                                 "g",
                                 "s",
-                                active("agent_profile:P Q", "a b"),
+                                active("agent_profile:P Q", "a-b"),
                                 List.of(),
                                 List.of(),
                                 List.of(),
@@ -192,7 +192,7 @@ class EffectiveProfileDtosTest {
         assertThat(wire.getLinks().get("self").getHref())
                 .isEqualTo("/charter/activations/act%201/artifacts/agent_profile/P%20Q");
         assertThat(wire.getLinks().get("artifact").getHref())
-                .isEqualTo("/charter/packs/a%20b/artifacts/agent_profile/P%20Q");
+                .isEqualTo("/charter/packs/a-b/artifacts/agent_profile/P%20Q");
         assertThat(wire.getLinks().get("up").getHref()).isEqualTo("/charter/activations/act%201");
     }
 

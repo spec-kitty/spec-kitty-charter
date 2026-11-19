@@ -94,7 +94,7 @@ class OfferingControllerTest {
     void theOfferingAnswersEveryPackInOrderWithItsArtifactsLinkAndTheFingerprint() throws Exception {
         List<ConfiguredPack> packs = List.of(
                 new ConfiguredPack(new PackIdentifier("qa"), PackLevel.ORG),
-                new ConfiguredPack(new PackIdentifier("my pack"), PackLevel.BUILT_IN));
+                new ConfiguredPack(new PackIdentifier("my-pack"), PackLevel.BUILT_IN));
 
         mvc(packs, named("2.0.0"))
                 .perform(get("/api/v1/offering"))
@@ -103,11 +103,11 @@ class OfferingControllerTest {
                 .andExpect(header().stringValues(FINGERPRINT, DIGEST))
                 .andExpect(header().doesNotExist("Link"))
                 .andExpect(jsonPath("$.packs.length()").value(2))
-                .andExpect(jsonPath("$.packs[0].packId").value("my pack"))
+                .andExpect(jsonPath("$.packs[0].packId").value("my-pack"))
                 .andExpect(jsonPath("$.packs[0].level").value("built-in"))
-                .andExpect(jsonPath("$.packs[0].name").value("my pack pack"))
+                .andExpect(jsonPath("$.packs[0].name").value("my-pack pack"))
                 .andExpect(jsonPath("$.packs[0].version").value("2.0.0"))
-                .andExpect(jsonPath("$.packs[0]._links.artifacts.href").value("/api/v1/packs/my%20pack/artifacts"))
+                .andExpect(jsonPath("$.packs[0]._links.artifacts.href").value("/api/v1/packs/my-pack/artifacts"))
                 .andExpect(jsonPath("$.packs[0]._links.self").doesNotExist())
                 .andExpect(jsonPath("$.packs[1].packId").value("qa"))
                 .andExpect(jsonPath("$.packs[1].level").value("org"))

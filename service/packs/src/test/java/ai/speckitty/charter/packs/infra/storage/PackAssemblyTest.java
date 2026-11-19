@@ -35,7 +35,7 @@ class PackAssemblyTest {
         FilesystemPackStore.PackRead read = read(pack);
         Map<Urn, String> places = new HashMap<>();
 
-        Pack built = PackAssembly.assembly(id(read), read, places).build();
+        Pack built = PackAssembly.assembly(id(pack), read, places).build();
 
         assertThat(built.violations()).isEmpty();
         assertThat(built.artifacts()).isNotEmpty();
@@ -57,7 +57,7 @@ class PackAssemblyTest {
         FilesystemPackStore.PackRead read = read(pack);
         Map<Urn, String> places = new HashMap<>();
 
-        Pack built = PackAssembly.assembly(id(read), read, places, Set.of(ENHANCEMENT_FILE), Set.of(TYPE_FILE))
+        Pack built = PackAssembly.assembly(id(pack), read, places, Set.of(ENHANCEMENT_FILE), Set.of(TYPE_FILE))
                 .build();
 
         assertThat(built.violations()).isEmpty();
@@ -65,7 +65,7 @@ class PackAssemblyTest {
         assertThat(built.artifacts(ArtifactKind.MISSION_TYPE, CharterArtifact.class))
                 .isEmpty();
         assertThat(built.artifacts())
-                .hasSize(PackAssembly.assembly(id(read), read, new HashMap<>())
+                .hasSize(PackAssembly.assembly(id(pack), read, new HashMap<>())
                                 .build()
                                 .artifacts()
                                 .size()
@@ -76,7 +76,8 @@ class PackAssemblyTest {
         return new FilesystemPackStore(pack.getParent(), new YamlSerializationStrategy()).read(PackDirectory.of(pack));
     }
 
-    private static PackIdentifier id(FilesystemPackStore.PackRead read) {
-        return new PackIdentifier(read.descriptor().packId());
+    /** The registered id the pack is read under: its directory's name, not its descriptor's pack_id (#583). */
+    private static PackIdentifier id(Path pack) {
+        return new PackIdentifier(pack.getFileName().toString());
     }
 }

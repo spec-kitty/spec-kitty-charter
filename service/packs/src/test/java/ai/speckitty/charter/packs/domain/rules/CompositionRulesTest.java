@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static ai.speckitty.charter.packs.fixtures.FixtureUlids.ordered;
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -187,15 +188,14 @@ class CompositionRulesTest {
         @DisplayName("a fault keeps its code, packs and detail; its pack list is copied")
         void aFaultKeepsItsFields() {
             List<RefusalPack> packs = new ArrayList<>(
-                    List.of(new RefusalPack(new PackUlid(ordered("A")), new PackIdentifier(ordered("A")), "a")));
+                    List.of(new RefusalPack(new PackUlid(ordered("A")), registeredIdOf(ordered("A")), "a")));
             CompositionFault fault = new CompositionFault(CYCLE, packs, "why");
             packs.clear();
 
             assertThat(fault.packs())
-                    .containsExactly(
-                            new RefusalPack(new PackUlid(ordered("A")), new PackIdentifier(ordered("A")), "a"));
+                    .containsExactly(new RefusalPack(new PackUlid(ordered("A")), registeredIdOf(ordered("A")), "a"));
             assertThatThrownBy(() -> fault.packs()
-                            .add(new RefusalPack(new PackUlid(ordered("B")), new PackIdentifier(ordered("B")), "b")))
+                            .add(new RefusalPack(new PackUlid(ordered("B")), registeredIdOf(ordered("B")), "b")))
                     .isInstanceOf(UnsupportedOperationException.class);
             assertThatThrownBy(() -> new CompositionFault(null, List.of(), "d"))
                     .isInstanceOf(NullPointerException.class);
@@ -437,7 +437,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(downstream, a, b, x, y)))
                     .extracting(
                             CompositionFault::code,
-                            fault -> fault.packs().getFirst().packId().value())
+                            fault -> fault.packs().getFirst().descriptorPackId().value())
                     .containsExactly(
                             org.assertj.core.groups.Tuple.tuple(CYCLE, ordered("AAA")),
                             org.assertj.core.groups.Tuple.tuple(CYCLE, ordered("XXX")));
@@ -591,8 +591,9 @@ class CompositionRulesTest {
                     .toList();
 
             assertThat(ranges)
-                    .extracting(fault -> fault.packs().getFirst().packId().value() + "/"
-                            + fault.packs().get(1).packId().value())
+                    .extracting(
+                            fault -> fault.packs().getFirst().descriptorPackId().value() + "/"
+                                    + fault.packs().get(1).descriptorPackId().value())
                     .containsExactly(
                             "01TRE000000000000000000000/01NZNE00000000000000000000",
                             "01TWNZ00000000000000000000/01NZNE00000000000000000000",
@@ -1230,8 +1231,11 @@ class CompositionRulesTest {
 
                 // Merge order: c, placed; then a and b, on a parent cycle, in the stable order.
                 assertThat(check(a, b, c))
-                        .extracting(fault -> fault.packs().getFirst().packId().value() + "/"
-                                + fault.packs().get(1).packId().value())
+                        .extracting(fault -> fault.packs()
+                                        .getFirst()
+                                        .descriptorPackId()
+                                        .value() + "/"
+                                + fault.packs().get(1).descriptorPackId().value())
                         .containsExactly(
                                 "01AAA000000000000000000000/01CCC000000000000000000000",
                                 "01BBB000000000000000000000/01CCC000000000000000000000");
@@ -1366,7 +1370,7 @@ class CompositionRulesTest {
     }
 
     private static RefusalPack refusalPack(String id, String name) {
-        return new RefusalPack(new PackUlid(id), new PackIdentifier(id), name);
+        return new RefusalPack(new PackUlid(id), registeredIdOf(id), name);
     }
 
     private static List<PackDependency> depends(String packId, String range) {
@@ -1374,7 +1378,7 @@ class CompositionRulesTest {
     }
 
     private static ConfiguredPack configured(String id, PackLevel level) {
-        return new ConfiguredPack(new PackIdentifier(id), level);
+        return new ConfiguredPack(registeredIdOf(id), level);
     }
 
     private static PackDescriptor descriptor(

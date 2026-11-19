@@ -1,11 +1,11 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static ai.speckitty.charter.packs.fixtures.FixtureUlids.ordered;
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -531,7 +531,7 @@ class PackCodesCoverageTest {
     }
 
     private static ConfiguredPack configured(String id, PackLevel level) {
-        return new ConfiguredPack(new PackIdentifier(id), level);
+        return new ConfiguredPack(registeredIdOf(id), level);
     }
 
     private static PackDescriptor descriptor(
