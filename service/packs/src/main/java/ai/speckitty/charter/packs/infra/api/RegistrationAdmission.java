@@ -95,6 +95,11 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
             // and takes no slot, so the switch is the whole of its admission; the revision rules are the services'.
             requireRegistrationOn();
         }
+        if (SOURCE.equals(name) || DELETE_PACK.equals(name)) {
+            // After the switch, before anything else: a dryRun outside the boolean is 400 (R5-1). The upload reads it
+            // when it records the job's origin, after its own switch check.
+            modeOf(request);
+        }
         return true;
     }
 
@@ -190,15 +195,24 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     }
 
     /**
-     * Whether a registration request is made or only judged: {@code dryRun=true} is a dry run (ADR-0081 D5).
+     * Whether a write is made or only judged: {@code dryRun=true} is a dry run (ADR-0081 D5), {@code false} or no
+     * parameter the write; any other value is a {@code 400}. The admission reads it for the three operations that take
+     * it, before the write is judged, and they all act on this one reading.
      *
      * @param request the request
      * @return the mode
      */
     static PackRegistrationService.Mode modeOf(HttpServletRequest request) {
-        return RegistrationPaths.isDryRun(request.getParameter("dryRun"))
-                ? PackRegistrationService.Mode.DRY_RUN
-                : PackRegistrationService.Mode.COMMIT;
+        @Nullable String dryRun = request.getParameter("dryRun");
+        if (dryRun == null || dryRun.equals("false")) {
+            return PackRegistrationService.Mode.COMMIT;
+        }
+        if (dryRun.equals("true")) {
+            return PackRegistrationService.Mode.DRY_RUN;
+        }
+        // One reading for the three operations (review R5-1): a value the contract's boolean does not spell is no
+        // write and no dry run, so it is refused before anything is judged, never taken as either.
+        throw new InvalidParameter(InvalidParameter.In.QUERY, "dryRun", dryRun, "which is neither true nor false");
     }
 
     /**

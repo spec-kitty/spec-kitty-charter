@@ -99,7 +99,11 @@ public class PackRegistrationController implements RegistrationApi {
 
     @Override
     public ResponseEntity<PackImpact> deletePack(String packId, @Nullable String ifMatch, Boolean dryRun) {
-        return removals.deletePack(packId, ifMatch, Boolean.TRUE.equals(dryRun));
+        // The admission's reading of dryRun, the one the PUT and the POST act on too (R5-1).
+        return removals.deletePack(
+                packId,
+                ifMatch,
+                RegistrationAdmission.modeOf(currentRequest()) == PackRegistrationService.Mode.DRY_RUN);
     }
 
     @Override
@@ -260,9 +264,7 @@ public class PackRegistrationController implements RegistrationApi {
                 "registerPackFromSource",
                 source.kind().wire(),
                 locator,
-                Boolean.TRUE.equals(dryRun)
-                        ? PackRegistrationService.Mode.DRY_RUN
-                        : PackRegistrationService.Mode.COMMIT);
+                RegistrationAdmission.modeOf(request)); // the admission's one reading of dryRun (R5-1)
         RegistrationJobs.Reservation reservation =
                 jobs.reserve(packSource.getPackId(), RegistrationAdmission.admittedPreconditions(request), origin);
         try {

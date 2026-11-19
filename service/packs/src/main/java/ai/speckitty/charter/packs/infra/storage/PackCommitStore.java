@@ -701,11 +701,28 @@ public final class PackCommitStore implements WholePackWriteStore {
      * @throws CharterRefusal {@code pack_unreadable} when the rename fails; the pack is then whole
      */
     void removeWhole(Path live, String packId) {
+        removeWhole(live, packId, PackCommitStore::moveDirectory);
+    }
+
+    /** The rename a removal makes, a seam so a test can make it fail. */
+    @FunctionalInterface
+    interface DirectoryMove {
+        void move(Path from, Path to) throws IOException;
+    }
+
+    /**
+     * {@link #removeWhole(Path, String)} with the rename given: a test's seam.
+     *
+     * @param live the pack's live directory
+     * @param packId the name the pack is stored under
+     * @param mover renames the live directory to its discard name
+     */
+    void removeWhole(Path live, String packId, DirectoryMove mover) {
         healHistory(live, packId);
         hideStaleAsides(live);
         Path discard = live.resolveSibling(".pack-discard-" + unique());
         try {
-            moveDirectory(live, discard);
+            mover.move(live, discard);
         } catch (IOException failure) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot remove pack " + packId, failure);
         }

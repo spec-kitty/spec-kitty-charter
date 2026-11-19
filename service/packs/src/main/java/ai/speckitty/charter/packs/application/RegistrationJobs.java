@@ -269,20 +269,6 @@ public final class RegistrationJobs implements AutoCloseable {
             Objects.requireNonNull(locator, "locator");
             Objects.requireNonNull(mode, "mode");
         }
-
-        /**
-         * The origin of a registration that writes.
-         *
-         * @param worktree the worktree identity
-         * @param credential what the request carried
-         * @param operation the operation
-         * @param sourceKind the source kind
-         * @param locator the locator with its query cut
-         */
-        public Origin(
-                String worktree, AuditLog.Credential credential, String operation, String sourceKind, String locator) {
-            this(worktree, credential, operation, sourceKind, locator, PackRegistrationService.Mode.COMMIT);
-        }
     }
 
     /**

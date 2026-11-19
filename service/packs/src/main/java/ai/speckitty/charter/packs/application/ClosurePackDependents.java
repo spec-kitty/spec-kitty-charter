@@ -116,8 +116,18 @@ public final class ClosurePackDependents implements PackDependents {
                 : new CharterRefusal(RefusalCode.PACK_UNREADABLE, detail, cause);
     }
 
-    /** The stored activations whose {@code packs} list names the removed pack, by id. */
+    /**
+     * The stored activations whose {@code packs} list names the removed pack, by id. An activation whose document cannot
+     * be read might name it, so the removal fails closed (review R3-1): no refusal code names a fault of the activation
+     * store, so it ends as the service's own failure, as a registration's impact check does (DIV-614).
+     */
     private List<Dependent> activationsNaming(Removed removed) {
+        List<String> unreadable = activations.unreadableActivations();
+        if (!unreadable.isEmpty()) {
+            throw new IllegalStateException("The stored activations " + unreadable
+                    + " cannot be read, so whether they name the pack being removed cannot be judged; repair them"
+                    + " first.");
+        }
         String name = removed.configured().id().value();
         return activations.activationRoots().stream()
                 .filter(roots -> roots.names(name))

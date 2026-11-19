@@ -171,6 +171,20 @@ public final class FileActivationRepository implements ActivationRepository {
         return List.copyOf(listed);
     }
 
+    @Override
+    public List<ActivationId> unreadable() {
+        List<ActivationId> unreadable = new ArrayList<>();
+        for (ActivationId id : storedIds()) {
+            try {
+                find(id);
+            } catch (ActivationStorageException fault) {
+                unreadable.add(id);
+            }
+        }
+        unreadable.sort(java.util.Comparator.comparing(ActivationId::value));
+        return List.copyOf(unreadable);
+    }
+
     /** The ids of the directories of the root that are named as an activation's; any other entry is not one. */
     private List<ActivationId> storedIds() {
         if (!Files.isDirectory(root)) {

@@ -35,6 +35,16 @@ public interface ActivationRepository {
     List<StoredActivation> list();
 
     /**
+     * The ids of the stored activations whose document cannot be read: what {@link #list()} leaves out. A check that must
+     * fail closed (a pack removal's dependents, ADR-0081 D7, review R3-1) cannot judge them, and asks for them.
+     *
+     * @return the ids, sorted; empty when every stored document reads, and for a store that holds no documents
+     */
+    default List<ActivationId> unreadable() {
+        return List.of();
+    }
+
+    /**
      * The stored activation.
      *
      * @param id the activation's id
