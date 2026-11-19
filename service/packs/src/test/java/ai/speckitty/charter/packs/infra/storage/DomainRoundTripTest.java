@@ -193,6 +193,7 @@ class DomainRoundTripTest {
                         .isInstanceOfSatisfying(
                                 Refused.class,
                                 refused -> assertThat(refused.reason())
+                                        .startsWith("pack_id_invalid: ")
                                         .contains("Built_In")
                                         .contains(PackIdentifier.GRAMMAR_DETAIL)));
         assertThat(target).doesNotExist();
