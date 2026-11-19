@@ -116,7 +116,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: open-packs draft (open-packs#TBD-pack-entry-linked), rc.2 release runbook dry-read against service-build.md, service-native.yml and service-release.yml, closeout list (Closes #597, Refs #478 until the release, #549 line). WP03-WP07 names marked 'to confirm at closeout'. Commit 801abb839, signed.",
-        "Cycle 1 folded in 44fb67f33: F1 WP01 cited as merged in #608 (to confirm), current lane-a range noted, issue-matrix instruction dropped; F2 pack_entry_linked named under validation_failed; F3 Type Task and no milestone; F4 snapshot PR updates contract-and-dtos.md status line. Lint clean."
+        "Cycle 1 folded in 44fb67f33: F1 WP01 cited as merged in #608 (to confirm), current lane-a range noted, issue-matrix instruction dropped; F2 pack_entry_linked named under validation_failed; F3 Type Task and no milestone; F4 snapshot PR updates contract-and-dtos.md status line. Lint clean.",
+        "Review cycle 2 passed: F1-F4 of cycle 1 folded in 44fb67f33; every cited lane SHA is reachable; lint clean; commit signed, no trailer"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
