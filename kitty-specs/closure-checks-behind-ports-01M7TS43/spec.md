@@ -19,7 +19,11 @@ resolved Decision Moment under `decisions/`.
 - **Outcome.** The write is refused once, with every fault the checks find, not the first. Each check is a kernel
   `Rule` behind a port in the packs domain, so a composition root composes it, or leaves it out by not composing it.
 - **Invariants.**
-  - One refusal per write. Its code is the first fault's specific code, and its violations name every fault.
+  - One refusal per check. The mutability check runs first, and its `409` ends the write. The impact check's refusal
+    then names every fault of every closure. Each refusal's code is its first fault's specific code, and its
+    violations name every fault.
+  - A read failure (`pack_unreadable`) is never collected. It propagates as today, so #517's dry run still rethrows
+    it.
   - A write with one fault is refused as today: the same code, status and packs.
   - Each closure is composed once per write, and each stored pack is read once per session, as today.
   - `pack-check` and `PackRulesets.closure()` do not change (#478).
@@ -158,15 +162,15 @@ path too.
 |----|-------------|--------|
 | FR-001 | `packs.domain` declares three ports, `ClosureWalk`, `ImpactCheck` and `MutabilityCheck`, each exposing a kernel `Rule` over its subject, with no Spring type. | Draft |
 | FR-002 | `ImpactCheck` judges a write (a whole pack, an artifact or relationship write or removal) and a pack removal. It returns the verdict (`Rationale`) and the FR-027 notices from one compose per closure (D4). | Draft |
-| FR-003 | `ImpactCheck` judges every closure the write joins. In each, it reports every relation fault: `self_override`, `conflicting_relations`, `override_not_permitted` (the edge and the locked step), `override_cycle`, `enhances_cycle` (the cycle and the ungrounded enhancer) and `specialization_cycle`, in that rule order. Within a rule, faults are in edge order. | Draft |
+| FR-003 | `ImpactCheck` judges every closure the write joins. In each, it reports every relation fault: `self_override`, `conflicting_relations`, `override_not_permitted` (the edge and the locked step), `override_cycle`, `enhances_cycle` (the cycle and the ungrounded enhancer) and `specialization_cycle`, in that rule order. Within a rule, faults are in edge order. A fault implied by an earlier one is not reported again: each cycle is reported once, a place on a reported enhances cycle is not judged ungrounded, and a self-override edge is not an override cycle. | Draft |
 | FR-004 | For a removal, `ImpactCheck` names every dependent first (`409 pack_has_dependents`, as ADR-0081 D7) and composes the closures only when there are none. `PackDependents` and `ClosurePackDependents` are deleted (D3). | Draft |
 | FR-005 | `ClosureWalk` judges each declaring pack's own closure: the ADR-0068 fallback profile, then the role pins, then the profile enhancements. Each reports every breach. `fallback_profile_unknown` alone ends the fallback's checks. | Draft |
-| FR-006 | The qualified-reference checks (`pack_reference_unqualified`, `pack_reference_pack_missing`, `pack_reference_artifact_missing`, and the case-only match) report every fault of their phase in one refusal, on the read and the write path. | Draft |
+| FR-006 | Each phase of the compose reports every fault of its phase in one refusal, on the read and the write path: the resolver's composition faults, the substep delegations, the qualified references (`pack_reference_unqualified`, `pack_reference_pack_missing`, `pack_reference_artifact_missing`), the step enhancement targets, the preset contests and the case-only matches. The phases stay sequential, so a phase runs only when the earlier ones pass. | Draft |
 | FR-007 | `MutabilityCheck` replaces `WritePolicyGate` outright. A registration's refused writes are each one violation of one `409 governance_policy_violation`. A single write's refusal is unchanged (D5). | Draft |
 | FR-008 | One mapping turns a failing verdict into the write's `CharterRefusal`. Its code is the first violation's specific code, with that code's status. Its violations name every fault, each with its own code, file pointer and detail. Its packs are the union, in first-seen order, then each closure's roots (D1). | Draft |
-| FR-009 | The order of a verdict is fixed: closures in the order they are found, and within a closure the compose, then the relations (FR-003), then the closure walk (FR-005). The activations gate comes last. | Draft |
+| FR-009 | The order of the impact verdict is today's phase order: every closure in the order it is found, each with its compose fault or its relation faults (FR-003); then the closure walk (FR-005) of every single-root closure that composed and held its relations; then the activations gate, only when nothing failed. A closure that does not compose, or breaks a relation, gets no snapshot, walk or notices. | Draft |
 | FR-010 | `deployable` composes the ports for the service. `pack-validation`, `pack-check` and `PackRulesets.closure()` compose none of them and do not change. | Draft |
-| FR-011 | The census logs every finding of each stored pack. | Draft |
+| FR-011 | The census keeps one finding per stored pack, carrying every fault, and logs each fault. | Draft |
 | FR-012 | The contract records that a pack-write refusal's violations name every fault: the codes' descriptions in `CharterRefusalCode.yaml`, and a `Changed` change fragment. | Draft |
 | FR-013 | ADR-0068 is amended for where its rule runs (behind `ClosureWalk`). ADR-0075 gains a slice-7 amendment with the S1 ambiguity flagged. ADR-0081 notes that `PackDependents` was absorbed. | Draft |
 | FR-014 | `@contract` scenarios on charter's own example packs (ADR-0070) cover User Stories 1, 2, 4 and 5, and pass the ADR-0059 D1 gate. The #517 delete scenarios pass unchanged. | Draft |
