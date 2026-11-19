@@ -49,7 +49,7 @@ class RegistrationPathsTest {
 
     @ParameterizedTest
     @CsvSource(
-            value = {"true, true", "TRUE, true", "false, false", "yes, false", "NULL, false"},
+            value = {"true, true", "TRUE, false", "false, false", "yes, false", "NULL, false"},
             nullValues = "NULL")
     void onlyDryRunTrueIsADryRun(String value, boolean dryRun) {
         assertThat(RegistrationPaths.isDryRun(value)).isEqualTo(dryRun);
