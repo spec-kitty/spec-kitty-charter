@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackReadout;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,19 @@ class PackRulesetsClosureTest {
         assertThat(PackRulesets.closure().apply(List.of(LEFT, RIGHT))).isEmpty();
         assertThat(PackRulesets.closure(EACH_HOLDS_TEAM).apply(List.of(LEFT, RIGHT)))
                 .isNotEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "the planted example subjects carry the one reader's Built facts, so a set check over them runs CLOSURE")
+    void thePlantedExampleSubjectsAreBuilt() {
+        List<PlantedFixtures.Planted> examples = PlantedFixtures.all().stream()
+                .filter(planted -> planted.key().startsWith("example-packs/"))
+                .toList();
+
+        assertThat(examples).isNotEmpty();
+        assertThat(examples)
+                .allSatisfy(planted -> assertThat(planted.readout().facts()).isInstanceOf(PackReadout.Built.class));
     }
 
     private static Function<PackUnderResolution, Collection<String>> holding(Map<String, List<String>> presets) {

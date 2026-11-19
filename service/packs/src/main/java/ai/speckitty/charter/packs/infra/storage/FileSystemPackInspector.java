@@ -246,7 +246,17 @@ public final class FileSystemPackInspector implements PackReading {
      */
     @Override
     public PackReadout read(PackRoot root) {
-        OneRead one = readWithStore(root);
+        return readout(root, readWithStore(root));
+    }
+
+    /**
+     * The readout of one read already made: its contents, census, verdict and composition facts, all from {@code one}.
+     *
+     * @param root the pack read; its name is the pack id the composition facts' refusals name
+     * @param one the one read of {@code root}
+     * @return the readout
+     */
+    static PackReadout readout(PackRoot root, OneRead one) {
         TreeRead tree = one.tree();
         return new PackReadout(
                 tree.contents(),
