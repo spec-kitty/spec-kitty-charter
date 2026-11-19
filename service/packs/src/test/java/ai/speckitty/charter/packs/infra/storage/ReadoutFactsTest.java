@@ -1,0 +1,151 @@
+package ai.speckitty.charter.packs.infra.storage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * The readout's composition facts ride on the one read (#478, FR-003, S1, S10): {@link PackReadout#facts()} is built
+ * from the same walk and store half as the rest of the readout, or carries the refusal that stopped it, and never
+ * throws.
+ */
+@DisplayName("PackReadout.facts: the composition facts of the one read, or the refusal that stopped them (#478, S1)")
+class ReadoutFactsTest {
+
+    private static final YamlSerializationStrategy STRATEGY = new YamlSerializationStrategy();
+
+    static List<String> examplePacks() {
+        return ExamplePacks.names();
+    }
+
+    private static PackReadout read(String name, Path directory) {
+        return new FileSystemPackInspector()
+                .read(new PackRoot(name, Optional.of(ExamplePacks.level(name)), directory.toString()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("examplePacks")
+    @DisplayName("each example pack: the readout's facts are the pack under resolution's, and so the recorded ones")
+    void theReadoutsFactsAreThePackUnderResolutions(String name, @TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(name, host);
+        PackUnderResolution expected = CompositionFactsBuilder.underResolution(
+                new ConfiguredPack(new PackIdentifier(name), ExamplePacks.level(name)), pack, STRATEGY);
+
+        PackReadout readout = read(name, pack);
+
+        assertThat(readout.facts()).isInstanceOfSatisfying(PackReadout.Built.class, built -> {
+            JsonNode recorded = recorded().required(name);
+            assertThat(built.descriptor()).isEqualTo(expected.descriptor());
+            assertThat(built.descriptor().packId())
+                    .isEqualTo(recorded.required("packId").asString());
+            assertThat(built.facts().changed()).isEqualTo(expected.changedArtifacts());
+            assertThat(built.facts().changed()).isEqualTo(strings(recorded.required("changed")));
+            assertThat(built.facts().defined()).isEqualTo(expected.definedArtifacts());
+            assertThat(built.facts().defined()).isEqualTo(strings(recorded.required("defined")));
+            assertThat(Set.copyOf(built.facts().terms())).isEqualTo(expected.heldTerms());
+            assertThat(Set.copyOf(built.facts().terms()))
+                    .isEqualTo(Set.copyOf(strings(recorded.required("heldTerms"))));
+        });
+    }
+
+    @Test
+    @DisplayName("a graph document that cannot be read: Unreadable(pack_unreadable), worded as the composing read")
+    void anUnreadableGraphIsUnreadable(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        Files.writeString(pack.resolve("broken.graph.yaml"), "nodes: [valid\n", StandardCharsets.UTF_8);
+
+        PackReadout readout = read(ExamplePacks.BUILT_IN, pack);
+
+        assertThat(readout.facts())
+                .isEqualTo(new PackReadout.Unreadable(
+                        RefusalCode.PACK_UNREADABLE, "a graph document of built-in cannot be read"));
+    }
+
+    @Test
+    @DisplayName("a file the load refuses: Unreadable with the load's code, naming the file")
+    void aRefusedFileIsUnreadable(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        Files.writeString(pack.resolve("tactics/broken.tactic.yaml"), "id: [\n", StandardCharsets.UTF_8);
+
+        PackReadout readout = read(ExamplePacks.BUILT_IN, pack);
+
+        assertThat(readout.facts()).isInstanceOfSatisfying(PackReadout.Unreadable.class, unreadable -> {
+            assertThat(unreadable.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(unreadable.detail())
+                    .startsWith("the file tactics/broken.tactic.yaml of built-in cannot be read");
+        });
+    }
+
+    @Test
+    @DisplayName("a pack with no pack.yaml: Unreadable(pack_unreadable), not an exception")
+    void aPackWithoutADescriptorIsUnreadable(@TempDir Path host) throws IOException {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        Files.delete(pack.resolve("pack.yaml"));
+
+        PackReadout readout = read(ExamplePacks.BUILT_IN, pack);
+
+        assertThat(readout.facts())
+                .isEqualTo(new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, "pack built-in has no pack.yaml"));
+    }
+
+    @Test
+    @DisplayName("a root that is not a directory: Unreadable(pack_unreadable), not an exception")
+    void aRootThatIsNoDirectoryIsUnreadable(@TempDir Path host) {
+        PackReadout readout = read(ExamplePacks.BUILT_IN, host.resolve("absent"));
+
+        assertThat(readout.facts())
+                .as(
+                        "the store half names the directory it was given; the verdict's root fault carries the configured name")
+                .isEqualTo(new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, "pack absent is not a directory"));
+    }
+
+    @Test
+    @DisplayName("one read: a readout with its facts walks the tree once and runs the store half once")
+    void theFactsCostNoSecondRead(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        ReadCounters before = ReadCounters.now();
+
+        PackReadout readout = read(ExamplePacks.BUILT_IN, pack);
+
+        assertThat(readout.facts()).isInstanceOf(PackReadout.Built.class);
+        assertThat(ReadCounters.now().since(before)).isEqualTo(new ReadCounters(1, 1, 1));
+    }
+
+    private static JsonNode recorded() {
+        try (InputStream in = Objects.requireNonNull(
+                ReadoutFactsTest.class.getResourceAsStream("/facts/example-packs.json"), "/facts/example-packs.json")) {
+            return JsonMapper.builder().build().readTree(in);
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
+    private static List<String> strings(JsonNode array) {
+        List<String> values = new ArrayList<>();
+        array.forEach(value -> values.add(value.asString()));
+        return values;
+    }
+}

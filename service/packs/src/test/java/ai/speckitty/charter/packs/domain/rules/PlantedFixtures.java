@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.PackContents;
@@ -90,6 +91,10 @@ final class PlantedFixtures {
      */
     record Planted(String key, TreeRead tree, Optional<List<Expected>> expected) {
 
+        /** The composition facts of a planted readout: not composed, since a subject's tree read keeps no store half. */
+        static final PackReadout.Unreadable NOT_COMPOSED = new PackReadout.Unreadable(
+                RefusalCode.PACK_UNREADABLE, "a planted subject's composition facts are not composed");
+
         /**
          * The facts of the read.
          *
@@ -100,13 +105,19 @@ final class PlantedFixtures {
         }
 
         /**
-         * What the domain port gives for the read: its facts and the storage edge's verdict.
+         * What the domain port gives for the read: its facts and the storage edge's verdict. Its composition facts are
+         * {@link #NOT_COMPOSED}: the subjects judge the verdict of one pack, and {@code ReadoutFactsTest} owns the
+         * composition facts of a read.
          *
          * @return the readout
          */
         PackReadout readout() {
             return new PackReadout(
-                    tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
+                    tree.contents(),
+                    tree.census().files(),
+                    tree.census().notHeld(),
+                    StorageRulesets.verdict(tree),
+                    NOT_COMPOSED);
         }
 
         @Override

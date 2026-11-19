@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -237,16 +238,22 @@ public final class FileSystemPackInspector implements PackReading {
     /**
      * Reads one pack root once (S6): its contents, the files it classifies, the files the store does not hold and the
      * storage edge's verdict of the read ({@link StorageRulesets#verdict}: the read faults, the registration's
-     * composition and the manifest gate), in registration's order.
+     * composition and the manifest gate), in registration's order, and the pack's composition facts from the same read
+     * ({@link CompositionFactsBuilder#readoutFacts}, #478 S1): the store half the walk already ran, never a second read.
      *
      * @param root the pack to read; its {@code locator} is the directory
      * @return the readout
      */
     @Override
     public PackReadout read(PackRoot root) {
-        TreeRead tree = readTree(root);
+        OneRead one = readWithStore(root);
+        TreeRead tree = one.tree();
         return new PackReadout(
-                tree.contents(), tree.census().files(), tree.census().notHeld(), StorageRulesets.verdict(tree));
+                tree.contents(),
+                tree.census().files(),
+                tree.census().notHeld(),
+                StorageRulesets.verdict(tree),
+                CompositionFactsBuilder.readoutFacts(new PackIdentifier(root.name()), one.store()));
     }
 
     /**

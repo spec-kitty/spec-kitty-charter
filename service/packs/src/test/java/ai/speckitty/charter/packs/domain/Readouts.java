@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -14,11 +15,24 @@ import java.util.List;
  * Test fixtures: the readout the one reader would give for a pack whose facts a test writes by hand (#554, S6). Its
  * read faults are worded as the reader words them ({@link Wording}): the descriptor's, each graph document's, then each
  * other file the test names as unreadable. A hand-written descriptor is well formed: a test of the descriptor's format
- * prechecks reads a tree, where the reader states them.
+ * prechecks reads a tree, where the reader states them. Hand-written facts carry no assembly input, so their
+ * composition facts are what the one reader answers for such a read ({@link #noAssembly}).
  */
 public final class Readouts {
 
     private Readouts() {}
+
+    /**
+     * The composition facts the one reader gives a read with no assembly input, as hand-written facts are: the pack
+     * cannot be composed, {@code pack_unreadable}, in the reader's wording.
+     *
+     * @param pack the pack's configured name
+     * @return the facts
+     */
+    public static PackReadout.Unreadable noAssembly(String pack) {
+        return new PackReadout.Unreadable(
+                RefusalCode.PACK_UNREADABLE, "the pack " + pack + " cannot be read: it has no assembly");
+    }
 
     /**
      * The readout of hand-written facts, with no other unreadable file, no classified file and no file not held.
@@ -64,6 +78,6 @@ public final class Readouts {
             }
         }
         unreadable.forEach(bad -> faults.addAll(Wording.unreadable(name, bad)));
-        return new PackReadout(contents, files, notHeld, new Rationale(faults));
+        return new PackReadout(contents, files, notHeld, new Rationale(faults), noAssembly(name));
     }
 }

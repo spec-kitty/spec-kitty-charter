@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Rationale;
@@ -96,7 +97,15 @@ class PackCheckTest {
                 List.of(),
                 List.of(),
                 List.of());
-        return new PackReadout(contents, FILES, List.of(), new Rationale(reasons));
+        // Hand-written facts carry no assembly input: the one reader answers such a read pack_unreadable.
+        return new PackReadout(
+                contents,
+                FILES,
+                List.of(),
+                new Rationale(reasons),
+                new PackReadout.Unreadable(
+                        RefusalCode.PACK_UNREADABLE,
+                        "the pack " + root.name() + " cannot be read: it has no assembly"));
     }
 
     private static Reason failing(ReasonCode code, String file, String pointer, String detail) {

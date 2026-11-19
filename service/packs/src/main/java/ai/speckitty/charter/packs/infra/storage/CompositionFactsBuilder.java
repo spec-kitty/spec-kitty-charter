@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.Styleguide;
@@ -77,13 +78,46 @@ final class CompositionFactsBuilder {
                 strategy,
                 KindBindings.all(),
                 Companions.Rules.bundled());
-        PackCompositionFacts facts = composeFacts(pack, read);
+        PackReadout.Built built = built(pack, read);
+        PackCompositionFacts facts = built.facts();
         return new PackUnderResolution(
-                configured,
-                ((Assembly.Assembled) read.assembly()).descriptor(),
-                facts.changed(),
-                facts.defined(),
-                Set.copyOf(facts.terms()));
+                configured, built.descriptor(), facts.changed(), facts.defined(), Set.copyOf(facts.terms()));
+    }
+
+    /**
+     * The readout's composition facts (#478, S1, S10): what {@link #built} answers for the one read's store half, or the
+     * refusal that stopped it. It never throws for a pack that cannot be read: every refusal {@link #composeFacts}
+     * raises becomes {@link PackReadout.Unreadable} with its code and message, and a read with no assembly input
+     * ({@link Assembly.None}) is {@code pack_unreadable}.
+     *
+     * @param pack the pack, as the refusals name it
+     * @param read the store half of the one read
+     * @return the facts, or why there are none
+     */
+    static PackReadout.Facts readoutFacts(PackIdentifier pack, StoreRead read) {
+        if (read.assembly() instanceof Assembly.None) {
+            return new PackReadout.Unreadable(
+                    RefusalCode.PACK_UNREADABLE, "the pack " + pack.value() + " cannot be read: it has no assembly");
+        }
+        try {
+            return built(pack, read);
+        } catch (CharterRefusal refusal) {
+            return new PackReadout.Unreadable(refusal.code(), String.valueOf(refusal.getMessage()));
+        }
+    }
+
+    /**
+     * The one derivation of a pack's composition facts from a read (#478, S1): the descriptor the load assembled and
+     * {@link #composeFacts}. {@link #underResolution} and {@link #readoutFacts} both build through it.
+     *
+     * @param pack the pack, as the refusals name it
+     * @param read the read
+     * @return the descriptor and the facts
+     * @throws CharterRefusal as {@link #composeFacts} refuses the pack
+     */
+    private static PackReadout.Built built(PackIdentifier pack, StoreRead read) {
+        PackCompositionFacts facts = composeFacts(pack, read);
+        return new PackReadout.Built(((Assembly.Assembled) read.assembly()).descriptor(), facts);
     }
 
     /**
