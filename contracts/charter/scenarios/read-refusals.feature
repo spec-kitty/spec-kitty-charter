@@ -84,6 +84,7 @@ Feature: The reads answer each refusal and each conditional answer they declare
       | getEffectiveGlossaryTerm (term id)       | /activations/a-1/artifacts/glossary/core/terms/Mission                                                               | /activations/a-1/artifacts/glossary/core/terms/mission         | 404    |
       | listEffectiveArtifactReferences          | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/artifacts/directive/D/references      | /activations/a-1/artifacts/directive/D/references              | 200    |
       | getActivationSkippedReport               | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/skipped                               | /activations/a-1/skipped                                       | 200    |
+      | getActivationTensions                    | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/tensions                              | /activations/a-1/tensions                                      | 200    |
       | listActivationVocabularyTerms            | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/vocabulary/terms                      | /activations/a-1/vocabulary/terms                              | 200    |
       | getActivationVocabularyContextive        | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/vocabulary/contextive                 | /activations/a-1/vocabulary/contextive                         | 200    |
       | listActivationVocabularyTaboos           | /activations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/vocabulary/taboos                     | /activations/a-1/vocabulary/taboos                             | 200    |
@@ -100,6 +101,7 @@ Feature: The reads answer each refusal and each conditional answer they declare
     Examples:
       | operation                  | path                     |
       | getActivationSkippedReport | /activations/a-1/skipped |
+      | getActivationTensions      | /activations/a-1/tensions |
       | listActivationPacks        | /activations/a-1/packs   |
       | getOpenApiDocument         | /openapi.yaml            |
 

@@ -248,6 +248,8 @@ paths:
     $ref: paths/activations_activationId_vocabulary_taboos.yaml
   /activations/{activationId}/skipped:
     $ref: paths/activations_activationId_skipped.yaml
+  /activations/{activationId}/tensions:
+    $ref: paths/activations_activationId_tensions.yaml
   /activations/{activationId}/graph:
     $ref: paths/activations_activationId_graph.yaml
   /activations/{activationId}/mission-types/{missionType}/actions/{action}/context:

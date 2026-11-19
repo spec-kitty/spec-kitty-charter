@@ -296,18 +296,23 @@ rules:
               - edit
               - delete
               - skipped
+              - tensions
               - effective-context
               - prompt
               - profile-selection
               - select
               - unselect
               - exclude
+              - exclude-source
+              - exclude-target
               - include
               - apply-preset
               - artifact
               - references
               - payload
               - effective-artifact
+              - effective-source
+              - effective-target
               - assets
               - asset
               - skills

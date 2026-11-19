@@ -1,0 +1,60 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: getActivationTensions
+  summary: Read the tensions of an activation and what to do about the unreconciled ones.
+  description: >-
+    Every tension the activation puts in force (ADR-0045 decisions 8 to 11): each pair of guidance artifacts in force
+    joined by a tension, once, from the smaller URN, with its first writer's when and reason and the artifacts in force
+    that reconcile it, as getEffectiveGraph answers its tension edge. For each tension no artifact in force reconciles,
+    one unreconciled_tension finding with its resolutions and links (decision 12, ruling G3): reconcile always, and
+    deactivate_one_side with an exclude link for each side the exclusion write would accept. A finding never refuses:
+    the read answers 200 whatever it finds, and no write refuses for a tension.
+
+    ETag follows the skipped report's rule, with a read name of its own, so it never matches the skipped report's tag:
+    it changes with the activation's revision and with any pack of the activation's closure, not with a pack outside
+    it, and a matching If-None-Match is a 304 without a body.
+
+    An activationId outside the declared pattern is a 400 Problem without a code. An unknown activation is 404 activation_not_found. A closure that cannot compose or merge is 500, with its code:
+    pack_unreadable also for a layer override or an overrides edge that the mutability level of the overridden artifact
+    forbids (ADR-0063 D3) and for an overrides cycle among active artifacts; stale_input and internal_error may be
+    retried. The answer is never partial.
+  tags:
+  - Activation
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The answer.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActivationTensions.yaml
+          examples:
+            empty:
+              $ref: ../examples/ActivationTensions.empty.yaml
+            unreconciled:
+              $ref: ../examples/ActivationTensions.unreconciled.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

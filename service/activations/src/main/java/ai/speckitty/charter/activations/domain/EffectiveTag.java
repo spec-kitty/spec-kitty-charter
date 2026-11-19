@@ -130,7 +130,13 @@ public record EffectiveTag(String token) {
          * step's role is read from the closure, whose fingerprint digests the mission types that declare it, so the query
          * names the step and the context, and the tag never matches the role-keyed read's.
          */
-        STEP_SELECTION
+        STEP_SELECTION,
+        /**
+         * {@code getActivationTensions}: the tensions in force and the findings of those nothing reconciles (ADR-0045
+         * decision 11). Its inputs are the skipped report's, the revision and the closure fingerprint, and its own read
+         * name, so its tag never matches the skipped report's.
+         */
+        TENSIONS
     }
 
     /**
@@ -368,6 +374,17 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag skipped(Revision revision, ClosureSnapshot closure) {
         return of(Read.SKIPPED, revision, closure, NO_QUERY);
+    }
+
+    /**
+     * The tag of the tensions read (ADR-0045 decision 11).
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @return the tag, never the skipped report's for the same inputs
+     */
+    public static EffectiveTag tensions(Revision revision, ClosureSnapshot closure) {
+        return of(Read.TENSIONS, revision, closure, NO_QUERY);
     }
 
     /**

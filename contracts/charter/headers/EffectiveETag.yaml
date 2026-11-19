@@ -1,6 +1,6 @@
 description: >-
   A strong entity tag of a read that depends on the packs of an activation's closure (the effective reads,
-  listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph, getEffectiveActionContext,
+  listEffectiveArtifacts, getActivationSkippedReport, getActivationTensions, getEffectiveGraph, getEffectiveActionContext,
   getEffectiveArtifact, getEffectiveAgentProfile, getEffectiveStepPrompt, listEffectiveSkills, getEffectiveSkill,
   listEffectiveAssets, getEffectiveAsset, getEffectiveAssetPayload, listEffectiveGlossaryContexts,
   getEffectiveGlossaryContext, getEffectiveGlossaryTerm, selectAgentProfile, selectAgentProfileForStep,

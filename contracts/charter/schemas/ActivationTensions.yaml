@@ -1,0 +1,74 @@
+title: ActivationTensions
+description: >-
+  The tensions of an activation (ADR-0045 decisions 11 and 12): every tension the activation puts in force, each once
+  from the smaller URN with its first writer's words and the artifacts in force that reconcile it, as the effective
+  graph answers it; and one unreconciled_tension finding for each tension no artifact in force reconciles. A finding
+  never refuses a read or a write: it names the ways to resolve the tension. It is answered with the revision and the
+  closure digest it was computed from, under an ETag of its own.
+type: object
+additionalProperties: false
+required:
+- activationId
+- revision
+- governanceFingerprint
+- tensions
+- findings
+- _links
+properties:
+  activationId:
+    allOf:
+    - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment, or the ULID the service minted on POST (ADR-0020 D2, D3).
+      inputs:
+      - parameters/ActivationId.yaml
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The charter-closure/v1 digest of the packs of the activation's closure alone: the configured id and level of each
+      closure pack and the files of those packs, taken in the same consistent read as the answer. It is not
+      ServiceInfo.sourceFingerprint and not the Charter-Source-Fingerprint header, which digest the whole source; a
+      change to a pack outside the closure leaves it unchanged. With revision, it ties the answer to both the document
+      and the packs of its closure.
+    x-derived:
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  tensions:
+    type: array
+    items:
+      $ref: ContextTension.yaml
+    description: >-
+      Every tension in force of the activation, sorted by source, then target, whether or not an artifact reconciles it.
+    x-derived:
+      rule: >-
+        The tensions in force of the merged closure under the activation: each pair whose two sides are in force,
+        resolved symmetrically through the layer merge and collapsed on the pair (ADR-0045 decision 8).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  findings:
+    type: array
+    items:
+      $ref: TensionFinding.yaml
+    description: >-
+      One unreconciled_tension finding per tension in force whose reconciledBy is empty, in the order of tensions.
+      Empty when every tension in force is reconciled, or when there is none.
+    x-derived:
+      rule: The tensions in force that no artifact in force reconciles.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  _links:
+    $ref: Links.yaml

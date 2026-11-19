@@ -50,6 +50,7 @@ class ActivationMapperLinksTest {
                         tuple("packs", SELF + "/packs", null, null),
                         tuple("graph", SELF + "/graph", null, null),
                         tuple("skipped", SELF + "/skipped", null, null),
+                        tuple("tensions", SELF + "/tensions", null, null),
                         tuple(
                                 "effective-context",
                                 SELF + "/mission-types/{missionType}/actions/{action}/context{?depth}",

@@ -61,6 +61,8 @@ files:
   - TensionCondition.yaml
   - TensionReason.yaml
   - TensionReconcilers.yaml
+  - ActivationTensions.yaml
+  - TensionFinding.yaml
   - ExclusionRequest.yaml
   - LanguageToken.yaml
   - LayerOverride.yaml

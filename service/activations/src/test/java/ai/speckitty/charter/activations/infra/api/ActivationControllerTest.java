@@ -30,7 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The activation set is reserved one operation at a time (ADR-0020 D8): the controller carries no mark of its own, and an
- * operation that is not built carries one, so an operation is built by removing its mark alone. Every one of the sixteen
+ * operation that is not built carries one, so an operation is built by removing its mark alone. Every one of the seventeen
  * operations is built now (PR C built the effective graph and the effective action context, WP06 the read of one
  * artifact, mission effective-step-and-action-context's WP07 the effective prompt), so none is marked; the interceptor
  * stays for a reservation to come, which {@code ReservedOperationInterceptorTest} and the architecture rules keep honest.
@@ -54,6 +54,7 @@ class ActivationControllerTest {
             "applyActivationPreset",
             "listEffectiveArtifacts",
             "getActivationSkippedReport",
+            "getActivationTensions",
             "getEffectiveGraph",
             "getEffectiveActionContext",
             "getEffectiveArtifact",
@@ -69,8 +70,8 @@ class ActivationControllerTest {
     }
 
     @Test
-    void everyOneOfTheSixteenOperationsIsOverriddenAndNoneIsMarkedReserved() throws NoSuchMethodException {
-        assertThat(operations()).hasSize(16);
+    void everyOneOfTheSeventeenOperationsIsOverriddenAndNoneIsMarkedReserved() throws NoSuchMethodException {
+        assertThat(operations()).hasSize(17);
         assertThat(operations()).extracting(Method::getName).containsExactlyInAnyOrderElementsOf(BUILT);
         for (Method operation : operations()) {
             Method overridden =

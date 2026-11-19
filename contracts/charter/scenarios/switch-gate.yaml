@@ -28,6 +28,7 @@ operations:
   deletePackRelationship: {switch: ready}
   getActivation: {switch: ready}
   getActivationSkippedReport: {switch: ready}
+  getActivationTensions: {switch: ready}
   getActivationVocabularyContextive: {switch: ready}
   getApiRoot: {switch: ready}
   getEffectiveActionContext: {switch: ready}
