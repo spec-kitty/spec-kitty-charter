@@ -194,12 +194,11 @@
       ],
       "properties": {
         "packId": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Slug"
-            }
-          ],
-          "description": "The pack's id, as the service's pack registry names it."
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "The pack's id, as the service's pack registry names it: a kebab slug of at most 63 characters (ADR-0075 decision 2)."
         },
         "version": {
           "type": "string",
@@ -321,13 +320,6 @@
           "description": "The routing_catalog ids: the catalogs the activation selects (ADR-0080). The model recommendation reads the one catalog in force. Absent means none of the kind; [] means none; a list means exactly those."
         }
       }
-    },
-    "Slug": {
-      "title": "Slug",
-      "description": "A lowercase identifier segment of a DRG URN.",
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]*$",
-      "maxLength": 64
     }
   }
 }

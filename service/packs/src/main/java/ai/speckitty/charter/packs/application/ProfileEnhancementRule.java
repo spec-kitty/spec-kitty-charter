@@ -85,14 +85,14 @@ final class ProfileEnhancementRule {
             List<ProfileEnhancementGateway.Enhancing> enhancers = new ArrayList<>();
             enhanced.getValue()
                     .forEach(winner -> profileOf(winner.urn(), winners, profiles)
-                            .ifPresent(profile -> enhancers.add(new ProfileEnhancementGateway.Enhancing(
-                                    profile, winner.packId().value()))));
+                            .ifPresent(profile ->
+                                    enhancers.add(new ProfileEnhancementGateway.Enhancing(profile, winner.packId()))));
             Optional<ProfileEnhancementGateway.Dropped> dropped = judge.firstDrop(base.get(), enhancers);
             if (dropped.isPresent()) {
                 return Optional.of(new Breach(
                         RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
                         dropped.get().detail(),
-                        List.of(new PackIdentifier(dropped.get().pack()))));
+                        List.of(dropped.get().pack())));
             }
         }
         return Optional.empty();

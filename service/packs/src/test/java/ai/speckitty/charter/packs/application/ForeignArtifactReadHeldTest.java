@@ -24,6 +24,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ class ForeignArtifactReadHeldTest {
 
     private static PackDescriptor descriptor() {
         return new PackDescriptor(
-                "id-qa",
+                FixtureUlids.of("qa"),
                 "1.0.0",
                 Optional.empty(),
                 "qa",

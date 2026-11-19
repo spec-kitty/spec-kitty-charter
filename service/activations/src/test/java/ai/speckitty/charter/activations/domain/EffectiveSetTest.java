@@ -40,6 +40,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -388,7 +389,10 @@ class EffectiveSetTest {
     @Test
     void aPinToAVersionThePackIsNotHeldAtIsListedAndAHeldPinIsNot() {
         ActivationDocument document = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("alpha", "1.0.0"), PackRef.pinned("beta", "2.0.0"), PackRef.of("gamma")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("alpha"), "1.0.0"),
+                        PackRef.pinned(new PackIdentifier("beta"), "2.0.0"),
+                        PackRef.of(new PackIdentifier("gamma"))))
                 .build()
                 .document();
         ClosureSnapshot closure = ClosureSnapshots.snapshot()
@@ -688,7 +692,8 @@ class EffectiveSetTest {
     @Test
     void theQueryCarriesTheSelectionTheDenyEntriesTheLanguagesAndThePinsOfEveryKind() {
         ActivationDocument document = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("alpha", "1.0.0"), PackRef.of("beta")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("alpha"), "1.0.0"), PackRef.of(new PackIdentifier("beta"))))
                 .languages(List.of("java", "python"))
                 .selected(ArtifactKind.DIRECTIVE, List.of("D1"))
                 .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
@@ -724,7 +729,7 @@ class EffectiveSetTest {
     private static EffectiveSet effectiveSetOverAStepEnhancer(List<String> selectedMissionTypes) {
         ConfiguredPack configured = new ConfiguredPack(new PackIdentifier("alpha"), PackLevel.ORG);
         PackDescriptor descriptor = new PackDescriptor(
-                "id-alpha",
+                FixtureUlids.of("alpha"),
                 "1.0.0",
                 Optional.empty(),
                 "alpha",

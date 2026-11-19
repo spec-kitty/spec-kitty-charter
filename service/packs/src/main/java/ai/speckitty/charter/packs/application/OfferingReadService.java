@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -68,7 +69,7 @@ public final class OfferingReadService {
     /**
      * One configured pack as the offering names it.
      *
-     * @param id the configured identifier of the pack
+     * @param id the registered id of the pack
      * @param descriptorPackId the {@code pack_id} its descriptor declares, the identity a dependency edge names
      * @param level the level the pack is configured at
      * @param name the name its descriptor gives
@@ -78,7 +79,7 @@ public final class OfferingReadService {
      */
     public record OfferingEntry(
             PackIdentifier id,
-            String descriptorPackId,
+            PackUlid descriptorPackId,
             PackLevel level,
             String name,
             String version,
@@ -227,7 +228,7 @@ public final class OfferingReadService {
         return closure.stream()
                 .map(pack -> new OfferingEntry(
                         pack.configured().id(),
-                        pack.descriptor().packId(),
+                        pack.descriptorId(),
                         pack.configured().level(),
                         pack.descriptor().name(),
                         pack.descriptor().packVersion(),

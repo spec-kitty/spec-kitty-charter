@@ -15,6 +15,7 @@ import ai.speckitty.charter.activations.domain.SkippedReport;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
@@ -86,7 +87,11 @@ class ActivationSelectionServiceTest {
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
         return repository
-                .create(ID, builder.packs(List.of(PackRef.of("main"))).build().document())
+                .create(
+                        ID,
+                        builder.packs(List.of(PackRef.of(new PackIdentifier("main"))))
+                                .build()
+                                .document())
                 .orElseThrow();
     }
 
@@ -583,7 +588,7 @@ class ActivationSelectionServiceTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.pinned("main", "9.9.9")))
+                                .packs(List.of(PackRef.pinned(new PackIdentifier("main"), "9.9.9")))
                                 .build()
                                 .document())
                 .orElseThrow();
@@ -591,8 +596,8 @@ class ActivationSelectionServiceTest {
         ActivationWrites.Outcome outcome =
                 service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
 
-        assertThat(outcome.change().droppedPins()).containsExactly(PackRef.pinned("main", "9.9.9"));
-        assertThat(now().packs()).contains(List.of(PackRef.of("main")));
+        assertThat(outcome.change().droppedPins()).containsExactly(PackRef.pinned(new PackIdentifier("main"), "9.9.9"));
+        assertThat(now().packs()).contains(List.of(PackRef.of(new PackIdentifier("main"))));
         assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D");
     }
 
@@ -602,7 +607,7 @@ class ActivationSelectionServiceTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.pinned("main", "9.9.9")))
+                                .packs(List.of(PackRef.pinned(new PackIdentifier("main"), "9.9.9")))
                                 .selected(ArtifactKind.DIRECTIVE, List.of("D"))
                                 .build()
                                 .document())
@@ -612,7 +617,7 @@ class ActivationSelectionServiceTest {
                 service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
 
         assertThat(outcome.change().applied()).isEmpty();
-        assertThat(outcome.change().droppedPins()).containsExactly(PackRef.pinned("main", "9.9.9"));
+        assertThat(outcome.change().droppedPins()).containsExactly(PackRef.pinned(new PackIdentifier("main"), "9.9.9"));
         assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
         assertThat(repository.replaces()).isOne();
     }

@@ -255,7 +255,8 @@ public class RefusalHandler {
     private static List<RefusalPack> packDtos(List<ai.speckitty.charter.kernel.domain.RefusalPack> packs) {
         return packs.stream()
                 .limit(MAX_PACKS)
-                .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
+                .map(pack -> new RefusalPack(
+                        pack.descriptorPackId().value(), pack.packId().value(), pack.name()))
                 .toList();
     }
 
@@ -303,7 +304,8 @@ public class RefusalHandler {
         return refusal.packs().isEmpty()
                 ? ""
                 : refusal.packs().stream()
-                        .map(pack -> pack.name() + " (" + pack.descriptorPackId() + ")")
+                        .map(pack ->
+                                pack.name() + " (" + pack.descriptorPackId().value() + ")")
                         .collect(java.util.stream.Collectors.joining(", ", " [packs: ", "]"));
     }
 

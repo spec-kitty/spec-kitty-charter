@@ -34,7 +34,10 @@ import org.junit.jupiter.api.io.TempDir;
 class TemplateStoreTest {
 
     private static final PackIdentifier SOURCE = new PackIdentifier("source");
+
+    private static final PackDirectory SOURCE_DIRECTORY = PackDirectory.of(SOURCE);
     private static final PackIdentifier TARGET = new PackIdentifier("target");
+    private static final PackDirectory TARGET_DIRECTORY = PackDirectory.of(TARGET);
     private static final String MINUTES = "writing/meeting-minutes.md";
 
     /** Frontmatter, CR/LF pairs, a NUL, a byte that is no UTF-8 and no final newline. */
@@ -74,14 +77,14 @@ class TemplateStoreTest {
         Path target = pack(host, "target");
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        FilesystemPackStore.PackRead read = store.read(SOURCE);
+        FilesystemPackStore.PackRead read = store.read(SOURCE_DIRECTORY);
         assertThat(read.violations()).isEmpty();
         assertThat(read.templates())
                 .extracting(FilesystemPackStore.TemplateFile::path)
                 .containsExactly("empty.md", "latin1.txt", MINUTES);
         for (FilesystemPackStore.TemplateFile file : read.templates()) {
             Template template = TemplateBinding.INSTANCE.toEntity(SOURCE, file.path(), file.content());
-            DomainRepositoryService.writeArtifact(store, TARGET, template);
+            DomainRepositoryService.writeArtifact(store, TARGET_DIRECTORY, template);
         }
 
         Template minutes = TemplateBinding.INSTANCE.toEntity(SOURCE, MINUTES, Payload.of(TEMPLATE));
@@ -105,7 +108,7 @@ class TemplateStoreTest {
         write(source, "missions/plan/templates/spec.md", TEMPLATE);
         write(source, "templates/top.md", TEMPLATE);
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(read.templates())
                 .extracting(FilesystemPackStore.TemplateFile::path, FilesystemPackStore.TemplateFile::place)
@@ -125,7 +128,7 @@ class TemplateStoreTest {
         write(source, "missions/plan/templates/x.md", TEMPLATE);
         write(source, "templates/plan/x.md", new byte[] {'t', 'o', 'p'});
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
         Map<Urn, String> places = new java.util.HashMap<>();
         Pack pack = PackAssembly.assembly(SOURCE, read, places).build();
 
@@ -166,7 +169,7 @@ class TemplateStoreTest {
         AssetStoreTest.link(source.resolve("templates/leak.md"), outside);
         AssetStoreTest.link(source.resolve("templates/inside.md"), source.resolve("templates/real.md"));
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE_DIRECTORY);
 
         assertThat(read.templates())
                 .extracting(FilesystemPackStore.TemplateFile::path)
@@ -188,14 +191,14 @@ class TemplateStoreTest {
         Payload content = Payload.of(TEMPLATE);
 
         DomainRepositoryService.writeArtifact(
-                store, TARGET, TemplateBinding.INSTANCE.toEntity(TARGET, "x.md", content));
+                store, TARGET_DIRECTORY, TemplateBinding.INSTANCE.toEntity(TARGET, "x.md", content));
         assertThatThrownBy(() -> DomainRepositoryService.writeArtifact(
-                        store, TARGET, TemplateBinding.INSTANCE.toEntity(TARGET, "x.tactic.yaml", content)))
+                        store, TARGET_DIRECTORY, TemplateBinding.INSTANCE.toEntity(TARGET, "x.tactic.yaml", content)))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("payload templates/x.tactic.yaml is a pack file of kind tactic, not a template");
         assertThatThrownBy(() -> DomainRepositoryService.writeArtifact(
                         store,
-                        TARGET,
+                        TARGET_DIRECTORY,
                         TemplateBinding.INSTANCE.toEntity(TARGET, "plan-field-declaration.yaml", content)))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("payload templates/plan-field-declaration.yaml is excluded by"
@@ -220,11 +223,11 @@ class TemplateStoreTest {
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
         Payload other = Payload.of(new byte[] {'o'});
 
-        assertThatThrownBy(() -> store.writePayload(TARGET, "templates/x/a.md", other, PackFileKind.TEMPLATE))
+        assertThatThrownBy(() -> store.writePayload(TARGET_DIRECTORY, "templates/x/a.md", other, PackFileKind.TEMPLATE))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessage("payload templates/x/a.md differs only in case from templates/x/A.md");
-        assertThatThrownBy(() -> store.writePayload(TARGET, "templates/X/b.md", other, PackFileKind.TEMPLATE))
+        assertThatThrownBy(() -> store.writePayload(TARGET_DIRECTORY, "templates/X/b.md", other, PackFileKind.TEMPLATE))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessage("payload templates/X/b.md differs only in case from templates/x");
@@ -233,7 +236,7 @@ class TemplateStoreTest {
         assertThat(target.resolve("templates/X")).doesNotExist();
         assertThat(Files.readAllBytes(target.resolve("templates/x/A.md"))).isEqualTo(TEMPLATE);
 
-        store.writePayload(TARGET, "templates/x/A.md", other, PackFileKind.TEMPLATE);
+        store.writePayload(TARGET_DIRECTORY, "templates/x/A.md", other, PackFileKind.TEMPLATE);
         assertThat(Files.readAllBytes(target.resolve("templates/x/A.md"))).isEqualTo(other.bytes());
     }
 
@@ -251,7 +254,7 @@ class TemplateStoreTest {
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
         assertThatThrownBy(() -> store.writePayload(
-                        TARGET, "templates/a.md", Payload.of(new byte[] {'o'}), PackFileKind.TEMPLATE))
+                        TARGET_DIRECTORY, "templates/a.md", Payload.of(new byte[] {'o'}), PackFileKind.TEMPLATE))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessage("payload templates/a.md differs only in case from templates/A.md");

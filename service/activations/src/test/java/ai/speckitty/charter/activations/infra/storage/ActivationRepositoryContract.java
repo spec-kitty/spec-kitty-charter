@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +81,7 @@ abstract class ActivationRepositoryContract {
     /** A document distinct for each {@code n}. */
     static ActivationDocument document(int n) {
         return ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("pack-" + n, "1." + n)))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("pack-" + n), "1." + n)))
                 .selected(ArtifactKind.TACTIC, List.of("tactic-" + n))
                 .selected(ArtifactKind.MISSION_TYPE, List.of("mission-" + n))
                 .languages(List.of("lang-" + n))

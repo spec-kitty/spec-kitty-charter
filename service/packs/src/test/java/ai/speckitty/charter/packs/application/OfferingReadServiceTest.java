@@ -12,7 +12,6 @@ import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -24,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,7 +59,8 @@ class OfferingReadServiceTest {
     }
 
     private static PackDescriptor descriptor(String id, Optional<PackLevel> declared) {
-        return new PackDescriptor(id, "1.0." + id.length(), Optional.empty(), id + " pack", declared, Optional.empty());
+        return new PackDescriptor(
+                FixtureUlids.of(id), "1.0." + id.length(), Optional.empty(), id + " pack", declared, Optional.empty());
     }
 
     private OfferingReadService service(List<ConfiguredPack> packs, ConsistentRead read) {
@@ -72,29 +73,30 @@ class OfferingReadServiceTest {
 
     @Test
     void theOrderIsByConfiguredLevelThenByIdInCodePointOrder() {
-        // Configured out of order: project first, and the lower-case id before the upper-case one at every level.
+        // Configured out of order: project first, and the later id before the earlier one at every level.
         List<ConfiguredPack> packs = List.of(
+                configured("kilo", PackLevel.PROJECT),
                 configured("charlie", PackLevel.PROJECT),
-                configured("Kilo", PackLevel.PROJECT),
+                configured("omega", PackLevel.ORG),
                 configured("bravo", PackLevel.ORG),
-                configured("Omega", PackLevel.ORG),
-                configured("alpha", PackLevel.BUILT_IN),
-                configured("Zeta", PackLevel.BUILT_IN));
+                configured("zeta", PackLevel.BUILT_IN),
+                configured("alpha", PackLevel.BUILT_IN));
 
         assertThat(service(packs).offering().value())
                 .extracting(entry -> entry.id().value() + "@" + entry.level().token())
                 .containsExactly(
-                        "Zeta@built-in", "alpha@built-in", "Omega@org", "bravo@org", "Kilo@project", "charlie@project");
+                        "alpha@built-in", "zeta@built-in", "bravo@org", "omega@org", "charlie@project", "kilo@project");
     }
 
     @Test
-    void theIdOrderComparesCodePointsNotUtf16Units() {
-        // U+1F600 is a surrogate pair, which String.compareTo puts before U+FB01; code-point order puts it after.
-        List<ConfiguredPack> packs = List.of(configured("😀", PackLevel.ORG), configured("ﬁ", PackLevel.ORG));
+    void theIdOrderComparesCodePointsSoAHyphenSortsBeforeADigitAndADigitBeforeALetter() {
+        // U+002D before U+0030 before U+0061: a collation that ignores the hyphen would put a-b after a0.
+        List<ConfiguredPack> packs = List.of(
+                configured("ab", PackLevel.ORG), configured("a0", PackLevel.ORG), configured("a-b", PackLevel.ORG));
 
         assertThat(service(packs).offering().value())
                 .extracting(entry -> entry.id().value())
-                .containsExactly("ﬁ", "😀");
+                .containsExactly("a-b", "a0", "ab");
     }
 
     @Test
@@ -233,7 +235,7 @@ class OfferingReadServiceTest {
             descriptors.put(
                     "gamma",
                     Optional.of(new PackDescriptor(
-                            "gamma",
+                            FixtureUlids.of("gamma"),
                             "not a version",
                             Optional.empty(),
                             "gamma pack",
@@ -277,7 +279,7 @@ class OfferingReadServiceTest {
 
             assertThat(refusalOf(() -> service(packs).composed(roots("alpha"))))
                     .satisfies(refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                    .hasMessageContaining("hidden")
+                    .hasMessageContaining(FixtureUlids.of("hidden"))
                     .hasMessageContaining("gamma");
         }
 
@@ -299,7 +301,9 @@ class OfferingReadServiceTest {
             CharterRefusal refused = refusalOf(() -> service(packs).composed(roots("alpha")));
 
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_DUPLICATE_ID);
-            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactlyInAnyOrder("beta", "twin");
+            assertThat(refused.packs())
+                    .extracting(pack -> pack.packId().value())
+                    .containsExactlyInAnyOrder("beta", "twin");
         }
 
         @Test
@@ -337,7 +341,7 @@ class OfferingReadServiceTest {
                     .containsExactly("beta", "alpha");
             assertThat(OfferingReadService.entriesOf(composed.packs()).getLast().dependencies())
                     .singleElement()
-                    .satisfies(edge -> assertThat(edge.to()).isEqualTo("beta"));
+                    .satisfies(edge -> assertThat(edge.to()).isEqualTo(FixtureUlids.of("beta")));
         }
     }
 
@@ -377,7 +381,9 @@ class OfferingReadServiceTest {
             assertThat(refused.getMessage())
                     .contains("step_enhancement:spdd-plan")
                     .contains("action:software-dev/nosuch");
-            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("enhancer", "base");
+            assertThat(refused.packs())
+                    .extracting(pack -> pack.packId().value())
+                    .containsExactly("enhancer", "base");
         }
 
         @Test
@@ -408,7 +414,7 @@ class OfferingReadServiceTest {
 
         private static PackDescriptor distribution(String packId, String member, String... members) {
             return new PackDescriptor(
-                    packId,
+                    FixtureUlids.of(packId),
                     "1.0.0",
                     Optional.empty(),
                     packId + " pack",
@@ -416,9 +422,11 @@ class OfferingReadServiceTest {
                     Optional.empty(),
                     PackPaths.none(),
                     Arrays.stream(members)
-                            .map(target -> new PackDependency(target, ">=1.0"))
+                            .map(target -> new PackDependency(FixtureUlids.of(target), ">=1.0"))
                             .toList(),
-                    member == null ? List.of() : List.of(new PackOverride("directive:DIRECTIVE_009", member)));
+                    member == null
+                            ? List.of()
+                            : List.of(new PackOverride("directive:DIRECTIVE_009", FixtureUlids.of(member))));
         }
 
         @Test
@@ -440,8 +448,11 @@ class OfferingReadServiceTest {
 
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
             assertThat(refused.getMessage())
-                    .contains("declared by pack `member pack` (member), which is not the distribution pack");
-            assertThat(refused.packs()).extracting(RefusalPack::packId).containsExactly("member", "right", "left");
+                    .contains("declared by pack `member pack` (" + FixtureUlids.of("member")
+                            + "), which is not the distribution pack");
+            assertThat(refused.packs())
+                    .extracting(pack -> pack.packId().value())
+                    .containsExactly("member", "right", "left");
         }
 
         @Test
@@ -454,7 +465,8 @@ class OfferingReadServiceTest {
             CharterRefusal refused = refusalOf(() -> service(packs).offering());
 
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refused.getMessage()).contains("(left), which is not the distribution pack");
+            assertThat(refused.getMessage())
+                    .contains("(" + FixtureUlids.of("left") + "), which is not the distribution pack");
         }
 
         @Test
@@ -467,7 +479,9 @@ class OfferingReadServiceTest {
 
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
             assertThat(refused.getMessage()).contains("more than one distribution pack");
-            assertThat(refused.packs()).extracting(RefusalPack::packId).startsWith("dist", "other");
+            assertThat(refused.packs())
+                    .extracting(pack -> pack.packId().value())
+                    .startsWith("dist", "other");
             assertThat(service(packs).composed(roots("dist")))
                     .as("the control: one distribution's closure leaves the other out, and is served")
                     .hasSize(3);
@@ -530,7 +544,10 @@ class OfferingReadServiceTest {
                             declared(
                                     "one",
                                     PackLevel.ORG,
-                                    named("one", "one pack", List.of(new PackDependency("base", ">=9")))));
+                                    named(
+                                            "one",
+                                            "one pack",
+                                            List.of(new PackDependency(FixtureUlids.of("base"), ">=9")))));
                 case PARENT_UNRESOLVED -> List.of(declared("one", PackLevel.ORG, withParent("one", "gone")));
                 case LEVEL_VIOLATION ->
                     List.of(
@@ -603,7 +620,7 @@ class OfferingReadServiceTest {
 
     private static PackDescriptor named(String packId, String name, List<PackDependency> dependencies) {
         return new PackDescriptor(
-                packId,
+                FixtureUlids.of(packId),
                 "1.0.0",
                 Optional.empty(),
                 name,
@@ -618,18 +635,23 @@ class OfferingReadServiceTest {
                 packId,
                 packId + " pack",
                 Arrays.stream(targets)
-                        .map(target -> new PackDependency(target, ">=1.0"))
+                        .map(target -> new PackDependency(FixtureUlids.of(target), ">=1.0"))
                         .toList());
     }
 
     private static PackDescriptor withParent(String packId, String parent) {
         return new PackDescriptor(
-                packId, "1.0.0", Optional.of(parent), packId + " pack", Optional.empty(), Optional.empty());
+                FixtureUlids.of(packId),
+                "1.0.0",
+                Optional.of(FixtureUlids.of(parent)),
+                packId + " pack",
+                Optional.empty(),
+                Optional.empty());
     }
 
     private static PackDescriptor settling(String packId, String member) {
         return new PackDescriptor(
-                packId,
+                FixtureUlids.of(packId),
                 "1.0.0",
                 Optional.empty(),
                 packId + " pack",
@@ -637,7 +659,7 @@ class OfferingReadServiceTest {
                 Optional.empty(),
                 PackPaths.none(),
                 List.of(),
-                List.of(new PackOverride("directive:DIRECTIVE_009", member)));
+                List.of(new PackOverride("directive:DIRECTIVE_009", FixtureUlids.of(member))));
     }
 
     private static List<PackIdentifier> roots(String... ids) {

@@ -14,6 +14,7 @@ import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StaleIds;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
@@ -318,8 +319,8 @@ public class ActivationService {
         return normalized.document();
     }
 
-    private static Optional<List<String>> packIdsOf(ActivationDocument document) {
-        return document.packs().map(list -> list.stream().map(PackRef::packId).toList());
+    private static Optional<List<PackIdentifier>> packIdsOf(ActivationDocument document) {
+        return document.packIds();
     }
 
     /** What a write's headers ask for, judged before anything is read. */

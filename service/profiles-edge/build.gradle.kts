@@ -28,6 +28,8 @@ dependencies {
     implementation(catalog.lib("jackson-databind"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
+    // The fixture values the packs tests build from: a descriptor pack_id is a real ULID (#583).
+    testImplementation(testFixtures(project(":packs")))
 }
 
 // The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85); the score

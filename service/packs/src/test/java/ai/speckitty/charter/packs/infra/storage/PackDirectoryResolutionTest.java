@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,11 +19,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The read side ({@link DomainRepositoryService}), the commit store ({@link PackCommitStore}) and the write store
- * ({@link CommitStorePackWriteStore}) resolve a pack identifier to the same configured directory (#184): a location
- * whose configured name is the identifier wins, otherwise the first location whose {@code pack.yaml} declares it, and
- * a location that cannot declare it is passed over.
+ * ({@link CommitStorePackWriteStore}) resolve a pack identifier to the same configured directory (#184): the location
+ * configured as that registered id. The {@code pack_id} a {@code pack.yaml} declares is no address (#583, D3).
  */
-@DisplayName("Reads, commits and writes resolve a pack id to the same directory")
+@DisplayName("Reads, commits and writes resolve a registered pack id to the same directory")
 class PackDirectoryResolutionTest {
 
     private static final String ID_A = "01M5YVECC0MPAN10ND1GEST00A";
@@ -87,62 +87,27 @@ class PackDirectoryResolutionTest {
     }
 
     @Test
-    void theConfiguredNameWinsOverAnEarlierLocationThatDeclaresItAsItsId() throws IOException {
-        Path declares = pack("declares", ID_A);
-        Path named = pack("named", ID_B);
-
-        assertAllResolve(List.of(at("first", declares), at(ID_A, named)), ID_A, named);
-    }
-
-    @Test
-    void withNoLocationOfThatNameTheLocationThatDeclaresTheIdIsResolved() throws IOException {
+    void theRegisteredIdResolvesTheLocationConfiguredAsIt() throws IOException {
         Path other = pack("other", ID_B);
-        Path declares = pack("declares", ID_A);
+        Path mine = pack("my-pack", ID_A);
 
-        assertAllResolve(List.of(at("other", other), at("p", declares)), ID_A, declares);
+        assertAllResolve(List.of(at("other", other), at("my-pack", mine)), "my-pack", mine);
     }
 
     @Test
-    void whenTwoLocationsDeclareTheIdTheFirstConfiguredIsResolved() throws IOException {
-        Path first = pack("first", ID_A);
-        Path second = pack("second", ID_A);
+    void theDescriptorsPackIdIsNoAddressBecauseItIsNoPackIdentifier() throws IOException {
+        pack("my-pack", ID_A);
 
-        assertAllResolve(List.of(at("x", first), at("y", second)), ID_A, first);
+        assertThatThrownBy(() -> new PackIdentifier(ID_A))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
     }
 
     @Test
-    void aLocationThatCannotDeclareTheIdIsPassedOver() throws IOException {
-        Path missing = host.resolve("missing");
-        Path unreadable = Files.createDirectories(host.resolve("unreadable"));
-        Files.writeString(unreadable.resolve(PackFileSet.PACK_YAML), "pack_id: [\n", StandardCharsets.UTF_8);
-        Path declares = pack("declares", ID_A);
-
-        assertAllResolve(List.of(at("x", missing), at("y", unreadable), at("z", declares)), ID_A, declares);
-    }
-
-    @Test
-    void aLocationWhosePackYamlCannotBeReadIsRefusedNotPassedOver() throws IOException {
-        // A pack.yaml that is there but cannot be read (here a directory) must not hide itself: the duplicate
-        // declaration after it would silently win.
-        Path unreadable = Files.createDirectories(host.resolve("unreadable").resolve(PackFileSet.PACK_YAML))
-                .getParent();
-        Path declares = pack("declares", ID_A);
-
-        assertAllRefuse(List.of(at("x", unreadable), at("y", declares)), ID_A, RefusalCode.PACK_UNREADABLE);
-    }
-
-    @Test
-    void aLocationWithNoParentDirectoryIsPassedOverAsOneThatCannotDeclareTheId() throws IOException {
-        Path root = host.getRoot();
-        Path declares = pack("declares", ID_A);
-
-        assertAllResolve(List.of(at("root", root), at("p", declares)), ID_A, declares);
-    }
-
-    @Test
-    void anIdNoLocationNamesOrDeclaresIsNotFound() throws IOException {
+    void anIdNoLocationIsConfiguredAsIsNotFound() throws IOException {
         Path other = pack("other", ID_B);
 
-        assertAllRefuse(List.of(at("other", other)), ID_A, RefusalCode.PACK_NOT_FOUND);
+        assertAllRefuse(List.of(at("other", other)), "absent", RefusalCode.PACK_NOT_FOUND);
     }
 }

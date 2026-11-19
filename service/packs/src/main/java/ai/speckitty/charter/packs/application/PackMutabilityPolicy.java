@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -74,7 +75,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * @param buildsOn the descriptor {@code pack_id}s of the packs it builds on ({@code depends_on}, {@code parent_pack})
      * @param held the artifacts it holds
      */
-    record Member(PackIdentifier configured, String descriptorPackId, List<String> buildsOn, Set<Urn> held) {
+    record Member(PackIdentifier configured, PackUlid descriptorPackId, List<PackUlid> buildsOn, Set<Urn> held) {
 
         /**
          * Checks and copies the fields.
@@ -118,15 +119,18 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * pack below holds is already someone's artifact, so a write of it into the pack is a replace of that artifact (C21,
      * decision 01M6VEDYX8TQ4AKCP7C19WAP75), never a registration.
      */
-    private record Judging(Map<String, MutabilityPolicySource> policies, Set<Urn> held) {}
+    private record Judging(Map<PackUlid, MutabilityPolicySource> policies, Set<Urn> held) {}
 
     /** One closure pack as the lock scope reads it. */
-    private record Scope(String packId, List<String> buildsOn, Set<Urn> held, MutabilityPolicySource policy) {}
+    private record Scope(PackUlid packId, List<PackUlid> buildsOn, Set<Urn> held, MutabilityPolicySource policy) {}
 
     private static final String STALE = "The packs changed while the write's policy was read; send the write again.";
 
-    /** The name the single-source seam gives the packs whose levels it plants. */
-    private static final String BUILT_ON = "built-on";
+    /**
+     * The key the single-source seam files the levels it plants under: the packs every written pack builds on, which
+     * the seam does not name, so it is the nil ULID, a {@code pack_id} no descriptor declares.
+     */
+    private static final PackUlid BUILT_ON = new PackUlid("00000000000000000000000000");
 
     private final JudgingPolicies judgingPolicies;
     private final JudgingPolicies stagedJudgingPolicies;
@@ -146,7 +150,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             ConsistentRead read) {
-        this(liveJudging(offerings, catalog, descriptors, read), stagedJudging(offerings, catalog, descriptors, read));
+        this(liveJudging(offerings, catalog, read), stagedJudging(offerings, catalog, descriptors, read));
     }
 
     /**
@@ -225,7 +229,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     private static void require(Pack pack, Judging judging, Operation written, Urn target) {
-        Map<String, MutabilityPolicySource> byPack = judging.policies();
+        Map<PackUlid, MutabilityPolicySource> byPack = judging.policies();
         Operation operation =
                 written == Operation.REGISTER && judging.held().contains(target) ? Operation.REPLACE : written;
         PerPackPolicy.Level level = new PerPackPolicy(byPack).levelIn(List.copyOf(byPack.keySet()), target);
@@ -233,7 +237,9 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
             throw new CharterRefusal(
                     RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                     "Operation " + operation + " on " + target + " is refused: pack "
-                            + level.setBy().orElse(pack.id().value()) + " of the composition of "
+                            + level.setBy()
+                                    .map(PackUlid::value)
+                                    .orElse(pack.id().value()) + " of the composition of "
                             + pack.id().value()
                             + " declares it " + level.level().token()
                             + ", which does not permit this write (ADR-0012, ADR-0063).");
@@ -249,23 +255,22 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * @param policyOf each pack's declared policy
      * @return each pack's scoped policy, by descriptor {@code pack_id}, in closure order
      */
-    public static Map<String, MutabilityPolicySource> scopedPolicies(
+    public static Map<PackUlid, MutabilityPolicySource> scopedPolicies(
             List<PackUnderResolution> closure, Function<PackUnderResolution, MutabilityPolicySource> policyOf) {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(policyOf, "policyOf");
         return scoped(closure.stream()
-                .map(member ->
-                        new Scope(member.descriptor().packId(), buildsOn(member), held(member), policyOf.apply(member)))
+                .map(member -> new Scope(member.descriptorId(), buildsOn(member), held(member), policyOf.apply(member)))
                 .toList());
     }
 
     /** The policies judging a write into {@code root}: the closure's scoped policies, the root's own left out (B8). */
     private static Judging judgingOf(OfferingReadService.ComposedClosure composed, PackIdentifier root) {
-        Map<String, MutabilityPolicySource> judging = scopedPolicies(
+        Map<PackUlid, MutabilityPolicySource> judging = scopedPolicies(
                 composed.packs(), member -> composed.factsOf(member).policy());
         composed.packs().stream()
                 .filter(member -> member.configured().id().equals(root))
-                .forEach(member -> judging.remove(member.descriptor().packId()));
+                .forEach(member -> judging.remove(member.descriptorId()));
         Set<Urn> held = new HashSet<>();
         composed.packs().stream()
                 .filter(member -> !member.configured().id().equals(root))
@@ -275,12 +280,9 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
 
     /** The policies judging a write into a stored pack: its live closure, composed in one verified read. */
     private static JudgingPolicies liveJudging(
-            OfferingReadService offerings,
-            PackCatalogRepository catalog,
-            PackDescriptorRepository descriptors,
-            ConsistentRead read) {
+            OfferingReadService offerings, PackCatalogRepository catalog, ConsistentRead read) {
         return pack -> read.read(STALE, () -> {
-                    PackIdentifier root = rootOf(catalog, descriptors, pack);
+                    PackIdentifier root = rootOf(catalog, pack);
                     return judgingOf(offerings.composedWithFacts(Set.of(root)), root);
                 })
                 .value();
@@ -330,7 +332,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     private static JudgingPolicies policiesOver(MutabilityPolicyRepository policies, Closure closure) {
         return pack -> {
             List<Member> members = closure.of(pack);
-            Map<String, MutabilityPolicySource> judging = scoped(members.stream()
+            Map<PackUlid, MutabilityPolicySource> judging = scoped(members.stream()
                     .map(member -> new Scope(
                             member.descriptorPackId(),
                             member.buildsOn(),
@@ -349,18 +351,18 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /** Each pack's policy restricted to what it and the packs it builds on hold, in closure order, each id once. */
-    private static Map<String, MutabilityPolicySource> scoped(List<Scope> closure) {
-        Map<String, Scope> byId = new LinkedHashMap<>();
+    private static Map<PackUlid, MutabilityPolicySource> scoped(List<Scope> closure) {
+        Map<PackUlid, Scope> byId = new LinkedHashMap<>();
         closure.forEach(scope -> byId.putIfAbsent(scope.packId(), scope));
-        Map<String, MutabilityPolicySource> scoped = new LinkedHashMap<>();
+        Map<PackUlid, MutabilityPolicySource> scoped = new LinkedHashMap<>();
         byId.values().forEach(scope -> scoped.put(scope.packId(), restricted(scope.policy(), heldAlong(scope, byId))));
         return scoped;
     }
 
     /** What a pack and every pack it builds on, transitively, hold; a pack outside the closure holds nothing here. */
-    private static Set<Urn> heldAlong(Scope from, Map<String, Scope> byId) {
+    private static Set<Urn> heldAlong(Scope from, Map<PackUlid, Scope> byId) {
         Set<Urn> held = new HashSet<>();
-        Set<String> seen = new HashSet<>();
+        Set<PackUlid> seen = new HashSet<>();
         Deque<Scope> pending = new ArrayDeque<>(List.of(from));
         while (!pending.isEmpty()) {
             Scope next = pending.pop();
@@ -388,10 +390,11 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /** The descriptor {@code pack_id}s a pack builds on: its {@code depends_on} edges and its {@code parent_pack}. */
-    private static List<String> buildsOn(PackUnderResolution member) {
+    private static List<PackUlid> buildsOn(PackUnderResolution member) {
         return Stream.concat(
                         member.descriptor().dependencies().stream().map(PackDependency::packId),
                         member.descriptor().parentPack().stream())
+                .map(PackUlid::new)
                 .toList();
     }
 
@@ -403,23 +406,14 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /**
-     * The configured pack a write addresses: the one configured as the pack's identifier, else the one whose descriptor
-     * declares the pack's {@code pack_id} (a pack may be addressed by either). A pack that is neither is refused
-     * {@code pack_not_found}, as on every other read.
+     * The configured pack a write addresses: the one configured as the pack's identifier, its registered id (#583,
+     * D3). A pack that is not configured is refused {@code pack_not_found}, as on every other read.
      */
-    private static PackIdentifier rootOf(
-            PackCatalogRepository catalog, PackDescriptorRepository descriptors, Pack pack) {
-        List<PackIdentifier> configured =
-                catalog.configured().stream().map(ConfiguredPack::id).toList();
-        if (configured.contains(pack.id())) {
+    private static PackIdentifier rootOf(PackCatalogRepository catalog, Pack pack) {
+        if (catalog.configured().stream().anyMatch(candidate -> candidate.id().equals(pack.id()))) {
             return pack.id();
         }
-        String packId = pack.descriptor().packId();
-        return configured.stream()
-                .filter(candidate -> declares(descriptors, candidate, packId))
-                .findFirst()
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.PACK_NOT_FOUND, "Pack " + pack.id().value() + " was not found."));
+        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.id().value() + " was not found.");
     }
 
     /** Whether the configured pack's descriptor declares {@code packId}; an unreadable one declares nothing. */

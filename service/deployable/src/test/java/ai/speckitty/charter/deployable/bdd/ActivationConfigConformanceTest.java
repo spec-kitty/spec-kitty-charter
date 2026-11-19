@@ -94,6 +94,7 @@ class ActivationConfigConformanceTest {
             case "enum" -> violation.startsWith(at + " is ") && violation.contains(", not one of ");
             case "pattern" -> violation.startsWith(at + " '") && violation.contains("' does not match ");
             case "minLength" -> violation.startsWith(at + " is shorter than ");
+            case "maxLength" -> violation.startsWith(at + " is longer than ");
             case "minItems" -> violation.startsWith(at + " holds fewer than ");
             case "minimum" -> violation.startsWith(at + " is below ");
             case "maximum" -> violation.startsWith(at + " is above ");

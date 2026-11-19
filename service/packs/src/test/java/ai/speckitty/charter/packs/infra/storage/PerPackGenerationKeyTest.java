@@ -1,10 +1,12 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackRemovalStore.Removal;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
@@ -26,8 +28,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The per-pack write generation is keyed by the pack's configured name on every write path (issue 418, R5): the facts
- * cache of the effective reads keys on it, so a write that named the pack by its declared {@code pack_id} would move a
- * counter nobody reads.
+ * cache of the effective reads keys on it. A write addresses the pack by that name, its registered id, alone (#583,
+ * D3): one addressed by the declared {@code pack_id} is refused {@code pack_not_found} and moves no counter.
  */
 class PerPackGenerationKeyTest {
 
@@ -65,7 +67,7 @@ class PerPackGenerationKeyTest {
 
     private static final class Rig {
         final PackWriteGeneration generation = new PackWriteGeneration();
-        final PackIdentifier declared = new PackIdentifier(DECLARED);
+        final PackIdentifier registered = new PackIdentifier(CONFIGURED);
         final DomainRepositoryService service;
         final PackCommitStore commits;
         final CommitStorePackWriteStore writeStore;
@@ -88,43 +90,39 @@ class PerPackGenerationKeyTest {
     }
 
     @Test
-    @DisplayName("a per-artifact write addressed by the declared pack_id moves the generation of the configured name")
+    @DisplayName("a per-artifact write addressed by the registered id moves the generation of that id")
     void aPerArtifactWriteMovesTheConfiguredNamesGeneration(@TempDir Path host) throws IOException {
         Rig rig = new Rig(unbrokenPacks(host));
         long before = rig.generation.ofPack(CONFIGURED);
 
         rig.writeStore.commit(
-                rig.declared,
-                null,
-                Change.artifact(withToolguide(rig.service.load(new PackIdentifier(CONFIGURED))), toolguide()));
+                rig.registered, null, Change.artifact(withToolguide(rig.service.load(rig.registered)), toolguide()));
 
         assertThat(rig.generation.ofPack(CONFIGURED)).isEqualTo(before + 2);
         assertThat(rig.generation.ofPack(DECLARED))
-                .as("nothing is keyed by the declared id")
+                .as("nothing is keyed by the declared pack_id")
                 .isZero();
     }
 
     @Test
-    @DisplayName("a DELETE addressed by the declared pack_id moves the generation of the configured name")
+    @DisplayName("a DELETE addressed by the registered id moves the generation of that id")
     void aRemovalMovesTheConfiguredNamesGeneration(@TempDir Path host) throws IOException {
         Rig rig = new Rig(unbrokenPacks(host));
         rig.writeStore.commit(
-                rig.declared,
-                null,
-                Change.artifact(withToolguide(rig.service.load(new PackIdentifier(CONFIGURED))), toolguide()));
+                rig.registered, null, Change.artifact(withToolguide(rig.service.load(rig.registered)), toolguide()));
         long before = rig.generation.ofPack(CONFIGURED);
 
         rig.writeStore.remove(
-                rig.declared, Removal.ofArtifact(new Urn(NodeKind.TOOLGUIDE, "ripgrep"), List.of(), List.of()));
+                rig.registered, Removal.ofArtifact(new Urn(NodeKind.TOOLGUIDE, "ripgrep"), List.of(), List.of()));
 
         assertThat(rig.generation.ofPack(CONFIGURED)).isEqualTo(before + 2);
         assertThat(rig.generation.ofPack(DECLARED))
-                .as("nothing is keyed by the declared id")
+                .as("nothing is keyed by the declared pack_id")
                 .isZero();
     }
 
     @Test
-    @DisplayName("a whole-pack replace addressed by the declared pack_id moves the generation of the configured name")
+    @DisplayName("a whole-pack replace addressed by the registered id moves the generation of that id")
     void aWholePackReplaceMovesTheConfiguredNamesGeneration(@TempDir Path host) throws IOException {
         Rig rig = new Rig(unbrokenPacks(host));
         Path upload = PackFixtures.copyOf("pack-a", host.resolve("stage"));
@@ -136,11 +134,28 @@ class PerPackGenerationKeyTest {
                 StandardCharsets.UTF_8);
         long before = rig.generation.ofPack(CONFIGURED);
 
-        rig.commits.replaceWhole(rig.declared, new StagedPack(upload));
+        rig.commits.replaceWhole(rig.registered, new StagedPack(upload));
 
         assertThat(rig.generation.ofPack(CONFIGURED)).isEqualTo(before + 2);
         assertThat(rig.generation.ofPack(DECLARED))
-                .as("nothing is keyed by the declared id")
+                .as("nothing is keyed by the declared pack_id")
                 .isZero();
+    }
+
+    @Test
+    @DisplayName(
+            "a write cannot be addressed by the declared pack_id, which is no pack identifier, and moves no generation")
+    void aWriteCannotBeAddressedByTheDeclaredPackId(@TempDir Path host) throws IOException {
+        Rig rig = new Rig(unbrokenPacks(host));
+        Pack written = withToolguide(rig.service.load(rig.registered));
+        long before = rig.generation.ofPack(CONFIGURED);
+
+        assertThatThrownBy(() -> rig.writeStore.commit(
+                        new PackIdentifier(DECLARED), null, Change.artifact(written, toolguide())))
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.reason().detail()).isEqualTo(PackIdentifier.GRAMMAR_DETAIL));
+        assertThat(rig.generation.ofPack(CONFIGURED)).isEqualTo(before);
+        assertThat(rig.generation.ofPack(DECLARED)).isZero();
     }
 }

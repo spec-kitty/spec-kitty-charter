@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,7 +228,12 @@ class RelationshipControllerTest {
         private final Pack pack = Pack.builder()
                 .id(PACK)
                 .descriptor(new PackDescriptor(
-                        "pack-a", "1.0.0", Optional.empty(), "pack-a", Optional.empty(), Optional.empty()))
+                        FixtureUlids.of("pack-a"),
+                        "1.0.0",
+                        Optional.empty(),
+                        "pack-a",
+                        Optional.empty(),
+                        Optional.empty()))
                 .directive(Directive.builder()
                         .id(new DirectiveIdentifier("DIR_A"))
                         .packId(PACK)

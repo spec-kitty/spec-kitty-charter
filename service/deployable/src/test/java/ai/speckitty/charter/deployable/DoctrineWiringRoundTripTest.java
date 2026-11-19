@@ -47,7 +47,7 @@ import org.springframework.test.context.DynamicPropertySource;
 class DoctrineWiringRoundTripTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
-    private static final PackIdentifier PACK = new PackIdentifier("01M5JHD0D0CTR1NEW1R1NG000A");
+    private static final PackIdentifier PACK = new PackIdentifier("fixture");
     private static Path packs = Path.of("");
 
     @Autowired

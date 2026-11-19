@@ -189,7 +189,7 @@ class GlossaryBodiesTest {
     void anIdIsEncodedAsOnePathSegmentAndTheTemplateIsLeftForTheClient() {
         GlossaryView odd = new GlossaryView(
                 "a b",
-                new PackIdentifier("q/a"),
+                new PackIdentifier("q-a"),
                 "1.0",
                 "N",
                 "D",
@@ -200,10 +200,10 @@ class GlossaryBodiesTest {
                 List.of(LANE));
         Artifact envelope = new GlossaryBodies("/api/v1").artifact(odd);
 
-        assertThat(envelope.getLinks().get("self").getHref()).isEqualTo("/api/v1/packs/q%2Fa/artifacts/glossary/a%20b");
+        assertThat(envelope.getLinks().get("self").getHref()).isEqualTo("/api/v1/packs/q-a/artifacts/glossary/a%20b");
         assertThat(envelope.getLinks().get("self").getTemplated()).isNull();
         assertThat(envelope.getLinks().get("term").getHref())
-                .isEqualTo("/api/v1/packs/q%2Fa/artifacts/glossary/a%20b/terms/{termId}");
+                .isEqualTo("/api/v1/packs/q-a/artifacts/glossary/a%20b/terms/{termId}");
         assertThat(envelope.getLinks().get("term").getTemplated()).isTrue();
     }
 }

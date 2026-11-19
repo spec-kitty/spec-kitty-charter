@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -230,7 +229,7 @@ class RetiredFilesTest {
             FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
 
             List<PackElementViolation> violations =
-                    store.read(new PackIdentifier("qa")).violations();
+                    store.read(new PackDirectory("qa")).violations();
 
             assertThat(violations)
                     .containsExactlyInAnyOrderElementsOf(files.entrySet().stream()
@@ -252,7 +251,7 @@ class RetiredFilesTest {
             write(exact, "pack.md");
             write(exact, "PROVENANCE.md");
 
-            assertThat(store.read(new PackIdentifier("qa")).violations())
+            assertThat(store.read(new PackDirectory("qa")).violations())
                     .containsExactlyInAnyOrder(
                             new PackElementViolation(
                                     "pack.md", StorageCodes.RETIRED, RetiredFileFixture.RULES.get("*/pack.md")),
@@ -268,7 +267,7 @@ class RetiredFilesTest {
                 String name = "variant" + n++;
                 write(RetiredFileFixture.plant(host.resolve(name), List.of()), variant.getKey());
 
-                assertThat(store.read(new PackIdentifier(name)).violations())
+                assertThat(store.read(new PackDirectory(name)).violations())
                         .as(variant.getKey())
                         .containsExactly(new PackElementViolation(
                                 variant.getKey(),

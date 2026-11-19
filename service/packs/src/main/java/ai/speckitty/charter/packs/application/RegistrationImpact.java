@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -228,7 +229,7 @@ public final class RegistrationImpact {
      * composed through, so the check lists the configured locations and reads the pack once, and the write is laid over
      * the facts it read. The descriptor is the stored one, which a per-artifact write does not change.
      *
-     * @param pack the pack written to, by the name it is configured under or by its declared {@code pack_id}
+     * @param pack the pack written to, by the name it is configured under, its registered id
      * @param write what the pack's facts become once the write is stored
      * @return the floor and lock changes over those closures; the answer of such a write declares no notices, so the
      *     activations it affects are not asked for
@@ -544,7 +545,7 @@ public final class RegistrationImpact {
         for (PackIdentifier pack : packs) {
             staged.descriptors()
                     .find(pack)
-                    .map(descriptor -> new RefusalPack(descriptor.packId(), pack.value(), descriptor.name()))
+                    .map(descriptor -> new RefusalPack(new PackUlid(descriptor.packId()), pack, descriptor.name()))
                     .ifPresent(involved::add);
         }
         return involved;
@@ -651,12 +652,12 @@ public final class RegistrationImpact {
     /** The packs involved, then the closure's roots, each pack once. */
     private static List<RefusalPack> withRoots(
             List<RefusalPack> involved, ClosureRoots.Roots roots, StagedPackViews.View staged) {
-        Map<String, RefusalPack> named = new LinkedHashMap<>();
+        Map<PackIdentifier, RefusalPack> named = new LinkedHashMap<>();
         involved.forEach(pack -> named.putIfAbsent(pack.packId(), pack));
         for (PackIdentifier root : roots.ids()) {
             staged.descriptors()
                     .find(root)
-                    .map(descriptor -> new RefusalPack(descriptor.packId(), root.value(), descriptor.name()))
+                    .map(descriptor -> new RefusalPack(new PackUlid(descriptor.packId()), root, descriptor.name()))
                     .ifPresent(pack -> named.putIfAbsent(pack.packId(), pack));
         }
         return new ArrayList<>(named.values());
@@ -664,9 +665,7 @@ public final class RegistrationImpact {
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {
         return new RefusalPack(
-                pack.descriptor().packId(),
-                pack.configured().id().value(),
-                pack.descriptor().name());
+                pack.descriptorId(), pack.configured().id(), pack.descriptor().name());
     }
 
     // ---- the notices ----------------------------------------------------------------------------------------------

@@ -560,6 +560,25 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/violations/0/pointer" is "/packs/0/version"
     And the field at "/violations/0/code" is "invalid_value"
 
+  Scenario Outline: A pin whose packId is no pack id is refused at the pin (<spelling>)
+    #583, FR-011: a pin names a pack by the id the registry names it under, a kebab slug of at most 63 characters, so
+    the contract's pattern and length refuse what no registered pack can carry, and so does the service, 422.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "<packId>"}]}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/packs/0/packId"
+    And the field at "/violations/0/code" is "invalid_value"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+    Examples:
+      | spelling           | packId                                                           |
+      | an underscore      | my_pack                                                          |
+      | sixty-four letters | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+
   Scenario: A document naming an unconfigured pack is refused at the pack's id
     R4.
     When I PUT "/activations/a-1" with the body:

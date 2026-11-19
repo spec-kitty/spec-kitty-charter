@@ -18,6 +18,7 @@ import ai.speckitty.charter.activations.domain.SkippedReport;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
@@ -84,7 +85,11 @@ class ActivationExclusionServiceTest {
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
         return repository
-                .create(ID, builder.packs(List.of(PackRef.of("main"))).build().document())
+                .create(
+                        ID,
+                        builder.packs(List.of(PackRef.of(new PackIdentifier("main"))))
+                                .build()
+                                .document())
                 .orElseThrow();
     }
 

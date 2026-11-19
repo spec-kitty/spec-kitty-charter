@@ -29,6 +29,8 @@ import org.junit.jupiter.api.io.TempDir;
 class PackRoundTripTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK);
     private static final String ALPHA_ID = "alpha-tactic";
     private static final String BETA_ID = "beta-tactic";
 
@@ -105,9 +107,9 @@ class PackRoundTripTest {
             Files.writeString(pack.resolve(tactic.id() + ".tactic.yaml"), "id: " + tactic.id() + "\n");
         }
         FilesystemPackStore store = storeOver(fresh);
-        store.writeDescriptor(PACK, original.descriptor());
-        tactics(original).forEach(t -> store.write(PACK, TacticBinding.INSTANCE, t));
-        return store.read(PACK);
+        store.writeDescriptor(PACK_DIRECTORY, original.descriptor());
+        tactics(original).forEach(t -> store.write(PACK_DIRECTORY, TacticBinding.INSTANCE, t));
+        return store.read(PACK_DIRECTORY);
     }
 
     /** The literal oracle: read values are the fixture's, so a field the reader drops fails here. */
@@ -115,7 +117,7 @@ class PackRoundTripTest {
     void aFixturePackReadsAsTheFixtureLiterals(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host);
 
-        FilesystemPackStore.PackRead read = storeOver(host).read(PACK);
+        FilesystemPackStore.PackRead read = storeOver(host).read(PACK_DIRECTORY);
 
         assertThat(read.descriptor()).isEqualTo(PACK_A_DESCRIPTOR);
         assertThat(tactics(read)).containsExactly(ALPHA, BETA);
@@ -125,7 +127,7 @@ class PackRoundTripTest {
     @Test
     void theLiteralOracleDistinguishesADroppedNestedExample(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host);
-        TacticDso readAlpha = tactic(storeOver(host).read(PACK), ALPHA_ID);
+        TacticDso readAlpha = tactic(storeOver(host).read(PACK_DIRECTORY), ALPHA_ID);
         List<TacticDso.Step> withoutNested = List.of(
                 new TacticDso.Step("First step", Optional.of("Do the first thing."), List.of("first example")),
                 readAlpha.steps().get(1));
@@ -148,7 +150,7 @@ class PackRoundTripTest {
     void aWrittenPackRefetchesEqualToTheOriginal(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host.resolve("source"));
         FilesystemPackStore.PackRead original =
-                storeOver(host.resolve("source")).read(PACK);
+                storeOver(host.resolve("source")).read(PACK_DIRECTORY);
 
         FilesystemPackStore.PackRead refetched = roundTrip(original, host.resolve("fresh"));
 
@@ -169,7 +171,7 @@ class PackRoundTripTest {
     void aMutatedTacticWrittenToAFreshPackRefetchesDifferently(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host.resolve("source"));
         FilesystemPackStore.PackRead original =
-                storeOver(host.resolve("source")).read(PACK);
+                storeOver(host.resolve("source")).read(PACK_DIRECTORY);
         TacticDso alpha = tactic(original, ALPHA_ID);
         TacticDso mutated = new TacticDso(
                 alpha.id(),
@@ -199,7 +201,7 @@ class PackRoundTripTest {
     void aMutatedDescriptorWrittenToAFreshPackRefetchesDifferently(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host.resolve("source"));
         FilesystemPackStore.PackRead original =
-                storeOver(host.resolve("source")).read(PACK);
+                storeOver(host.resolve("source")).read(PACK_DIRECTORY);
         PackDescriptorDso d = original.descriptor();
         PackDescriptorDso mutated = new PackDescriptorDso(
                 d.packId(),
@@ -226,7 +228,7 @@ class PackRoundTripTest {
     void aDescriptorWithAnOverridesEdgeRefetchesEqualToTheOriginal(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host.resolve("source"));
         FilesystemPackStore.PackRead original =
-                storeOver(host.resolve("source")).read(PACK);
+                storeOver(host.resolve("source")).read(PACK_DIRECTORY);
         PackDescriptorDso d = original.descriptor();
         PackDescriptorDso settling = new PackDescriptorDso(
                 d.packId(),
@@ -257,14 +259,15 @@ class PackRoundTripTest {
     void anUndeclaredDescriptorKeyMakesThePackUnreadable(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-undeclared", host);
         PackFixtures.copyOf("pack-a", host.resolve("clean"));
-        PackIdentifier id = new PackIdentifier(pack.getFileName().toString());
+        PackDirectory directory = PackDirectory.of(pack);
 
-        assertThat(storeOver(host.resolve("clean")).read(PACK).descriptor()).isEqualTo(PACK_A_DESCRIPTOR);
-        assertThatThrownBy(() -> storeOver(host).read(id))
+        assertThat(storeOver(host.resolve("clean")).read(PACK_DIRECTORY).descriptor())
+                .isEqualTo(PACK_A_DESCRIPTOR);
+        assertThatThrownBy(() -> storeOver(host).read(directory))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("pack.yaml of " + id.value() + ": unknown key 'experimental_note'");
+                .hasMessage("pack.yaml of " + directory.name() + ": unknown key 'experimental_note'");
     }
 
     /** Partial tolerance: the broken file is reported, and the valid elements are still returned (the control). */
@@ -272,7 +275,7 @@ class PackRoundTripTest {
     void aBrokenTacticIsReportedWhileTheValidElementsAreStillReturned(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host);
 
-        FilesystemPackStore.PackRead read = storeOver(host).read(PACK);
+        FilesystemPackStore.PackRead read = storeOver(host).read(PACK_DIRECTORY);
 
         assertThat(tactics(read)).extracting(TacticDso::id).containsExactly(ALPHA_ID, BETA_ID);
         assertThat(read.violations()).singleElement().satisfies(violation -> {

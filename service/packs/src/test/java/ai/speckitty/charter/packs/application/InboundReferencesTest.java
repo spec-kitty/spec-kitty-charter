@@ -6,16 +6,28 @@ import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -82,7 +94,7 @@ class InboundReferencesTest {
                 .as("every referrer is named, by its pack and artifact")
                 .contains("derived/" + referrer);
         assertThat(refused.packs())
-                .extracting(RefusalPack::packId)
+                .extracting(pack -> pack.packId().value())
                 .as("the referring packs, each once, as the contract's packs member lists them")
                 .containsExactly("derived");
         assertThat(rig.filesOf(rig.packs.resolve("base"))).as("nothing changed").containsKey(A_FILE);
@@ -431,4 +443,61 @@ class InboundReferencesTest {
                         + " derived's qualified references name base")
                 .isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
     }
+
+    @Test
+    void aRefusalForANewPacksBrokenReferenceNamesThePackByItsUploadId() {
+        Urn keep = new Urn(NodeKind.DIRECTIVE, "KEEP");
+        Urn gone = new Urn(NodeKind.DIRECTIVE, "GONE");
+        PackDescriptor descriptor =
+                new PackDescriptor(OTHER_ID, "1.0.0", Optional.empty(), "new_pack", Optional.empty(), Optional.empty());
+        PackCompositionFacts facts = new PackCompositionFacts(
+                List.of(),
+                List.of(keep.toString(), gone.toString()),
+                List.of(),
+                MutabilityPolicySource.empty(),
+                List.of(),
+                List.of(Relationship.of(
+                        keep,
+                        Optional.empty(),
+                        gone,
+                        Optional.empty(),
+                        RelationType.REQUIRES,
+                        Optional.empty(),
+                        Optional.empty())));
+        InboundReferences.StagedTree staged =
+                new InboundReferences.StagedTree(new PackIdentifier("new-pack"), Optional.empty(), descriptor, facts);
+        InboundReferences scan = new InboundReferences(List::of, NO_DESCRIPTORS, pack -> {
+            throw new AssertionError("no stored pack is read: none is configured");
+        });
+
+        CharterRefusal refused = InboundReferences.refusal("detail", "registration", scan.scan(staged, Set.of(gone)));
+
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::pointer)
+                .as("FR-008: the pointer addresses the pack by the id it is uploaded under, not its descriptor name")
+                .containsExactly("new-pack/directive:KEEP");
+        assertThat(refused.packs()).singleElement().satisfies(pack -> {
+            assertThat(pack.packId()).isEqualTo(new PackIdentifier("new-pack"));
+            assertThat(pack.descriptorPackId()).isEqualTo(new PackUlid(OTHER_ID));
+            assertThat(pack.name()).isEqualTo("new_pack");
+        });
+    }
+
+    /** The descriptors of a catalog that configures no pack: nothing reads them. */
+    private static final PackDescriptorRepository NO_DESCRIPTORS = new PackDescriptorRepository() {
+        @Override
+        public PackDescriptor get(PackIdentifier pack) {
+            throw new AssertionError("no stored descriptor is read: " + pack.value());
+        }
+
+        @Override
+        public Optional<PackDescriptor> find(PackIdentifier pack) {
+            throw new AssertionError("no stored descriptor is read: " + pack.value());
+        }
+
+        @Override
+        public void save(PackIdentifier pack, PackDescriptor descriptor) {
+            throw new AssertionError("the scan writes nothing");
+        }
+    };
 }

@@ -380,7 +380,7 @@ class StepEnhancementSurfacesTest {
         FilesystemPackStore files = new FilesystemPackStore(host, strategy);
 
         Pack assembled = PackAssembly.assembly(
-                        new PackIdentifier("enhancer"), files.read(new PackIdentifier("enhancer")), new HashMap<>())
+                        new PackIdentifier("enhancer"), files.read(new PackDirectory("enhancer")), new HashMap<>())
                 .build();
 
         assertThat(assembled.violations()).singleElement().satisfies(violation -> {

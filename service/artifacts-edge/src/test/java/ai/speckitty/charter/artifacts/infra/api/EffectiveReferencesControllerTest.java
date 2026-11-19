@@ -19,6 +19,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -58,7 +59,7 @@ class EffectiveReferencesControllerTest {
     private static final Urn Z = new Urn(NodeKind.TACTIC, "Z");
     private static final Urn TEMPLATE = new Urn(NodeKind.TEMPLATE, "notes");
     private static final ReferenceReads.Holder CORE_HOLDER =
-            new ReferenceReads.Holder(CORE, "01M4P01D5TWB5FKZGNNQG3943R", "core-pack");
+            new ReferenceReads.Holder(CORE, new PackUlid("01M4P01D5TWB5FKZGNNQG3943R"), "core-pack");
 
     private final List<String> asked = new ArrayList<>();
 

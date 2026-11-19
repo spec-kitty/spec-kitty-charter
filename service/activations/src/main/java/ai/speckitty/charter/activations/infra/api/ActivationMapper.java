@@ -24,6 +24,7 @@ import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.ResolvedDependency;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -377,7 +378,7 @@ public class ActivationMapper {
     }
 
     private static PackRef packRef(PackPin pin) {
-        return new PackRef(pin.getPackId(), Optional.ofNullable(pin.getVersion()));
+        return new PackRef(new PackIdentifier(pin.getPackId()), Optional.ofNullable(pin.getVersion()));
     }
 
     private static ArtifactKind kindOf(String token) {

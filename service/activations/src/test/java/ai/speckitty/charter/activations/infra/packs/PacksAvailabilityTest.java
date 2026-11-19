@@ -29,6 +29,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -55,6 +56,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import java.io.IOException;
@@ -125,10 +127,10 @@ class PacksAvailabilityTest {
         Map<ArtifactKind, Set<String>> held = new EnumMap<>(ArtifactKind.class);
         held.put(ArtifactKind.DIRECTIVE, Set.of("D1", "D2"));
         held.put(ArtifactKind.MISSION_TYPE, Set.of("software-dev"));
-        Map<Urn, String> holderOf = new LinkedHashMap<>();
-        holderOf.put(d1, BETA);
-        holderOf.put(d2, BETA);
-        holderOf.put(Urn.missionType("software-dev"), BETA);
+        Map<Urn, PackUlid> holderOf = new LinkedHashMap<>();
+        holderOf.put(d1, new PackUlid(BETA));
+        holderOf.put(d2, new PackUlid(BETA));
+        holderOf.put(Urn.missionType("software-dev"), new PackUlid(BETA));
         Preset governing = new Preset(
                 "governing",
                 "D2 is required.",
@@ -140,10 +142,15 @@ class PacksAvailabilityTest {
         return new ClosureView(
                 List.of(
                         new OfferingEntry(
-                                new PackIdentifier("beta"), BETA, PackLevel.BUILT_IN, "beta-pack", "1.0.0", List.of()),
+                                new PackIdentifier("beta"),
+                                new PackUlid(BETA),
+                                PackLevel.BUILT_IN,
+                                "beta-pack",
+                                "1.0.0",
+                                List.of()),
                         new OfferingEntry(
                                 new PackIdentifier("alpha"),
-                                ALPHA,
+                                new PackUlid(ALPHA),
                                 PackLevel.ORG,
                                 "alpha-pack",
                                 "2.0.0",
@@ -152,17 +159,17 @@ class PacksAvailabilityTest {
                 holderOf,
                 new RequiredFloor(Map.of(d2, List.of(ALPHA))),
                 new PerPackPolicy(Map.of(
-                        ALPHA,
+                        new PackUlid(ALPHA),
                                 MutabilityPolicySource.builder()
                                         .entry(d1, MutabilityLevel.LOCKED)
                                         .build(),
-                        BETA,
+                        new PackUlid(BETA),
                                 MutabilityPolicySource.builder()
                                         .entry(d2, MutabilityLevel.EXTENDABLE)
                                         .build())),
-                List.of(BETA, ALPHA),
-                List.of(new ClosureView.HeldPreset(governing, ALPHA)),
-                Map.of(ALPHA, BETA),
+                List.of(new PackUlid(BETA), new PackUlid(ALPHA)),
+                List.of(new ClosureView.HeldPreset(governing, new PackUlid(ALPHA))),
+                Map.of(new PackUlid(ALPHA), new PackUlid(BETA)),
                 "sha256:fingerprint",
                 EdgeIndex.empty(),
                 mergeInputs(governing));
@@ -188,7 +195,7 @@ class PacksAvailabilityTest {
     void theViewIsCopiedFieldByField() {
         closures.answers(Optional.of(List.of(new PackIdentifier("alpha"))), view());
 
-        ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
 
         assertThat(closures.calls).as("one verified read per snapshot").isEqualTo(1);
         assertThat(snapshot.resolved()).isTrue();
@@ -309,12 +316,13 @@ class PacksAvailabilityTest {
                 Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost"))),
                 new UnknownRootException(List.of("ghost")));
 
-        ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha", "ghost")));
+        ClosureSnapshot snapshot =
+                adapter.snapshot(Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost"))));
 
         assertThat(snapshot.resolved()).isFalse();
         assertThat(snapshot.unknownPacks()).containsExactly("ghost");
         ActivationDocument.Built built = ActivationDocument.builder()
-                .packs(List.of(PackRef.of("alpha"), PackRef.of("ghost")))
+                .packs(List.of(PackRef.of(new PackIdentifier("alpha")), PackRef.of(new PackIdentifier("ghost"))))
                 .build();
         assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
@@ -330,7 +338,7 @@ class PacksAvailabilityTest {
         IllegalArgumentException fault = new IllegalArgumentException("a fault of the compose");
         closures.throwsOn(Optional.of(List.of(new PackIdentifier("alpha"))), fault);
 
-        assertThatThrownBy(() -> adapter.snapshot(Optional.of(List.of("alpha"))))
+        assertThatThrownBy(() -> adapter.snapshot(Optional.of(List.of(new PackIdentifier("alpha")))))
                 .isSameAs(fault);
     }
 
@@ -348,7 +356,7 @@ class PacksAvailabilityTest {
         ArtifactRef d1 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D1");
         ReachPlan plan = new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true);
 
-        PacksSession session = adapter.session(Optional.of(List.of("alpha")));
+        PacksSession session = adapter.session(Optional.of(List.of(new PackIdentifier("alpha"))));
         session.reach(plan);
         session.reach(plan);
 
@@ -362,7 +370,7 @@ class PacksAvailabilityTest {
                 Optional.of(List.of(new PackIdentifier("ghost"))), new UnknownRootException(List.of("ghost")));
         ArtifactRef d1 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D1");
 
-        PacksSession session = adapter.session(Optional.of(List.of("ghost")));
+        PacksSession session = adapter.session(Optional.of(List.of(new PackIdentifier("ghost"))));
 
         assertThat(session.snapshot().unknownPacks()).containsExactly("ghost");
         assertThat(session.reach(new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true)))
@@ -427,7 +435,7 @@ class PacksAvailabilityTest {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
-        private final Map<String, MutabilityPolicySource> policies = new LinkedHashMap<>();
+        private final Map<PackUlid, MutabilityPolicySource> policies = new LinkedHashMap<>();
         private final Map<String, String> ids;
 
         Merging() {
@@ -466,7 +474,7 @@ class PacksAvailabilityTest {
                     name,
                     new PackCompositionFacts(
                             List.of(), held, List.of(), policy, presets, Arrays.asList(edges), languages));
-            policies.put(descriptorId(name), policy);
+            policies.put(new PackUlid(descriptorId(name)), policy);
             return this;
         }
 
@@ -478,8 +486,9 @@ class PacksAvailabilityTest {
             return view("sha256:merged");
         }
 
+        /** The view of the closure, its packs listed as the offering lists them: a pack it names is one it lists. */
         ClosureView view(String closureFingerprint) {
-            return view(closureFingerprint, Map.of(), List.of());
+            return view(closureFingerprint, Map.of(), entries());
         }
 
         /** The view of a closure whose held ids are declared, as the compose declares them. */
@@ -496,7 +505,7 @@ class PacksAvailabilityTest {
                     Map.of(),
                     new RequiredFloor(Map.of()),
                     policy,
-                    packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                    packs.stream().map(PackUnderResolution::descriptorId).toList(),
                     List.of(),
                     Map.of(),
                     "sha256:merged",
@@ -510,7 +519,7 @@ class PacksAvailabilityTest {
             return packs.stream()
                     .map(pack -> new OfferingEntry(
                             pack.configured().id(),
-                            pack.descriptor().packId(),
+                            pack.descriptorId(),
                             pack.configured().level(),
                             pack.descriptor().name(),
                             "1.0.0",
@@ -519,7 +528,7 @@ class PacksAvailabilityTest {
         }
 
         private String descriptorId(String name) {
-            return ids.getOrDefault(name, "id-" + name);
+            return ids.getOrDefault(name, FixtureUlids.of(name));
         }
     }
 
@@ -701,12 +710,12 @@ class PacksAvailabilityTest {
         PacksAvailability real = new PacksAvailability(closureQueriesOver(roots));
         Revision revision = ActivationDocument.builder().build().document().revision();
         EffectiveTag.Query page = new EffectiveTag.Query(Optional.empty(), Optional.empty(), Optional.empty(), 100);
-        ClosureSnapshot before = real.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot before = real.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
 
         Files.writeString(roots.get("gamma").resolve("pack.yaml"), "name: gamma\nchanged: true\n");
-        ClosureSnapshot gammaChanged = real.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot gammaChanged = real.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
         Files.writeString(roots.get("beta").resolve("pack.yaml"), "name: beta\nchanged: true\n");
-        ClosureSnapshot betaChanged = real.snapshot(Optional.of(List.of("alpha")));
+        ClosureSnapshot betaChanged = real.snapshot(Optional.of(List.of(new PackIdentifier("alpha"))));
 
         assertThat(gammaChanged.fingerprint()).as("every configured pack").isNotEqualTo(before.fingerprint());
         assertThat(EffectiveTag.artifacts(revision, gammaChanged, page))
@@ -730,14 +739,16 @@ class PacksAvailabilityTest {
                 .forEach(name -> descriptors.put(
                         name,
                         new PackDescriptor(
-                                name,
+                                FixtureUlids.of(name),
                                 "1.0.0",
                                 Optional.empty(),
                                 name + " pack",
                                 Optional.empty(),
                                 Optional.empty(),
                                 PackPaths.none(),
-                                name.equals("alpha") ? List.of(new PackDependency("beta", ">=1.0")) : List.of())));
+                                name.equals("alpha")
+                                        ? List.of(new PackDependency(FixtureUlids.of("beta"), ">=1.0"))
+                                        : List.of())));
         PackDescriptorRepository repository = new PackDescriptorRepository() {
             @Override
             public PackDescriptor get(PackIdentifier pack) {
@@ -819,7 +830,7 @@ class PacksAvailabilityTest {
         closures.throwsOn(
                 Optional.of(List.of(new PackIdentifier("ghost"))), new UnknownRootException(List.of("ghost")));
 
-        PacksSession session = adapter.session(Optional.of(List.of("ghost")));
+        PacksSession session = adapter.session(Optional.of(List.of(new PackIdentifier("ghost"))));
 
         assertThat(session.merged()).isEqualTo(MergedSnapshot.empty());
         assertThat(session.inForce(new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of())))

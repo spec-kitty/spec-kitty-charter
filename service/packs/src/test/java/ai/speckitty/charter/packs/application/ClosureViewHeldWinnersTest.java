@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +45,7 @@ class ClosureViewHeldWinnersTest {
         descriptors.put(
                 name,
                 new PackDescriptor(
-                        "id-" + name,
+                        FixtureUlids.of(name),
                         "1.0.0",
                         Optional.empty(),
                         name,
@@ -52,7 +53,7 @@ class ClosureViewHeldWinnersTest {
                         Optional.empty(),
                         PackPaths.none(),
                         dependsOn.stream()
-                                .map(other -> new PackDependency("id-" + other, ">=0"))
+                                .map(other -> new PackDependency(FixtureUlids.of(other), ">=0"))
                                 .toList()));
         facts.put(name, held);
     }

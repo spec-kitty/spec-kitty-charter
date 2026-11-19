@@ -6,7 +6,7 @@ get:
     level storage serves it at, the name and the version its pack.yaml gives, the dependencies it
     resolved (dependsOn) and the link to its artifacts. The order is the merge order: dependencies and
     parent_pack parents before the packs that need them, each level contiguous (built-in, then org, then project), and the
-    packs no dependency relates in configured-level, then pack-id code-point order, so Zeta comes
+    packs no dependency relates in configured-level, then pack-id code-point order, so a-zeta comes
     before alpha. The level is the one storage serves the pack at:
     the pack_level its pack.yaml declares, org when it declares no valid one (ADR-0038); the offering
     never recomputes it from pack.yaml. Merging is not applied yet (#10, #11): the offering lists

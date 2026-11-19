@@ -3,7 +3,9 @@ package ai.speckitty.charter.packs.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,8 +18,8 @@ import org.junit.jupiter.api.Test;
  */
 class PerPackPolicyTest {
 
-    private static final String BUILTIN = "BUILTIN";
-    private static final String ORG = "ORG";
+    private static final PackUlid BUILTIN = FixtureUlids.ulid("builtin");
+    private static final PackUlid ORG = FixtureUlids.ulid("org");
     private static final Urn D1 = new Urn(NodeKind.DIRECTIVE, "D1");
 
     private static MutabilityPolicySource entry(Urn urn, MutabilityLevel level) {
@@ -70,7 +72,7 @@ class PerPackPolicyTest {
     void aPackOfTheClosureWithoutAPolicyIsOpenNotAnError() {
         PerPackPolicy policy = new PerPackPolicy(Map.of(ORG, entry(D1, MutabilityLevel.EXTENDABLE)));
 
-        assertThat(policy.levelIn(List.of("UNLISTED", ORG), D1))
+        assertThat(policy.levelIn(List.of(FixtureUlids.ulid("unlisted"), ORG), D1))
                 .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.EXTENDABLE, Optional.of(ORG)));
     }
 
