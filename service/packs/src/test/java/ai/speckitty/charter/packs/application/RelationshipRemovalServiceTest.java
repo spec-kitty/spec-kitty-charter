@@ -218,6 +218,101 @@ class RelationshipRemovalServiceTest {
         assertThat(rig.writeStore.registeredRelationships(QA)).hasSize(1);
     }
 
+    // ---- ADR-0045 decision 5: a removal is judged per pair class -------------------------------------------------
+
+    private static final Urn D1 = Urn.parse("directive:D1").orElseThrow();
+    private static final Urn D2 = Urn.parse("directive:D2").orElseThrow();
+
+    /** The pack qa with a registered requires D2 to D1 and a registered tension D1 to D2 on the one pair. */
+    private static Packs bothRegistered() {
+        return qa().file(
+                        "registered.graph.yaml",
+                        RelationshipShard.write(List.of(
+                                Relationship.of(D2, D1, RelationType.REQUIRES),
+                                Relationship.of(D1, D2, RelationType.TENSION))));
+    }
+
+    private static List<RelationType> registeredTypes(Rig rig) {
+        return rig.writeStore.registeredRelationships(QA).stream()
+                .map(Relationship::type)
+                .toList();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"TENSION, REQUIRES", "REQUIRES, TENSION"})
+    void aRemovalThatNamesARelationRemovesOnlyTheEdgeOfThatRelation(
+            RelationType removed, RelationType kept, @TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(bothRegistered()), Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.service.remove(
+                QA,
+                reference("directive:D2"),
+                reference("directive:D1"),
+                Optional.of(removed),
+                "*",
+                RevisionTrail.NONE);
+
+        assertThat(registeredTypes(rig)).containsExactly(kept);
+    }
+
+    @Test
+    void aRemovalThatNamesNoRelationRemovesEveryRegisteredEdgeOfThePair(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(bothRegistered()), Preconditions.none());
+
+        new Removals(rig).remove("directive:D1", "directive:D2");
+
+        assertThat(registeredTypes(rig)).isEmpty();
+    }
+
+    @Test
+    void anAuthoredRequiresDoesNotStandInTheWayOfRemovingTheRegisteredTensionByItsRelation(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qa().file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(Relationship.of(D1, D2, RelationType.TENSION))))
+                        .file("lineage.graph.yaml", AUTHORED_EDGE)),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        CharterRefusal absent = refusal(() -> removals.remove("directive:D1", "directive:D2"));
+        assertThat(absent.code()).isEqualTo(RefusalCode.RELATIONSHIP_NOT_REGISTERED);
+        assertThat(absent.getMessage()).contains("relation parameter");
+        assertThat(registeredTypes(rig)).containsExactly(RelationType.TENSION);
+
+        removals.service.remove(
+                QA,
+                reference("directive:D1"),
+                reference("directive:D2"),
+                Optional.of(RelationType.TENSION),
+                "*",
+                RevisionTrail.NONE);
+        assertThat(registeredTypes(rig)).isEmpty();
+    }
+
+    @Test
+    void aRelationThePairHoldsNoRegisteredEdgeOfIsNotFoundWhateverElseItHolds(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa().registeredEdge("D1", "D2")), Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        CharterRefusal refused = refusal(() -> removals.service.remove(
+                QA,
+                reference("directive:D1"),
+                reference("directive:D2"),
+                Optional.of(RelationType.TENSION),
+                "*",
+                RevisionTrail.NONE));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.RELATIONSHIP_NOT_FOUND);
+        assertThat(refused.getMessage()).contains("tension");
+        assertThat(registeredTypes(rig)).containsExactly(RelationType.REQUIRES);
+    }
+
     @Test
     void theRevisionIsRequiredAndAStaleOneIsRefused(@TempDir Path host) {
         Rig rig = new Rig(host);

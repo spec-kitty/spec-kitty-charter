@@ -972,6 +972,58 @@ class ArtifactRemovalServiceTest {
         return Packs.of(OTHER_ID, "other", "1.0.0", "org", DEPENDS_ON_QA).directive("R", "R");
     }
 
+    // ---- ADR-0045 decision 1: a tension names both of its sides ---------------------------------------------------
+
+    @Test
+    void aRegisteredTensionGoesWithAnArtifactOnEitherSideAndARequiresToItStillRefuses(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qa().file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(
+                                        edge("directive:D1", RelationType.TENSION, "directive:D2", null),
+                                        edge("directive:D2", RelationType.REQUIRES, "directive:D3", null))))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        // D2 is the stored target of the tension: the tension goes with it, and so does D2's own requires.
+        removals.remove("qa", "directive", "D2");
+
+        assertThat(rig.writeStore.registeredRelationships(QA)).isEmpty();
+        assertThat(removals.filesOf("qa")).containsKeys("directives/D1.directive.yaml", "directives/D3.directive.yaml");
+    }
+
+    @Test
+    void aTensionInAnotherPackThatNamesTheArtifactRefusesItsRemovalOnEitherSide(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa()), Preconditions.none());
+        rig.register(
+                "other",
+                rig.stage(otherPack()
+                        .file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(Relationship.of(
+                                        urn("directive:D1"),
+                                        Optional.of("qa"),
+                                        urn("directive:D2"),
+                                        Optional.of("qa"),
+                                        RelationType.TENSION,
+                                        Optional.empty(),
+                                        Optional.empty()))))),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        // Both the stored source (D1) and the stored target (D2) are named by the other pack's tension.
+        assertThat(refusal(() -> removals.remove("qa", "directive", "D1")).code())
+                .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(refusal(() -> removals.remove("qa", "directive", "D2")).code())
+                .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        // Positive control: D3, which the tension does not name, goes.
+        removals.remove("qa", "directive", "D3");
+        assertThat(removals.filesOf("qa")).doesNotContainKey("directives/D3.directive.yaml");
+    }
+
     @Test
     void anEdgeOfAnotherPackThatPointsAtTheArtifactRefusesAndNamesTheReferrer(@TempDir Path host) {
         Rig rig = new Rig(host);

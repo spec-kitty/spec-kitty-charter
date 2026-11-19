@@ -1,0 +1,13 @@
+summary: >-
+  A tension the org pack acme registers between two built-in directives it holds neither of, so its from names the
+  built-in pack (ADR-0045 decision 1).
+value:
+  relationship:
+    from: core::directive:DIRECTIVE_024
+    to: core::directive:DIRECTIVE_025
+    type: tension
+    rationale: a change that grows beyond its goal against the smallest viable diff
+    when: null
+  _links:
+    artifacts:
+      href: /api/v1/packs/acme/artifacts

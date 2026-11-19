@@ -13,6 +13,7 @@ files:
   - CharterRefusal.tactic-not-found.yaml
   - Offering.three-levels.yaml
   - RelationshipRegistered.requires.yaml
+  - RelationshipRegistered.tension.yaml
   - ServiceInfo.one-worktree.yaml
   - ActivationPackList.two-packs.yaml
   - CharterRefusal.activation-invalid.yaml

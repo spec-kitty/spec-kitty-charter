@@ -9,13 +9,32 @@ requirement_refs:
 - FR-012
 - NFR-001
 - NFR-002
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: 8c3f62919c44e087a515c02718cb51f33c6a78db
+created_at: '2026-11-19T08:50:10.462580+00:00'
 subtasks:
 - T019
 - T020
 - T021
 - T022
 - T023
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/application/TensionsInForce.java
+create_intent:
+- service/packs/src/main/java/ai/speckitty/charter/packs/application/TensionsInForce.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/TensionsInForceTest.java
+- service/packs/src/testFixtures/resources/example-packs/tensions/pack.yaml
+- service/packs/src/testFixtures/resources/example-packs/tensions/pack-manifest.yaml
+- service/packs/src/testFixtures/resources/example-packs/tensions/tensions.graph.yaml
+execution_mode: code_change
 owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/application/TensionsInForce.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java
@@ -38,27 +57,10 @@ owned_files:
 - docs/plans/charter-example-packs.md
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyReadTest.java
 - service/artifacts-edge/src/test/java/ai/speckitty/charter/artifacts/infra/packs/ExampleVocabularyInForceTest.java
-create_intent:
-- service/packs/src/main/java/ai/speckitty/charter/packs/application/TensionsInForce.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/application/TensionsInForceTest.java
-- service/packs/src/testFixtures/resources/example-packs/tensions/pack.yaml
-- service/packs/src/testFixtures/resources/example-packs/tensions/pack-manifest.yaml
-- service/packs/src/testFixtures/resources/example-packs/tensions/tensions.graph.yaml
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: java-jenny
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP04 - Tensions in force and the example pack

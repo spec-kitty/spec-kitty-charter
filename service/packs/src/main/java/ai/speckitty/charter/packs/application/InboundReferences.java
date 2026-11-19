@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -316,6 +317,11 @@ public final class InboundReferences {
         List<Reference> out = new ArrayList<>();
         for (Relationship edge : member.facts().edges()) {
             out.add(new Reference(edge.fromReference().toString(), Optional.of(edge.from()), edge.toReference()));
+            if (edge.type() == RelationType.TENSION) {
+                // A tension names both of its sides, whichever it stores as the source (ADR-0045 decision 1): a pack
+                // never keeps a tension to an artifact another pack removes.
+                out.add(new Reference(edge.toReference().toString(), Optional.of(edge.to()), edge.fromReference()));
+            }
         }
         for (Preset preset : member.facts().presets()) {
             preset.artifacts()

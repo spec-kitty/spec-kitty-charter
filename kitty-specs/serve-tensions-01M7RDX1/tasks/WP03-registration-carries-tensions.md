@@ -6,6 +6,12 @@ dependencies:
 - WP02
 requirement_refs:
 - FR-005
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: 4bfea03a6d9e8ff88574f850fe857fee8d2fa8e4
+created_at: '2026-11-19T08:49:51.469150+00:00'
 subtasks:
 - T013
 - T014
@@ -13,7 +19,18 @@ subtasks:
 - T016
 - T017
 - T018
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRegistrationService.java
+create_intent:
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipMergeTest.java
+- contracts/charter/examples/RelationshipRegistration.tension.yaml
+- contracts/charter/examples/RelationshipRegistered.tension.yaml
+execution_mode: code_change
 owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipDraft.java
@@ -37,25 +54,10 @@ owned_files:
 - contracts/charter/examples/RelationshipRegistered.tension.yaml
 - contracts/charter/scenarios/relationships.feature
 - contracts/charter/scenarios/pack-removal.feature
-create_intent:
-- service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipMergeTest.java
-- contracts/charter/examples/RelationshipRegistration.tension.yaml
-- contracts/charter/examples/RelationshipRegistered.tension.yaml
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: java-jenny
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP03 - Registration carries tensions
