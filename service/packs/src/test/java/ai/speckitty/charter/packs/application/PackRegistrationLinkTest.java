@@ -53,9 +53,12 @@ class PackRegistrationLinkTest {
                 StandardCharsets.UTF_8);
         Files.createDirectories(outside.resolve("more"));
         Files.writeString(
-                outside.resolve("more/C.directive.yaml"), Packs.directiveText("C", "In a directory"), StandardCharsets.UTF_8);
+                outside.resolve("more/C.directive.yaml"),
+                Packs.directiveText("C", "In a directory"),
+                StandardCharsets.UTF_8);
         Files.writeString(outside.resolve("NOTES.txt"), "notes outside the pack\n", StandardCharsets.UTF_8);
-        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("A", "A"));
+        StagedPack upload =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("A", "A"));
         link(upload.directory().resolve(at), outside.resolve(target));
 
         CharterRefusal refused = refusal(() -> rig.register("pack-x", upload, Preconditions.none()));
@@ -73,9 +76,11 @@ class PackRegistrationLinkTest {
     @DisplayName("the control: the same staged pack without the link registers")
     void theSamePackWithoutTheLinkRegisters(@TempDir Path host) {
         Rig rig = new Rig(host);
-        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("A", "A"));
+        StagedPack upload =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("A", "A"));
 
-        assertThat(rig.register("pack-x", upload, Preconditions.none()).outcome()).isEqualTo(Outcome.CREATED);
+        assertThat(rig.register("pack-x", upload, Preconditions.none()).outcome())
+                .isEqualTo(Outcome.CREATED);
     }
 
     /** Makes a link, or skips the test where the file system cannot; fails it instead when CI requires links. */

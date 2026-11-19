@@ -33,7 +33,8 @@ public final class LinkRules {
     static List<Reason> linked(TreeRead read) {
         return read.census().entries().stream()
                 .filter(entry -> entry.standing() == TreeCensus.Standing.LINK)
-                .map(entry -> Findings.at(StorageCodes.PACK_ENTRY_LINKED, entry.path(), List.of(), detail(entry.path())))
+                .map(entry ->
+                        Findings.at(StorageCodes.PACK_ENTRY_LINKED, entry.path(), List.of(), detail(entry.path())))
                 .toList();
     }
 

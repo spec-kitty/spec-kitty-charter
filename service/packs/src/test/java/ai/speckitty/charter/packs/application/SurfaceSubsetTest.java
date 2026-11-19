@@ -261,7 +261,9 @@ class SurfaceSubsetTest {
                     .as("%s: that refusal is one of every fault now (S8)", key)
                     .containsAll(was);
         } else if (s2) {
-            assertThat(faults.stream().filter(fault -> !isS2(fault) && !isD1(fault)).toList())
+            assertThat(faults.stream()
+                            .filter(fault -> !isS2(fault) && !isD1(fault))
+                            .toList())
                     .as("%s: apart from S2's gains, the registration answers what it answered before WP12", key)
                     .isEqualTo(was);
         } else if (d1) {
