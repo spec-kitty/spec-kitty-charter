@@ -117,10 +117,9 @@ An operator removes an org pack that no other pack depends on and no activation 
 - A delete of a built-in pack, or of a pack configured in a read-only location: `409 registration_conflict`.
 - A delete addressed by the declared `pack_id` instead of the configured name: resolved as every pack path resolves it.
 - A delete while the registry lock is busy: `503` with `Retry-After`, as the other writes.
-- A stored pack whose own `pack.yaml` cannot be read: its `pack_id` is unknown, so what builds on it cannot be judged;
-  the delete is refused `500 pack_unreadable`, and the pack is first replaced with a readable one (fail closed,
-  implementation call I3). A pack whose descriptor reads but whose artifacts do not is judged from what the salvage read
-  finds, as for a replace.
+- A stored pack that cannot be read: it can still be deleted when nothing depends on it (its dependents are found
+  from the other packs, not from it). A pack whose own `pack.yaml` cannot be read is judged by its configured name
+  (operator ruling on I3). Its inbound referrers are found by the salvage read, as for a replace.
 - Another configured pack whose descriptor cannot be read: it cannot be judged, so the delete is refused
   `500 pack_unreadable`, naming it (fail closed).
 - A delete of a pack whose only dependent is itself (a self-reference): not a dependent.

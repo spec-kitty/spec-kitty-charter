@@ -292,6 +292,8 @@ with.
 - An activation that lists no packs is not a dependent. Its closure is composed without the pack, and one that no
   longer composes refuses the delete `422`. A selection it holds of one of the pack's artifacts reads as stale.
 - A built-in pack, a pack in a read-only location, or a linked pack cannot be removed (`409 registration_conflict`).
+- A pack whose own `pack.yaml` no longer reads can still be removed; it is judged by its configured name. Any other
+  pack that cannot be read refuses the delete `500 pack_unreadable`, since it might depend on the pack.
 - The version history survives the delete. A re-install may take any version the history does not hold with other
   content.
 

@@ -153,8 +153,8 @@ delete:
     stale If-Match is 412. Then the pack's dependents: a configured pack whose depends_on or parent_pack names it, a
     stored activation whose packs list names it, and an artifact of another pack that refers to one of its artifacts.
     A configured pack whose descriptor cannot be read cannot be judged, so it refuses the removal with 500
-    pack_unreadable naming it, before any dependent is judged; the removed pack's own unreadable pack.yaml does too
-    (replace it with a readable pack first). Any dependent refuses the removal with 409 pack_has_dependents, whose
+    pack_unreadable naming it, before any dependent is judged. The removed pack's own pack.yaml need not be readable:
+    such a pack can still be deleted, and is judged by its configured name. Any dependent refuses the removal with 409 pack_has_dependents, whose
     packs member names the dependent packs and whose violations name every dependent (at most 100; the detail counts
     the rest), and nothing is written. Then every other closure that holds the pack (an activation that lists no packs) is composed without it,
     strictly: one that does not compose or breaks a rule refuses the removal with 422 and its composition code, naming

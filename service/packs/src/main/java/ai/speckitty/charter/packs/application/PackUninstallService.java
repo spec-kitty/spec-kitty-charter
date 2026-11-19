@@ -26,7 +26,9 @@ import org.springframework.stereotype.Service;
  * required ({@code 428}), the pack must be a removable org or project pack ({@code 409 registration_conflict}), the
  * {@code If-Match} must name its revision ({@code 412}, {@code *} passes), nothing may depend on it
  * ({@code 409 pack_has_dependents}), and every other closure that holds it must compose without it ({@code 422}). A dry
- * run judges the same steps on the same session and stops before the removal.
+ * run judges the same steps on the same session and stops before the removal. A pack whose own {@code pack.yaml} cannot
+ * be read is still removed: it is judged by its configured name, and any other pack the judgement needs fails it
+ * closed ({@code 500 pack_unreadable}).
  */
 @Service
 public final class PackUninstallService {
@@ -35,7 +37,7 @@ public final class PackUninstallService {
      * What a removal did, or would do.
      *
      * @param pack the configured name of the pack
-     * @param version the {@code pack_version} of the stored pack
+     * @param version the {@code pack_version} of the stored pack; empty when its {@code pack.yaml} cannot be read
      * @param revision the revision of the stored pack, the one the {@code If-Match} matched
      * @param notices what the removal takes off the floor and the locks, and the activations whose in-force set changes;
      *     none when it is refused
@@ -46,7 +48,7 @@ public final class PackUninstallService {
      */
     public record Outcome(
             PackIdentifier pack,
-            String version,
+            Optional<String> version,
             PackRevision revision,
             RegistrationImpact.Notices notices,
             boolean dryRun,
@@ -142,7 +144,8 @@ public final class PackUninstallService {
         }
         store.requireRemovable(name);
         PackRevision revision = RemovalPrecondition.require(store, name, ifMatch, trail);
-        PackDescriptor descriptor = descriptorOf(stored, name);
+        Optional<PackDescriptor> descriptor = descriptorOf(stored, name);
+        Optional<String> version = descriptor.map(PackDescriptor::packVersion);
         boolean dryRun = mode == PackRegistrationService.Mode.DRY_RUN;
         RegistrationImpact.Notices notices;
         try {
@@ -151,32 +154,26 @@ public final class PackUninstallService {
             if (!dryRun || !isJudgement(refused)) {
                 throw refused;
             }
-            return new Outcome(
-                    name,
-                    descriptor.packVersion(),
-                    revision,
-                    RegistrationImpact.Notices.NONE,
-                    true,
-                    Optional.of(refused));
+            return new Outcome(name, version, revision, RegistrationImpact.Notices.NONE, true, Optional.of(refused));
         }
         if (!dryRun) {
             store.removeWhole(name);
         }
-        return new Outcome(name, descriptor.packVersion(), revision, notices, dryRun, Optional.empty());
+        return new Outcome(name, version, revision, notices, dryRun, Optional.empty());
     }
 
     /** The dependents, then the closures left: the judgement a dry run answers as a body (ADR-0081 D5, P6). */
     private RegistrationImpact.Notices judge(
             StagedPackViews.Session session,
             ConfiguredPack configured,
-            PackDescriptor descriptor,
+            Optional<PackDescriptor> descriptor,
             PackIdentifier name) {
         PackDependents.Removed removed = new PackDependents.Removed(configured, descriptor, heldBy(name));
         List<PackDependents.Dependent> found = dependents.of(session.stored(), removed);
         if (!found.isEmpty()) {
             throw PackDependents.refusal(name.value(), found);
         }
-        return impact.checkRemoval(session, configured, descriptor.packId());
+        return impact.checkRemoval(session, configured, removed.packId());
     }
 
     /**
@@ -196,21 +193,17 @@ public final class PackUninstallService {
     }
 
     /**
-     * The removed pack's descriptor. One that cannot be read leaves its {@code pack_id} unknown, and with it what builds
-     * on the pack, so the removal fails closed: the pack is repaired by a whole-pack replace first.
+     * The removed pack's descriptor, or empty when its own {@code pack.yaml} cannot be read (ADR-0081 D6): the pack is
+     * then judged by its configured name, and the removal is how the operator clears it.
      */
-    private static PackDescriptor descriptorOf(StagedPackViews.View stored, PackIdentifier name) {
+    private static Optional<PackDescriptor> descriptorOf(StagedPackViews.View stored, PackIdentifier name) {
         try {
-            return stored.descriptors().get(name);
+            return Optional.of(stored.descriptors().get(name));
         } catch (CharterRefusal unreadable) {
             if (unreadable.code() != RefusalCode.PACK_UNREADABLE) {
                 throw unreadable;
             }
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE,
-                    "The pack " + name.value() + " has no readable pack.yaml, so what depends on it cannot be judged;"
-                            + " replace it with a readable pack first.",
-                    unreadable);
+            return Optional.empty();
         }
     }
 

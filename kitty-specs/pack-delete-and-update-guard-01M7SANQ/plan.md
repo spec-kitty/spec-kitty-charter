@@ -34,7 +34,8 @@ are logged as open review items for the plan-point squad:
   - `PackDependents` lists only direct dependents, in this order: packs (`depends_on`, then `parent_pack`, one
     violation per relation, sorted by configured name), then activations (sorted by id), then inbound referrers (in
     the order `InboundReferences` gives them).
-  - A's `pack_id` is salvaged from its `pack.yaml` when A cannot be loaded.
+  - A's `pack_id` is salvaged from its `pack.yaml` when A cannot be loaded. When A's own `pack.yaml` cannot be read,
+    A is judged by its configured name and can still be deleted (operator ruling on I3, after review R4-1).
   - Any other configured pack whose descriptor cannot be read refuses the delete with `500 pack_unreadable`, naming
     it. A dependent that cannot be read never lets a delete through (squad M3).
   - This is a refusal of the delete's own, not a #556 rule (C-003).

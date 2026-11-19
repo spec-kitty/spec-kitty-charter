@@ -8,10 +8,14 @@ recorded analysis stays current.
   in `parameters/DryRun.yaml` and ADR-0081 decision 5.
 - **I2 (WP05).** `RegistrationJobs.Origin` carries the request's `Mode`. A 5-argument constructor keeps the write
   (`COMMIT`) as the default for the callers that never dry-run.
-- **I3 (WP04, P3).** A pack whose own `pack.yaml` cannot be read is not removed: its `pack_id` is unknown, so what
-  builds on it cannot be judged. The removal answers `500 pack_unreadable`, telling the client to replace it with a
-  readable pack first. The spec's edge case said such a pack "can still be deleted"; the fail-closed rule of P3 (squad
-  M3) wins, and the edge case is reworded at closeout.
+- **I3 (WP04, P3), ruled (a) by the operator after review R4-1.** A pack whose own `pack.yaml` cannot be read can be
+  deleted: it is judged by its configured name (the name an activation and a qualified reference name it by; a
+  `depends_on` or `parent_pack` names a ULID `pack_id`, which is unknown, so such a pack is not found, and its closure
+  already holds the unreadable pack), its referrers are found from what the salvage read finds, and any other pack the
+  judgement needs fails it closed (`500 pack_unreadable`). The dry run's `PackImpact.version` is then absent, so
+  `version` is no longer required. The spec's "can still be deleted" edge case stands. The first call, a
+  `500 pack_unreadable` telling the client to replace the pack first, left a pack that no longer reads with no way out
+  but a replace.
 - **I4 (WP04).** `deletePack` joins the impact-checked writes of the refusal handler and the per-operation maps of
   `CharterRefusalCode` ("thirteen operations"), so it answers the composition codes as `422`, like the other
   `DELETE`s.
@@ -25,7 +29,7 @@ recorded analysis stays current.
 |---|-----|---------|-------------|
 | 1 | HIGH | WP01 alone does not compile (no default methods) | Folded: I5; the controller lands with WP04/WP05 |
 | 2 | HIGH | `ReservedRefusalCodesTest`: the probe does not name `PACK_HAS_DEPENDENTS`, and no main class raises it | Folded: the probe names it; `PackDependents` raises it |
-| 3 | MED | `PackImpact.version` is required, but an unreadable pack has none | Folded by I3: such a pack never reaches a judgement, so `version` is always known |
+| 3 | MED | `PackImpact.version` is required, but an unreadable pack has none | Folded by I3, then reopened by its ruling: `version` is optional, absent for a pack whose `pack.yaml` cannot be read |
 | 4 | MED | The shared 412 text says an If-Match on a missing pack is 412, not 404 | Folded: the text is limited to registrations, and says a DELETE answers 404 first |
 | 5 | MED | The `PackRegistrationStatus` pack-link sentence was stale | Folded: "except a dry run's" |
 | 6 | MED | The order of 409 `pack_has_dependents` and 500 `pack_unreadable` was ambiguous | Folded: 500 comes before any dependent is judged (path and code text) |
