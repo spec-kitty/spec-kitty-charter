@@ -29,8 +29,7 @@ public final class PackRefusalMapping {
      * @throws IllegalArgumentException when the verdict passes
      */
     public static CharterRefusal of(Rationale verdict) {
-        List<RefusalViolation> violations =
-                verdict.violations().stream().map(PackRefusalMapping::violation).toList();
+        List<RefusalViolation> violations = violations(verdict);
         if (violations.isEmpty()) {
             throw new IllegalArgumentException("a verdict with no violation refuses nothing");
         }
@@ -39,6 +38,18 @@ public final class PackRefusalMapping {
                 "The pack cannot be registered: " + violations.size() + " fault(s), the first at "
                         + violations.getFirst().pointer() + ".",
                 violations);
+    }
+
+    /**
+     * The violations of a verdict, one per violation in its order, each at its file in the one wording
+     * ({@link PackCodes#detail}): the violations {@link #of} refuses with. A surface that words its own problem around
+     * them (pack-check's round trip, #478) maps them here, so a violation reads the same wherever it is reported.
+     *
+     * @param verdict a verdict
+     * @return its violations; empty when it has none
+     */
+    public static List<RefusalViolation> violations(Rationale verdict) {
+        return verdict.violations().stream().map(PackRefusalMapping::violation).toList();
     }
 
     /**

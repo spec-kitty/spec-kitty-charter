@@ -59,6 +59,21 @@ class PackRefusalMappingTest {
     }
 
     @Test
+    @DisplayName("the violation mapping is the refusal's violations, and a passing verdict has none")
+    void theViolationsAreTheRefusals() {
+        Rationale verdict = new Rationale(List.of(
+                failing(PackCodes.DUPLICATE_ARTIFACT_ID, "tactics/a.tactic.yaml", "already declared"),
+                failing(NOT_HELD, "notes.txt", "notes.txt: not held (no pack file kind models this file)")));
+
+        assertThat(PackRefusalMapping.violations(verdict))
+                .containsExactly(new RefusalViolation(
+                        "tactics/a.tactic.yaml", "duplicate_artifact_id", "tactics/a.tactic.yaml: already declared"))
+                .isEqualTo(PackRefusalMapping.of(verdict).violations());
+        assertThat(PackRefusalMapping.violations(new Rationale(List.of(Reason.passed("checked")))))
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("a passing verdict refuses nothing")
     void aPassingVerdictRefusesNothing() {
         Rationale verdict = new Rationale(List.of(Reason.passed("checked")));

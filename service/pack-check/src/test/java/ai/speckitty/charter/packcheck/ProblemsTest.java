@@ -8,12 +8,14 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packcheck.Problems.Problem;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
@@ -188,6 +190,41 @@ class ProblemsTest {
                 .extracting(RefusalViolation::code)
                 .containsExactly("round_trip_red");
         assertThat(problems.get(1).instance()).contains(instance());
+    }
+
+    @Test
+    void theRoundTripsProblemHasItsOwnLeadAndTheRegistrationsViolationWording() {
+        Reason red = WholePackRoundTripRule.refused("pack_unreadable", "pack.yaml cannot be read");
+        PackResult pack = with(List.of(), real.facts(), List.of(red), List.of());
+
+        Problem problem = Problems.of(verdict(List.of(pack), List.of())).getFirst();
+
+        RefusalViolation violation = problem.violations().getFirst();
+        assertThat(problem.detail())
+                .isEqualTo("The pack does not round-trip through the charter's model: 1 fault(s), the first at "
+                        + violation.pointer() + ".")
+                .doesNotContain("registered");
+        assertThat(problem.title()).isEqualTo("Validation failed");
+        assertThat(problem.status()).isEqualTo(422);
+        assertThat(problem.violations())
+                .as("the one wording of a violation, the registration's mapping")
+                .isEqualTo(PackRefusalMapping.violations(new Rationale(List.of(red))));
+    }
+
+    @Test
+    void aRoundTripOfAHundredAndOneFaultsListsTheFirstHundredAndCountsTheRest() {
+        List<Reason> reds = IntStream.range(0, 101)
+                .mapToObj(n -> new Reason(
+                        "test", Evaluation.FAIL, WholePackRoundTripRule.RED, Location.in("f" + n + ".yaml"), "red"))
+                .toList();
+        PackResult pack = with(List.of(), real.facts(), reds, List.of());
+
+        Problem problem = Problems.of(verdict(List.of(pack), List.of())).getFirst();
+
+        assertThat(problem.violations()).hasSize(100);
+        assertThat(problem.detail())
+                .isEqualTo("The pack does not round-trip through the charter's model: 101 fault(s), the first at"
+                        + " f0.yaml. 1 more violations are not listed.");
     }
 
     @Test

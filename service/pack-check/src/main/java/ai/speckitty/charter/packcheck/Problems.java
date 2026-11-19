@@ -133,8 +133,36 @@ final class Problems {
         // D3: pack-validation decides when the refusal is the pack's problem (PackResult.unreportedRefusal); this
         // renders.
         pack.unreportedRefusal().map(refusal -> ofRefusal(refusal, instance)).ifPresent(problems::add);
-        violationsOf(new Rationale(pack.roundTrip()), instance).ifPresent(problems::add);
+        roundTripOf(new Rationale(pack.roundTrip()), instance).ifPresent(problems::add);
         return problems;
+    }
+
+    /**
+     * The {@code validation_failed} problem of a pack's round trip; empty when it is green. The registration runs no
+     * round trip, so its lead sentence ("cannot be registered") would be false here: the lead is this check's own
+     * ({@link #roundTripDetail}), and the violations are the registration's mapping
+     * ({@link PackRefusalMapping#violations}), so each reads in the one wording.
+     */
+    private static Optional<Problem> roundTripOf(Rationale reasons, String instance) {
+        List<RefusalViolation> violations = PackRefusalMapping.violations(reasons);
+        if (violations.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(ofCharterRefusal(
+                CharterRefusal.withViolations(RefusalCode.VALIDATION_FAILED, roundTripDetail(violations), violations),
+                Optional.of(instance)));
+    }
+
+    /**
+     * The detail of a round-trip problem: {@code The pack does not round-trip through the charter's model: N fault(s),
+     * the first at <file>.}
+     *
+     * @param violations the round trip's violations; not empty
+     * @return the detail, before any count of the violations left out
+     */
+    static String roundTripDetail(List<RefusalViolation> violations) {
+        return "The pack does not round-trip through the charter's model: " + violations.size()
+                + " fault(s), the first at " + violations.getFirst().pointer() + ".";
     }
 
     /**
