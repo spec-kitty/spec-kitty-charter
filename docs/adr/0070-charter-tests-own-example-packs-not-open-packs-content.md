@@ -55,14 +55,14 @@ gate on its own pull requests. Decision 4 carries a note where it changes; the r
     once the open-packs gate was required and its charter track had landed. It is not kept beside the gate.
 - **Drift from charter is watched in open-packs.** open-packs' `.github/workflows/charter-track.yml`
   ([spec-kitty-open-packs#308](https://github.com/spec-kitty/spec-kitty-open-packs/pull/308), closing
-  [#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)) takes over what the charter watch did. It
+  [#253](https://github.com/spec-kitty/spec-kitty-open-packs/issues/253)) replaces the charter watch. It
   runs the whole required gate, `:pack-validation:driftTest` included, in two tracks:
   - **Daily release track.** It checks the packs against the newest charter `service-v*` release or pre-release when
     that release is newer than the pin in `charter.lock.yaml`. On green it opens one pull request that bumps the pin;
     on red it opens one `charter:release-red` issue in open-packs.
-  - **On-demand charter `main`.** A `workflow_dispatch` with `charter_ref` (default `main`), or the `charter:head` label
-    on an open-packs pull request, builds charter from source at that ref and runs the same checks. It reports in the
-    job summary and never bumps the pin.
+  - **On-demand charter `main`.** A `workflow_dispatch` with `charter_ref` (default `main`; a branch, tag, pull request
+    or commit), or the `charter:head` label on an open-packs pull request (always charter `main`), builds charter from
+    source at that ref and runs the same checks. It reports in the job summary and never bumps the pin.
   - **Nightly charter `main` (follow-up).** Neither track checks charter `main` on a schedule, so until open-packs adds
     a nightly scheduled run against charter `main`
     ([spec-kitty-open-packs#311](https://github.com/spec-kitty/spec-kitty-open-packs/issues/311)), an unreleased
