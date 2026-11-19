@@ -61,15 +61,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
  * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
  * {@link MutabilityPolicyRepository}, {@link PackCompanionFiles} and {@link PackDocumentRepository} over the filesystem.
- * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
- * sibling would carry its own stereotype.
+ * It is a plain class, framework-free: {@code StorageConfiguration} registers it as the one bean realizing the pack
+ * ports, and the production round trip ({@link PackRoundTrip}) builds it directly, so pack-check, which runs the round
+ * trip without Spring, reaches no Spring type through it (ADR-0075 as amended 2026-11-13, #478). The ports in the
+ * domain stay plain interfaces, and a database-backed sibling would be registered in its place.
  *
  * <p>It serves every configured pack through an explicit {@link PackIdentifier}. The identifier is resolved to a pack
  * directory through the configured {@link Locations}: a location whose configured name equals the identifier wins,
@@ -83,7 +83,6 @@ import org.springframework.stereotype.Service;
  * {@code bytes} content form, are assembled beside them by the same Spring-free {@link PackAssembly} and written byte
  * for byte; they have no repository port of their own.
  */
-@Service
 public final class DomainRepositoryService
         implements TacticRepository,
                 DirectiveRepository,
@@ -109,7 +108,6 @@ public final class DomainRepositoryService
      * @param locations the configured pack locations
      * @param strategy the serialization format
      */
-    @Autowired
     public DomainRepositoryService(Locations locations, SerializationStrategy strategy) {
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");

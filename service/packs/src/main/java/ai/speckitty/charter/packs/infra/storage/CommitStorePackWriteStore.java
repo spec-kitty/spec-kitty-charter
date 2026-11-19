@@ -260,7 +260,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             // self-contained set with no outside-link or cross-pack adversary, and this only ever repairs that one
             // pack's own directory. On the listing path, all() has already repaired or refused the pack before
             // resolve(pack) reaches this line, so for StorageRootLocations this is a no-op.
-            PackCommitStore.missingLiveDirectory(directory).ifPresent(PackCommitStore::restoreInterruptedSwap);
+            PackDirectories.missingLiveDirectory(directory).ifPresent(PackCommitStore::restoreInterruptedSwap);
             return work.get();
         } finally {
             lock.unlock();

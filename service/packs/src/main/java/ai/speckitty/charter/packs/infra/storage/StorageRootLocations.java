@@ -269,7 +269,7 @@ public final class StorageRootLocations implements Locations {
      * when the pack now resolves: restored, or swapped into place by a commit that finished since the domain was read.
      */
     private boolean restore(Path entry, Path domain, List<Path> served) {
-        Optional<Path> missing = PackCommitStore.missingLiveDirectory(entry);
+        Optional<Path> missing = PackDirectories.missingLiveDirectory(entry);
         if (missing.isEmpty() || !mayRestore(missing.get(), domain, served)) {
             return Files.exists(entry);
         }
@@ -277,7 +277,7 @@ public final class StorageRootLocations implements Locations {
             reported.remove(nameOf(entry) + ASIDE_MARKER);
             return true;
         }
-        int asides = PackCommitStore.asidesOf(missing.get()).size();
+        int asides = PackDirectories.asidesOf(missing.get()).size();
         if (asides > 1) {
             warnUnrepaired(
                     entry,
