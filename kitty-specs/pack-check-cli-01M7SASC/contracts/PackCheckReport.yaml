@@ -1,10 +1,11 @@
-# Draft of contracts/charter/schemas/PackCheckReport.yaml (IC-05). Not served by any operation: the standard output of
-# the pack-check CLI (ADR-0075 decision 9, ruling D2). Uses only the keywords ContractConformance allows.
+# Draft of contracts/charter/schemas/PackCheckReport.yaml (IC-05), kept equal to the shipped schema (WP07, folding
+# WP05's review). Not served by any operation: the standard output of the pack-check CLI (ADR-0075 decision 9, D2).
 title: PackCheckReport
 description: >-
   What pack-check writes on standard output: the checks that ran over the set of packs, the packs it checked, any check
   it skipped and why, and the problems, each a Problem with the code and the shape the registration answers for the
-  same fault. No operation serves it. An empty problems list is a valid set, and pack-check then exits 0; otherwise 1.
+  same fault (the round trip, which the registration does not run, words its own lead sentence). No operation serves
+  it (ADR-0075 decision 9). An empty problems list is a valid set, and pack-check then exits 0; otherwise 1.
 type: object
 additionalProperties: false
 required:
@@ -69,13 +70,19 @@ properties:
   problems:
     type: array
     description: >-
-      Per pack, in order: one validation_failed problem when the pack has a violation (its instance is the file: URI of the pack's directory);
-      otherwise, when its facts could not be read, one problem with the refusal's code (e.g. pack_unreadable); then one
-      validation_failed problem for its round-trip reasons. Then one problem per composition fault, with its code and
-      packs. A pack never gets two problems for one cause. Empty when the set is valid.
+      Per pack, in order: one validation_failed problem when the pack has a violation; otherwise, when its facts
+      could not be read, one problem with the refusal's code (e.g. pack_unreadable); then one validation_failed
+      problem for its round-trip reasons. The registration runs no round trip, so that problem has no registration
+      counterpart: its detail reads "The pack does not round-trip through the charter's model: N fault(s), the first
+      at <file>.", and its violations (round_trip_red, round_trip_written_unpaired) are worded as the registration
+      words a violation. The other problems are what the registration answers for the same fault. Each of a pack's
+      problems has as its instance the absolute file URI of the pack's directory (file:///work/packs/org-base/), so
+      two packs' problems are told apart. Then one problem per composition fault, with its code and packs and no
+      instance. A pack never gets two problems for one cause. Empty when the set is valid.
     items:
       $ref: ../../_shared/schemas/Problem.yaml
     x-derived:
-      rule: The verdicts of PACK, ROUND_TRIP and CLOSURE, as the registration words each fault.
+      rule: The verdicts of PACK, ROUND_TRIP and CLOSURE, as the registration words each fault; the round trip's lead
+        sentence is its own.
       inputs:
         - the packs checked
