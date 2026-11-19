@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_REC_A
+title: Ship In Small Increments
+intent: >
+  Deliver each change as the smallest increment that can be reviewed and released on its own.
+enforcement: advisory

@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_REG_B
+title: Evolve Interfaces Freely
+intent: >
+  Change a public interface whenever a better shape is found.
+enforcement: advisory

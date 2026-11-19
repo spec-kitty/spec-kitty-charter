@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_REQ_B
+title: Merge Without Waiting
+intent: >
+  Merge a change as soon as its checks pass, without waiting on a reviewer.
+enforcement: advisory

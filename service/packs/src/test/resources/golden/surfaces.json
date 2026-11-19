@@ -45,6 +45,14 @@
     },
     "composeRead" : "readable"
   },
+  "example-packs/tensions" : {
+    "registration" : {
+      "accepted" : {
+        "diagnostics" : [ ]
+      }
+    },
+    "composeRead" : "readable"
+  },
   "planted/artifact-not-utf8" : {
     "registration" : {
       "refused" : {

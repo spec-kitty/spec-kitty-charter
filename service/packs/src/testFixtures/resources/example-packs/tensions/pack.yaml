@@ -1,0 +1,13 @@
+# Example org pack (ADR-0070, ADR-0045, #602): the tensions between guidance artifacts, one case each, with an open
+# policy so a scenario can register a tension into it. It depends on the built-in pack and nothing depends on it.
+schema_version: "1.0"
+pack_id: 01M7RDX1000000000000TENS0N
+pack_version: 1.0.0
+parent_pack: null
+name: tensions
+pack_level: org
+pack_drg: drg/fragment.yaml
+mutability_policy: policy.yaml
+depends_on:
+  - pack_id: 01ARWG13C000000000000000FG
+    range: ">=1.0,<2"

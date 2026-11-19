@@ -710,7 +710,25 @@ public record ClosureView(
      */
     public GraphProjection mergedGraph(InForceStates states) {
         MergedView view = merged();
-        return GraphProjection.of(view.edges(), view.closure(), effective(states));
+        Predicate<Urn> effective = effective(states);
+        return GraphProjection.of(view.edges(), view.closure(), effective, tensions(view, effective));
+    }
+
+    /**
+     * The tensions in force under a request (ADR-0045 decisions 8 to 10): each pair resolved symmetrically through the
+     * layer merge from the edge its authoring pack wrote, with both sides in force, once, with the artifacts in force
+     * that reconcile it ({@link TensionsInForce}). It reads nothing more than this view (NFR-007).
+     *
+     * @param states what {@link #inForce} answered for the request
+     * @return the tensions in force
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged()} does
+     */
+    public TensionsInForce tensions(InForceStates states) {
+        return tensions(merged(), effective(states));
+    }
+
+    private TensionsInForce tensions(MergedView view, Predicate<Urn> effective) {
+        return TensionsInForce.of(mergeInputs.packs(), mergeInputs.facts(), edges, view, effective);
     }
 
     /**

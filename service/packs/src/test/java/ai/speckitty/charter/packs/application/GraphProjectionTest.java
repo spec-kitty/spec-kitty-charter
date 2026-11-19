@@ -33,7 +33,7 @@ class GraphProjectionTest {
     }
 
     private static GraphProjection project(Closure closure, Predicate<Urn> inForce) {
-        return GraphProjection.of(closure.merged(), closure.mergedClosure(), inForce);
+        return GraphProjection.of(closure.merged(), closure.mergedClosure(), inForce, closure.tensions(inForce));
     }
 
     private static Edge link(String source, RelationType relation, String target) {
@@ -180,5 +180,88 @@ class GraphProjectionTest {
                         link("directive:D", RelationType.SUGGESTS, "tactic:T"),
                         link("tactic:T", RelationType.SUGGESTS, "directive:D"));
         assertThat(backward).isEqualTo(forward);
+    }
+
+    // ---- ADR-0045 decision 9: the tension edges --------------------------------------------------------------------
+
+    private static Relationship worded(String from, String to, String when, String reason) {
+        ai.speckitty.charter.kernel.domain.PackQualifiedReference source =
+                ai.speckitty.charter.kernel.domain.PackQualifiedReference.parse(from);
+        ai.speckitty.charter.kernel.domain.PackQualifiedReference target =
+                ai.speckitty.charter.kernel.domain.PackQualifiedReference.parse(to);
+        return Relationship.of(
+                source.asUrn().orElseThrow(),
+                source.packName(),
+                target.asUrn().orElseThrow(),
+                target.packName(),
+                RelationType.TENSION,
+                java.util.Optional.of(when),
+                java.util.Optional.of(reason));
+    }
+
+    private static Edge tensionEdge(String source, String target, String when, String reason, String... reconcilers) {
+        return new Edge(
+                urn(source),
+                RelationType.TENSION,
+                urn(target),
+                java.util.Optional.of(when),
+                java.util.Optional.of(reason),
+                new java.util.TreeSet<>(
+                        Stream.of(reconcilers).map(EdgeIndexTest::urn).toList()));
+    }
+
+    @Test
+    void aTensionInForceIsOneEdgeWithItsWordsAndARequiresOnThePairIsASeparateEdgeWithNone() {
+        Closure closure = new Closure()
+                .pack(
+                        "core",
+                        PackLevel.BUILT_IN,
+                        List.of("directive:A", "directive:B", "tactic:R"),
+                        worded("directive:A", "directive:B", "first", "first reason"),
+                        edge("directive:B", RelationType.REQUIRES, "directive:A"),
+                        edge("tactic:R", RelationType.RECONCILES_TENSION, "directive:A"),
+                        edge("tactic:R", RelationType.RECONCILES_TENSION, "directive:B"))
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("core"),
+                        List.of(),
+                        worded("core::directive:A", "core::directive:B", "second", "second reason"));
+
+        GraphProjection graph = project(closure, inForce("directive:A", "directive:B", "tactic:R"));
+
+        assertThat(graph.edges())
+                .containsExactly(
+                        tensionEdge("directive:A", "directive:B", "first", "first reason", "tactic:R"),
+                        link("directive:B", RelationType.REQUIRES, "directive:A"),
+                        link("tactic:R", RelationType.RECONCILES_TENSION, "directive:A"),
+                        link("tactic:R", RelationType.RECONCILES_TENSION, "directive:B"));
+    }
+
+    @Test
+    void aTensionWithASideOutOfForceIsNoEdgeAndOnlyATensionEdgeCarriesWords() {
+        Closure closure = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("directive:A", "directive:B"),
+                        edge("directive:A", RelationType.TENSION, "directive:B"));
+
+        assertThat(project(closure, inForce("directive:A")).edges()).isEmpty();
+        assertThat(project(closure, inForce("directive:A", "directive:B")).edges())
+                .containsExactly(new Edge(
+                        urn("directive:A"),
+                        RelationType.TENSION,
+                        urn("directive:B"),
+                        java.util.Optional.empty(),
+                        java.util.Optional.empty(),
+                        new java.util.TreeSet<>()));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new Edge(
+                        urn("directive:A"),
+                        RelationType.REQUIRES,
+                        urn("directive:B"),
+                        java.util.Optional.of("w"),
+                        java.util.Optional.empty(),
+                        new java.util.TreeSet<>()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

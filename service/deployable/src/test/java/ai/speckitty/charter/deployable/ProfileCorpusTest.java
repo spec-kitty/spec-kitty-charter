@@ -94,7 +94,7 @@ class ProfileCorpusTest {
         Map<String, Map<String, Object>> profiles = new LinkedHashMap<>();
         Path directory = CORPUS.resolve(pack).resolve("agent_profiles");
         if (!Files.isDirectory(directory)) {
-            // A pack that holds no profile (org-alt, #358; org-mandate, ADR-0080) serves none.
+            // A pack that holds no profile (org-alt, #358; org-mandate, ADR-0080; tensions, #602) serves none.
             return profiles;
         }
         try (Stream<Path> files = Files.list(directory)) {
@@ -324,8 +324,10 @@ class ProfileCorpusTest {
     void everyProfileFileOfEachExamplePackIsServedAndNothingElse() throws Exception {
         for (String pack : PACKS) {
             Set<String> onDisk = profilesOf(pack).keySet();
-            // Every pack holds profiles but org-alt and org-mandate, which hold none and are served none.
-            if (ExamplePacks.ORG_ALT.equals(pack) || ExamplePacks.ORG_MANDATE.equals(pack)) {
+            // Every pack holds profiles but org-alt, org-mandate and tensions, which hold none and are served none.
+            if (ExamplePacks.ORG_ALT.equals(pack)
+                    || ExamplePacks.ORG_MANDATE.equals(pack)
+                    || ExamplePacks.TENSIONS.equals(pack)) {
                 assertThat(onDisk).as("%s profile files", pack).isEmpty();
             } else {
                 assertThat(onDisk).as("%s profile files", pack).isNotEmpty();

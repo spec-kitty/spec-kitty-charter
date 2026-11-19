@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_ONE_B
+title: Accept Lenient Input
+intent: >
+  Accept input that can be read unambiguously, even when it departs from its declared shape.
+enforcement: advisory

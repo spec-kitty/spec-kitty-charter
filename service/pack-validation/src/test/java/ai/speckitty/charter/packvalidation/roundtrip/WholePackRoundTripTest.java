@@ -143,7 +143,8 @@ class WholePackRoundTripTest {
                         ExamplePacks.ORG_ALT,
                         ExamplePacks.ORG,
                         ExamplePacks.ORG_MANDATE,
-                        ExamplePacks.PROJECT);
+                        ExamplePacks.PROJECT,
+                        ExamplePacks.TENSIONS);
         try (Stream<Path> dirs = Files.list(ExamplePacks.packsDirectory())) {
             assertThat(dirs.filter(Files::isDirectory).map(dir -> String.valueOf(dir.getFileName())))
                     .as("every directory under the example packs is a gated example pack")

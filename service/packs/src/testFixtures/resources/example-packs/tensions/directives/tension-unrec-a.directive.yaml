@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: TENSION_UNREC_A
+title: Document Every Decision
+intent: >
+  Record each decision a change takes, with its reasons, where reviewers read it.
+enforcement: advisory

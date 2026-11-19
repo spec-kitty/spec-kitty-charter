@@ -1,0 +1,78 @@
+# The tensions pack's only DRG document (ADR-0064, ADR-0045, #602). Each tension is written once, from the smaller
+# bare URN (ADR-0045 ruling G1). See README.md for the five cases.
+nodes:
+- id: TENSION_ONE_A
+  kind: directives
+  title: Prefer Strict Validation
+  body_path: directives/tension-one-a.directive.yaml
+- id: TENSION_ONE_B
+  kind: directives
+  title: Accept Lenient Input
+  body_path: directives/tension-one-b.directive.yaml
+- id: TENSION_REC_A
+  kind: directives
+  title: Ship In Small Increments
+  body_path: directives/tension-rec-a.directive.yaml
+- id: TENSION_REC_B
+  kind: directives
+  title: Complete The Design First
+  body_path: directives/tension-rec-b.directive.yaml
+- id: TENSION_REG_A
+  kind: directives
+  title: Freeze Interfaces Early
+  body_path: directives/tension-reg-a.directive.yaml
+- id: TENSION_REG_B
+  kind: directives
+  title: Evolve Interfaces Freely
+  body_path: directives/tension-reg-b.directive.yaml
+- id: TENSION_REQ_A
+  kind: directives
+  title: Review Every Change
+  body_path: directives/tension-req-a.directive.yaml
+- id: TENSION_REQ_B
+  kind: directives
+  title: Merge Without Waiting
+  body_path: directives/tension-req-b.directive.yaml
+- id: TENSION_UNREC_A
+  kind: directives
+  title: Document Every Decision
+  body_path: directives/tension-unrec-a.directive.yaml
+- id: TENSION_UNREC_B
+  kind: directives
+  title: Keep Documentation Minimal
+  body_path: directives/tension-unrec-b.directive.yaml
+- id: reconcile-half
+  kind: tactics
+  title: Decision Log Entries
+  body_path: tactics/reconcile-half.tactic.yaml
+- id: reconcile-rec
+  kind: tactics
+  title: Increment Behind A Settled Outline
+  body_path: tactics/reconcile-rec.tactic.yaml
+edges:
+- source: directive:TENSION_REC_A
+  target: directive:TENSION_REC_B
+  relation: tension
+  when: when a change is large enough to need a design
+  reason: Small increments ship sooner; a settled design avoids rework.
+- source: tactic:reconcile-rec
+  target: directive:TENSION_REC_A
+  relation: reconciles_tension
+- source: tactic:reconcile-rec
+  target: directive:TENSION_REC_B
+  relation: reconciles_tension
+- source: directive:TENSION_UNREC_A
+  target: directive:TENSION_UNREC_B
+  relation: tension
+- source: tactic:reconcile-half
+  target: directive:TENSION_UNREC_A
+  relation: reconciles_tension
+- source: directive:TENSION_ONE_A
+  target: directive:TENSION_ONE_B
+  relation: tension
+- source: directive:TENSION_REQ_A
+  target: directive:TENSION_REQ_B
+  relation: tension
+- source: directive:TENSION_REQ_B
+  target: directive:TENSION_REQ_A
+  relation: requires
