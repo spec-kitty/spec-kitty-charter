@@ -2,7 +2,7 @@
 target:
   term: PackIdentifier
   replacement: PackIdentifier (registered id) | PackUlid (descriptor pack_id) | PackDirectory (storage directory name)
-  operation: split
+  operation: rename
 categories:
   code_symbols:
     action: rename
