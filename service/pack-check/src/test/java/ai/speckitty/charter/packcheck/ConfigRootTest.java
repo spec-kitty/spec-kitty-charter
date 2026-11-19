@@ -11,56 +11,101 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** {@link ConfigRoot#packs}: the packs of a config root (#478, T015). */
+/** {@link ConfigRoot#packs}: the packs of a config root, by the service's entry rule (#478, T015, review MEDIUM-2). */
 class ConfigRootTest {
 
     @TempDir
     Path temp;
 
+    private Path packs() throws IOException {
+        return Files.createDirectories(temp.resolve(ConfigRoot.PACKS));
+    }
+
+    private static void link(Path link, Path target) throws IOException {
+        try {
+            Files.createSymbolicLink(link, target);
+        } catch (IOException | UnsupportedOperationException noLinks) {
+            assumeTrue(Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+            throw noLinks;
+        }
+    }
+
     @Test
     void theFiveExamplePacksAreFiveRootsInNameOrderWithNoConfiguredLevel() throws IOException {
         ExamplePacks.names().forEach(name -> ExamplePacks.copyOf(name, temp.resolve(ConfigRoot.PACKS)));
 
-        assertThat(ConfigRoot.packs(temp))
+        ConfigRoot.Listing listing = ConfigRoot.packs(temp);
+
+        assertThat(listing.packs())
                 .extracting(PackRoot::name)
                 .containsExactlyElementsOf(
                         ExamplePacks.names().stream().sorted().toList())
                 .hasSize(5);
-        assertThat(ConfigRoot.packs(temp)).allSatisfy(root -> {
+        assertThat(listing.packs()).allSatisfy(root -> {
             assertThat(root.configuredLevel()).isEmpty();
             assertThat(root.locator())
                     .isEqualTo(
                             temp.resolve(ConfigRoot.PACKS).resolve(root.name()).toString());
         });
+        assertThat(listing.dangling()).isEmpty();
     }
 
     @Test
     void aLinkToAPackDirectoryIsAPack() throws IOException {
         Path elsewhere = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("elsewhere"));
-        Path packs = Files.createDirectories(temp.resolve("root").resolve(ConfigRoot.PACKS));
-        try {
-            Files.createSymbolicLink(packs.resolve("linked"), elsewhere);
-        } catch (IOException | UnsupportedOperationException noLinks) {
-            assumeTrue(Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
-            throw noLinks;
-        }
+        link(packs().resolve("linked"), elsewhere);
 
-        assertThat(ConfigRoot.packs(temp.resolve("root")))
-                .extracting(PackRoot::name)
-                .containsExactly("linked");
+        assertThat(ConfigRoot.packs(temp).packs()).extracting(PackRoot::name).containsExactly("linked");
     }
 
     @Test
     void aFileUnderPacksIsIgnored() throws IOException {
-        Path packs = Files.createDirectories(temp.resolve(ConfigRoot.PACKS));
-        Files.createDirectories(packs.resolve("a-pack"));
-        Files.writeString(packs.resolve("notes.md"), "not a pack\n");
+        Files.createDirectories(packs().resolve("a-pack"));
+        Files.writeString(packs().resolve("notes.md"), "not a pack\n");
 
-        assertThat(ConfigRoot.packs(temp)).extracting(PackRoot::name).containsExactly("a-pack");
+        assertThat(ConfigRoot.packs(temp).packs()).extracting(PackRoot::name).containsExactly("a-pack");
+    }
+
+    @Test
+    void aHiddenDirectoryIsNoPack() throws IOException {
+        Files.createDirectories(packs().resolve("a-pack"));
+        Files.createDirectories(packs().resolve(".staging"));
+
+        assertThat(ConfigRoot.packs(temp).packs()).extracting(PackRoot::name).containsExactly("a-pack");
+    }
+
+    @Test
+    void anAsideCopyIsNoPack() throws IOException {
+        Files.createDirectories(packs().resolve("a-pack"));
+        Files.createDirectories(packs().resolve("a-pack.pack-old-123"));
+
+        assertThat(ConfigRoot.packs(temp).packs()).extracting(PackRoot::name).containsExactly("a-pack");
+    }
+
+    @Test
+    void aDanglingLinkIsListedAsDanglingNotDropped() throws IOException {
+        Files.createDirectories(packs().resolve("a-pack"));
+        link(packs().resolve("gone"), temp.resolve("nowhere"));
+
+        ConfigRoot.Listing listing = ConfigRoot.packs(temp);
+
+        assertThat(listing.packs()).extracting(PackRoot::name).containsExactly("a-pack");
+        assertThat(listing.dangling()).containsExactly(packs().resolve("gone"));
+    }
+
+    @Test
+    void aHiddenDanglingLinkIsNoPackEither() throws IOException {
+        Files.createDirectories(packs().resolve("a-pack"));
+        link(packs().resolve(".gone"), temp.resolve("nowhere"));
+
+        assertThat(ConfigRoot.packs(temp).dangling()).isEmpty();
     }
 
     @Test
     void noPacksDirectoryIsNoPack() throws IOException {
-        assertThat(ConfigRoot.packs(temp)).isEmpty();
+        ConfigRoot.Listing listing = ConfigRoot.packs(temp);
+
+        assertThat(listing.packs()).isEmpty();
+        assertThat(listing.dangling()).isEmpty();
     }
 }

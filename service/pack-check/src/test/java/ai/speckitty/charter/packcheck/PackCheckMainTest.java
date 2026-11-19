@@ -5,15 +5,19 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -298,6 +302,123 @@ class PackCheckMainTest {
         assertThat(exit).isEqualTo(PackCheckMain.FAILED);
         assertThat(out.toString(StandardCharsets.UTF_8)).isEmpty();
         assertThat(err.toString(StandardCharsets.UTF_8)).contains("temporary directory");
+    }
+
+    private static Run run(Path temporary, PackCheckMain.Composition composition, String... args) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        int exit = PackCheckMain.run(
+                args,
+                new PrintStream(out, true, StandardCharsets.UTF_8),
+                new PrintStream(err, true, StandardCharsets.UTF_8),
+                temporary,
+                composition);
+        return new Run(exit, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
+    }
+
+    private static List<Path> left(Path temporary) throws IOException {
+        try (Stream<Path> left = Files.list(temporary)) {
+            return left.toList();
+        }
+    }
+
+    /** Error handling: a reader that fails as no canonical pack makes it fail, an internal error of the run. */
+    @Test
+    void anInternalErrorExitsTwoWithNothingOnStandardOutput() {
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+        PackCheckMain.Composition failing = new PackCheckMain.Composition(
+                root -> {
+                    throw new IllegalStateException("the reader broke on " + root.name());
+                },
+                PackRoundTrip::run);
+
+        Run run = run(temp, failing, "--pack", builtIn + ":built-in");
+
+        assertThat(run.exit()).isEqualTo(PackCheckMain.FAILED);
+        assertThat(run.out()).isEmpty();
+        assertThat(run.err())
+                .startsWith("pack-check: internal error: java.lang.IllegalStateException: the reader broke on built-in")
+                .contains("\tat ");
+    }
+
+    /** Error handling: the round trip fails on the second pack, after the first was written. */
+    @Test
+    void aRoundTripThatFailsMidwayLeavesNoTemporaryDirectoryAndExitsTwo() throws IOException {
+        Path root = configRoot();
+        Path temporary = Files.createDirectories(temp.resolve("midway-tmp"));
+        AtomicInteger calls = new AtomicInteger();
+        PackCheckMain.Composition midway =
+                new PackCheckMain.Composition(new FileSystemPackInspector(), (source, target) -> {
+                    if (calls.incrementAndGet() == 2) {
+                        throw new UncheckedIOException(new IOException("the disk is full"));
+                    }
+                    return PackRoundTrip.run(source, target);
+                });
+
+        Run run = run(temporary, midway, "--config-root", root.toString(), "--round-trip");
+
+        assertThat(calls).hasValue(2);
+        assertThat(run.exit()).isEqualTo(PackCheckMain.FAILED);
+        assertThat(run.out()).isEmpty();
+        assertThat(run.err()).contains("the disk is full");
+        assertThat(left(temporary)).as("the run directory is deleted").isEmpty();
+    }
+
+    /** Error handling: as above, with an internal error in place of the I/O failure. */
+    @Test
+    void aRoundTripThatBreaksMidwayLeavesNoTemporaryDirectoryAndExitsTwo() throws IOException {
+        Path root = configRoot();
+        Path temporary = Files.createDirectories(temp.resolve("midway-tmp"));
+        AtomicInteger calls = new AtomicInteger();
+        PackCheckMain.Composition midway =
+                new PackCheckMain.Composition(new FileSystemPackInspector(), (source, target) -> {
+                    if (calls.incrementAndGet() == 2) {
+                        throw new IllegalStateException("the flow broke");
+                    }
+                    return PackRoundTrip.run(source, target);
+                });
+
+        Run run = run(temporary, midway, "--config-root", root.toString(), "--round-trip");
+
+        assertThat(run.exit()).isEqualTo(PackCheckMain.FAILED);
+        assertThat(run.out()).isEmpty();
+        assertThat(run.err()).startsWith("pack-check: internal error: java.lang.IllegalStateException: the flow broke");
+        assertThat(left(temporary)).isEmpty();
+    }
+
+    @Test
+    void aConfigRootChecksTheEntriesTheServiceServes() throws IOException {
+        Path root = configRoot();
+        Path packs = root.resolve(ConfigRoot.PACKS);
+        Files.createDirectories(packs.resolve(".staging"));
+        ExamplePacks.copyOf(ExamplePacks.BUILT_IN, packs.resolve("aside"));
+        Files.move(packs.resolve("aside").resolve(ExamplePacks.BUILT_IN), packs.resolve("built-in.pack-old-123"));
+        Files.delete(packs.resolve("aside"));
+
+        Run run = run("--config-root", root.toString());
+
+        assertThat(run.exit()).as(run.out()).isZero();
+        assertThat(names(run.report()))
+                .containsExactlyElementsOf(
+                        ExamplePacks.names().stream().sorted().toList());
+    }
+
+    @Test
+    void aDanglingConfigRootEntryIsAUsageFault() throws IOException {
+        Path root = configRoot();
+        Path gone = root.resolve(ConfigRoot.PACKS).resolve("gone");
+        try {
+            Files.createSymbolicLink(gone, temp.resolve("nowhere"));
+        } catch (IOException | UnsupportedOperationException noLinks) {
+            assumeTrue(Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+            throw noLinks;
+        }
+
+        Run run = run("--config-root", root.toString());
+
+        assertThat(run.exit()).isEqualTo(PackCheckMain.FAILED);
+        assertThat(run.out()).isEmpty();
+        assertThat(run.err()).contains(gone + " is a link to nothing");
     }
 
     private static GoldenSubjects.Subject subject(String key) {

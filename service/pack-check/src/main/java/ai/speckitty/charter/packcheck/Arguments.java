@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,7 +23,10 @@ import java.util.stream.Collectors;
  *
  * <p>A user error is a value, never an exception: {@link #parse} answers {@link UsageFault} for no input, both inputs,
  * an unknown option, a missing value, an unknown level, a directory that does not exist, a config root with no pack, and
- * two packs with one directory (by real path) or one name. It judges the command line and the directories it names,
+ * a {@code --pack} value that could name two directories ({@code x:org} and {@code x} both exist), two packs with one
+ * directory (by real path), one inside another or one name, and an entry of the config root's {@code packs/} that is a
+ * link resolving to nothing. A value that starts with {@code --} is a missing value, unless it follows {@code --}, which
+ * ends the options. It judges the command line and the directories it names,
  * never a pack's content: that is {@code pack-validation}'s.
  */
 final class Arguments {
@@ -35,6 +39,8 @@ final class Arguments {
                                        repeat it to check a set of packs together
               --round-trip             also round-trip every pack through the charter's model
               --help                   print this usage
+              --                       end the options: each argument after it is a --pack value, for a
+                                       directory whose name starts with -- (or write ./--dir)
             exit codes: 0 valid (warnings allowed), 1 a problem, 2 a usage or I/O failure
             """;
 
@@ -42,6 +48,7 @@ final class Arguments {
     private static final String PACK = "--pack";
     private static final String ROUND_TRIP = "--round-trip";
     private static final String HELP = "--help";
+    private static final String END_OF_OPTIONS = "--";
 
     private Arguments() {}
 
@@ -96,43 +103,68 @@ final class Arguments {
         if (args.length == 1 && HELP.equals(args[0])) {
             return new Help();
         }
-        Optional<String> configRoot = Optional.empty();
-        List<String> packs = new ArrayList<>();
-        boolean roundTrip = false;
+        Collected collected = new Collected();
         Iterator<String> given = Arrays.asList(args).iterator();
         while (given.hasNext()) {
-            String arg = given.next();
-            switch (arg) {
-                case CONFIG_ROOT, PACK -> {
-                    String value = given.hasNext() ? given.next() : "--";
-                    if (value.startsWith("--")) {
-                        return new UsageFault(arg + " needs a value");
-                    }
-                    if (CONFIG_ROOT.equals(arg)) {
-                        if (configRoot.isPresent()) {
-                            return new UsageFault(CONFIG_ROOT + " is given twice");
-                        }
-                        configRoot = Optional.of(value);
-                    } else {
-                        packs.add(value);
-                    }
-                }
-                case ROUND_TRIP -> roundTrip = true;
-                default -> {
-                    return new UsageFault("unknown option " + arg);
-                }
+            Optional<UsageFault> fault = collected.take(given.next(), given);
+            if (fault.isPresent()) {
+                return fault.get();
             }
         }
-        if (configRoot.isPresent() && !packs.isEmpty()) {
-            return new UsageFault("give " + CONFIG_ROOT + " or " + PACK + ", not both");
+        return collected.outcome();
+    }
+
+    /** What the options asked for so far. */
+    private static final class Collected {
+        private Optional<String> configRoot = Optional.empty();
+        private final List<String> packs = new ArrayList<>();
+        private boolean roundTrip;
+
+        /** Takes one argument, and its value from {@code rest}; the fault it is, if any. */
+        Optional<UsageFault> take(String arg, Iterator<String> rest) {
+            switch (arg) {
+                case END_OF_OPTIONS -> rest.forEachRemaining(packs::add);
+                case ROUND_TRIP -> roundTrip = true;
+                case CONFIG_ROOT, PACK -> {
+                    return value(arg, rest);
+                }
+                default -> {
+                    return Optional.of(new UsageFault("unknown option " + arg));
+                }
+            }
+            return Optional.empty();
         }
-        if (configRoot.isPresent()) {
-            return configured(configRoot.get(), roundTrip);
+
+        /** The value of {@code --config-root} or {@code --pack}: a missing one is one that starts with {@code --}. */
+        private Optional<UsageFault> value(String option, Iterator<String> rest) {
+            String value = rest.hasNext() ? rest.next() : END_OF_OPTIONS;
+            if (value.startsWith(END_OF_OPTIONS)) {
+                return Optional.of(new UsageFault(option + " needs a value"));
+            }
+            if (PACK.equals(option)) {
+                packs.add(value);
+                return Optional.empty();
+            }
+            if (configRoot.isPresent()) {
+                return Optional.of(new UsageFault(CONFIG_ROOT + " is given twice"));
+            }
+            configRoot = Optional.of(value);
+            return Optional.empty();
         }
-        if (packs.isEmpty()) {
-            return new UsageFault("nothing to check: give " + CONFIG_ROOT + " <dir> or " + PACK + " <dir>[:<level>]");
+
+        Outcome outcome() {
+            if (configRoot.isPresent() && !packs.isEmpty()) {
+                return new UsageFault("give " + CONFIG_ROOT + " or " + PACK + ", not both");
+            }
+            if (configRoot.isPresent()) {
+                return configured(configRoot.get(), roundTrip);
+            }
+            if (packs.isEmpty()) {
+                return new UsageFault(
+                        "nothing to check: give " + CONFIG_ROOT + " <dir> or " + PACK + " <dir>[:<level>]");
+            }
+            return given(packs, roundTrip);
         }
-        return given(packs, roundTrip);
     }
 
     /** The packs of a config root: every directory under its {@code packs/}, at its declared level. */
@@ -141,12 +173,19 @@ final class Arguments {
         if (!Files.isDirectory(directory)) {
             return new UsageFault(CONFIG_ROOT + " " + root + " is not a directory");
         }
-        List<PackRoot> roots;
+        ConfigRoot.Listing listing;
         try {
-            roots = ConfigRoot.packs(directory);
+            listing = ConfigRoot.packs(directory);
         } catch (IOException failure) {
             return new UsageFault("cannot list " + directory.resolve(ConfigRoot.PACKS) + ": " + failure.getMessage());
         }
+        if (!listing.dangling().isEmpty()) {
+            return new UsageFault(
+                    listing.dangling().stream().map(Path::toString).collect(Collectors.joining(", "))
+                            + (listing.dangling().size() == 1 ? " is a link" : " are links")
+                            + " to nothing; a pack entry must resolve to a directory");
+        }
+        List<PackRoot> roots = listing.packs();
         if (roots.isEmpty()) {
             return new UsageFault(
                     "nothing to check: " + directory.resolve(ConfigRoot.PACKS) + " holds no pack directory");
@@ -186,20 +225,16 @@ final class Arguments {
      */
     private static Given packRoot(String value) {
         int colon = value.lastIndexOf(':');
-        String path = value;
-        Optional<PackLevel> level = Optional.empty();
-        if (colon >= 0) {
-            String suffix = value.substring(colon + 1);
-            Optional<PackLevel> token = PackLevel.fromToken(suffix);
-            if (token.isPresent()) {
-                path = value.substring(0, colon);
-                level = token;
-            } else if (isBareWord(suffix) && !Files.isDirectory(Path.of(value))) {
-                return Given.refused("unknown level " + suffix + " in " + PACK + " " + value + "; the levels are "
-                        + Arrays.stream(PackLevel.values())
-                                .map(PackLevel::token)
-                                .collect(Collectors.joining(", ")));
-            }
+        String suffix = colon < 0 ? "" : value.substring(colon + 1);
+        Optional<PackLevel> level = PackLevel.fromToken(suffix);
+        String path = level.isPresent() ? value.substring(0, colon) : value;
+        if (level.isPresent() && Files.isDirectory(Path.of(value)) && Files.isDirectory(Path.of(path))) {
+            return Given.refused(PACK + " " + value + " is ambiguous: " + value + " and " + path
+                    + " are both directories; rename one, or write " + value + ":<level>");
+        }
+        if (level.isEmpty() && isBareWord(suffix) && !Files.isDirectory(Path.of(value))) {
+            return Given.refused("unknown level " + suffix + " in " + PACK + " " + value + "; the levels are "
+                    + Arrays.stream(PackLevel.values()).map(PackLevel::token).collect(Collectors.joining(", ")));
         }
         Path directory = Path.of(path);
         if (!Files.isDirectory(directory)) {
@@ -216,9 +251,9 @@ final class Arguments {
         return !suffix.isEmpty() && suffix.indexOf('/') < 0 && suffix.indexOf('\\') < 0;
     }
 
-    /** The packs, refused when two share a directory (by real path) or a name. */
+    /** The packs, refused when two share a directory (by real path), one lies inside another, or two share a name. */
     private static Outcome distinct(List<PackRoot> roots, boolean roundTrip) {
-        Map<Path, String> byRealPath = new HashMap<>();
+        Map<Path, String> byRealPath = new LinkedHashMap<>();
         Map<String, String> byName = new HashMap<>();
         List<PackSetEntry> entries = new ArrayList<>();
         for (PackRoot root : roots) {
@@ -232,6 +267,13 @@ final class Arguments {
             if (sameDirectory != null) {
                 return new UsageFault(
                         sameDirectory + " and " + root.locator() + " are the same directory; give each pack once");
+            }
+            for (Map.Entry<Path, String> other : byRealPath.entrySet()) {
+                if (!other.getKey().equals(real)
+                        && (real.startsWith(other.getKey()) || other.getKey().startsWith(real))) {
+                    return new UsageFault(other.getValue() + " and " + root.locator()
+                            + " overlap, one inside the other; a pack holds no other pack");
+                }
             }
             String sameName = byName.putIfAbsent(root.name(), root.locator());
             if (sameName != null) {

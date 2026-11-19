@@ -118,8 +118,9 @@ final class Problems {
     }
 
     /**
-     * A pack's problems: its violations (validate mode's, then the set check's), or else the refusal of its facts not
-     * yet reported (D3), never both; then its round trip's violations.
+     * A pack's problems: its violations (validate mode's, then the set check's), the refusal of its facts that
+     * {@code pack-validation} leaves unreported (D3, {@link PackResult#unreportedRefusal}, never beside a violation),
+     * then its round trip's violations.
      */
     private static List<Problem> ofPack(PackResult pack) {
         String instance = pack.entry().root().locator();
@@ -127,11 +128,9 @@ final class Problems {
         Rationale found = new Rationale(Stream.concat(pack.verdict().findings().stream(), pack.setCheck().stream())
                 .toList());
         violationsOf(found, instance).ifPresent(problems::add);
-        if (problems.isEmpty()) {
-            pack.unreportedRefusal()
-                    .map(refusal -> ofRefusal(refusal, instance))
-                    .ifPresent(problems::add);
-        }
+        // D3: pack-validation decides when the refusal is the pack's problem (PackResult.unreportedRefusal); this
+        // renders.
+        pack.unreportedRefusal().map(refusal -> ofRefusal(refusal, instance)).ifPresent(problems::add);
         violationsOf(new Rationale(pack.roundTrip()), instance).ifPresent(problems::add);
         return problems;
     }

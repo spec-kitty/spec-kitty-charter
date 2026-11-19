@@ -5,6 +5,8 @@ import ai.speckitty.charter.packcheck.Arguments.Outcome;
 import ai.speckitty.charter.packcheck.Arguments.Parsed;
 import ai.speckitty.charter.packcheck.Arguments.UsageFault;
 import ai.speckitty.charter.packcheck.Problems.Problem;
+import ai.speckitty.charter.packs.domain.PackReading;
+import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
@@ -19,7 +21,9 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 /**
  * The pack-check CLI (ADR-0075 decision 9, #478, FR-001, FR-006, T017): the composition root of the pack-set check.
@@ -31,8 +35,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * it.
  *
  * <p>Exit codes: {@code 0} when the report holds no problem (warnings allowed), {@code 1} when it holds one, and
- * {@code 2} on a usage fault or a failure outside a pack read (the run directory, writing the report), with nothing on
- * standard output.
+ * {@code 2} on a usage fault, a failure outside a pack read (the run directory, writing the report) or an internal
+ * error ({@code pack-check: internal error: ...} and its stack trace on standard error), with nothing on standard
+ * output. The report is built whole before it is written, so no partial report reaches standard output.
+ *
+ * <p>The run directory is deleted in a {@code finally}, so a failure midway leaves none behind. No shutdown hook covers
+ * an interrupted JVM (SIGINT, SIGTERM): a run stopped that way can leave its {@code pack-check-*} directory under the
+ * temporary directory.
  */
 public final class PackCheckMain {
 
@@ -42,7 +51,7 @@ public final class PackCheckMain {
     /** At least one problem. */
     static final int PROBLEMS = 1;
 
-    /** A usage fault, or a failure outside a pack read. */
+    /** A usage fault, a failure outside a pack read, or an internal error. */
     static final int FAILED = 2;
 
     private PackCheckMain() {}
@@ -78,6 +87,40 @@ public final class PackCheckMain {
      * @return the exit code
      */
     static int run(String[] args, PrintStream out, PrintStream err, Path temporary) {
+        return run(args, out, err, temporary, new Composition(new FileSystemPackInspector(), PackRoundTrip::run));
+    }
+
+    /**
+     * What the composition root plugs into the pack-set check: the reader and the production round trip. A test gives
+     * its own to reach a failure no canonical pack provokes.
+     *
+     * @param reading the port that reads one pack root once
+     * @param flow the production round trip of one pack, from its directory into an empty target
+     */
+    record Composition(PackReading reading, BiFunction<Path, Path, PackRoundTripResult> flow) {
+        /**
+         * Checks the fields.
+         *
+         * @param reading the reader
+         * @param flow the round trip
+         */
+        Composition {
+            Objects.requireNonNull(reading, "reading");
+            Objects.requireNonNull(flow, "flow");
+        }
+    }
+
+    /**
+     * Runs pack-check over a composition.
+     *
+     * @param args the command line
+     * @param out where the report goes
+     * @param err where the usage, the warnings and the failures go
+     * @param temporary the directory the round trip's run directory is made in
+     * @param composition the reader and the round trip
+     * @return the exit code
+     */
+    static int run(String[] args, PrintStream out, PrintStream err, Path temporary, Composition composition) {
         Outcome outcome = Arguments.parse(args);
         return switch (outcome) {
             case Help help -> {
@@ -89,21 +132,34 @@ public final class PackCheckMain {
                 err.print(Arguments.USAGE);
                 yield FAILED;
             }
-            case Parsed parsed -> check(parsed, out, err, temporary);
+            case Parsed parsed -> check(parsed, out, err, temporary, composition);
         };
     }
 
-    private static int check(Parsed parsed, PrintStream out, PrintStream err, Path temporary) {
-        PackSetVerdict verdict;
+    /**
+     * The check, its report built whole before anything reaches standard output: an I/O failure outside a pack read, or
+     * any other failure (an internal error), exits {@link #FAILED} with nothing on standard output, so {@link #PROBLEMS}
+     * always means a report that lists problems.
+     */
+    private static int check(Parsed parsed, PrintStream out, PrintStream err, Path temporary, Composition composition) {
+        List<Problem> problems;
+        List<String> warnings;
+        String report;
         try {
-            verdict = verdict(parsed, temporary);
+            PackSetVerdict verdict = verdict(parsed, temporary, composition);
+            problems = Problems.of(verdict);
+            warnings = ReportWriter.warnings(verdict);
+            report = ReportWriter.report(verdict, problems);
         } catch (UncheckedIOException failure) {
             err.println("pack-check: " + failure.getMessage());
             return FAILED;
+        } catch (RuntimeException failure) {
+            err.println("pack-check: internal error: " + failure);
+            failure.printStackTrace(err);
+            return FAILED;
         }
-        List<Problem> problems = Problems.of(verdict);
-        ReportWriter.warnings(verdict).forEach(err::println);
-        out.print(ReportWriter.report(verdict, problems));
+        warnings.forEach(err::println);
+        out.print(report);
         int written = written(out, err);
         if (written != VALID) {
             return written;
@@ -112,8 +168,8 @@ public final class PackCheckMain {
     }
 
     /** The verdict of the set; with the round trip, its run directory is gone when this returns. */
-    private static PackSetVerdict verdict(Parsed parsed, Path temporary) {
-        PackSetCheck check = new PackSetCheck(new FileSystemPackInspector());
+    private static PackSetVerdict verdict(Parsed parsed, Path temporary, Composition composition) {
+        PackSetCheck check = new PackSetCheck(composition.reading());
         if (!parsed.roundTrip()) {
             return check.check(parsed.packs());
         }
@@ -127,8 +183,9 @@ public final class PackCheckMain {
             AtomicInteger next = new AtomicInteger();
             return check.checkWithRoundTrip(
                     parsed.packs(),
-                    root -> PackRoundTrip.run(
-                            Path.of(root.locator()), run.resolve(next.incrementAndGet() + "-" + root.name())));
+                    root -> composition
+                            .flow()
+                            .apply(Path.of(root.locator()), run.resolve(next.incrementAndGet() + "-" + root.name())));
         } finally {
             delete(run);
         }

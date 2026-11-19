@@ -124,6 +124,37 @@ class ArgumentsTest {
         }
 
         @Test
+        void everyArgumentAfterTheTerminatorIsAPack() throws IOException {
+            Path plain = pack("plain");
+            Path other = pack("other");
+
+            Parsed parsed = parsed(
+                    Arguments.parse(new String[] {"--round-trip", "--pack", plain.toString(), "--", other + ":org"}));
+
+            assertThat(parsed.packs()).extracting(PackSetEntry::name).containsExactly("plain", "other");
+            assertThat(parsed.packs().get(1).root().configuredLevel()).contains(PackLevel.ORG);
+            assertThat(parsed.roundTrip()).isTrue();
+        }
+
+        @Test
+        void aValueThatStartsWithTwoDashesIsAPackValueAfterTheTerminator() {
+            // Not an option: the value is taken as a pack directory, which does not exist where the tests run.
+            assertThat(fault(Arguments.parse(new String[] {"--", "--no-such-dir-478"})))
+                    .isEqualTo("--pack --no-such-dir-478 is not a directory");
+        }
+
+        @Test
+        void aConfigRootSkipsHiddenEntriesAndAsideCopies() throws IOException {
+            Files.createDirectories(temp.resolve("packs/a"));
+            Files.createDirectories(temp.resolve("packs/.staging"));
+            Files.createDirectories(temp.resolve("packs/a.pack-old-1"));
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--config-root", temp.toString()}));
+
+            assertThat(parsed.packs()).extracting(PackSetEntry::name).containsExactly("a");
+        }
+
+        @Test
         void helpAloneAsksForTheUsage() {
             assertThat(Arguments.parse(new String[] {"--help"})).isInstanceOf(Help.class);
         }
@@ -243,6 +274,72 @@ class ArgumentsTest {
 
             assertThat(fault(Arguments.parse(new String[] {"--pack", a.toString(), "--pack", again + ":org"})))
                     .isEqualTo(a + " and " + again + " are the same directory; give each pack once");
+        }
+
+        @Test
+        void aValueThatStartsWithTwoDashesWithoutTheTerminator() throws IOException {
+            pack("--dir");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", "--dir"}))).isEqualTo("--pack needs a value");
+        }
+
+        @Test
+        void onlyTheTerminator() {
+            assertThat(fault(Arguments.parse(new String[] {"--"}))).startsWith("nothing to check");
+        }
+
+        @Test
+        void aConfigRootAndPacksAfterTheTerminator() throws IOException {
+            Files.createDirectories(temp.resolve("packs/a"));
+
+            assertThat(fault(Arguments.parse(new String[] {
+                        "--config-root", temp.toString(), "--", pack("b").toString()
+                    })))
+                    .isEqualTo("give --config-root or --pack, not both");
+        }
+
+        @Test
+        void aPackValueThatNamesTwoDirectories() throws IOException {
+            Path bare = pack("x");
+            Path colon = pack("x:org");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", colon.toString()})))
+                    .isEqualTo("--pack " + colon + " is ambiguous: " + colon + " and " + bare
+                            + " are both directories; rename one, or write " + colon + ":<level>");
+        }
+
+        @Test
+        void aPackInsideAnother() throws IOException {
+            Path outer = pack("outer");
+            Path inner = Files.createDirectories(outer.resolve("inner"));
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", outer.toString(), "--pack", inner.toString()})))
+                    .isEqualTo(outer + " and " + inner + " overlap, one inside the other; a pack holds no other pack");
+        }
+
+        @Test
+        void aPackHoldingAnEarlierOne() throws IOException {
+            Path outer = pack("outer");
+            Path inner = Files.createDirectories(outer.resolve("inner"));
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", inner.toString(), "--pack", outer.toString()})))
+                    .isEqualTo(inner + " and " + outer + " overlap, one inside the other; a pack holds no other pack");
+        }
+
+        @Test
+        void aDanglingEntryUnderTheConfigRoot() throws IOException {
+            Files.createDirectories(temp.resolve("packs/a"));
+            Path gone = temp.resolve("packs/gone");
+            try {
+                Files.createSymbolicLink(gone, temp.resolve("nowhere"));
+            } catch (IOException | UnsupportedOperationException noLinks) {
+                org.junit.jupiter.api.Assumptions.assumeTrue(
+                        Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+                throw noLinks;
+            }
+
+            assertThat(fault(Arguments.parse(new String[] {"--config-root", temp.toString()})))
+                    .isEqualTo(gone + " is a link to nothing; a pack entry must resolve to a directory");
         }
 
         @Test

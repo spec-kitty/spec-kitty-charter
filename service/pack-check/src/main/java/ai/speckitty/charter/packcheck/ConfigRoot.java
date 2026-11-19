@@ -1,9 +1,11 @@
 package ai.speckitty.charter.packcheck;
 
+import ai.speckitty.charter.packs.domain.PackEntryNames;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +13,8 @@ import java.util.stream.Stream;
 
 /**
  * The packs of a config root, laid out as the service's {@code charter.config-root} is (#478, T015): one directory per
- * pack under {@code <root>/packs/}, each at the level its {@code pack.yaml} declares.
+ * pack under {@code <root>/packs/}, each at the level its {@code pack.yaml} declares. The entries are the ones the
+ * service's listing can serve, by the one rule both share ({@link PackEntryNames#canBeAPack}).
  */
 final class ConfigRoot {
 
@@ -21,24 +24,59 @@ final class ConfigRoot {
     private ConfigRoot() {}
 
     /**
-     * The packs of a config root: the directories directly under {@code root/packs}, in name order, each named by its
-     * directory and with no configured level, so the level its {@code pack.yaml} declares applies. A directory reached
-     * through a symbolic link is a pack (#174); a plain file is not.
+     * What a config root's {@code packs/} holds for pack-check.
+     *
+     * @param packs the packs, in name order
+     * @param dangling the entries that can be packs but are links resolving to nothing, in name order; a pack the
+     *     author expects to be checked, so the run refuses them rather than dropping them
+     */
+    record Listing(List<PackRoot> packs, List<Path> dangling) {
+        /**
+         * Copies the lists.
+         *
+         * @param packs the packs
+         * @param dangling the dangling entries
+         */
+        Listing {
+            packs = List.copyOf(packs);
+            dangling = List.copyOf(dangling);
+        }
+    }
+
+    /**
+     * The packs of a config root: the entries directly under {@code root/packs} that can be packs (not hidden, not an
+     * aside copy) and are directories, in name order, each named by its entry and with no configured level, so the level
+     * its {@code pack.yaml} declares applies. A link to a directory is a pack (#174); a plain file is not; a link that
+     * resolves to nothing is listed as dangling.
      *
      * @param root the config root
-     * @return the packs; empty when {@code root/packs} is absent or holds no directory
+     * @return the listing; no pack when {@code root/packs} is absent or holds no directory
      * @throws IOException when {@code root/packs} cannot be listed
      */
-    static List<PackRoot> packs(Path root) throws IOException {
+    static Listing packs(Path root) throws IOException {
         Path packs = root.resolve(PACKS);
         if (!Files.isDirectory(packs)) {
-            return List.of();
+            return new Listing(List.of(), List.of());
         }
-        try (Stream<Path> entries = Files.list(packs)) {
-            return entries.filter(Files::isDirectory)
-                    .sorted(Comparator.comparing(entry -> String.valueOf(entry.getFileName())))
-                    .map(entry -> new PackRoot(String.valueOf(entry.getFileName()), Optional.empty(), entry.toString()))
+        List<Path> entries;
+        try (Stream<Path> listed = Files.list(packs)) {
+            entries = listed.filter(entry -> PackEntryNames.canBeAPack(nameOf(entry)))
+                    .sorted(Comparator.comparing(ConfigRoot::nameOf))
                     .toList();
         }
+        List<PackRoot> roots = new ArrayList<>();
+        List<Path> dangling = new ArrayList<>();
+        for (Path entry : entries) {
+            if (Files.isDirectory(entry)) {
+                roots.add(new PackRoot(nameOf(entry), Optional.empty(), entry.toString()));
+            } else if (Files.isSymbolicLink(entry) && !Files.exists(entry)) {
+                dangling.add(entry);
+            }
+        }
+        return new Listing(roots, dangling);
+    }
+
+    private static String nameOf(Path entry) {
+        return String.valueOf(entry.getFileName());
     }
 }
