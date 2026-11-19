@@ -195,6 +195,9 @@
       "last_event_id": "01M7TDWPMD97DATBTYG9ZXMN00",
       "last_transition_at": "2026-11-19T17:32:55.309067+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "PackIdentifier guards slug(63); fixtures canonical; PackLocation refuses non-pack-id names (last 2 NFR-003 hits, 0 now); PackId.yaml wording + ### Changed; ADR-0075 status; glossary. NFR-002 exceptions: offering.feature packs renamed to pack ids (### Changed fragment), golden composition packIds lower-cased. verifyAll+wholePackRoundTrip on lane-f a1f7a99: 6824 tests, 1 failure = MixedReadConcurrencyTest timing assertion (99/100) under concurrent load; untouched by this mission; passes alone (rc=0). Docs checks green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 20254,
