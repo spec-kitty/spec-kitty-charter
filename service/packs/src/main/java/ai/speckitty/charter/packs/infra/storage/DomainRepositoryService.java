@@ -344,7 +344,7 @@ public final class DomainRepositoryService
     @Override
     public List<ConfiguredPack> configured() {
         return locations.all().stream()
-                .map(location -> new ConfiguredPack(new PackIdentifier(location.name()), location.level()))
+                .map(location -> new ConfiguredPack(location.id(), location.level()))
                 .toList();
     }
 
