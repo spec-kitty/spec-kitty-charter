@@ -2,8 +2,8 @@
 title: "ADR-0045: A tension is a relationship of its own pair class, served under an activation, and a graph node keeps every declared field"
 description: Decides how the model, packs and contract hold a tension, how the effective reads serve it with its reconcilers, and which fields a graph node keeps.
 doc_status: active
-updated: 2026-11-18T00:00:00Z
-decision_status: "Accepted 2026-11-18 (operator rulings on #602); decisions 1, 2, 5 and 6 of the 2026-10-31 proposal replaced"
+updated: 2026-11-19T00:00:00Z
+decision_status: "Accepted 2026-11-18 (operator rulings on #602; G1 to G3 on 2026-11-19); decisions 1, 2, 5 and 6 of the 2026-10-31 proposal replaced"
 decision_date: '2026-11-18'
 type: ADR
 kind: ADR
@@ -42,7 +42,9 @@ ruling on [#602](https://github.com/spec-kitty/spec-kitty-charter/issues/602), r
   13 are new. The file name keeps the proposal's slug so links hold.
 - **Open review items** (calls made without a ruling, for the operator and the plan-point squad): decision 1's
   orientation on a registration write, decision 5's `relation` parameter on a removal, and decision 9's words on a
-  tension edge only.
+  tension edge only. The plan-point squad's findings and their dispositions are in
+  `kitty-specs/serve-tensions-01M7RDX1/research/squad-plan.md`; rulings G1 to G3 settled the three that changed a
+  ruling's meaning.
 
 This record answers [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) decision 5 ("how …
 the relationship appear[s] in the domain, the pack files and the contract").
@@ -78,12 +80,19 @@ the relationship appear[s] in the domain, the pack files and the contract").
   structural relationship per pair. Beside it, at most one tension per pair (ADR-0028 decision 3).
   `Relationship.samePair` stays the pair test; a new `sameSlot` (pair and class) is the identity
   `RelationshipMerge` replaces on, so a tension never replaces a `requires` on the same pair, nor the reverse.
-- **Canonical orientation.** A tension is written with the lexicographically smaller URN as its `from` (ADR-0036
-  decision 4).
-  - In a pack file, the other orientation refuses the pack (decision 6).
-  - On a registration write (`putPackRelationship` with `type: tension`), the service stores the canonical
-    orientation of the pair it is given, and answers it. *Open review item:* the pair is unordered in meaning, so
-    the write normalizes rather than refuses.
+- **Stored orientation** (ruling G1 (b), 2026-11-19). A tension is stored with the side its pack owns as `source`.
+  When the pack owns both sides, the lexicographically smaller **bare** URN is the `source` (ADR-0036 decision 4); the
+  pack qualifier is provenance and takes no part in the comparison. So every path that keys on an edge's source (the
+  governance gate, the registration answer, removal, the references listing) stays in the owning pack.
+  - In a pack file, a tension whose `source` the pack does not own, or a reversed tension between two owned sides,
+    refuses the pack (decision 6).
+  - On a registration write (`putPackRelationship` with `type: tension`), the wire's rule holds (`from` in the pack,
+    `to` may be qualified). When both sides are in the pack and `from` is the larger, the service stores the pair the
+    other way round. The answer echoes the request as written. *Open review item:* the pair is unordered in meaning,
+    so the write normalizes rather than refuses.
+  - A tension whose two sides have the same bare URN (two versions of one artifact) is refused, at load and on the
+    wire.
+- **The reads** answer every tension in canonical order: the smaller bare URN as `source` (decision 8).
 - **The contract.** `Relation.yaml` gains `tension`. `TaxonomyRelation` and the `getKindTaxonomy` row rename
   `in_tension_with` to `tension`; the row keeps `heldAs: tension`, which now names the pair class.
 
@@ -120,9 +129,13 @@ yet; the writer proves that a fragment node's `body_path` survives the round tri
 - **Registered shard.** `registered.graph.yaml` holds tension edges like any other. The rewrite on a registration
   carries every tension of the shard through; `PackPolicy.registeredGraph` no longer finds a tension a fault, and
   the 2026-10-31 refusal of a registration into a pack whose registered shard holds a tension is removed.
-- **Removal.** `deletePackRelationship` takes an optional `relation` query parameter (a `Relation` token).
-  Given, it removes only the edge of that relation on the pair. Absent, it removes every registered edge of the
-  pair, structural and tension. *Open review item.*
+- **Duplicate.** A registered tension on a pair that another graph document of the pack already joins by a tension
+  is refused, 422 `tension_duplicated`, so a write never leaves a pack that would be refused at load.
+- **Removal.** `deletePackRelationship` takes an optional `relation` query parameter (a `Relation` token), judged per
+  pair class. An unknown token is 400. Given, it removes only the registered edge of that relation on the pair.
+  Absent, it removes every registered edge of the pair, structural and tension; when the pair also has an edge an
+  author wrote outside `registered.graph.yaml`, the answer is 409 `relationship_not_registered`, whose detail names
+  `relation`. *Open review item.*
 
 ### 6. A pack's tensions are consistent, or the pack is refused
 
@@ -130,7 +143,9 @@ Within one pack, across all its graph documents, each of these is a violation: i
 validation and at registration, and is never corrected by the reader.
 
 - **A second tension on the same unordered pair** (ADR-0028 decision 3's "at most one").
-- **A tension in the non-canonical orientation**: its `source` is not the smaller URN.
+- **A tension in the wrong orientation**: its `source` is not owned by the pack, or both sides are owned and its
+  `source` is not the smaller bare URN.
+- **A tension of an artifact with itself**: both sides have the same bare URN.
 
 Across packs, two tensions on one pair are not a fault: the merge collapses them (decision 8). charter's example
 packs are canonical.
@@ -145,10 +160,11 @@ production caller today.
 
 The effective reads resolve a tension as they resolve an edge (ADR-0020 D7):
 
-- A tension authored on a version a layer override hides is absent. A tension to an overridden version ends at the
-  winner.
-- After resolution, the endpoints are put in canonical order. Two tensions on the same pair from different packs
-  collapse to one; the first in merge order keeps its `when` and `reason`.
+- **Symmetric under overrides** (ruling G2 (a), 2026-11-19). A tension is absent when the authoring pack's own
+  version of either side loses the layer merge. A side the authoring pack does not hold is re-pointed to the winner.
+- After resolution, the endpoints are put in canonical order, and a resolved self-pair is dropped. Two tensions on
+  the same pair from different packs collapse to one; the first in merge order (the closure's writer order, then
+  document order) keeps its `when` and `reason`.
 - The storage is never rewritten: the pack files keep the tension as written.
 
 **Reconciled.** An artifact `R` reconciles the tension on `{A, B}` when `R` is in force and, after resolution, has a
@@ -158,17 +174,20 @@ force is listed, sorted by URN, whether or not it is delivered to the action bei
 ### 9. The effective graph carries the tensions in force
 
 - `getEffectiveGraph` answers each tension whose two sides are both in force as an `EffectiveGraphEdge` with relation
-  `tension`, its `source` the smaller URN, among the other edges in their usual sort.
+  `tension`, its `source` the smaller URN, among the other edges in their usual sort. The tension edges come from the
+  one projection of decision 8, never from the plain edge list, so a pair answers one tension edge.
 - A tension edge also carries, from the authored edge, `when` and `reason` when it writes them, and always
-  `reconciledBy`, the URNs of its reconcilers in force (possibly empty). No other relation's edge carries them.
-  *Open review item:* the words are added for tension edges only, to keep the change additive and in scope.
+  `reconciledBy`, the URNs of its reconcilers in force (possibly empty, unique, sorted). No other relation's edge
+  carries them; the schema says so with a documented `oneOf`. *Open review item:* the words are added for tension
+  edges only.
 
 ### 10. The effective action context carries the tensions delivered to it
 
 - `getEffectiveActionContext` answers a new required member, `tensions`: each tension whose two sides are both listed
   in the context's `artifacts` in force (state active; a suggestion does not count), with `source`, `target`, `when?`,
   `reason?` and `reconciledBy` (every reconciler in force, decision 8).
-- `depth` limits it: a side the depth cut off is not listed, so its tension is not in the context.
+- `depth` limits it only through what the context lists: `depth` governs the `suggests` reach, and a suggestion does
+  not count.
 - A mission type the activation does not put in force answers `tensions: []`.
 - The governance walk does not follow `tension` (it is not a reach relation): a tension never brings an artifact into
   a context, a governance read or a cascade.
@@ -177,9 +196,10 @@ force is listed, sorted by URN, whether or not it is delivered to the action bei
 
 - `GET /api/v1/activations/{activationId}/tensions` (`getActivationTensions`) answers `ActivationTensions`:
   `activationId`, `revision`, `governanceFingerprint` (the closure fingerprint, as the skipped report),
-  `tensions` (every tension in force, as in decision 9) and `findings`.
-- It is linked from the `Activation` `_links` as `tensions`, and it has the skipped report's ETag rule
-  (`EffectiveTag.skipped`: the revision and the closure fingerprint).
+  `tensions` (every tension in force, as in decision 9), `findings` and `_links` (`self`).
+- It is linked from the `Activation` `_links` as `tensions`. Its ETag is its own (`EffectiveTag.Read.TENSIONS`) over
+  the skipped report's inputs: the revision and the closure fingerprint. The effective tag's domain moves to v4,
+  because the graph, the context and the activation answer new bodies for the same inputs.
 - **A finding** is a tension in force that nothing in force reconciles. Each finding names `code`
   `unreconciled_tension`, the pair (`source`, `target`, canonical, so a tension authored either way gives one finding
   keyed on the sorted pair), `resolutions`, and `_links`.
@@ -187,17 +207,21 @@ force is listed, sorted by URN, whether or not it is delivered to the action bei
 
 ### 12. The resolution vocabulary
 
-- `resolutions` is the closed list `[reconcile, deactivate_one_side]`, always both, in that order.
-  - `reconcile`: author an artifact that reconciles both sides (pack work). It has no link.
-  - `deactivate_one_side`: exclude one side. A finding links `deactivate-source` and `deactivate-target`, the
-    exclusion writes (`deactivateActivationArtifact`) for each side, and `source` and `target`, their effective
-    reads.
+- `resolutions` is a list over the closed vocabulary `[reconcile, deactivate_one_side]`, in that order (ruling G3
+  (a), 2026-11-19).
+  - `reconcile`: author an artifact that reconciles both sides (pack work). It is always listed and has no link.
+  - `deactivate_one_side`: exclude one side. A finding links `exclude-source` and `exclude-target`, the exclusion
+    writes (`deactivateActivationArtifact`, PUT, If-Match: the answer's `revision`) for each side, except a side that
+    is locked or required, whose exclusion is refused. `deactivate_one_side` is listed only when at least one of the
+    two links is present.
+  - Every finding links `effective-source` and `effective-target`, the effective reads of its sides. The relation
+    names follow the hypermedia table (`exclude` is already the name of that write).
 - Core's two fixed strings are evidence, not the specification. The difference is in the divergence register.
 
 ### 13. What else the relation reaches
 
 - **References.** `listPackArtifactReferences` and `listEffectiveArtifactReferences` answer a tension edge whose
-  source is the artifact, as authored, like any other edge.
+  source is the artifact, as stored, like any other edge; the stored source is always owned by the pack (decision 1).
 - **The taxonomy.** `getKindTaxonomy`'s row is `tension`, `heldAs: tension`, `directed: false`, with its `G ↔ G`
   pairs.
 - **Not reached.** The governance walk, the activation cascade and the closure-reach rules do not follow `tension`.
