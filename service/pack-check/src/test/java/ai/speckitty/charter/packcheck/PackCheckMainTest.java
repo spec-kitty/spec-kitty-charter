@@ -157,7 +157,7 @@ class PackCheckMainTest {
         JsonNode problem = run.report().get("problems").get(0);
         assertThat(problem.get("title").asString()).isEqualTo("Validation failed");
         assertThat(problem.get("status").asInt()).isEqualTo(422);
-        assertThat(problem.get("instance").asString()).isEqualTo(pack.toString());
+        assertThat(problem.get("instance").asString()).isEqualTo(pack.toUri().toString());
         // Validate mode's findings for this subject (golden/validate.json): the org placement rule, then the plant's.
         assertThat(problem.get("detail").asString())
                 .isEqualTo("The pack cannot be registered: 2 fault(s), the first at pack.yaml.");
@@ -418,7 +418,7 @@ class PackCheckMainTest {
 
         assertThat(run.exit()).isEqualTo(PackCheckMain.FAILED);
         assertThat(run.out()).isEmpty();
-        assertThat(run.err()).contains(gone + " is a link to nothing");
+        assertThat(run.err()).contains(gone + " is a link to no directory");
     }
 
     private static GoldenSubjects.Subject subject(String key) {

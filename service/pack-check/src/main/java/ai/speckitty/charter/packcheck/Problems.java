@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict.PackResult;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,7 +66,8 @@ final class Problems {
      * @param title the code as a sentence
      * @param status the registration's status for the code
      * @param detail the refusal's detail, with the count of the violations left out
-     * @param instance the pack's path as given, for a pack's problem; empty for a composition fault
+     * @param instance the {@code file:} URI of the pack's directory ({@link #instanceOf}), for a pack's problem; empty
+     *     for a composition fault
      * @param code the refusal code's token
      * @param violations at most {@value #MAX_VIOLATIONS} violations; empty for none
      * @param packs at most {@value #MAX_PACKS} packs the fault names; empty for none
@@ -123,7 +125,7 @@ final class Problems {
      * then its round trip's violations.
      */
     private static List<Problem> ofPack(PackResult pack) {
-        String instance = pack.entry().root().locator();
+        String instance = instanceOf(pack.entry().root().locator());
         List<Problem> problems = new ArrayList<>();
         Rationale found = new Rationale(Stream.concat(pack.verdict().findings().stream(), pack.setCheck().stream())
                 .toList());
@@ -133,6 +135,19 @@ final class Problems {
         pack.unreportedRefusal().map(refusal -> ofRefusal(refusal, instance)).ifPresent(problems::add);
         violationsOf(new Rationale(pack.roundTrip()), instance).ifPresent(problems::add);
         return problems;
+    }
+
+    /**
+     * The {@code instance} of a pack's problem: the absolute, normalized {@code file:} URI of the pack's directory as
+     * given, so it is the URI reference the contract's {@code Problem} asks for, whatever characters the path holds
+     * ({@code x:org} as a relative reference would read as a scheme, {@code C:\packs} holds a backslash), and two packs'
+     * problems are told apart. The report's {@code packs[].path} keeps the path as given.
+     *
+     * @param locator the pack's directory as given
+     * @return its {@code file:} URI
+     */
+    static String instanceOf(String locator) {
+        return Path.of(locator).toAbsolutePath().normalize().toUri().toString();
     }
 
     /** The {@code validation_failed} problem of a pack's violations, in the registration's words; empty for none. */

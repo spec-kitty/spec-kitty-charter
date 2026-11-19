@@ -66,14 +66,16 @@ public final class PackCheckMain {
     }
 
     /**
-     * Runs pack-check, its temporary directories under the JVM's temporary directory.
+     * Runs pack-check, its temporary directories under the JVM's temporary directory. Public so the contract test
+     * ({@code PackCheckReportContractTest}, in {@code deployable}) and the parity test run the CLI in process, as
+     * {@link #main} does, without exiting the JVM.
      *
      * @param args the command line
      * @param out where the report goes
      * @param err where the usage, the warnings and the failures go
      * @return the exit code
      */
-    static int run(String[] args, PrintStream out, PrintStream err) {
+    public static int run(String[] args, PrintStream out, PrintStream err) {
         return run(args, out, err, Path.of(System.getProperty("java.io.tmpdir")));
     }
 

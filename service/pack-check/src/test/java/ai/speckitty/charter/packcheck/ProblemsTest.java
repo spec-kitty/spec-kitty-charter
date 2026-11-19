@@ -25,6 +25,9 @@ import ai.speckitty.charter.packvalidation.set.PackSetEntry;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict.Check;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict.PackResult;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -67,8 +70,9 @@ class ProblemsTest {
         return new PackSetVerdict(packs, faults, List.of(Check.PACK), List.of());
     }
 
+    /** The pack's directory as a {@code file:} URI, built here from the directory, not by {@code Problems}. */
     private String instance() {
-        return real.entry().root().locator();
+        return temp.resolve(ExamplePacks.BUILT_IN).toUri().toString();
     }
 
     @Test
@@ -284,5 +288,19 @@ class ProblemsTest {
         assertThatThrownBy(() -> Problems.statusOf(RefusalCode.INTERNAL_ERROR))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("internal_error has no status in pack-check's table");
+    }
+
+    @Test
+    void theInstanceIsTheFileUriOfThePacksDirectoryEvenForAPathThatReadsAsAScheme() throws IOException {
+        // As a relative reference, x:org would read as the scheme x; the file: URI is a URI reference whatever the
+        // path.
+        Path colon = Files.createDirectories(temp.resolve("x:org"));
+        String relative = Path.of("").toAbsolutePath().relativize(colon).toString();
+
+        URI instance = URI.create(Problems.instanceOf(relative));
+
+        assertThat(instance.getScheme()).isEqualTo("file");
+        assertThat(instance.isAbsolute()).isTrue();
+        assertThat(Path.of(instance)).isEqualTo(colon);
     }
 }
