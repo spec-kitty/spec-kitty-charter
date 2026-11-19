@@ -578,7 +578,8 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
 - **`CLOSURE` is `CompositionRules.closure()`,** a `ModularRuleset<List<PackUnderResolution>>` in `packs.domain.rules`,
   its codes `PackCodes.CLOSURE`. `CompositionFault(code, packs, detail)` keeps the pack list a `Reason` cannot carry
   (A-M4). WP09 adds the one-line delegate `PackRulesets.closure()`. The preset contests are a phase of their own,
-  `CompositionRules.presets(presetIdsOf)`, since a `PackUnderResolution` carries no preset ids. It orders the packs
+  `CompositionRules.presetFaults(packs, presetIdsOf)`, since a `PackUnderResolution` carries no preset ids; #478 joins
+  the two phases in `PackRulesets.closureFaults` and `PackRulesets.closure(presetIdsOf)`. It orders the packs
   itself, by `PackCompositionResolver.mergeOrder` (the resolved order, then the unplaced packs in the stable order), so
   its answer does not depend on the input order; the offering's `presetContests` keeps the order it is given.
 - **Classification (T045).** The offering keeps its interleaved order, answering the first fault of each phase: the

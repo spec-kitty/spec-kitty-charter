@@ -60,7 +60,7 @@ public final class PackRulesets {
     }
 
     /**
-     * {@code CLOSURE} with its preset phase ({@link CompositionRules#presets}): the set check pack-check runs (#478), so
+     * {@code CLOSURE} with its preset phase ({@link CompositionRules#presetFaults}): the set check pack-check runs (#478), so
      * pack-check names one composition and defines no rule of its own. The preset phase judges the packs in merge order,
      * so the answer does not depend on the order the packs are given in. Its reasons are {@link #closureFaults}', in
      * that order, each with its phase's rule name: there is one derivation, and the closure walk's checks (#556) extend
