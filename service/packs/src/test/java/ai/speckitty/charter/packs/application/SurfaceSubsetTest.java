@@ -105,7 +105,8 @@ class SurfaceSubsetTest {
      * ADR-0080 and the operator ruling of 2026-11-18 on #108: org-mandate, whose preset requires its routing catalog; #602: tensions, one case of each tension).
      * The baseline predates them, so the registration has nothing to answer as before: it must refuse nothing.
      */
-    private static final Set<String> NEWER_EXAMPLES = Set.of("example-packs/org-alt", "example-packs/org-mandate", "example-packs/tensions");
+    private static final Set<String> NEWER_EXAMPLES =
+            Set.of("example-packs/org-alt", "example-packs/org-mandate", "example-packs/tensions");
 
     /**
      * The row of the plant whose sidecar's payload path the landing fixed (W1, a fixed fixture defect) that names the
