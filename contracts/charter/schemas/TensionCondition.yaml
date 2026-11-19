@@ -1,0 +1,5 @@
+title: TensionCondition
+description: >-
+  The condition under which a tension holds, as its first writer authored it (ADR-0045 decision 9). Absent when the
+  first writer authored none.
+type: string

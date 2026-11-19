@@ -64,6 +64,7 @@ value:
       enhancedBy:
         - kind: step_enhancement
           artifactId: spdd-implement
+  tensions: []
   skipped:
     skippedByScope: []
     skippedDeactivated: []

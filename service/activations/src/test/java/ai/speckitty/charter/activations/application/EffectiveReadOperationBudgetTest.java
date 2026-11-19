@@ -58,15 +58,23 @@ class EffectiveReadOperationBudgetTest {
             long loads, long hits, long resolutions, long walkVisits, int wholeDigests, int closureDigests) {}
 
     private Work measured() throws Exception {
+        return measured(fixture, EffectiveReadFixture.PATH, "\"hasNextPage\":true");
+    }
+
+    /** What one request to the path did, its answer a 200 that contains the text. */
+    private static Work measured(EffectiveReadFixture fixture, String path, String contains) throws Exception {
         long loads = fixture.cache.loads();
         long hits = fixture.cache.hits();
         long resolutions = InForceResolution.resolutions();
         long visits = InForceResolution.walkVisits();
         int whole = fixture.digests.whole();
         int closure = fixture.digests.closure();
-        MockHttpServletResponse answer = read();
+        MockHttpServletResponse answer = fixture.mvc
+                .perform(get(path).accept(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse();
         assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(200);
-        assertThat(answer.getContentAsString()).contains("\"hasNextPage\":true");
+        assertThat(answer.getContentAsString()).contains(contains);
         return new Work(
                 fixture.cache.loads() - loads,
                 fixture.cache.hits() - hits,
@@ -139,5 +147,58 @@ class EffectiveReadOperationBudgetTest {
 
         assertThat(revised.loads()).isEqualTo(EffectiveReadFixture.PACKS);
         assertThat(revised.hits()).isZero();
+    }
+
+    // ---- #602 (ADR-0045 decisions 9 and 10, NFR-004): the tensions add no compose and no resolution ----------------
+
+    /** The work of one cold read of the artifact list over the base fixture: the counts every other read is held to. */
+    private static Work listedCold(EffectiveReadFixture fixture) throws Exception {
+        fixture.cache.clear();
+        return measured(fixture, EffectiveReadFixture.PATH, "\"hasNextPage\":true");
+    }
+
+    @Test
+    void theGraphAndSkippedReadsOfAClosureWithNoTensionDoTheWorkOfTheListRead() throws Exception {
+        Work list = listedCold(fixture);
+
+        fixture.cache.clear();
+        Work graph = measured(fixture, EffectiveReadFixture.GRAPH, "\"edges\":[");
+        fixture.cache.clear();
+        Work skipped = measured(fixture, EffectiveReadFixture.SKIPPED, "\"report\"");
+
+        assertThat(graph)
+                .as("the graph read: one compose, one resolution, the same walk and digests")
+                .isEqualTo(list);
+        assertThat(skipped).as("the skipped report: the same").isEqualTo(list);
+        assertThat(graph.loads()).isEqualTo(EffectiveReadFixture.PACKS);
+        assertThat(graph.resolutions()).isEqualTo(1);
+    }
+
+    @Test
+    void theGraphAndContextReadsOfAClosureWithATensionResolveOnceAndAnswerIt(@TempDir Path root) throws Exception {
+        EffectiveReadFixture tensions = new EffectiveReadFixture(root, true);
+        String pair = "\"source\":\"directive:" + EffectiveReadFixture.TENSION_A + "\"";
+
+        tensions.cache.clear();
+        Work graph = measured(tensions, EffectiveReadFixture.GRAPH, "\"relation\":\"tension\"");
+        tensions.cache.clear();
+        Work context = measured(tensions, EffectiveReadFixture.CONTEXT, "\"tensions\":[{" + pair);
+        Work warmGraph = measured(
+                tensions,
+                EffectiveReadFixture.GRAPH,
+                "\"reconciledBy\":[\"directive:" + EffectiveReadFixture.RECONCILER + "\"]");
+
+        assertThat(graph.loads()).as("one compose of the ten packs").isEqualTo(EffectiveReadFixture.PACKS);
+        assertThat(graph.resolutions())
+                .as("one in-force resolution, the tensions included")
+                .isEqualTo(1);
+        assertThat(graph.wholeDigests()).isEqualTo(2);
+        assertThat(graph.closureDigests()).isEqualTo(EffectiveReadFixture.PACKS);
+        assertThat(context.loads()).isEqualTo(EffectiveReadFixture.PACKS);
+        assertThat(context.resolutions())
+                .as("the context and its tensions resolve once")
+                .isEqualTo(1);
+        assertThat(warmGraph.loads()).isZero();
+        assertThat(warmGraph.resolutions()).isEqualTo(1);
     }
 }

@@ -7,19 +7,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * What {@code getEffectiveActionContext} answers (IC-11, FR-019, rule E16 as amended by FR-008), assembled from the
  * {@link EffectiveSet} and what the walk reached under the ownership rule: the artifacts that apply to the action, sorted
  * by URN, each as the effective list gives it with the part of the rule that lists it (FR-009); the enhancers in force of
- * each node; and the skipped report.
+ * each node; the tensions in force between two artifacts the context lists in force (ADR-0045 decision 10); and the
+ * skipped report.
  *
  * @param artifacts the listed artifacts in URN order: those in force, then each suggestion among them by its URN
  * @param enhancements the enhancers in force of the step and of each listed artifact in force
+ * @param tensions the tensions in force whose two sides the context lists in state active, in (source, target) order;
+ *     a suggestion never counts as a side
  * @param skipped the skipped report, whose {@code missionTypeNotInForce} is the mission type itself when it is not in force
  */
-public record EffectiveContext(List<Item> artifacts, List<Enhancement> enhancements, EffectiveSkippedReport skipped) {
+public record EffectiveContext(
+        List<Item> artifacts,
+        List<Enhancement> enhancements,
+        List<TensionSnapshot> tensions,
+        EffectiveSkippedReport skipped) {
 
     /**
      * One artifact of the context: the artifact as the effective list gives it, and the part of the ownership rule that
@@ -69,11 +78,13 @@ public record EffectiveContext(List<Item> artifacts, List<Enhancement> enhanceme
      *
      * @param artifacts the listed artifacts
      * @param enhancements the enhancements
+     * @param tensions the tensions among the listed artifacts in force
      * @param skipped the skipped report
      */
     public EffectiveContext {
         artifacts = List.copyOf(Objects.requireNonNull(artifacts, "artifacts"));
         enhancements = List.copyOf(Objects.requireNonNull(enhancements, "enhancements"));
+        tensions = List.copyOf(Objects.requireNonNull(tensions, "tensions"));
         Objects.requireNonNull(skipped, "skipped");
     }
 
@@ -84,14 +95,21 @@ public record EffectiveContext(List<Item> artifacts, List<Enhancement> enhanceme
      * @param walked what the walk reached from the action's step
      * @param missionType the mission type of the action
      * @param step the action's step
-     * @return the context; for a mission type not in force it lists nothing and names the mission type itself in the
-     *     skipped report's {@code missionTypeNotInForce}, as an action context's report does
+     * @param inForce the tensions in force of the activation, in (source, target) order
+     * @return the context; for a mission type not in force it lists nothing, no tension, and names the mission type itself
+     *     in the skipped report's {@code missionTypeNotInForce}, as an action context's report does
      * @throws IllegalStateException when the walk lists an artifact the set does not hold
      */
-    public static EffectiveContext of(EffectiveSet set, ActionContext walked, ArtifactRef missionType, NodeRef step) {
+    public static EffectiveContext of(
+            EffectiveSet set,
+            ActionContext walked,
+            ArtifactRef missionType,
+            NodeRef step,
+            List<TensionSnapshot> inForce) {
+        Objects.requireNonNull(inForce, "inForce");
         if (!walked.missionTypeInForce()) {
             return new EffectiveContext(
-                    List.of(), List.of(), set.skipped().withMissionTypeNotInForce(List.of(missionType)));
+                    List.of(), List.of(), List.of(), set.skipped().withMissionTypeNotInForce(List.of(missionType)));
         }
         Map<ArtifactRef, EffectiveArtifact> byRef = new HashMap<>();
         set.artifacts().forEach(artifact -> byRef.put(artifact.ref(), artifact));
@@ -105,8 +123,16 @@ public record EffectiveContext(List<Item> artifacts, List<Enhancement> enhanceme
                                         .stream()))
                 .sorted(Comparator.comparing(item -> item.artifact().ref().urn(), ActivationDocument.CODE_POINT_ORDER))
                 .toList();
+        Set<NodeRef> active = artifacts.stream()
+                .map(Item::artifact)
+                .filter(artifact -> artifact.state() == EffectiveSet.State.ACTIVE
+                        && artifact.suggestion().isEmpty())
+                .map(artifact -> NodeRef.of(artifact.ref()))
+                .collect(Collectors.toSet());
+        List<TensionSnapshot> tensions =
+                inForce.stream().filter(tension -> tension.between(active)).toList();
         return new EffectiveContext(
-                artifacts, enhancements(walked, step), set.skipped().withMissionTypeNotInForce(List.of()));
+                artifacts, enhancements(walked, step), tensions, set.skipped().withMissionTypeNotInForce(List.of()));
     }
 
     private static EffectiveArtifact inForce(Map<ArtifactRef, EffectiveArtifact> byRef, ArtifactRef ref) {

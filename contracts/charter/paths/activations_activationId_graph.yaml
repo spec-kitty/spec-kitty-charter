@@ -33,6 +33,8 @@ get:
           examples:
             one-edge:
               $ref: ../examples/EffectiveGraph.one-edge.yaml
+            tension:
+              $ref: ../examples/EffectiveGraph.tension.yaml
             layer-override:
               $ref: ../examples/EffectiveGraph.layer-override.yaml
     '304':

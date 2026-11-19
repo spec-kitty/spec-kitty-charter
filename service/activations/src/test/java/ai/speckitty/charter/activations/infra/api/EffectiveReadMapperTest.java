@@ -38,6 +38,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import ai.speckitty.charter.activations.domain.TensionSnapshot;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ArtifactReference;
@@ -471,6 +472,7 @@ class EffectiveReadMapperTest {
         EffectiveContext context = new EffectiveContext(
                 List.of(new EffectiveContext.Item(item(A, List.of(), Optional.empty()), AppliesThrough.ACTION)),
                 List.of(),
+                List.of(),
                 EffectiveSkippedReport.empty());
 
         EffectiveActionContext wire = mapper.toContext(contextRead(context), true);
@@ -534,7 +536,7 @@ class EffectiveReadMapperTest {
 
     @Test
     void theContextLinksItsStepReadUnderTheActivationAndInThePackThatHoldsTheMissionType() {
-        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty());
+        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), List.of(), EffectiveSkippedReport.empty());
         EffectiveTag.ContextQuery query = new EffectiveTag.ContextQuery("software-dev", "implement", 0);
         ContextRead held =
                 new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"), false);
@@ -602,6 +604,102 @@ class EffectiveReadMapperTest {
         assertThat(wire.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/a-1/graph");
     }
 
+    // ---- ADR-0045 decisions 9 and 10: a tension on the wire
+
+    @Test
+    void aTensionEdgeCarriesItsWordsAndReconcilersAndARequiresOnThePairCarriesNone() {
+        NodeRef r = new NodeRef(NodeKind.TACTIC, "R");
+        GraphSnapshot graph = new GraphSnapshot(
+                List.of(NodeRef.of(A), NodeRef.of(B)),
+                List.of(
+                        new GraphSnapshot.Edge(
+                                NodeRef.of(A),
+                                RelationType.TENSION,
+                                NodeRef.of(B),
+                                Optional.of("when shipping"),
+                                Optional.of("speed against care"),
+                                List.of(r)),
+                        new GraphSnapshot.Edge(NodeRef.of(B), RelationType.REQUIRES, NodeRef.of(A))),
+                List.of());
+
+        List<EffectiveGraphEdge> edges = mapper.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph))
+                .getEdges();
+
+        assertThat(edges.get(0).getRelation().getValue()).isEqualTo("tension");
+        assertThat(edges.get(0).getWhen()).isEqualTo("when shipping");
+        assertThat(edges.get(0).getReason()).isEqualTo("speed against care");
+        assertThat(edges.get(0).getReconciledBy()).containsExactly("tactic:R");
+        assertThat(edges.get(1).getRelation().getValue()).isEqualTo("requires");
+        assertThat(edges.get(1).getWhen()).isNull();
+        assertThat(edges.get(1).getReason()).isNull();
+        assertThat(edges.get(1).getReconciledBy()).isNull();
+    }
+
+    @Test
+    void aTensionNoArtifactReconcilesAnswersAnEmptyReconciledByAndNoWordsItsWriterLeftOut() {
+        GraphSnapshot graph = new GraphSnapshot(
+                List.of(NodeRef.of(A), NodeRef.of(B)),
+                List.of(new GraphSnapshot.Edge(
+                        NodeRef.of(A),
+                        RelationType.TENSION,
+                        NodeRef.of(B),
+                        Optional.empty(),
+                        Optional.empty(),
+                        List.of())),
+                List.of());
+
+        EffectiveGraphEdge edge = mapper.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph))
+                .getEdges()
+                .getFirst();
+
+        assertThat(edge.getReconciledBy()).isNotNull().isEmpty();
+        assertThat(edge.getWhen()).isNull();
+        assertThat(edge.getReason()).isNull();
+    }
+
+    @Test
+    void theContextAnswersItsTensionsAsTheGraphAnswersTheirEdges() {
+        TensionSnapshot tension = new TensionSnapshot(
+                NodeRef.of(A),
+                NodeRef.of(B),
+                Optional.empty(),
+                Optional.of("speed against care"),
+                List.of(new NodeRef(NodeKind.TACTIC, "R")));
+        EffectiveContext context = new EffectiveContext(
+                List.of(new EffectiveContext.Item(item(A, List.of(), Optional.empty()), AppliesThrough.ACTION)),
+                List.of(),
+                List.of(tension),
+                EffectiveSkippedReport.empty());
+
+        EffectiveActionContext wire = mapper.toContext(contextRead(context), true);
+        EffectiveActionContext none = mapper.toContext(
+                contextRead(new EffectiveContext(List.of(), List.of(), List.of(), EffectiveSkippedReport.empty())),
+                true);
+
+        assertThat(wire.getTensions()).singleElement().satisfies(listed -> {
+            assertThat(listed.getSource()).isEqualTo("directive:A");
+            assertThat(listed.getTarget()).isEqualTo("directive:B");
+            assertThat(listed.getWhen()).isNull();
+            assertThat(listed.getReason()).isEqualTo("speed against care");
+            assertThat(listed.getReconciledBy()).containsExactly("tactic:R");
+        });
+        assertThat(none.getTensions()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void onlyATensionEdgeOfTheSnapshotCarriesWordsOrReconcilers() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new GraphSnapshot.Edge(
+                        NodeRef.of(A),
+                        RelationType.REQUIRES,
+                        NodeRef.of(B),
+                        Optional.of("when"),
+                        Optional.empty(),
+                        List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(new GraphSnapshot.Edge(NodeRef.of(A), RelationType.REQUIRES, NodeRef.of(B)).reconciledBy())
+                .isEmpty();
+    }
+
     @Test
     void anEmptyGraphIsMappedWithEmptyListsAndNotAbsentOnes() {
         EffectiveGraph wire =
@@ -616,7 +714,7 @@ class EffectiveReadMapperTest {
 
     @Test
     void theContextOfAMissionTypeInForceLinksThePromptOfTheSameActionAndOneNotInForceDoesNot() {
-        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty());
+        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), List.of(), EffectiveSkippedReport.empty());
         EffectiveTag.ContextQuery query = new EffectiveTag.ContextQuery("software-dev", "implement", 0);
         ContextRead inForce =
                 new ContextRead(stored, "sha256:source", "sha256:closure", query, empty, Optional.of("proj"), true);
@@ -789,6 +887,7 @@ class EffectiveReadMapperTest {
                                 new NodeRef(NodeKind.ACTION, "software-dev/implement"),
                                 List.of(new ArtifactRef(ArtifactKind.STEP_ENHANCEMENT, "x"))),
                         new EffectiveContext.Enhancement(NodeRef.of(A), List.of(B))),
+                List.of(),
                 EffectiveSkippedReport.empty());
     }
 
@@ -799,7 +898,7 @@ class EffectiveReadMapperTest {
                 .toList();
 
         EffectiveActionContext wire = mapper.toContext(
-                contextRead(new EffectiveContext(items, List.of(), EffectiveSkippedReport.empty())), true);
+                contextRead(new EffectiveContext(items, List.of(), List.of(), EffectiveSkippedReport.empty())), true);
 
         assertThat(wire.getArtifacts())
                 .extracting(item -> item.getAppliesThrough().getValue())
@@ -808,7 +907,8 @@ class EffectiveReadMapperTest {
 
     @Test
     void theContextsSelfLinkIsTheRequestThatWasMadeAndCarriesTheDepthOnlyWhenTheRequestNamedOne() {
-        ContextRead read = contextRead(new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty()));
+        ContextRead read =
+                contextRead(new EffectiveContext(List.of(), List.of(), List.of(), EffectiveSkippedReport.empty()));
 
         assertThat(mapper.toContext(read, true).getLinks().get("self").getHref())
                 .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context?depth=1");
@@ -832,7 +932,7 @@ class EffectiveReadMapperTest {
                 List.of());
 
         EffectiveActionContext wire =
-                mapper.toContext(contextRead(new EffectiveContext(List.of(), List.of(), skipped)), true);
+                mapper.toContext(contextRead(new EffectiveContext(List.of(), List.of(), List.of(), skipped)), true);
 
         assertThat(wire.getArtifacts()).isEmpty();
         assertThat(wire.getEnhancements()).isEmpty();
