@@ -241,11 +241,12 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * ({@link PackManifestDerivation#derivedAt}): what the manifest stamp writes and the registration's membership check
      * compares with.
      *
+     * @param pack the registered id the pack is read under
      * @param directory the pack directory
      * @return the manifest with the derived lists
      */
-    PackManifestDso derivedManifest(Path directory) {
-        return PackManifestDerivation.derivedAt(directory, strategy, bindings, companionRules);
+    PackManifestDso derivedManifest(PackIdentifier pack, Path directory) {
+        return PackManifestDerivation.derivedAt(pack, directory, strategy, bindings, companionRules);
     }
 
     /**
@@ -292,7 +293,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      */
     @Override
     public WholePackWriteStore.Contents loadStaged(PackReadout read) {
-        return contentsOf(new PackIdentifier(read.contents().root().name()), heldBy(read));
+        Assembly.Assembled held = heldBy(read);
+        return contentsOf(held.id(), held);
     }
 
     /** The assembly input of a read the registration judged: a read whose rationale passed always holds one. */
@@ -368,21 +370,20 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     }
 
     @Override
-    public WholePackWriteStore.Contents loadStored(Path directory) {
+    public WholePackWriteStore.Contents loadStored(PackIdentifier pack, Path directory) {
         Path packDir = directory.toAbsolutePath().normalize();
-        String name = packDir.getFileName() == null ? "pack" : String.valueOf(packDir.getFileName());
         if (!Files.isDirectory(packDir)) {
-            throw refusalOf(StoreRead.of(packDir, name, NO_WALK, strategy, bindings, companionRules));
+            throw refusalOf(StoreRead.of(packDir, pack, NO_WALK, strategy, bindings, companionRules));
         }
-        StoreRead read =
-                StoreRead.of(packDir, name, PackFileSet.walk(packDir, name), strategy, bindings, companionRules);
+        StoreRead read = StoreRead.of(
+                packDir, pack, PackFileSet.walk(packDir, pack.value()), strategy, bindings, companionRules);
         read.graphRefusal().ifPresent(refusal -> {
             throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, refusal);
         });
         if (!(read.assembly() instanceof Assembly.Assembled held)) {
             throw refusalOf(read);
         }
-        return contentsOf(new PackIdentifier(name), held);
+        return contentsOf(pack, held);
     }
 
     /** What a salvage has read so far. */
@@ -406,20 +407,19 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * fails to read costs only itself.
      */
     @Override
-    public WholePackWriteStore.Remains salvageStored(Path directory) {
+    public WholePackWriteStore.Remains salvageStored(PackIdentifier pack, Path directory) {
         Path packDir = directory.toAbsolutePath().normalize();
         Path parent = packDir.getParent();
         if (parent == null || packDir.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
         }
         String name = String.valueOf(packDir.getFileName());
-        PackIdentifier key = new PackIdentifier(name);
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
         Salvage salvage = new Salvage();
         PackFileSet.Listing listing = PackFileSet.listing(packDir); // the pack is listed once
         for (KindBinding<?, ?> binding : bindings) {
             for (String file : listing.files(binding.kind())) {
-                salvageFile(store, key, packDir, binding, file, salvage);
+                salvageFile(store, pack, packDir, binding, file, salvage);
             }
         }
         listing.templates().forEach(file -> salvageTemplate(packDir, file, salvage));
@@ -434,7 +434,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     private <D, E extends CharterArtifact> void salvageFile(
             FilesystemPackStore store,
-            PackIdentifier key,
+            PackIdentifier pack,
             Path packDir,
             KindBinding<D, E> binding,
             String file,
@@ -445,7 +445,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         Optional<String> byName = urnOf(binding, stem);
         byDeclared.ifPresent(out.defined::add);
         byName.ifPresent(out.defined::add);
-        if (!readEntity(store, key, packDir, binding, file, out)) {
+        if (!readEntity(store, pack, packDir, binding, file, out)) {
             // One copy of the id cannot be read: the readable twin, if any, is no proof that the id is unchanged.
             byDeclared.ifPresent(out.unreadable::add);
             byName.ifPresent(out.unreadable::add);
@@ -459,14 +459,14 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      */
     private <D, E extends CharterArtifact> boolean readEntity(
             FilesystemPackStore store,
-            PackIdentifier key,
+            PackIdentifier pack,
             Path packDir,
             KindBinding<D, E> binding,
             String file,
             Salvage out) {
         try {
             Optional<D> read = store.readListed(packDir, file, binding);
-            read.ifPresent(dso -> addRead(binding.toEntity(key, dso), out));
+            read.ifPresent(dso -> addRead(binding.toEntity(pack, dso), out));
             return read.isPresent();
         } catch (RuntimeException readFault) {
             // This file's read fault: it is counted by its ids above, and nothing else of it is known.

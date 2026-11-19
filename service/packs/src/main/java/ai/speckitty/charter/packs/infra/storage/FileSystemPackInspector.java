@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -305,9 +306,13 @@ public final class FileSystemPackInspector implements PackReading {
         }
     }
 
-    /** The read's DSO half ({@link StoreRead}) over this reader's format, bindings and companion rules. */
+    /**
+     * The read's DSO half ({@link StoreRead}) over this reader's format, bindings and companion rules, assembled under
+     * the root's name; a name that is not a pack id is refused, and {@link #readFaults} states it ({@link
+     * StoreRead#ofNamed}).
+     */
     private StoreRead storeRead(Path directory, String name, PackFileSet.Walk walk) {
-        return StoreRead.of(directory, name, walk, strategy, bindings, companionRules);
+        return StoreRead.ofNamed(directory, name, walk, strategy, bindings, companionRules);
     }
 
     /** The read of a root that cannot be read: no fact, an empty census, and the one fault at {@value #ROOT}. */
@@ -402,7 +407,8 @@ public final class FileSystemPackInspector implements PackReading {
     }
 
     /**
-     * The read faults, in the reader's order: the descriptor's (its read, or its format prechecks, S2), each root
+     * The read faults, in the reader's order: the name's, when the pack is not named by a pack id (#583, D5), the
+     * descriptor's (its read, or its format prechecks, S2), each root
      * shard's, the fragment's, every other file's, then each contained asset's MIME precheck (S2). Each is worded once,
      * here ({@link Wording}), with the code its owner builds.
      */
@@ -413,6 +419,9 @@ public final class FileSystemPackInspector implements PackReading {
             FileRead<RawGraph> fragment,
             FullRead full) {
         List<Reason> faults = new ArrayList<>();
+        if (!PackIdentifier.isPackId(name)) {
+            faults.add(Findings.at(StorageCodes.PACK_ID_INVALID, ROOT, List.of(), StoreRead.notAPackId(name)));
+        }
         switch (descriptor) {
             case FileRead.Unreadable<PackDescriptor> bad -> faults.addAll(Wording.unreadable(name, bad));
             case FileRead.Read<PackDescriptor> good ->

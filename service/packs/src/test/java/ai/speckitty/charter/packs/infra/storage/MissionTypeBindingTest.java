@@ -55,6 +55,7 @@ class MissionTypeBindingTest {
 
     private static final String PACK = "mission-type";
     private static final PackIdentifier PACK_ID = new PackIdentifier(PACK);
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK_ID);
     private static final String FILE = "missions/research/research.mission-type.yaml";
     private static final String PROMPT = "missions/research/steps/scoping.prompt.md";
     private static final String GUIDELINES = "missions/research/steps/scoping.guidelines.md";
@@ -65,7 +66,7 @@ class MissionTypeBindingTest {
     Path host;
 
     private FilesystemPackStore.PackRead read() {
-        return new FilesystemPackStore(host, strategy).read(PACK_ID, List.of(MissionTypeBinding.INSTANCE));
+        return new FilesystemPackStore(host, strategy).read(PACK_DIRECTORY, List.of(MissionTypeBinding.INSTANCE));
     }
 
     private Pack load(Path pack) {
@@ -157,7 +158,7 @@ class MissionTypeBindingTest {
             Files.delete(pack.resolve(file));
         }
         new FilesystemPackStore(host, strategy)
-                .write(PACK_ID, MissionTypeBinding.INSTANCE, MissionTypeBinding.INSTANCE.toDso(type));
+                .write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, MissionTypeBinding.INSTANCE.toDso(type));
 
         source.forEach((file, text) -> assertThat(pack.resolve(file)).as(file).hasContent(text));
     }
@@ -179,7 +180,7 @@ class MissionTypeBindingTest {
                 fixture.steps(),
                 List.of());
 
-        new FilesystemPackStore(host, strategy).write(PACK_ID, MissionTypeBinding.INSTANCE, renamed);
+        new FilesystemPackStore(host, strategy).write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, renamed);
 
         assertThat(pack.resolve("missions/plan/plan.mission-type.yaml")).exists();
         assertThat(pack.resolve("missions/plan/steps/scoping.prompt.md")).hasSameTextualContentAs(pack.resolve(PROMPT));
@@ -197,14 +198,14 @@ class MissionTypeBindingTest {
                 id, "1.0", "T", "D", Optional.empty(), false, Map.of(), List.of(), List.of(), List.of());
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        assertThatThrownBy(() -> store.write(PACK_ID, MissionTypeBinding.INSTANCE, escaping))
+        assertThatThrownBy(() -> store.write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, escaping))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("mission_type id '" + id + "' does not name a file in the pack");
 
         // The accepted neighbour: the same shape under a valid new id is written at its place and reads back.
         MissionTypeDso neighbour = new MissionTypeDso(
                 "neighbour", "1.0", "T", "D", Optional.empty(), false, Map.of(), List.of(), fixture.steps(), List.of());
-        store.write(PACK_ID, MissionTypeBinding.INSTANCE, neighbour);
+        store.write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, neighbour);
         assertThat(read().dsos(MissionTypeBinding.INSTANCE))
                 .extracting(MissionTypeDso::id)
                 .containsExactlyInAnyOrder("research", "neighbour");
@@ -339,7 +340,7 @@ class MissionTypeBindingTest {
         String before = Files.readString(pack.resolve(FILE));
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        assertThatThrownBy(() -> store.write(PACK_ID, MissionTypeBinding.INSTANCE, held))
+        assertThatThrownBy(() -> store.write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, held))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("mission_type 'research' names templates/spec-template.md (named by step 'scoping'):"
                         + " missing");
@@ -382,8 +383,8 @@ class MissionTypeBindingTest {
                 .containsExactly(tuple(FILE, FILE + ": names " + reason));
 
         String before = Files.readString(pack.resolve(FILE));
-        assertThatThrownBy(
-                        () -> new FilesystemPackStore(host, strategy).write(PACK_ID, MissionTypeBinding.INSTANCE, held))
+        assertThatThrownBy(() -> new FilesystemPackStore(host, strategy)
+                        .write(PACK_DIRECTORY, MissionTypeBinding.INSTANCE, held))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("mission_type 'research' names " + reason);
         assertThat(pack.resolve(FILE)).hasContent(before);
@@ -466,8 +467,8 @@ class MissionTypeBindingTest {
             return Files.readAllBytes(file);
         };
 
-        FilesystemPackStore.PackRead read =
-                new FilesystemPackStore(host, strategy, failing).read(PACK_ID, List.of(MissionTypeBinding.INSTANCE));
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy, failing)
+                .read(PACK_DIRECTORY, List.of(MissionTypeBinding.INSTANCE));
 
         assertThat(asked).as("the template is read through the seam, once").containsOnlyOnce(template);
         assertThat(read.templates()).isEmpty();

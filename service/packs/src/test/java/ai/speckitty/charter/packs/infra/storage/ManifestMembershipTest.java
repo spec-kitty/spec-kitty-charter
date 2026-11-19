@@ -223,7 +223,8 @@ class ManifestMembershipTest {
             Assumptions.abort("symbolic links are not supported here: " + e);
         }
 
-        assertThatThrownBy(() -> ManifestMembership.stamp(pack, store::derivedManifest, strategy))
+        assertThatThrownBy(() -> ManifestMembership.stamp(
+                        pack, directory -> store.derivedManifest(new PackIdentifier(PROJECT), directory), strategy))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refusal.getMessage()).contains("pack-manifest.yaml is not a regular file");
@@ -425,7 +426,8 @@ class ManifestMembershipTest {
     void theDerivedListsAreInPathOrder(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
 
-        PackManifestDso derived = PackManifestDerivation.derivedAt(pack, new YamlSerializationStrategy());
+        PackManifestDso derived = PackManifestDerivation.derivedAt(
+                new PackIdentifier(ExamplePacks.BUILT_IN), pack, new YamlSerializationStrategy());
 
         assertThat(derived.constituents()).hasSizeGreaterThan(1);
         assertThat(derived.constituents())

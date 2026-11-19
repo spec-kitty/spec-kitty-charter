@@ -244,20 +244,6 @@ class ForeignArtifactReadTest {
     }
 
     @Test
-    void aPackAddressedByItsDeclaredPackIdIsWalkedAsTheConfiguredPackItIs() {
-        projectOverBuiltIn();
-        ForeignArtifactRead service = service();
-
-        ForeignArtifactRead.Foreign read = service.read(
-                        new PackIdentifier("id-project"), ArtifactKind.AGENT_PROFILE, "P", 0)
-                .value();
-
-        assertThat(read.governance().orElseThrow().entries())
-                .extracting(entry -> entry.urn().toString())
-                .containsExactly("agent_profile:Q", "directive:D");
-    }
-
-    @Test
     void aProfileOnlyTheClosureHoldsIsNotThePacksOwnAndIsArtifactNotFound() {
         projectOverBuiltIn();
         ForeignArtifactRead service = service();

@@ -228,7 +228,7 @@ public final class RegistrationImpact {
      * composed through, so the check lists the configured locations and reads the pack once, and the write is laid over
      * the facts it read. The descriptor is the stored one, which a per-artifact write does not change.
      *
-     * @param pack the pack written to, by the name it is configured under or by its declared {@code pack_id}
+     * @param pack the pack written to, by the name it is configured under, its registered id
      * @param write what the pack's facts become once the write is stored
      * @return the floor and lock changes over those closures; the answer of such a write declares no notices, so the
      *     activations it affects are not asked for

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
@@ -47,6 +48,8 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>hidden entries, among them the {@code .pack-commit-*} staging directory of {@link PackCommitStore};
  *   <li>a {@code <name>.pack-old-*} entry, the aside copy a commit leaves when its swap is interrupted;
+ *   <li>a directory whose name is not a pack id ({@code a--b}, {@code My_Pack}): refused {@code pack_id_invalid}
+ *       (#583), since no write of the service could have named it;
  *   <li>a file;
  *   <li>a link that resolves to no directory (a dangling link, a link to a file), or to the pack domain, the
  *       configuration root or a directory above either;
@@ -143,6 +146,7 @@ public final class StorageRootLocations implements Locations {
             listed.addAll(repair.inFlight());
             for (Path entry : listed) {
                 directoryOf(entry, domain.get(), configRoot, repair.unrepaired())
+                        .filter(real -> namedByPackId(entry))
                         .ifPresent(real -> candidates.add(new Candidate(entry, real)));
             }
         } catch (IOException e) {
@@ -446,6 +450,20 @@ public final class StorageRootLocations implements Locations {
             return Optional.of("resolves to " + real + ", in the configuration root but outside the pack domain");
         }
         return Optional.empty();
+    }
+
+    /**
+     * Whether a pack entry is named by a pack id ({@link PackIdentifier#isPackId}), the only name the service registers
+     * a pack under; one that is not, a directory seeded by hand, is refused {@code pack_id_invalid} (#583, D5), so the
+     * read never serves what every write refuses.
+     */
+    private boolean namedByPackId(Path entry) {
+        String name = nameOf(entry);
+        if (PackIdentifier.isPackId(name)) {
+            return true;
+        }
+        refuse(entry, "is refused " + StoreRead.packIdInvalid(name));
+        return false;
     }
 
     /** Warns that an entry is not served, once for each reason it is refused for. */

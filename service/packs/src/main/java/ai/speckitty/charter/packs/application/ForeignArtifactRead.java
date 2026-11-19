@@ -8,7 +8,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -136,7 +135,7 @@ public final class ForeignArtifactRead {
      *
      * @param packs the port that loads a pack aggregate
      * @param descriptors the port that reads a pack's descriptor, judged before the artifact is looked up
-     * @param catalog the configured packs, to name the pack the request addresses by its declared {@code pack_id}
+     * @param catalog the configured packs, which must still hold the pack the request addresses
      * @param read the verifier that digests the inputs before and after the read
      * @param revisions the pack revision, read inside the verified read
      * @param governance the pack-scoped governance walk, run inside the verified read
@@ -181,11 +180,11 @@ public final class ForeignArtifactRead {
             throw new IllegalArgumentException("depth counts suggests hops and is at least 0: " + depth);
         }
         return read.read(STALE, () -> {
-            PackDescriptor descriptor = judged(pack);
+            judged(pack);
             CharterArtifact artifact = held(packs.load(pack), pack, kind, id);
             Optional<ProfileGovernance.Governance> walked = kind == ArtifactKind.AGENT_PROFILE
                     ? Optional.of(governance
-                            .ofPack(configuredId(pack, descriptor), id, depth)
+                            .ofPack(configuredId(pack), id, depth)
                             .orElseThrow(() -> new IllegalStateException("the closure of pack " + pack.value()
                                     + " does not hold the " + kind.token() + " " + id + " the pack holds")))
                     : Optional.empty();
@@ -287,22 +286,14 @@ public final class ForeignArtifactRead {
     }
 
     /**
-     * The configured identifier of the pack the request names. The storage answers a request by the configured name or
-     * by the {@code pack_id} the pack declares; the closure's roots are configured identifiers only.
+     * The configured identifier of the pack the request names: the registered id, the only one the storage answers a
+     * request by (#583, D3), and the closure's roots are configured identifiers only.
      */
-    private PackIdentifier configuredId(PackIdentifier requested, PackDescriptor descriptor) {
-        List<ConfiguredPack> all = catalog.configured();
-        if (all.stream().anyMatch(candidate -> candidate.id().equals(requested))) {
+    private PackIdentifier configuredId(PackIdentifier requested) {
+        if (catalog.configured().stream().anyMatch(candidate -> candidate.id().equals(requested))) {
             return requested;
         }
-        return all.stream()
-                .map(ConfiguredPack::id)
-                .filter(candidate -> descriptors
-                        .find(candidate)
-                        .map(found -> found.packId().equals(descriptor.packId()))
-                        .orElse(false))
-                .findFirst()
-                // the pack was found a moment ago and is configured no longer: the catalog changed during the read
-                .orElseThrow(() -> new CharterRefusal(RefusalCode.STALE_INPUT, STALE));
+        // the pack was found a moment ago and is configured no longer: the catalog changed during the read
+        throw new CharterRefusal(RefusalCode.STALE_INPUT, STALE);
     }
 }
