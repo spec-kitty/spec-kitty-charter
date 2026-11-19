@@ -1,17 +1,17 @@
 {
-  "event_count": 60,
-  "last_event_id": "01M7T7HZR08X4FWR3E257R9M85",
-  "materialized_at": "2026-11-19T15:42:12.736091+00:00",
+  "event_count": 68,
+  "last_event_id": "01M7TFJ9KN8PFGYQJ6S4G14YQY",
+  "materialized_at": "2026-11-19T18:02:11.445761+00:00",
   "mission_number": "",
   "mission_slug": "serve-tensions-01M7RDX1",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 8,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 0,
+    "done": 8,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
@@ -25,15 +25,16 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7SCY3P07GK4AXZJJK1Y8NDM",
-      "last_transition_at": "2026-11-19T07:56:58.432589+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFGCPDJ88G1EDCWHWFAMW9",
+      "last_transition_at": "2026-11-19T18:01:09.069752+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green (contract compatibility rerun after unshallow: no released baseline). Out-of-map edits to follow the API change: NodeKindTest and RelationshipWire (edgeTargetOf takes a RelationType), GraphDocumentReader (javadoc). in_tension_with remains only in refusal fixtures and assertions, core-verdicts.json, and living docs left to WP08. The cascade pin is not in TensionIsNotWalkedTest: CascadeRules.CASCADE_RELATIONS is an explicit set in activations.",
         "Rejected by independent review, cycle 1: small fixes",
         "Cycle 1 fixes: (1) TensionIsNotWalkedTest reach over the cascade relations with a requires twin, plus TensionIsNotCascadedTest in activations (out-of-map, pins CASCADE_RELATIONS); (2) neither-owned orientation in both pack schema Relation descriptions; ADR-0045 decisions 1 and 6 carry it (commit e5cf00b on the mission branch); (3) git grep -n in_tension_with -- service contracts/charter contracts/packs lists only: contracts/charter/CHANGELOG.md (released history), RelationTypeTest:50, GraphBindingTest:416-419, PackEdgeAdapterTest:85-89, RelationshipShardRoundTripTest:109-112, VocabularyEqualityTest:325 (refusal assertions), load-fixtures/shard-in-tension-with-is-unknown (refusal fixture), planted/core-verdicts.json:1001 (core's own text). Nit: RelationshipEndpointRule comment reflowed. Handoff to WP03 noted: refuseStepEnhancementEdge samePair becomes slot-aware.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5, cycle 2 (review/602-wp01 @ b64b48e5d), recorded by the implementer on the reviewer's request: reach and cascade pins close T008.1; G1 extension in both pack schemas and ADR-0045 d1/d6; grep re-run matches; nit fixed; touched tests, spotless and checkstyleTest green."
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5, cycle 2 (review/602-wp01 @ b64b48e5d), recorded by the implementer on the reviewer's request: reach and cascade pins close T008.1; G1 extension in both pack schemas and ADR-0045 d1/d6; grep re-run matches; nit fixed; touched tests, spotless and checkstyleTest green.",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -63,15 +64,16 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7SFYKT6C97A27SFA8WSXH66",
-      "last_transition_at": "2026-11-19T08:49:40.678692+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFGN23A2B9YPB76XYZ4C1H",
+      "last_transition_at": "2026-11-19T18:01:17.635099+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green (8m). Self-tension: the binding reports tension_self for a bare or qualified self-tension (one code, U2 resolved); the consistency rule skips self-pairs. Ownership: a side is owned when bare or qualified with the pack's own name AND the pack holds the artifact; a bare reference to an artifact the pack lacks is foreign. PackCodesCoverageTest gains a failing pack per new code. Out-of-map: GraphBinding (TENSION_SELF outcome) and GraphBindingTest (the self-tension expectation), both WP01 files. Not done: planted/tension-* and golden/validate.json, the coverage-test packs exercise each code; load-fixtures have no runner (existing follow-up), they document the six cases.",
         "Rejected, cycle 1: records only",
         "Cycle 1 fixes. (1) Registration path: contracts/charter/scenarios/registration/whole-pack-registration.feature, scenario 'A pack whose tension between two of its directives is written larger first is refused tension_orientation': PUT of a pack with B tension A -> refused 422 validation_failed, one violation tension_orientation; the canonical twin A tension B registers (passes; out-of-map, a shared scenario file). (2a) tension_self: one code, reported by the binder (GraphBinding) for a bare or qualified self-tension; the consistency rule skips self-pairs; resolves analysis U2. (2b) Out-of-map edits: GraphBinding (the SelfTension outcome reporting TENSION_SELF) and GraphBindingTest (its self-tension expectation), both WP01 files, because the binder is where a self-tension is first refused. (2c) No planted/tension-* fixtures and no golden/validate.json change: PackCodesCoverageTest gains a failing pack per new code, and the load-fixtures document the six cases (no runner exists, an existing follow-up). Observation noted for WP03/WP04: a fully foreign tension needs the qualifier's pack in depends_on.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5, cycle 2 (review/602-wp01 @ 448a78740), recorded by the implementer on the reviewer's request. Registration DoD: scenario 'A pack whose tension between two of its directives is written larger first is refused tension_orientation' in contracts/charter/scenarios/registration/whole-pack-registration.feature (out-of-map, a shared scenario file), passing in :deployable:test; the deployable suite passes."
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5, cycle 2 (review/602-wp01 @ 448a78740), recorded by the implementer on the reviewer's request. Registration DoD: scenario 'A pack whose tension between two of its directives is written larger first is refused tension_orientation' in contracts/charter/scenarios/registration/whole-pack-registration.feature (out-of-map, a shared scenario file), passing in :deployable:test; the deployable suite passes.",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -97,15 +99,16 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7SNY0X0HF2AZMJ71GZN2FVV",
-      "last_transition_at": "2026-11-19T10:34:12.769018+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFGXRYPAC6W4ACQDSXXHAD",
+      "last_transition_at": "2026-11-19T18:01:26.558785+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green (12m). Wire: from may be pack-qualified only for type tension (the service, not the wire, judges held sides). Stored orientation in RelationshipRegistrationService.stored(): held side first; both or neither held, smaller bare URN first; the answer echoes the request. created/upsert per slot (RelationshipMerge.equals is the slot after WP01). Gate: a tension is authorized on each side; a structural relation on from only. Each side the pack does not hold is targets.require'd. 422 tension_duplicated at /to against authoredRelationships. Step-enhancement guards: samePair -> sameSlot (reviewer's WP01 handoff). deletePackRelationship: optional relation (String on the generated API; PackRemovalController parses it, an unknown or derived token is InvalidParameter 400 before the pack); RelationshipRemovalService judges names/heldOutsideTheShard per relation; absent relation with an authored edge beside a registered one is 409 naming the relation parameter. ArtifactRemovalService: a registered tension goes with either side (also in without/startsAt), retained by identity (IdentityHashMap set, ErrorProne-clean). InboundReferences: a tension adds a reference from its target side too, so a foreign tension blocks removing either side. Out-of-map: PackRegistrationController (generated signature), PackRemovalControllerTest (mocks of the new overload, plus 400 and pass-through tests), examples/_index.yaml (WP06's file, one line), pack-removal.feature used for the scenarios (its Background has D1-D3). Not done: RelationshipRegistration.tension.yaml request example (the response example covers the wire).",
         "Rejected by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1)",
         "Cycle 1 fixes (review/602-wp01 @ acbe6fe94); verifyAll green (12m). (1) A tension's stored source is always required through the compose (targets.require on from and to), so a bare source another pack holds is pack_reference_unqualified; test with its qualified twin. (2) PackRegistrationService: changedEdges/keyed/writesOn extracted; PackRegistrationEdgeDiffTest shows a requires and a tension on one pair diff as two edges. Folded in: the whole-pack diff gates a changed tension on each side, as single registration does (ADR-0045 d1). (3) RelationshipRegistration.tension.yaml request example, indexed and referenced from the PUT requestBody. (4) Scenarios: a later registration keeps the tension; removal row 2; row 5 (409 whose detail names the relation parameter, then relation=tension -> 204). (5) Reverse-orientation tension replaces the pair's tension. RelationshipMergeTest folded into RelationshipRegistrationServiceTest (slot behaviour asserted there). Nits fixed. Open review item: the wire accepts a qualified from for any tension and stored() normalizes even when the pack holds to; stricter in meaning than the ADR's 'from may be qualified when the pack owns neither side', consistent with 'the write normalizes rather than refuses'.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 2, review/602-wp01 @ acbe6fe94)"
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 2, review/602-wp01 @ acbe6fe94)",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -133,13 +136,14 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7SS9BMR332S4JXP0PPTF5X0",
-      "last_transition_at": "2026-11-19T11:32:49.944871+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFH65TAZVHGJ451QK9TZDZ",
+      "last_transition_at": "2026-11-19T18:01:35.162831+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "review/602-wp01 @ 9fa27cd74 (WP04 on top of WP03). verifyAll + :pack-validation:wholePackRoundTrip green on lane-d (verifyAll run 2, after one SurfaceSubsetTest fix). T019 TensionsInForce: per writer pack in closure order, document order; each side resolved by place (bare = writer, qualified = holdingPack); the writer's own held version must win (G2, symmetric), any other side is the winner; both sides in force; canonical; collapse on the pair, first writer's when/reason; reconcilers from merged reconciles_tension links reaching both sides, in force. Self-pair: no runtime drop (unreachable: the kernel refuses a tension self-loop); the TensionInForce record refuses source >= target. T020 ClosureView.tensions(states) from the held merge, no new pass; GraphProjection.Edge gains when/reason/reconciledBy (only a tension carries them); plain edges exclude TENSION. T021 pack 'tensions' at org, depends_on built-in, open directive/tactic policy, the five cases. Deviations: graph in drg/fragment.yaml not tensions.graph.yaml (validate mode answers org_fragment_missing for an org pack without one); tactic ids reconcile-rec/reconcile-half (tactic ids are lowercase). T022: ExamplePacks (TENSIONS, LEVELS, names()), WholePackRoundTripTest, ProfileCorpusTest (tensions holds no profile), ExamplePacksComposeTest, PackDigestBaselineTest, facts/example-packs.json, golden surfaces.json and validate.json (no findings), ClosureViewTest over the five packs (each case; one side out). Outside owned_files (small): EdgeIndexTest.Closure.tensions helper; facts/example-packs.json (the facts snapshot); SurfaceSubsetTest NEWER_EXAMPLES. T023 TensionsInForceTest: G2 both sides parameterized with control, re-pointed foreign sides, own-vs-foreign side, collapse, reconcilers (both/one/not in force/sorted), one side in force, requires beside, deliveredTo, 5 seeds of permutations.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 9fa27cd74)"
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 9fa27cd74)",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -165,13 +169,14 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7SY5ZSSCS0C1Z7295WS6TTG",
-      "last_transition_at": "2026-11-19T12:58:22.393170+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFHFFSYS645QPJFRD49MW6",
+      "last_transition_at": "2026-11-19T18:01:44.697552+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "review/602-wp01 @ d574381c4 (WP05 on top of WP04). verifyAll green on lane-e. T024 TensionSnapshot; GraphSnapshot.Edge gains when/reason/reconciledBy (only a tension carries them); PacksSession.tensions(query) from ClosureView.tensions(statesOf(query)), the merge and states held once. T025 EffectiveGraphEdge: when, reason, reconciledBy via shared TensionCondition/TensionReason/TensionReconcilers schemas. Deviation: the rule is an if/then/else, not a oneOf, because a oneOf with properties branches makes the generated EffectiveGraphEdge an interface; uniqueItems is dropped (no schema uses it; the generated Set does not compile; ContractConformance refuses it) and the description says each once, sorted. Folded: squad C12, the graph and context governanceFingerprint texts now name the closure digest they answer. T026 ContextTension, required tensions on EffectiveActionContext (both sides listed in state active, a suggestion never a side; [] when the mission type is not in force); examples EffectiveGraph.tension, EffectiveActionContext.tension, implement gains tensions: []. T027 EffectiveTag v4 (javadoc, header recipe, E17 rule doc amended); EffectiveTagTest v4 literals and a v3 twin; EffectiveReadOperationBudgetTest: graph and skipped reads do the list read's work with no tension; with a tension the graph and context reads compose once and resolve once. T028 EffectiveContextTest (listed, suggestion, not in force with control), EffectiveReadMapperTest (tension words, requires none, empty reconciledBy, context mapping), ClosureViewSessionTensionsTest. Outside owned_files (logged): ContractConformance implements if/then/else, not, anyOf, string const (fail-closed otherwise; two must-fail edges pinned in ContractConformanceTest; two old tests used const as the unimplemented keyword, now uniqueItems); ActivationJson/ActivationRuntimeHints add EffectiveGraphEdge and ContextTension (absent members omitted, NullOmissionTest); docs/architecture/composition-and-activation-rules.md E17 v4; schemas/_index and examples/_index entries (WP06's files).",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ d574381c4)"
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ d574381c4)",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -197,13 +202,14 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7T1WVG0G474SCTYRRY7C1SN",
-      "last_transition_at": "2026-11-19T14:03:17.376282+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFHR2KKNVMJYCK3GY2X0W9",
+      "last_transition_at": "2026-11-19T18:01:53.491765+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "review/602-wp01 @ 0ee025d78 (WP06 on top of WP05). verifyAll green on lane-f (after one fix: _links reference Links.yaml directly for checkClosedResponseObjects). T029 TensionFinding(source, target, sourceExcludable, targetExcludable); resolutions() derived: reconcile always, deactivate_one_side when a side is excludable (G3); of() refuses a reconciled tension. T030 EffectiveTag.Read.TENSIONS + tensions(revision, closure) (out-of-map, EffectiveTag is WP05's); TensionReadService: found/open (EffectiveReadService's, made package-private rather than duplicated), tag and 304, session.tensions(query), excludability per side of each unreconciled tension through ActivationExclusionService.excludable, which shares the write's own floor check (refuseFloor now calls the same private floorRefusal; with an empty body the cascade is NONE, so the write's second check judges what the first does). Controller getActivationTensions; TensionReadMapper. T031 path, ActivationTensions, TensionFinding (resolutions minItems 1 maxItems 2, ordered), examples empty and unreconciled, openapi/_index entries, Activation.yaml prose and minimal example, CharterSourceFingerprint and EffectiveETag op lists. T032 ActivationMapper tensions link after skipped (+ tensions(), exclusion() paths); ruleset enum and hypermedia table: tensions, exclude-source/-target, effective-source/-target. T033 every-operation 401/403, read-refusals 400/304, unexpected-failure 500, activation-links prose + example row + a scenario (own ETag differs from the skipped report's; unknown activation 404 activation_not_found), switch-gate ready. Deviation: the 404 and the ETag-differs scenario live in activation-links.feature (WP06's) rather than the feature files where the other reads' 404s live (not WP06's). T034 TensionFindingTest, TensionReadServiceTest (findings only for unreconciled; an offered side is accepted by the real exclusion write with the read's revision and the unoffered locked/required sides are refused artifact_locked/artifact_required; 304; tag differs from skipped; 404), TensionReadMapperTest, ActivationMapperLinksTest/ActivationMapperTest (tensions after skipped). Outside owned_files (logged): ActivationExclusionService (excludable + shared floorRefusal), EffectiveReadService (found/open package-private), EffectiveTag, StandaloneActivationMvc (controller args), ActivationControllerTest (17 operations). Note: an excludability check of a required side asks the in-force resolution of the would-be document, as the write does; a tension with no required side adds none.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 0ee025d78)"
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 0ee025d78)",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -230,13 +236,14 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7T59MV474YA3RE0BWPCQ90K",
-      "last_transition_at": "2026-11-19T15:02:42.276173+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFJ0ANB27QCXS9VN6GBYD9",
+      "last_transition_at": "2026-11-19T18:02:01.941076+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "review/602-wp01 @ 67f5cecdb (WP07 on top of WP06). verifyAll green on lane-g (16m). T035 TensionSteps: graph tension edges, context tensions, activation tensions (each '<s> tension <t> reconciledBy [..] when <w|-> reason <r|->', so words and reconcilers are pinned), findings ('<s> <t> resolutions [..] links [..]', code asserted), 'has no tension words', and following a finding's link with the answer's revision quoted and {}. README step vocabulary and feature list. T036/T037 tensions.feature over built-in + tensions: case 1 graph, context and tensions read with reconciledBy [tactic:reconcile-rec] and words, no finding; case 2 reconcile-half is no reconciler, one finding with both resolutions and all four links, effective-source answers the side, exclude-source followed with the read's revision -> 200, then no tension and no finding; case 3 ONE_B deactivated -> no tension edge, context [] and tensions read [] beside a twin activation a-2 that has all three; case 4 PUT B->A tension -> 201, registered.graph.yaml source A target B, the read answers A->B with a finding; case 5 requires edge has no words, the tension edge has none and both are separate. Locked twin (reviewer note): a scenario policy.yaml locks UNREC_A -> links [effective-*, exclude-target], resolutions both, exclude-target followed -> 200; both locked -> [reconcile] and only effective-*, the write refuses artifact_locked. Suggestion: a scenario suggests edge REC_A->REC_B with only REC_A selected: B listed as a suggestion at depth 1, no tension at depth 0 or 1, none in the tensions read; twin = case 1. Mission type not in force: software-dev is required by built-in and cannot be denied, so the scenario adds a mission type solo (not selected): its context has tensions [] and lists solo in missionTypeNotInForce while software-dev's context and the tensions read list the tension. Deviation from the WP table: case 5's 'exclude link for the required side is absent' does not hold, since a requires edge's target is not on the floor (only a pack lock or a governing preset's must-have is, as the exclusion write judges); the G3 twin uses a pack lock instead, which the reviewer asked for. Non-vacuity: before WP04-06 the graph had no reconciledBy on a tension edge (the step reads '(no reconciledBy)'), the context had no tensions member and /tensions was 404, so every case fails.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 67f5cecdb)"
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 67f5cecdb)",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -260,13 +267,14 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "approved",
-      "last_event_id": "01M7T7HZR08X4FWR3E257R9M85",
-      "last_transition_at": "2026-11-19T15:42:12.736091+00:00",
+      "lane": "done",
+      "last_event_id": "01M7TFJ9KN8PFGYQJ6S4G14YQY",
+      "last_transition_at": "2026-11-19T18:02:11.445761+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "review/602-wp01 @ 7dae1c9e9 (WP08 on top of WP07). Gates: ./gradlew verifyAll :pack-validation:wholePackRoundTrip --max-workers=1 -> BUILD SUCCESSFUL (14m, Java 25); check_docs.py all -> ok; check_docs.py plantuml (pinned jar + graphviz) -> ok, two diagrams re-rendered; cspell docs/**/*.md -> clean; markdownlint-cli2 -> only MD060 on table separator rows, present in untouched files (advisory in CI). T038 DIV-108 decided reads; DIV-615 spelling, DIV-616 resolutions, DIV-617 reconciler, DIV-618 stored orientation and load refusals; service-contract: tension row decided and built, #101 delivered (ADR-0044, PR #472), getActivationTensions in the operation table, activation links and verified reads, deletePackRelationship's relation. T039 three fragments (one ### block each, per changes/README.md): Breaking, Added, Changed. T040 definitions.yaml: Tension updated, Reconciliation de-legacied, new Reconciler, Pair class, Unreconciled tension (in_tension_with stays an alias = avoid term); docs/glossary pages NOT regenerated (the docsite build's @spec-kitty/doc-toolkit answers 401 here; hand edits forbidden; no CI drift check). ADR-0027 amendment, ADR-0028 d5 answered, ADR-0077 row amended; packs README section and packs CHANGELOG breaking line (fold-in: WP01 had none); docs/changelog/2026-11-19-tensions.md; hubs not committed (preview only). Living docs: logical-model, contract-and-dtos, two diagrams; domain.md and journey 06 already accurate. ADR-0045 avoid term fixed. T041 git grep in_tension_with also lists history (dated changelogs, released CHANGELOG sections, accepted ADR text, triage plans), kept as records; living docs spell tension. open-packs draft (mission branch) says filed as spec-kitty-open-packs#316, on the orchestrator's report. WP07 nits folded: case 4 echo asserted; suggestion prose.",
-        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 7dae1c9e9)"
+        "Approved by independent reviewer session_019C2Tk2RcGZ2qH78xUiRot5 (cycle 1, review/602-wp01 @ 7dae1c9e9)",
+        "Merged to main in PR #606 (011723622) | Done override: Lanes were consolidated onto main by signed cherry-pick (-x) and landed via PR #606 at 011723622; lane ancestry is not in main by design"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
