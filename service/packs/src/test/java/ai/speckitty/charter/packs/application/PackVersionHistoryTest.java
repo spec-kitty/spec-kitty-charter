@@ -118,23 +118,47 @@ class PackVersionHistoryTest {
     }
 
     @Test
-    void aReusedVersionWithOtherContentIsRefusedAfterADowngradeEvenThoughItIsNotTheStoredOne(@TempDir Path host) {
+    void anOlderVersionIsRefusedEvenWithTheContentTheHistoryHoldsForIt(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none());
         rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none());
         java.util.Map<String, String> before = rig.filesOf(rig.packs.resolve("pack-x"));
 
         assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("1.0.0", "Other")), Preconditions.none())))
-                .as("1.0.0 was registered with other content, and the stored version is 2.0.0")
+                .as("1.0.0 is older than the stored 2.0.0, and was registered with other content")
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+        assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none())))
+                .as("a replacement moves the version forward, even to content the history holds (ADR-0081 D2)")
                 .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
         assertThat(rig.filesOf(rig.packs.resolve("pack-x")))
                 .as("nothing changed")
                 .isEqualTo(before);
 
-        assertThat(rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none())
+        assertThat(rig.register("pack-x", rig.stage(pack("3.0.0", "Third")), Preconditions.none())
                         .outcome())
-                .as("the control: the content 1.0.0 had is accepted, a downgrade")
+                .as("the control: a newer version")
                 .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void labelsThatArePep440EqualAreOneLabel() {
+        List<Entry> history = List.of(entry("1.1", "a"));
+
+        assertThat(refusalOf(() -> PackVersionHistory.requireNotReused("pack-x", history, "1.1.0", revision("b"))))
+                .as("1.1 and 1.1.0 are one label")
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+        assertThat(refusalOf(() -> PackVersionHistory.requireNotReused("pack-x", history, "1.1.0+local", revision("b"))))
+                .as("a local segment does not make another label")
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+        assertThat(PackVersionHistory.appended(history, entry("1.1.0", "a")))
+                .as("the pair is held already, under an equal label")
+                .isSameAs(history);
+        assertThat(PackVersionHistory.healed(history, entry("v1.1", "c")))
+                .as("the history knows the label")
+                .isSameAs(history);
+        assertThatCode(() -> PackVersionHistory.requireNotReused("pack-x", history, "1.1.1", revision("b")))
+                .as("the control: another version")
+                .doesNotThrowAnyException();
     }
 
     @Test

@@ -3,11 +3,13 @@ package ai.speckitty.charter.packs.infra.api;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Which requests are registration or {@code DELETE} attempts that NFR-010 audits, by method and path below the API base
- * path: {@code PUT /packs/{packId}}, {@code POST /packs}, and the two {@code DELETE}s under a pack. Path segments are
- * taken as the request carries them, undecoded, so what is audited is what was sent.
+ * path: {@code PUT /packs/{packId}}, {@code POST /packs}, the {@code DELETE} of a pack and the two {@code DELETE}s under
+ * a pack. Path segments are taken as the request carries them, undecoded, so what is audited is what was sent. A dry
+ * run ({@code dryRun=true}, ADR-0081 D5) writes nothing and is never an attempt the log holds ({@link #isDryRun}).
  */
 final class RegistrationPaths {
 
@@ -48,10 +50,22 @@ final class RegistrationPaths {
             return match(PACK, path, "registerPackFromArchive", "archive");
         }
         if (method.equals("DELETE")) {
-            return match(ARTIFACT, path, "deletePackArtifact", "")
+            return match(PACK, path, "deletePack", "")
+                    .or(() -> match(ARTIFACT, path, "deletePackArtifact", ""))
                     .or(() -> match(RELATIONSHIP, path, "deletePackRelationship", ""));
         }
         return Optional.empty();
+    }
+
+    /**
+     * Whether a request asks for a dry run: its {@code dryRun} query parameter is {@code true}, in any case, as the
+     * contract's boolean binds it. Any other value is the write itself, or a {@code 400} the binding answers.
+     *
+     * @param dryRun the value of the {@code dryRun} query parameter, or null when the request has none
+     * @return whether the request is a dry run
+     */
+    static boolean isDryRun(@Nullable String dryRun) {
+        return "true".equalsIgnoreCase(dryRun);
     }
 
     private static Optional<Attempt> match(Pattern pattern, String path, String operation, String sourceKind) {

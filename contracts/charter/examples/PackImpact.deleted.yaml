@@ -12,7 +12,5 @@ value:
     locksRemoved: []
     activationsAffected: []
   _links:
-    self:
-      href: /api/v1/packs/acme-style-pack?dryRun=true
     pack:
       href: /api/v1/packs/acme-style-pack

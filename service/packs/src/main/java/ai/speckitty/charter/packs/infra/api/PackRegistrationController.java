@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.RegistrationApi;
 import ai.speckitty.charter.api.model.PackDocumentRead;
+import ai.speckitty.charter.api.model.PackImpact;
 import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationStatus;
 import ai.speckitty.charter.api.model.PackSource;
@@ -10,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
 import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
+import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
@@ -64,6 +66,7 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackRegistrationMapper mapper;
     private final PackSourceIntake intake;
     private final PackRemovalController removals;
+    private final PackUninstallController uninstalls;
     private final PackDocumentController documents;
 
     /**
@@ -74,7 +77,8 @@ public class PackRegistrationController implements RegistrationApi {
      * @param archives the archive extractor
      * @param mapper the contract shapes
      * @param intake what takes a registration from a source
-     * @param removals the adapter of the two {@code DELETE}s
+     * @param removals the adapter of the two {@code DELETE}s under a pack
+     * @param uninstalls the adapter of the {@code DELETE} of a pack
      * @param documents the adapter of the document read, in both its forms
      */
     @Autowired
@@ -85,6 +89,7 @@ public class PackRegistrationController implements RegistrationApi {
             PackRegistrationMapper mapper,
             PackSourceIntake intake,
             PackRemovalController removals,
+            PackUninstallController uninstalls,
             PackDocumentController documents) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
@@ -92,7 +97,13 @@ public class PackRegistrationController implements RegistrationApi {
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.intake = Objects.requireNonNull(intake, "intake");
         this.removals = Objects.requireNonNull(removals, "removals");
+        this.uninstalls = Objects.requireNonNull(uninstalls, "uninstalls");
         this.documents = Objects.requireNonNull(documents, "documents");
+    }
+
+    @Override
+    public ResponseEntity<PackImpact> deletePack(String packId, @Nullable String ifMatch, Boolean dryRun) {
+        return uninstalls.delete(packId, ifMatch, Boolean.TRUE.equals(dryRun));
     }
 
     @Override
@@ -169,7 +180,9 @@ public class PackRegistrationController implements RegistrationApi {
 
     @Override
     public ResponseEntity<PackRegistrationStatus> registerPackFromArchive(
-            String packId, Resource body, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
+            String packId, Resource body, @Nullable String ifMatch, Boolean dryRun, @Nullable String ifNoneMatch) {
+        // dryRun reaches the job through the admitted origin (RegistrationAdmission.modeOf), read from the same query
+        // parameter before the body was spooled.
         HttpServletRequest request = currentRequest();
         ArchiveBody archive = archiveOf(body);
         AuditContext audit = AuditContext.of(request);
@@ -236,7 +249,7 @@ public class PackRegistrationController implements RegistrationApi {
 
     @Override
     public ResponseEntity<PackRegistrationStatus> registerPackFromSource(
-            PackSource packSource, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
+            PackSource packSource, @Nullable String ifMatch, Boolean dryRun, @Nullable String ifNoneMatch) {
         HttpServletRequest request = currentRequest();
         PackSourceRequest source = sourceOf(packSource);
         String locator = AuditLocators.of(source);
@@ -250,7 +263,8 @@ public class PackRegistrationController implements RegistrationApi {
                 AuditContext.credentialOf(request),
                 "registerPackFromSource",
                 source.kind().wire(),
-                locator);
+                locator,
+                Boolean.TRUE.equals(dryRun) ? PackRegistrationService.Mode.DRY_RUN : PackRegistrationService.Mode.COMMIT);
         RegistrationJobs.Reservation reservation =
                 jobs.reserve(packSource.getPackId(), RegistrationAdmission.admittedPreconditions(request), origin);
         try {
