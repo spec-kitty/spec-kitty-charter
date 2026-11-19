@@ -8,6 +8,12 @@ requirement_refs:
 - FR-010
 - C-003
 - C-005
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: c05ad96ab6cd3cb9755bdf5e7b2e892b9087f933
+created_at: '2026-11-19T12:58:33.523608+00:00'
 subtasks:
 - T029
 - T030
@@ -15,7 +21,26 @@ subtasks:
 - T032
 - T033
 - T034
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: java-jenny
 authoritative_surface: service/activations/src/main/java/ai/speckitty/charter/activations/application/TensionReadService.java
+create_intent:
+- service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionFinding.java
+- service/activations/src/main/java/ai/speckitty/charter/activations/application/TensionReadService.java
+- service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/TensionReadMapper.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/domain/TensionFindingTest.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/application/TensionReadServiceTest.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/TensionReadMapperTest.java
+- contracts/charter/paths/activations_activationId_tensions.yaml
+- contracts/charter/schemas/ActivationTensions.yaml
+- contracts/charter/schemas/TensionFinding.yaml
+- contracts/charter/examples/ActivationTensions.empty.yaml
+- contracts/charter/examples/ActivationTensions.unreconciled.yaml
+execution_mode: code_change
 owned_files:
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionFinding.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/application/TensionReadService.java
@@ -45,33 +70,10 @@ owned_files:
 - contracts/charter/scenarios/switch-gate.yaml
 - contracts/lint/ruleset.yaml
 - docs/development/hypermedia-hateoas.md
-create_intent:
-- service/activations/src/main/java/ai/speckitty/charter/activations/domain/TensionFinding.java
-- service/activations/src/main/java/ai/speckitty/charter/activations/application/TensionReadService.java
-- service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/TensionReadMapper.java
-- service/activations/src/test/java/ai/speckitty/charter/activations/domain/TensionFindingTest.java
-- service/activations/src/test/java/ai/speckitty/charter/activations/application/TensionReadServiceTest.java
-- service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/TensionReadMapperTest.java
-- contracts/charter/paths/activations_activationId_tensions.yaml
-- contracts/charter/schemas/ActivationTensions.yaml
-- contracts/charter/schemas/TensionFinding.yaml
-- contracts/charter/examples/ActivationTensions.empty.yaml
-- contracts/charter/examples/ActivationTensions.unreconciled.yaml
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: java-jenny
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP06 - The activation's tensions read

@@ -11,12 +11,29 @@ requirement_refs:
 - C-004
 - SC-002
 - SC-004
+planning_base_branch: feat/602-tensions
+merge_target_branch: feat/602-tensions
+branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/602-tensions unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-serve-tensions-01M7RDX1
+base_commit: d2d38832dffe528c6b1d273919bf8cf8aa79d0a2
+created_at: '2026-11-19T15:02:53.129068+00:00'
 subtasks:
 - T038
 - T039
 - T040
 - T041
+agent: claude
+history:
+- at: '2026-11-19T07:00:00Z'
+  actor: system
+  action: Prompt generated via /spec-kitty.tasks
+agent_profile: scribe-sally
 authoritative_surface: docs/
+create_intent:
+- contracts/charter/changes/2026-11-19-tensions-are-served.md
+- contracts/charter/changes/2026-11-19-tension-is-a-relation.md
+- docs/changelog/2026-11-19-tensions.md
+execution_mode: code_change
 owned_files:
 - docs/api/service-contract.md
 - docs/conformance/divergences.yaml
@@ -30,25 +47,10 @@ owned_files:
 - contracts/charter/changes/2026-11-19-tensions-are-served.md
 - contracts/charter/changes/2026-11-19-tension-is-a-relation.md
 - docs/changelog/2026-11-19-tensions.md
-create_intent:
-- contracts/charter/changes/2026-11-19-tensions-are-served.md
-- contracts/charter/changes/2026-11-19-tension-is-a-relation.md
-- docs/changelog/2026-11-19-tensions.md
-planning_base_branch: feat/602-tensions
-merge_target_branch: feat/602-tensions
-branch_strategy: Planning artifacts for this mission were generated on feat/602-tensions. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge
-  back into feat/602-tensions unless the human explicitly redirects the landing branch.
-agent_profile: scribe-sally
 role: implementer
-agent: claude
-execution_mode: code_change
-history:
-- at: '2026-11-19T07:00:00Z'
-  actor: system
-  action: Prompt generated via /spec-kitty.tasks
+tags: []
 tracker_refs:
 - '#602'
-tags: []
 ---
 
 # Work Package Prompt: WP08 - Records and gates
