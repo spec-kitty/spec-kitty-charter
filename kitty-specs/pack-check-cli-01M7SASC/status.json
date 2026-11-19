@@ -29,6 +29,9 @@
       "last_event_id": "01M7SJQEXF08SD9M30265PVDM2",
       "last_transition_at": "2026-11-19T09:38:12.015505+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: links refused on every surface (D1, D6, #597); verifyAll green with -PrequireSymlinks=true. No contract scenario: every registration stager refuses a link before the reader."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 6097,
