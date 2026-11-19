@@ -215,13 +215,13 @@ public final class PackUninstallService {
         Path directory = packs.liveDirectory(name);
         Set<Urn> held = new LinkedHashSet<>();
         try {
-            WholePackWriteStore.Contents contents = loader.loadStored(directory);
+            WholePackWriteStore.Contents contents = loader.loadStored(name, directory);
             PackCompositionFacts facts = contents.facts();
             facts.defined().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
             facts.terms().forEach(term -> Urn.parse(term).ifPresent(held::add));
             held.addAll(contents.digests().keySet());
         } catch (CharterRefusal unreadable) {
-            WholePackWriteStore.Remains remains = loader.salvageStored(directory);
+            WholePackWriteStore.Remains remains = loader.salvageStored(name, directory);
             remains.defined().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
             held.addAll(remains.digests().keySet());
         }

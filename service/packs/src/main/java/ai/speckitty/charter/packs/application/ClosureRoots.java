@@ -74,6 +74,11 @@ final class ClosureRoots {
         Found {
             closures = List.copyOf(closures);
         }
+
+        /** No closure: what holds a pack whose descriptor cannot be read, which no closure that can be walked holds. */
+        static Found none() {
+            return new Found(List.of(), listed -> Optional.empty());
+        }
     }
 
     /**
