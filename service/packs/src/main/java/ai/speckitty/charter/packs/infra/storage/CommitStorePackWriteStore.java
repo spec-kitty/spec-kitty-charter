@@ -497,6 +497,6 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     /** The configured location of a pack, as {@link PackLocator} resolves it. */
     private PackLocation location(PackIdentifier pack) {
-        return PackLocator.locate(locations, strategy, pack);
+        return PackLocator.locate(locations, pack);
     }
 }

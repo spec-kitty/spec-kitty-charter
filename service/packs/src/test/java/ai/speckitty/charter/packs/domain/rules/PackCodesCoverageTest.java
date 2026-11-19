@@ -266,6 +266,20 @@ class PackCodesCoverageTest {
                         .details());
     }
 
+    /**
+     * The clean descriptor in a directory whose name is not a pack id ({@code pack_id_invalid}, #583 D5): the read is
+     * of the directory under its own name, as validate mode and a whole-pack load read it.
+     */
+    private static Judged packIdInvalid(Path host) throws IOException {
+        Path dir = Files.createDirectories(host.resolve("My_Pack"));
+        write(dir, "pack.yaml", DESCRIPTOR);
+        return new Judged(
+                "written/pack_id_invalid",
+                Optional.of(StorageCodes.PACK_ID_INVALID),
+                StorageRulesets.verdict(TreeReads.of(new PackRoot("My_Pack", Optional.empty(), dir.toString())))
+                        .details());
+    }
+
     private static volatile List<Judged> corpus;
 
     /** The planted and example packs, the packs written here and the hand-written fact, each judged once per JVM. */
@@ -329,6 +343,7 @@ class PackCodesCoverageTest {
                         StorageRulesets.verdict(TreeReads.of(new PackRoot(name, Optional.empty(), dir.toString())))
                                 .details()));
             }
+            judged.add(packIdInvalid(scratch.resolve(Integer.toString(n))));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {

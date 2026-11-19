@@ -146,7 +146,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             ConsistentRead read) {
-        this(liveJudging(offerings, catalog, descriptors, read), stagedJudging(offerings, catalog, descriptors, read));
+        this(liveJudging(offerings, catalog, read), stagedJudging(offerings, catalog, descriptors, read));
     }
 
     /**
@@ -275,12 +275,9 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
 
     /** The policies judging a write into a stored pack: its live closure, composed in one verified read. */
     private static JudgingPolicies liveJudging(
-            OfferingReadService offerings,
-            PackCatalogRepository catalog,
-            PackDescriptorRepository descriptors,
-            ConsistentRead read) {
+            OfferingReadService offerings, PackCatalogRepository catalog, ConsistentRead read) {
         return pack -> read.read(STALE, () -> {
-                    PackIdentifier root = rootOf(catalog, descriptors, pack);
+                    PackIdentifier root = rootOf(catalog, pack);
                     return judgingOf(offerings.composedWithFacts(Set.of(root)), root);
                 })
                 .value();
@@ -403,23 +400,14 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /**
-     * The configured pack a write addresses: the one configured as the pack's identifier, else the one whose descriptor
-     * declares the pack's {@code pack_id} (a pack may be addressed by either). A pack that is neither is refused
-     * {@code pack_not_found}, as on every other read.
+     * The configured pack a write addresses: the one configured as the pack's identifier, its registered id (#583,
+     * D3). A pack that is not configured is refused {@code pack_not_found}, as on every other read.
      */
-    private static PackIdentifier rootOf(
-            PackCatalogRepository catalog, PackDescriptorRepository descriptors, Pack pack) {
-        List<PackIdentifier> configured =
-                catalog.configured().stream().map(ConfiguredPack::id).toList();
-        if (configured.contains(pack.id())) {
+    private static PackIdentifier rootOf(PackCatalogRepository catalog, Pack pack) {
+        if (catalog.configured().stream().anyMatch(candidate -> candidate.id().equals(pack.id()))) {
             return pack.id();
         }
-        String packId = pack.descriptor().packId();
-        return configured.stream()
-                .filter(candidate -> declares(descriptors, candidate, packId))
-                .findFirst()
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.PACK_NOT_FOUND, "Pack " + pack.id().value() + " was not found."));
+        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.id().value() + " was not found.");
     }
 
     /** Whether the configured pack's descriptor declares {@code packId}; an unreadable one declares nothing. */

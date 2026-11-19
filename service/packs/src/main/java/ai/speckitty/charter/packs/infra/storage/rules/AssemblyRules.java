@@ -24,7 +24,7 @@ import java.util.Set;
  * The read records that refusal as a fact of the one read ({@link Assembly.Refused}); {@link #REFUSED} states it, once,
  * where the reader's own faults do not already: a pack with no {@code pack.yaml} (R2 row 24), and an aggregate invariant
  * the readable artifacts break (row 26). A descriptor the reader could not read is the reader's fault, and a root it
- * could not read too.
+ * could not read too, and a pack the read refused because its name is not a pack id.
  *
  * <p>The store half also meets faults of its own while it assembles a pack the read held (A-M1 rows 16 to 19 and 32,
  * WP12): a template read twice, a value-object breach, a companion it cannot read, the
@@ -56,7 +56,8 @@ public final class AssemblyRules {
         if (!(read.contents().assembly() instanceof Assembly.Refused refused)
                 || (refused.atDescriptor()
                         && read.contents().descriptor() instanceof FileRead.Unreadable<PackDescriptor>)
-                || rootUnreadable(read)) {
+                || rootUnreadable(read)
+                || nameInvalid(read)) {
             return List.of();
         }
         ReasonCode code = refused.code() == RefusalCode.PACK_UNREADABLE
@@ -64,6 +65,14 @@ public final class AssemblyRules {
                 : StorageCodes.ASSEMBLY_REFUSED;
         Reason reason = Findings.at(code, refused.atDescriptor() ? DESCRIPTOR : PACK, List.of(), refused.message());
         return read.readFaults().contains(reason) ? List.of() : List.of(reason);
+    }
+
+    /**
+     * Whether the reader already stated that the pack is not named by a pack id ({@link StorageCodes#PACK_ID_INVALID}):
+     * the store refused to read it for that alone, so its refusal states nothing more (#583, D5).
+     */
+    static boolean nameInvalid(TreeRead read) {
+        return read.readFaults().stream().anyMatch(fault -> StorageCodes.PACK_ID_INVALID.equals(fault.code()));
     }
 
     /**

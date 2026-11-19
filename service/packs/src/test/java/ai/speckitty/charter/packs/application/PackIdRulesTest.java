@@ -85,18 +85,23 @@ class PackIdRulesTest {
     }
 
     @Test
-    void anIdThatFoldsToAStoredIdIsAConflict(@TempDir Path host) {
+    void aHandSeededDirectoryWhoseNameIsNoPackIdIsNoStoredPack(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.install("Legacy", Packs.of(ORG_PACK, "legacy", "1.0.0", "org"));
-        StagedPack upload = rig.stage(Packs.of(OTHER_PACK, "legacy-two", "1.0.0", "org"));
 
-        assertThat(refusalOf(() -> rig.register("legacy", upload, Preconditions.none())))
-                .isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
-        assertThat(rig.packs.resolve("legacy")).doesNotExist();
-
-        assertThat(rig.register("legacy-two", upload, Preconditions.none()).outcome())
-                .as("the control: an id that folds to nothing stored")
+        assertThat(rig.repository.configured())
+                .as("#583 D5: the read refuses a directory that is not named by a pack id")
+                .isEmpty();
+        assertThat(rig.register(
+                                "legacy-two",
+                                rig.stage(Packs.of(OTHER_PACK, "legacy-two", "1.0.0", "org")),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: a pack id registers beside it")
                 .isEqualTo(Outcome.CREATED);
+        assertThat(rig.repository.configured())
+                .extracting(configured -> configured.id().value())
+                .containsExactly("legacy-two");
     }
 
     @Test

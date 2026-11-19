@@ -26,7 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("A glossary context round-trips through the YAML format and the store (ADR-0049)")
 class GlossaryYamlTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5YVECG10SSARYPACKF1XT0A");
+    private static final PackIdentifier PACK = new PackIdentifier("glossary-fixture");
 
     /** Every declared field, each optional one written, terms deliberately unsorted. */
     private static final String FULL = """
