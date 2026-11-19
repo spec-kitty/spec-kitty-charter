@@ -59,7 +59,7 @@ allow:
     reason: records core's canonical mission_steps as the refused name in the divergence entry
   - path: docs/conformance/divergence-register.md
     term: in_tension_with
-    reason: DIV-018 records the schema's Relation enum as it stands, which still carries core's legacy in_tension_with value
+    reason: the register records core's spelling (DIV-018, DIV-108, DIV-615)
   - path: docs/conformance/divergence-register.md
     term: retired-drg-acronym
     reason: the register documents core's doctrine-era code paths and naming verbatim (offering/drg/*, drg/fragment.yaml, drg_dir) — core still ships DRG; our side says CRG

@@ -1054,6 +1054,12 @@ scenarios that pin it.
   - Core: `offering/model_task_routing/evaluator.py` (evaluate)
   - Charter: `model-recommendation.feature` (rows 7 to 10; the 404 and order outlines)
 
+## Tensions (DIV-615..618, ADR-0045)
+
+The block of Mission `serve-tensions-01M7RDX1` (#602): a tension is the relation `tension`, and the effective graph, the
+action context and `getActivationTensions` answer the tensions in force (DIV-108 records the reads). The entries are
+`open` since the reads are built, and each names the tests or scenarios that pin it.
+
 ### DIV-615: The spelling of a tension in the pack files
 
 - **Core:** Writes and reads `in_tension_with`.
