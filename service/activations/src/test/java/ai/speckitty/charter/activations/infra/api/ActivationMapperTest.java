@@ -20,6 +20,7 @@ import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.ResolvedDependency;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,7 +58,9 @@ class ActivationMapperTest {
 
         assertThat(built.violations()).isEmpty();
         ActivationDocument document = built.document();
-        assertThat(document.packs()).contains(List.of(PackRef.of("beta"), PackRef.pinned("alpha", "1.0.0")));
+        assertThat(document.packs())
+                .contains(List.of(
+                        PackRef.of(new PackIdentifier("beta")), PackRef.pinned(new PackIdentifier("alpha"), "1.0.0")));
         assertThat(document.selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("software-dev");
         assertThat(document.languages().orElseThrow()).containsExactly("java");
         assertThat(document.selected(ArtifactKind.AGENT_PROFILE).orElseThrow()).containsExactly("p1", "p2");
@@ -168,7 +171,7 @@ class ActivationMapperTest {
                 stored,
                 false,
                 List.of(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research")),
-                List.of(PackRef.pinned("alpha", "2.0.0"))));
+                List.of(PackRef.pinned(new PackIdentifier("alpha"), "2.0.0"))));
 
         assertThat(plain).isEqualTo(mapper.toActivation(stored));
         assertThat(plain.getDropped()).isNull();

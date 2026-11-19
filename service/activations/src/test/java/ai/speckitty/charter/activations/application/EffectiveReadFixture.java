@@ -29,6 +29,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import java.io.IOException;
@@ -131,7 +132,7 @@ final class EffectiveReadFixture {
             @Override
             public Optional<PackDescriptor> find(PackIdentifier pack) {
                 return Optional.of(new PackDescriptor(
-                        "id-" + pack.value(),
+                        FixtureUlids.of(pack.value()),
                         "1.0.0",
                         Optional.empty(),
                         pack.value() + " pack",
@@ -232,7 +233,7 @@ final class EffectiveReadFixture {
     private static ActivationDocument activation() {
         ActivationDocument.Builder builder = ActivationDocument.builder()
                 .packs(IntStream.range(0, PACKS)
-                        .mapToObj(pack -> PackRef.of(name(pack)))
+                        .mapToObj(pack -> PackRef.of(new PackIdentifier(name(pack))))
                         .toList());
         builder.selected(
                 ArtifactKind.DIRECTIVE,

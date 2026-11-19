@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Reason;
@@ -45,12 +44,12 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The filesystem storage of packs, at the persistence-shape level: it maps a {@link PackIdentifier} to a pack
+ * The filesystem storage of packs, at the persistence-shape level: it maps a {@link PackDirectory} to a pack
  * directory, reads the directory partial-tolerantly into DSOs, and writes a DSO back atomically and inside the pack.
  * Format is the {@link SerializationStrategy}'s business; this class only moves text, and the bytes of the files of the
  * {@code bytes} content form (asset files and templates), which it reads and writes as they are, with no charset.
  *
- * <p>The identifier's value names the pack directory under the storage root. Every kind bound in {@link KindBindings}
+ * <p>The {@link PackDirectory} names the pack directory under the storage root. Every kind bound in {@link KindBindings}
  * is read and written through one path (ADR-0037). An element is located by scanning the pack's files of its kind, as
  * {@link PackFileSet} declares them, for the one whose {@code id} matches. A write is an upsert: a known id replaces
  * its file, an unknown id creates {@code <id>.<kind>.yaml} directly in the pack directory (and never over an existing
@@ -342,14 +341,15 @@ final class FilesystemPackStore {
     /**
      * The directory a pack lives in.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @return the pack directory under the storage root
-     * @throws CharterRefusal when the identifier does not name a directory directly under the root
+     * @throws CharterRefusal when the name does not name a directory directly under the root
      */
-    Path directoryOf(PackIdentifier id) {
-        Path directory = root.resolve(id.value()).normalize();
+    Path directoryOf(PackDirectory pack) {
+        Path directory = root.resolve(pack.name()).normalize();
         if (!root.equals(directory.getParent())) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack identifier does not name a pack directory");
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "pack directory name does not name a directory under the root");
         }
         return directory;
     }
@@ -357,13 +357,13 @@ final class FilesystemPackStore {
     /**
      * Reads a pack, tolerating broken element files.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @return the descriptor, the readable files of every bound kind and a violation per broken file, and per retired
      *     file (ADR-0044 decision 6) one of kind {@code retired} naming its rule's reason
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
-    PackRead read(PackIdentifier id) {
-        return read(id, KindBindings.all());
+    PackRead read(PackDirectory pack) {
+        return read(pack, KindBindings.all());
     }
 
     /**
@@ -371,13 +371,13 @@ final class FilesystemPackStore {
      * has already read, so one read of a pack parses its graph documents once and judges the same documents it
      * assembles.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param graphs the pack's graph documents, as {@link #readGraphs} read them for this read
-     * @return as {@link #read(PackIdentifier)} answers
+     * @return as {@link #read(PackDirectory)} answers
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
-    PackRead read(PackIdentifier id, GraphRead graphs) {
-        return read(id, KindBindings.all(), graphs);
+    PackRead read(PackDirectory pack, GraphRead graphs) {
+        return read(pack, KindBindings.all(), graphs);
     }
 
     /**
@@ -390,44 +390,45 @@ final class FilesystemPackStore {
      * the document, as a step enhancement's edge fault (ADR-0066 OD-3 (a)). A graph document that cannot be read is
      * not judged here: {@link #readGraphs} reports it on its own.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kinds the bindings to read, in order
      * @return the descriptor, the readable files of each binding's kind and a violation per broken file and per refused
      *     {@code overrides} edge
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
-    PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds) {
-        return read(id, kinds, readGraphs(id));
+    PackRead read(PackDirectory pack, List<KindBinding<?, ?>> kinds) {
+        return read(pack, kinds, readGraphs(pack));
     }
 
     /**
-     * {@link #read(PackIdentifier, List)} over graph documents the caller has already read, so one read parses them once.
+     * {@link #read(PackDirectory, List)} over graph documents the caller has already read, so one read parses them once.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kinds the bindings to read, in order
      * @param graphs the pack's graph documents, as {@link #readGraphs} read them for this read
-     * @return as {@link #read(PackIdentifier, List)} answers
+     * @return as {@link #read(PackDirectory, List)} answers
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
-    PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
-        return read(id, kinds, graphs, null);
+    PackRead read(PackDirectory pack, List<KindBinding<?, ?>> kinds, GraphRead graphs) {
+        return read(pack, kinds, graphs, null);
     }
 
     /**
-     * {@link #read(PackIdentifier, List, GraphRead)} over a walk of the pack already made, so the one read walks the
+     * {@link #read(PackDirectory, List, GraphRead)} over a walk of the pack already made, so the one read walks the
      * tree once (#554, T028).
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kinds the bindings to read, in order
      * @param graphs the pack's graph documents
      * @param walk the pack's walk; {@code null} walks it here
-     * @return as {@link #read(PackIdentifier, List)} answers
+     * @return as {@link #read(PackDirectory, List)} answers
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
-    PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds, GraphRead graphs, PackFileSet.@Nullable Walk walk) {
+    PackRead read(
+            PackDirectory pack, List<KindBinding<?, ?>> kinds, GraphRead graphs, PackFileSet.@Nullable Walk walk) {
         READS.increment();
-        Path directory = existingDirectory(id);
-        PackDescriptorDso descriptor = descriptorOf(directory, id);
+        Path directory = existingDirectory(pack);
+        PackDescriptorDso descriptor = descriptorOf(directory, pack);
         PackFileSet.Listing listing = walk == null
                 ? PackFileSet.listing(directory, companionRules.table())
                 : PackFileSet.listing(directory, companionRules.table(), walk);
@@ -703,44 +704,44 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Reads only a pack's {@code pack.yaml}: no element file is opened. This is how an identifier is matched to a pack
+     * Reads only a pack's {@code pack.yaml}: no element file is opened. This is how an identifier is matched to a pack directory
      * without reading every pack's elements.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @return the descriptor
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
-    PackDescriptorDso readDescriptor(PackIdentifier id) {
-        return descriptorOf(existingDirectory(id), id);
+    PackDescriptorDso readDescriptor(PackDirectory pack) {
+        return descriptorOf(existingDirectory(pack), pack);
     }
 
     /**
      * Reads only a pack's {@code pack.yaml}, telling an absent file from one that cannot be read: when nothing stands at
      * {@code pack.yaml}, not even a link, the file is absent; anything else there must be a readable descriptor.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @return the descriptor; empty when the pack has no {@code pack.yaml}
      * @throws CharterRefusal when the pack directory is missing, or {@code pack.yaml} is there but is no readable
      *     descriptor
      */
-    Optional<PackDescriptorDso> findDescriptor(PackIdentifier id) {
-        Path directory = existingDirectory(id);
+    Optional<PackDescriptorDso> findDescriptor(PackDirectory pack) {
+        Path directory = existingDirectory(pack);
         if (!Files.exists(directory.resolve(PackFileSet.PACK_YAML), LinkOption.NOFOLLOW_LINKS)) {
             return Optional.empty();
         }
-        return Optional.of(descriptorOf(directory, id));
+        return Optional.of(descriptorOf(directory, pack));
     }
 
     /**
      * Reads the readable elements of one kind of a pack, without its descriptor.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kind the kind's binding
      * @param <D> the kind's persistence shape
      * @return the readable elements, in path order
      */
-    <D> List<D> readAll(PackIdentifier id, KindBinding<D, ?> kind) {
-        Path directory = existingDirectory(id);
+    <D> List<D> readAll(PackDirectory pack, KindBinding<D, ?> kind) {
+        Path directory = existingDirectory(pack);
         return readKind(
                         directory,
                         PackFileSet.files(directory, kind.kind()),
@@ -758,14 +759,14 @@ final class FilesystemPackStore {
      * rule, but whether another artifact also names one is not checked: that needs the whole pack, and {@link #read}
      * refuses it.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kind the kind's binding
      * @param elementId the element's id
      * @param <D> the kind's persistence shape
      * @return the element, or empty when the pack has no readable element of the kind with that id
      */
-    <D> Optional<D> readOne(PackIdentifier id, KindBinding<D, ?> kind, String elementId) {
-        Path directory = existingDirectory(id);
+    <D> Optional<D> readOne(PackDirectory pack, KindBinding<D, ?> kind, String elementId) {
+        Path directory = existingDirectory(pack);
         return locate(directory, kind, elementId)
                 .flatMap(file -> readListed(
                         directory,
@@ -810,15 +811,15 @@ final class FilesystemPackStore {
      * so is a fragment with a node whose {@code body_path} leaves the pack root (#254): one violation per such node, and
      * the fragment is not read.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @return the readable documents and the violations of the others
      */
-    GraphRead readGraphs(PackIdentifier id) {
-        Path directory = existingDirectory(id);
+    GraphRead readGraphs(PackDirectory pack) {
+        Path directory = existingDirectory(pack);
         List<GraphDocument> documents = new ArrayList<>();
         List<PackElementViolation> violations = new ArrayList<>();
         List<String> files = new ArrayList<>();
-        for (Path shard : PackFileSet.rootShards(directory, id.value())) {
+        for (Path shard : PackFileSet.rootShards(directory, pack.name())) {
             files.add(String.valueOf(shard.getFileName()));
         }
         boolean hasFragment = Files.isRegularFile(directory.resolve(PackFileSet.FRAGMENT));
@@ -860,19 +861,19 @@ final class FilesystemPackStore {
                 .toList();
     }
 
-    private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
+    private PackDescriptorDso descriptorOf(Path directory, PackDirectory pack) {
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (!Files.isRegularFile(packYaml)) {
-            throw descriptorRefusal("pack " + id.value() + " has no pack.yaml");
+            throw descriptorRefusal("pack " + pack.name() + " has no pack.yaml");
         }
         return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {
             case FileRead.Read<PackDescriptorDso> good -> good.value();
             // The refusal names why, in validate mode's words: the parse failure, or each schema fault (an undeclared
             // key such as the retired active_charter named), so the author sees what to fix (FR-010, #554 R2).
             case FileRead.Unreadable<PackDescriptorDso> bad ->
-                throw descriptorRefusal(descriptorFault(id.value(), bad));
+                throw descriptorRefusal(descriptorFault(pack.name(), bad));
             case FileRead.Absent<PackDescriptorDso> absent ->
-                throw descriptorRefusal("pack " + id.value() + " has no pack.yaml");
+                throw descriptorRefusal("pack " + pack.name() + " has no pack.yaml");
         };
     }
 
@@ -1028,11 +1029,11 @@ final class FilesystemPackStore {
     /**
      * Replaces a pack's {@code pack.yaml}.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param descriptor what to write
      */
-    void writeDescriptor(PackIdentifier id, PackDescriptorDso descriptor) {
-        Path directory = existingDirectory(id);
+    void writeDescriptor(PackDirectory pack, PackDescriptorDso descriptor) {
+        Path directory = existingDirectory(pack);
         writeAtomically(
                 directory, directory.resolve(PackFileSet.PACK_YAML), utf8(strategy.writeDescriptor(descriptor)));
     }
@@ -1041,12 +1042,12 @@ final class FilesystemPackStore {
      * Writes an activation preset in place at {@code presets/<id>.yaml}, creating the directory, replacing the file
      * when it is there. The file name is the preset's id, so the stem rule holds by construction.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param preset what to write
      * @throws CharterRefusal when the file cannot be written
      */
-    void writePreset(PackIdentifier id, PresetDso preset) {
-        Path directory = existingDirectory(id);
+    void writePreset(PackDirectory pack, PresetDso preset) {
+        Path directory = existingDirectory(pack);
         writeAtomically(
                 directory, directory.resolve(PresetFiles.pathOf(preset.id())), utf8(strategy.writePreset(preset)));
     }
@@ -1055,24 +1056,24 @@ final class FilesystemPackStore {
      * Writes the mutability policy file in place at {@code policy.yaml}, the only path a descriptor may name for it
      * (ADR-0063), replacing the file when it is there (#476).
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param text the policy's text ({@link PolicyYaml#write})
      * @throws CharterRefusal when the file cannot be written
      */
-    void writePolicy(PackIdentifier id, String text) {
-        Path directory = existingDirectory(id);
+    void writePolicy(PackDirectory pack, String text) {
+        Path directory = existingDirectory(pack);
         writeAtomically(directory, directory.resolve(PolicyYaml.FILE), utf8(text));
     }
 
     /**
      * Writes the pack document in place at {@code README.md}, replacing the file when it is there (#260).
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param text the document's canonical Markdown text ({@link PackDocumentMarkdown#toWritableText})
      * @throws CharterRefusal when the file cannot be written
      */
-    void writePackDocument(PackIdentifier id, String text) {
-        Path directory = existingDirectory(id);
+    void writePackDocument(PackDirectory pack, String text) {
+        Path directory = existingDirectory(pack);
         writeAtomically(directory, directory.resolve(PackDocumentMarkdown.FILE), utf8(text));
     }
 
@@ -1088,7 +1089,7 @@ final class FilesystemPackStore {
      * the element are atomic together only through the commit path, which writes into a staging copy of the pack and
      * swaps the whole directory ({@link PackCommitStore}); that is the only production writer of kinds with companions.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kind the kind's binding
      * @param dso what to write
      * @param <D> the kind's persistence shape
@@ -1101,8 +1102,8 @@ final class FilesystemPackStore {
      *     ({@code REGISTRATION_CONFLICT}, a client error); when a file the element names is not a template of the pack
      *     ({@code VALIDATION_FAILED}, ADR-0044)
      */
-    <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
-        write(id, kind, dso, Optional.empty());
+    <D> void write(PackDirectory pack, KindBinding<D, ?> kind, D dso) {
+        write(pack, kind, dso, Optional.empty());
     }
 
     /**
@@ -1112,7 +1113,7 @@ final class FilesystemPackStore {
      * {@code write}'s. An element of that id that already exists is replaced in place, wherever it sits, as {@code write}
      * does; the place applies only to a create.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param kind the kind's binding
      * @param dso what to write
      * @param place the pack-relative path of a new element's file, with forward slashes
@@ -1120,12 +1121,12 @@ final class FilesystemPackStore {
      * @throws CharterRefusal as {@link #write} does, and with {@code PACK_UNREADABLE} when the place leaves the pack, is
      *     already taken, or does not name {@code <id>.<fileToken>.yaml} as its file
      */
-    <D> void writeAt(PackIdentifier id, KindBinding<D, ?> kind, D dso, String place) {
-        write(id, kind, dso, Optional.of(place));
+    <D> void writeAt(PackDirectory pack, KindBinding<D, ?> kind, D dso, String place) {
+        write(pack, kind, dso, Optional.of(place));
     }
 
-    private <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso, Optional<String> place) {
-        Path directory = existingDirectory(id);
+    private <D> void write(PackDirectory pack, KindBinding<D, ?> kind, D dso, Optional<String> place) {
+        Path directory = existingDirectory(pack);
         String elementId = kind.idOf(dso);
         Optional<Path> existing = locate(directory, kind, elementId);
         Path target = existing.orElseGet(() -> place.map(at -> placedFile(directory, kind, elementId, at))
@@ -1293,7 +1294,7 @@ final class FilesystemPackStore {
      * companion's does ({@link Companions#inPack}) and must classify back as {@code kind} (one file, one owner:
      * {@link PackFileSet#notHeldAs}), and the write is the store's one atomic write.
      *
-     * @param id the pack
+     * @param pack the pack's directory
      * @param file the pack-relative, {@code /}-separated path, such as {@code assets/a/logo.png}
      * @param payload the bytes to write
      * @param kind the {@code bytes} kind the file is written as: {@link PackFileKind#ASSET_PAYLOAD} or
@@ -1302,8 +1303,8 @@ final class FilesystemPackStore {
      *     case from a file or directory of the pack ({@code REGISTRATION_CONFLICT}, {@link Spellings#collision}, #252),
      *     the file resolves outside the pack, or it cannot be written
      */
-    void writePayload(PackIdentifier id, String file, Payload payload, String kind) {
-        Path directory = existingDirectory(id);
+    void writePayload(PackDirectory pack, String file, Payload payload, String kind) {
+        Path directory = existingDirectory(pack);
         Companions.Inside at = switch (Companions.inPack(directory, file)) {
             case Companions.Inside inside -> inside;
             case Companions.Refused refused ->
@@ -1323,10 +1324,10 @@ final class FilesystemPackStore {
 
     // ---- id to path ----------------------------------------------------------------------------------------------
 
-    private Path existingDirectory(PackIdentifier id) {
-        Path directory = directoryOf(id);
+    private Path existingDirectory(PackDirectory pack) {
+        Path directory = directoryOf(pack);
         if (!Files.isDirectory(directory)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " is not a directory");
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.name() + " is not a directory");
         }
         return directory;
     }
@@ -1338,7 +1339,7 @@ final class FilesystemPackStore {
     private static final java.util.concurrent.atomic.LongAdder READS = new java.util.concurrent.atomic.LongAdder();
 
     /**
-     * How many whole reads of a pack ({@link #read(PackIdentifier)} and its overloads) this JVM has made: the counter
+     * How many whole reads of a pack ({@link #read(PackDirectory)} and its overloads) this JVM has made: the counter
      * that tells a surface reads a pack once (#554, T028, {@code OneReadTest}).
      *
      * @return the count

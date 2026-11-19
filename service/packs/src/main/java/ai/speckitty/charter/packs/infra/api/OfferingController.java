@@ -80,7 +80,7 @@ public class OfferingController implements OfferingApi {
         String id = entry.id().value();
         return new OfferingPack(
                 id,
-                entry.descriptorPackId(),
+                entry.descriptorPackId().value(),
                 OfferingPack.LevelEnum.fromValue(entry.level().token()),
                 entry.name(),
                 entry.version(),

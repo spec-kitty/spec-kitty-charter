@@ -3,6 +3,8 @@ package ai.speckitty.charter.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ch.qos.logback.classic.Level;
@@ -17,6 +19,9 @@ import org.slf4j.LoggerFactory;
 
 /** What {@link RefusalHandler} logs for a refusal: a routine, retryable one is quiet; a real server fault is loud. */
 class RefusalHandlerLoggingTest {
+
+    private static final String A_ID = "01M7RA0000000000000000000A";
+    private static final String B_ID = "01M7RB0000000000000000000B";
 
     private final Logger logger = (Logger) LoggerFactory.getLogger(RefusalHandler.class);
     private final ListAppender<ILoggingEvent> events = new ListAppender<>();
@@ -64,7 +69,9 @@ class RefusalHandlerLoggingTest {
                 .refused(new CharterRefusal(
                         RefusalCode.PACK_DEPENDENCY_CYCLE,
                         "pack `a` is on a cycle",
-                        List.of(new RefusalPack("01A", "cfg-a", "a"), new RefusalPack("01B", "cfg-b", "b"))));
+                        List.of(
+                                new RefusalPack(new PackUlid(A_ID), new PackIdentifier("cfg-a"), "a"),
+                                new RefusalPack(new PackUlid(B_ID), new PackIdentifier("cfg-b"), "b"))));
         new RefusalHandler().refused(new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot read"));
 
         assertThat(events.list).hasSize(2).allSatisfy(event -> {
@@ -74,7 +81,7 @@ class RefusalHandlerLoggingTest {
         assertThat(events.list.get(0).getFormattedMessage())
                 .contains("pack_dependency_cycle")
                 .contains("pack `a` is on a cycle")
-                .contains("a (01A), b (01B)");
+                .contains("a (" + A_ID + "), b (" + B_ID + ")");
         assertThat(events.list.get(1).getFormattedMessage())
                 .contains("pack_unreadable")
                 .contains("cannot read");

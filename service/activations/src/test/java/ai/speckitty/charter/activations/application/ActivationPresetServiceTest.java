@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.List;
@@ -58,7 +59,11 @@ class ActivationPresetServiceTest {
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
         return repository
-                .create(ID, builder.packs(List.of(PackRef.of("main"))).build().document())
+                .create(
+                        ID,
+                        builder.packs(List.of(PackRef.of(new PackIdentifier("main"))))
+                                .build()
+                                .document())
                 .orElseThrow();
     }
 
@@ -86,7 +91,7 @@ class ActivationPresetServiceTest {
                         .orElseThrow())
                 .containsExactly("B", "C");
         assertThat(packs.calls()).isEqualTo(1);
-        assertThat(packs.lastRoots()).contains(List.of("main"));
+        assertThat(packs.lastRoots()).contains(List.of(new PackIdentifier("main")));
     }
 
     @Test

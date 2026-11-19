@@ -63,7 +63,8 @@ class EffectiveReadServiceMissionWinnerTest {
         assertThat(repository.create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("main"), PackRef.of("proj")))
+                                .packs(List.of(
+                                        PackRef.of(new PackIdentifier("main")), PackRef.of(new PackIdentifier("proj"))))
                                 .build()
                                 .document()))
                 .isPresent();

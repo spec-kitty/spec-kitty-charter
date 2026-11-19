@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,11 +51,11 @@ class CompositionGoldenTest {
     private static final String DIRECTIVE = "directive:DIRECTIVE_009";
 
     /** The rooted fixture of {@code PackCompositionResolverTest.Rooted}: alpha depends on beta, gamma is unrelated. */
-    private static final PackUnderResolution BETA = pack("01BETA", "beta", "1.0.0", PackLevel.ORG);
+    private static final PackUnderResolution BETA = pack(u("BETA"), "beta", "1.0.0", PackLevel.ORG);
 
     private static final PackUnderResolution ALPHA =
-            pack("01ALPHA", "alpha", "1.0.0", PackLevel.ORG, depends("01BETA", ">=1.0"));
-    private static final PackUnderResolution GAMMA = pack("01GAMMA", "gamma", "1.0.0", PackLevel.ORG);
+            pack(u("ALPHA"), "alpha", "1.0.0", PackLevel.ORG, depends(u("BETA"), ">=1.0"));
+    private static final PackUnderResolution GAMMA = pack(u("GAMMA"), "gamma", "1.0.0", PackLevel.ORG);
 
     /**
      * One compose: the packs available, the roots it is rooted at, and what each member's facts say.
@@ -126,33 +127,33 @@ class CompositionGoldenTest {
     /** The parent cycles, the preset contests and a mention that matches only by case. */
     private static List<Case> cyclesPresetsAndMentions() {
         return List.of(
-                new Case("parent-names-itself", extending("01LOOP", "loop", PackLevel.ORG, "01LOOP")),
+                new Case("parent-names-itself", extending(u("LOOP"), "loop", PackLevel.ORG, u("LOOP"))),
                 new Case(
                         "parents-name-each-other",
-                        extending("01FIRST", "first", PackLevel.ORG, "01SECOND"),
-                        extending("01SECOND", "second", PackLevel.ORG, "01FIRST")),
+                        extending(u("FIRST"), "first", PackLevel.ORG, u("SECOND")),
+                        extending(u("SECOND"), "second", PackLevel.ORG, u("FIRST"))),
                 new Case(
                         "parent-cycle-through-a-dependency",
-                        pack("01PARENT", "parent", "1.0.0", PackLevel.ORG, depends("01CHILD", ">=1.0")),
-                        extending("01CHILD", "child", PackLevel.ORG, "01PARENT")),
+                        pack(u("PARENT"), "parent", "1.0.0", PackLevel.ORG, depends(u("CHILD"), ">=1.0")),
+                        extending(u("CHILD"), "child", PackLevel.ORG, u("PARENT"))),
                 new Case(
                                 "preset-contest-of-two-unrelated-packs",
-                                pack("01LEFT", "left", "1.0.0", PackLevel.ORG),
-                                pack("01RIGHT", "right", "1.0.0", PackLevel.ORG))
-                        .presets("01LEFT", "team")
-                        .presets("01RIGHT", "team"),
+                                pack(u("LEFT"), "left", "1.0.0", PackLevel.ORG),
+                                pack(u("RIGHT"), "right", "1.0.0", PackLevel.ORG))
+                        .presets(u("LEFT"), "team")
+                        .presets(u("RIGHT"), "team"),
                 new Case(
                                 "preset-contest-of-two-children-of-one-parent",
-                                pack("01PARENT", "parent", "1.0.0", PackLevel.ORG),
-                                extending("01ONE", "one", PackLevel.ORG, "01PARENT"),
-                                extending("01TWO", "two", PackLevel.ORG, "01PARENT"))
-                        .presets("01ONE", "team")
-                        .presets("01TWO", "team"),
+                                pack(u("PARENT"), "parent", "1.0.0", PackLevel.ORG),
+                                extending(u("ONE"), "one", PackLevel.ORG, u("PARENT")),
+                                extending(u("TWO"), "two", PackLevel.ORG, u("PARENT")))
+                        .presets(u("ONE"), "team")
+                        .presets(u("TWO"), "team"),
                 new Case(
                                 "mention-of-a-held-id-only-by-case",
-                                defining("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001"),
-                                defining("01MENT", "mentioner", PackLevel.ORG))
-                        .mentions("01MENT", "directive:directive_001"));
+                                defining(u("HOLD"), "holder", PackLevel.ORG, "directive:DIRECTIVE_001"),
+                                defining(u("MENT"), "mentioner", PackLevel.ORG))
+                        .mentions(u("MENT"), "directive:directive_001"));
     }
 
     /** The dependency, range, name and parent refusals. */
@@ -160,32 +161,32 @@ class CompositionGoldenTest {
         return List.of(
                 new Case(
                         "cycle-with-a-pack-downstream-of-it",
-                        pack("01AAA", "a", "1.0.0", PackLevel.ORG, depends("01BBB", ">=1.0")),
-                        pack("01BBB", "b", "1.0.0", PackLevel.ORG, depends("01CCC", ">=1.0")),
-                        pack("01CCC", "c", "1.0.0", PackLevel.ORG, depends("01BBB", ">=1.0"))),
+                        pack(u("AAA"), "a", "1.0.0", PackLevel.ORG, depends(u("BBB"), ">=1.0")),
+                        pack(u("BBB"), "b", "1.0.0", PackLevel.ORG, depends(u("CCC"), ">=1.0")),
+                        pack(u("CCC"), "c", "1.0.0", PackLevel.ORG, depends(u("BBB"), ">=1.0"))),
                 new Case(
                         "pack-depends-on-itself",
-                        pack("01SELF", "self", "1.0.0", PackLevel.ORG, depends("01SELF", ">=1.0"))),
+                        pack(u("SELF"), "self", "1.0.0", PackLevel.ORG, depends(u("SELF"), ">=1.0"))),
                 new Case(
                         "unknown-dependency",
-                        pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, depends("01GONE", ">=1.0"))),
+                        pack(u("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(u("GONE"), ">=1.0"))),
                 new Case(
                         "ranges-no-version-satisfies-together",
-                        pack("01TWO", "two", "1.0.0", PackLevel.ORG, depends("01BASE", ">=2.0")),
-                        pack("01ONE", "one", "1.0.0", PackLevel.ORG, depends("01BASE", ">=1.0,<2")),
-                        pack("01BASE", "base", "1.5.0", PackLevel.BUILT_IN)),
+                        pack(u("TWO"), "two", "1.0.0", PackLevel.ORG, depends(u("BASE"), ">=2.0")),
+                        pack(u("ONE"), "one", "1.0.0", PackLevel.ORG, depends(u("BASE"), ">=1.0,<2")),
+                        pack(u("BASE"), "base", "1.5.0", PackLevel.BUILT_IN)),
                 new Case(
                         "two-packs-with-one-name",
-                        pack("01AAA", "shared-name", "1.0.0", PackLevel.ORG),
-                        pack("01BBB", "shared-name", "1.0.0", PackLevel.ORG)),
+                        pack(u("AAA"), "shared-name", "1.0.0", PackLevel.ORG),
+                        pack(u("BBB"), "shared-name", "1.0.0", PackLevel.ORG)),
                 new Case(
                         "parent-unresolved",
                         new PackUnderResolution(
-                                configured("01ORPH", PackLevel.ORG),
+                                configured(u("ORPH"), PackLevel.ORG),
                                 new PackDescriptor(
-                                        "01ORPH",
+                                        u("ORPH"),
                                         "1.0.0",
-                                        Optional.of("01MISSING"),
+                                        Optional.of(u("MISSING")),
                                         "orphan",
                                         Optional.of(PackLevel.ORG),
                                         Optional.empty()))));
@@ -196,42 +197,42 @@ class CompositionGoldenTest {
         return List.of(
                 new Case(
                         "siblings-changing-one-artifact",
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "siblings-defining-one-artifact",
-                        defining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE),
-                        defining("01LEFT", "left", PackLevel.ORG, DIRECTIVE)),
+                        defining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE),
+                        defining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "siblings-defining-one-mission-type-and-its-step",
-                        defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement"),
-                        defining("01LEFT", "left", PackLevel.ORG, "mission_type:m", "action:m/implement")),
+                        defining(u("RIGHT"), "right", PackLevel.ORG, "mission_type:m", "action:m/implement"),
+                        defining(u("LEFT"), "left", PackLevel.ORG, "mission_type:m", "action:m/implement")),
                 new Case(
                         "a-qualifier-does-not-make-two-contests",
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, "base::" + DIRECTIVE)),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, "base::" + DIRECTIVE)),
                 new Case(
                         "two-distribution-packs-naming-different-winners",
-                        settling("01DTWO", "dtwo", "org::" + DIRECTIVE, "01RIGHT", "01LEFT", "01RIGHT"),
-                        settling("01DONE", "done", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE)),
+                        settling(u("DTWO"), "dtwo", "org::" + DIRECTIVE, u("RIGHT"), u("LEFT"), u("RIGHT")),
+                        settling(u("DONE"), "done", DIRECTIVE, u("LEFT"), u("LEFT"), u("RIGHT")),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "a14-two-settlements-naming-two-winners",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
-                        settling("01DTWO", "dtwo", DIRECTIVE, "01RIGHT", "01LEFT", "01RIGHT"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        settling(u("DSTR"), "distribution", DIRECTIVE, u("LEFT"), u("LEFT"), u("RIGHT")),
+                        settling(u("DTWO"), "dtwo", DIRECTIVE, u("RIGHT"), u("LEFT"), u("RIGHT")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "overrides-naming-a-member-outside-the-compose",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01GHOST"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        settling(u("DSTR"), "distribution", DIRECTIVE, u("GHOST")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "overrides-naming-a-member-that-is-not-a-contestant",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01DSTR"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)));
+                        settling(u("DSTR"), "distribution", DIRECTIVE, u("DSTR")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)));
     }
 
     /** Who settles a sibling contest (#358): the distribution pack only. */
@@ -239,44 +240,44 @@ class CompositionGoldenTest {
         return List.of(
                 new Case(
                         "the-distribution-pack-settles",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        settling(u("DSTR"), "distribution", DIRECTIVE, u("LEFT"), u("LEFT"), u("RIGHT")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "a-member-of-the-distribution-does-not-settle",
-                        settling("01MEMB", "member", DIRECTIVE, "01LEFT"),
+                        settling(u("MEMB"), "member", DIRECTIVE, u("LEFT")),
                         pack(
-                                "01DSTR",
+                                u("DSTR"),
                                 "distribution",
                                 "1.0.0",
                                 PackLevel.ORG,
                                 List.of(
-                                        new PackDependency("01LEFT", ">=1.0"),
-                                        new PackDependency("01RIGHT", ">=1.0"),
-                                        new PackDependency("01MEMB", ">=1.0"))),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                                        new PackDependency(u("LEFT"), ">=1.0"),
+                                        new PackDependency(u("RIGHT"), ">=1.0"),
+                                        new PackDependency(u("MEMB"), ">=1.0"))),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "a-pack-that-does-not-depend-on-the-contestants-does-not-settle",
-                        settling("01UNRL", "unrelated", DIRECTIVE, "01LEFT"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        settling(u("UNRL"), "unrelated", DIRECTIVE, u("LEFT")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "a-member-beside-the-distribution-pack-is-refused",
-                        settling("01MEMB", "member", DIRECTIVE, "01RIGHT"),
-                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT", "01MEMB"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        settling(u("MEMB"), "member", DIRECTIVE, u("RIGHT")),
+                        settling(u("DSTR"), "distribution", DIRECTIVE, u("LEFT"), u("LEFT"), u("RIGHT"), u("MEMB")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "a-contestant-does-not-settle-its-own-contest",
-                        settlingRefiner("01LEFT", "left", DIRECTIVE, "01LEFT"),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)),
+                        settlingRefiner(u("LEFT"), "left", DIRECTIVE, u("LEFT")),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)),
                 new Case(
                         "two-distribution-packs-naming-one-winner",
-                        settling("01DSTR", "distribution", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
-                        settling("01DTWO", "dtwo", DIRECTIVE, "01LEFT", "01LEFT", "01RIGHT"),
-                        refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE)));
+                        settling(u("DSTR"), "distribution", DIRECTIVE, u("LEFT"), u("LEFT"), u("RIGHT")),
+                        settling(u("DTWO"), "dtwo", DIRECTIVE, u("LEFT"), u("LEFT"), u("RIGHT")),
+                        refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE)));
     }
 
     /** The reference refusals, and the refusals of a rooted compose. */
@@ -284,60 +285,60 @@ class CompositionGoldenTest {
         return List.of(
                 new Case(
                                 "qualified-reference-to-an-artifact-the-pack-does-not-hold",
-                                pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN),
-                                pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, depends("01WRI", ">=1.0")))
-                        .references("01REA", "writing::" + DIRECTIVE),
+                                pack(u("WRI"), "writing", "1.0.0", PackLevel.BUILT_IN),
+                                pack(u("REA"), "reader", "1.0.0", PackLevel.PROJECT, depends(u("WRI"), ">=1.0")))
+                        .references(u("REA"), "writing::" + DIRECTIVE),
                 new Case(
                                 "qualified-reference-to-a-pack-only-another-pack-depends-on",
-                                defining("01WRI", "writing", PackLevel.BUILT_IN, DIRECTIVE),
-                                pack("01REA", "reader", "1.0.0", PackLevel.PROJECT),
-                                pack("01OTH", "other", "1.0.0", PackLevel.PROJECT, depends("01WRI", ">=1.0")))
-                        .references("01REA", "writing::" + DIRECTIVE),
+                                defining(u("WRI"), "writing", PackLevel.BUILT_IN, DIRECTIVE),
+                                pack(u("REA"), "reader", "1.0.0", PackLevel.PROJECT),
+                                pack(u("OTH"), "other", "1.0.0", PackLevel.PROJECT, depends(u("WRI"), ">=1.0")))
+                        .references(u("REA"), "writing::" + DIRECTIVE),
                 new Case(
                                 "bare-reference-that-resolves-only-in-another-pack",
-                                defining("01WRI", "writing", PackLevel.BUILT_IN, "anti_pattern:big-ball-of-mud"),
-                                pack("01REA", "reader", "1.0.0", PackLevel.PROJECT))
-                        .references("01REA", "anti_pattern:big-ball-of-mud"),
+                                defining(u("WRI"), "writing", PackLevel.BUILT_IN, "anti_pattern:big-ball-of-mud"),
+                                pack(u("REA"), "reader", "1.0.0", PackLevel.PROJECT))
+                        .references(u("REA"), "anti_pattern:big-ball-of-mud"),
                 new Case(
                                 "qualified-reference-to-a-pack-outside-the-compose",
-                                pack("01REA", "reader", "1.0.0", PackLevel.PROJECT))
-                        .references("01REA", "writing::" + DIRECTIVE),
+                                pack(u("REA"), "reader", "1.0.0", PackLevel.PROJECT))
+                        .references(u("REA"), "writing::" + DIRECTIVE),
                 new Case(
                                 "rooted-parent-cycle",
-                                withParent("01FIRST", "first", "01SECOND"),
-                                withParent("01SECOND", "second", "01FIRST"),
+                                withParent(u("FIRST"), "first", u("SECOND")),
+                                withParent(u("SECOND"), "second", u("FIRST")),
                                 GAMMA)
-                        .rootedAt("01FIRST"),
+                        .rootedAt(u("FIRST")),
                 new Case(
                         "whole-compose-duplicate-pack-id",
                         ALPHA,
                         BETA,
                         GAMMA,
-                        configuredAs("twin", "01GAMMA", "gamma-twin")),
+                        configuredAs("twin", u("GAMMA"), "gamma-twin")),
                 new Case(
                         "whole-compose-duplicate-name",
                         ALPHA,
                         BETA,
                         GAMMA,
-                        pack("01OTHER", "gamma", "1.0.0", PackLevel.ORG)),
+                        pack(u("OTHER"), "gamma", "1.0.0", PackLevel.ORG)),
                 new Case(
                                 "rooted-missing-dependency",
-                                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, depends("01GONE", ">=1.0")),
+                                pack(u("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(u("GONE"), ">=1.0")),
                                 GAMMA)
-                        .rootedAt("01DEP"),
+                        .rootedAt(u("DEP")),
                 new Case(
                                 "rooted-duplicate-pack-id-inside-the-closure",
                                 ALPHA,
                                 BETA,
-                                configuredAs("beta-twin", "01BETA", "beta-twin"),
+                                configuredAs("beta-twin", u("BETA"), "beta-twin"),
                                 GAMMA)
-                        .rootedAt("01ALPHA"),
+                        .rootedAt(u("ALPHA")),
                 new Case(
                                 "rooted-dependency-cycle",
-                                pack("01FIRST", "first", "1.0.0", PackLevel.ORG, depends("01SECOND", ">=1.0")),
-                                pack("01SECOND", "second", "1.0.0", PackLevel.ORG, depends("01FIRST", ">=1.0")),
+                                pack(u("FIRST"), "first", "1.0.0", PackLevel.ORG, depends(u("SECOND"), ">=1.0")),
+                                pack(u("SECOND"), "second", "1.0.0", PackLevel.ORG, depends(u("FIRST"), ">=1.0")),
                                 GAMMA)
-                        .rootedAt("01FIRST"));
+                        .rootedAt(u("FIRST")));
     }
 
     /** The refused rows of the level matrix: a dependency or a parent further from built-in than the pack's own level. */
@@ -352,20 +353,20 @@ class CompositionGoldenTest {
                     }
                     PackUnderResolution ownPack = parentEdge
                             ? new PackUnderResolution(
-                                    configured("01OWN0", own),
+                                    configured(u("OWN0"), own),
                                     new PackDescriptor(
-                                            "01OWN0",
+                                            u("OWN0"),
                                             "1.0.0",
-                                            Optional.of("01TRGT"),
+                                            Optional.of(u("TRGT")),
                                             "own",
                                             Optional.of(own),
                                             Optional.empty()))
-                            : pack("01OWN0", "own", "1.0.0", own, depends("01TRGT", ">=1.0"));
+                            : pack(u("OWN0"), "own", "1.0.0", own, depends(u("TRGT"), ">=1.0"));
                     cases.add(new Case(
                             "level-violation-" + (parentEdge ? "parent" : "dependency") + "-" + own.token() + "-to-"
                                     + target.token(),
                             ownPack,
-                            pack("01TRGT", "target", "1.0.0", target)));
+                            pack(u("TRGT"), "target", "1.0.0", target)));
                 }
             }
         }
@@ -377,61 +378,61 @@ class CompositionGoldenTest {
         return List.of(
                 new Case(
                         "multi-cycle-and-unknown-dependency",
-                        pack("01AAA", "a", "1.0.0", PackLevel.ORG, depends("01BBB", ">=1.0")),
-                        pack("01BBB", "b", "1.0.0", PackLevel.ORG, depends("01AAA", ">=1.0")),
-                        pack("01CCC", "c", "1.0.0", PackLevel.ORG, depends("01GONE", ">=1.0"))),
+                        pack(u("AAA"), "a", "1.0.0", PackLevel.ORG, depends(u("BBB"), ">=1.0")),
+                        pack(u("BBB"), "b", "1.0.0", PackLevel.ORG, depends(u("AAA"), ">=1.0")),
+                        pack(u("CCC"), "c", "1.0.0", PackLevel.ORG, depends(u("GONE"), ">=1.0"))),
                 new Case(
                         "multi-name-conflict-and-sibling-contest",
-                        defining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                        defining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE),
-                        pack("01AAA", "shared-name", "1.0.0", PackLevel.ORG),
-                        pack("01BBB", "shared-name", "1.0.0", PackLevel.ORG)),
+                        defining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                        defining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE),
+                        pack(u("AAA"), "shared-name", "1.0.0", PackLevel.ORG),
+                        pack(u("BBB"), "shared-name", "1.0.0", PackLevel.ORG)),
                 new Case(
                                 "multi-preset-contest-and-unqualified-reference",
-                                defining("01LEFT", "left", PackLevel.ORG, "anti_pattern:big-ball-of-mud"),
-                                pack("01RIGHT", "right", "1.0.0", PackLevel.ORG))
-                        .presets("01LEFT", "team")
-                        .presets("01RIGHT", "team")
-                        .references("01RIGHT", "anti_pattern:big-ball-of-mud"),
+                                defining(u("LEFT"), "left", PackLevel.ORG, "anti_pattern:big-ball-of-mud"),
+                                pack(u("RIGHT"), "right", "1.0.0", PackLevel.ORG))
+                        .presets(u("LEFT"), "team")
+                        .presets(u("RIGHT"), "team")
+                        .references(u("RIGHT"), "anti_pattern:big-ball-of-mud"),
                 new Case(
                         "multi-duplicate-id-and-out-of-range",
-                        pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN),
+                        pack(u("BASE"), "base", "1.0.0", PackLevel.BUILT_IN),
                         new PackUnderResolution(
                                 configured("base-twin", PackLevel.BUILT_IN),
                                 new PackDescriptor(
-                                        "01BASE",
+                                        u("BASE"),
                                         "1.0.0",
                                         Optional.empty(),
                                         "base-twin",
                                         Optional.of(PackLevel.BUILT_IN),
                                         Optional.empty())),
-                        pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, depends("01BASE", ">=2.0"))),
+                        pack(u("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(u("BASE"), ">=2.0"))),
                 new Case(
                         "multi-level-violation-and-parent-unresolved",
-                        pack("01OWN0", "own", "1.0.0", PackLevel.BUILT_IN, depends("01TRGT", ">=1.0")),
-                        pack("01TRGT", "target", "1.0.0", PackLevel.PROJECT),
-                        withParent("01ORPH", "orphan", "01MISSING")),
+                        pack(u("OWN0"), "own", "1.0.0", PackLevel.BUILT_IN, depends(u("TRGT"), ">=1.0")),
+                        pack(u("TRGT"), "target", "1.0.0", PackLevel.PROJECT),
+                        withParent(u("ORPH"), "orphan", u("MISSING"))),
                 new Case(
                                 "multi-sibling-contest-and-case-only-mention",
-                                refining("01LEFT", "left", PackLevel.ORG, DIRECTIVE),
-                                refining("01RIGHT", "right", PackLevel.ORG, DIRECTIVE),
-                                defining("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001"))
-                        .mentions("01LEFT", "directive:directive_001"),
+                                refining(u("LEFT"), "left", PackLevel.ORG, DIRECTIVE),
+                                refining(u("RIGHT"), "right", PackLevel.ORG, DIRECTIVE),
+                                defining(u("HOLD"), "holder", PackLevel.ORG, "directive:DIRECTIVE_001"))
+                        .mentions(u("LEFT"), "directive:directive_001"),
                 new Case(
                                 "multi-unknown-dependency-and-missing-artifact",
-                                pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN),
-                                pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, depends("01WRI", ">=1.0")),
-                                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, depends("01GONE", ">=1.0")))
-                        .references("01REA", "writing::" + DIRECTIVE),
+                                pack(u("WRI"), "writing", "1.0.0", PackLevel.BUILT_IN),
+                                pack(u("REA"), "reader", "1.0.0", PackLevel.PROJECT, depends(u("WRI"), ">=1.0")),
+                                pack(u("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(u("GONE"), ">=1.0")))
+                        .references(u("REA"), "writing::" + DIRECTIVE),
                 new Case(
                                 "multi-unqualified-reference-preset-contest-and-case-only-mention",
-                                defining("01WRI", "writing", PackLevel.ORG, "anti_pattern:big-ball-of-mud"),
-                                defining("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001"),
-                                pack("01REA", "reader", "1.0.0", PackLevel.ORG))
-                        .references("01REA", "anti_pattern:big-ball-of-mud")
-                        .presets("01WRI", "team")
-                        .presets("01REA", "team")
-                        .mentions("01REA", "directive:directive_001"));
+                                defining(u("WRI"), "writing", PackLevel.ORG, "anti_pattern:big-ball-of-mud"),
+                                defining(u("HOLD"), "holder", PackLevel.ORG, "directive:DIRECTIVE_001"),
+                                pack(u("REA"), "reader", "1.0.0", PackLevel.ORG))
+                        .references(u("REA"), "anti_pattern:big-ball-of-mud")
+                        .presets(u("WRI"), "team")
+                        .presets(u("REA"), "team")
+                        .mentions(u("REA"), "directive:directive_001"));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -513,8 +514,8 @@ class CompositionGoldenTest {
             List<Map<String, Object>> packs = new ArrayList<>();
             for (RefusalPack pack : refusal.packs()) {
                 Map<String, Object> row = new LinkedHashMap<>();
-                row.put("descriptorPackId", pack.descriptorPackId());
-                row.put("packId", pack.packId());
+                row.put("descriptorPackId", pack.descriptorPackId().value());
+                row.put("packId", pack.packId().value());
                 row.put("name", pack.name());
                 packs.add(row);
             }
@@ -607,5 +608,10 @@ class CompositionGoldenTest {
                 configured(configuredId, PackLevel.ORG),
                 new PackDescriptor(
                         packId, "1.0.0", Optional.empty(), name, Optional.of(PackLevel.ORG), Optional.empty()));
+    }
+
+    /** A descriptor {@code pack_id} in the order-keeping fixture encoding ({@link FixtureUlids#ordered}). */
+    private static String u(String mnemonic) {
+        return FixtureUlids.ordered(mnemonic);
     }
 }

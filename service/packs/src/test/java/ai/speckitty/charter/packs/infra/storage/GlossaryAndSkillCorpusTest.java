@@ -33,6 +33,8 @@ class GlossaryAndSkillCorpusTest {
 
     private static final PackIdentifier PROBE = new PackIdentifier("probe");
 
+    private static final PackDirectory PROBE_DIRECTORY = PackDirectory.of(PROBE);
+
     private final SerializationStrategy yaml = new YamlSerializationStrategy();
 
     @TempDir
@@ -65,8 +67,8 @@ class GlossaryAndSkillCorpusTest {
             SkillDso source = skill(file);
             SkillDso back = SkillBinding.INSTANCE.toDso(SkillBinding.INSTANCE.toEntity(PROBE, source));
             Path pack = writeSkill(back);
-            Optional<SkillDso> reread =
-                    store(pack).readAll(PROBE, SkillBinding.INSTANCE).stream().findFirst();
+            Optional<SkillDso> reread = store(pack).readAll(PROBE_DIRECTORY, SkillBinding.INSTANCE).stream()
+                    .findFirst();
 
             MeaningOfTexts.adr0036()
                     .compareTexts(
@@ -212,7 +214,7 @@ class GlossaryAndSkillCorpusTest {
     private SkillDso skill(Path file) {
         Path directory = file.getParent();
         FilesystemPackStore store = new FilesystemPackStore(directory.getParent(), yaml);
-        PackIdentifier pack = new PackIdentifier(String.valueOf(directory.getFileName()));
+        PackDirectory pack = PackDirectory.of(directory);
         String id = file.getFileName().toString().replace(".skill.yaml", "");
         return store.readOne(pack, SkillBinding.INSTANCE, id)
                 .orElseThrow(() -> new AssertionError(file + " does not read with its body"));
@@ -222,7 +224,7 @@ class GlossaryAndSkillCorpusTest {
     private Path writeSkill(SkillDso dso) throws IOException {
         Path pack =
                 Files.createDirectories(Files.createTempDirectory(host, "w-").resolve(PROBE.value()));
-        store(pack).write(PROBE, SkillBinding.INSTANCE, dso);
+        store(pack).write(PROBE_DIRECTORY, SkillBinding.INSTANCE, dso);
         return pack;
     }
 

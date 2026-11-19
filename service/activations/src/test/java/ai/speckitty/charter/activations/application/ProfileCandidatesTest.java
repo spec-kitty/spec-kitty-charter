@@ -53,7 +53,7 @@ class ProfileCandidatesTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("org-base")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("org-base"))))
                                 .selected(ArtifactKind.AGENT_PROFILE, List.of("reviewer-renata", "reviewer-rita"))
                                 .build()
                                 .document())

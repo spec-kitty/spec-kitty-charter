@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -74,7 +75,7 @@ final class ImpactRelations {
     private final Map<PackIdentifier, PackUnderResolution> byConfigured = new HashMap<>();
     private final List<Edge> edges = new ArrayList<>();
     private final OfferingReadService.ComposedClosure composed;
-    private @Nullable Map<String, MutabilityPolicySource> scopedPolicies;
+    private @Nullable Map<PackUlid, MutabilityPolicySource> scopedPolicies;
 
     private ImpactRelations(OfferingReadService.ComposedClosure composed) {
         this.composed = composed;
@@ -186,7 +187,7 @@ final class ImpactRelations {
      * left out as it is by the write gate (B8).
      */
     private Optional<Violation> notPermitted() {
-        Map<String, MutabilityPolicySource> scoped = scoped();
+        Map<PackUlid, MutabilityPolicySource> scoped = scoped();
         Map<PackIdentifier, PerPackPolicy> judging = new HashMap<>();
         for (Edge edge : edges) {
             if (!edge.is(RelationType.OVERRIDES) || edge.target().isEmpty()) {
@@ -223,7 +224,7 @@ final class ImpactRelations {
     }
 
     /** Each closure pack's policy, scoped to what it and the packs it builds on hold (A15), read once. */
-    private Map<String, MutabilityPolicySource> scoped() {
+    private Map<PackUlid, MutabilityPolicySource> scoped() {
         if (scopedPolicies == null) {
             scopedPolicies = PackMutabilityPolicy.scopedPolicies(
                     packs, member -> composed.factsOf(member).policy());
@@ -231,9 +232,9 @@ final class ImpactRelations {
         return scopedPolicies;
     }
 
-    private PerPackPolicy judgedWithout(PackIdentifier pack, Map<String, MutabilityPolicySource> scoped) {
-        Map<String, MutabilityPolicySource> others = new LinkedHashMap<>(scoped);
-        others.remove(packOf(pack).descriptor().packId());
+    private PerPackPolicy judgedWithout(PackIdentifier pack, Map<PackUlid, MutabilityPolicySource> scoped) {
+        Map<PackUlid, MutabilityPolicySource> others = new LinkedHashMap<>(scoped);
+        others.remove(packOf(pack).descriptorId());
         return new PerPackPolicy(others);
     }
 
@@ -250,13 +251,11 @@ final class ImpactRelations {
     }
 
     private static String along(PerPackPolicy.Level level) {
-        return level.setBy().map(setBy -> " by the pack " + setBy).orElse("");
+        return level.setBy().map(setBy -> " by the pack " + setBy.value()).orElse("");
     }
 
-    private Optional<PackUnderResolution> byDescriptorPackId(String packId) {
-        return packs.stream()
-                .filter(pack -> pack.descriptor().packId().equals(packId))
-                .findFirst();
+    private Optional<PackUnderResolution> byDescriptorPackId(PackUlid packId) {
+        return packs.stream().filter(pack -> pack.descriptorId().equals(packId)).findFirst();
     }
 
     // ---- C28 and A8 ---------------------------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CostTier;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -80,12 +81,12 @@ import org.jspecify.annotations.Nullable;
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
         Map<ArtifactKind, Set<String>> heldIds,
-        Map<Urn, String> holderOf,
+        Map<Urn, PackUlid> holderOf,
         RequiredFloor floor,
         PerPackPolicy policy,
-        List<String> closurePackIds,
+        List<PackUlid> closurePackIds,
         List<HeldPreset> heldPresets,
-        Map<String, String> parents,
+        Map<PackUlid, PackUlid> parents,
         String fingerprint,
         EdgeIndex edges,
         MergeInputs mergeInputs,
@@ -362,7 +363,7 @@ public record ClosureView(
             Map<Urn, Set<Urn>> enhances = new LinkedHashMap<>();
             Map<Urn, Urn> derived = new LinkedHashMap<>();
             closure.winners().forEach((urn, winner) -> {
-                List<Relationship> written = edges.inPack(new PackIdentifier(winner.descriptorPackId()))
+                List<Relationship> written = edges.inPack(winner.descriptorPackId())
                         .resolve(urn)
                         .map(CharterArtifact::derivedRelationships)
                         .orElse(List.of());
@@ -404,7 +405,7 @@ public record ClosureView(
      * @param preset the preset
      * @param descriptorPackId the descriptor {@code pack_id} of the holding pack
      */
-    public record HeldPreset(Preset preset, String descriptorPackId) {
+    public record HeldPreset(Preset preset, PackUlid descriptorPackId) {
 
         /**
          * Checks the fields.
@@ -467,12 +468,12 @@ public record ClosureView(
     public ClosureView(
             List<OfferingReadService.OfferingEntry> packs,
             Map<ArtifactKind, Set<String>> heldIds,
-            Map<Urn, String> holderOf,
+            Map<Urn, PackUlid> holderOf,
             RequiredFloor floor,
             PerPackPolicy policy,
-            List<String> closurePackIds,
+            List<PackUlid> closurePackIds,
             List<HeldPreset> heldPresets,
-            Map<String, String> parents,
+            Map<PackUlid, PackUlid> parents,
             String fingerprint,
             EdgeIndex edges,
             MergeInputs mergeInputs) {
@@ -508,12 +509,12 @@ public record ClosureView(
     public ClosureView(
             List<OfferingReadService.OfferingEntry> packs,
             Map<ArtifactKind, Set<String>> heldIds,
-            Map<Urn, String> holderOf,
+            Map<Urn, PackUlid> holderOf,
             RequiredFloor floor,
             PerPackPolicy policy,
-            List<String> closurePackIds,
+            List<PackUlid> closurePackIds,
             List<HeldPreset> heldPresets,
-            Map<String, String> parents,
+            Map<PackUlid, PackUlid> parents,
             String fingerprint,
             EdgeIndex edges) {
         this(
@@ -546,12 +547,12 @@ public record ClosureView(
     public ClosureView(
             List<OfferingReadService.OfferingEntry> packs,
             Map<ArtifactKind, Set<String>> heldIds,
-            Map<Urn, String> holderOf,
+            Map<Urn, PackUlid> holderOf,
             RequiredFloor floor,
             PerPackPolicy policy,
-            List<String> closurePackIds,
+            List<PackUlid> closurePackIds,
             List<HeldPreset> heldPresets,
-            Map<String, String> parents,
+            Map<PackUlid, PackUlid> parents,
             String fingerprint) {
         this(
                 packs,
@@ -647,14 +648,7 @@ public record ClosureView(
                 missing.detail(pack -> Optional.ofNullable(byId.get(pack))
                         .map(held -> held.descriptor().name())
                         .orElse(pack.value())),
-                missing.packs().stream()
-                        .map(pack -> Optional.ofNullable(byId.get(pack))
-                                .map(held -> new RefusalPack(
-                                        held.descriptor().packId(),
-                                        pack.value(),
-                                        held.descriptor().name()))
-                                .orElseGet(() -> new RefusalPack(pack.value(), pack.value(), pack.value())))
-                        .toList());
+                missing.packs().stream().map(this::refusalPack).toList());
     }
 
     /**
@@ -871,8 +865,8 @@ public record ClosureView(
             List<ProfileEnhancementGateway.Enhancing> enhancing =
                     enhancers.getOrDefault(profile.urn(), List.of()).stream()
                             .filter(enhancer -> inForce.test(enhancer.urn()))
-                            .map(enhancer -> new ProfileEnhancementGateway.Enhancing(
-                                    profileOf(enhancer), enhancer.packId().value()))
+                            .map(enhancer ->
+                                    new ProfileEnhancementGateway.Enhancing(profileOf(enhancer), enhancer.packId()))
                             .toList();
             chain.add(new ProfileEnhancementGateway.Layer(profileOf(profile), enhancing));
         }
@@ -883,7 +877,7 @@ public record ClosureView(
                 throw new CharterRefusal(
                         RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
                         dropped.detail(),
-                        List.of(refusalPack(new PackIdentifier(dropped.pack()))));
+                        List.of(refusalPack(dropped.pack())));
         };
     }
 
@@ -915,16 +909,21 @@ public record ClosureView(
                         "pack `" + winner.packId().value() + "` holds " + winner.urn() + " and cannot read it"));
     }
 
-    /** A refusal's pack: its descriptor id and name, as the closure composed it. */
+    /**
+     * A refusal's pack: its descriptor id and name, as the closure composed it. Every pack the merge names (a winner's,
+     * an enhancer's, a slot's) is a pack of the closure, so the refusal names the pack the closure holds and never one
+     * it does not.
+     *
+     * @throws IllegalStateException when no pack of the closure is registered under {@code pack}
+     */
     private RefusalPack refusalPack(PackIdentifier pack) {
         return mergeInputs.packs().stream()
                 .filter(held -> held.configured().id().equals(pack))
                 .findFirst()
                 .map(held -> new RefusalPack(
-                        held.descriptor().packId(),
-                        pack.value(),
-                        held.descriptor().name()))
-                .orElseGet(() -> new RefusalPack(pack.value(), pack.value(), pack.value()));
+                        held.descriptorId(), pack, held.descriptor().name()))
+                .orElseThrow(() -> new IllegalStateException(
+                        "pack " + pack.value() + " is named by the merge but is not a pack of the closure"));
     }
 
     /**
@@ -1100,7 +1099,7 @@ public record ClosureView(
      * @param descriptorPackId the pack's descriptor {@code pack_id}
      * @return the parent's descriptor {@code pack_id}; empty for a pack that extends none
      */
-    public Optional<String> parentOf(String descriptorPackId) {
+    public Optional<PackUlid> parentOf(PackUlid descriptorPackId) {
         return Optional.ofNullable(parents.get(descriptorPackId));
     }
 

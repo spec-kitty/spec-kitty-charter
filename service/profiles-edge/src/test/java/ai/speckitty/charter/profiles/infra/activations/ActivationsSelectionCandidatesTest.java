@@ -17,6 +17,7 @@ import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.profiles.application.SelectionCandidates;
 import ai.speckitty.charter.profiles.domain.selection.Candidates;
@@ -50,7 +51,7 @@ class ActivationsSelectionCandidatesTest {
         StoredActivation stored = StoredActivation.of(
                 ID,
                 ActivationDocument.builder()
-                        .packs(List.of(PackRef.of("project")))
+                        .packs(List.of(PackRef.of(new PackIdentifier("project"))))
                         .build()
                         .document());
         return new EffectiveReadService.SelectionRead(

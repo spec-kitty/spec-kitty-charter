@@ -30,7 +30,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("A loaded pack's edges come from its graph document; no artifact derives one (ADR-0064)")
 class ProcedureEdgesTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPR0CEDVREEDGES000A");
+    private static final PackIdentifier PACK = new PackIdentifier("edges-pack");
 
     @Test
     @DisplayName("the edge port answers the graph document's edges in order, and every artifact derives none")

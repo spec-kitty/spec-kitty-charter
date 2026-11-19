@@ -13,6 +13,7 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RequiringPack;
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ class DocumentRulesOverrideTest {
             .build();
 
     private static final ActivationDocument EMPTY = ActivationDocument.builder()
-            .packs(List.of(PackRef.of("main")))
+            .packs(List.of(PackRef.of(new PackIdentifier("main"))))
             .build()
             .document();
 
@@ -111,7 +112,7 @@ class DocumentRulesOverrideTest {
     }
 
     private static ActivationDocument.Builder document() {
-        return ActivationDocument.builder().packs(List.of(PackRef.of("main")));
+        return ActivationDocument.builder().packs(List.of(PackRef.of(new PackIdentifier("main"))));
     }
 
     private static CharterRefusal refused(Optional<CharterRefusal> refusal, RefusalCode code) {
@@ -343,7 +344,7 @@ class DocumentRulesOverrideTest {
     void theQueryTheFactsAreAskedCarriesTheLanguageFilterAndThePinsOfTheStoredDocument() {
         Facts facts = new Facts().satisfied(T, F);
         ActivationDocument document = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("main", "1.0.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("main"), "1.0.0")))
                 .languages(List.of("java"))
                 .selected(DIRECTIVE, List.of("F"))
                 .deactivated(DIRECTIVE, List.of("T"))

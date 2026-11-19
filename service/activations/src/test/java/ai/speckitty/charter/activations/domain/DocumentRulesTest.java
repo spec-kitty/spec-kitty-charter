@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RequiringPack;
@@ -44,7 +45,9 @@ class DocumentRulesTest {
     @Test
     void aDocumentThatNamesOnlyWhatTheClosureHoldsPasses() {
         ActivationDocument document = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("org-a", "2.1.0"), PackRef.of("built-in")))
+                .packs(List.of(
+                        PackRef.pinned(new PackIdentifier("org-a"), "2.1.0"),
+                        PackRef.of(new PackIdentifier("built-in"))))
                 .selected(DIRECTIVE, List.of("D1", "D3"))
                 .deactivated(TACTIC, List.of("T1"))
                 .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
@@ -140,20 +143,24 @@ class DocumentRulesTest {
 
     @Test
     void packsMustBeConfiguredOnceAndPinnedToTheHeldVersion() {
-        assertThat(violations(ActivationDocument.builder().packs(List.of(PackRef.of("zeta")))))
+        assertThat(violations(ActivationDocument.builder().packs(List.of(PackRef.of(new PackIdentifier("zeta"))))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/0/packId", "unknown_pack"));
-        assertThat(violations(ActivationDocument.builder().packs(List.of(PackRef.of("org-a"), PackRef.of("org-a")))))
+        assertThat(violations(ActivationDocument.builder()
+                        .packs(List.of(
+                                PackRef.of(new PackIdentifier("org-a")), PackRef.of(new PackIdentifier("org-a"))))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/1/packId", "duplicate_pack"));
-        assertThat(violations(ActivationDocument.builder().packs(List.of(PackRef.pinned("org-a", "2.0.0")))))
+        assertThat(violations(ActivationDocument.builder()
+                        .packs(List.of(PackRef.pinned(new PackIdentifier("org-a"), "2.0.0")))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/0/version", "version_not_held"));
     }
 
     @Test
     void aVersionPinOtherThanTheHeldOneIsAnInvalidDocumentTellingTheHeldAndThePinnedVersion() {
-        CharterRefusal refusal = refusal(ActivationDocument.builder().packs(List.of(PackRef.pinned("org-a", "2.0.0"))));
+        CharterRefusal refusal = refusal(
+                ActivationDocument.builder().packs(List.of(PackRef.pinned(new PackIdentifier("org-a"), "2.0.0"))));
 
         assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
         assertThat(refusal.violations())
@@ -185,17 +192,17 @@ class DocumentRulesTest {
                 .deactivated(DIRECTIVE, List.of("D1"))
                 .deactivated(TACTIC, List.of())
                 .packs(List.of(
-                        PackRef.of("p2"),
-                        PackRef.of("p3"),
-                        PackRef.of("p4"),
-                        PackRef.of("p5"),
-                        PackRef.of("p6"),
-                        PackRef.of("p7"),
-                        PackRef.of("p8"),
-                        PackRef.of("p9"),
-                        PackRef.of("p10"),
-                        PackRef.of("p11"),
-                        PackRef.of("p2")))
+                        PackRef.of(new PackIdentifier("p2")),
+                        PackRef.of(new PackIdentifier("p3")),
+                        PackRef.of(new PackIdentifier("p4")),
+                        PackRef.of(new PackIdentifier("p5")),
+                        PackRef.of(new PackIdentifier("p6")),
+                        PackRef.of(new PackIdentifier("p7")),
+                        PackRef.of(new PackIdentifier("p8")),
+                        PackRef.of(new PackIdentifier("p9")),
+                        PackRef.of(new PackIdentifier("p10")),
+                        PackRef.of(new PackIdentifier("p11")),
+                        PackRef.of(new PackIdentifier("p2"))))
                 .selected(ArtifactKind.TEMPLATE, List.of("T"));
 
         assertThat(violations(builder))
@@ -242,7 +249,10 @@ class DocumentRulesTest {
     @Test
     void aDuplicatePackThenAnUnknownPackHaveDistinctPointers() {
         assertThat(violations(ActivationDocument.builder()
-                        .packs(List.of(PackRef.of("org-a"), PackRef.of("org-a"), PackRef.of("zeta")))))
+                        .packs(List.of(
+                                PackRef.of(new PackIdentifier("org-a")),
+                                PackRef.of(new PackIdentifier("org-a")),
+                                PackRef.of(new PackIdentifier("zeta"))))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/1/packId", "duplicate_pack"), tuple("/packs/2/packId", "unknown_pack"));
     }
@@ -251,9 +261,9 @@ class DocumentRulesTest {
     void aDuplicatePackThenAMismatchedPinPointAtTheirOwnPositions() {
         assertThat(violations(ActivationDocument.builder()
                         .packs(List.of(
-                                PackRef.of("org-a"),
-                                PackRef.pinned("org-a", "9.9.9"),
-                                PackRef.pinned("built-in", "0.1")))))
+                                PackRef.of(new PackIdentifier("org-a")),
+                                PackRef.pinned(new PackIdentifier("org-a"), "9.9.9"),
+                                PackRef.pinned(new PackIdentifier("built-in"), "0.1")))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(
                         tuple("/packs/1/packId", "duplicate_pack"), tuple("/packs/2/version", "version_not_held"));
@@ -451,7 +461,7 @@ class DocumentRulesTest {
     @Test
     void b1ACreateRefusesAPinNoPackHoldsAndAReplaceOfTheSameBodyDoesNot() {
         ActivationDocument.Built body = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("org-a", "2.0.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("org-a"), "2.0.0")))
                 .build();
 
         assertThat(DocumentRules.check(body, CLOSURE, InForceFacts.NONE)
@@ -468,7 +478,7 @@ class DocumentRulesTest {
     @Test
     void aReplaceStillRefusesAnUnknownPack() {
         ActivationDocument.Built body = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("zeta", "1.0.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("zeta"), "1.0.0")))
                 .build();
 
         assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE, InForceFacts.NONE)
@@ -526,7 +536,10 @@ class DocumentRulesTest {
 
     private static CharterRefusal denying(String id, String... packs) {
         ActivationDocument.Built built = ActivationDocument.builder()
-                .packs(Arrays.stream(packs).map(PackRef::of).toList())
+                .packs(Arrays.stream(packs)
+                        .map(PackIdentifier::new)
+                        .map(PackRef::of)
+                        .toList())
                 .deactivated(DIRECTIVE, List.of(id))
                 .build();
         return DocumentRules.check(built, EXTENDED, InForceFacts.NONE).orElseThrow();

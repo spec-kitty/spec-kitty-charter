@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.web.ProblemHandler;
 import ai.speckitty.charter.web.ProblemJson;
 import ai.speckitty.charter.web.RefusalHandler;
@@ -74,7 +75,7 @@ class OfferingControllerTest {
             @Override
             public Optional<PackDescriptor> find(PackIdentifier pack) {
                 return Optional.of(new PackDescriptor(
-                        pack.value(),
+                        FixtureUlids.of(pack.value()),
                         version,
                         Optional.empty(),
                         pack.value() + " pack",

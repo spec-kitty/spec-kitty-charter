@@ -54,7 +54,8 @@ class AgentProfileEnhancementsTest {
 
         ProfileEnhancementGateway.Composed composed = AgentProfileEnhancements.INSTANCE.compose(List.of(
                 new ProfileEnhancementGateway.Layer(
-                        root, List.of(new ProfileEnhancementGateway.Enhancing(rootEnhancer, "org"))),
+                        root,
+                        List.of(new ProfileEnhancementGateway.Enhancing(rootEnhancer, new PackIdentifier("org")))),
                 new ProfileEnhancementGateway.Layer(leaf, List.of())));
 
         assertThat(composed).isInstanceOf(ProfileEnhancementGateway.Effective.class);
@@ -89,12 +90,12 @@ class AgentProfileEnhancementsTest {
 
         ProfileEnhancementGateway.Composed composed = AgentProfileEnhancements.INSTANCE.compose(List.of(
                 new ProfileEnhancementGateway.Layer(
-                        root, List.of(new ProfileEnhancementGateway.Enhancing(dropping, "team"))),
+                        root, List.of(new ProfileEnhancementGateway.Enhancing(dropping, new PackIdentifier("team")))),
                 new ProfileEnhancementGateway.Layer(leaf, List.of())));
 
         assertThat(composed).isInstanceOf(ProfileEnhancementGateway.Dropped.class);
         ProfileEnhancementGateway.Dropped dropped = (ProfileEnhancementGateway.Dropped) composed;
-        assertThat(dropped.pack()).isEqualTo("team");
+        assertThat(dropped.pack()).isEqualTo(new PackIdentifier("team"));
         assertThat(dropped.field()).isEqualTo("specialization");
         assertThat(dropped.detail()).contains("root-team", "team", "root", "specialization");
     }

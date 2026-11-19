@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
@@ -46,25 +47,26 @@ public final class InboundReferences {
     /**
      * One thing that still refers to a removed artifact.
      *
-     * @param pack the configured identifier of the pack that holds the referrer
+     * @param pack the registered id of the pack that holds the referrer
      * @param descriptorPackId the {@code pack_id} that pack's descriptor declares
      * @param name that pack's name
      * @param referrer what refers: an artifact URN, {@code preset:<id>} or {@code overrides:<artifact>}
      * @param removed the removed artifact it refers to
      */
-    public record Referrer(PackIdentifier pack, String descriptorPackId, String name, String referrer, Urn removed) {}
+    public record Referrer(PackIdentifier pack, PackUlid descriptorPackId, String name, String referrer, Urn removed) {}
 
     /**
      * The staged tree standing in for the stored pack.
      *
-     * @param replacing the configured identifier of the stored pack the tree replaces; empty for a new pack
+     * @param packId the registered id the tree is staged under: the id of the stored pack it replaces, or the id a new
+     *     pack is uploaded under
      * @param replacedName the name the stored pack had, which other packs may have qualified a reference with, since a
      *     replace can rename the pack; empty for a new pack
      * @param descriptor the staged pack's descriptor
      * @param facts the staged pack's composition facts
      */
     public record StagedTree(
-            Optional<PackIdentifier> replacing,
+            PackIdentifier packId,
             Optional<String> replacedName,
             PackDescriptor descriptor,
             PackCompositionFacts facts) {}
@@ -107,8 +109,7 @@ public final class InboundReferences {
                                 + ", which the " + removedBy + " removes."))
                 .toList();
         List<RefusalPack> packs = referrers.stream()
-                .map(referrer -> new RefusalPack(
-                        referrer.descriptorPackId(), referrer.pack().value(), referrer.name()))
+                .map(referrer -> new RefusalPack(referrer.descriptorPackId(), referrer.pack(), referrer.name()))
                 .distinct()
                 .toList();
         return CharterRefusal.withPacksAndViolations(RefusalCode.ARTIFACT_REFERENCED, detail, packs, violations);
@@ -202,17 +203,18 @@ public final class InboundReferences {
                 .toList();
     }
 
-    /** The configured packs but the one the tree replaces, which the tree stands for, and the tree. */
+    /**
+     * The configured packs but the one the tree replaces, which the tree stands for, and the tree, under the id it is
+     * staged under.
+     */
     private static List<Member> membersOf(StagedPackViews.View stored, StagedTree staged) {
         List<Member> members = new ArrayList<>();
         for (ConfiguredPack configured : stored.catalog().configured()) {
-            if (!staged.replacing().filter(configured.id()::equals).isPresent()) {
+            if (!configured.id().equals(staged.packId())) {
                 readMember(stored, configured).ifPresent(members::add);
             }
         }
-        PackIdentifier id = staged.replacing()
-                .orElseGet(() -> new PackIdentifier(staged.descriptor().name()));
-        members.add(new Member(id, staged.descriptor(), staged.facts(), true));
+        members.add(new Member(staged.packId(), staged.descriptor(), staged.facts(), true));
         return members;
     }
 
@@ -244,7 +246,7 @@ public final class InboundReferences {
             if (hit.isPresent() && !sourceRemoved) {
                 out.add(new Referrer(
                         member.id(),
-                        member.descriptor().packId(),
+                        new PackUlid(member.descriptor().packId()),
                         member.descriptor().name(),
                         reference.label(),
                         hit.get()));

@@ -87,7 +87,7 @@ class ActivationsEffectiveProfilesTest {
         StoredActivation stored = StoredActivation.of(
                 ID,
                 ActivationDocument.builder()
-                        .packs(List.of(PackRef.of("main")))
+                        .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                         .build()
                         .document());
         return new EffectiveArtifactAnswer(stored, "sha256:source", "sha256:closure", winner, artifact, governance);

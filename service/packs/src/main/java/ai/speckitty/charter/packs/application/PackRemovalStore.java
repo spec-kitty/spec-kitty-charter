@@ -136,7 +136,7 @@ public interface PackRemovalStore extends PackRevisions {
     }
 
     /**
-     * The name a pack is configured under, for a pack addressed by its name or by the {@code pack_id} it declares.
+     * The name a pack is configured under, for a pack addressed by its registered id.
      *
      * @param pack the pack's identity
      * @return the configured name

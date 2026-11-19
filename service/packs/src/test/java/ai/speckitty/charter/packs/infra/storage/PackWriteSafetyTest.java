@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 /** NFR-003: a write is atomic and stays inside the pack. (Create-or-replace by id: {@link TacticSaveContractTest}.) */
 class PackWriteSafetyTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+    private static final PackDirectory PACK = new PackDirectory("pack-a");
 
     private static TacticDso tactic(String id, String name) {
         return new TacticDso(
@@ -99,19 +98,15 @@ class PackWriteSafetyTest {
         assertThat(Files.readString(pack.resolve(ALPHA_FILE))).contains("Written in root");
     }
 
-    /** An identifier that climbs out of the storage root is refused; a plain one resolves (the control). */
+    /** A plain directory name resolves directly under the storage root; a name that is no one segment is no key. */
     @Test
-    void anIdentifierOutsideTheStorageRootIsRefusedWhileAPlainOneResolves(@TempDir Path host) throws IOException {
+    void aPlainDirectoryNameResolvesUnderTheStorageRoot(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host);
         FilesystemPackStore store = store(host);
 
-        assertThatThrownBy(() -> store.directoryOf(new PackIdentifier("../elsewhere")))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
-        assertThatThrownBy(() -> store.directoryOf(new PackIdentifier("a/b")))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThat(store.directoryOf(PACK))
                 .isEqualTo(host.toAbsolutePath().normalize().resolve("pack-a"));
+        assertThatThrownBy(() -> new PackDirectory("../elsewhere")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new PackDirectory("a/b")).isInstanceOf(IllegalArgumentException.class);
     }
 }

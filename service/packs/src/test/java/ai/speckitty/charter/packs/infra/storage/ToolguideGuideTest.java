@@ -53,6 +53,7 @@ class ToolguideGuideTest {
 
     private static final String PACK = "toolguide";
     private static final PackIdentifier PACK_ID = new PackIdentifier(PACK);
+    private static final PackDirectory PACK_DIRECTORY = PackDirectory.of(PACK_ID);
     private static final String ID = "git-agent-commit-signing";
     private static final String TITLE = "Git Agent Commit Signing";
     private static final String TOOLGUIDE_FILE = "toolguides/" + ID + ".toolguide.yaml";
@@ -104,7 +105,7 @@ class ToolguideGuideTest {
         String source = Files.readString(pack.resolve(GUIDE_FILE));
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
 
-        FilesystemPackStore.PackRead read = store.read(PACK_ID, List.of(ToolguideBinding.INSTANCE));
+        FilesystemPackStore.PackRead read = store.read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE));
 
         assertThat(read.violations()).isEmpty();
         ToolguideDso dso = read.dsos(ToolguideBinding.INSTANCE).getFirst();
@@ -130,7 +131,7 @@ class ToolguideGuideTest {
                 .isEqualTo(dso);
 
         Files.delete(pack.resolve(GUIDE_FILE));
-        store.write(PACK_ID, ToolguideBinding.INSTANCE, ToolguideBinding.INSTANCE.toDso(toolguide));
+        store.write(PACK_DIRECTORY, ToolguideBinding.INSTANCE, ToolguideBinding.INSTANCE.toDso(toolguide));
 
         assertThat(pack.resolve(GUIDE_FILE)).hasContent(source);
     }
@@ -337,7 +338,7 @@ class ToolguideGuideTest {
         Files.delete(pack.resolve(GUIDE_FILE));
 
         FilesystemPackStore.PackRead read =
-                new FilesystemPackStore(host, strategy).read(PACK_ID, List.of(ToolguideBinding.INSTANCE));
+                new FilesystemPackStore(host, strategy).read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE));
 
         assertThat(read.dsos(ToolguideBinding.INSTANCE)).isEmpty();
         assertThat(read.violations())
@@ -351,7 +352,7 @@ class ToolguideGuideTest {
         Files.writeString(pack.resolve(GUIDE_FILE), "# " + TITLE + "\n\nRead this first.\n\n## Overview\n\nO.\n");
 
         FilesystemPackStore.PackRead read =
-                new FilesystemPackStore(host, strategy).read(PACK_ID, List.of(ToolguideBinding.INSTANCE));
+                new FilesystemPackStore(host, strategy).read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE));
 
         assertThat(read.violations())
                 .containsExactly(new PackElementViolation(
@@ -410,7 +411,7 @@ class ToolguideGuideTest {
         // the stored guide keeps an H1 the title cannot equal.
         PackFixtures.copyOf(PACK, host);
         ToolguideDso read = new FilesystemPackStore(host, strategy)
-                .read(PACK_ID, List.of(ToolguideBinding.INSTANCE))
+                .read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE))
                 .dsos(ToolguideBinding.INSTANCE)
                 .getFirst();
         MarkdownDocument guide = read.guide().orElseThrow();
@@ -444,14 +445,14 @@ class ToolguideGuideTest {
     void aStructureBreachIsRefusedOnWrite() throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         ToolguideDso read = new FilesystemPackStore(host, strategy)
-                .readAll(PACK_ID, ToolguideBinding.INSTANCE)
+                .readAll(PACK_DIRECTORY, ToolguideBinding.INSTANCE)
                 .getFirst();
         ToolguideDso withPreamble =
                 read.withGuide(Optional.of(document("# " + TITLE + "\n\nP.\n\n## Overview\n\nO.\n")));
         String before = Files.readString(pack.resolve(GUIDE_FILE));
 
-        assertThatThrownBy(() ->
-                        new FilesystemPackStore(host, strategy).write(PACK_ID, ToolguideBinding.INSTANCE, withPreamble))
+        assertThatThrownBy(() -> new FilesystemPackStore(host, strategy)
+                        .write(PACK_DIRECTORY, ToolguideBinding.INSTANCE, withPreamble))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
@@ -470,7 +471,7 @@ class ToolguideGuideTest {
         for (String path : List.of("../" + GUIDE, "Git-agent-commit-signing.guide.md", "../x.guide.md")) {
             Files.writeString(
                     pack.resolve(TOOLGUIDE_FILE), yaml.replace("guide_path: " + GUIDE, "guide_path: " + path));
-            FilesystemPackStore.PackRead read = store.read(PACK_ID, List.of(ToolguideBinding.INSTANCE));
+            FilesystemPackStore.PackRead read = store.read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE));
             assertThat(read.dsos(ToolguideBinding.INSTANCE)).as(path).isEmpty();
             assertThat(read.violations())
                     .as(path)
@@ -478,7 +479,8 @@ class ToolguideGuideTest {
                     .containsExactly(TOOLGUIDE_FILE);
         }
         Files.writeString(pack.resolve(TOOLGUIDE_FILE), yaml);
-        assertThat(store.read(PACK_ID, List.of(ToolguideBinding.INSTANCE)).violations())
+        assertThat(store.read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE))
+                        .violations())
                 .as("the sanitized name beside the toolguide")
                 .isEmpty();
         Path packDir = pack.toAbsolutePath().normalize();
@@ -514,13 +516,15 @@ class ToolguideGuideTest {
         List<KindBinding<?, ?>> kinds = List.of(ToolguideBinding.INSTANCE, SkillBinding.INSTANCE);
 
         Files.writeString(pack.resolve("skills/s.skill.yaml"), skill("s.md"));
-        assertThat(store.read(PACK_ID, kinds).violations()).as("distinct names").isEmpty();
+        assertThat(store.read(PACK_DIRECTORY, kinds).violations())
+                .as("distinct names")
+                .isEmpty();
 
         Files.writeString(
                 pack.resolve("skills/s.skill.yaml"),
                 skill("../toolguides/" + ID.toUpperCase(java.util.Locale.ROOT) + ".GUIDE.MD"));
         // #272: the path is classified case-folded, so the guide's rule owns it, as it owns the exact name.
-        assertThat(store.read(PACK_ID, kinds).violations())
+        assertThat(store.read(PACK_DIRECTORY, kinds).violations())
                 .singleElement()
                 .satisfies(violation -> assertThat(violation.reason())
                         .isEqualTo("../toolguides/" + ID.toUpperCase(java.util.Locale.ROOT) + ".GUIDE.MD: is a pack"

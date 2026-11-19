@@ -459,8 +459,7 @@ class PromptSlotSurfacesTest {
     private List<PromptSlots.Slot> slotsOfTheStoredDocument(Pack pack, String raw) throws IOException {
         plan(pack, raw);
         FilesystemPackStore files = new FilesystemPackStore(host, strategy);
-        MissionTypeDso dso = files.read(
-                        new PackIdentifier(pack.dir.getFileName().toString()))
+        MissionTypeDso dso = files.read(PackDirectory.of(pack.dir))
                 .dsos(MissionTypeBinding.INSTANCE)
                 .getFirst();
         return PromptSlots.parse(
@@ -473,7 +472,7 @@ class PromptSlotSurfacesTest {
     void theBuiltInPromptsAgreeOnTheLoadPath() throws IOException {
         Path packs = ExamplePacks.packsDirectory();
         List<MissionTypeDso> types = new FilesystemPackStore(packs, strategy)
-                .read(new PackIdentifier("built-in"), List.of(MissionTypeBinding.INSTANCE))
+                .read(new PackDirectory("built-in"), List.of(MissionTypeBinding.INSTANCE))
                 .dsos(MissionTypeBinding.INSTANCE);
         List<String> withSlots = new ArrayList<>();
         for (MissionTypeDso type : types) {

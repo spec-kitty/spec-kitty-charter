@@ -17,6 +17,7 @@ import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.List;
@@ -86,10 +87,11 @@ class ActivationServiceTest {
 
     @Test
     void createReadsTheClosureOfTheDocumentsPacks() {
-        service.create(
-                ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build());
+        service.create(ActivationDocument.builder()
+                .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
+                .build());
 
-        assertThat(packs.lastRoots()).contains(List.of("alpha"));
+        assertThat(packs.lastRoots()).contains(List.of(new PackIdentifier("alpha")));
         assertThat(packs.calls()).isEqualTo(1);
     }
 
@@ -478,7 +480,7 @@ class ActivationServiceTest {
     @Test
     void b1ACreateRefusesAPinNoPackHoldsAndAPutOfTheSameBodyDropsIt() {
         ActivationDocument.Built pinned = ActivationDocument.builder()
-                .packs(List.of(PackRef.pinned("alpha", "0.9.0")))
+                .packs(List.of(PackRef.pinned(new PackIdentifier("alpha"), "0.9.0")))
                 .selected(ArtifactKind.DIRECTIVE, List.of("D2"))
                 .build();
 
@@ -494,8 +496,8 @@ class ActivationServiceTest {
         ActivationService.Written written = service.put(ID, pinned, null, null);
 
         assertThat(written.created()).isTrue();
-        assertThat(written.droppedPins()).containsExactly(PackRef.pinned("alpha", "0.9.0"));
-        assertThat(written.stored().document().packs()).contains(List.of(PackRef.of("alpha")));
+        assertThat(written.droppedPins()).containsExactly(PackRef.pinned(new PackIdentifier("alpha"), "0.9.0"));
+        assertThat(written.stored().document().packs()).contains(List.of(PackRef.of(new PackIdentifier("alpha"))));
         assertThat(written.stored().document().selected(ArtifactKind.DIRECTIVE).orElseThrow())
                 .containsExactly("D2");
     }
@@ -505,7 +507,7 @@ class ActivationServiceTest {
         packs.answer(ClosureSnapshot.unresolved(Set.of("ghost")));
 
         ActivationDocument.Built built = ActivationDocument.builder()
-                .packs(List.of(PackRef.of("alpha"), PackRef.of("ghost")))
+                .packs(List.of(PackRef.of(new PackIdentifier("alpha")), PackRef.of(new PackIdentifier("ghost"))))
                 .build();
 
         assertThatThrownBy(() -> service.put(ID, built, null, null))
@@ -564,8 +566,9 @@ class ActivationServiceTest {
 
     @Test
     void packsAnswersTheClosureUnderATagOverTheRevisionAndTheFingerprint() {
-        StoredActivation current = stored(
-                ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build());
+        StoredActivation current = stored(ActivationDocument.builder()
+                .packs(List.of(PackRef.of(new PackIdentifier("alpha"))))
+                .build());
 
         ActivationService.Read<ClosureSnapshot> read = service.packs(ID, null);
 
@@ -577,7 +580,7 @@ class ActivationServiceTest {
                     .extracting(ClosureSnapshot.PackEntry::packId)
                     .containsExactly("alpha");
         });
-        assertThat(packs.lastRoots()).contains(List.of("alpha"));
+        assertThat(packs.lastRoots()).contains(List.of(new PackIdentifier("alpha")));
         assertThat(packs.calls()).isEqualTo(1);
     }
 
@@ -602,7 +605,9 @@ class ActivationServiceTest {
 
     @Test
     void packsOfADocumentWhosePackIsNoLongerConfiguredIsUnreadable() {
-        stored(ActivationDocument.builder().packs(List.of(PackRef.of("gone"))).build());
+        stored(ActivationDocument.builder()
+                .packs(List.of(PackRef.of(new PackIdentifier("gone"))))
+                .build());
         packs.answer(ClosureSnapshot.unresolved(Set.of("gone")));
 
         assertThatThrownBy(() -> service.packs(ID, null)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -634,12 +639,14 @@ class ActivationServiceTest {
     @Test
     void theRootsOfTheClosureAreTheDocumentsPacksInOrder() {
         stored(ActivationDocument.builder()
-                .packs(List.of(PackRef.of("beta"), PackRef.pinned("alpha", "1.0.0")))
+                .packs(List.of(
+                        PackRef.of(new PackIdentifier("beta")), PackRef.pinned(new PackIdentifier("alpha"), "1.0.0")))
                 .build());
 
         service.packs(ID, null);
 
-        assertThat(packs.lastRoots()).isEqualTo(Optional.of(List.of("beta", "alpha")));
+        assertThat(packs.lastRoots())
+                .isEqualTo(Optional.of(List.of(new PackIdentifier("beta"), new PackIdentifier("alpha"))));
     }
 
     // ---- C38: an activation write that would put an enhancement in force without its slot (squad A3)

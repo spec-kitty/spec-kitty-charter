@@ -8,6 +8,7 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
@@ -40,7 +41,8 @@ class FileActivationRepositoryFailureTest {
         List<PackRef> packs = new ArrayList<>();
         int count = 1 + random.nextInt(4);
         for (int i = 0; i < count; i++) {
-            packs.add(PackRef.pinned("pack-" + i + "-" + random.nextInt(1000), "1." + random.nextInt(50)));
+            packs.add(PackRef.pinned(
+                    new PackIdentifier("pack-" + i + "-" + random.nextInt(1000)), "1." + random.nextInt(50)));
         }
         List<ArtifactKind> kinds = Arrays.stream(ArtifactKind.values())
                 .filter(ArtifactKind::activatable)

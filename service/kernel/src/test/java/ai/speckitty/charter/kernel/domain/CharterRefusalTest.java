@@ -34,7 +34,8 @@ class CharterRefusalTest {
 
     @Test
     void aRefusalCanNameBothPacksAndViolations() {
-        RefusalPack referrer = new RefusalPack("01M6R0WP14AAAAAAAAAAAAAAAA", "other", "other-pack");
+        RefusalPack referrer =
+                new RefusalPack(new PackUlid("01M6R0WP14AAAAAAAAAAAAAAAA"), new PackIdentifier("other"), "other-pack");
         List<RefusalPack> packs = new ArrayList<>(List.of(referrer));
         List<RefusalViolation> violations = new ArrayList<>(List.of(UNKNOWN));
 
@@ -63,7 +64,8 @@ class CharterRefusalTest {
 
     @Test
     void theExistingConstructorsGiveEmptyLists() {
-        RefusalPack pack = new RefusalPack("01J0000000000000000000000A", "pack-a", "a");
+        RefusalPack pack =
+                new RefusalPack(new PackUlid("01J0000000000000000000000A"), new PackIdentifier("pack-a"), "a");
         List<CharterRefusal> refusals = List.of(
                 new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "d"),
                 new CharterRefusal(RefusalCode.PACK_NAME_CONFLICT, "d", List.of(pack)),

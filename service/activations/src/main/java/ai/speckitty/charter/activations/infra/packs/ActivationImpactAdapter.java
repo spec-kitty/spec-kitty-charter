@@ -4,7 +4,6 @@ import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
-import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.packs.application.ActivationImpact;
@@ -148,7 +147,7 @@ public class ActivationImpactAdapter implements ActivationImpact {
         return activation
                 .document()
                 .packs()
-                .map(packs -> packs.stream().map(PackRef::packId).toList());
+                .map(packs -> packs.stream().map(pack -> pack.packId().value()).toList());
     }
 
     private List<StoredActivation> stored() {

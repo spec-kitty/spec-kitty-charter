@@ -20,6 +20,7 @@ import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,7 +69,7 @@ class ActivationWriteWarningsTest {
                 .create(
                         ID,
                         ActivationDocument.builder()
-                                .packs(List.of(PackRef.of("main")))
+                                .packs(List.of(PackRef.of(new PackIdentifier("main"))))
                                 .build()
                                 .document())
                 .orElseThrow();

@@ -39,7 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class DoctrineRepositoryContractTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A");
+    private static final PackIdentifier PACK = new PackIdentifier("pack-a");
 
     private DomainRepositoryService service;
     private Path packDirectory;
