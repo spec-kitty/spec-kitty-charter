@@ -60,7 +60,7 @@ the relationship appear[s] in the domain, the pack files and the contract").
 - **Use.** A tension marks two rules that pull against each other. A third artifact reconciles it with
   `reconciles_tension`. A consumer needs, under an activation: the tensions in force, the tensions that bear on one
   action with what reconciles them, and the co-activated pairs nothing reconciles. Core answers these today (its
-  governance bundle and its activation consistency check); that is evidence of behaviour, not the specification
+  governance bundle and its activation consistency check); that is evidence of behavior, not the specification
   (ADR-0015).
 - **The model is canonical** (charter companion, 2026-11-10): the rationalized shape replaces the old one outright,
   with no reader for the old spelling.
@@ -77,7 +77,7 @@ the relationship appear[s] in the domain, the pack files and the contract").
   (every relation but `tension`) or tension. ADR-0027's collapse holds within the structural class: at most one
   structural relationship per pair. Beside it, at most one tension per pair (ADR-0028 decision 3).
   `Relationship.samePair` stays the pair test; a new `sameSlot` (pair and class) is the identity
-  `RelationshipMerge` upserts on, so a tension never replaces a `requires` on the same pair, nor the reverse.
+  `RelationshipMerge` replaces on, so a tension never replaces a `requires` on the same pair, nor the reverse.
 - **Canonical orientation.** A tension is written with the lexicographically smaller URN as its `from` (ADR-0036
   decision 4).
   - In a pack file, the other orientation refuses the pack (decision 6).
