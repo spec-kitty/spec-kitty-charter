@@ -120,7 +120,7 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::generic-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -130,7 +130,8 @@
       "last_transition_at": "2026-11-19T16:01:06.604323+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Indexes and closure key by PackUlid; typed RefusalPack; EdgeNode carries the registered id; holdingPack without tolerance; Dropped/Enhancing typed; StagedTree carries the upload id (+ ### Changed fragment); case-twin guard over raw entries; CountingReading thread-safe. Golden composition.json: fake ids -> order-keeping ULIDs only. kernel/packs/pack-validation check + test (all modules) green on lane-d 419f7b5."
+        "Indexes and closure key by PackUlid; typed RefusalPack; EdgeNode carries the registered id; holdingPack without tolerance; Dropped/Enhancing typed; StagedTree carries the upload id (+ ### Changed fragment); case-twin guard over raw entries; CountingReading thread-safe. Golden composition.json: fake ids -> order-keeping ULIDs only. kernel/packs/pack-validation check + test (all modules) green on lane-d 419f7b5.",
+        "Independent review: approved (lane-d 419f7b5). D2/D9: no PackIdentifier is built from a descriptor pack_id anywhere in main; closure/edge indexes, RefusalPack, MergedClosure.Winner keyed by PackUlid; Dropped/Enhancing.pack are PackIdentifier. Golden composition.json verified by reviewer script: identical structure, injective order-keeping 68-id substitution to real ULIDs, messages substituted consistently, nothing else changed. RefusalPack wire stays strings; FR-008 fragment accurate. requireNoCaseTwin restored over raw domain entries with test. Full :kernel:check :packs:check :pack-validation:check test green (run by reviewer). Nit: out-of-owned-files fixture edits (kernel, activations, profiles-edge, web-transport) needed to compile, disclosed."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
