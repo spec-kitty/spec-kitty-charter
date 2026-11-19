@@ -140,7 +140,7 @@ registration alike (D1; folds #597).
 |----|-------------|-------|--------|----------|-----------------|
 | FR-001 | `service/pack-check` has a `main` that parses `--config-root <dir>`, a repeated `--pack <dir>[:<level>]` and `--round-trip`, with no CLI framework, and is the composition root that supplies the file-system reader | #478 | Proposed | build | no |
 | FR-002 | Per pack, the CLI runs validate mode (`PackCheck.validate`) over the one reader, so its findings are the registration's plus placement, in the same codes and wording | #478 | Proposed | build | no |
-| FR-003 | The pack-set check builds each pack's composition facts through a public adapter entry over `CompositionFactsBuilder.underResolution` (outside `packs.domain`) and runs `PackRulesets.closure()` over them | #478 | Proposed | build | no |
+| FR-003 | The pack-set check takes each pack's composition facts from the one read (no second read, squad S1) and runs `PackRulesets.closure(presetIdsOf)` over the set as given (D5) | #478 | Proposed | build | no |
 | FR-004 | `--round-trip` runs the production round trip (`PackRoundTrip`) and `WholePackRoundTripRule` per pack, with no expected-red baseline | #478 | Proposed | build | no |
 | FR-005 | The output is one report naming the checks that ran and the packs checked, whose problems each validate against the contract's `Problem` schema with the API's codes (D2) | #478 | Proposed | build | no |
 | FR-006 | Exit codes: `0` valid (warnings allowed), `1` any violation, `2` usage or I/O failure; warnings go to standard error | #478 | Proposed | build | no |

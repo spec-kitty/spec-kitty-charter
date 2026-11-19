@@ -38,7 +38,7 @@ rehearsal script
 **Performance Goals**: NFR-002, all example packs as a set with `--round-trip` under 20 s on a CI runner
 **Constraints**: no Spring, Tomcat, Jakarta Servlet or generated-contract class in the jar (NFR-001); jar under 40 MB
 (NFR-004; the lean classpath is 8.8 MB); strict SHA-256 dependency verification (C-004)
-**Scale/Scope**: one new module main (about 6 classes), one new domain port and adapter, one storage rule and code, one
+**Scale/Scope**: one new module main (about 6 classes), the readout's facts, one storage rule and code, one
 contract schema plus one code, workflow and script edits, three docs pages
 
 ## Charter Check

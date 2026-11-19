@@ -9,7 +9,7 @@ gh attestation verify pack-check-0.1.0-rc.2.jar --repo spec-kitty/spec-kitty-cha
   --signer-workflow spec-kitty/spec-kitty-charter/.github/workflows/service-release.yml \
   --source-ref refs/tags/service-v0.1.0-rc.2
 
-# One pack, at a level
+# One pack, at a level (a pack that depends on others is checked together with them, as below)
 java -jar pack-check-0.1.0-rc.2.jar --pack ./packs/my-org:org
 
 # A set, as a deployment lays it out (<root>/packs/<name>/)
