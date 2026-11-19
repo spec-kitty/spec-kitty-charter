@@ -1,4 +1,6 @@
 {
+  "change_mode": "bulk_edit",
+  "coordination_branch": "kitty/mission-pack-id-split-01M7SS5G",
   "create_return_branch": "feat/583-pack-id-split",
   "created_at": "2026-11-19T11:30:45.139392+00:00",
   "flattened": false,
@@ -15,9 +17,16 @@
   "purpose_tldr": "A pack's registered id and its descriptor's pack_id are two typed identities, and a stored pack whose directory name is not a pack id is refused on read.",
   "slug": "pack-id-split-01M7SS5G",
   "target_branch": "feat/583-pack-id-split",
-  "topology": "single_branch",
-  "topology_settled": false,
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 6,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 6
+  },
+  "topology_settled": true,
   "topology_source": "default",
-  "change_mode": "bulk_edit",
   "vcs": "git"
 }
