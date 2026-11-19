@@ -105,7 +105,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude::reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -118,6 +118,7 @@
         "Ready for review: open-packs draft (open-packs#TBD-pack-entry-linked), rc.2 release runbook dry-read against service-build.md, service-native.yml and service-release.yml, closeout list (Closes #597, Refs #478 until the release, #549 line). WP03-WP07 names marked 'to confirm at closeout'. Commit 801abb839, signed."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-check-cli-01M7SASC-coord/kitty-specs/pack-check-cli-01M7SASC/tasks/WP08-drafts-runbook-closeout/review-cycle-1.md",
         "reference": "review-cycle://pack-check-cli-01M7SASC/WP08-drafts-runbook-closeout/review-cycle-1.md",
@@ -125,12 +126,12 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 554,
-      "shell_pid_created_at": "1795086486.52",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T032": "done",
-        "T033": "done",
-        "T034": "done"
+        "T032": "planned",
+        "T033": "planned",
+        "T034": "planned"
       }
     }
   }
