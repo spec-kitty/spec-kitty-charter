@@ -138,7 +138,7 @@ registration alike (D1; folds #597).
 
 | ID | Requirement | Issue | Status | Delivery | No-op passable? |
 |----|-------------|-------|--------|----------|-----------------|
-| FR-001 | `service/pack-check` has a `main` that parses `--config-root <dir>`, a repeated `--pack <dir>[:<level>]` and `--round-trip`, with no CLI framework, and is the composition root that supplies the file-system reader | #478 | Proposed | build | no |
+| FR-001 | `service/pack-check` has a `main` that parses `--config-root <dir>`, a repeated `--pack <dir>[:<level>][=<id>]` and `--round-trip`, with no CLI framework, and is the composition root that supplies the file-system reader | #478 | Proposed | build | no |
 | FR-002 | Per pack, the CLI runs validate mode (`PackCheck.validate`) over the one reader, so its findings are the registration's plus placement, in the same codes and wording | #478 | Proposed | build | no |
 | FR-003 | The pack-set check takes each pack's composition facts from the one read (no second read, squad S1) and runs `PackRulesets.closure(presetIdsOf)` over the set as given (D5) | #478 | Proposed | build | no |
 | FR-004 | `--round-trip` runs the production round trip (`PackRoundTrip`) and `WholePackRoundTripRule` per pack, with no expected-red baseline | #478 | Proposed | build | no |
@@ -214,6 +214,9 @@ registration alike (D1; folds #597).
   pack is checked with the packs it depends on.
 - **D6 (A, ruled 2026-11-19):** no read follows a link on any surface, and the
   store half states `pack_entry_linked`, so the service's load of a configured pack refuses it too.
+- **MEDIUM-3 (operator, 2026-11-20): B, `--pack <dir>[:<level>][=<id>]`.** The id is the pack's registered id
+  (#583 D2b), and the pack is read, composed, round-tripped and reported under it; without `=<id>` the directory's
+  name is the id, and `--config-root` keeps directory names, as the service does.
 
 ## Assumptions
 

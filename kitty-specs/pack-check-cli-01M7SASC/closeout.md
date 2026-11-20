@@ -72,7 +72,7 @@ The FR-to-WP map comes from `spec.md` and `tasks.md`; the evidence names the mer
 
 | FR | Delivered by | Evidence |
 | --- | --- | --- |
-| FR-001, FR-002, FR-006 | WP04 | `service/pack-check`: `PackCheckMain`, `Arguments`, `ConfigRoot`, `Problems`, `ReportWriter`; `PackCheckMainTest`, `ArgumentsTest`, `ConfigRootTest`, `ProblemsTest` |
+| FR-001, FR-002, FR-006 | WP04; PR #608 MEDIUM-3 (operator ruling B, 2026-11-20) | `service/pack-check`: `PackCheckMain`, `Arguments`, `ConfigRoot`, `Problems`, `ReportWriter`; `PackCheckMainTest`, `ArgumentsTest`, `ConfigRootTest`, `ProblemsTest`. `--pack <dir>[:<level>][=<id>]` checks a pack under its registered id through `PackSetEntry.name()` and `PackRoundTrip.run(PackIdentifier, Path, Path)`: `ArgumentsTest`, `PackCheckMainTest`, `PackCheckReportContractTest$Validates`, jarTest |
 | FR-003, FR-007 | WP02, WP03 | `PackReadout.facts()` on the one read; `PackRulesets.closureFaults`/`closure(presetIdsOf)`; `packvalidation.set.PackSetCheck`, `PackSetEntry`, `PackSetVerdict`; `PackSetCheckTest`, `ReadoutFactsTest`, `PackRulesetsClosureTest` |
 | FR-004 | WP03, WP04 | `--round-trip` through the `RoundTripping` port and `PackRoundTrip`; `PackSetCheckTest$RoundTrip`, `PackCheckMainTest`, jarTest case 1 |
 | FR-005 | WP05 | `contracts/charter/schemas/PackCheckReport.yaml`, `contracts/charter/changes/2026-11-19-pack-check-report.md`, `ReachableContractFilesTest` (`STANDALONE`), `PackCheckReportContractTest`, `PlantedParityTest` (118 subjects) |
@@ -113,8 +113,8 @@ So only WP01 was re-signed after its approval. WP03 to WP07 were committed befor
 status merges on top were dropped because they are unsigned.
 
 **Code after the approvals.** The main merge `6c7a5b522` and its fixes `b48d6e038` and `804339fa0` (#583 and #602), and
-the fixes of the independent review's findings, came after the per-WP approvals. The independent adversarial review of
-#608 covers them.
+the fixes of the independent review's findings, came after the per-WP approvals. The independent adversarial review
+of #608 covers them.
 
 ## Known limits
 
