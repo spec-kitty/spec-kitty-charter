@@ -430,10 +430,10 @@ Status: Accepted, as an amendment of this accepted ADR. No floor is moved.
   manual dispatch)" where they said "nightly". The file name and the ids of earlier amendments stay as they are.
 - **No PIT in mission work.** Implement, review, squad and closeout steps never run `pitest` or `checkMutationFloors`,
   a narrowed run (`pit-targets.init.gradle`) or a `-PmutationGroups` shard included, and no brief, acceptance criterion
-  or NFR asks for a mutation score, margin or floor (charter, "How work lands"). Agent sessions had run whole `:packs`
-  shards for up to 1h 21m inside reviews.
-- **Floors and margins** are measured and moved only from the weekly or dispatched run's report, in a follow-up pull
-  request after it. The amendments of 2026-11-17 and 2026-11-19 took their measurements from runs made inside missions;
+  or NFR asks for a mutation score, margin or floor (charter, "How work lands"). Agent sessions had run PIT in mission
+  work: `:packs` shards for 1h 21m in #556's implementation, and for about 85 minutes in #618's review.
+- **Floors and margins**, apart from a new module's first floor (exception 1 below), are measured and moved only from
+  the weekly or dispatched run's report, in a follow-up pull request after it. The amendments of 2026-11-17 and 2026-11-19 took their measurements from runs made inside missions;
   they stand, and later margins come from the scheduled run.
 - **Two exceptions, and no other** (operator rulings, 2026-11-20):
   1. **A new module's first floor.** One in-mission PIT run is allowed, scoped to the new module only, solely to set
