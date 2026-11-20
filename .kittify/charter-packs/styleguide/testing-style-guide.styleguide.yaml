@@ -41,6 +41,6 @@ tooling:
   architecture: ArchUnit
   coverage: JaCoCo
   doubles: Mockito
-  mutation: PIT (scheduled or dispatched mutation-testing workflow only)
+  mutation: PIT (weekly scheduled run, or a manual dispatch, only)
   scenarios: Cucumber-JVM
   unit: JUnit 6 with AssertJ

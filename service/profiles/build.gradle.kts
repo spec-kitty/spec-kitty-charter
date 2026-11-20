@@ -9,7 +9,7 @@ dependencies {
     api(project(":kernel"))
 }
 
-// The nightly mutation floor (#239): one group for the whole module; raised by PR once the score clears it by 5.
+// The weekly mutation floor (#239): one group for the whole module; raised by PR once the score clears it by 5.
 mutationFloors {
     group("profiles") {
         packages.add("ai.speckitty.charter.profiles")

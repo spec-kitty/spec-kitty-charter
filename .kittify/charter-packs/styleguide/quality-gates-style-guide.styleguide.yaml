@@ -20,8 +20,8 @@ principles:
 - Docs changes pass check_docs.py (frontmatter, related, freshness, links, 
   terms, adr, changelog, orphans), markdownlint-cli2 and cspell.
 - JaCoCo reports coverage per module and aggregated; no minimum coverage is set 
-  (min_coverage 0). PIT mutation testing runs only in the scheduled or 
-  dispatched mutation-testing workflow, never on a pull request, never as a 
+  (min_coverage 0). PIT mutation testing runs only in the weekly scheduled 
+  run (or a manual dispatch), never on a pull request, never as a 
   merge gate and never in mission work.
 - Each new gate lands with a planted violation that fails it, then removed.
 - One approval per pull request; contract, architecture and domain changes also 
@@ -36,4 +36,4 @@ tooling:
   coverage: JaCoCo
   dependency_verification: gradle/verification-metadata.xml (SHA-256)
   docs: check_docs.py, markdownlint-cli2, cspell
-  mutation: PIT (scheduled or dispatched mutation-testing workflow only)
+  mutation: PIT (weekly scheduled run, or a manual dispatch, only)

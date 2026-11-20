@@ -10,9 +10,9 @@ steps:
       module's tests (for example ./gradlew :charter-domain:test) and
       the specific gate the change touches, and record the exact commands and
       counts in the pull request.
-  - title: Leave mutation testing to the nightly run
+  - title: Leave mutation testing to the weekly scheduled run (or a manual dispatch)
     description: >-
-      PIT runs nightly only, as its own task outside check; do not run
+      PIT runs only in the weekly scheduled run (or a manual dispatch), as its own task outside check; do not run
       ./gradlew pitest during mission work unless the operator asks for it by
       name.
   - title: Classify unrelated reds instead of widening the run

@@ -18,13 +18,13 @@ steps:
     pull request.
   title: Run the targeted set during mission work
 - description: >-
-    PIT runs only in mutation-testing.yml, on its schedule or a workflow_dispatch
-    (ADR-0062). Implement, review, squad and closeout steps never run pitest or
+    PIT runs only in mutation-testing.yml, in its weekly scheduled run (or a
+    manual dispatch) (ADR-0062). Implement, review, squad and closeout steps never run pitest or
     checkMutationFloors, a narrowed run (pit-targets.init.gradle) or a
     -PmutationGroups shard included, unless the operator asks for that run by
     name. This overrides the open-packs testing doctrine's "run it on the changed
     scope under review".
-  title: Leave mutation testing to the scheduled or dispatched workflow
+  title: Leave mutation testing to the weekly scheduled run (or a manual dispatch)
 - description: >-
     A brief, acceptance criterion, NFR or Definition of Done never asks for a
     mutation score, margin or floor. A module's floor and margin are measured

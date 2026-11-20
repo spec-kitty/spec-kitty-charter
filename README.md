@@ -67,7 +67,7 @@ direction, the design, the decisions, the contract and the first slice of the se
 It runs the charter's own contract checks, contract generation, formatting
 (palantir-java-format), Checkstyle, Error Prone with NullAway, Javadoc with doclint, unit
 tests, the architecture rules, the contract scenarios, the open-packs round-trip, and the
-aggregated Javadoc and coverage reports. Mutation testing (PIT) runs nightly, not here. It
+aggregated Javadoc and coverage reports. Mutation testing (PIT) runs in a weekly scheduled run (or a manual dispatch), not here. It
 needs Java 25, the full Git history and a `spec-kitty-open-packs` checkout beside this one
 (or `-PopenPacksDir=<path>`, absolute or relative to the repository root). `packs/internal` and `packs/qa` are not
 committed: run `./gradlew syncPacks` once per worktree to fetch them from the pinned open-packs commit. Details: [Building the service](docs/guides/service-build.md).

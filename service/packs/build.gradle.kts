@@ -3,7 +3,7 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
-    // The nightly mutation floor (#239). Packs cannot use charter.domain-conventions, which refuses external
+    // The weekly mutation floor (#239). Packs cannot use charter.domain-conventions, which refuses external
     // dependencies, so it applies the mutation conventions itself; the PIT scope and its floors are below.
     id("charter.mutation-conventions")
     // The example packs every pack-reading test reads (ADR-0070): a test-fixtures source set :deployable consumes.
@@ -226,7 +226,7 @@ tasks.test {
     systemProperty("charter.goldenDir", layout.projectDirectory.dir("src/test/resources/golden").asFile.absolutePath)
 }
 
-// The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
+// The weekly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
 // (infra.storage.config included), infra.fetch, and since WP13 infra.archive (the archive extractor, which carries the upload's
 // safety rules; floor group infra.archive), but never the Spring wiring (application.config, infra.fetch.config) nor the
 // inbound REST adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests

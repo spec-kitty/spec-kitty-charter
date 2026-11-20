@@ -38,7 +38,7 @@ tooling:
   doubles: Mockito
   architecture: ArchUnit
   coverage: JaCoCo
-  mutation: PIT (nightly only)
+  mutation: PIT (weekly scheduled run, or a manual dispatch, only)
 quality_test: >-
   Would each new test fail if the contract it pins were broken, and pass after
   a behavior-neutral refactor?

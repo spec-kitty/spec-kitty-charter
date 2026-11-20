@@ -6,7 +6,7 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
-    // The nightly mutation floor (#239, ADR-0062). Never charter.domain-conventions: it refuses the external
+    // The weekly mutation floor (#239, ADR-0062). Never charter.domain-conventions: it refuses the external
     // dependencies a ring of the edge needs.
     id("charter.mutation-conventions")
 }
@@ -27,7 +27,7 @@ dependencies {
     testImplementation(catalog.lib("spring-boot-starter-test"))
 }
 
-// The nightly mutation floor (#239): one group for the whole module, at the floor of :profiles-edge (85). Raised by PR
+// The weekly mutation floor (#239): one group for the whole module, at the floor of :profiles-edge (85). Raised by PR
 // once the nightly score clears it by 5.
 mutationFloors {
     group("routing-edge") {

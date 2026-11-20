@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-19T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -95,7 +95,7 @@ so it is exempt by construction and still compiles. A new hand-written module un
 also be listed in `service/charter-reports/build.gradle.kts`; the build fails, naming it,
 until it is.
 
-Not in `verifyAll`: mutation testing. It runs nightly, against a floor per module, and no pull request runs it; see
+Not in `verifyAll`: mutation testing. It runs in a weekly scheduled run (or a manual dispatch), against a floor per module, and no pull request runs it; see
 [Mutation testing](#mutation-testing).
 
 Not in `verifyAll` either: the whole-pack round-trip gate (below), which CI runs as its own required group.
@@ -168,7 +168,7 @@ run splits the packs groups across two shards (below). In the first sharded run 
 shards took 41 and 47 minutes, and every other module together took 13.
 
 **The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
-floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to
+floor is raised by a pull request once the weekly score clears it by 5 points, and lowered only by an amendment to
 ADR-0062.
 
 **The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
@@ -206,9 +206,9 @@ every module's report go up as the `mutation-report-<shard>` artifacts, kept for
 not succeed, a timeout or a red summary included, the workflow opens one issue labelled `mutation-testing`, or
 comments on the open one; a `workflow_dispatch` with `force_issue` tests that path.
 
-**Never in the required check.** PIT runs only in the nightly (ADR-0060). The root build fails any invocation in which
+**Never in the required check.** PIT runs only in the weekly scheduled run (or a manual dispatch) (ADR-0060). The root build fails any invocation in which
 `verifyAll` or a `check` depends on `pitest` or `checkMutationFloors`, and build-logic's `MutationWorkflowGuardTest`
-pins the nightly's triggers and that no other workflow runs PIT (#387).
+pins the mutation workflow's triggers and that no other workflow runs PIT (#387).
 
 **A surviving mutant** is triaged in this order: kill it by strengthening an existing test's assertion; mark it
 equivalent, with a one-line reason; or accept it, naming an owner. Never add a test whose only purpose is killing a
