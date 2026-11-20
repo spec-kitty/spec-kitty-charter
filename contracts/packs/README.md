@@ -37,7 +37,7 @@ type's `missions/<type>/templates/` is a `template` (a `README.md` under `assets
 under either templates directory or `assets/`, are excluded). A retired file is refused by name with its rule's
 reason, never skipped (ADR-0044 decision 6); the pack-level `pack.md` and `PROVENANCE.md` (#451) and
 `org-charter.yaml` (#431) are retired rules too, and a root file that differs from a root rule's file only in letter
-case (`Readme.md`, `Pack.md`) is refused by name under that rule. Last, after the companion claims of the kind
+case (`Readme.md`, `Pack.md`) is refused by name under that rule, with the violation code `case_variant`. Last, after the companion claims of the kind
 bindings (a skill's body, a toolguide's guide), the `ignored` rules (`match` and `reason`, both required) take what
 nothing else took: `**/*.md`, so Markdown no rule models (an author's `docs/notes.md`) is excluded. An excluded file,
 whether an `exclusions` or an `ignored` match, is not held, not served, not digested and not refused: a registration

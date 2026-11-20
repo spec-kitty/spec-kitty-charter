@@ -152,9 +152,12 @@ class GlossaryOldShapeRefusalTest {
         @Test
         @DisplayName("the digest takes the file in its retired tail, and the census names it retired")
         void theDigestAndTheCensusCoverIt() {
-            assertThat(PackFileSet.listing(pack).retired())
+            assertThat(PackFileSet.listing(pack).refused())
                     .containsOnlyKeys(FILE)
-                    .containsEntry(FILE, REASON);
+                    .hasEntrySatisfying(FILE, refused -> {
+                        assertThat(refused.reason()).isEqualTo(REASON);
+                        assertThat(refused.code()).isEqualTo(StorageCodes.RETIRED);
+                    });
             assertThat(WholePackCensus.of(pack))
                     .containsEntry(FILE, WholePackCensus.RETIRED + "**/*.glossary-pack.yaml");
         }

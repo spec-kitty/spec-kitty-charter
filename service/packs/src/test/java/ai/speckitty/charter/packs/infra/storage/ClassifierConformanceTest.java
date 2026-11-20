@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.packs.infra.storage.PackFileKind.Classification;
 import ai.speckitty.charter.packs.infra.storage.PackFileKind.Excluded;
 import ai.speckitty.charter.packs.infra.storage.PackFileKind.Mapped;
-import ai.speckitty.charter.packs.infra.storage.PackFileKind.Retired;
+import ai.speckitty.charter.packs.infra.storage.PackFileKind.RefusedByName;
 import ai.speckitty.charter.packs.infra.storage.PackFileKind.Unclassified;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -98,8 +98,9 @@ class ClassifierConformanceTest {
                 assertNoMappedFields(c);
             }
             case "retired" -> {
-                assertThat(actual).as(c.path()).isInstanceOf(Retired.class);
-                assertThat(((Retired) actual).match())
+                // A file of a retired family or a root case variant: refused by name under the case's rule.
+                assertThat(actual).as(c.path()).isInstanceOf(RefusedByName.class);
+                assertThat(((RefusedByName) actual).match())
                         .as("rule of %s", c.path())
                         .isEqualTo(c.rule());
                 assertNoMappedFields(c);

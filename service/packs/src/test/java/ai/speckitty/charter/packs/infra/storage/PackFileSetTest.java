@@ -349,7 +349,7 @@ class PackFileSetTest {
                         "mission_types/qa.yaml",
                         "org-charter.yaml"));
 
-        assertThat(PackFileSet.listing(stale, PackFileKind.bundled()).retired().keySet())
+        assertThat(PackFileSet.listing(stale, PackFileKind.bundled()).refused().keySet())
                 .containsExactly("mission_types/qa.yaml", "missions/plan/mission.yaml", "org-charter.yaml");
         assertThat(PackFileSet.digested(stale))
                 .containsExactly(

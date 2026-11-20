@@ -251,7 +251,7 @@ class MissionTypeCorpusTest {
     void noRetiredFileIsLeft() throws IOException {
         try (Stream<Path> packs = Files.list(ExamplePacks.packsDirectory())) {
             for (Path pack : packs.filter(Files::isDirectory).sorted().toList()) {
-                assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).retired())
+                assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).refused())
                         .as("retired files in %s", pack)
                         .isEmpty();
             }

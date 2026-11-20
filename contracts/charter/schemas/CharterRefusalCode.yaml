@@ -406,7 +406,9 @@ x-refusal:
       is not YAML or breaks its schema), unreadable (a file that cannot be read or does not parse, a manifest that is
       not a regular file, a policy file mutability_policy names that cannot be read), artifact_schema_error (an
       artifact or manifest that breaks its schema or a rule of its kind: a file stem, a value-object invariant, a
-      reference the pack does not hold), retired (a file the file-kinds table retires), companion (a companion file
+      reference the pack does not hold), retired (a file the file-kinds table retires), case_variant (a root file that
+      differs only in letter case from a root rule's file, such as Pack.yaml beside pack.yaml, refused by name under
+      that rule), companion (a companion file
       that cannot be read), asset (a sidecar whose path escapes assets/ or names no payload),
       duplicate_artifact_id (a second file declaring an id, a template read twice), duplicate_step_id,
       reserved_shard (a registered.graph.yaml no registration wrote), pack_entry_linked (a symbolic link inside the

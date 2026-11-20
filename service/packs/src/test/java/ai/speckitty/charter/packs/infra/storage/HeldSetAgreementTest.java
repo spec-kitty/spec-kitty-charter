@@ -308,7 +308,7 @@ class HeldSetAgreementTest {
                 .filteredOn(file -> file.kind() != NotHeldFile.Kind.UNNAMED)
                 .as("%s: a not-held file other than an unnamed one is never one a rule maps or retires", subject)
                 .allSatisfy(file -> assertThat(PackFileKind.bundled().classify(pack.getFileName() + "/" + file.path()))
-                        .isNotInstanceOfAny(PackFileKind.Mapped.class, PackFileKind.Retired.class));
+                        .isNotInstanceOfAny(PackFileKind.Mapped.class, PackFileKind.RefusedByName.class));
     }
 
     @Test

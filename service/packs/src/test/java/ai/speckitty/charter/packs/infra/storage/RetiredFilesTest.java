@@ -96,7 +96,7 @@ class RetiredFilesTest {
         @DisplayName("a pack.md or PROVENANCE.md that is not at the pack root is not retired")
         void aPackLevelNamesakeBelowTheRootIsNotRetired() {
             for (String path : RetiredFileFixture.NOT_AT_THE_ROOT) {
-                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.Retired.class);
+                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.RefusedByName.class);
                 assertThat(TABLE.matchingRules("qa/" + path)).as(path).isEmpty();
             }
         }
@@ -120,23 +120,39 @@ class RetiredFilesTest {
         void aCaseVariantIsRefusedByName() {
             RetiredFileFixture.CASE_VARIANTS.forEach((file, match) -> assertThat(TABLE.classify("qa/" + file))
                     .as(file)
-                    .isEqualTo(new PackFileKind.Retired(
+                    .isEqualTo(new PackFileKind.CaseVariant(
                             match,
                             "differs only in letter case from '" + match.substring(match.indexOf('/') + 1) + "'")));
+        }
+
+        @Test
+        @DisplayName("a case variant is refused as case_variant, a file of a retired family as retired (#624)")
+        void aCaseVariantHasItsOwnCode() {
+            RetiredFileFixture.CASE_VARIANTS
+                    .keySet()
+                    .forEach(file -> assertThat(TABLE.classify("qa/" + file))
+                            .as(file)
+                            .isInstanceOfSatisfying(
+                                    PackFileKind.CaseVariant.class,
+                                    refused -> assertThat(refused.code()).isEqualTo(StorageCodes.CASE_VARIANT)));
+            assertThat(TABLE.classify("qa/pack.md"))
+                    .isInstanceOfSatisfying(
+                            PackFileKind.Retired.class,
+                            refused -> assertThat(refused.code()).isEqualTo(StorageCodes.RETIRED));
         }
 
         @Test
         @DisplayName("a case variant below the pack root is not refused: only the root files are rule files")
         void aCaseVariantBelowTheRootIsNotRefused() {
             for (String path : List.of("docs/readme.md", "docs/Readme.md", "sub/PACK.md")) {
-                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.Retired.class);
+                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.RefusedByName.class);
             }
         }
 
         @Test
         @DisplayName("a case variant of an asset or template payload is not a rule file and is not refused")
         void aPayloadCaseVariantIsNotRefused() {
-            assertThat(TABLE.classify("qa/Assets/x.bin")).isNotInstanceOf(PackFileKind.Retired.class);
+            assertThat(TABLE.classify("qa/Assets/x.bin")).isNotInstanceOf(PackFileKind.RefusedByName.class);
         }
 
         @Test
@@ -244,7 +260,8 @@ class RetiredFilesTest {
     class ThePackLevelFiles {
 
         @Test
-        @DisplayName("a pack.md, a PROVENANCE.md and every case variant is a retired violation naming its reason")
+        @DisplayName(
+                "a pack.md and a PROVENANCE.md are retired violations, every case variant a case_variant one (#624)")
         void theStoreRefusesThemByName(@TempDir Path host) {
             FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
             Path exact = RetiredFileFixture.plant(host.resolve("qa"), List.of());
@@ -271,7 +288,7 @@ class RetiredFilesTest {
                         .as(variant.getKey())
                         .containsExactly(new PackElementViolation(
                                 variant.getKey(),
-                                StorageCodes.RETIRED,
+                                StorageCodes.CASE_VARIANT,
                                 "differs only in letter case from '"
                                         + variant.getValue()
                                                 .substring(variant.getValue().indexOf('/') + 1) + "'"));

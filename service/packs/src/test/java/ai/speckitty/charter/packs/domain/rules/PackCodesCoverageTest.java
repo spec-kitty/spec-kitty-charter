@@ -211,6 +211,10 @@ class PackCodesCoverageTest {
                                 DESCRIPTOR
                                         + "depends_on:\n  - pack_id: 01ARWG13C000000000000000FG\n    range: banana\n")),
                 bare(
+                        "case_variant",
+                        StorageCodes.CASE_VARIANT,
+                        pack -> write(pack, "Readme.md", "# A case variant of README.md\n")),
+                bare(
                         "reserved_shard",
                         StorageCodes.RESERVED_SHARD,
                         pack -> write(
