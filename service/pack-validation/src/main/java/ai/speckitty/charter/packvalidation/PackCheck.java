@@ -104,25 +104,6 @@ public final class PackCheck {
     }
 
     /**
-     * Validates the pack in a directory that its caller names no id for: it is assembled under the directory's name
-     * (#583, D2b), and a directory name that is not a pack id is one {@code pack_id_invalid} violation.
-     *
-     * @param configuredLevel the level the pack is configured at; empty for a bare-path validation
-     * @param directory the pack's directory
-     * @return the classification of every file and every finding, in precedence order; a pack with no finding is
-     *     valid
-     */
-    public PackVerdict validate(Optional<PackLevel> configuredLevel, Path directory) {
-        return validate(new PackRoot(directoryName(directory), configuredLevel, directory.toString()));
-    }
-
-    /** The name of a directory, as the reader names it: the last segment of its normalized absolute path. */
-    private static String directoryName(Path directory) {
-        Path last = directory.toAbsolutePath().normalize().getFileName();
-        return last == null ? "" : last.toString();
-    }
-
-    /**
      * Validates one pack, assembled under its root's name: the pack is read once and every rule runs ({@link #check}'s
      * verdict).
      *
