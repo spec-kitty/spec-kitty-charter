@@ -26,10 +26,11 @@ about 85 minutes a run, because briefs, acceptance criteria and the open-packs t
 - The charter's "How work lands" now says so, and the bootstrap render of every action's charter context (its first
   load) shows it.
 - No step runs `pitest` or `checkMutationFloors`, a narrowed run or a shard included.
-- No brief, acceptance criterion or NFR asks for a mutation score, margin or floor.
+- No brief, acceptance criterion, NFR or Definition of Done asks for a mutation score, margin or floor, except a new
+  module's first floor.
 - Apart from a new module's first floor, floors and margins move only from the weekly or dispatched run's report, in
   a follow-up pull request.
 - Two exceptions, and no other (operator, 2026-11-20): a new module may take one in-mission PIT run, scoped to that
   module, solely to set its first floor; and PIT tuning work (#530, #531) may run narrowed PIT locally, confirmed
-  through a manual dispatch.
+  through `workflow_dispatch`.
 - The charter's tactic for directive 030 was invalid YAML and was skipped by the CLI; it loads again.

@@ -56,13 +56,13 @@ two.
   plan point and before merge, then operator approval.
 - A call made without review is logged as an open review item, never left implicit.
 - **No PIT in mission work: only `mutation-testing.yml`'s weekly scheduled run (or a manual dispatch) runs it**
-  (operator,
-  2026-11-20; ADR-0062). Implement, review, squad and closeout steps never run `pitest` or `checkMutationFloors`,
-  narrowed runs included, and no brief, acceptance criterion or NFR asks for a mutation score, margin or floor.
-  Apart from a new module's first floor (below), floors and margins are measured and moved only from that workflow's
-  report, in a follow-up pull request. This overrides the open-packs testing doctrine's "run it on the changed scope under review". Two exceptions, and no
-  other (operator, 2026-11-20): a **new module** may take one in-mission PIT run, scoped to that module only, solely to
-  set its first floor; and **PIT tuning work** (#530, #531) may run narrowed PIT locally, confirmed through a dispatch.
+  (operator, 2026-11-20; ADR-0062). Implement, review, squad and closeout steps never run `pitest` or
+  `checkMutationFloors`, narrowed runs included, and no brief, acceptance criterion, NFR or Definition of Done asks for
+  a mutation score, margin or floor, except a new module's first floor (below). Apart from that first floor, floors and
+  margins are measured and moved only from that workflow's report, in a follow-up pull request. This overrides the
+  open-packs testing doctrine's "run it on the changed scope under review". Two exceptions, and no other (operator,
+  2026-11-20): a **new module** may take one in-mission PIT run, scoped to that module only, solely to set its first
+  floor; and **PIT tuning work** (#530, #531) may run narrowed PIT locally, confirmed through `workflow_dispatch`.
 - **Issues stay small** (operator, 2026-11-11; the detail is in
   `docs/development/issue-tracker.md`):
   - A squad finding below MEDIUM is folded into the pull request, recorded under its "Not done",

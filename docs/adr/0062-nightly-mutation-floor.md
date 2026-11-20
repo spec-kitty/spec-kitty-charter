@@ -179,7 +179,7 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 
 - A scheduled run takes about 51 minutes of mutation testing on four cores, 48 of them `:packs:pitest`, plus the
   set-up steps.
-- Mutation coverage of a change is seen a day late, never in the pull request that caused it.
+- Mutation coverage of a change is seen at the next weekly (or a dispatched) run, never in the pull request that caused it.
 - The missions floor of 70 sits well below the packs `domain+application` and `infra.storage` floors until its
   score clears it by 5 points.
 - A floor does not catch a single weakened test: the margins of packs and kernel absorb tens of mutants. Missions and
@@ -429,8 +429,9 @@ Status: Accepted, as an amendment of this accepted ADR. No floor is moved.
   `workflow_dispatch` for a manual run. This ADR and the documents that follow it say "weekly scheduled run (or a
   manual dispatch)" where they said "nightly". The file name and the ids of earlier amendments stay as they are.
 - **No PIT in mission work.** Implement, review, squad and closeout steps never run `pitest` or `checkMutationFloors`,
-  a narrowed run (`pit-targets.init.gradle`) or a `-PmutationGroups` shard included, and no brief, acceptance criterion
-  or NFR asks for a mutation score, margin or floor (charter, "How work lands"). Agent sessions had run PIT in mission
+  a narrowed run (`pit-targets.init.gradle`) or a `-PmutationGroups` shard included, and no brief, acceptance criterion,
+  NFR or Definition of Done asks for a mutation score, margin or floor, except a new module's first floor (exception 1
+  below; charter, "How work lands"). Agent sessions had run PIT in mission
   work: `:packs` shards for 1h 21m in #556's implementation, and for about 85 minutes in #618's review.
 - **Floors and margins**, apart from a new module's first floor (exception 1 below), are measured and moved only from
   the weekly or dispatched run's report, in a follow-up pull request after it. The amendments of 2026-11-17 and 2026-11-19 took their measurements from runs made inside missions;
