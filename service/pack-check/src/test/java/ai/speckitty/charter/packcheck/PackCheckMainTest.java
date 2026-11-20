@@ -189,24 +189,27 @@ class PackCheckMainTest {
 
     /**
      * PR #608 MEDIUM-3 (operator ruling B): a pack in a directory whose name is no pack id, given its registered id, is
-     * read, judged and reported under that id; the directory's name plays no part.
+     * read, judged and reported under that id; the directory's name plays no part. The id, {@code org-base}, is no level
+     * token, so the report and the warnings name the id, not the level (PR #608 delta review L3).
      */
     @Test
     void aPackInADirectoryNamedBadNameGivenItsIdIsValid() throws IOException {
-        Path pack = misnamed(ExamplePacks.BUILT_IN, "Bad_Name");
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+        Path pack = misnamed(ExamplePacks.ORG, "Bad_Name");
 
-        Run run = run("--pack", pack + "=" + ExamplePacks.BUILT_IN);
+        // org-base depends on built-in, so the set holds both (ruling D5).
+        Run run = run("--pack", builtIn + ":built-in", "--pack", pack + "=" + ExamplePacks.ORG);
 
         assertThat(run.exit()).as(run.err()).isEqualTo(PackCheckMain.VALID);
         assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE");
         assertThat(run.report().get("problems")).isEmpty();
-        JsonNode entry = run.report().get("packs").get(0);
-        assertThat(entry.get("name").asString()).isEqualTo(ExamplePacks.BUILT_IN);
-        assertThat(entry.get("level").asString()).isEqualTo("built-in");
+        JsonNode entry = run.report().get("packs").get(1);
+        assertThat(entry.get("name").asString()).isEqualTo(ExamplePacks.ORG);
+        assertThat(entry.get("level").asString()).isEqualTo("org");
         assertThat(entry.get("path").asString()).isEqualTo(pack.toString());
-        assertThat(run.err().lines().toList())
+        assertThat(run.err().lines().filter(line -> !line.startsWith("warning: built-in: ")))
                 .isNotEmpty()
-                .allSatisfy(line -> assertThat(line).startsWith("warning: built-in: file_not_held "));
+                .allSatisfy(line -> assertThat(line).startsWith("warning: " + ExamplePacks.ORG + ": file_not_held "));
     }
 
     /** The round trip configures the pack under its given id too, not under its directory's name. */
