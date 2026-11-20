@@ -86,18 +86,26 @@ jobs:
         include:
           - runner: ubuntu-24.04
             target: linux-x64
+            native-heap: 5g
+            gradle-heap: 2g
             exe: ""
             prebuilt-bundle: false
           - runner: ubuntu-24.04-arm
             target: linux-arm64
+            native-heap: 5g
+            gradle-heap: 2g
             exe: ""
             prebuilt-bundle: false
           - runner: macos-15
             target: macos-arm64
+            native-heap: 4g
+            gradle-heap: 1g
             exe: ""
             prebuilt-bundle: false
           - runner: windows-2025
             target: windows-x64
+            native-heap: 5g
+            gradle-heap: 2g
             exe: ".exe"
             prebuilt-bundle: true
     runs-on: ${{ matrix.runner }}
@@ -150,15 +158,27 @@ jobs:
         env:
           PREBUILT: ${{ matrix.prebuilt-bundle }}
           BUNDLE_DIR: ${{ runner.temp }}/contract-bundle
+          # The macOS runner has 7 GB: native-image and the Gradle JVM that forks it share it, so it gets less of both.
+          # Measured on run 44802926531: 4g/1g built the image in 19m08s against 27m37s at 5g/2g; 3g thrashed in GC
+          # (64-89% of each stage) and hit the job's 60-minute limit. It still swaps at 4g; a larger runner is not an option.
+          NATIVE_HEAP: ${{ matrix.native-heap }}
+          GRADLE_HEAP: ${{ matrix.gradle-heap }}
         run: |
           set -euo pipefail
+          heaps=("-Pcharter.nativeImageHeap=$NATIVE_HEAP" "-Dorg.gradle.jvmargs=-Xmx$GRADLE_HEAP -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8")
           if [ "$PREBUILT" = true ]; then
             # The bundle must be the one its checksum names, as the Linux job wrote them.
             (cd "$(cygpath -u "$BUNDLE_DIR")" && sha256sum --check --strict charter-openapi.yaml.sha256)
-            ./gradlew --no-daemon :deployable:nativeCompile -Pcharter.native=true "-PcontractBundle=$BUNDLE_DIR/charter-openapi.yaml"
+            ./gradlew --no-daemon "${heaps[@]}" :deployable:nativeCompile -Pcharter.native=true "-PcontractBundle=$BUNDLE_DIR/charter-openapi.yaml"
           else
-            ./gradlew --no-daemon :deployable:nativeCompile -Pcharter.native=true
+            ./gradlew --no-daemon "${heaps[@]}" :deployable:nativeCompile -Pcharter.native=true
           fi
+
+      - name: Record memory pressure
+        if: runner.os == 'macOS'
+        run: |
+          sysctl hw.memsize hw.ncpu vm.swapusage
+          vm_stat | grep -E 'Pageouts|Swapouts|Compressions'
 
       - name: Read the versions the executable must report
         id: versions
