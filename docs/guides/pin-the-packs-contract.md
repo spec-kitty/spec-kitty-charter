@@ -2,7 +2,7 @@
 title: Pin the packs contract
 description: Fetch a packs contract release, check the archive and every file against their SHA-256, record the pin, and run the classifier conformance cases against your own reader.
 doc_status: draft
-updated: 2026-11-16T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -33,9 +33,10 @@ It is versioned on its own changes, apart from the charter's OpenAPI contract. I
 [ADR-0022](/adr/0022-contract-versions-start-at-0-x/): a patch does not break, while the major is 0 a minor may, and
 each break is listed under `### Breaking`.
 
-**No release is tagged yet.** The first releases are release candidates (operator ruling R1), such as
-`contract-packs-v0.1.0-rc.1`, published as GitHub pre-releases. Until one is tagged, pin a commit of `main` as below,
-and switch to a release, candidate or final, once there is one. The commands are the same; only the source differs.
+**Only release candidates are tagged so far** (operator ruling R1): `contract-packs-v0.1.0-rc.1` and
+`contract-packs-v0.1.0-rc.2`, published as GitHub pre-releases. Pin the newest candidate, or a commit of `main` as
+below for a change not yet released, and switch to the final release once there is one. The commands are the same;
+only the source differs.
 
 ## Before you start
 
