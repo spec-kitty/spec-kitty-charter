@@ -114,8 +114,8 @@ Conflicts (fallback or pin) are judged before selection, by the caller (WP05), a
   - `routing-priority` absent counts as 50.
 
 ## Definition of Done
-- 100% branch coverage of `ProfileSelection`. Mutation testing is configured in the repository, so check that no
-  mutant survives in this package.
+- 100% branch coverage of `ProfileSelection`, each branch pinned by an outcome assertion. Mutation testing is not run
+  in this work package: the package is measured by the scheduled or dispatched mutation-testing workflow (ADR-0062).
 - ArchUnit is green: the domain depends on nothing outside the domain and the kernel.
 
 ## Branch Strategy

@@ -1,10 +1,13 @@
 failure_modes:
 - Dispatch briefs that say "run everything" without naming the targeted tasks.
+- Briefs or work packages that ask a reviewer or implementer to run PIT or to
+  report a mutation score, margin or floor.
 id: how-we-apply-no-full-heavy-suites-in-mission
 name: How We Apply NO_FULL_HEAVY_SUITES_IN_MISSION
 notes: The charter makes ./gradlew verifyAll the pre-merge gate; this tactic 
-  does not reclassify it as a heavy suite. Which local runs count as heavy 
-  beyond PIT is not stated in the interview and is left to the operator.
+  does not reclassify it as a heavy suite. PIT is heavy (a whole :packs:pitest 
+  takes over an hour); which other local runs count as heavy is left to the 
+  operator.
 purpose: Validate mission work with targeted runs and leave the heavy runs to 
   CI.
 schema_version: '1.0'
@@ -14,10 +17,20 @@ steps:
     gate the change touches, and record the exact commands and counts in the 
     pull request.
   title: Run the targeted set during mission work
-- description: PIT runs nightly only, as its own task outside check; do not run 
-    ./gradlew pitest during mission work unless the operator asks for it by 
-    name.
-  title: Leave mutation testing to the nightly run
+- description: >-
+    PIT runs only in mutation-testing.yml, on its schedule or a workflow_dispatch
+    (ADR-0062). Implement, review, squad and closeout steps never run pitest or
+    checkMutationFloors, a narrowed run (pit-targets.init.gradle) or a
+    -PmutationGroups shard included, unless the operator asks for that run by
+    name. This overrides the open-packs testing doctrine's "run it on the changed
+    scope under review".
+  title: Leave mutation testing to the scheduled or dispatched workflow
+- description: >-
+    A brief, acceptance criterion, NFR or Definition of Done never asks for a
+    mutation score, margin or floor. A module's floor and margin are measured
+    and moved only from the workflow's report, in a follow-up pull request after
+    it; a reviewer cites that report or leaves the number out.
+  title: Ask for no mutation numbers in mission work
 - description: A red result outside the change's blast radius is classified and 
     left to CI, not chased with a broader local sweep.
   title: Classify unrelated reds instead of widening the run
