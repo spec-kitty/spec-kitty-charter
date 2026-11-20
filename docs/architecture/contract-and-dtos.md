@@ -22,7 +22,7 @@ audience:
 
 How one OpenAPI document becomes the DTOs on both sides: the service generates its server interfaces from it, and core ingests a pinned release to generate its own. The page also lists what the contract carries and how it is versioned.
 
-> **Status:** partly built. `contracts/charter/` exists here at `0.2.0-SNAPSHOT` with three read operations and its contract scenarios, the charter's own contract checks run in the build, and the service generates its interfaces from it. The release candidates `0.2.0-rc.1`, `0.2.0-rc.2` and `0.2.0-rc.3` are published; the service `0.1.0-rc.1` bundles `0.2.0-rc.2`, and the service `0.1.0-rc.2` bundles `0.2.0-rc.3`; core ingests nothing yet. [What the labels mean](/#status).
+> **Status:** partly built. `contracts/charter/` exists here at `0.2.0-SNAPSHOT` with three read operations and its contract scenarios, the charter's own contract checks run in the build, and the service generates its interfaces from it. The release candidates `0.2.0-rc.1`, `0.2.0-rc.2` and `0.2.0-rc.3` are published; the service `0.1.0-rc.1` bundles `0.2.0-rc.2`, the service `0.1.0-rc.2` was never published, and the service `0.1.0-rc.3` bundles `0.2.0-SNAPSHOT`, the same contract as `0.2.0-rc.3`; core ingests nothing yet. [What the labels mean](/#status).
 
 ## One document, two generators
 
