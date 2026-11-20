@@ -1,20 +1,20 @@
 {
-  "event_count": 6,
-  "last_event_id": "01M7XBWGR0B1A5HP68BY2PF7MB",
-  "materialized_at": "2026-11-20T20:55:35.424954+00:00",
+  "event_count": 7,
+  "last_event_id": "01M7XBWHQD16CGZ2SJ3ZZC9EYM",
+  "materialized_at": "2026-11-20T20:55:36.429674+00:00",
   "mission_number": "",
   "mission_slug": "pack-name-reference-grammar-01M7X5QX",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 0,
+    "approved": 1,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 1
   },
   "work_packages": {
@@ -25,14 +25,19 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M7XBWGR0B1A5HP68BY2PF7MB",
-      "last_transition_at": "2026-11-20T20:55:35.424954+00:00",
+      "lane": "approved",
+      "last_event_id": "01M7XBWHQD16CGZ2SJ3ZZC9EYM",
+      "last_transition_at": "2026-11-20T20:55:36.429674+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP01 ready: QUALIFIER is the one written form; SubstepCandidate and pin tests read it; no behavior change. Tests: :kernel:test, :missions:test, PackSchemasTest, VocabularyEqualityTest, IdentifierPatternParityTest green; :kernel:check :missions:check, packs spotless+checkstyleTest green. Planted break (QUALIFIER without ?): missions 10 and packs 12 tests fail. SLUG_AS_WRITTEN deferred to WP02 (first use there)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-name-reference-grammar-01M7X5QX/WP01-one-statement-of-the-pack-name-grammar/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 5082,
       "shell_pid_created_at": "1795202321.31",
