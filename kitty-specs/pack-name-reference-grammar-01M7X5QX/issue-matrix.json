@@ -25,15 +25,15 @@
       "wp": null
     },
     "#552": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: closed by PR #580; #582 is its drafted follow-up",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "ADR-0075 slice 3: every identifier on the shared kernel grammar",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#556": {
