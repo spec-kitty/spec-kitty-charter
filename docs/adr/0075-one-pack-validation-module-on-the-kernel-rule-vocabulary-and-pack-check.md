@@ -216,8 +216,8 @@ landed decision 9 under the amendments above, with the operator's rulings D1 to 
 decision; this note records what was built and the calls made on the way.
 
 - **The CLI.** `service/pack-check` is a thin `main`, `PackCheckMain`, with no CLI framework. It takes
-  `--config-root <dir>` or a repeated `--pack <dir>[:<level>]`, plus `--round-trip`. Per pack it runs validate mode
-  (`PackCheck.validate`), then `CLOSURE` over the set, then the round trip when asked. Its exit codes are those of
+  `--config-root <dir>` or a repeated `--pack <dir>[:<level>][=<id>]`, plus `--round-trip`. Per pack it runs validate
+  mode (`PackCheck.validate`), then `CLOSURE` over the set, then the round trip when asked. Its exit codes are those of
   decision 9: `0` valid (warnings allowed, on standard error as `warning:` lines), `1` a problem, and `2` a usage or
   I/O failure. An internal error exits `2` too, with nothing on standard output, so `1` always comes with a report.
   `--config-root` lists the names the service would serve through `PackEntryNames`, the one entry rule in
@@ -250,6 +250,9 @@ decision; this note records what was built and the calls made on the way.
   No read follows a symbolic link inside a pack root, on any surface. The one reader states `pack_entry_linked`
   (a `VIOLATION`) for each link, so `pack-check`, a registration and the service's load of a configured pack refuse
   it alike. The pack root itself may be a link. Hard links and Windows junctions are not judged.
+- **A pack under its registered id (PR #608 MEDIUM-3, operator ruling B, 2026-11-20).** `--pack <dir>=<id>` checks,
+  composes and round-trips the pack under `<id>` (#583 D2b), through `PackSetEntry.name()` and
+  `PackRoundTrip.run(PackIdentifier, Path, Path)`; without it, and under `--config-root`, the directory's name is the id.
 - **The set as given (ruling D5).** `CLOSURE` runs over the packs given, never fetching others. A pack is checked
   together with the packs it depends on; alone, its dependencies are `pack_dependency_unknown`.
 - **The round trip is Spring-free.** `pack-check --round-trip` runs `PackRoundTrip` and `WholePackRoundTripRule`

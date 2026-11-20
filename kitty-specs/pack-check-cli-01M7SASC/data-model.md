@@ -52,10 +52,27 @@ One line each: `warning: <pack>: <code> <file>: <detail>`, for every `WARNING` r
   statement of the code (D6 A).
 - **Scope:** the pack root itself may be a link and is entered as today (#174).
 
+## Command line (FR-001; PR #608 MEDIUM-3, operator ruling B)
+
+`pack-check (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip]`, or `--help` alone.
+
+- **`--config-root <dir>`:** every directory under `<dir>/packs/` that is not hidden or an aside copy, under its
+  directory's name, at its declared level, as the service reads it.
+- **`--pack <dir>[:<level>][=<id>]`:** read right to left.
+  - `=<id>`: the text after the last `=`, when `PackIdentifier.isPackId` holds for it. The pack is configured under
+    it, its registered id (#583 D2b): the per-pack read and readout facts, `CLOSURE`'s configured pack, the round trip,
+    `packs[].name`, the problems' `packs` and the warnings' `<pack>` all take it from `PackSetEntry.name()`. The
+    directory's name plays no part.
+  - `:<level>`: then the text after the last `:` of what remains, when it is a level token (`built-in`, `org`,
+    `project`).
+  - With no `=<id>`, the directory's name is the id; a name that is no pack id is one `pack_id_invalid` at `pack`.
+  - A directory whose name holds `=` or `:` still parses: when the value read with no id names a directory and the value
+    read with an id does not, the value is that directory under its own name.
+
 ## Exit codes
 
 | Code | When |
 |---|---|
 | 0 | No problem (warnings allowed) |
 | 1 | At least one problem |
-| 2 | Usage fault (no input, both inputs, unknown option, bad level, an ambiguous `--pack` value, duplicate pack by real path or by name, overlapping packs, missing directory, empty config root, an entry under the config root's `packs/` that is a link to no directory), an I/O failure outside a pack read (writing the output, the round trip's temporary directory), or an internal failure (an unexpected exception: `pack-check: internal error: …` and the stack trace on stderr) |
+| 2 | Usage fault (no input, both inputs, unknown option, bad level, an ambiguous `--pack` value (`x:org` and `x`, or `x=id` and `x`, both directories), a text after the last `=` that is no pack id when the value names no directory, duplicate pack by real path or by id (given or defaulted), overlapping packs, missing directory, empty config root, an entry under the config root's `packs/` that is a link to no directory), an I/O failure outside a pack read (writing the output, the round trip's temporary directory), or an internal failure (an unexpected exception: `pack-check: internal error: …` and the stack trace on stderr) |

@@ -55,9 +55,10 @@ tag and the jar's SHA-256, as you pin any other tool.
 Give it the packs in one of two forms:
 
 - **A config root:** `--config-root <dir>` checks every pack under `<dir>/packs/<name>/`, each at the level its
-  `pack.yaml` declares. This is the layout the service reads. A hidden entry (`.git`) is not a pack.
-- **Repeated `--pack`:** `--pack <dir>[:<level>]` checks the pack in `<dir>`, at `<level>` (`built-in`, `org` or
-  `project`) when you give one. Repeat it to check a set of packs together.
+  `pack.yaml` declares and under its directory's name, as the service reads it. A hidden entry (`.git`) is not a pack.
+- **Repeated `--pack`:** `--pack <dir>[:<level>][=<id>]` checks the pack in `<dir>`, at `<level>` (`built-in`, `org`
+  or `project`) when you give one, and under the pack id `<id>` when you give one. Repeat it to check a set of packs
+  together.
 
 Add `--round-trip` to round-trip every pack through the charter's model as well: each file is read, written back from
 the model and compared by meaning ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)).
@@ -74,10 +75,29 @@ java -jar pack-check-0.1.0-rc.2.jar \
   --round-trip
 ```
 
-**Name each pack's directory by its pack id.** A pack is checked under the name of its directory, as the service
-reads it, so the name must be a pack id: lowercase letters and digits in hyphen-separated runs, at most 63 characters.
-A directory named otherwise, such as `My_Pack`, is one `pack_id_invalid` violation at `pack`, and the pack is not read
-further.
+**A pack is checked under its pack id.** The id is the name the pack is registered under: lowercase letters and
+digits in hyphen-separated runs, at most 63 characters. With no `=<id>`, it is the name of the pack's directory, as
+the service reads it, and a directory named otherwise, such as `My_Pack`, is one `pack_id_invalid` violation at `pack`,
+and the pack is not read further. `--config-root` always uses directory names.
+
+Give `=<id>` when the directory is not named by the pack's id: a checkout, a build directory or a copy. The pack is
+then read, composed and round-tripped under that id, the report and its problems name it by that id, and the
+directory's name plays no part:
+
+```bash
+java -jar pack-check-0.1.0-rc.2.jar --pack build/staging:org=org-base --pack vendor/built-in
+```
+
+How a `--pack` value is read:
+
+- The id is the text after the last `=`, when it is a pack id. The level is then the text after the last `:` of
+  what remains, when it is `built-in`, `org` or `project`. So `=<id>` comes last: `<dir>:org=org-base`.
+- A directory whose name holds `=` or `:` still works. When the value read without an id names a directory and the
+  value read with one does not, the value is that directory, under its own name. When both name a directory (both
+  `x=y` and `x` exist, or both `x:org` and `x`), the value is ambiguous and refused: rename one, or add `=<id>`.
+- Text after the last `=` that is not a pack id, such as `dir=My_Id` or `dir=`, is refused unless the whole value
+  names a directory. It is never read as part of a path that does not exist.
+- Two packs under one id, given or taken from the directory's name, are refused.
 
 `--config-root` and `--pack` cannot be mixed. `java -jar pack-check-<version>.jar --help` prints the usage. A
 directory whose name starts with `--` goes after `--`, which ends the options.
@@ -92,7 +112,7 @@ Give its dependencies too, or use a config root that holds them.
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (an unknown option, a missing directory, two packs in one directory), the output cannot be written, or `pack-check` failed internally. Nothing is on standard output; the cause is on standard error. |
+| `2` | The command line is wrong (an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), the output cannot be written, or `pack-check` failed internally. Nothing is on standard output; the cause is on standard error. |
 
 A pack it cannot read is a problem (`1`), not a failure (`2`).
 
@@ -103,7 +123,8 @@ The report goes to standard output, as one JSON object. Its schema is the contra
 
 - **`checks`:** the checks that ran over the set, in order: `PACK` always, `CLOSURE` when every pack's composition
   could be read, and `ROUND_TRIP` with `--round-trip`.
-- **`packs`:** each pack checked, with its directory name, its level and its path as you gave it.
+- **`packs`:** each pack checked, with its pack id as `name` (its `=<id>`, or its directory's name), its level and
+  its path as you gave it.
 - **`skipped`:** present only when a check was asked for and did not run. Today that is `CLOSURE`, when a pack could
   not be read; its `reason` names the pack.
 - **`problems`:** each a `Problem` of the contract, with the code and the shape a registration answers for the same
