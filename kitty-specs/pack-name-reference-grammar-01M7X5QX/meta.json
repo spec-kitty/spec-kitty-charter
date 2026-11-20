@@ -1,4 +1,6 @@
 {
+  "contracts": "none",
+  "contracts_rationale": "The mission changes the repository's own contract schemas under contracts/ (charter and packs), recorded under ### Breaking there; it defines no planning-time interface contracts.",
   "create_return_branch": "main",
   "created_at": "2026-11-20T19:08:14.382153+00:00",
   "flattened": false,
