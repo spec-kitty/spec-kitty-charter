@@ -918,10 +918,11 @@ final class FilesystemPackStore {
     /**
      * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack, is spelled in another
      * case than the pack lists it ({@link Spellings#of}, #300), is not a regular file there, or is not a template
-     * payload, with why. A named file is the artifact's output template (ADR-0044): it must
-     * be a file the pack holds and digests as a template, never a file the table excludes or retires. The check opens
-     * no file. A link the name resolves through is judged by where it leads, and the pack walk never lists it as a
-     * template, so the storage rules refuse it ({@code pack_entry_linked}, D6).
+     * payload, or stands on a symbolic link, with why. A named file is the artifact's output template (ADR-0044): it
+     * must be a file the pack holds and digests as a template, never a file the table excludes or retires. The check
+     * opens no file and follows no link: a name that resolves through a link, to a file or a directory, wherever it
+     * leads, is refused in the link rule's words ({@link LinkRules#LINKED}), and the storage rules refuse the link
+     * itself ({@code pack_entry_linked}, D6).
      *
      * @param directory the pack directory, absolute and normalized (the callers normalize it; #319)
      * @param file the artifact's pack-relative path
@@ -959,16 +960,11 @@ final class FilesystemPackStore {
             }
             case Spellings.Exact exact -> {}
         }
-        if (!Files.exists(target)) {
-            // Listed, but a link to nothing.
-            return Optional.of("missing");
+        if (PackFileSet.throughLink(directory, relative)) {
+            // A link, or a linked parent directory, wherever it leads: never followed (D6).
+            return Optional.of(LinkRules.LINKED);
         }
-        Optional<Path> real = realPath(target);
-        if (real.isEmpty() || !real.get().startsWith(realPath(directory).orElse(directory))) {
-            // A link, or a linked parent directory, whose real place is outside the pack.
-            return Optional.of("leaves the pack");
-        }
-        if (!Files.isRegularFile(target)) {
+        if (!Files.isRegularFile(target, LinkOption.NOFOLLOW_LINKS)) {
             return Optional.of("is not a regular file");
         }
         String prefix = String.valueOf(directory.getFileName()) + "/";
@@ -977,14 +973,6 @@ final class FilesystemPackStore {
             return Optional.of("is not a template of the pack");
         }
         return Optional.empty();
-    }
-
-    private static Optional<Path> realPath(Path path) {
-        try {
-            return Optional.of(path.toRealPath());
-        } catch (IOException e) {
-            return Optional.empty();
-        }
     }
 
     /**

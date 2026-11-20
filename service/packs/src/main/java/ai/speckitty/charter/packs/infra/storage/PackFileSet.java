@@ -704,14 +704,27 @@ final class PackFileSet {
      * @return true when a regular file stands there and no link leads to it
      */
     static boolean unlinkedFile(Path directory, String packRelative) {
+        return !throughLink(directory, packRelative)
+                && Files.isRegularFile(directory.resolve(packRelative), LinkOption.NOFOLLOW_LINKS);
+    }
+
+    /**
+     * Whether a segment of a pack-relative path below the pack directory is a symbolic link, the last one included: a
+     * path the link rule refuses (D6). The pack directory itself may be a link (#174).
+     *
+     * @param directory the pack directory
+     * @param packRelative the path, relative to the pack directory and {@code /}-separated
+     * @return true when a link stands on the path
+     */
+    static boolean throughLink(Path directory, String packRelative) {
         Path at = directory;
         for (String segment : packRelative.split("/", -1)) {
             at = at.resolve(segment);
             if (Files.isSymbolicLink(at)) {
-                return false;
+                return true;
             }
         }
-        return Files.isRegularFile(at, LinkOption.NOFOLLOW_LINKS);
+        return false;
     }
 
     /**

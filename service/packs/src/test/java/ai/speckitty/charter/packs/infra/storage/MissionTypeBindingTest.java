@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
@@ -251,7 +252,7 @@ class MissionTypeBindingTest {
     }
 
     @Test
-    @DisplayName("an output template that names a file is read; one that is missing or leaves the pack is refused")
+    @DisplayName("an output template that names a file is read; one that is missing or stands on a link is refused")
     void outputTemplatesNameAFile() throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         String withTemplate = Files.readString(pack.resolve(FILE))
@@ -271,7 +272,8 @@ class MissionTypeBindingTest {
         assertThat(read().violations()).isEmpty();
         assertThat(read().dsos(MissionTypeBinding.INSTANCE)).hasSize(1);
 
-        // A templates directory that links out of the pack: the file is there, its real place is not in the pack.
+        // A templates directory that is a link (L1, D6): the file is there through it, and the link is refused, never
+        // followed, in the link rule's words.
         Path outside = Files.createDirectories(host.resolve("outside"));
         Files.writeString(outside.resolve("spec-template.md"), "# Spec\n");
         Path templates = pack.resolve("missions/research/templates");
@@ -280,7 +282,7 @@ class MissionTypeBindingTest {
         Files.createSymbolicLink(templates, outside);
         assertThat(read().violations())
                 .extracting(PackElementViolation::reason)
-                .containsExactly("templates/spec-template.md (named by step 'scoping'): leaves the pack");
+                .containsExactly("templates/spec-template.md (named by step 'scoping'): " + LinkRules.LINKED);
         Files.delete(templates);
 
         Files.writeString(
@@ -294,7 +296,7 @@ class MissionTypeBindingTest {
     @Test
     @DisplayName(
             "an output template must be a template of the pack: an excluded file, a directory or no file is refused;"
-                    + " a link inside the pack is followed")
+                    + " a link inside the pack is refused, never followed")
     void anOutputTemplateIsATemplateOfThePack() throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         String withTemplate = Files.readString(pack.resolve(FILE))
@@ -320,8 +322,9 @@ class MissionTypeBindingTest {
         Files.writeString(pack.resolve(FILE), withTemplate);
         Files.createSymbolicLink(templates.resolve("spec-template.md"), templates.resolve("real.md"));
         assertThat(read().violations())
-                .as("a link whose real place is a template of the pack")
-                .isEmpty();
+                .extracting(PackElementViolation::reason)
+                .as("a link whose real place is a template of the pack is still a link (L1, D6)")
+                .containsExactly("templates/spec-template.md (named by step 'scoping'): " + LinkRules.LINKED);
     }
 
     @Test
