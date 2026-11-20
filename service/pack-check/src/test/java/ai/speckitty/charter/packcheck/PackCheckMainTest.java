@@ -435,6 +435,21 @@ class PackCheckMainTest {
         assertThat(run.err()).contains(temp.resolve("missing").toString()).contains("usage: pack-check");
     }
 
+    /** PR #608 delta review L1: an empty directory part is a usage fault, never the working directory checked. */
+    @Test
+    void anEmptyDirectoryPartExitsTwoWithNothingOnStandardOutput() {
+        for (String value : List.of("=" + ExamplePacks.ORG, ":org")) {
+            Run run = run("--pack", value);
+
+            assertThat(run.exit()).as(value).isEqualTo(PackCheckMain.FAILED);
+            assertThat(run.out()).as(value).isEmpty();
+            assertThat(run.err())
+                    .as(value)
+                    .contains("--pack " + value + " names no directory: its directory part is empty")
+                    .contains("usage: pack-check");
+        }
+    }
+
     @Test
     void helpPrintsTheUsageAndExitsZero() {
         Run run = run("--help");

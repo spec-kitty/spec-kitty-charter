@@ -559,6 +559,35 @@ class ArgumentsTest {
                             + equals + "=<id> for " + equals);
         }
 
+        /** L1: an empty directory part never names the working directory, which the empty path resolves to. */
+        @Test
+        void anEmptyDirectoryBeforeTheIdIsRefused() {
+            assertThat(fault(Arguments.parse(new String[] {"--pack", "=" + ExamplePacks.ORG})))
+                    .isEqualTo("--pack =" + ExamplePacks.ORG
+                            + " names no directory: its directory part is empty; write --pack <dir>[:<level>][=<id>]");
+        }
+
+        @Test
+        void anEmptyDirectoryBeforeTheLevelIsRefused() {
+            assertThat(fault(Arguments.parse(new String[] {"--pack", ":org"})))
+                    .isEqualTo("--pack :org names no directory: its directory part is empty;"
+                            + " write --pack <dir>[:<level>][=<id>]");
+        }
+
+        @Test
+        void anEmptyDirectoryBeforeALevelAndAnIdIsRefused() {
+            assertThat(fault(Arguments.parse(new String[] {"--pack", ":org=" + ExamplePacks.ORG})))
+                    .isEqualTo("--pack :org names no directory: its directory part is empty;"
+                            + " write --pack <dir>[:<level>][=<id>]");
+        }
+
+        @Test
+        void anEmptyPackValueIsRefused() {
+            assertThat(fault(Arguments.parse(new String[] {"--pack", ""})))
+                    .isEqualTo("--pack  names no directory: its directory part is empty;"
+                            + " write --pack <dir>[:<level>][=<id>]");
+        }
+
         @Test
         void anIdReadingThatIsItselfAmbiguousIsThatFault() throws IOException {
             Path bare = pack("x");

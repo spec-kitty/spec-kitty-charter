@@ -95,6 +95,7 @@ How a `--pack` value is read:
 - A directory whose name holds `=` or `:` still works. When the value read without an id names a directory and the
   value read with one does not, the value is that directory, under its own name. When both name a directory (both
   `x=y` and `x` exist, or both `x:org` and `x`), the value is ambiguous and refused: rename one, or add `=<id>`.
+- An empty directory part, as in `=<id>` or `:org`, is refused. It never checks the working directory.
 - Text after the last `=` that is not a pack id, such as `dir=My_Id` or `dir=`, is refused unless the whole value
   names a directory. It is never read as part of a path that does not exist.
 - Two packs under one id, given or taken from the directory's name, are refused.
