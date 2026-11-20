@@ -78,10 +78,10 @@
       "criterion_id": "FR-008",
       "description": "Verify FR-008 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "contracts/charter/changes/2026-11-20-pack-name-reference-grammar.md and contracts/packs/CHANGELOG.md ### Breaking; :contracts:check fragment and changelog rules pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:59.359456+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
