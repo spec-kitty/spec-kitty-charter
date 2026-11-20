@@ -921,14 +921,42 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /**
      * The revision of a staged directory: the digest over the bytes of every file the fingerprint would cover, so a
-     * file that is not UTF-8 text (a binary payload) is digested, not refused. {@code packName} only labels a refusal
-     * to list the tree: the registered id of the pack, or the name of a staged directory.
+     * file that is not UTF-8 text (a binary payload) is digested, not refused. {@code packName} labels a refusal: the
+     * registered id of the pack, or the name of a staged directory. Each file is opened without following a link (D6,
+     * {@link PackFileSet#noFollowBytes}): one the walk listed and that became a link before the read refuses the pack,
+     * {@code PACK_UNREADABLE} in the link rule's words, and is never read.
+     *
+     * @param packDir the pack directory
+     * @param packName the pack's name, as the refusals name it
+     * @return the revision
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when a file to digest is a link
+     * @throws IOException when a file cannot be read
      */
-    private static PackRevision revisionOf(Path packDir, String packName) throws IOException {
-        List<byte[]> contents = new ArrayList<>();
+    static PackRevision revisionOf(Path packDir, String packName) throws IOException {
         // Named after the pack, not the directory: the live directory may be a link's target, the staging copy a temp.
-        for (String relative : PackFileSet.digested(packDir, packName)) {
-            contents.add(Files.readAllBytes(packDir.resolve(relative)));
+        return revisionOver(packDir, packName, PackFileSet.digested(packDir, packName));
+    }
+
+    /**
+     * {@link #revisionOf} over the files a walk listed: the read half, apart from the walk, so a test can hand it a file
+     * that became a link after the walk.
+     *
+     * @param packDir the pack directory
+     * @param packName the pack's name, as the refusals name it
+     * @param files the pack-relative files to digest, in digest order
+     * @return the revision
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when a file is a link
+     * @throws IOException when a file cannot be read
+     */
+    static PackRevision revisionOver(Path packDir, String packName, List<String> files) throws IOException {
+        List<byte[]> contents = new ArrayList<>();
+        for (String relative : files) {
+            try {
+                contents.add(PackFileSet.noFollowBytes(packDir.resolve(relative)));
+            } catch (PackFileSet.LinkedFile linked) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, LinkRules.detail(packName + "/" + relative), linked);
+            }
         }
         return PackRevision.computeOverBytes(contents);
     }

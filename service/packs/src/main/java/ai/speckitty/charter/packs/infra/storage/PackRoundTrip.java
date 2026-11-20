@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -216,7 +215,7 @@ public final class PackRoundTrip {
 
     private static byte[] bytes(Path file) {
         try {
-            return Files.readAllBytes(file);
+            return PackFileSet.noFollowBytes(file); // never through a link (D6)
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -224,7 +223,7 @@ public final class PackRoundTrip {
 
     private static String text(Path file) {
         try {
-            return Files.readString(file, StandardCharsets.UTF_8);
+            return PackFileSet.noFollowText(file); // never through a link (D6)
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

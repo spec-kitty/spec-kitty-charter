@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -131,9 +132,21 @@ public final class FileSystemPackSources implements PackSources {
         return parts;
     }
 
-    private static byte[] bytes(Path file, String packName, String relative) {
+    /**
+     * One digested file's bytes, never through a link (D6).
+     *
+     * @param file the file
+     * @param packName the pack's name, as the refusal names it
+     * @param relative the file's pack-relative path
+     * @return the bytes
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the file is a link or cannot be read
+     */
+    static byte[] bytes(Path file, String packName, String relative) {
         try {
-            return Files.readAllBytes(file);
+            // Never through a link (D6): a digested file that became one after the walk refuses the pack.
+            return PackFileSet.noFollowBytes(file);
+        } catch (PackFileSet.LinkedFile linked) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, LinkRules.detail(packName + "/" + relative), linked);
         } catch (IOException e) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, packName + "/" + relative + " cannot be read", e);
         }

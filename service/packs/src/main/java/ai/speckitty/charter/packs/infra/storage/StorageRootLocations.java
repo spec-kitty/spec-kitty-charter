@@ -8,7 +8,6 @@ import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.domain.PackEntryNames;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -513,7 +512,8 @@ public final class StorageRootLocations implements Locations {
             return PackLevel.ORG;
         }
         try {
-            Object document = Yaml.load(Files.readString(packYaml, StandardCharsets.UTF_8));
+            // Never through a link (D6): a pack.yaml that became one after the check is no level.
+            Object document = Yaml.load(PackFileSet.noFollowText(packYaml));
             if (document instanceof Map<?, ?> map && map.get("pack_level") instanceof String token) {
                 return PackLevel.fromToken(token).orElse(PackLevel.ORG);
             }

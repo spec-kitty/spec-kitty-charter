@@ -4,9 +4,15 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -721,9 +727,60 @@ final class PackFileSet {
         if (!unlinkedFile(directory, packRelative)) {
             return Optional.empty();
         }
-        try (java.io.InputStream in =
-                Files.newInputStream(directory.resolve(packRelative), LinkOption.NOFOLLOW_LINKS)) {
-            return Optional.of(in.readAllBytes());
+        return Optional.of(noFollowBytes(directory.resolve(packRelative)));
+    }
+
+    /**
+     * The one read of a pack file's bytes (D6): the file is opened without following a link at it
+     * ({@link LinkOption#NOFOLLOW_LINKS}, {@code O_NOFOLLOW} on POSIX), so a file a walk listed and that was swapped
+     * for a link before the read is refused, never read through. The refusal is {@link LinkedFile}, worded as the link
+     * rule words it ({@link LinkRules#LINKED}). Every read of a file of a pack tree goes through here.
+     *
+     * @param file the file
+     * @return its bytes
+     * @throws LinkedFile when a symbolic link stands at {@code file}
+     * @throws IOException when the file cannot be read
+     */
+    static byte[] noFollowBytes(Path file) throws IOException {
+        try (InputStream in = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS)) {
+            return in.readAllBytes();
+        } catch (IOException failure) {
+            // The open's failure names no link (a bare ELOOP on Linux): ask what stands there.
+            if (Files.isSymbolicLink(file)) {
+                throw new LinkedFile(file, failure);
+            }
+            throw failure;
+        }
+    }
+
+    /**
+     * A pack file's text, read as {@link #noFollowBytes} reads its bytes and decoded as strict UTF-8, as
+     * {@link Files#readString(Path)} decodes it: a malformed sequence is refused, never replaced.
+     *
+     * @param file the file
+     * @return its text
+     * @throws LinkedFile when a symbolic link stands at {@code file}
+     * @throws IOException when the file cannot be read, or its bytes are not UTF-8
+     */
+    static String noFollowText(Path file) throws IOException {
+        return StandardCharsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(noFollowBytes(file)))
+                .toString();
+    }
+
+    /**
+     * A read that found a symbolic link where it opened a pack file (D6): refused, never followed. Its message is
+     * {@code <file>: }{@value LinkRules#LINKED}, the link rule's words.
+     */
+    static final class LinkedFile extends FileSystemException {
+        private static final long serialVersionUID = 1L;
+
+        LinkedFile(Path file, Throwable cause) {
+            super(file.toString(), null, LinkRules.LINKED);
+            initCause(cause);
         }
     }
 
