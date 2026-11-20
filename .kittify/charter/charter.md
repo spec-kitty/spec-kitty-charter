@@ -19,7 +19,8 @@ failures are judged against the charter's own model, contract and packs (epic #1
 legacy shapes get no compatibility. Amended 2026-11-11 (operator, ADR-0070): the round-trip gate
 runs over charter's own example packs; spec-kitty-open-packs proves its content against a pinned charter release.
 Amended 2026-11-11 (operator, issue triage Op 01M75XTFKEJG0AGWB78QZMCC12): rules for filing and
-closing issues.
+closing issues. Amended 2026-11-20 (operator): mutation testing never runs in mission work; only the
+scheduled or dispatched mutation-testing workflow runs it (ADR-0062).
 
 ## What this repository is for
 
@@ -54,6 +55,11 @@ two.
 - Contract, architecture and domain changes get an **adversarial review squad** at the
   plan point and before merge, then operator approval.
 - A call made without review is logged as an open review item, never left implicit.
+- **No PIT in mission work: only `mutation-testing.yml`, on its schedule or a dispatch, runs it** (operator,
+  2026-11-20; ADR-0062). Implement, review, squad and closeout steps never run `pitest` or `checkMutationFloors`,
+  narrowed runs included, and no brief, acceptance criterion or NFR asks for a mutation score, margin or floor.
+  Floors and margins are measured and moved only from that workflow's report, in a follow-up pull request. This
+  overrides the open-packs testing doctrine's "run it on the changed scope under review".
 - **Issues stay small** (operator, 2026-11-11; the detail is in
   `docs/development/issue-tracker.md`):
   - A squad finding below MEDIUM is folded into the pull request, recorded under its "Not done",
