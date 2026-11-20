@@ -3,6 +3,8 @@ package ai.speckitty.charter.packcheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
@@ -229,7 +231,8 @@ class ProblemsTest {
 
     @Test
     void aCompositionFaultIsItsCodeWithItsPacksAndNoInstance() {
-        RefusalPack project = new RefusalPack("01M74H0000000000000000PRJ1", "project", "project");
+        RefusalPack project =
+                new RefusalPack(new PackUlid("01M74H0000000000000000PRJ1"), new PackIdentifier("project"), "project");
         CompositionFault fault = new CompositionFault(
                 PackCodes.CLOSURE.get(1), List.of(project), "project depends on a pack the set does not hold");
 
@@ -249,8 +252,10 @@ class ProblemsTest {
     void thePacksProblemsComeBeforeTheCompositionProblems() {
         PackResult pack = with(
                 List.of(violation("duplicate_artifact_id", "a.yaml", "repeated")), real.facts(), List.of(), List.of());
-        CompositionFault fault =
-                new CompositionFault(PackCodes.CLOSURE.getFirst(), List.of(new RefusalPack("x", "y", "z")), "a cycle");
+        CompositionFault fault = new CompositionFault(
+                PackCodes.CLOSURE.getFirst(),
+                List.of(new RefusalPack(new PackUlid("01M74H0000000000000000XYZ1"), new PackIdentifier("y"), "z")),
+                "a cycle");
 
         assertThat(Problems.of(verdict(List.of(pack), List.of(fault))))
                 .extracting(Problem::code)

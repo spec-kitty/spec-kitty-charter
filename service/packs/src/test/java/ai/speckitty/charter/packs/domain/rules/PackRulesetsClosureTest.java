@@ -27,14 +27,23 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PackRulesets.closure(presetIdsOf): CLOSURE with its preset phase (#478, S4)")
 class PackRulesetsClosureTest {
 
-    private static final PackUnderResolution LEFT = pack("01LEFT", "left", Optional.empty());
+    private static final String LEFT_ID = "01KZEFT0000000000000000000";
 
-    private static final PackUnderResolution RIGHT = pack("01RIGHT", "right", Optional.empty());
+    private static final String RIGHT_ID = "01RHZGHT000000000000000000";
 
-    private static final PackUnderResolution CHILD = pack("01CHILD", "child", Optional.of("01LEFT"));
+    private static final String CHILD_ID = "01CHZKD0000000000000000000";
+
+    private static final String ORPHAN_ID = "01ZRPHAN000000000000000000";
+
+    private static final String NONE_ID = "01GNZNE0000000000000000000";
+    private static final PackUnderResolution LEFT = pack(LEFT_ID, "left", Optional.empty());
+
+    private static final PackUnderResolution RIGHT = pack(RIGHT_ID, "right", Optional.empty());
+
+    private static final PackUnderResolution CHILD = pack(CHILD_ID, "child", Optional.of(LEFT_ID));
 
     private static final Function<PackUnderResolution, Collection<String>> EACH_HOLDS_TEAM =
-            holding(Map.of("01LEFT", List.of("team"), "01RIGHT", List.of("team"), "01CHILD", List.of("team")));
+            holding(Map.of(LEFT_ID, List.of("team"), RIGHT_ID, List.of("team"), CHILD_ID, List.of("team")));
 
     @Test
     @DisplayName("two unrelated packs of one level holding one preset id refuse with the sibling conflict")
@@ -45,7 +54,8 @@ class PackRulesetsClosureTest {
             assertThat(reason.code().value()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT.token());
             assertThat(reason.rule()).isEqualTo(CompositionRules.PRESETS_RULE);
             assertThat(reason.detail())
-                    .isEqualTo("packs `left` (01LEFT) and `right` (01RIGHT) at org both hold the preset `team`,"
+                    .isEqualTo("packs `left` (" + LEFT_ID + ") and `right` (" + RIGHT_ID
+                            + ") at org both hold the preset `team`,"
                             + " and neither extends the other by parent_pack");
         });
     }
@@ -78,7 +88,7 @@ class PackRulesetsClosureTest {
     @Test
     @DisplayName("one derivation: closure(presetIdsOf)'s reasons are closureFaults', code, detail and phase, in order")
     void theRulesetsReasonsAreItsFaults() {
-        PackUnderResolution orphan = pack("01ORPHAN", "orphan", Optional.of("01NONE"));
+        PackUnderResolution orphan = pack(ORPHAN_ID, "orphan", Optional.of(NONE_ID));
         List<PackUnderResolution> set = List.of(LEFT, RIGHT, orphan);
 
         List<CompositionFault> faults = PackRulesets.closureFaults(set, EACH_HOLDS_TEAM);
@@ -119,9 +129,10 @@ class PackRulesetsClosureTest {
         return pack -> presets.getOrDefault(pack.descriptor().packId(), List.of());
     }
 
+    /** A pack configured under its name, a pack id, whose descriptor declares the ULID {@code id} (#583). */
     private static PackUnderResolution pack(String id, String name, Optional<String> parent) {
         return new PackUnderResolution(
-                new ConfiguredPack(new PackIdentifier(id), PackLevel.ORG),
+                new ConfiguredPack(new PackIdentifier(name), PackLevel.ORG),
                 new PackDescriptor(id, "1.0.0", parent, name, Optional.of(PackLevel.ORG), Optional.empty()));
     }
 }

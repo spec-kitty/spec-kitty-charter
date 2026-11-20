@@ -78,8 +78,8 @@ final class ReportWriter {
             ArrayNode packs = node.putArray("packs");
             for (RefusalPack pack : problem.packs()) {
                 packs.addObject()
-                        .put("descriptorPackId", pack.descriptorPackId())
-                        .put("packId", pack.packId())
+                        .put("descriptorPackId", pack.descriptorPackId().value())
+                        .put("packId", pack.packId().value())
                         .put("name", pack.name());
             }
         }
