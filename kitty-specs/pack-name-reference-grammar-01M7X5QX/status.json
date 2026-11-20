@@ -51,7 +51,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -62,7 +62,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "WP02 ready. Red first: 0dfe1cf (PackQualifiedReferenceTest 20 tests, 11 fail on the WP01 head). Fix 2753f52, 5d87170 (URN part [^:\\s] so a_b:: cannot pass as a bare URN, found by QualifierParityTest), b284e6f (fixtures at 63), c34f36d (docs). Green: kernel/missions/packs/contracts tests (7009, then the 2 fixtures fixed), :kernel:check :missions:check, packs checkstyle+spotless, :contracts:check -PcontractBaseline=none (changelog fragment and packs CHANGELOG rules pass), :pack-validation:test and wholePackRoundTrip, :client-java:compileJava, check_docs all, markdownlint 0.18.1, cspell 9.2.0. Planted break (_ in GlossaryTerm qualifier): QualifierParityTest fails naming the site. Out-of-map edits: GraphBinding+GraphBindingTest (load-path refusal in place of QualifierLoadTest), RelationshipWireTest, packs IdentifierBoundsTest, KindRefTest, QualifierParityTest (new). Reviewer LOW from WP01 folded (PackSchemasTest pins the kind alternation after QUALIFIER). Not done: Urn.yaml keeps [a-z_]+:.+ (bare URN, not a reference).",
-        "Cycle 1 fixed: MEDIUM-1 readGraphs refuses a malformed qualified endpoint (strict load drg_schema_error, stored edge read pack_unreadable), QualifierLoadTest with 63 control, ArtifactReadService comment; SubstepCandidate matches with possessive SLUG (#440) with a 40,000-char test and guard allow-list update; L1 kept [^:\\s] with reason; L2 comment fixed. Green: full :missions/:packs tests, :kernel, :contracts identifiers, RegexRecursionGuardTest, checkstyle+spotless, :contracts:check. Commits a00b593, 5c42606."
+        "Cycle 1 fixed: MEDIUM-1 readGraphs refuses a malformed qualified endpoint (strict load drg_schema_error, stored edge read pack_unreadable), QualifierLoadTest with 63 control, ArtifactReadService comment; SubstepCandidate matches with possessive SLUG (#440) with a 40,000-char test and guard allow-list update; L1 kept [^:\\s] with reason; L2 comment fixed. Green: full :missions/:packs tests, :kernel, :contracts identifiers, RegexRecursionGuardTest, checkstyle+spotless, :contracts:check. Commits a00b593, 5c42606.",
+        "Cycle 2 approved (head ce79053): MEDIUM-1 fixed; 64-char qualifier refused by staging, strict load (drg_schema_error with pack-id detail) and stored edge read (pack_unreadable), 63 loads everywhere; possessive SubstepCandidate matcher equals GRAMMAR (3M-case fuzz, 0 diffs); planted breaks caught by RegexRecursionGuardTest, SubstepTest and QualifierLoadTest; gradle check green; driftTest and pack-check on open-packs b426378: 19 packs, 0 problems. LOW: lenient DomainRepositoryService.load drops a refused graph document without a violation (pre-existing for any unreadable document); edges() refusal does not name the document or reason; optional upgrade line for packs already stored with such a qualifier."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
