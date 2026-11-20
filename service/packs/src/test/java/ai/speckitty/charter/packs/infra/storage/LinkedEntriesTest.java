@@ -204,7 +204,7 @@ class LinkedEntriesTest {
         inspector.read(root(pack)).rationale().details().forEach(reason -> outputs.add(reason.toString()));
         outputs.add(StoreRead.of(
                         pack,
-                        PACK,
+                        new PackIdentifier(PACK),
                         PackFileSet.walk(pack, PACK),
                         STRATEGY,
                         KindBindings.all(),
@@ -306,7 +306,12 @@ class LinkedEntriesTest {
         link(pack.resolve("directives/B.directive.yaml"), outside);
 
         StoreRead read = StoreRead.of(
-                pack, PACK, PackFileSet.walk(pack, PACK), STRATEGY, KindBindings.all(), Companions.Rules.bundled());
+                pack,
+                new PackIdentifier(PACK),
+                PackFileSet.walk(pack, PACK),
+                STRATEGY,
+                KindBindings.all(),
+                Companions.Rules.bundled());
         assertThat(read.assembly()).isInstanceOfSatisfying(Assembly.Assembled.class, held -> {
             assertThat(held.violations()).singleElement().satisfies(violation -> {
                 assertThat(violation.kind()).isEqualTo(StorageCodes.PACK_ENTRY_LINKED);
