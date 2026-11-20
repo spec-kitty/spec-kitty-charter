@@ -60,6 +60,9 @@
       "last_event_id": "01M7XDQHJJ5D0ZV7DJ1CN58XFE",
       "last_transition_at": "2026-11-20T21:27:49.586137+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP02 ready. Red first: 0dfe1cf (PackQualifiedReferenceTest 20 tests, 11 fail on the WP01 head). Fix 2753f52, 5d87170 (URN part [^:\\s] so a_b:: cannot pass as a bare URN, found by QualifierParityTest), b284e6f (fixtures at 63), c34f36d (docs). Green: kernel/missions/packs/contracts tests (7009, then the 2 fixtures fixed), :kernel:check :missions:check, packs checkstyle+spotless, :contracts:check -PcontractBaseline=none (changelog fragment and packs CHANGELOG rules pass), :pack-validation:test and wholePackRoundTrip, :client-java:compileJava, check_docs all, markdownlint 0.18.1, cspell 9.2.0. Planted break (_ in GlossaryTerm qualifier): QualifierParityTest fails naming the site. Out-of-map edits: GraphBinding+GraphBindingTest (load-path refusal in place of QualifierLoadTest), RelationshipWireTest, packs IdentifierBoundsTest, KindRefTest, QualifierParityTest (new). Reviewer LOW from WP01 folded (PackSchemasTest pins the kind alternation after QUALIFIER). Not done: Urn.yaml keeps [a-z_]+:.+ (bare URN, not a reference)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 191,
