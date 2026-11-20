@@ -15,6 +15,14 @@
   "slug": "pack-name-reference-grammar-01M7X5QX",
   "target_branch": "main",
   "topology": "single_branch",
-  "topology_settled": false,
+  "topology_decision": {
+    "code_lane_count": 2,
+    "from": "single_branch",
+    "rule": "wp_count_le_2",
+    "target_protected": true,
+    "to": "single_branch",
+    "wp_count": 2
+  },
+  "topology_settled": true,
   "topology_source": "default"
 }

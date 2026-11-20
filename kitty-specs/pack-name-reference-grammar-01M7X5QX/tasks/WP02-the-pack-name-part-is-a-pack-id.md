@@ -1,7 +1,8 @@
 ---
 work_package_id: WP02
 title: The pack-name part of a reference is a pack id
-dependencies: [WP01]
+dependencies:
+- WP01
 requirement_refs:
 - FR-001
 - FR-002
@@ -21,7 +22,7 @@ requirement_refs:
 - SC-004
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+branch_strategy: Planning artifacts for this mission were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks:
 - T006
 - T007
@@ -31,9 +32,6 @@ subtasks:
 - T011
 - T012
 phase: Phase 2 - The change
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - at: '2026-11-20T19:15:00Z'
   actor: system
@@ -70,6 +68,8 @@ owned_files:
 - docs/architecture/descriptors.md
 - site/.contextive/definitions.yaml
 role: implementer
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 - The pack-name part of a reference is a pack id

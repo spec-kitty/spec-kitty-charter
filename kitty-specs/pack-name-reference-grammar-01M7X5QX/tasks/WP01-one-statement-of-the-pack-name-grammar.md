@@ -8,7 +8,7 @@ requirement_refs:
 - SC-003
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Planning artifacts were generated on main; completed changes must merge back into main.
+branch_strategy: Planning artifacts for this mission were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -16,9 +16,6 @@ subtasks:
 - T004
 - T005
 phase: Phase 1 - Tidy first
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - at: '2026-11-20T19:15:00Z'
   actor: system
@@ -35,6 +32,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java
 - contracts/src/test/java/ai/speckitty/charter/contracts/identifiers/**
 role: implementer
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP01 - One statement of the pack-name grammar (tidy-first)
