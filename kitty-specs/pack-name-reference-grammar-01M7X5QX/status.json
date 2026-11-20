@@ -1,7 +1,7 @@
 {
-  "event_count": 7,
-  "last_event_id": "01M7XBWHQD16CGZ2SJ3ZZC9EYM",
-  "materialized_at": "2026-11-20T20:55:36.429674+00:00",
+  "event_count": 9,
+  "last_event_id": "01M7XBY9P4CX4Z9NB3M1WXVWP9",
+  "materialized_at": "2026-11-20T20:56:33.716246+00:00",
   "mission_number": "",
   "mission_slug": "pack-name-reference-grammar-01M7X5QX",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -50,11 +50,20 @@
       }
     },
     "WP02": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7X61R0CYV49D4ADJ6DX321P",
-      "last_transition_at": "2026-11-20T19:13:35.244860+00:00"
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M7XBY9P4CX4Z9NB3M1WXVWP9",
+      "last_transition_at": "2026-11-20T20:56:33.716246+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 191,
+      "shell_pid_created_at": "1795208187.04"
     }
   }
 }
