@@ -22,6 +22,8 @@ Grounding on `main` 17d5ca2 (Phase 1 research) found the grammar in these places
 - **Missions**: `SubstepCandidate`, which rebuilds its written grammar from `PACK_NAME_GRAMMAR` by stripping the anchors.
 - **Packs**: `GuardImplementation`, whose `<pack>::asset:<id>` qualifier is a second copy of the grammar
   (`IdentifierGrammar.SLUG`, capped at 64, not 63).
+- **Missions**: `GuardReference`, whose `<pack>::guard:<id>` pack part is a third copy (`IdentifierGrammar.SLUG`, capped
+  at 64).
 - **Charter contract** (`contracts/charter`, `contracts/_shared`):
   - the qualifier of `PackQualifiedReference.yaml` and `PackQualifiedReferenceWrite.yaml`;
   - the `seeAlso` items of `GlossaryTerm.yaml`, `GlossaryContextTerm.yaml` and `VocabularyTerm.yaml`;
@@ -31,7 +33,9 @@ Grounding on `main` 17d5ca2 (Phase 1 research) found the grammar in these places
   - the descriptor `name`;
   - the qualifier of the graph-shard and org-fragment edge `source` and `target`, and of their term-target `if`;
   - the glossary `see_also` qualifier;
-  - the mission-type substep `candidates` qualifier.
+  - the mission-type substep `candidates` qualifier;
+  - the guard `implemented_by` and lifecycle guard `ref` qualifiers, already on the slug. The lifecycle `ref` is capped
+    at 136 (64 + 8 + 64), so it moves to 135.
 
 The activations `PackRef` named in the issue is already a `PackIdentifier` (#583); nothing is left to do there.
 
@@ -109,13 +113,15 @@ each schema's qualifier to the kernel's written form.
 |----|-------|------------|----------|--------|----------|-----------------|
 | FR-001 | Kernel pack-name part is a pack id | As a pack author, I want a reference's pack name checked by `PackIdentifier.isPackId` so that a reference to a pack that cannot exist is refused at parse. | High | Open | [build] | no — the red test on `a_b::` fails on `main` |
 | FR-002 | Refusal names the grammar | As a pack author, I want the refusal to carry `PackIdentifier.GRAMMAR_DETAIL` so that I know what to write. | High | Open | [build] | no — `main` names `^[a-z0-9][a-z0-9_-]*$` |
-| FR-003 | One predicate and one written form | As a maintainer, I want `KindRef`, `Relationship`, `SubstepCandidate` and `GuardImplementation` to check the pack name through the kernel's one predicate, and the schema pin tests to read the kernel's one written form, so that the grammar is stated once. | Medium | Open | [build] | no — `GuardImplementation` and `SubstepCandidate` hold their own copies on `main` |
+| FR-003 | One predicate and one written form | As a maintainer, I want `KindRef`, `Relationship`, `SubstepCandidate`, `GuardImplementation` and `GuardReference` to check the pack name through the kernel's one predicate, and the schema pin tests to read the kernel's one written form, so that the grammar is stated once. | Medium | Open | [build] | no — `GuardImplementation`, `GuardReference` and `SubstepCandidate` hold their own copies on `main` |
 | FR-004 | Charter contract qualifiers follow | As a contract consumer, I want the qualifier of `PackQualifiedReference`, `PackQualifiedReferenceWrite`, and the `seeAlso` of `GlossaryTerm`, `GlossaryContextTerm` and `VocabularyTerm`, written as the slug so that the contract refuses what the service refuses. | High | Open | [build] | no — the parity test fails on `main` once it maps the sites |
-| FR-005 | Packs contract qualifiers follow | As a pack author, I want the qualifiers of the graph-shard, org-fragment, glossary and mission-type schemas written as the slug. | High | Open | [build] | no — as FR-004 |
+| FR-005 | Packs contract qualifiers follow | As a pack author, I want the qualifiers of the graph-shard, org-fragment, glossary and mission-type schemas written as the slug, and the lifecycle guard `ref` capped at 135. | High | Open | [build] | no — as FR-004 |
 | FR-006 | Pack names and ids follow | As a pack author, I want the descriptor `name`, `PackRegistration.name` and `RequiringPack.packId` and `via[]` on the pack-id form, the slug capped at 63, so that a name no pack id can equal is refused. | High | Open | [build] | no — `main` accepts `a_b` and 64 characters |
-| FR-007 | Parity covers qualifiers and pack names | As a maintainer, I want `IdentifierPatternParityTest` to map every `::` qualifier site, and every pack-name or pack-id site, to `PackIdentifier.isPackId`, with the 63 cap on a qualifier as a documented exception, so that the sites cannot drift again. | High | Open | [build] | no — a planted `_` fails it |
+| FR-007 | Parity covers qualifiers and pack names | As a maintainer, I want `IdentifierPatternParityTest` to map every `::` qualifier site (15, wherever the `(<pack>::` group sits in the pattern), and every pack-name or pack-id site, to `PackIdentifier.isPackId`, with the 63 cap on a qualifier as a documented exception, so that the sites cannot drift again. | High | Open | [build] | no — a planted `_` fails it |
 | FR-008 | Breaking change recorded | As a consumer, I want the change under `### Breaking` in the charter contract fragment and in the packs contract CHANGELOG, saying what core's seam changes (ADR-0022). | High | Open | [build] | no — review checks that the entries are present |
 | FR-009 | Fixtures canonical | As a maintainer, I want every fixture and example to carry only the canonical shape; the old shape appears only in refusal tests. | Medium | Open | [build] | no — `PackQualifiedReferenceTest` asserts that `open_packs-2::` is accepted on `main` |
+| FR-010 | The cap is in the contract text | As a contract consumer, I want each charter qualifier site's `description` to say the pack name is a pack id of at most 63 characters, so that the documented exception is written where I read it. | Medium | Open | [build] | no — no description says it on `main` |
+| FR-011 | Load path refuses clearly | As a pack author, I want a graph edge whose qualifier has 64 characters, which the schema accepts, to be refused at load with the pack-id detail, not reshaped silently. | Medium | Open | [build] | no — a new load test on the same fixture, with a 63-character positive control |
 
 ### Non-Functional Requirements
 
@@ -135,6 +141,7 @@ each schema's qualifier to the kernel's written form.
 | C-004 | Out of scope | The profile-id grammar, `Slug.yaml` as used for mission types and actions, and #556's closure walk are not changed. | Scope | Medium | Open |
 | C-005 | Tier R review | Every WP review and the final review are done by a separate reviewer session. | Process | High | Open |
 
+
 ### Key Entities
 
 - **Pack name (qualifier)**: the `<pack-name>` before `::` in a reference. It is a registered pack id, `slug(63)`.
@@ -149,5 +156,5 @@ each schema's qualifier to the kernel's written form.
   fixture — [build] · no-op passable: no
 - **SC-002**: every contract and pack-schema site that restates a pack name or the `::` qualifier is discovered and
   agrees with `PackIdentifier.isPackId` (allowing the documented exception) — [build] · no-op passable: no
-- **SC-003**: no source outside the kernel restates the pack-name grammar — [build] · no-op passable: no
+- **SC-003**: no source outside the kernel restates the pack-name grammar or its cap (`GuardImplementation` and `GuardReference` included) — [build] · no-op passable: no
 - **SC-004**: the open-packs census stays at 0 references broken — [ratchet] · no-op passable: yes (positive control: 607 qualified references counted)

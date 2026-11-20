@@ -32,7 +32,7 @@ or pack-id patterns of the contracts. The old grammar is replaced outright. The 
 - C-001 to C-005;
 - NFR-002: no lookahead in the charter contract.
 
-**Scale/Scope**: about 12 Java sources, 11 schema files, about 6 test files and 4 living docs.
+**Scale/Scope**: about 13 Java sources, 13 schema files, about 6 test files and 4 living docs.
 
 ## Design decisions
 
@@ -45,18 +45,33 @@ or pack-id patterns of the contracts. The old grammar is replaced outright. The 
     which `KernelGrammar.SLUG` already restates.
   - `SubstepCandidate.GRAMMAR` and the schema pin tests read `QUALIFIER`, and nothing strips anchors any more.
   - In WP01, `QUALIFIER` still spells today's grammar (`([a-z0-9][a-z0-9_-]*::)?`), so behavior does not change.
+  - `GuardImplementation` and `GuardReference` keep their own patterns, because the qualifier sits inside a longer
+    spelling there. They decide the pack part through `isPackName` only.
 - **D3 — The 63 cap is a documented exception.** A pattern cannot cap one part of a longer string without lookahead,
   and the charter contract carries none (ADR-0078, RE2-safe).
   - The schemas restate the slug; the service refuses a qualifier of 64 or more characters.
+  - Each charter qualifier site's `description` states the cap ("the pack name is a pack id, at most 63 characters"),
+    as `SlotId.yaml` states its part cap.
+  - The packs contract could carry a lookahead cap, since `glossary.schema.json` already uses one. It does not, so the
+    exception stays one rule across both contracts. The lifecycle guard `ref` keeps its whole-string cap, which moves
+    to 135 (63 + 8 + 64).
   - `IdentifierPatternParityTest` pins this exception as #580 pins the slot part.
   - Pack-name and pack-id fields that stand alone (the descriptor `name`, `PackRegistration.name`, `RequiringPack`) do
     carry `maxLength: 63`, and so map to `PACK_ID` under the existing rule.
-- **D4 — Parity sees qualifiers.**
-  - A pattern holding `::` is a qualifier site. The test strips the leading `^` and the newline guard, then requires the
-    pattern to start with `QUALIFIER`; a `::` site that does not fails, naming the site.
+- **D4 — Parity sees qualifiers (WP02).**
+  - A pattern holding `::` is a qualifier site. Each `(<form>::` group in it is a qualifier, wherever it sits: at the
+    start (13 sites), inside an alternation (guard `implemented_by`), or as `(<form>::guard:)?` (lifecycle `ref`). That
+    makes 15 sites.
+  - Every `<form>` must equal `IdentifierGrammar.SLUG_AS_WRITTEN`. A `::` site with no such group fails, naming the
+    site.
+  - This check lands in WP02, when every site is on the slug. In WP01, the guard and lifecycle sites already differ from
+    today's grammar, and a temporary allowlist would be an exemption.
   - The qualifier, compiled alone, gives `isPackName`'s verdict on every corpus row of at most 63 characters. Over 63,
     the schema accepts and the kernel refuses (D3).
-- **D5 — GuardImplementation.**
+- **D5 — GuardImplementation and GuardReference.** `GuardReference` (missions, `<pack>::guard:<id>`) gets the same
+  treatment as `GuardImplementation` below: its pack part goes through `isPackName`, capped at 63, with the length
+  checked before the match; `IdentifierBoundsTest` follows.
+- **D5a — GuardImplementation.**
   - The `<pack>::asset:` qualifier is read by `SPELLING_SHAPE`, then checked by `isPackName`.
   - The pre-match length guard uses `PackIdentifier.MAX_LENGTH` (63).
   - It moves in WP02, because today's guard is stricter than the old grammar; moving it in WP01 would loosen it.
@@ -68,7 +83,11 @@ or pack-id patterns of the contracts. The old grammar is replaced outright. The 
   entry:
   - charter contract: a fragment `contracts/charter/changes/2026-11-20-pack-name-reference-grammar.md`;
   - packs contract: a line under `## 0.1.0-SNAPSHOT` in `contracts/packs/CHANGELOG.md`;
-  - the repository changelog: an entry `docs/changelog/2026-11-20-pack-name-reference-grammar.md`.
+  - the repository changelog: an entry `docs/changelog/2026-11-20-pack-name-reference-grammar.md`. It says that it
+    supersedes the 64-character qualifier cap of `2026-11-09-pack-id-length-caps.md`.
+- **D8 — Load path.** A 64-character qualifier on a graph edge passes the schema, so a `:packs` load test shows it is
+  refused, naming the pack-id detail. `FileSystemPackInspector`'s step-enhancement fallback reshapes a malformed target;
+  the test proves the graph read refuses before that fallback matters, or the fallback is fixed.
 
   Core's seam: regenerate the client's validation patterns. No field changes shape.
 
@@ -123,27 +142,28 @@ None.
 
 ### IC-01 — One statement of the pack-name grammar
 
-- **Purpose**: state the qualifier once in the kernel, and make every Java site and pin test read it, with no change in
-  behavior.
-- **Relevant requirements**: FR-003, FR-007 (the qualifier mapping, against today's grammar).
+- **Purpose**: state the qualifier once in the kernel, and make `SubstepCandidate` and the pin tests read it, with no
+  change in behavior.
+- **Relevant requirements**: FR-003.
 - **Affected surfaces**:
   - `PackQualifiedReference`, `IdentifierGrammar`, `SubstepCandidate`;
-  - `PackSchemasTest`, `VocabularyEqualityTest`;
-  - the parity test (`KernelGrammar`, `IdentifierPatternParityTest`).
+  - `PackSchemasTest`, `VocabularyEqualityTest`.
 - **Sequencing/depends-on**: none.
 - **Risks**:
   - `VocabularyEqualityTest` parses the qualifier prefix with a regex. It must read `QUALIFIER` instead (via
     `Pattern.quote`).
-  - The parity extension must not loosen `identifierLike` for non-qualifier patterns.
+  - The `SubstepCandidate.GRAMMAR` string must not change.
 
 ### IC-02 — The pack-name part is a pack id
 
 - **Purpose**: change the grammar to `slug(63)` in the kernel, in `GuardImplementation` and in every contract site.
-- **Relevant requirements**: FR-001, FR-002, FR-004, FR-005, FR-006, FR-008, FR-009, NFR-001, NFR-002.
+- **Relevant requirements**: FR-001, FR-002, FR-004 to FR-011, NFR-001, NFR-002.
 - **Affected surfaces**:
   - the kernel;
-  - `GuardImplementation`;
-  - 11 schema files;
+  - `GuardImplementation`, `GuardReference`;
+  - 13 schema files;
+  - the parity test;
+  - a `:packs` load test;
   - the changelog entries;
   - 3 living docs;
   - the tests named above.
