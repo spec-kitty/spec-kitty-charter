@@ -241,6 +241,24 @@ class PackCheckJarTest {
         assertThat(run.err()).isEmpty();
     }
 
+    // PR #608 MEDIUM-3 (operator ruling B): a pack in a directory whose name is no pack id, given its id, with the
+    // round
+    // trip, passes every check under that id.
+    @Test
+    void aPackGivenItsIdPassesEveryCheckWhateverItsDirectoryIsCalled() throws Exception {
+        Path pack = Files.move(
+                ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs")),
+                temp.resolve("packs").resolve("Bad_Name"));
+
+        Run run = run("--pack", pack + "=" + ExamplePacks.BUILT_IN, "--round-trip");
+
+        assertThat(run.exit()).as(run.err()).isZero();
+        assertThat(run.checks()).containsExactly("PACK", "CLOSURE", "ROUND_TRIP");
+        assertThat(run.report().get("packs").get(0).get("name").asString()).isEqualTo(ExamplePacks.BUILT_IN);
+        assertThat(run.codes()).isEmpty();
+        onlyWarningsOnStandardError(run);
+    }
+
     // Case 4 (squad S2), with the round trip: nothing reads through the link, so its target's text reaches neither
     // stream. The link is one problem: the round trip's reason at a file validate mode already refuses is dropped
     // (WP05), so pack_entry_linked stands alone.

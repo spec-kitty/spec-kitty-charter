@@ -3,6 +3,7 @@ package ai.speckitty.charter.packcheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packcheck.Arguments.Help;
 import ai.speckitty.charter.packcheck.Arguments.Outcome;
@@ -190,6 +191,88 @@ class ArgumentsTest {
             Parsed parsed = parsed(Arguments.parse(new String[] {"--config-root", temp.toString()}));
 
             assertThat(parsed.packs()).extracting(PackSetEntry::name).containsExactly("a");
+        }
+
+        @Test
+        void aPackGivenAnIdIsConfiguredUnderItWhateverItsDirectoryIsCalled() throws IOException {
+            Path misnamed = pack("Bad_Name");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", misnamed + "=" + ExamplePacks.ORG}));
+
+            assertThat(parsed.packs())
+                    .extracting(
+                            PackSetEntry::name,
+                            entry -> entry.root().configuredLevel(),
+                            entry -> entry.root().locator())
+                    .containsExactly(tuple(ExamplePacks.ORG, Optional.empty(), misnamed.toString()));
+        }
+
+        @Test
+        void aLevelThenAnId() throws IOException {
+            Path misnamed = pack("Bad_Name");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", misnamed + ":org=" + ExamplePacks.ORG}));
+
+            assertThat(parsed.packs())
+                    .extracting(
+                            PackSetEntry::name,
+                            entry -> entry.root().configuredLevel(),
+                            entry -> entry.root().locator())
+                    .containsExactly(tuple(ExamplePacks.ORG, Optional.of(PackLevel.ORG), misnamed.toString()));
+        }
+
+        @Test
+        void aDirectoryWhoseNameHoldsAnEqualsSignIsThePathWholeUnderItsOwnName() throws IOException {
+            // b is a pack id, but no directory a exists: the value names the directory a=b.
+            Path equals = pack("a=b");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", equals.toString()}));
+
+            assertThat(parsed.packs()).singleElement().satisfies(entry -> {
+                assertThat(entry.root().locator()).isEqualTo(equals.toString());
+                assertThat(entry.name()).isEqualTo("a=b");
+                assertThat(entry.root().configuredLevel()).isEmpty();
+            });
+        }
+
+        @Test
+        void aDirectoryWhoseNameHoldsAnEqualsSignTakesALevel() throws IOException {
+            Path equals = pack("a=b");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", equals + ":org"}));
+
+            assertThat(parsed.packs()).singleElement().satisfies(entry -> {
+                assertThat(entry.root().locator()).isEqualTo(equals.toString());
+                assertThat(entry.name()).isEqualTo("a=b");
+                assertThat(entry.root().configuredLevel()).contains(PackLevel.ORG);
+            });
+        }
+
+        @Test
+        void aDirectoryWhoseNameEndsInNoPackIdAfterAnEqualsSignIsThePathWhole() throws IOException {
+            Path equals = pack("x=Not_An_Id");
+
+            Parsed parsed = parsed(Arguments.parse(new String[] {"--pack", equals.toString()}));
+
+            assertThat(parsed.packs()).singleElement().satisfies(entry -> {
+                assertThat(entry.root().locator()).isEqualTo(equals.toString());
+                assertThat(entry.name()).isEqualTo("x=Not_An_Id");
+            });
+        }
+
+        @Test
+        void aDirectoryWhoseNameHoldsAnEqualsSignTakesAnIdOfItsOwn() throws IOException {
+            Path equals = pack("a=b");
+
+            Parsed parsed =
+                    parsed(Arguments.parse(new String[] {"--pack", equals + ":project=" + ExamplePacks.PROJECT}));
+
+            assertThat(parsed.packs())
+                    .extracting(
+                            PackSetEntry::name,
+                            entry -> entry.root().configuredLevel(),
+                            entry -> entry.root().locator())
+                    .containsExactly(tuple(ExamplePacks.PROJECT, Optional.of(PackLevel.PROJECT), equals.toString()));
         }
 
         @Test
@@ -423,8 +506,89 @@ class ArgumentsTest {
             Path second = Files.createDirectories(temp.resolve("two/" + ExamplePacks.ORG));
 
             assertThat(fault(Arguments.parse(new String[] {"--pack", first.toString(), "--pack", second.toString()})))
-                    .isEqualTo(first + " and " + second + " are both named " + ExamplePacks.ORG
-                            + "; a set holds one pack of each name");
+                    .isEqualTo(first + " and " + second + " are both under the id " + ExamplePacks.ORG
+                            + "; a set holds one pack of each id");
+        }
+
+        @Test
+        void nothingAfterTheEqualsSign() throws IOException {
+            Path dir = pack("dir");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", dir + "="})))
+                    .isEqualTo("--pack " + dir + "=: nothing follows the last =, and " + dir
+                            + "= is not a directory; write --pack <dir>[:<level>]=<id>. "
+                            + PackIdentifier.GRAMMAR_DETAIL);
+        }
+
+        @Test
+        void anIdThatIsNoPackId() throws IOException {
+            Path dir = pack("dir");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", dir + "=Bad_Id"})))
+                    .isEqualTo("--pack " + dir + "=Bad_Id: Bad_Id after the last = is not a pack id, and " + dir
+                            + "=Bad_Id is not a directory; write --pack <dir>[:<level>]=<id>. "
+                            + PackIdentifier.GRAMMAR_DETAIL);
+        }
+
+        @Test
+        void anIdBeforeTheLevelIsNoPackId() throws IOException {
+            // The order is <dir>[:<level>][=<id>]: org-base:org is the text after the last =, and is no pack id.
+            Path dir = pack("dir");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", dir + "=org-base:org"})))
+                    .startsWith("--pack " + dir + "=org-base:org: org-base:org after the last = is not a pack id");
+        }
+
+        @Test
+        void aMissingDirectoryWithAnId() {
+            Path missing = temp.resolve("missing");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", missing + ":org=" + ExamplePacks.ORG})))
+                    .isEqualTo("--pack " + missing + ":org is not a directory, and nor is " + missing);
+        }
+
+        @Test
+        void aPackValueWhoseIdReadingAndWholeReadingBothNameADirectory() throws IOException {
+            Path bare = pack("a");
+            Path equals = pack("a=b");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", equals.toString()})))
+                    .isEqualTo("--pack " + equals + " is ambiguous: it names the directory " + equals
+                            + " under its own name, and the directory " + bare
+                            + " under the id b; rename one, or write "
+                            + equals + "=<id> for " + equals);
+        }
+
+        @Test
+        void anIdReadingThatIsItselfAmbiguousIsThatFault() throws IOException {
+            Path bare = pack("x");
+            Path colon = pack("x:org");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", colon + "=" + ExamplePacks.ORG})))
+                    .isEqualTo("--pack " + colon + " is ambiguous: " + colon + " and " + bare
+                            + " are both directories; rename one, or write " + colon + ":<level>");
+        }
+
+        @Test
+        void aWholeReadingThatIsAmbiguousIsThatFault() throws IOException {
+            // x=Bad:org and x=Bad are both directories; Bad:org after the = is no pack id.
+            Path bare = pack("x=Bad");
+            Path colon = pack("x=Bad:org");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", colon.toString()})))
+                    .isEqualTo("--pack " + colon + " is ambiguous: " + colon + " and " + bare
+                            + " are both directories; rename one, or write " + colon + ":<level>");
+        }
+
+        @Test
+        void anExplicitIdThatRepeatsADefaultedOne() throws IOException {
+            Path named = pack(ExamplePacks.ORG);
+            Path misnamed = pack("Bad_Name");
+
+            assertThat(fault(Arguments.parse(
+                            new String[] {"--pack", named.toString(), "--pack", misnamed + "=" + ExamplePacks.ORG})))
+                    .isEqualTo(named + " and " + misnamed + " are both under the id " + ExamplePacks.ORG
+                            + "; a set holds one pack of each id");
         }
     }
 }

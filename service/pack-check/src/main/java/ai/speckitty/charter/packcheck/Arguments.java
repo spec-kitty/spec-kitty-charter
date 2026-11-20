@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packcheck;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packvalidation.set.PackSetEntry;
@@ -19,23 +20,29 @@ import java.util.stream.Collectors;
 
 /**
  * The command line of pack-check (#478, FR-001, T014): {@code --config-root <dir>}, or one or more
- * {@code --pack <dir>[:<level>]}, then optionally {@code --round-trip}; {@code --help} alone asks for the usage.
+ * {@code --pack <dir>[:<level>][=<id>]}, then optionally {@code --round-trip}; {@code --help} alone asks for the usage.
+ * A pack is configured under its {@code =<id>} when one is given, its registered id (#583, D2b; PR #608 MEDIUM-3,
+ * operator ruling B), and otherwise under its directory's name, as every pack of a config root is.
  *
  * <p>A user error is a value, never an exception: {@link #parse} answers {@link UsageFault} for no input, both inputs,
- * an unknown option, a missing value, an unknown level, a directory that does not exist, a config root with no pack, and
- * a {@code --pack} value that could name two directories ({@code x:org} and {@code x} both exist), two packs with one
- * directory (by real path), one inside another or one name, and an entry of the config root's {@code packs/} that is a
- * link resolving to no directory (to nothing, or to a file). A value that starts with {@code --} is a missing value,
- * unless it follows {@code --}, which ends the options. It judges the command line and the directories it names, never
- * a pack's content: that is {@code pack-validation}'s.
+ * an unknown option, a missing value, an unknown level, a directory that does not exist, a config root with no pack, a
+ * text after a {@code --pack} value's last {@code =} that is no pack id when the value names no directory, a
+ * {@code --pack} value that could name two directories ({@code x:org} and {@code x}, or {@code x=id} and {@code x}, both
+ * exist), two packs with one directory (by real path), one inside another or one id, and an entry of the config
+ * root's {@code packs/} that is a link resolving to no directory (to nothing, or to a file). A value that starts with
+ * {@code --} is a missing value, unless it follows {@code --}, which ends the options. It judges the command line and
+ * the directories it names, never a pack's content: that is {@code pack-validation}'s.
  */
 final class Arguments {
 
     /** The usage, as {@code --help} prints it and a usage fault ends with. */
     static final String USAGE = """
-            usage: pack-check (--config-root <dir> | --pack <dir>[:<level>] ...) [--round-trip]
+            usage: pack-check (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip]
               --config-root <dir>      check every pack under <dir>/packs/, each at the level its pack.yaml declares
-              --pack <dir>[:<level>]   check the pack in <dir>, at <level> (built-in, org or project) when given;
+                                       and under its directory's name
+              --pack <dir>[:<level>][=<id>]
+                                       check the pack in <dir>, at <level> (built-in, org or project) when given,
+                                       under the pack id <id> when given, else under the directory's name;
                                        repeat it to check a set of packs together
               --round-trip             also round-trip every pack through the charter's model
               --help                   print this usage
@@ -59,7 +66,7 @@ final class Arguments {
      * A check to run.
      *
      * @param packs the packs, in the order given, or in name order under a config root; no two with one directory or
-     *     one name
+     *     one id
      * @param roundTrip whether the round trip is asked for
      */
     record Parsed(List<PackSetEntry> packs, boolean roundTrip) implements Outcome {
@@ -161,7 +168,7 @@ final class Arguments {
             }
             if (packs.isEmpty()) {
                 return new UsageFault(
-                        "nothing to check: give " + CONFIG_ROOT + " <dir> or " + PACK + " <dir>[:<level>]");
+                        "nothing to check: give " + CONFIG_ROOT + " <dir> or " + PACK + " <dir>[:<level>][=<id>]");
             }
             return given(packs, roundTrip);
         }
@@ -193,7 +200,7 @@ final class Arguments {
         return distinct(roots, roundTrip);
     }
 
-    /** The packs of repeated {@code --pack}, each at its level when one is given. */
+    /** The packs of repeated {@code --pack}, each at its level when one is given, under its id when one is given. */
     private static Outcome given(List<String> values, boolean roundTrip) {
         List<PackRoot> roots = new ArrayList<>();
         for (String value : values) {
@@ -206,31 +213,91 @@ final class Arguments {
         return distinct(roots, roundTrip);
     }
 
-    /** One {@code --pack} value: its root, or why it has none. */
-    private record Given(Optional<PackRoot> root, Optional<UsageFault> fault) {
+    /**
+     * One {@code --pack} value: its root, or why it has none.
+     *
+     * @param named whether a reading of the value names an existing directory: true for a root, and for a value that is
+     *     ambiguous because two readings do
+     */
+    private record Given(Optional<PackRoot> root, Optional<UsageFault> fault, boolean named) {
 
         static Given of(PackRoot root) {
-            return new Given(Optional.of(root), Optional.empty());
+            return new Given(Optional.of(root), Optional.empty(), true);
         }
 
         static Given refused(String message) {
-            return new Given(Optional.empty(), Optional.of(new UsageFault(message)));
+            return new Given(Optional.empty(), Optional.of(new UsageFault(message)), false);
+        }
+
+        static Given ambiguous(String message) {
+            return new Given(Optional.empty(), Optional.of(new UsageFault(message)), true);
+        }
+
+        /** This root under the registered id {@code id} (#583, D2b), whatever its directory is called. */
+        Given under(String id) {
+            return of(root.map(found -> new PackRoot(id, found.configuredLevel(), found.locator()))
+                    .orElseThrow());
         }
     }
 
     /**
-     * One {@code --pack <dir>[:<level>]}. The level is the text after the last {@code :} when it is a level token, so a
-     * path that holds a {@code :} ({@code C:\packs\x}) parses; a suffix that is a bare word but no level, on a path that
-     * is not a directory, is an unknown level. When the whole value is a directory and the text before the colon is
-     * not, the whole value is the directory, at no configured level; when both are, the value is ambiguous.
+     * One {@code --pack <dir>[:<level>][=<id>]} (PR #608 MEDIUM-3, operator ruling B). The id is the text after the last
+     * {@code =} when it is a pack id ({@link PackIdentifier#isPackId}); the level is then read from what remains, by
+     * {@link #levelled}'s rule. The pack is configured under the id, whatever its directory is called; with no id, under
+     * its directory's name.
+     *
+     * <p>A directory whose name holds an {@code =} still parses: when the value read with no id names a directory and
+     * the value read with an id does not, the value is that directory, under its own name; when both name one, the
+     * value is ambiguous. A text after the last {@code =} that is no pack id is a usage fault unless the value, read
+     * with no id, names a directory: it is never taken into the path of a directory that does not exist.
      */
     private static Given packRoot(String value) {
+        int equals = value.lastIndexOf('=');
+        if (equals < 0) {
+            return levelled(value);
+        }
+        String id = value.substring(equals + 1);
+        String rest = value.substring(0, equals);
+        Given plain = levelled(value);
+        if (!PackIdentifier.isPackId(id)) {
+            if (plain.named()) {
+                return plain;
+            }
+            return Given.refused(PACK + " " + value + ": "
+                    + (id.isEmpty() ? "nothing follows the last =" : id + " after the last = is not a pack id")
+                    + ", and " + value + " is not a directory; write " + PACK + " <dir>[:<level>]=<id>. "
+                    + PackIdentifier.GRAMMAR_DETAIL);
+        }
+        Given withId = levelled(rest);
+        if (withId.named() && plain.named()) {
+            return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
+                    + " under its own name, and the directory " + rest + " under the id " + id
+                    + "; rename one, or write "
+                    + value + "=<id> for " + value);
+        }
+        if (withId.root().isPresent()) {
+            return withId.under(id);
+        }
+        if (plain.named()) {
+            return plain;
+        }
+        return withId;
+    }
+
+    /**
+     * One {@code <dir>[:<level>]}, the pack under its directory's name. The level is the text after the last {@code :}
+     * when it is a level token, so a path that holds a {@code :} ({@code C:\packs\x}) parses; a suffix that is a bare
+     * word but no level, on a path that is not a directory, is an unknown level. When the whole value is a directory and
+     * the text before the colon is not, the whole value is the directory, at no configured level; when both are, the
+     * value is ambiguous.
+     */
+    private static Given levelled(String value) {
         int colon = value.lastIndexOf(':');
         String suffix = colon < 0 ? "" : value.substring(colon + 1);
         Optional<PackLevel> level = PackLevel.fromToken(suffix);
         String path = level.isPresent() ? value.substring(0, colon) : value;
         if (level.isPresent() && Files.isDirectory(Path.of(value)) && Files.isDirectory(Path.of(path))) {
-            return Given.refused(PACK + " " + value + " is ambiguous: " + value + " and " + path
+            return Given.ambiguous(PACK + " " + value + " is ambiguous: " + value + " and " + path
                     + " are both directories; rename one, or write " + value + ":<level>");
         }
         if (level.isEmpty() && isBareWord(suffix) && !Files.isDirectory(Path.of(value))) {
@@ -265,7 +332,10 @@ final class Arguments {
         return !suffix.isEmpty() && suffix.indexOf('/') < 0 && suffix.indexOf('\\') < 0;
     }
 
-    /** The packs, refused when two share a directory (by real path), one lies inside another, or two share a name. */
+    /**
+     * The packs, refused when two share a directory (by real path), one lies inside another, or two share an id, given
+     * or taken from the directory's name.
+     */
     private static Outcome distinct(List<PackRoot> roots, boolean roundTrip) {
         Map<Path, String> byRealPath = new LinkedHashMap<>();
         Map<String, String> byName = new HashMap<>();
@@ -291,8 +361,8 @@ final class Arguments {
             }
             String sameName = byName.putIfAbsent(root.name(), root.locator());
             if (sameName != null) {
-                return new UsageFault(sameName + " and " + root.locator() + " are both named " + root.name()
-                        + "; a set holds one pack of each name");
+                return new UsageFault(sameName + " and " + root.locator() + " are both under the id " + root.name()
+                        + "; a set holds one pack of each id");
             }
             entries.add(new PackSetEntry(root));
         }

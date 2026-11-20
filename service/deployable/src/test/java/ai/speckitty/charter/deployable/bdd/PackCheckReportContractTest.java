@@ -309,6 +309,26 @@ class PackCheckReportContractTest {
         }
 
         @Test
+        @DisplayName("a pack given its id (PR #608 MEDIUM-3, ruling B), in a directory whose name is no pack id")
+        void aPackGivenItsId() throws IOException {
+            Path project = Files.move(
+                    ExamplePacks.copyOf(ExamplePacks.PROJECT, temp.resolve("packs")),
+                    temp.resolve("packs").resolve("Project_Copy"));
+
+            Run run = run("--pack", project + ":project=" + ExamplePacks.PROJECT);
+
+            assertThat(run.exit()).isEqualTo(1);
+            assertConforms(run, project);
+            assertThat(run.report().get("packs").get(0).get("name").asString()).isEqualTo(ExamplePacks.PROJECT);
+            assertThat(run.problems())
+                    .isNotEmpty()
+                    .allSatisfy(problem -> assertThat(problem.get("packs"))
+                            .singleElement()
+                            .satisfies(named ->
+                                    assertThat(named.get("name").asString()).isEqualTo(ExamplePacks.PROJECT)));
+        }
+
+        @Test
         void aPlantedLink() throws IOException {
             Path pack = plant(LINK_PLANT);
 
