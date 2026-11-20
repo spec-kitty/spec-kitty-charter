@@ -252,7 +252,8 @@ public final class FileSystemPackInspector implements PackReading {
     /**
      * The readout of one read already made: its contents, census, verdict and composition facts, all from {@code one}.
      *
-     * @param root the pack read; its name is the pack id the composition facts' refusals name
+     * @param root the pack read; its name is the name the composition facts' refusals name, and a name that is not a
+     *     pack id gives no facts (#583, D5)
      * @param one the one read of {@code root}
      * @return the readout
      */
@@ -263,7 +264,7 @@ public final class FileSystemPackInspector implements PackReading {
                 tree.census().files(),
                 tree.census().notHeld(),
                 StorageRulesets.verdict(tree),
-                CompositionFactsBuilder.readoutFacts(new PackIdentifier(root.name()), one.store()));
+                CompositionFactsBuilder.readoutFacts(root.name(), one.store()));
     }
 
     /**

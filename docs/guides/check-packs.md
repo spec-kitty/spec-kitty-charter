@@ -74,6 +74,11 @@ java -jar pack-check-0.1.0-rc.2.jar \
   --round-trip
 ```
 
+**Name each pack's directory by its pack id.** A pack is checked under the name of its directory, as the service
+reads it, so the name must be a pack id: lowercase letters and digits in hyphen-separated runs, at most 63 characters.
+A directory named otherwise, such as `My_Pack`, is one `pack_id_invalid` violation at `pack`, and the pack is not read
+further.
+
 `--config-root` and `--pack` cannot be mixed. `java -jar pack-check-<version>.jar --help` prints the usage. A
 directory whose name starts with `--` goes after `--`, which ends the options.
 

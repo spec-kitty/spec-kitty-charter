@@ -116,7 +116,7 @@ class ReadoutFactsTest {
                 Optional.empty(),
                 false);
 
-        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts(new PackIdentifier("built-in"), refused);
+        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts("built-in", refused);
 
         assertThat(facts).isEqualTo(new PackReadout.Unreadable(code, "the aggregate of built-in breaks an invariant"));
     }
@@ -126,7 +126,7 @@ class ReadoutFactsTest {
     void anAggregateBreachIsValidationFailed() {
         StoreRead breached = StoreRead.breached(List.of(), "two artifacts share the id x", Optional.empty());
 
-        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts(new PackIdentifier("built-in"), breached);
+        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts("built-in", breached);
 
         assertThat(facts)
                 .isEqualTo(new PackReadout.Unreadable(RefusalCode.VALIDATION_FAILED, "two artifacts share the id x"));
@@ -138,7 +138,7 @@ class ReadoutFactsTest {
         StoreRead none = new StoreRead(
                 new Assembly.None(), new PackLayout(Map.of()), List.of(), Optional.empty(), Optional.empty(), false);
 
-        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts(new PackIdentifier("built-in"), none);
+        PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts("built-in", none);
 
         assertThat(facts)
                 .isEqualTo(new PackReadout.Unreadable(
@@ -167,6 +167,28 @@ class ReadoutFactsTest {
                 .as(
                         "the store half names the directory it was given; the verdict's root fault carries the configured name")
                 .isEqualTo(new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, "pack absent is not a directory"));
+    }
+
+    @Test
+    @DisplayName("a directory whose name is not a pack id: Unreadable, not an exception, and one pack_id_invalid fault")
+    void aNameThatIsNoPackIdIsUnreadableNotAnException(@TempDir Path host) throws IOException {
+        Path pack = Files.move(ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host), host.resolve("Bad_Name"));
+
+        PackReadout readout = read(ExamplePacks.BUILT_IN, pack);
+        PackReadout named = new FileSystemPackInspector()
+                .read(new PackRoot(
+                        "Bad_Name", Optional.of(ExamplePacks.level(ExamplePacks.BUILT_IN)), pack.toString()));
+
+        assertThat(readout.facts())
+                .as("under a pack id, the directory's name is not judged")
+                .isInstanceOf(PackReadout.Built.class);
+        assertThat(named.facts())
+                .isEqualTo(
+                        new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, StoreRead.packIdInvalid("Bad_Name")));
+        assertThat(named.rationale().violations())
+                .as("#583 D5: the read's one fault; the facts' refusal is the same cause")
+                .singleElement()
+                .satisfies(reason -> assertThat(reason.code().value()).isEqualTo("pack_id_invalid"));
     }
 
     @Test

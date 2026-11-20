@@ -66,7 +66,7 @@ class PackCheckMainTest {
         return new Run(exit, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
     }
 
-    /** The five example packs under {@code root/packs/}, a config root. */
+    /** The example packs under {@code root/packs/}, a config root. */
     private Path configRoot() {
         Path root = temp.resolve("root");
         ExamplePacks.names().forEach(name -> ExamplePacks.copyOf(name, root.resolve(ConfigRoot.PACKS)));
@@ -143,6 +143,43 @@ class PackCheckMainTest {
             assertThat(problem.get("packs").get(0).get("packId").asString()).isEqualTo(ExamplePacks.PROJECT);
         }
         assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE");
+    }
+
+    /** Error handling (#583, D5): a pack in a directory whose name is not a pack id. */
+    @Test
+    void aPackInADirectoryNamedBadNameExitsOneWithOnePackIdInvalidProblem() throws IOException {
+        assertOnePackIdInvalidProblem(false);
+    }
+
+    /** Error handling (#583, D5): the round trip adds no second problem for the same name. */
+    @Test
+    void aPackInADirectoryNamedBadNameHasOneProblemWithTheRoundTripToo() throws IOException {
+        assertOnePackIdInvalidProblem(true);
+    }
+
+    private void assertOnePackIdInvalidProblem(boolean roundTrip) throws IOException {
+        Path pack = Files.move(
+                ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs")),
+                temp.resolve("packs").resolve("Bad_Name"));
+        List<String> args = new ArrayList<>(List.of("--pack", pack.toString()));
+        if (roundTrip) {
+            args.add("--round-trip");
+        }
+
+        Run run = run(args.toArray(String[]::new));
+
+        assertThat(run.exit()).as(run.err()).isEqualTo(PackCheckMain.PROBLEMS);
+        assertThat(run.codes()).containsExactly("validation_failed");
+        JsonNode problem = run.report().get("problems").get(0);
+        assertThat(problem.get("status").asInt()).isEqualTo(422);
+        assertThat(problem.get("instance").asString()).isEqualTo(pack.toUri().toString());
+        assertThat(problem.get("violations")).singleElement().satisfies(violation -> {
+            assertThat(violation.get("code").asString()).isEqualTo("pack_id_invalid");
+            assertThat(violation.get("pointer").asString()).isEqualTo("pack");
+            assertThat(violation.get("detail").asString()).contains("Bad_Name");
+        });
+        assertThat(names(run.report())).containsExactly("Bad_Name");
+        assertThat(run.report().get("skipped").get(0).get("check").asString()).isEqualTo("CLOSURE");
     }
 
     @Test

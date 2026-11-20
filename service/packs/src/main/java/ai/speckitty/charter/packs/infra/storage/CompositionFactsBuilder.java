@@ -89,18 +89,23 @@ final class CompositionFactsBuilder {
      * The readout's composition facts (#478, S1, S10): what {@link #built} answers for the one read's store half, or the
      * refusal that stopped it. It never throws for a pack that cannot be read: every refusal {@link #composeFacts}
      * raises becomes {@link PackReadout.Unreadable} with its code and message, and a read with no assembly input
-     * ({@link Assembly.None}) is {@code pack_unreadable}.
+     * ({@link Assembly.None}) is {@code pack_unreadable}. A pack known by a name that is not a pack id (#583, D5) has no
+     * facts either: its store half refused it ({@link StoreRead#ofNamed}), the reader states that as its one
+     * {@code pack_id_invalid} fault, and the facts carry the same refusal, so the pack gets no second problem.
      *
-     * @param pack the pack, as the refusals name it
+     * @param name the pack's name, as the refusals name it; the id it is composed under when it is a pack id
      * @param read the store half of the one read
      * @return the facts, or why there are none
      */
-    static PackReadout.Facts readoutFacts(PackIdentifier pack, StoreRead read) {
+    static PackReadout.Facts readoutFacts(String name, StoreRead read) {
         if (read.assembly() instanceof Assembly.None) {
-            return PackReadout.Unreadable.noAssembly(pack.value());
+            return PackReadout.Unreadable.noAssembly(name);
+        }
+        if (!PackIdentifier.isPackId(name)) {
+            return new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, StoreRead.packIdInvalid(name));
         }
         try {
-            return built(pack, read);
+            return built(new PackIdentifier(name), read);
         } catch (CharterRefusal refusal) {
             return new PackReadout.Unreadable(refusal.code(), String.valueOf(refusal.getMessage()));
         }

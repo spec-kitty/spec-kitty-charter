@@ -67,6 +67,9 @@ class PackSetCheckTest {
     private static final String BASE_ID = "01M6Y9ACNAAD96XPNQS0XWP2FF";
     private static final String ALT_ID = "01M74H0000000000000000RG2A";
 
+    /** A directory name that is not a pack id (#583, D5). */
+    private static final String BAD_NAME = "Bad_Name";
+
     private static final PackSetCheck CHECK = new PackSetCheck(new FileSystemPackInspector());
 
     private static PackSetEntry example(String name) {
@@ -128,11 +131,11 @@ class PackSetCheckTest {
     class Closure {
 
         @Test
-        @DisplayName("charter's five example packs at their levels: no violation, no fault, PACK then CLOSURE")
+        @DisplayName("charter's example packs at their levels: no violation, no fault, PACK then CLOSURE")
         void theExamplePacksAreValid() {
             PackSetVerdict verdict = CHECK.check(examples(ExamplePacks.names().toArray(String[]::new)));
 
-            assertThat(verdict.packs()).hasSize(5).noneMatch(PackResult::failing);
+            assertThat(verdict.packs()).hasSize(ExamplePacks.names().size()).noneMatch(PackResult::failing);
             assertThat(verdict.packs())
                     .allSatisfy(
                             result -> assertThat(hasViolation(result.verdict().findings()))
@@ -398,6 +401,47 @@ class PackSetCheckTest {
         }
 
         /**
+         * Error handling (#583, D5): a pack in a directory whose name is not a pack id. The set takes the pack's identity
+         * from that name, so the read refuses it with one {@code pack_id_invalid} violation at the pack, its facts carry
+         * the same refusal, and nothing throws.
+         */
+        @Test
+        @DisplayName(
+                "a pack in a directory named Bad_Name: one pack_id_invalid problem, CLOSURE skipped and named (D3)")
+        void aPackWhoseDirectoryNameIsNoPackIdIsOneProblemAndSkipsClosure(@TempDir Path dir) throws IOException {
+            Path bad = Files.move(ExamplePacks.copyOf(ExamplePacks.ORG, dir), dir.resolve(BAD_NAME));
+
+            PackSetVerdict verdict =
+                    CHECK.check(List.of(example(ExamplePacks.BUILT_IN), at(BAD_NAME, bad, Optional.of(PackLevel.ORG))));
+
+            PackResult result = verdict.packs().get(1);
+            assertThat(result.verdict().findings())
+                    .filteredOn(finding -> finding.isFailing(Severity.VIOLATION))
+                    .singleElement()
+                    .satisfies(finding -> {
+                        assertThat(finding.code().value()).isEqualTo("pack_id_invalid");
+                        assertThat(finding.location().file()).isEqualTo("pack");
+                        assertThat(finding.detail()).contains(BAD_NAME);
+                    });
+            assertThat(result.facts()).isInstanceOf(PackReadout.Unreadable.class);
+            assertThat(result.unreportedRefusal())
+                    .as("the violation speaks for the pack, so its refusal is no second problem")
+                    .isEmpty();
+            assertThat(result.setCheck()).isEmpty();
+            assertThat(result.failing()).isTrue();
+            assertThat(verdict.packs().getFirst().failing()).isFalse();
+            assertThat(verdict.checks()).containsExactly(Check.PACK);
+            assertThat(verdict.faults()).isEmpty();
+            assertThat(verdict.skipped()).singleElement().satisfies(skip -> {
+                assertThat(skip.check()).isEqualTo(Check.CLOSURE);
+                assertThat(skip.packs())
+                        .containsExactly(
+                                new Unjudged(BAD_NAME, "its composition facts cannot be read: pack_unreadable"));
+            });
+            assertThat(verdict.failing()).isTrue();
+        }
+
+        /**
          * Error handling: no real read of a canonical pack gives facts that cannot be read with a verdict that holds no
          * violation (the one reader reports every refusal the composing read gives as a violation). So the readout of a
          * real read of org-base is given the facts of a read with no assembly input, the one wording of
@@ -626,6 +670,38 @@ class PackSetCheckTest {
                     .extracting(PackSetVerdict.Skip::check)
                     .containsExactly(Check.CLOSURE);
             assertThat(verdict.packs().get(1).roundTrip()).isEmpty();
+        }
+
+        /**
+         * Error handling (#583, D5): the round trip configures a pack under its name (D2b), so a name that is not a pack
+         * id would refuse every modelled file for the cause validate mode already reports at the pack.
+         */
+        @Test
+        @DisplayName("the real flow over a pack named Bad_Name: pack_id_invalid is its one problem, no round-trip red")
+        void aPackWhoseDirectoryNameIsNoPackIdIsNotRoundTripped(@TempDir Path dir) throws IOException {
+            Path bad =
+                    Files.move(ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir.resolve("packs")), dir.resolve(BAD_NAME));
+            List<String> asked = new ArrayList<>();
+            RoundTripping flow = realFlow(dir);
+            RoundTripping counted = root -> {
+                asked.add(root.name());
+                return flow.run(root);
+            };
+
+            PackSetVerdict verdict = CHECK.checkWithRoundTrip(
+                    List.of(at(BAD_NAME, bad, Optional.of(PackLevel.BUILT_IN)), example(ExamplePacks.ORG)), counted);
+
+            PackResult result = verdict.packs().getFirst();
+            assertThat(result.verdict().findings())
+                    .filteredOn(finding -> finding.isFailing(Severity.VIOLATION))
+                    .extracting(finding -> finding.code().value())
+                    .containsExactly("pack_id_invalid");
+            assertThat(result.roundTrip()).isEmpty();
+            assertThat(result.failing()).isTrue();
+            assertThat(asked)
+                    .as("only the pack with a pack id is round-tripped")
+                    .containsExactly(ExamplePacks.ORG);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.ROUND_TRIP);
         }
 
         /** Error handling: a refusal of a pack validate mode passes, which no canonical pack gives today. */
