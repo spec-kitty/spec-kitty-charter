@@ -14,11 +14,21 @@ import java.util.regex.Pattern;
  */
 public record PackQualifiedReference(Optional<String> packName, String urn) {
 
+    /** The pack-name grammar without its anchors, the one text {@link #PACK_NAME_GRAMMAR} and {@link #QUALIFIER} share. */
+    private static final String PACK_NAME_FORM = "[a-z0-9][a-z0-9_-]*";
+
     /**
      * The grammar a pack name follows: a lower-case token that starts with a letter or digit. The pack descriptor
      * schema constrains {@code name} to the same pattern, so every authored pack can be referenced.
      */
-    public static final String PACK_NAME_GRAMMAR = "^[a-z0-9][a-z0-9_-]*$";
+    public static final String PACK_NAME_GRAMMAR = "^" + PACK_NAME_FORM + "$";
+
+    /**
+     * The optional {@code <pack-name>::} qualifier as the contracts write it at the start of a reference pattern, and as
+     * {@code SubstepCandidate} writes its grammar. It is the one written form of the qualifier: the schema pin tests read
+     * it, and no site rebuilds it from {@link #PACK_NAME_GRAMMAR}.
+     */
+    public static final String QUALIFIER = "(" + PACK_NAME_FORM + "::)?";
 
     private static final Pattern PACK_NAME = Pattern.compile(PACK_NAME_GRAMMAR);
 

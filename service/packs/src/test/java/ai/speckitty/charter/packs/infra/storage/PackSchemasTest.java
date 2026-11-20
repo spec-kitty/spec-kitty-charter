@@ -260,10 +260,8 @@ class PackSchemasTest {
         "org-fragment,/$defs/_OrgDRGEdge/properties/target/pattern"
     })
     void aReferencePatternQualifiesWithThePackNameGrammar(String kind, String pointer) throws IOException {
-        String grammar = PackQualifiedReference.PACK_NAME_GRAMMAR;
-        String qualifier = "(" + grammar.substring(1, grammar.length() - 1) + "::)?";
-
-        assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString()).startsWith("^" + qualifier);
+        assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString())
+                .startsWith("^" + PackQualifiedReference.QUALIFIER);
     }
 
     /**
@@ -346,8 +344,6 @@ class PackSchemasTest {
     /** The service contract's qualified-reference schema spells the qualifier as the Java grammar does. */
     @Test
     void theContractQualifiedReferenceSchemaSpellsTheQualifierWithThePackNameGrammar() throws IOException {
-        String grammar = PackQualifiedReference.PACK_NAME_GRAMMAR;
-        String qualifier = "(" + grammar.substring(1, grammar.length() - 1) + "::)?";
         Path schema = Path.of("..", "..", "contracts", "charter", "schemas", "PackQualifiedReference.yaml");
 
         Object parsed = Yaml.load(Files.readString(schema));
@@ -355,7 +351,7 @@ class PackSchemasTest {
         assertThat(parsed).isInstanceOf(Map.class);
         assertThat(((Map<?, ?>) parsed).get("pattern"))
                 .as("the schema's parsed pattern value, whatever the YAML quoting")
-                .isEqualTo("^" + qualifier + "[a-z_]+:.+$");
+                .isEqualTo("^" + PackQualifiedReference.QUALIFIER + "[a-z_]+:.+$");
     }
 
     @Test

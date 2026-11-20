@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Directionality;
 import ai.speckitty.charter.kernel.domain.EndpointPair;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -52,10 +53,11 @@ import tools.jackson.databind.json.JsonMapper;
 class VocabularyEqualityTest {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final Pattern ALTERNATION =
-            Pattern.compile("^\\^(?:\\(\\[a-z0-9\\]\\[a-z0-9_-\\]\\*::\\)\\?)?\\(([a-z_|]+)\\):");
-    private static final Pattern TARGET_ONLY_PREFIX =
-            Pattern.compile("\\^\\(\\[a-z0-9\\]\\[a-z0-9_-\\]\\*::\\)\\?([a-z_]+):");
+    /** The kernel's written qualifier, quoted: the schemas' reference patterns start with it. */
+    private static final String QUALIFIER = Pattern.quote("^" + PackQualifiedReference.QUALIFIER);
+
+    private static final Pattern ALTERNATION = Pattern.compile("^(?:" + QUALIFIER + "|\\^)\\(([a-z_|]+)\\):");
+    private static final Pattern TARGET_ONLY_PREFIX = Pattern.compile(QUALIFIER + "([a-z_]+):");
 
     private static JsonNode schema(String kind) throws IOException {
         try (InputStream in =
