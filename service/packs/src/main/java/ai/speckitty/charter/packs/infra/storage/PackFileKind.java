@@ -92,7 +92,7 @@ final class PackFileKind {
     private static final PackFileKind BUNDLED = load();
 
     /** The outcome of classifying one path. */
-    sealed interface Classification permits Mapped, Excluded, Retired, Unclassified {}
+    sealed interface Classification permits Mapped, Excluded, RefusedByName, Unclassified {}
 
     /**
      * A file of a known kind.
@@ -115,35 +115,58 @@ final class PackFileKind {
     record Excluded(String exclusionClass, String reason) implements Classification {}
 
     /**
-     * A file refused by name: a file of a retired family (ADR-0044 decision 6), or a root file that differs only in
-     * letter case from a root rule's file (ADR-0073 decision 3). The store's load and validate mode refuse it by name,
-     * the gate reports it in its own bucket, and the fingerprint digests it, so a stale file cannot hide. Its violation
-     * code says which it is ({@link #code()}).
-     *
-     * @param match the rule's glob: the {@code retired} rule that names the family, or the root rule whose file a case
-     *     variant differs from
-     * @param reason why the family is retired, or which file the case variant differs from
-     * @param caseVariant whether the file is a case variant of the rule's file rather than a file of a retired family
+     * A file the load and validate mode refuse by name, never read: a {@link Retired} file or a {@link CaseVariant}. The
+     * gate reports it in its own bucket, under its rule's glob, and the fingerprint digests it, so a stale file cannot
+     * hide.
      */
-    record Retired(String match, String reason, boolean caseVariant) implements Classification {
+    sealed interface RefusedByName extends Classification permits Retired, CaseVariant {
         /**
-         * A file of a retired family.
+         * The rule it is refused under.
          *
-         * @param match the {@code retired} rule's glob
-         * @param reason why the family is retired
+         * @return the rule's glob
          */
-        Retired(String match, String reason) {
-            this(match, reason, false);
-        }
+        String match();
 
         /**
-         * The violation code the load and validate mode refuse the file under: {@code case_variant} for a case variant
-         * (#624), {@code retired} for a file of a retired family.
+         * Why it is refused, for the violation's detail.
+         *
+         * @return the reason
+         */
+        String reason();
+
+        /**
+         * The violation code it is refused under.
          *
          * @return the code
          */
-        ReasonCode code() {
-            return caseVariant ? StorageCodes.CASE_VARIANT : StorageCodes.RETIRED;
+        ReasonCode code();
+    }
+
+    /**
+     * A file of a retired family (ADR-0044 decision 6), refused as {@code retired}.
+     *
+     * @param match the {@code retired} rule's glob, which names the family
+     * @param reason why the family is retired
+     */
+    record Retired(String match, String reason) implements RefusedByName {
+        @Override
+        public ReasonCode code() {
+            return StorageCodes.RETIRED;
+        }
+    }
+
+    /**
+     * A root file that differs only in letter case from a root-anchored {@code files} or {@code retired} rule's file
+     * ({@code Pack.yaml}, {@code Readme.md}), refused by name under that rule as {@code case_variant} (ADR-0073 decision
+     * 3, FR-022, #624).
+     *
+     * @param match the root rule's glob
+     * @param reason which file it differs from
+     */
+    record CaseVariant(String match, String reason) implements RefusedByName {
+        @Override
+        public ReasonCode code() {
+            return StorageCodes.CASE_VARIANT;
         }
     }
 
@@ -396,7 +419,7 @@ final class PackFileKind {
 
     /**
      * A root file that differs only in letter case from a root-anchored {@code files} or {@code retired} rule's file
-     * ({@code Readme.md}, {@code Pack.md}, {@code PROVENANCE.MD}, FR-022), as a {@link Retired} refusal naming that
+     * ({@code Readme.md}, {@code Pack.md}, {@code PROVENANCE.MD}, FR-022), as a {@link CaseVariant} refusal naming that
      * rule. Exact classification is case-sensitive, so such a file would otherwise be unclassified: on a
      * case-insensitive file system it is the rule's file under another name, and it is refused rather than guessed at.
      * It is a property of classification, so the load, validate mode, registration, the digest and the census treat it
@@ -416,7 +439,7 @@ final class PackFileKind {
             Matcher root = ROOT_FILE.matcher(rule.match());
             if (root.matches() && rule.folded().matcher(folded).matches()) {
                 return Optional.of(
-                        new Retired(rule.match(), "differs only in letter case from '" + root.group(1) + "'", true));
+                        new CaseVariant(rule.match(), "differs only in letter case from '" + root.group(1) + "'"));
             }
         }
         return Optional.empty();

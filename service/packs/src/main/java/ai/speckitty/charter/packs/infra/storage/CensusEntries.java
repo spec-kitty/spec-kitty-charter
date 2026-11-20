@@ -69,8 +69,9 @@ final class CensusEntries {
                         TreeCensus.Standing.MAPPED,
                         mapped.kind(),
                         Optional.of(mapped.contentForm().token()));
-            case PackFileKind.Retired retired ->
-                new TreeCensus.Entry(path, TreeCensus.Standing.RETIRED, retired.match(), Optional.empty());
+            // A case variant is refused by name under its root rule, so it stands in the retired bucket (ADR-0073 d3).
+            case PackFileKind.RefusedByName refused ->
+                new TreeCensus.Entry(path, TreeCensus.Standing.RETIRED, refused.match(), Optional.empty());
             case PackFileKind.Excluded excluded ->
                 new TreeCensus.Entry(path, TreeCensus.Standing.EXCLUDED, excluded.exclusionClass(), Optional.empty());
             case PackFileKind.Unclassified unclassified -> {

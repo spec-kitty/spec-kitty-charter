@@ -118,9 +118,9 @@ final class PackFileSet {
      *     {@code missions/<type>/templates/}, ADR-0044)
      * @param presets the activation presets, pack-relative ({@code presets/<stem>.yaml})
      * @param document the pack document, {@code README.md}, when the pack has one
-     * @param retired the files refused by name, each with its classification: a file of a retired family (ADR-0044
+     * @param refused the files refused by name, each with its classification: a file of a retired family (ADR-0044
      *     decision 6) or a root case variant (ADR-0073 decision 3), which the load and validate mode refuse under its
-     *     {@linkplain PackFileKind.Retired#code() code}
+     *     {@linkplain PackFileKind.RefusedByName#code() code}
      */
     record Listing(
             Map<ArtifactKind, List<String>> byKind,
@@ -128,7 +128,7 @@ final class PackFileSet {
             List<String> templates,
             List<String> presets,
             Optional<String> document,
-            SequencedMap<String, PackFileKind.Retired> retired) {
+            SequencedMap<String, PackFileKind.RefusedByName> refused) {
         /**
          * Copies the collections.
          *
@@ -137,7 +137,7 @@ final class PackFileSet {
          * @param templates the templates
          * @param presets the presets
          * @param document the pack document, if any
-         * @param retired the files refused by name, path to classification
+         * @param refused the files refused by name, path to classification
          */
         Listing {
             Map<ArtifactKind, List<String>> copy = new EnumMap<>(ArtifactKind.class);
@@ -147,7 +147,7 @@ final class PackFileSet {
             templates = List.copyOf(templates);
             presets = List.copyOf(presets);
             Objects.requireNonNull(document, "document");
-            retired = Collections.unmodifiableSequencedMap(new LinkedHashMap<>(retired));
+            refused = Collections.unmodifiableSequencedMap(new LinkedHashMap<>(refused));
         }
 
         /**
@@ -406,7 +406,7 @@ final class PackFileSet {
         // After the manifest and the policy, in path order, so a pack without a retired file keeps its digest; a
         // refused file that is
         // read but not digested could change unseen (ADR-0039, ADR-0044 decision 6).
-        out.addAll(loaded.retired().sequencedKeySet());
+        out.addAll(loaded.refused().sequencedKeySet());
         return out;
     }
 
@@ -473,7 +473,7 @@ final class PackFileSet {
             return graphShards(files, packName, shard -> Files.isRegularFile(shard, LinkOption.NOFOLLOW_LINKS)).stream()
                     // A retired graph fragment is refused by name with the other retired files, never read as a shard.
                     .filter(shard -> !(PackFileKind.bundled().classify(prefix + shard.getFileName())
-                            instanceof PackFileKind.Retired))
+                            instanceof PackFileKind.RefusedByName))
                     .toList();
         } catch (IOException e) {
             throw unlistable(packName, e);
@@ -496,11 +496,11 @@ final class PackFileSet {
         List<String> templates = new ArrayList<>();
         List<String> presets = new ArrayList<>();
         List<String> documents = new ArrayList<>();
-        SequencedMap<String, PackFileKind.Retired> retired = new LinkedHashMap<>();
+        SequencedMap<String, PackFileKind.RefusedByName> refused = new LinkedHashMap<>();
         for (String file : regularFiles) {
             PackFileKind.Classification classification = table.classify(prefix + file);
-            if (classification instanceof PackFileKind.Retired family) {
-                retired.put(file, family);
+            if (classification instanceof PackFileKind.RefusedByName byName) {
+                refused.put(file, byName);
             }
             if (!(classification instanceof PackFileKind.Mapped mapped)) {
                 continue;
@@ -516,7 +516,7 @@ final class PackFileSet {
         }
         // The rule matches only <pack>/README.md, so there is at most one.
         return new Listing(
-                byKind, assetFiles, templates, presets, documents.stream().findFirst(), retired);
+                byKind, assetFiles, templates, presets, documents.stream().findFirst(), refused);
     }
 
     /** The list a {@code yaml} file joins: the presets, its bound kind's files, or none for an unbound kind. */
@@ -690,6 +690,8 @@ final class PackFileSet {
             case PackFileKind.Excluded excluded ->
                 Optional.of("is excluded by " + excluded.exclusionClass() + ", not " + noun);
             case PackFileKind.Retired retired -> Optional.of("is retired by " + retired.match() + ", not " + noun);
+            case PackFileKind.CaseVariant variant ->
+                Optional.of("is a case variant of " + variant.match() + "'s file, not " + noun);
             case PackFileKind.Unclassified unclassified -> Optional.of("is classified by no rule, not " + noun);
         };
     }

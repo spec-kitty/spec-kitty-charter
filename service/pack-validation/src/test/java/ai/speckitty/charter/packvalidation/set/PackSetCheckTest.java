@@ -305,7 +305,7 @@ class PackSetCheckTest {
     }
 
     @Nested
-    @DisplayName("D3: a pack with no facts, a malformed descriptor or no level skips CLOSURE")
+    @DisplayName("D3: a pack with no facts or no level skips CLOSURE")
     class Skipped {
 
         @Test
@@ -327,10 +327,9 @@ class PackSetCheckTest {
                                 "its composition facts cannot be read: pack_unreadable: a graph document of built-in"
                                         + " cannot be read"));
                 assertThat(skip.reason())
-                        .isEqualTo(
-                                "CLOSURE needs a well-formed descriptor, the composition facts and the level of every pack; it has none for "
-                                        + "built-in (its composition facts cannot be read: pack_unreadable: a graph document"
-                                        + " of built-in cannot be read)");
+                        .isEqualTo("CLOSURE needs the composition facts and the level of every pack; it has none for "
+                                + "built-in (its composition facts cannot be read: pack_unreadable: a graph document"
+                                + " of built-in cannot be read)");
             });
             PackResult broken = verdict.packs().getFirst();
             assertThat(broken.failing()).isTrue();
@@ -361,8 +360,8 @@ class PackSetCheckTest {
                 assertThat(skip.packs())
                         .containsExactly(new Unjudged(
                                 ExamplePacks.ORG,
-                                "its descriptor is malformed: pack.yaml of org-base: pack_version 'not-a-version' is"
-                                        + " not a PEP 440 version"));
+                                "its composition facts cannot be read: pack_unreadable: pack.yaml of org-base:"
+                                        + " pack_version 'not-a-version' is not a PEP 440 version"));
             });
             PackResult malformed = verdict.packs().get(1);
             assertThat(malformed.verdict().findings())
@@ -371,6 +370,9 @@ class PackSetCheckTest {
                     .singleElement()
                     .satisfies(finding -> assertThat(finding.location().file()).isEqualTo("pack.yaml"));
             assertThat(malformed.failing()).isTrue();
+            assertThat(malformed.unreportedRefusal())
+                    .as("its verdict already reports the fault, so the refusal is not a second problem")
+                    .isEmpty();
             assertThat(verdict.packs().getFirst().failing()).isFalse();
         }
 

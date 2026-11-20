@@ -108,7 +108,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>It reports every retired file (ADR-0044 decision 6), YAML and Markdown alike, as
  * a read fault naming its rule's reason, from the store's own listing
- * ({@link PackFileSet.Listing#retired()}), so validate mode and the load refuse the same files by name.
+ * ({@link PackFileSet.Listing#refused()}), so validate mode and the load refuse the same files by name.
  *
  * <p>Every call reads the files again, every file through {@link ParsedYaml} and never through {@link Yaml} directly,
  * so that a document nested too deeply or holding a scalar no validator can judge is a parse failure. A file whose
@@ -579,6 +579,7 @@ public final class FileSystemPackInspector implements PackReading {
                     }
                 }
                 case PackFileKind.Retired retired -> {}
+                case PackFileKind.CaseVariant variant -> {}
             }
         }
         return out;
@@ -771,7 +772,7 @@ public final class FileSystemPackInspector implements PackReading {
             this.listing = listing;
             listPayloads(listing, prefix);
             refuseSidecarsWithoutPayload(listing);
-            listing.retired()
+            listing.refused()
                     .forEach((file, refused) -> unreadable.add(new FileRead.Unreadable<>(
                             file, ParseFailure.refused(file, refused.reason(), refused.code()), List.of())));
             notHeld.addAll(FileSystemPackInspector.notHeld(directory, walk, table, unnamedPolicy));
@@ -804,6 +805,7 @@ public final class FileSystemPackInspector implements PackReading {
                     }
                     // Reported by readAll from the store's listing, with the retired Markdown files.
                     case PackFileKind.Retired retired -> {}
+                    case PackFileKind.CaseVariant variant -> {}
                     case PackFileKind.Unclassified unclassified -> {}
                 }
             }

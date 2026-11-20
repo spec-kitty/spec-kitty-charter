@@ -182,6 +182,10 @@ final class Companions {
                 // A retired file is refused by name (ADR-0044 decision 6); no artifact may take it as its companion.
                 Optional.of("is retired by file-kinds rule '" + retired.match() + "' (" + retired.reason()
                         + "), not a companion");
+            case PackFileKind.CaseVariant variant ->
+                // A case variant of a root rule's file is refused by name (ADR-0073 decision 3); no artifact takes it.
+                Optional.of("is a case variant under file-kinds rule '" + variant.match() + "' (" + variant.reason()
+                        + "), not a companion");
             case PackFileKind.Mapped mapped
             when mapped.schema().isEmpty() ->
                 // A pack-level file (#193, ADR-0040): an asset file or a template.

@@ -96,7 +96,7 @@ class RetiredFilesTest {
         @DisplayName("a pack.md or PROVENANCE.md that is not at the pack root is not retired")
         void aPackLevelNamesakeBelowTheRootIsNotRetired() {
             for (String path : RetiredFileFixture.NOT_AT_THE_ROOT) {
-                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.Retired.class);
+                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.RefusedByName.class);
                 assertThat(TABLE.matchingRules("qa/" + path)).as(path).isEmpty();
             }
         }
@@ -120,10 +120,9 @@ class RetiredFilesTest {
         void aCaseVariantIsRefusedByName() {
             RetiredFileFixture.CASE_VARIANTS.forEach((file, match) -> assertThat(TABLE.classify("qa/" + file))
                     .as(file)
-                    .isEqualTo(new PackFileKind.Retired(
+                    .isEqualTo(new PackFileKind.CaseVariant(
                             match,
-                            "differs only in letter case from '" + match.substring(match.indexOf('/') + 1) + "'",
-                            true)));
+                            "differs only in letter case from '" + match.substring(match.indexOf('/') + 1) + "'")));
         }
 
         @Test
@@ -134,7 +133,7 @@ class RetiredFilesTest {
                     .forEach(file -> assertThat(TABLE.classify("qa/" + file))
                             .as(file)
                             .isInstanceOfSatisfying(
-                                    PackFileKind.Retired.class,
+                                    PackFileKind.CaseVariant.class,
                                     refused -> assertThat(refused.code()).isEqualTo(StorageCodes.CASE_VARIANT)));
             assertThat(TABLE.classify("qa/pack.md"))
                     .isInstanceOfSatisfying(
@@ -146,14 +145,14 @@ class RetiredFilesTest {
         @DisplayName("a case variant below the pack root is not refused: only the root files are rule files")
         void aCaseVariantBelowTheRootIsNotRefused() {
             for (String path : List.of("docs/readme.md", "docs/Readme.md", "sub/PACK.md")) {
-                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.Retired.class);
+                assertThat(TABLE.classify("qa/" + path)).as(path).isNotInstanceOf(PackFileKind.RefusedByName.class);
             }
         }
 
         @Test
         @DisplayName("a case variant of an asset or template payload is not a rule file and is not refused")
         void aPayloadCaseVariantIsNotRefused() {
-            assertThat(TABLE.classify("qa/Assets/x.bin")).isNotInstanceOf(PackFileKind.Retired.class);
+            assertThat(TABLE.classify("qa/Assets/x.bin")).isNotInstanceOf(PackFileKind.RefusedByName.class);
         }
 
         @Test

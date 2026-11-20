@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
@@ -91,7 +92,9 @@ final class CompositionFactsBuilder {
      * raises becomes {@link PackReadout.Unreadable} with its code and message, and a read with no assembly input
      * ({@link Assembly.None}) is {@code pack_unreadable}. A pack known by a name that is not a pack id (#583, D5) has no
      * facts either: its store half refused it ({@link StoreRead#ofNamed}), the reader states that as its one
-     * {@code pack_id_invalid} fault, and the facts carry the same refusal, so the pack gets no second problem.
+     * {@code pack_id_invalid} fault, and the facts carry the same refusal, so the pack gets no second problem. A
+     * descriptor the format prechecks refuse ({@link DescriptorChecks}) has no facts too: the composing read answers it
+     * {@code pack_unreadable} with the first fault's words, as the offering does, so the resolver never takes it (#624).
      *
      * @param name the pack's name, as the refusals name it; the id it is composed under when it is a pack id
      * @param read the store half of the one read
@@ -103,6 +106,14 @@ final class CompositionFactsBuilder {
         }
         if (!PackIdentifier.isPackId(name)) {
             return new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, StoreRead.packIdInvalid(name));
+        }
+        if (read.assembly() instanceof Assembly.Assembled assembled) {
+            Optional<DescriptorChecks.Fault> malformed = DescriptorChecks.faults(name, assembled.descriptor()).stream()
+                    .findFirst();
+            if (malformed.isPresent()) {
+                return new PackReadout.Unreadable(
+                        RefusalCode.PACK_UNREADABLE, malformed.get().detail());
+            }
         }
         try {
             return built(new PackIdentifier(name), read);

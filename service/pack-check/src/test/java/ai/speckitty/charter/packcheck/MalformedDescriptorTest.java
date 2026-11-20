@@ -21,8 +21,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * A malformed descriptor field fails its pack (#624): exit 1, one {@code validation_failed} problem for the pack that
- * names the descriptor rule's code at {@code pack.yaml}, never an internal error (exit 2), for {@code --pack} and for
- * {@code --config-root}. Each case plants one malformed field into the example org pack's {@code pack.yaml}.
+ * names the descriptor rule's code at {@code pack.yaml}, never an internal error (exit 2), for {@code --pack}, for
+ * {@code --config-root} and with {@code --round-trip}; {@code CLOSURE} is skipped and names the pack. Each case plants
+ * one malformed field into the example org pack's {@code pack.yaml}. The three format fields ({@code pack_version}, a
+ * {@code depends_on} range, {@code requires_core}) crashed before #624; the schema fields were already refused, and are
+ * pinned here so every malformed field stays a problem.
  */
 class MalformedDescriptorTest {
 
@@ -130,6 +133,14 @@ class MalformedDescriptorTest {
             }
         });
         assertThat(atDescriptor).as(run.out()).contains(plant.code());
+        List<String> codes = new ArrayList<>();
+        problem.get("violations")
+                .forEach(violation -> codes.add(violation.get("code").asString()));
+        assertThat(codes).as("one cause, no round-trip red beside it").doesNotContain("round_trip_red");
+        assertThat(run.report().get("checks").toString()).doesNotContain("CLOSURE");
+        JsonNode skip = run.report().get("skipped").get(0);
+        assertThat(skip.get("check").asString()).isEqualTo("CLOSURE");
+        assertThat(skip.get("reason").asString()).contains(ExamplePacks.ORG + " (");
     }
 
     private static String level(String name) {
