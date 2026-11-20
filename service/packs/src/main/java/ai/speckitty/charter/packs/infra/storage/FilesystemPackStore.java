@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -273,7 +274,8 @@ final class FilesystemPackStore {
 
     private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
-    private static final PayloadRead FILES = Files::readAllBytes;
+    /** The store's read of a pack file: opened without following a link (D6, {@link PackFileSet#noFollowBytes}). */
+    static final PayloadRead FILES = PackFileSet::noFollowBytes;
 
     private final Path root;
     private final SerializationStrategy strategy;
@@ -657,9 +659,10 @@ final class FilesystemPackStore {
     }
 
     /**
-     * An asset file's or a template's bytes. The walk follows a file link, so the file passes the containment rule a
-     * companion's does ({@link #realPathContained}): a link whose real location is outside the pack is a violation and
-     * is not read. A file that cannot be read is a violation too, not a refusal.
+     * An asset file's or a template's bytes. The walk lists no link as a file, and the read opens the file without
+     * following one (D6), so a file that became a link after the walk is a violation in the link rule's words and is not
+     * read; the file also passes the containment rule a companion's does ({@link #realPathContained}). A file that
+     * cannot be read is a violation too, not a refusal.
      */
     private Optional<byte[]> readPayload(Path directory, String file, List<PackElementViolation> violations) {
         return readPayload(
@@ -670,8 +673,9 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The bytes of a listed payload, or none with why the pack does not hold it: the file leaves the pack, or cannot
-     * be read. The load and validate mode read an asset file through it, so they hold the same ones (#251).
+     * The bytes of a listed payload, or none with why the pack does not hold it: the file leaves the pack, is a link
+     * ({@link LinkRules#LINKED}, D6), or cannot be read. The load and validate mode read an asset file through it, so
+     * they hold the same ones (#251).
      *
      * @param directory the pack directory
      * @param file the payload, pack-relative
@@ -697,11 +701,7 @@ final class FilesystemPackStore {
             refused.accept("the file leaves the pack");
             return Optional.empty();
         }
-        Optional<byte[]> bytes = readBytes(directory.resolve(file), read);
-        if (bytes.isEmpty()) {
-            refused.accept(UNREADABLE);
-        }
-        return bytes;
+        return readBytes(directory.resolve(file), read, refused);
     }
 
     /**
@@ -1453,10 +1453,10 @@ final class FilesystemPackStore {
     // ---- reading -------------------------------------------------------------------------------------------------
 
     private static <T> FileRead<T> readFile(Path path, String file, Function<String, FileRead<T>> reader) {
-        Optional<byte[]> bytes = readBytes(path);
-        Optional<String> text = bytes.flatMap(FilesystemPackStore::decodeUtf8);
+        AtomicReference<String> why = new AtomicReference<>(NOT_UTF8);
+        Optional<String> text = readBytes(path, FILES, why::set).flatMap(FilesystemPackStore::decodeUtf8);
         if (text.isEmpty()) {
-            return new FileRead.Unreadable<>(file, new ParseFailure(file, notText(bytes)), List.of());
+            return new FileRead.Unreadable<>(file, new ParseFailure(file, why.get()), List.of());
         }
         return reader.apply(text.get());
     }
@@ -1484,11 +1484,22 @@ final class FilesystemPackStore {
 
     /** The bytes {@code read} gives for {@code path}; empty when it throws. */
     private static Optional<byte[]> readBytes(Path path, PayloadRead read) {
+        return readBytes(path, read, why -> {});
+    }
+
+    /**
+     * The bytes {@code read} gives for {@code path}, or none with why: a link the read found there, in the link rule's
+     * words ({@link LinkRules#LINKED}, D6), or {@link #UNREADABLE}.
+     */
+    private static Optional<byte[]> readBytes(Path path, PayloadRead read, Consumer<String> refused) {
         try {
             return Optional.of(read.read(path));
+        } catch (PackFileSet.LinkedFile linked) {
+            refused.accept(LinkRules.LINKED);
         } catch (IOException e) {
-            return Optional.empty();
+            refused.accept(UNREADABLE);
         }
+        return Optional.empty();
     }
 
     /** The file's text; empty when its bytes are not UTF-8 or it cannot be read. */

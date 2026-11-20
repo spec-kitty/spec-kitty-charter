@@ -184,12 +184,8 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     public PackRevision currentRevision(PackIdentifier pack) {
         return reading(pack, directory -> {
             try {
-                // Over bytes, as PackCommitStore.revisionOf: a digested file need not be UTF-8 text.
-                List<byte[]> contents = new ArrayList<>();
-                for (String relative : PackFileSet.digested(directory, pack.value())) {
-                    contents.add(Files.readAllBytes(directory.resolve(relative)));
-                }
-                return PackRevision.computeOverBytes(contents);
+                // The commit store's one revision: over bytes, never through a link (D6).
+                return PackCommitStore.revisionOf(directory, pack.value());
             } catch (IOException failure) {
                 throw new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE, "cannot read the revision of pack " + pack.value(), failure);

@@ -884,7 +884,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     private static String read(Path file) {
         try {
-            return Files.readString(file, StandardCharsets.UTF_8);
+            return PackFileSet.noFollowText(file); // never through a link (D6)
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -36,6 +36,7 @@ import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
+import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
@@ -1403,12 +1404,16 @@ public final class FileSystemPackInspector implements PackReading {
 
     /**
      * Reads a file's bytes as UTF-8 and hands the text to {@code reader}. Bytes that are not UTF-8 are not YAML: the
-     * file is {@link FileRead.Unreadable} with a parse failure, so its finding takes the code of its kind.
+     * file is {@link FileRead.Unreadable} with a parse failure, so its finding takes the code of its kind. The file is
+     * opened without following a link (D6, {@link PackFileSet#noFollowBytes}): one the walk listed and that became a
+     * link before the read refuses the pack, {@code pack_unreadable} in the link rule's words, and is never read.
      */
     private static <T> FileRead<T> read(Path path, String file, String packName, Function<String, FileRead<T>> reader) {
         byte[] bytes;
         try {
-            bytes = Files.readAllBytes(path);
+            bytes = PackFileSet.noFollowBytes(path);
+        } catch (PackFileSet.LinkedFile linked) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, LinkRules.detail(packName + "/" + file), linked);
         } catch (IOException e) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, packName + "/" + file + " cannot be read", e);
         }
