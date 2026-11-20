@@ -273,10 +273,11 @@ final class Arguments {
         }
         Given withId = levelled(rest);
         if (withId.named() && plain.named()) {
+            PackRoot idReading = withId.root().orElseThrow();
             return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
-                    + " under its own name, and the directory " + rest + " under the id " + id
-                    + "; rename one, or write "
-                    + value + "=<id> for " + value);
+                    + " under its own name, and the directory " + idReading.locator() + " under the id " + id
+                    + "; rename one, write " + unambiguous(idReading, id) + " for " + idReading.locator()
+                    + " under the id " + id + ", or write " + value + "=<id> for " + value + " under an id");
         }
         if (withId.root().isPresent()) {
             return withId.under(id);
@@ -285,6 +286,16 @@ final class Arguments {
             return plain;
         }
         return withId;
+    }
+
+    /**
+     * The {@code --pack} spelling of {@code root} under {@code id} that no directory name can capture: a separator ends
+     * the directory part ({@code x/=y}, {@code x/:org=y}), so the whole value names a path inside {@code x}, never a
+     * sibling directory whose name holds the {@code =}.
+     */
+    private static String unambiguous(PackRoot root, String id) {
+        return root.locator() + "/"
+                + root.configuredLevel().map(level -> ":" + level.token()).orElse("") + "=" + id;
     }
 
     /**
