@@ -1,28 +1,27 @@
-id: how-we-apply-directive-030
-schema_version: "1.0"
-name: How We Apply DIRECTIVE_030 (Test and Typecheck Quality Gate)
-purpose: >-
-  Hand off only changes that pass the repository's automated gates.
-steps:
-  - title: Run the full verification before merge
-    description: >-
-      ./gradlew verifyAll on Java 25 passes before a pull request merges: it
-      runs contract validation and generation, unit tests, the ArchUnit gate,
-      the BDD scenarios and the whole-pack round trip over charter's example packs, with strict SHA-256
-      dependency verification. CI never builds with -Pcharter.javaVersion=21.
-  - title: Treat compile-time analysis as the type gate
-    description: >-
-      Error Prone with NullAway in JSpecify mode and Javadoc doclint as
-      errors are the static gates for hand-written Java as they are wired in
-      by the build-retro mission; a warning promoted to an error is fixed, not
-      suppressed inline.
-  - title: Run the docs checks on docs changes
-    description: >-
-      A change under docs/ passes check_docs.py (frontmatter, related,
-      freshness, links, terms, adr, changelog, orphans), markdownlint-cli2 and
-      cspell.
 failure_modes:
-  - Handing off with only the touched module's tests run when the change
-    alters the contract.
-  - Suppressing a static-analysis finding inline instead of in the single
-    checked-in register.
+- Handing off with only the touched module's tests run when the change alters 
+  the contract.
+- Suppressing a static-analysis finding inline instead of in the single 
+  checked-in register.
+id: how-we-apply-directive-030
+name: How We Apply DIRECTIVE_030 (Test and Typecheck Quality Gate)
+purpose: Hand off only changes that pass the repository's automated gates.
+schema_version: '1.0'
+steps:
+- description: >-
+    ./gradlew verifyAll on Java 25 passes before a pull request merges: it runs
+    contract validation and generation, unit tests, the ArchUnit gate, the BDD
+    scenarios and the whole-pack round trip over charter's example packs, with
+    strict SHA-256 dependency verification. CI never builds with
+    -Pcharter.javaVersion=21. Mutation floors are not part of it: PIT runs only
+    in the scheduled or dispatched mutation-testing workflow (ADR-0062).
+  title: Run the full verification before merge
+- description: Error Prone with NullAway in JSpecify mode and Javadoc doclint as
+    errors are the static gates for hand-written Java as they are wired in by 
+    the build-retro mission; a warning promoted to an error is fixed, not 
+    suppressed inline.
+  title: Treat compile-time analysis as the type gate
+- description: A change under docs/ passes check_docs.py (frontmatter, related, 
+    freshness, links, terms, adr, changelog, orphans), markdownlint-cli2 and 
+    cspell.
+  title: Run the docs checks on docs changes
