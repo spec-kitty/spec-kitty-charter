@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Engineering notes
 description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
 doc_status: draft
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -26,6 +26,10 @@ carry dated clarifications, marked with their date, that correct a reading of it
 - [Code and test suite quality assessment, 2026-11-12](/plans/engineering-notes/code-and-test-quality-assessment-2026-11-12/) —
   the 2026-11-03 assessment re-run nine days on, plus a production-code lens: six test gaps proved by
   planted breaks, the slow and timing-sensitive tests, the code hotspots, and four questions for the operator.
+- [Codebase assessment, 2026-11-20](/plans/engineering-notes/codebase-assessment-2026-11-20/) — where change
+  concentrates and how costly those places are to change, with a lens each on hotspots and churn, design, tests and static
+  analysis, what moved on the 2026-11-12 top 5, and the actions ranked with their issues. Its summary is the
+  [codebase health page](/plans/codebase-health-2026-11-20/).
 - [Service usability run, 2026-11-09](/plans/engineering-notes/service-usability-run-2026-11-09/) — how
   ready the service is for core. It registers the open-packs, activates this repository's charter, and reads a profile, its
   guidance and a mission. It gives the gaps with their issues and the recommended order of the next work.

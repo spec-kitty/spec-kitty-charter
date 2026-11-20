@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Plans
 description: Forward-looking work for the charter service — the bootstrap roadmap, the questions still open and dated engineering notes that feed decisions.
 doc_status: draft
-updated: 2026-11-12T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -44,3 +44,5 @@ Future work for this repository. The target design lives in
   packs replace the open-packs corpus in charter's tests.
 - [Engineering notes](/plans/engineering-notes/) — dated, point-in-time assessments that feed decisions and
   issues, starting with the [test suite assessment of 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/).
+- [Codebase health, 2026-11-20](/plans/codebase-health-2026-11-20/) — the verdict, scorecard, top hotspots and ten
+  ranked actions of the [codebase assessment of 2026-11-20](/plans/engineering-notes/codebase-assessment-2026-11-20/).
