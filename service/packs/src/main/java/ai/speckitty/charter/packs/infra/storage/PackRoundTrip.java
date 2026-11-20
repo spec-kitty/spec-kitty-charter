@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -39,14 +41,39 @@ public final class PackRoundTrip {
     private PackRoundTrip() {}
 
     /**
-     * Round-trips one pack through the storage service.
+     * Round-trips one pack through the storage service, configured under the name of its directory (#583, D2b): a
+     * directory name that is no pack id refuses every modelled file.
      *
      * @param source the pack directory to read; never written
      * @param target an empty or missing directory that becomes the written pack
      * @return what the round trip observed
      */
     public static PackRoundTripResult run(Path source, Path target) {
-        return run(new DomainRoundTrip(new YamlSerializationStrategy()), source, target);
+        return run(String.valueOf(source.getFileName()), source, target);
+    }
+
+    /**
+     * Round-trips one pack through the storage service, configured under the registered id its caller names (#583,
+     * D2b; PR #608 MEDIUM-3), whatever its directory is called.
+     *
+     * @param packId the registered id the pack is configured and loaded under
+     * @param source the pack directory to read; never written
+     * @param target an empty or missing directory that becomes the written pack
+     * @return what the round trip observed
+     */
+    public static PackRoundTripResult run(PackIdentifier packId, Path source, Path target) {
+        return run(Objects.requireNonNull(packId, "packId").value(), source, target);
+    }
+
+    private static PackRoundTripResult run(String name, Path source, Path target) {
+        TreeCensus census = WholePackCensus.census(source);
+        return run(
+                new DomainRoundTrip(new YamlSerializationStrategy()),
+                name,
+                source,
+                target,
+                WholePackCensus.kinds(census),
+                WholePackCensus.formsOf(census));
     }
 
     /**
@@ -110,7 +137,28 @@ public final class PackRoundTrip {
             Path target,
             SortedMap<String, String> census,
             Function<String, ContentForm> formOf) {
-        Map<String, Outcome> outcomes = roundTrip.roundTrip(source, target, census);
+        return run(roundTrip, String.valueOf(source.getFileName()), source, target, census, formOf);
+    }
+
+    /**
+     * {@link #run(WholePackRoundTrip, Path, Path, SortedMap, Function)}, the pack configured under {@code name}.
+     *
+     * @param roundTrip the adapter
+     * @param name the registered id the pack is configured under
+     * @param source the pack directory
+     * @param target the directory to write to
+     * @param census every source file's gate kind
+     * @param formOf the content form of a source path
+     * @return what the round trip observed
+     */
+    private static PackRoundTripResult run(
+            WholePackRoundTrip roundTrip,
+            String name,
+            Path source,
+            Path target,
+            SortedMap<String, String> census,
+            Function<String, ContentForm> formOf) {
+        Map<String, Outcome> outcomes = roundTrip.roundTrip(name, source, target, census);
         SortedMap<String, FileOutcome> read = new TreeMap<>();
         outcomes.forEach((path, outcome) -> read.put(
                 path,

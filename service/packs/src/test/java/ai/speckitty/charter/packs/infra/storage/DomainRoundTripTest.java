@@ -172,6 +172,25 @@ class DomainRoundTripTest {
     }
 
     @Test
+    void aSourceDirectoryWhoseNameIsNoPackIdRoundTripsUnderTheIdItsCallerNames() throws IOException {
+        Path misnamed = temp.resolve("src/Built_In");
+        Files.createDirectories(misnamed.getParent());
+        Files.move(source, misnamed);
+        Path target = temp.resolve("out/Built_In");
+
+        Map<String, Outcome> outcomes =
+                new DomainRoundTrip(new YamlSerializationStrategy()).roundTrip("built-in", misnamed, target, kinds);
+
+        assertThat(outcomes)
+                .isNotEmpty()
+                .containsOnlyKeys(kinds.entrySet().stream()
+                        .filter(entry -> DomainRoundTrip.MODELLED.contains(entry.getValue()))
+                        .map(Map.Entry::getKey)
+                        .toList());
+        assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
+    }
+
+    @Test
     void aSourceDirectoryWhoseNameIsNoPackIdRefusesEveryModelledFileAndWritesNothing() throws IOException {
         Path misnamed = temp.resolve("src/Built_In");
         Files.createDirectories(misnamed.getParent());

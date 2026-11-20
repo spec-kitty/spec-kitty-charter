@@ -227,8 +227,8 @@ class ToolguideGuideTest {
             }
 
             @Override
-            public Map<String, Outcome> roundTrip(Path from, Path to, Map<String, String> kindOf) {
-                outcomes.putAll(domain.roundTrip(from, to, kindOf));
+            public Map<String, Outcome> roundTrip(String name, Path from, Path to, Map<String, String> kindOf) {
+                outcomes.putAll(domain.roundTrip(name, from, to, kindOf));
                 return outcomes;
             }
         };
