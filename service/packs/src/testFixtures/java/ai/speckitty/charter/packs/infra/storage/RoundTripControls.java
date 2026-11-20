@@ -94,8 +94,8 @@ public final class RoundTripControls {
      * out both sides by hand and the flow only reads them: in the content form the bundled table gives each path, or as
      * Markdown for every file when {@code markdown} is set.
      *
-     * @param packId the registered id the pack is configured under, which also picks its files' content forms
-     * @param source the source directory
+     * @param packId the registered id the pack is configured under
+     * @param source the source directory, whose name roots the file-kind globs that pick each file's content form
      * @param written the directory that already holds the written side
      * @param census the files to answer, with their gate kinds
      * @param markdown whether every file is read as Markdown
@@ -121,6 +121,8 @@ public final class RoundTripControls {
                 source,
                 written,
                 new TreeMap<>(census),
-                path -> markdown ? ContentForm.MARKDOWN : WholePackCensus.contentFormOf(packId.value(), path));
+                path -> markdown
+                        ? ContentForm.MARKDOWN
+                        : WholePackCensus.contentFormOf(String.valueOf(source.getFileName()), path));
     }
 }
