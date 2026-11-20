@@ -141,7 +141,15 @@ public final class PackCheckMain {
      * @return the exit code
      */
     static int run(String[] args, PrintStream out, PrintStream err, Path temporary, Composition composition) {
-        Outcome outcome = Arguments.parse(args);
+        Outcome outcome;
+        try {
+            outcome = Arguments.parse(args);
+        } catch (RuntimeException failure) {
+            // An internal error while reading the arguments exits FAILED too, never PROBLEMS (PR #608 review MEDIUM-B).
+            err.println("pack-check: internal error: " + failure);
+            failure.printStackTrace(err);
+            return FAILED;
+        }
         return switch (outcome) {
             case Help help -> {
                 out.print(Arguments.USAGE);

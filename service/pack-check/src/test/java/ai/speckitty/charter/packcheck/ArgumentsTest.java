@@ -559,6 +559,20 @@ class ArgumentsTest {
                             + " under an id");
         }
 
+        /** PR #608 review MEDIUM-B: an id reading that is itself ambiguous is a usage fault, never an exception. */
+        @Test
+        void aValueWhoseIdReadingIsItselfAmbiguousIsAUsageFault() throws IOException {
+            pack("x");
+            pack("x:org");
+            Path whole = pack("x:org=" + ExamplePacks.ORG);
+            Path rest = temp.resolve("x:org");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", whole.toString()})))
+                    .isEqualTo("--pack " + whole + " is ambiguous: it names the directory " + whole
+                            + " under its own name, and " + rest
+                            + " is itself ambiguous; rename one of the directories");
+        }
+
         @Test
         void anAmbiguousIdReadingWithALevelKeepsTheLevelInItsSpelling() throws IOException {
             Path bare = pack("a");
