@@ -89,7 +89,9 @@ check in the method), so the rate is not comparable; the method count (+29 %) is
 | `RegistrationJobsTest closingTheJobs…` 30 s gate | **FIXED** | `cad3f433` (2026-11-12): releaser thread waits on a condition (all four REFUSED) then releases the gate, `RegistrationJobsTest.java:680-714` |
 | `PackFileSetExactnessTest` 16.7 s | **MITIGATED** | `ecd257d9`: trees written on first use (`PackFileSetExactnessTest.java:70-76, 250-257`). Under PIT it is still the slowest `:packs` test: 8.0 s / 8.1 s (run 43794141037). The per-file re-digest of #531 item 1 is not done |
 
-**#593, the reference shape** (`aa6babfc`, `55c6086e`, PR #599, `MixedReadConcurrencyTest`):
+**#593, the reference shape** (`aa6babfc`, `55c6086e`, PR #599, `MixedReadConcurrencyTest`). At the baseline, one case of the same
+class, `aSnapshotStartedInsideASwapRetriesIntoAVersionOnceTheSwapEnds`, still released a swap after a fixed 15 ms and
+failed 1 run in 100 on CI; `d04a8573` (#621) makes it wait for the read to start. Copy the shape in its fixed form:
 
 1. The property is bounded **per operation**, not per test: each write's wait, from the barrier to the end of its
    write, is held to `WAIT_BOUND = 4 s`, chosen below the production registry-lock limit (5 s), so a starving write
@@ -244,5 +246,5 @@ Shards: others 16 m 35 s, packs-core 44 m 1 s, packs-storage 40 m 29 s (37-40 % 
     should be closed with that run as evidence and #494 ticked. Size S.
 
 Commands used: `git log --grep '#593'`, `git show aa6babfc`, `grep -rn Thread.sleep service --include=*.java`,
-`python3 -I scripts/analysis/tests/jscan.py . build/analysis/tests`, GitHub MCP `actions_list`/`list_workflow_jobs`/`get_job_logs` on run 43794141037,
+`python3 -I scripts/analysis/tests/jscan.py . build/analysis/tests`, the jobs and logs of CI run 43794141037,
 `issue_read` #461 #530 #531 #593.
