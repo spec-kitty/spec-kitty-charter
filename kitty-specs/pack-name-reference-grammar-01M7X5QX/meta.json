@@ -1,0 +1,20 @@
+{
+  "create_return_branch": "main",
+  "created_at": "2026-11-20T19:08:14.382153+00:00",
+  "flattened": false,
+  "friendly_name": "pack name reference grammar",
+  "mid8": "01M7X5QX",
+  "mission_base_sha": "17d5ca2613dd5619676e72a1dd6af02ef47f6914",
+  "mission_branch": "kitty/mission-pack-name-reference-grammar-01M7X5QX",
+  "mission_id": "01M7X5QXXGEKBMM01V325HE9AJ",
+  "mission_number": null,
+  "mission_slug": "pack-name-reference-grammar-01M7X5QX",
+  "mission_type": "software-dev",
+  "purpose_context": "This mission advances pack name reference grammar on main so stakeholders can track the work from mission creation onward.",
+  "purpose_tldr": "pack name reference grammar",
+  "slug": "pack-name-reference-grammar-01M7X5QX",
+  "target_branch": "main",
+  "topology": "single_branch",
+  "topology_settled": false,
+  "topology_source": "default"
+}
