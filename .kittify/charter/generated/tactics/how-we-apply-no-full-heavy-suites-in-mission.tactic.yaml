@@ -1,30 +1,39 @@
-id: how-we-apply-no-full-heavy-suites-in-mission
-schema_version: "1.0"
-name: How We Apply NO_FULL_HEAVY_SUITES_IN_MISSION
-purpose: >-
-  Validate mission work with targeted runs and leave the heavy runs to CI.
-steps:
-  - title: Run the targeted set during mission work
-    description: >-
-      While implementing or reviewing a work package, run the touched
-      module's tests (for example ./gradlew :charter-domain:test) and
-      the specific gate the change touches, and record the exact commands and
-      counts in the pull request.
-  - title: Leave mutation testing to the weekly scheduled run (or a manual dispatch)
-    description: >-
-      PIT runs only in the weekly scheduled run (or a manual dispatch), as its own task outside check; do not run
-      ./gradlew pitest during mission work. Two exceptions, and no other
-      (operator, 2026-11-20): one in-mission run scoped to a new module, solely
-      to set its first floor; and narrowed runs for PIT tuning work (#530,
-      #531), confirmed through workflow_dispatch.
-  - title: Classify unrelated reds instead of widening the run
-    description: >-
-      A red result outside the change's blast radius is classified and left
-      to CI, not chased with a broader local sweep.
 failure_modes:
-  - Dispatch briefs that say "run everything" without naming the targeted
-    tasks.
-notes: >-
-  The charter makes ./gradlew verifyAll the pre-merge gate; this tactic does
-  not reclassify it as a heavy suite. Which local runs count as heavy beyond
-  PIT is not stated in the interview and is left to the operator.
+- Dispatch briefs that say "run everything" without naming the targeted tasks.
+- Briefs or work packages that ask a reviewer or implementer to run PIT or to
+  report a mutation score, margin or floor.
+id: how-we-apply-no-full-heavy-suites-in-mission
+name: How We Apply NO_FULL_HEAVY_SUITES_IN_MISSION
+notes: The charter makes ./gradlew verifyAll the pre-merge gate; this tactic 
+  does not reclassify it as a heavy suite. PIT is heavy (a whole :packs:pitest 
+  takes over an hour); which other local runs count as heavy is left to the 
+  operator.
+purpose: Validate mission work with targeted runs and leave the heavy runs to 
+  CI.
+schema_version: '1.0'
+steps:
+- description: While implementing or reviewing a work package, run the touched 
+    module's tests (for example ./gradlew :charter-domain:test) and the specific
+    gate the change touches, and record the exact commands and counts in the 
+    pull request.
+  title: Run the targeted set during mission work
+- description: >-
+    PIT runs only in mutation-testing.yml, in its weekly scheduled run (or a
+    manual dispatch) (ADR-0062). Implement, review, squad and closeout steps never run pitest or
+    checkMutationFloors, a narrowed run (pit-targets.init.gradle) or a
+    -PmutationGroups shard included. This overrides the open-packs testing
+    doctrine's "run it on the changed scope under review". Two exceptions, and
+    no other (operator, 2026-11-20): a new module may take one in-mission PIT
+    run, scoped to that module only, solely to set its first floor; and PIT
+    tuning work (#530, #531), where PIT is the subject, may run narrowed PIT
+    locally, with its confirmation run through workflow_dispatch.
+  title: Leave mutation testing to the weekly scheduled run (or a manual dispatch)
+- description: >-
+    A brief, acceptance criterion, NFR or Definition of Done never asks for a
+    mutation score, margin or floor. A module's floor and margin are measured
+    and moved only from the workflow's report, in a follow-up pull request after
+    it; a reviewer cites that report or leaves the number out.
+  title: Ask for no mutation numbers in mission work
+- description: A red result outside the change's blast radius is classified and 
+    left to CI, not chased with a broader local sweep.
+  title: Classify unrelated reds instead of widening the run
