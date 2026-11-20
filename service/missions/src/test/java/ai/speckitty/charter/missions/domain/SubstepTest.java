@@ -156,6 +156,18 @@ class SubstepTest {
     }
 
     @Test
+    @DisplayName("a candidate qualified by a pack name that is no pack id is refused, and a very long one cannot recurse")
+    void aQualifierThatIsNoPackIdIsRefusedWithoutRecursion() {
+        assertThat(SubstepCandidate.parse("a-b::tdd").packName()).contains("a-b");
+        assertThatThrownBy(() -> SubstepCandidate.parse("a_b::tdd")).isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> SubstepCandidate.parse("p".repeat(64) + "::tdd"))
+                .isInstanceOf(ConstraintBreachException.class);
+        // #440: the qualifier is matched with the kernel's possessive slug, so 20,000 runs do not overflow the stack.
+        assertThatThrownBy(() -> SubstepCandidate.parse("a-".repeat(20_000) + "a::tdd"))
+                .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
     @DisplayName("the candidate grammar is the one the mission-type schema states")
     void theGrammarIsTheSchemas() throws IOException {
         String schema = Files.readString(

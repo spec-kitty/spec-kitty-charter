@@ -6,7 +6,7 @@ description: >-
   which stays the bare Urn. The pack name is a pack id: a kebab slug of at most 63 characters (ADR-0075 decision 2).
   The pattern cannot cap it without lookahead, so the service refuses a longer one (#582). The URN part does not start
   with a colon, so a :: after the first token is always the qualifier: a_b::directive:D1 is not read as a URN of kind
-  a_b.
+  a_b. Nor does it start with white space, which the earlier .+ refused for a line break and no URN starts with.
 type: string
 pattern: '^([a-z0-9]+(-[a-z0-9]+)*::)?[a-z_]+:[^:\s].*$'
 x-source:

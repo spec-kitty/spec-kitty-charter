@@ -1,5 +1,6 @@
 package ai.speckitty.charter.missions.domain;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.validation.Constraints;
@@ -27,12 +28,13 @@ public record SubstepCandidate(Optional<String> packName, String id) {
 
     /**
      * The grammar of a candidate as written: the kernel's optional qualifier ({@link PackQualifiedReference#QUALIFIER}),
-     * then the id. It is the one statement of the grammar: {@link #parse} reads a candidate by it, and the
-     * {@code candidates} pattern of the mission-type schema is pinned to it by test.
+     * then the id. It is the one statement of the grammar, and the {@code candidates} pattern of the mission-type schema
+     * is pinned to it by test. {@link #parse} matches the same language with the kernel's possessive {@link
+     * IdentifierGrammar#SLUG}, so a long qualifier cannot recurse (#440).
      */
     public static final String GRAMMAR = "^" + PackQualifiedReference.QUALIFIER + ID_GRAMMAR + "$";
 
-    private static final Pattern WRITTEN = Pattern.compile(GRAMMAR);
+    private static final Pattern WRITTEN = Pattern.compile("(?:" + IdentifierGrammar.SLUG + "::)?+" + ID_GRAMMAR);
 
     private static final Pattern ID = Pattern.compile(ID_GRAMMAR);
 

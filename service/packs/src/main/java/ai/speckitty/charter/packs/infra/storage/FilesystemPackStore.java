@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -810,7 +812,7 @@ final class FilesystemPackStore {
      * Reads a pack's DRG documents with every field: the root {@code *.graph.yaml} shards by name, then
      * {@code drg/fragment.yaml} when the pack has one. A document that cannot be read is a violation, not a refusal, and
      * so is a fragment with a node whose {@code body_path} leaves the pack root (#254): one violation per such node, and
-     * the fragment is not read.
+     * the fragment is not read. So is a document with an edge endpoint whose pack qualifier is no pack id (#582).
      *
      * @param pack the pack's directory
      * @return the readable documents and the violations of the others
@@ -831,11 +833,14 @@ final class FilesystemPackStore {
             Shape shape = file.equals(PackFileSet.FRAGMENT) ? Shape.FRAGMENT : Shape.SHARD;
             switch (readFile(directory.resolve(file), file, text -> strategy.readGraph(text, shape, file))) {
                 case FileRead.Read<GraphDocument> good -> {
-                    List<PackElementViolation> escapes = bodyPathEscapes(good.value());
-                    if (escapes.isEmpty()) {
+                    List<PackElementViolation> refused = new ArrayList<>(bodyPathEscapes(good.value()));
+                    if (refused.isEmpty()) {
+                        refused.addAll(malformedQualifiers(good.value()));
+                    }
+                    if (refused.isEmpty()) {
                         documents.add(good.value());
                     } else {
-                        violations.addAll(escapes);
+                        violations.addAll(refused);
                     }
                 }
                 case FileRead.Unreadable<GraphDocument> bad -> violations.addAll(violationsOf(bad));
@@ -843,6 +848,32 @@ final class FilesystemPackStore {
             }
         }
         return new GraphRead(documents, violations);
+    }
+
+    /**
+     * The first edge endpoint written as a pack-qualified reference that does not parse, a pack name that is no pack id
+     * among them (#582), as one graph fault of the document: the schemas cannot cap the qualifier at the longest pack
+     * id, so the strict read refuses what the parser refuses, as the registration's staging does. The document is
+     * refused whole, as one that cannot be read is.
+     */
+    private static List<PackElementViolation> malformedQualifiers(GraphDocument document) {
+        return document.edges().stream()
+                .flatMap(edge -> Stream.of(edge.source(), edge.target()))
+                .filter(endpoint -> endpoint.contains("::"))
+                .flatMap(endpoint -> malformedQualifier(endpoint).stream())
+                .findFirst()
+                .map(reason -> new PackElementViolation(document.file(), PackCodes.DRG_SCHEMA_ERROR, reason))
+                .stream()
+                .toList();
+    }
+
+    private static Optional<String> malformedQualifier(String endpoint) {
+        try {
+            PackQualifiedReference.parse(endpoint);
+            return Optional.empty();
+        } catch (IllegalArgumentException refused) {
+            return Optional.of("edge endpoint is not a reference: " + refused.getMessage());
+        }
     }
 
     /**
