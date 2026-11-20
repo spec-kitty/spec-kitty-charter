@@ -60,6 +60,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#582": {
+      "evidence_ref": "WP01 7a9baa9 (one written form); WP02 delivers the grammar change",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "The pack-name part of a reference follows the pack-id grammar",
+      "verdict": "in-mission",
+      "wp": "WP02"
+    },
     "#583": {
       "evidence_ref": "8a44dfc: activations PackRef is a PackIdentifier (slug(63)); the PackRef part of #582 needs no work",
       "fr": null,
