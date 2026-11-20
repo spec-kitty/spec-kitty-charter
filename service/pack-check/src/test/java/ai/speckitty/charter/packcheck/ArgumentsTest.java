@@ -554,9 +554,47 @@ class ArgumentsTest {
 
             assertThat(fault(Arguments.parse(new String[] {"--pack", equals.toString()})))
                     .isEqualTo("--pack " + equals + " is ambiguous: it names the directory " + equals
-                            + " under its own name, and the directory " + bare
-                            + " under the id b; rename one, or write "
-                            + equals + "=<id> for " + equals);
+                            + " under its own name, and the directory " + bare + " under the id b; rename one, write "
+                            + bare + "/=b for " + bare + " under the id b, or write " + equals + "=<id> for " + equals
+                            + " under an id");
+        }
+
+        @Test
+        void anAmbiguousIdReadingWithALevelKeepsTheLevelInItsSpelling() throws IOException {
+            Path bare = pack("a");
+            Path whole = pack("a:org=b");
+
+            assertThat(fault(Arguments.parse(new String[] {"--pack", whole.toString()})))
+                    .isEqualTo("--pack " + whole + " is ambiguous: it names the directory " + whole
+                            + " under its own name, and the directory " + bare + " under the id b; rename one, write "
+                            + bare + "/:org=b for " + bare + " under the id b, or write " + whole + "=<id> for "
+                            + whole + " under an id");
+        }
+
+        /** Each spelling the ambiguity fault offers parses as it says, with both directories present. */
+        @Test
+        void theSpellingsTheAmbiguityOffersAreUnambiguous() throws IOException {
+            Path bare = pack("a");
+            Path equals = pack("a=b");
+
+            Parsed idReading = parsed(Arguments.parse(new String[] {"--pack", bare + "/=b"}));
+            Parsed wholeReading = parsed(Arguments.parse(new String[] {"--pack", equals + "=" + ExamplePacks.ORG}));
+            Parsed levelled = parsed(Arguments.parse(new String[] {"--pack", bare + "/:org=b"}));
+
+            assertThat(idReading.packs())
+                    .extracting(PackSetEntry::name, entry -> entry.root().configuredLevel())
+                    .containsExactly(tuple("b", Optional.empty()));
+            assertThat(Path.of(idReading.packs().getFirst().root().locator())).isEqualTo(bare);
+            assertThat(wholeReading.packs())
+                    .extracting(
+                            PackSetEntry::name,
+                            entry -> entry.root().configuredLevel(),
+                            entry -> entry.root().locator())
+                    .containsExactly(tuple(ExamplePacks.ORG, Optional.empty(), equals.toString()));
+            assertThat(levelled.packs())
+                    .extracting(PackSetEntry::name, entry -> entry.root().configuredLevel())
+                    .containsExactly(tuple("b", Optional.of(PackLevel.ORG)));
+            assertThat(Path.of(levelled.packs().getFirst().root().locator())).isEqualTo(bare);
         }
 
         /** L1: an empty directory part never names the working directory, which the empty path resolves to. */

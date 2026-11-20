@@ -94,7 +94,9 @@ How a `--pack` value is read:
   what remains, when it is `built-in`, `org` or `project`. So `=<id>` comes last: `<dir>:org=org-base`.
 - A directory whose name holds `=` or `:` still works. When the value read without an id names a directory and the
   value read with one does not, the value is that directory, under its own name. When both name a directory (both
-  `x=y` and `x` exist, or both `x:org` and `x`), the value is ambiguous and refused: rename one, or add `=<id>`.
+  `x=y` and `x` exist, or both `x:org` and `x`), the value is ambiguous and refused, naming both readings. Rename
+  one, or spell the reading you mean: `x/=y` is the directory `x` under the id `y`, and `x=y=<id>` is the directory
+  `x=y` under `<id>`; `x:org:<level>` is the directory `x:org`.
 - An empty directory part, as in `=<id>` or `:org`, is refused. It never checks the working directory.
 - Text after the last `=` that is not a pack id, such as `dir=My_Id` or `dir=`, is refused unless the whole value
   names a directory. It is never read as part of a path that does not exist.
