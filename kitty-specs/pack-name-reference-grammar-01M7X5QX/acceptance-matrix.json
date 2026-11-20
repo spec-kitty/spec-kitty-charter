@@ -1,0 +1,99 @@
+{
+  "mission_slug": "pack-name-reference-grammar-01M7X5QX",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackQualifiedReferenceTest (red 0dfe1cf, green 2753f52): isPackName == PackIdentifier.isPackId; a_b::, a--b::, a-::, 64 chars refused at parse",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:33.804830+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackQualifiedReferenceTest asserts PackIdentifier.GRAMMAR_DETAIL in every refusal; KindRefTest, GuardTest, IdentifierBoundsTest likewise",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:37.732553+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "SubstepCandidate/PackSchemasTest/VocabularyEqualityTest read QUALIFIER; GuardImplementation, GuardReference, KindRef, Relationship check via isPackName; grep finds no PACK_NAME_GRAMMAR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:41.322238+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "QualifierParityTest: 5 charter qualifier sites on SLUG_AS_WRITTEN; PackSchemasTest pins PackQualifiedReference.yaml",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:44.830210+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "QualifierParityTest: 10 packs-contract qualifier sites; lifecycle ref maxLength 135; IdentifierBoundsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:48.491519+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "QualifierParityTest.thePackNameAndPackIdFieldsMapToThePackIdGrammar; PackSchemasTest.theDescriptorSchemaConstrainsNameToThePackIdGrammar",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:51.993061+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "QualifierParityTest (15 sites, documented exception over 63); planted break of _ fails naming the site",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:55.728330+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/changes/2026-11-20-pack-name-reference-grammar.md and contracts/packs/CHANGELOG.md ### Breaking; :contracts:check fragment and changelog rules pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:44:59.359456+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Only refusal tests carry the old shape; RelationshipWireTest and IdentifierBoundsTest fixtures at 63; open-packs census 0 of 24 names, 0 of 607 references",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T22:45:02.753935+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

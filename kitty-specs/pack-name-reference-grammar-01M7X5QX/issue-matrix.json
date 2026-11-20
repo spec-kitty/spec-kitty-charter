@@ -1,0 +1,113 @@
+{
+  "rows": {
+    "#440": {
+      "evidence_ref": "Context only: NFR-001 keeps its rule (length checked before the match); no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Overlong ids and recursion: possessive repeats, length before match",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#549": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#552": {
+      "evidence_ref": "Context only: closed by PR #580; #582 is its drafted follow-up",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "ADR-0075 slice 3: every identifier on the shared kernel grammar",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#556": {
+      "evidence_ref": "Related-separate: no grammar change in the closure walk (research/grounding.md)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "ADR-0075 slice 7: walk and closure checks behind ports",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#580": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: pr_or_commit_ref>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#582": {
+      "evidence_ref": "WP01 7a9baa9 (one written form); WP02 delivers the grammar change",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "The pack-name part of a reference follows the pack-id grammar",
+      "verdict": "in-mission",
+      "wp": "WP02"
+    },
+    "#583": {
+      "evidence_ref": "8a44dfc: activations PackRef is a PackIdentifier (slug(63)); the PackRef part of #582 needs no work",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Split PackIdentifier into the registered pack id and the descriptor identity",
+      "verdict": "verified-already-fixed",
+      "wp": null
+    },
+    "#585": {
+      "evidence_ref": "Context only: closed by PR #586; WP02 extends it to qualifier sites (QualifierParityTest)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Contract identifier patterns checked against the kernel by a parity test",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#586": {
+      "evidence_ref": "PR reference, context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "test(contracts): identifier patterns give the kernel's verdict",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

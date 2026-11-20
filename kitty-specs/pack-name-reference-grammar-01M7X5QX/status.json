@@ -1,0 +1,92 @@
+{
+  "event_count": 18,
+  "last_event_id": "01M7XJ8SR91806W0Q7YZ4NSM6N",
+  "materialized_at": "2026-11-20T22:47:09.321269+00:00",
+  "mission_number": "29",
+  "mission_slug": "pack-name-reference-grammar-01M7X5QX",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 2,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7XJ8S9KSNYN9A4FQ2S49QSW",
+      "last_transition_at": "2026-11-20T22:47:08.851566+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP01 ready: QUALIFIER is the one written form; SubstepCandidate and pin tests read it; no behavior change. Tests: :kernel:test, :missions:test, PackSchemasTest, VocabularyEqualityTest, IdentifierPatternParityTest green; :kernel:check :missions:check, packs spotless+checkstyleTest green. Planted break (QUALIFIER without ?): missions 10 and packs 12 tests fail. SLUG_AS_WRITTEN deferred to WP02 (first use there).",
+        "Approved by claude::reviewer-renata: no behaviour change (GRAMMAR string identical, test-pattern equivalence checked); kernel/missions/packs/contracts suites and check/spotless/checkstyle green on rerun; planted break (QUALIFIER without ?) fails 10 missions + 12 packs tests. LOW fold: startsWith pin in PackSchemasTest misses a truncated QUALIFIER; WP02 may pin the full group."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-name-reference-grammar-01M7X5QX/WP01-one-statement-of-the-pack-name-grammar/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 5082,
+      "shell_pid_created_at": "1795202321.31",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T005": "done"
+      }
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "done",
+      "last_event_id": "01M7XJ8SR91806W0Q7YZ4NSM6N",
+      "last_transition_at": "2026-11-20T22:47:09.321269+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP02 ready. Red first: 0dfe1cf (PackQualifiedReferenceTest 20 tests, 11 fail on the WP01 head). Fix 2753f52, 5d87170 (URN part [^:\\s] so a_b:: cannot pass as a bare URN, found by QualifierParityTest), b284e6f (fixtures at 63), c34f36d (docs). Green: kernel/missions/packs/contracts tests (7009, then the 2 fixtures fixed), :kernel:check :missions:check, packs checkstyle+spotless, :contracts:check -PcontractBaseline=none (changelog fragment and packs CHANGELOG rules pass), :pack-validation:test and wholePackRoundTrip, :client-java:compileJava, check_docs all, markdownlint 0.18.1, cspell 9.2.0. Planted break (_ in GlossaryTerm qualifier): QualifierParityTest fails naming the site. Out-of-map edits: GraphBinding+GraphBindingTest (load-path refusal in place of QualifierLoadTest), RelationshipWireTest, packs IdentifierBoundsTest, KindRefTest, QualifierParityTest (new). Reviewer LOW from WP01 folded (PackSchemasTest pins the kind alternation after QUALIFIER). Not done: Urn.yaml keeps [a-z_]+:.+ (bare URN, not a reference).",
+        "Cycle 1 fixed: MEDIUM-1 readGraphs refuses a malformed qualified endpoint (strict load drg_schema_error, stored edge read pack_unreadable), QualifierLoadTest with 63 control, ArtifactReadService comment; SubstepCandidate matches with possessive SLUG (#440) with a 40,000-char test and guard allow-list update; L1 kept [^:\\s] with reason; L2 comment fixed. Green: full :missions/:packs tests, :kernel, :contracts identifiers, RegexRecursionGuardTest, checkstyle+spotless, :contracts:check. Commits a00b593, 5c42606.",
+        "Cycle 2 approved (head ce79053): MEDIUM-1 fixed; 64-char qualifier refused by staging, strict load (drg_schema_error with pack-id detail) and stored edge read (pack_unreadable), 63 loads everywhere; possessive SubstepCandidate matcher equals GRAMMAR (3M-case fuzz, 0 diffs); planted breaks caught by RegexRecursionGuardTest, SubstepTest and QualifierLoadTest; gradle check green; driftTest and pack-check on open-packs b426378: 19 packs, 0 problems. LOW: lenient DomainRepositoryService.load drops a refused graph document without a violation (pre-existing for any unreadable document); edges() refusal does not name the document or reason; optional upgrade line for packs already stored with such a qualifier."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://pack-name-reference-grammar-01M7X5QX/WP02-the-pack-name-part-is-a-pack-id/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T004": "done",
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done"
+      }
+    }
+  }
+}

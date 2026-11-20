@@ -1,0 +1,49 @@
+{
+  "accept_commit": "94520323bd7bee9bcd7f0532df6cc2786363998b",
+  "acceptance_history": [
+    {
+      "accept_commit": "94520323bd7bee9bcd7f0532df6cc2786363998b",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-20T22:45:38.458259+00:00",
+      "accepted_by": "claude::java-jenny",
+      "accepted_from_commit": "2786ef85023df5fae0bd9178801dadb77f5d7e47"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-20T22:45:38.458259+00:00",
+  "accepted_by": "claude::java-jenny",
+  "accepted_from_commit": "2786ef85023df5fae0bd9178801dadb77f5d7e47",
+  "baseline_merge_commit": "5ad6aee55902f4be4a9ee0f5c5392f64c5561f2f",
+  "contracts": "none",
+  "contracts_rationale": "The mission changes the repository's own contract schemas under contracts/ (charter and packs), recorded under ### Breaking there; it defines no planning-time interface contracts.",
+  "create_return_branch": "main",
+  "created_at": "2026-11-20T19:08:14.382153+00:00",
+  "flattened": false,
+  "friendly_name": "pack name reference grammar",
+  "merged_at": "2026-11-20T22:47:12.902069+00:00",
+  "merged_commit": "af84e218edb78fa73e1bf28bf22fb7373901ceaa",
+  "mid8": "01M7X5QX",
+  "mission_base_sha": "17d5ca2613dd5619676e72a1dd6af02ef47f6914",
+  "mission_id": "01M7X5QXXGEKBMM01V325HE9AJ",
+  "mission_number": 29,
+  "mission_slug": "pack-name-reference-grammar-01M7X5QX",
+  "mission_type": "software-dev",
+  "path_conventions": "waived",
+  "path_conventions_rationale": "This mission changes the repository's own contracts under contracts/ (charter and packs) and writes no planning-time contracts/ directory.",
+  "purpose_context": "This mission advances pack name reference grammar on main so stakeholders can track the work from mission creation onward.",
+  "purpose_tldr": "pack name reference grammar",
+  "slug": "pack-name-reference-grammar-01M7X5QX",
+  "status_phase": "1",
+  "target_branch": "main",
+  "topology": "single_branch",
+  "topology_decision": {
+    "code_lane_count": 2,
+    "from": "single_branch",
+    "rule": "wp_count_le_2",
+    "target_protected": true,
+    "to": "single_branch",
+    "wp_count": 2
+  },
+  "topology_settled": true,
+  "topology_source": "default"
+}
