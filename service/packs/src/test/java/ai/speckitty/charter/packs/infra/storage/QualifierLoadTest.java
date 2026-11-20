@@ -38,13 +38,10 @@ class QualifierLoadTest {
         Path refused = WholePackStoreTest.richPack(host.resolve("over"));
         WholePackStoreTest.write(refused, SHARD, shard(OVER_CAP));
 
-        assertThatThrownBy(() -> store.load(refused))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
-                    assertThat(refusal.getMessage())
-                            .contains(SHARD)
-                            .contains(PackIdentifier.GRAMMAR_DETAIL);
-                });
+        assertThatThrownBy(() -> store.load(refused)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
+            assertThat(refusal.getMessage()).contains(SHARD).contains(PackIdentifier.GRAMMAR_DETAIL);
+        });
 
         Path held = WholePackStoreTest.richPack(host.resolve("at"));
         WholePackStoreTest.write(held, SHARD, shard(AT_CAP));

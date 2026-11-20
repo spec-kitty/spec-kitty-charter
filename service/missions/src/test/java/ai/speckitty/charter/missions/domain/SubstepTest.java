@@ -156,7 +156,8 @@ class SubstepTest {
     }
 
     @Test
-    @DisplayName("a candidate qualified by a pack name that is no pack id is refused, and a very long one cannot recurse")
+    @DisplayName(
+            "a candidate qualified by a pack name that is no pack id is refused, and a very long one cannot recurse")
     void aQualifierThatIsNoPackIdIsRefusedWithoutRecursion() {
         assertThat(SubstepCandidate.parse("a-b::tdd").packName()).contains("a-b");
         assertThatThrownBy(() -> SubstepCandidate.parse("a_b::tdd")).isInstanceOf(ConstraintBreachException.class);
