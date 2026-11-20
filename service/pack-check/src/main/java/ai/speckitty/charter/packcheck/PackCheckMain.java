@@ -40,6 +40,11 @@ import java.util.function.Function;
  * error ({@code pack-check: internal error: ...} and its stack trace on standard error), with nothing on standard
  * output. The report is built whole before it is written, so no partial report reaches standard output.
  *
+ * <p>Pack content never reaches the internal-error path (#624): every fault a pack holds, a malformed {@code pack.yaml}
+ * field included, is a problem ({@code 1}), and {@code CLOSURE} judges only descriptors the read accepted. An internal
+ * error is a defect of pack-check. It exits {@code 2}, not {@code 1}, because no report backs it; a throw left to the
+ * JVM would exit {@code 1} with nothing on standard output.
+ *
  * <p>The run directory is deleted in a {@code finally}, so a failure midway leaves none behind. No shutdown hook covers
  * an interrupted JVM (SIGINT, SIGTERM): a run stopped that way can leave its {@code pack-check-*} directory under the
  * temporary directory.

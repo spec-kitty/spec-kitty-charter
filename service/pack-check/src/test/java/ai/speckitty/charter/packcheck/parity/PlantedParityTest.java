@@ -70,6 +70,10 @@ class PlantedParityTest {
     private static final Path VALIDATE =
             Path.of("..", "pack-validation", "src", "test", "resources", "golden", "validate.json");
 
+    /** The codes of the descriptor's format prechecks: a pack.yaml that states one has no composition facts (#624). */
+    private static final Set<String> DESCRIPTOR_FORMAT =
+            Set.of("requires_core_invalid", "pack_version_invalid", "dependency_range_invalid");
+
     /** The tokens of the placement codes, which validate mode states and the registration does not. */
     private static final Set<String> PLACEMENT =
             PlacementCodes.ALL.stream().map(ReasonCode::value).collect(Collectors.toUnmodifiableSet());
@@ -112,7 +116,8 @@ class PlantedParityTest {
                 .as("%s: the placement codes pack-check reports, by file, against validate.json", subject)
                 .isEqualTo(byFile(
                         placementIn(
-                                findings, subject.configuredLevel().isEmpty() && hasNoLevelAtAll(pack, registration)),
+                                findings,
+                                subject.configuredLevel().isEmpty() && hasNoLevelAtAll(pack, registration, findings)),
                         PLACEMENT::contains));
         assertThat(otherProblems(run.report(), instance))
                 .as("%s: the set has no problem but the pack's validation_failed", subject)
@@ -258,14 +263,20 @@ class PlantedParityTest {
 
     /**
      * Whether the pack, given no level, has none at all: its {@code pack.yaml} reads (the registration refuses no
-     * {@code pack_unreadable} at it, as surfaces.json records) and holds no top-level {@code pack_level} with a value. A
-     * pack whose descriptor does not read has no facts, so {@code CLOSURE} is skipped for it and no level is asked of
-     * it.
+     * {@code pack_unreadable} at it, as surfaces.json records), passes the format prechecks (validate mode states no
+     * {@link #DESCRIPTOR_FORMAT} code at it, as validate.json records) and holds no top-level {@code pack_level} with a
+     * value. A pack whose descriptor does not read, or is malformed, has no facts (#624), so {@code CLOSURE} is skipped
+     * for it and no level is asked of it.
      */
-    private static boolean hasNoLevelAtAll(Path pack, JsonNode registration) throws IOException {
+    private static boolean hasNoLevelAtAll(Path pack, JsonNode registration, JsonNode findings) throws IOException {
         Path descriptor = pack.resolve(PACK_YAML);
         boolean unreadable = registrationViolations(registration).contains(new Violation(PACK_YAML, "pack_unreadable"));
-        if (unreadable || !Files.isRegularFile(descriptor)) {
+        boolean malformed = false;
+        for (JsonNode finding : findings) {
+            malformed |= PACK_YAML.equals(finding.get("file").asString())
+                    && DESCRIPTOR_FORMAT.contains(finding.get("code").asString());
+        }
+        if (unreadable || malformed || !Files.isRegularFile(descriptor)) {
             return false;
         }
         return Files.readAllLines(descriptor, StandardCharsets.UTF_8).stream()

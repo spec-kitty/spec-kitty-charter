@@ -49,7 +49,9 @@ properties:
         - the command line
   skipped:
     type: array
-    description: Only when a check did not run although asked; today only CLOSURE, when a pack has no facts.
+    description: >-
+      Only when a check did not run although asked; today only CLOSURE, when a pack has no composition facts (it
+      cannot be read, or its pack.yaml is malformed) or no level.
     items:
       type: object
       additionalProperties: false
@@ -62,7 +64,7 @@ properties:
           type: string
           minLength: 1
     x-derived:
-      rule: The packs whose composition facts could not be read.
+      rule: The packs whose composition facts could not be read, a malformed pack.yaml among them, or whose level is unknown.
       inputs:
         - the packs checked
   problems:
