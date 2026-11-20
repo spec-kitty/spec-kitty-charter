@@ -33,14 +33,14 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/styleguide-python-style-guide.yaml
   slug: python-style-guide
-- content_hash: 56320c6e942327c36448ddaecef578795e16608e0a8bed06975dac5950f99402
+- content_hash: 7d3cf15475f564dd8f728454d5f7c3e8772f49ef5d8c587a54a7a00e05a1a792
   kind: styleguide
   path: 
     .kittify/charter-packs/styleguide/quality-gates-style-guide.styleguide.yaml
   provenance_path: 
     .kittify/charter/provenance/styleguide-quality-gates-style-guide.yaml
   slug: quality-gates-style-guide
-- content_hash: 7c0799ec02497d62a609942ad1b06eba622a7b5a45ace1247aa2b3fe4773ce31
+- content_hash: d7667b05182cf0317f4e8e904564cd54000cfa06f5e90d4968fec8e29cfa02c3
   kind: styleguide
   path: .kittify/charter-packs/styleguide/testing-style-guide.styleguide.yaml
   provenance_path: 
@@ -70,7 +70,7 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/tactic-how-we-apply-directive-025.yaml
   slug: how-we-apply-directive-025
-- content_hash: 36d2e73ddff7f94a16a86fd20987e52de2673145bd6c151edcd35d004c805cc1
+- content_hash: cb0dd89e35643211f85d0d72a19b1ae55c8c689ddb8a6efafc9bf83dc7ce6709
   kind: tactic
   path: .kittify/charter-packs/tactic/how-we-apply-directive-030.tactic.yaml
   provenance_path: 
@@ -106,7 +106,7 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/tactic-how-we-apply-directive-051.yaml
   slug: how-we-apply-directive-051
-- content_hash: 209efffbcb62c904ce34456dc538d010aaf0112880f87525d5f652c7e375481f
+- content_hash: f2eed64ca6d2d95f024182c4a5e9232f1113871d45f6894ae1ac1327d41047c3
   kind: tactic
   path: 
     .kittify/charter-packs/tactic/how-we-apply-no-full-heavy-suites-in-mission.tactic.yaml
