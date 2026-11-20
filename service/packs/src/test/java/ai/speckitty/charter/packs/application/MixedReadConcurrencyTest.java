@@ -411,7 +411,12 @@ class MixedReadConcurrencyTest {
                     failures.add("run " + run + ": the swap never started");
                     return;
                 }
-                Future<?> reader = pool.submit(this::readOnce);
+                CountDownLatch checked = new CountDownLatch(1);
+                Future<?> reader = pool.submit(() -> readOnce(checked::countDown));
+                if (!checked.await(10, TimeUnit.SECONDS)) {
+                    failures.add("run " + run + ": the read never started");
+                    return;
+                }
                 pause(15);
                 release.countDown();
                 reader.get(10, TimeUnit.SECONDS);
@@ -446,10 +451,16 @@ class MixedReadConcurrencyTest {
         }
 
         private void readOnce() {
+            readOnce(() -> {});
+        }
+
+        /** Reads once; {@code afterCheck} runs once the read has judged whether it started inside a swap. */
+        private void readOnce(Runnable afterCheck) {
             snapshots.incrementAndGet();
             if (PackWriteGeneration.isSwapping(generation.registry())) {
                 overlapped.incrementAndGet();
             }
+            afterCheck.run();
             try {
                 ConsistentRead.Verified<String> view = readMarkers(() -> pause(1));
                 versionsSeen.incrementAndGet();
