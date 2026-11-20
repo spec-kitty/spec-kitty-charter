@@ -7,7 +7,9 @@ version", steps 3 to 5, and the workflows `.github/workflows/service-native.yml`
 `.github/workflows/service-release.yml` (name `service-release`). Steps 1 and 2 of the guide are settled by ruling D4:
 
 - **Version:** `0.1.0-rc.2`, a pre-release.
-- **Contract:** a pre-release may bundle an unreleased contract.
+- **Contract:** a pre-release may bundle an unreleased contract. The operator's ruling of 2026-11-20 cut the charter
+  contract `0.2.0-rc.3` and the packs contract `0.1.0-rc.2` in the same version PR (#615), as #590 did for
+  `0.1.0-rc.1`, so this release bundles the published `0.2.0-rc.3`.
 
 The precedent is `service-v0.1.0-rc.1`: commit `b886d9886` ("release(service): service 0.1.0-rc.1") set the
 version, and `bbf7f4385` reopened `0.1.0-SNAPSHOT`.
@@ -35,13 +37,15 @@ From an up-to-date `main`, on a new branch:
 
    It names the cause of a refusal, or writes `build/service-release/gate.properties`. Expect `prerelease=true` there.
    While `info.version` of `contracts/charter/openapi.yaml` is `0.2.0-SNAPSHOT`, expect the contract note
-   `It implements the charter contract 0.2.0-SNAPSHOT, which is not released yet.`
+   `It implements the charter contract 0.2.0-SNAPSHOT, which is not released yet.` With `0.2.0-rc.3` and its tag
+   merged (#615), expect `It implements the charter contract release candidate 0.2.0-rc.3 (contract-charter-v0.2.0-rc.3).`
 3. Commit, signed, in the precedent's form: `release(service): service 0.1.0-rc.2`.
 4. Open the PR against `main`. The PR body states the following:
    - **The release:** this is the release candidate that adds the `pack-check` jar to the `service-v*` release
      (#478, ruling D4).
-   - **The contract:** the bundled contract is unreleased (`0.2.0-SNAPSHOT`, `info.version` at this commit). A
-     pre-release may bundle it (`service-build.md` step 2; the gate's pre-release rule in `ServiceReleaseGate`).
+   - **The contract:** the bundled contract is the charter contract release candidate `0.2.0-rc.3`, cut in the same
+     PR with the packs contract `0.1.0-rc.2` (operator ruling, 2026-11-20). A pre-release may bundle a candidate
+     (`service-build.md` step 2; the gate's pre-release rule in `ServiceReleaseGate`).
    - **The tag:** `service-v0.1.0-rc.2`, at this PR's merge commit on `main`, pushed by the operator once
      `service-native` is green at that commit.
    - `Refs #478`.
@@ -81,16 +85,21 @@ gh run list --repo spec-kitty/spec-kitty-charter --workflow service-native.yml -
 
 When that run is green, tell the orchestrator:
 
-- **Tag:** `service-v0.1.0-rc.2`
+- **Tags, in order:** first `contract-charter-v0.2.0-rc.3` and `contract-packs-v0.1.0-rc.2`, then, once the
+  native run is green, `service-v0.1.0-rc.2`. The service gate reads whether the charter tag is merged into the
+  tagged commit, so it must exist before the service tag's workflow runs.
 - **Commit:** `<merge-sha>`, the version PR's merge commit on `main`
 - **Native run:** the URL from step 2
-- **The command, for the operator:**
+- **The commands, for the operator, in this order:**
 
   ```bash
+  git tag contract-charter-v0.2.0-rc.3 <merge-sha> && git push origin contract-charter-v0.2.0-rc.3
+  git tag contract-packs-v0.1.0-rc.2 <merge-sha> && git push origin contract-packs-v0.1.0-rc.2
+  # after the service-native run at <merge-sha> is green:
   git tag service-v0.1.0-rc.2 <merge-sha> && git push origin service-v0.1.0-rc.2
   ```
 
-The operator pushes it. The session does not run this command. A tag ruleset on `service-v*` limits who can push one.
+The operator pushes them. The session does not run these commands. The tag rulesets limit who can push one.
 
 ## 4. The release
 
@@ -156,7 +165,7 @@ version. The gate never publishes a `-SNAPSHOT`.
 In the same PR, update the service release named in the status line of `docs/architecture/contract-and-dtos.md`
 (line 25 on 2026-11-19), as `bbf7f4385` did for that file. The line now says "the service `0.1.0-rc.1` bundles the
 second". Add `0.1.0-rc.2` with the contract it bundled. The release notes' contract note from step 4 states that
-contract; while it is unreleased, the line says that the service `0.1.0-rc.2` bundles the unreleased `0.2.0-SNAPSHOT`.
+contract: the service `0.1.0-rc.2` bundles the charter contract release candidate `0.2.0-rc.3` (#615).
 
 - **Commit:** signed, `release: reopen service 0.1.0-SNAPSHOT after 0.1.0-rc.2`.
 - **PR body:** `Refs #478`.
