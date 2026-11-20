@@ -85,15 +85,15 @@
       "wp": null
     },
     "#586": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "PR reference, context only",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "test(contracts): identifier patterns give the kernel's verdict",
+      "verdict": "not-applicable",
       "wp": null
     }
   },
