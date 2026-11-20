@@ -1,7 +1,8 @@
 failure_modes:
 - Dispatch briefs that say "run everything" without naming the targeted tasks.
 - Briefs or work packages that ask a reviewer or implementer to run PIT or to
-  report a mutation score, margin or floor.
+  report a mutation score, margin or floor, outside the two exceptions of the
+  step above (a new module's first floor; PIT tuning work).
 id: how-we-apply-no-full-heavy-suites-in-mission
 name: How We Apply NO_FULL_HEAVY_SUITES_IN_MISSION
 notes: The charter makes ./gradlew verifyAll the pre-merge gate; this tactic 
@@ -32,7 +33,10 @@ steps:
     A brief, acceptance criterion, NFR or Definition of Done never asks for a
     mutation score, margin or floor. A module's floor and margin are measured
     and moved only from the workflow's report, in a follow-up pull request after
-    it; a reviewer cites that report or leaves the number out.
+    it; a reviewer cites that report or leaves the number out. The one exception
+    is a new module's first floor: the work package that adds the module may ask
+    for its one in-mission run, scoped to that module, and the floor it sets;
+    every later move comes from the workflow's report.
   title: Ask for no mutation numbers in mission work
 - description: A red result outside the change's blast radius is classified and 
     left to CI, not chased with a broader local sweep.

@@ -59,8 +59,8 @@ two.
   (operator,
   2026-11-20; ADR-0062). Implement, review, squad and closeout steps never run `pitest` or `checkMutationFloors`,
   narrowed runs included, and no brief, acceptance criterion or NFR asks for a mutation score, margin or floor.
-  Floors and margins are measured and moved only from that workflow's report, in a follow-up pull request. This
-  overrides the open-packs testing doctrine's "run it on the changed scope under review". Two exceptions, and no
+  Apart from a new module's first floor (below), floors and margins are measured and moved only from that workflow's
+  report, in a follow-up pull request. This overrides the open-packs testing doctrine's "run it on the changed scope under review". Two exceptions, and no
   other (operator, 2026-11-20): a **new module** may take one in-mission PIT run, scoped to that module only, solely to
   set its first floor; and **PIT tuning work** (#530, #531) may run narrowed PIT locally, confirmed through a dispatch.
 - **Issues stay small** (operator, 2026-11-11; the detail is in
