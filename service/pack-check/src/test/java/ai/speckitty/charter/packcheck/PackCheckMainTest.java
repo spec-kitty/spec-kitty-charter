@@ -187,6 +187,117 @@ class PackCheckMainTest {
                         + " directory 'Bad_Name' is not a pack id.");
     }
 
+    /**
+     * PR #608 MEDIUM-3 (operator ruling B): a pack in a directory whose name is no pack id, given its registered id, is
+     * read, judged and reported under that id; the directory's name plays no part.
+     */
+    @Test
+    void aPackInADirectoryNamedBadNameGivenItsIdIsValid() throws IOException {
+        Path pack = misnamed(ExamplePacks.BUILT_IN, "Bad_Name");
+
+        Run run = run("--pack", pack + "=" + ExamplePacks.BUILT_IN);
+
+        assertThat(run.exit()).as(run.err()).isEqualTo(PackCheckMain.VALID);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE");
+        assertThat(run.report().get("problems")).isEmpty();
+        JsonNode entry = run.report().get("packs").get(0);
+        assertThat(entry.get("name").asString()).isEqualTo(ExamplePacks.BUILT_IN);
+        assertThat(entry.get("level").asString()).isEqualTo("built-in");
+        assertThat(entry.get("path").asString()).isEqualTo(pack.toString());
+        assertThat(run.err().lines().toList())
+                .isNotEmpty()
+                .allSatisfy(line -> assertThat(line).startsWith("warning: built-in: file_not_held "));
+    }
+
+    /** The round trip configures the pack under its given id too, not under its directory's name. */
+    @Test
+    void theRoundTripOfAPackGivenItsIdIsValid() throws IOException {
+        Path pack = misnamed(ExamplePacks.BUILT_IN, "Bad_Name");
+        Path temporary = temp.resolve("round-trip-tmp");
+
+        Run run = run(temporary, "--pack", pack + ":built-in=" + ExamplePacks.BUILT_IN, "--round-trip");
+
+        assertThat(run.exit()).as(run.out()).isEqualTo(PackCheckMain.VALID);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "ROUND_TRIP");
+        assertThat(run.report().get("problems")).isEmpty();
+        assertThat(names(run.report())).containsExactly(ExamplePacks.BUILT_IN);
+    }
+
+    /** The composition root hands the round trip the given id, never one taken from the directory. */
+    @Test
+    void theRoundTripIsHandedTheGivenId() throws IOException {
+        Path pack = misnamed(ExamplePacks.BUILT_IN, "Bad_Name");
+        List<String> handed = new ArrayList<>();
+        PackCheckMain.Composition recording =
+                new PackCheckMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
+                    handed.add(packId.value() + " " + source);
+                    return PackRoundTrip.run(packId, source, target);
+                });
+
+        Path temporary = Files.createDirectories(temp.resolve("tmp"));
+
+        Run run = run(temporary, recording, "--pack", pack + "=" + ExamplePacks.BUILT_IN, "--round-trip");
+
+        assertThat(run.exit()).as(run.err()).isEqualTo(PackCheckMain.VALID);
+        assertThat(handed).containsExactly(ExamplePacks.BUILT_IN + " " + pack);
+    }
+
+    /**
+     * CLOSURE over a set whose depended-on packs are given by id (#583, D5): built-in and org-base sit in directories
+     * whose names are no pack ids, and every other example pack depends on one of them.
+     */
+    @Test
+    void aSetWhosePacksDependOnPacksGivenByIdResolves() throws IOException {
+        Path root = configRoot();
+        Path packs = root.resolve(ConfigRoot.PACKS);
+        Path builtIn = Files.move(packs.resolve(ExamplePacks.BUILT_IN), packs.resolve("Core_Copy"));
+        Path org = Files.move(packs.resolve(ExamplePacks.ORG), packs.resolve("Org_Copy"));
+        List<String> args = new ArrayList<>();
+        for (String name : ExamplePacks.names().stream().sorted().toList()) {
+            String directory = switch (name) {
+                case ExamplePacks.BUILT_IN -> builtIn + "=" + name;
+                case ExamplePacks.ORG -> org + ":org=" + name;
+                default -> packs.resolve(name).toString();
+            };
+            args.add("--pack");
+            args.add(directory);
+        }
+
+        Run run = run(args.toArray(String[]::new));
+
+        assertThat(run.exit()).as(run.out()).isEqualTo(PackCheckMain.VALID);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE");
+        assertThat(run.report().has("skipped")).isFalse();
+        assertThat(names(run.report()))
+                .containsExactlyElementsOf(
+                        ExamplePacks.names().stream().sorted().toList());
+    }
+
+    /** A problem names the pack by its given id, in its {@code packs}. */
+    @Test
+    void aProblemNamesThePackByItsGivenId() throws IOException {
+        Path pack = misnamed(ExamplePacks.PROJECT, "Project_Copy");
+
+        Run run = run("--pack", pack + ":project=" + ExamplePacks.PROJECT);
+
+        assertThat(run.exit()).isEqualTo(PackCheckMain.PROBLEMS);
+        assertThat(run.codes()).containsExactly("pack_dependency_unknown", "pack_dependency_unknown");
+        for (JsonNode problem : run.report().get("problems")) {
+            assertThat(problem.get("packs")).singleElement().satisfies(named -> {
+                assertThat(named.get("packId").asString()).isEqualTo(ExamplePacks.PROJECT);
+                assertThat(named.get("name").asString()).isEqualTo(ExamplePacks.PROJECT);
+            });
+        }
+        assertThat(run.out()).doesNotContain("\"name\" : \"Project_Copy\"");
+    }
+
+    /** An example pack copied into {@code temp/packs/<directory>}. */
+    private Path misnamed(String name, String directory) throws IOException {
+        return Files.move(
+                ExamplePacks.copyOf(name, temp.resolve("packs")),
+                temp.resolve("packs").resolve(directory));
+    }
+
     @Test
     void aPlantedDuplicateArtifactIdIsOneValidationFailedProblem() throws IOException {
         Path pack = GoldenSubjects.copy(
@@ -415,11 +526,11 @@ class PackCheckMainTest {
         Path temporary = Files.createDirectories(temp.resolve("midway-tmp"));
         AtomicInteger calls = new AtomicInteger();
         PackCheckMain.Composition midway =
-                new PackCheckMain.Composition(new FileSystemPackInspector(), (source, target) -> {
+                new PackCheckMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
                     if (calls.incrementAndGet() == 2) {
                         throw new UncheckedIOException(new IOException("the disk is full"));
                     }
-                    return PackRoundTrip.run(source, target);
+                    return PackRoundTrip.run(packId, source, target);
                 });
 
         Run run = run(temporary, midway, "--config-root", root.toString(), "--round-trip");
@@ -438,11 +549,11 @@ class PackCheckMainTest {
         Path temporary = Files.createDirectories(temp.resolve("midway-tmp"));
         AtomicInteger calls = new AtomicInteger();
         PackCheckMain.Composition midway =
-                new PackCheckMain.Composition(new FileSystemPackInspector(), (source, target) -> {
+                new PackCheckMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
                     if (calls.incrementAndGet() == 2) {
                         throw new IllegalStateException("the flow broke");
                     }
-                    return PackRoundTrip.run(source, target);
+                    return PackRoundTrip.run(packId, source, target);
                 });
 
         Run run = run(temporary, midway, "--config-root", root.toString(), "--round-trip");

@@ -97,6 +97,12 @@ public final class PackCheckSeam {
             Path temporary,
             BiFunction<Path, Path, PackRoundTripResult> flow) {
         return PackCheckMain.run(
-                args, out, err, temporary, new PackCheckMain.Composition(new FileSystemPackInspector(), flow));
+                args,
+                out,
+                err,
+                temporary,
+                // A control runs under the pack's directory name, so it is given a pack whose directory is its id.
+                new PackCheckMain.Composition(
+                        new FileSystemPackInspector(), (packId, source, target) -> flow.apply(source, target)));
     }
 }

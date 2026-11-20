@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packcheck;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packcheck.Arguments.Help;
 import ai.speckitty.charter.packcheck.Arguments.Outcome;
 import ai.speckitty.charter.packcheck.Arguments.Parsed;
@@ -23,7 +24,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 
 /**
  * The pack-check CLI (ADR-0075 decision 9, #478, FR-001, FR-006, T017): the composition root of the pack-set check.
@@ -93,13 +93,31 @@ public final class PackCheckMain {
     }
 
     /**
+     * The production round trip of one pack ({@link PackRoundTrip#run(PackIdentifier, Path, Path)}): the pack in
+     * {@code source}, configured under {@code packId}, written into the empty {@code target}.
+     */
+    @FunctionalInterface
+    interface Flow {
+        /**
+         * Round-trips one pack.
+         *
+         * @param packId the registered id the pack is configured under: its {@code --pack}'s {@code =<id>}, or its
+         *     directory's name
+         * @param source the pack directory
+         * @param target an empty or missing directory that becomes the written pack
+         * @return what the round trip observed
+         */
+        PackRoundTripResult run(PackIdentifier packId, Path source, Path target);
+    }
+
+    /**
      * What the composition root plugs into the pack-set check: the reader and the production round trip. A test gives
      * its own to reach a failure no canonical pack provokes.
      *
      * @param reading the port that reads one pack root once
-     * @param flow the production round trip of one pack, from its directory into an empty target
+     * @param flow the production round trip of one pack, under its id, from its directory into an empty target
      */
-    record Composition(PackReading reading, BiFunction<Path, Path, PackRoundTripResult> flow) {
+    record Composition(PackReading reading, Flow flow) {
         /**
          * Checks the fields.
          *
@@ -185,9 +203,13 @@ public final class PackCheckMain {
             AtomicInteger next = new AtomicInteger();
             return check.checkWithRoundTrip(
                     parsed.packs(),
+                    // The set check round-trips only a pack whose name is a pack id (#583, D2b).
                     root -> composition
                             .flow()
-                            .apply(Path.of(root.locator()), run.resolve(next.incrementAndGet() + "-" + root.name())));
+                            .run(
+                                    new PackIdentifier(root.name()),
+                                    Path.of(root.locator()),
+                                    run.resolve(next.incrementAndGet() + "-" + root.name())));
         } finally {
             delete(run);
         }
