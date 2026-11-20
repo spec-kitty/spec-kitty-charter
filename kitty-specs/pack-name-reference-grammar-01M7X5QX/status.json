@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -29,6 +29,9 @@
       "last_event_id": "01M7X7A17Z6HM4R0SP60JQRK96",
       "last_transition_at": "2026-11-20T19:35:35.423556+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP01 ready: QUALIFIER is the one written form; SubstepCandidate and pin tests read it; no behavior change. Tests: :kernel:test, :missions:test, PackSchemasTest, VocabularyEqualityTest, IdentifierPatternParityTest green; :kernel:check :missions:check, packs spotless+checkstyleTest green. Planted break (QUALIFIER without ?): missions 10 and packs 12 tests fail. SLUG_AS_WRITTEN deferred to WP02 (first use there)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 5082,
