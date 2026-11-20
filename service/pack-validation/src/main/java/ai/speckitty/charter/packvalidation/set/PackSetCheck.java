@@ -222,7 +222,9 @@ public final class PackSetCheck {
                 unjudged.add(new Unjudged(
                         result.entry().name(),
                         "its composition facts cannot be read: "
-                                + unreadable.code().token()));
+                                + unreadable.code().token()
+                                + ": "
+                                + unreadable.detail()));
             } else if (result.level().isEmpty()) {
                 unjudged.add(new Unjudged(result.entry().name(), NO_LEVEL));
             }

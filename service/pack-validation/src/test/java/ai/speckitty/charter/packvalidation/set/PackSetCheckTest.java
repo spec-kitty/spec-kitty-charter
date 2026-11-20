@@ -323,10 +323,13 @@ class PackSetCheckTest {
                 assertThat(skip.check()).isEqualTo(Check.CLOSURE);
                 assertThat(skip.packs())
                         .containsExactly(new Unjudged(
-                                ExamplePacks.BUILT_IN, "its composition facts cannot be read: pack_unreadable"));
+                                ExamplePacks.BUILT_IN,
+                                "its composition facts cannot be read: pack_unreadable: a graph document of built-in"
+                                        + " cannot be read"));
                 assertThat(skip.reason())
                         .isEqualTo("CLOSURE needs the composition facts and the level of every pack; it has none for "
-                                + "built-in (its composition facts cannot be read: pack_unreadable)");
+                                + "built-in (its composition facts cannot be read: pack_unreadable: a graph document"
+                                + " of built-in cannot be read)");
             });
             PackResult broken = verdict.packs().getFirst();
             assertThat(broken.failing()).isTrue();
@@ -435,8 +438,12 @@ class PackSetCheckTest {
             assertThat(verdict.skipped()).singleElement().satisfies(skip -> {
                 assertThat(skip.check()).isEqualTo(Check.CLOSURE);
                 assertThat(skip.packs())
-                        .containsExactly(
-                                new Unjudged(BAD_NAME, "its composition facts cannot be read: pack_unreadable"));
+                        .as("the skip names the cause, pack_id_invalid, not only pack_unreadable (PR #608 review L3)")
+                        .containsExactly(new Unjudged(
+                                BAD_NAME,
+                                "its composition facts cannot be read: pack_unreadable: pack_id_invalid: pack"
+                                        + " directory '" + BAD_NAME + "' is not a pack id. "
+                                        + PackIdentifier.GRAMMAR_DETAIL));
             });
             assertThat(verdict.failing()).isTrue();
         }

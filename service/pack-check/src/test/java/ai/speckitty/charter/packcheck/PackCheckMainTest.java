@@ -179,7 +179,12 @@ class PackCheckMainTest {
             assertThat(violation.get("detail").asString()).contains("Bad_Name");
         });
         assertThat(names(run.report())).containsExactly("Bad_Name");
-        assertThat(run.report().get("skipped").get(0).get("check").asString()).isEqualTo("CLOSURE");
+        JsonNode skip = run.report().get("skipped").get(0);
+        assertThat(skip.get("check").asString()).isEqualTo("CLOSURE");
+        assertThat(skip.get("reason").asString())
+                .as("the skip names the cause, pack_id_invalid (PR #608 review L3)")
+                .contains("Bad_Name (its composition facts cannot be read: pack_unreadable: pack_id_invalid: pack"
+                        + " directory 'Bad_Name' is not a pack id.");
     }
 
     @Test
