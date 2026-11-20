@@ -133,7 +133,9 @@ The report goes to standard output, as one JSON object. Its schema is the contra
   its path as you gave it.
 - **`skipped`:** present only when a check was asked for and did not run. Today that is `CLOSURE`, when a pack could
   not be read, its `pack.yaml` is malformed, or its level is unknown; its `reason` names the pack. The pack's own
-  fault is its one problem, under `PACK`.
+  fault is its one problem, under `PACK`. One such pack skips `CLOSURE` for the whole set, on purpose: judging the
+  others without it would report false `pack_dependency_unknown` faults for the packs that depend on it. A closure
+  fault among the other packs shows once that pack is fixed; the exit is `1` either way.
 - **`problems`:** each a `Problem` of the contract, with the code and the shape a registration answers for the same
   fault. A pack's violations are one `validation_failed` problem, with each violation's code, file and detail. Its
   `instance` is the `file:` URI of the pack's directory, so you can tell the packs apart. A composition fault has its

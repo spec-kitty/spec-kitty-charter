@@ -7,9 +7,11 @@ import static org.junit.jupiter.api.Assumptions.abort;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packcheck.PackCheckMain;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,6 +21,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,8 +74,9 @@ class PlantedParityTest {
             Path.of("..", "pack-validation", "src", "test", "resources", "golden", "validate.json");
 
     /** The codes of the descriptor's format prechecks: a pack.yaml that states one has no composition facts (#624). */
-    private static final Set<String> DESCRIPTOR_FORMAT =
-            Set.of("requires_core_invalid", "pack_version_invalid", "dependency_range_invalid");
+    private static final Set<String> DESCRIPTOR_FORMAT = Arrays.stream(DescriptorChecks.Check.values())
+            .map(check -> StorageCodes.precheck(check).value())
+            .collect(Collectors.toUnmodifiableSet());
 
     /** The tokens of the placement codes, which validate mode states and the registration does not. */
     private static final Set<String> PLACEMENT =

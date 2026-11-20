@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import java.util.List;
 import java.util.Set;
 
@@ -79,6 +80,21 @@ public final class StorageCodes {
     /** A file of the tree that is not held, excluded or unmodelled (Q1): a warning, never a violation. */
     public static final ReasonCode FILE_NOT_HELD =
             new ReasonCode(Diagnostic.Code.FILE_NOT_HELD.token(), Severity.WARNING);
+
+    /**
+     * The code the read states a descriptor format fault under (S2, FR-017): one per {@link DescriptorChecks.Check}, so
+     * a check added there needs its code here.
+     *
+     * @param check which value of the descriptor is malformed
+     * @return its code
+     */
+    public static ReasonCode precheck(DescriptorChecks.Check check) {
+        return switch (check) {
+            case REQUIRES_CORE -> REQUIRES_CORE_INVALID;
+            case PACK_VERSION -> PACK_VERSION_INVALID;
+            case DEPENDENCY_RANGE -> DEPENDENCY_RANGE_INVALID;
+        };
+    }
 
     /** Every code this class builds, in this class's order. */
     public static final List<ReasonCode> ORDERED = List.of(
