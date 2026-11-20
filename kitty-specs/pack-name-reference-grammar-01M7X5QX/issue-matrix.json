@@ -37,15 +37,15 @@
       "wp": null
     },
     "#556": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Related-separate: no grammar change in the closure walk (research/grounding.md)",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "ADR-0075 slice 7: walk and closure checks behind ports",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#580": {
