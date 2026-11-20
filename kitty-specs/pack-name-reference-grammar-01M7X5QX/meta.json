@@ -10,6 +10,8 @@
   "mission_number": null,
   "mission_slug": "pack-name-reference-grammar-01M7X5QX",
   "mission_type": "software-dev",
+  "path_conventions": "waived",
+  "path_conventions_rationale": "This mission changes the repository's own contracts under contracts/ (charter and packs) and writes no planning-time contracts/ directory.",
   "purpose_context": "This mission advances pack name reference grammar on main so stakeholders can track the work from mission creation onward.",
   "purpose_tldr": "pack name reference grammar",
   "slug": "pack-name-reference-grammar-01M7X5QX",
