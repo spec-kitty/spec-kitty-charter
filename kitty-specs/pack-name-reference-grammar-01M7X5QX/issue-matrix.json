@@ -73,15 +73,15 @@
       "wp": null
     },
     "#585": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: closed by PR #586; WP02 extends it to qualifier sites (QualifierParityTest)",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "Contract identifier patterns checked against the kernel by a parity test",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#586": {
