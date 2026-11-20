@@ -434,5 +434,14 @@ Status: Accepted, as an amendment of this accepted ADR. No floor is moved.
   shards for up to 1h 21m inside reviews.
 - **Floors and margins** are measured and moved only from the weekly or dispatched run's report, in a follow-up pull
   request after it. The amendments of 2026-11-17 and 2026-11-19 took their measurements from runs made inside missions;
-  they stand, and later margins come from the scheduled run. How a new module takes its first floor without such a
-  measurement is left to the operator.
+  they stand, and later margins come from the scheduled run.
+- **Two exceptions, and no other** (operator rulings, 2026-11-20):
+  1. **A new module's first floor.** One in-mission PIT run is allowed, scoped to the new module only, solely to set
+     its initial floor (decision 3's `floor5(score − 3)`). Every later move of that floor comes only from the weekly or
+     dispatched run.
+  2. **PIT tuning work** ([#530](https://github.com/spec-kitty/spec-kitty-charter/issues/530),
+     [#531](https://github.com/spec-kitty/spec-kitty-charter/issues/531)). Narrowed local PIT runs are allowed, because
+     PIT is the subject. The confirmation still goes through `workflow_dispatch`.
+- **The root cause in open-packs.** The testing pack's directive tells agents to run mutation testing on the changed
+  scope of each work package; [spec-kitty-open-packs#326](https://github.com/spec-kitty/spec-kitty-open-packs/issues/326)
+  makes the cadence the project's call.

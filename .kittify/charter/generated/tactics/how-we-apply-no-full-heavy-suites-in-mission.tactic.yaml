@@ -13,8 +13,10 @@ steps:
   - title: Leave mutation testing to the weekly scheduled run (or a manual dispatch)
     description: >-
       PIT runs only in the weekly scheduled run (or a manual dispatch), as its own task outside check; do not run
-      ./gradlew pitest during mission work unless the operator asks for it by
-      name.
+      ./gradlew pitest during mission work. Two exceptions, and no other
+      (operator, 2026-11-20): one in-mission run scoped to a new module, solely
+      to set its first floor; and narrowed runs for PIT tuning work (#530,
+      #531), confirmed through workflow_dispatch.
   - title: Classify unrelated reds instead of widening the run
     description: >-
       A red result outside the change's blast radius is classified and left
