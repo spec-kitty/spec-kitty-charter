@@ -280,7 +280,6 @@ public final class GraphBinding {
                 target.get().packName());
     }
 
-    /** The endpoint text split by {@link PackQualifiedReference}; empty when its qualifier is malformed. */
     /**
      * The finding for an endpoint written as a pack-qualified reference that does not parse, a pack name that is no
      * pack id among them (#582), with the parser's reason, so the refusal says what a reference must be.
@@ -297,6 +296,7 @@ public final class GraphBinding {
         }
     }
 
+    /** The endpoint text split by {@link PackQualifiedReference}; empty when its qualifier is malformed. */
     private static Optional<PackQualifiedReference> reference(String text) {
         try {
             return Optional.of(PackQualifiedReference.parse(text));

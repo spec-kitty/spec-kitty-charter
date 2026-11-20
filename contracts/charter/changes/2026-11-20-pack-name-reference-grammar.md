@@ -7,6 +7,9 @@
   - `PackQualifiedReference`, `PackQualifiedReferenceWrite` and the `seeAlso` items of `GlossaryTerm`,
     `GlossaryContextTerm` and `VocabularyTerm` write the qualifier `([a-z0-9]+(-[a-z0-9]+)*::)?`. Regenerate the
     client's patterns.
+  - The URN part of `PackQualifiedReference` and `PackQualifiedReferenceWrite` starts with neither a colon nor white
+    space (`[a-z_]+:[^:\s].*`, where it was `[a-z_]+:.+`). Before, `a_b::directive:D1` passed as a bare URN of kind
+    `a_b`, so the qualifier grammar alone could not refuse it.
   - A pattern cannot cap one part of a longer string without lookahead, and the contract carries none, so the schemas
     do not cap the qualifier; their descriptions say so. The service refuses a pack name of more than 63 characters:
     `putPackRelationship` answers `422 validation_failed`, as for any other malformed reference, and a pack that writes

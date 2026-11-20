@@ -333,9 +333,9 @@ class GraphBindingTest {
             String atCap = "p".repeat(PackIdentifier.MAX_LENGTH);
             GraphBuild bound = build(List.of(edge("tactic:a", atCap + "::directive:b", "requires")));
             assertThat(bound.findings()).isEmpty();
-            assertThat(bound.graph().relationships()).singleElement().satisfies(relationship -> assertThat(
-                            relationship.toPack())
-                    .contains(atCap));
+            assertThat(bound.graph().relationships())
+                    .singleElement()
+                    .satisfies(relationship -> assertThat(relationship.toPack()).contains(atCap));
         }
 
         @Test

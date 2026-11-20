@@ -367,7 +367,7 @@ class PackSchemasTest {
         assertThat(parsed).isInstanceOf(Map.class);
         assertThat(((Map<?, ?>) parsed).get("pattern"))
                 .as("the schema's parsed pattern value, whatever the YAML quoting")
-                .isEqualTo("^" + PackQualifiedReference.QUALIFIER + "[a-z_]+:.+$");
+                .isEqualTo("^" + PackQualifiedReference.QUALIFIER + "[a-z_]+:[^:\\s].*$");
     }
 
     @Test

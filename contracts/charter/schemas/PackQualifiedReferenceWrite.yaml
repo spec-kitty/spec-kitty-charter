@@ -6,7 +6,7 @@ description: >-
   in PackQualifiedReference; the pattern cannot cap it, so a longer one is refused 422 validation_failed (#582).
 type: string
 maxLength: 255
-pattern: '^([a-z0-9]+(-[a-z0-9]+)*::)?[a-z_]+:.+$'
+pattern: '^([a-z0-9]+(-[a-z0-9]+)*::)?[a-z_]+:[^:\s].*$'
 x-source:
   path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
   symbol: RelationshipWire.MAX_ENDPOINT_LENGTH
