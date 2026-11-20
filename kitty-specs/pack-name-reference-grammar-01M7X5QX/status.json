@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -30,7 +30,8 @@
       "last_transition_at": "2026-11-20T20:55:36.429674+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP01 ready: QUALIFIER is the one written form; SubstepCandidate and pin tests read it; no behavior change. Tests: :kernel:test, :missions:test, PackSchemasTest, VocabularyEqualityTest, IdentifierPatternParityTest green; :kernel:check :missions:check, packs spotless+checkstyleTest green. Planted break (QUALIFIER without ?): missions 10 and packs 12 tests fail. SLUG_AS_WRITTEN deferred to WP02 (first use there)."
+        "WP01 ready: QUALIFIER is the one written form; SubstepCandidate and pin tests read it; no behavior change. Tests: :kernel:test, :missions:test, PackSchemasTest, VocabularyEqualityTest, IdentifierPatternParityTest green; :kernel:check :missions:check, packs spotless+checkstyleTest green. Planted break (QUALIFIER without ?): missions 10 and packs 12 tests fail. SLUG_AS_WRITTEN deferred to WP02 (first use there).",
+        "Approved by claude::reviewer-renata: no behaviour change (GRAMMAR string identical, test-pattern equivalence checked); kernel/missions/packs/contracts suites and check/spotless/checkstyle green on rerun; planted break (QUALIFIER without ?) fails 10 missions + 12 packs tests. LOW fold: startsWith pin in PackSchemasTest misses a truncated QUALIFIER; WP02 may pin the full group."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
