@@ -90,6 +90,32 @@ The FR-to-WP map comes from `spec.md` and `tasks.md`; the evidence names the mer
 
 **When the release exists**, post the evidence comment (`release-runbook.md`, step 6) and close #478 as `completed`.
 
+## Integration: approval stamps and merged heads
+
+`spec-kitty consolidate` refused (`APPROVAL_STAMP_NOT_ON_LANE`), so the approved lanes were merged by hand into the
+mission branch at `7577b896c` (its second parents are lane-g `871b3d45e` and WP08 `44fb67f33`). The stamps that are not
+reachable from the mission branch are pushed as evidence under `kitty/pack-check-cli-01M7SASC-approval-stamps/wpNN`
+(unsigned spec-kitty commits, never merged). Each row's code diff, `git diff --stat <stamp> <head> -- . ':!kitty-specs'`,
+is empty.
+
+| WP | Approval stamp | Merged head | Relation |
+| --- | --- | --- | --- |
+| WP01 | `1fc6004d9` | `6741fa298` | the same commits re-signed (signed-commit rule); identical code |
+| WP02 | `2957d32c1` | `2957d32c1` | the stamp itself |
+| WP03 | `a8d726bde` | `1cb7115c2` | the stamp is spec-kitty's unsigned "merge mission into lane" commit; its first parent is the head |
+| WP04 | `2e0420c6d` | `746edcca1` | as WP03 |
+| WP05 | `a417bbd1b` | `8973920fc` | as WP03 |
+| WP06 | `8410d013d` | `c23bded79` | as WP03 |
+| WP07 | `34c1c88de` | `871b3d45e` | as WP03 |
+| WP08 | (planning lane) | `44fb67f33` | on `feat/478-pack-check`; touches only `kitty-specs/` |
+
+So only WP01 was re-signed after its approval. WP03 to WP07 were committed before their approvals; spec-kitty's own
+status merges on top were dropped because they are unsigned.
+
+**Code after the approvals.** The main merge `6c7a5b522` and its fixes `b48d6e038` and `804339fa0` (#583 and #602), and
+the fixes of the independent review's findings, came after the per-WP approvals. The independent adversarial review of
+#608 covers them.
+
 ## Epic #549
 
 Tick this line in #549's checklist when #478 closes, that is, once the `service-v0.1.0-rc.2` release exists:
