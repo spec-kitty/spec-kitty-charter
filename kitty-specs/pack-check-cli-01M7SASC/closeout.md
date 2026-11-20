@@ -116,6 +116,16 @@ status merges on top were dropped because they are unsigned.
 the fixes of the independent review's findings, came after the per-WP approvals. The independent adversarial review of
 #608 covers them.
 
+## Known limits
+
+- **A parent directory swapped for a link after the walk.** Every read of a pack file opens with `NOFOLLOW_LINKS`
+  (`PackFileSet.noFollowBytes`), which guards the last path component only. A directory higher in the path, swapped for
+  a link between the walk and the read, would still be followed. Closing it needs `openat`-style reads
+  (`SecureDirectoryStream`, as `LocalSourceReader` does). The independent review rated it LOW: exploiting it needs
+  write access inside the tree, which already allows writing the content directly. No issue is filed.
+- **The approval-stamp branches** (`kitty/pack-check-cli-01M7SASC-approval-stamps/*`) stay as evidence until the
+  records PR moves the WPs to done; the orchestrator decides then whether to delete them.
+
 ## Epic #549
 
 Tick this line in #549's checklist when #478 closes, that is, once the `service-v0.1.0-rc.2` release exists:
