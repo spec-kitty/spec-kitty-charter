@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packcheck;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
@@ -8,7 +9,6 @@ import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 /**
  * Test-only access to pack-check's package-private rendering, for {@code PackCheckReportContractTest} in
@@ -87,22 +87,27 @@ public final class PackCheckSeam {
      * @param out where the report goes
      * @param err where the usage, the warnings and the failures go
      * @param temporary the round trip's temporary directory
-     * @param flow the round trip of one pack, from its directory into an empty target
+     * @param flow the round trip of one pack, under its registered id, from its directory into an empty target
      * @return the exit code
      */
     public static int runWithRoundTrip(
-            String[] args,
-            PrintStream out,
-            PrintStream err,
-            Path temporary,
-            BiFunction<Path, Path, PackRoundTripResult> flow) {
+            String[] args, PrintStream out, PrintStream err, Path temporary, ControlFlow flow) {
         return PackCheckMain.run(
-                args,
-                out,
-                err,
-                temporary,
-                // A control runs under the pack's directory name, so it is given a pack whose directory is its id.
-                new PackCheckMain.Composition(
-                        new FileSystemPackInspector(), (packId, source, target) -> flow.apply(source, target)));
+                args, out, err, temporary, new PackCheckMain.Composition(new FileSystemPackInspector(), flow::run));
+    }
+
+    /** A round trip of one pack in place of the production one, for a test outside this package. */
+    @FunctionalInterface
+    public interface ControlFlow {
+
+        /**
+         * Round-trips one pack.
+         *
+         * @param packId the registered id the pack is configured under
+         * @param source the pack directory
+         * @param target an empty directory that becomes the written pack
+         * @return what the round trip observed
+         */
+        PackRoundTripResult run(PackIdentifier packId, Path source, Path target);
     }
 }

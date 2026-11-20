@@ -41,18 +41,6 @@ public final class PackRoundTrip {
     private PackRoundTrip() {}
 
     /**
-     * Round-trips one pack through the storage service, configured under the name of its directory (#583, D2b): a
-     * directory name that is no pack id refuses every modelled file.
-     *
-     * @param source the pack directory to read; never written
-     * @param target an empty or missing directory that becomes the written pack
-     * @return what the round trip observed
-     */
-    public static PackRoundTripResult run(Path source, Path target) {
-        return run(String.valueOf(source.getFileName()), source, target);
-    }
-
-    /**
      * Round-trips one pack through the storage service, configured under the registered id its caller names (#583,
      * D2b; PR #608 MEDIUM-3), whatever its directory is called.
      *
@@ -62,18 +50,11 @@ public final class PackRoundTrip {
      * @return what the round trip observed
      */
     public static PackRoundTripResult run(PackIdentifier packId, Path source, Path target) {
-        return run(Objects.requireNonNull(packId, "packId").value(), source, target);
-    }
-
-    private static PackRoundTripResult run(String name, Path source, Path target) {
-        TreeCensus census = WholePackCensus.census(source);
         return run(
                 new DomainRoundTrip(new YamlSerializationStrategy()),
-                name,
+                Objects.requireNonNull(packId, "packId"),
                 source,
-                target,
-                WholePackCensus.kinds(census),
-                WholePackCensus.formsOf(census));
+                target);
     }
 
     /**
@@ -108,23 +89,27 @@ public final class PackRoundTrip {
     }
 
     /**
-     * Round-trips one pack through {@code roundTrip}, with the pack's own census and content forms.
+     * Round-trips one pack through {@code roundTrip}, configured under {@code packId}, with the pack's own census and
+     * content forms.
      *
      * @param roundTrip the adapter; a control passes a lossy one
+     * @param packId the registered id the pack is configured and loaded under
      * @param source the pack directory
      * @param target the directory to write to
      * @return what the round trip observed
      */
-    static PackRoundTripResult run(WholePackRoundTrip roundTrip, Path source, Path target) {
+    static PackRoundTripResult run(WholePackRoundTrip roundTrip, PackIdentifier packId, Path source, Path target) {
         TreeCensus census = WholePackCensus.census(source);
-        return run(roundTrip, source, target, WholePackCensus.kinds(census), WholePackCensus.formsOf(census));
+        return run(roundTrip, packId, source, target, WholePackCensus.kinds(census), WholePackCensus.formsOf(census));
     }
 
     /**
-     * Round-trips one pack and reads both sides of every answered file by the content form {@code formOf} gives its
-     * path. The form is decided before any text is read, and the dispatch is exhaustive, so a new form is decided here.
+     * Round-trips one pack, configured under {@code packId}, and reads both sides of every answered file by the content
+     * form {@code formOf} gives its path. The form is decided before any text is read, and the dispatch is exhaustive,
+     * so a new form is decided here.
      *
      * @param roundTrip the adapter
+     * @param packId the registered id the pack is configured and loaded under
      * @param source the pack directory
      * @param target the directory to write to
      * @param census every source file's gate kind
@@ -133,32 +118,12 @@ public final class PackRoundTrip {
      */
     static PackRoundTripResult run(
             WholePackRoundTrip roundTrip,
+            PackIdentifier packId,
             Path source,
             Path target,
             SortedMap<String, String> census,
             Function<String, ContentForm> formOf) {
-        return run(roundTrip, String.valueOf(source.getFileName()), source, target, census, formOf);
-    }
-
-    /**
-     * {@link #run(WholePackRoundTrip, Path, Path, SortedMap, Function)}, the pack configured under {@code name}.
-     *
-     * @param roundTrip the adapter
-     * @param name the registered id the pack is configured under
-     * @param source the pack directory
-     * @param target the directory to write to
-     * @param census every source file's gate kind
-     * @param formOf the content form of a source path
-     * @return what the round trip observed
-     */
-    private static PackRoundTripResult run(
-            WholePackRoundTrip roundTrip,
-            String name,
-            Path source,
-            Path target,
-            SortedMap<String, String> census,
-            Function<String, ContentForm> formOf) {
-        Map<String, Outcome> outcomes = roundTrip.roundTrip(name, source, target, census);
+        Map<String, Outcome> outcomes = roundTrip.roundTrip(packId.value(), source, target, census);
         SortedMap<String, FileOutcome> read = new TreeMap<>();
         outcomes.forEach((path, outcome) -> read.put(
                 path,

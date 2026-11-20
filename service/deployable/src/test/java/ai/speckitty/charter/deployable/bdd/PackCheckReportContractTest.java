@@ -504,9 +504,9 @@ class PackCheckReportContractTest {
          * Error handling: the production flow with every tactic's {@code purpose} dropped on its write path, the
          * positive control {@code :pack-validation}'s round-trip gate uses.
          */
-        private static PackRoundTripResult lossy(Path source, Path target) {
+        private static PackRoundTripResult lossy(PackIdentifier packId, Path source, Path target) {
             return RoundTripControls.rewritingWrites(
-                    source, target, ArtifactKind.TACTIC, TheRoundTripsProblem::withoutPurpose);
+                    packId, source, target, ArtifactKind.TACTIC, TheRoundTripsProblem::withoutPurpose);
         }
 
         /** The {@code purpose} of a source tactic, as YAML reads it. */

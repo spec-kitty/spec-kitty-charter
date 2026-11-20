@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripObservation;
 import java.io.IOException;
@@ -24,8 +25,8 @@ final class WholePackGateRun {
     private WholePackGateRun() {}
 
     /**
-     * Runs the round trip and compares every answered file with its source by the content form {@code formOf} gives its
-     * path.
+     * Runs the round trip, the pack configured under its directory name (each fixture pack's directory is its id), and
+     * compares every answered file with its source by the content form {@code formOf} gives its path.
      *
      * @param roundTrip the adapter
      * @param pack the source pack
@@ -44,7 +45,8 @@ final class WholePackGateRun {
             Map<String, List<String>> information,
             Set<String> paired,
             Function<String, ContentForm> formOf) {
-        PackRoundTripResult result = PackRoundTrip.run(roundTrip, pack, written, census, formOf);
+        PackRoundTripResult result = PackRoundTrip.run(
+                roundTrip, new PackIdentifier(String.valueOf(pack.getFileName())), pack, written, census, formOf);
         RoundTripObservation observation = RoundTripObservation.of(result);
         information.putAll(observation.information());
         result.written().stream()

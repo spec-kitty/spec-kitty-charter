@@ -133,6 +133,9 @@ class DomainRoundTripTest {
                 rationale: Record decisions.
             """;
 
+    /** The id the fixture pack is configured under, also the name of its directory. */
+    private static final String BUILT_IN = "built-in";
+
     @TempDir
     Path temp;
 
@@ -163,7 +166,7 @@ class DomainRoundTripTest {
     }
 
     private Map<String, Outcome> roundTrip(SerializationStrategy strategy) {
-        return new DomainRoundTrip(strategy).roundTrip(source, temp.resolve("out/built-in"), kinds);
+        return new DomainRoundTrip(strategy).roundTrip(BUILT_IN, source, temp.resolve("out/built-in"), kinds);
     }
 
     private String written(Outcome outcome) throws IOException {
@@ -179,7 +182,7 @@ class DomainRoundTripTest {
         Path target = temp.resolve("out/Built_In");
 
         Map<String, Outcome> outcomes =
-                new DomainRoundTrip(new YamlSerializationStrategy()).roundTrip("built-in", misnamed, target, kinds);
+                new DomainRoundTrip(new YamlSerializationStrategy()).roundTrip(BUILT_IN, misnamed, target, kinds);
 
         assertThat(outcomes)
                 .isNotEmpty()
@@ -191,14 +194,14 @@ class DomainRoundTripTest {
     }
 
     @Test
-    void aSourceDirectoryWhoseNameIsNoPackIdRefusesEveryModelledFileAndWritesNothing() throws IOException {
+    void aNameThatIsNoPackIdRefusesEveryModelledFileAndWritesNothing() throws IOException {
         Path misnamed = temp.resolve("src/Built_In");
         Files.createDirectories(misnamed.getParent());
         Files.move(source, misnamed);
         Path target = temp.resolve("out/Built_In");
 
         Map<String, Outcome> outcomes =
-                new DomainRoundTrip(new YamlSerializationStrategy()).roundTrip(misnamed, target, kinds);
+                new DomainRoundTrip(new YamlSerializationStrategy()).roundTrip("Built_In", misnamed, target, kinds);
 
         assertThat(outcomes)
                 .isNotEmpty()
@@ -681,7 +684,7 @@ class DomainRoundTripTest {
 
         Map<String, Outcome> faithful = roundTrip(new YamlSerializationStrategy());
         Map<String, Outcome> broken = new DomainRoundTrip(new PresetBreakingWriter(new YamlSerializationStrategy()))
-                .roundTrip(source, temp.resolve("broken/built-in"), kinds);
+                .roundTrip(BUILT_IN, source, temp.resolve("broken/built-in"), kinds);
 
         assertThat(faithful.get("presets/p.yaml")).isEqualTo(new Written("presets/p.yaml"));
         assertThat(broken.get("presets/p.yaml")).isEqualTo(new Refused("read-back: unknown key 'surplus'"));
@@ -699,7 +702,7 @@ class DomainRoundTripTest {
                         .assetFile(new AssetFile("logo.png", Payload.of(new byte[0])))
                         .build());
 
-        Map<String, Outcome> outcomes = emptied.roundTrip(source, temp.resolve("out/built-in"), kinds);
+        Map<String, Outcome> outcomes = emptied.roundTrip(BUILT_IN, source, temp.resolve("out/built-in"), kinds);
 
         assertThat(outcomes.get("assets/logo.png")).isEqualTo(new Written("assets/logo.png"));
         assertThat(Files.readAllBytes(temp.resolve("out/built-in/assets/logo.png")))

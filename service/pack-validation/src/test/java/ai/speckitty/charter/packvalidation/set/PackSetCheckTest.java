@@ -530,7 +530,10 @@ class PackSetCheckTest {
         private RoundTripping realFlow(Path dir) {
             return root -> {
                 try {
-                    return PackRoundTrip.run(Path.of(root.locator()), Files.createTempDirectory(dir, root.name()));
+                    return PackRoundTrip.run(
+                            new PackIdentifier(root.name()),
+                            Path.of(root.locator()),
+                            Files.createTempDirectory(dir, root.name()));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -628,6 +631,7 @@ class PackSetCheckTest {
             RoundTripping lossy = root -> {
                 try {
                     return RoundTripControls.rewritingWrites(
+                            new PackIdentifier(root.name()),
                             Path.of(root.locator()),
                             Files.createTempDirectory(dir, root.name()),
                             ArtifactKind.TACTIC,

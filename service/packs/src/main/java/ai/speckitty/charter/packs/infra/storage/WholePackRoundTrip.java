@@ -36,19 +36,6 @@ interface WholePackRoundTrip {
      */
     Map<String, Outcome> roundTrip(String name, Path source, Path target, Map<String, String> kindOf);
 
-    /**
-     * {@link #roundTrip(String, Path, Path, Map)} for a pack its caller names no id for: it is configured under the
-     * name of its directory (#583, D2b).
-     *
-     * @param source the pack directory to read; never written
-     * @param target an empty or missing directory that becomes the written pack
-     * @param kindOf the gate kind of every pack-relative source path, from the census
-     * @return one outcome per source path whose kind is modelled
-     */
-    default Map<String, Outcome> roundTrip(Path source, Path target, Map<String, String> kindOf) {
-        return roundTrip(String.valueOf(source.getFileName()), source, target, kindOf);
-    }
-
     /** What happened to one source file. */
     sealed interface Outcome permits Written, Refused {}
 

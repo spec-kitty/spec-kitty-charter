@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.AssetFile;
@@ -65,6 +66,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class WholePackRoundTripTest {
 
     private static final String BUILT_IN = ExamplePacks.BUILT_IN;
+    private static final PackIdentifier BUILT_IN_ID = new PackIdentifier(BUILT_IN);
     private static final String ORG_FRAGMENT = "org-fragment";
     private static final String FRAGMENT = "drg/fragment.yaml";
     private static final String README = "README.md";
@@ -82,7 +84,8 @@ class WholePackRoundTripTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("examplePacks")
     void everyExamplePackRoundTripsAsExpected(String name, @TempDir Path temp) throws IOException {
-        PackRoundTripResult result = PackRoundTrip.run(ExamplePacks.pack(name), temp.resolve(name));
+        PackRoundTripResult result =
+                PackRoundTrip.run(new PackIdentifier(name), ExamplePacks.pack(name), temp.resolve(name));
         WholePackRoundTripRule.Verdict verdict =
                 new WholePackRoundTripRule(WholePackExpectation.fromClasspath().forPack(name)).judge(result);
 
@@ -164,7 +167,8 @@ class WholePackRoundTripTest {
     void anUnmodelledOrgFragmentFailsTheDriftAndTheSchemaChecks(@TempDir Path temp) {
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
         Path org = ExamplePacks.pack(ExamplePacks.ORG);
-        PackRoundTripResult faithful = PackRoundTrip.run(org, temp.resolve("faithful/org-base"));
+        PackRoundTripResult faithful =
+                PackRoundTrip.run(new PackIdentifier(ExamplePacks.ORG), org, temp.resolve("faithful/org-base"));
         PackRoundTripResult planted = withoutKind(faithful, ORG_FRAGMENT);
         WholePackExpectation expectation = WholePackExpectation.fromClasspath();
 
@@ -199,7 +203,7 @@ class WholePackRoundTripTest {
         String file = "glossaries/spec-kitty-core.glossary.yaml";
         Path pack = ExamplePacks.pack(BUILT_IN);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
-        PackRoundTripResult faithful = PackRoundTrip.run(pack, temp.resolve("faithful/" + BUILT_IN));
+        PackRoundTripResult faithful = PackRoundTrip.run(BUILT_IN_ID, pack, temp.resolve("faithful/" + BUILT_IN));
         PackRoundTripResult planted = withoutKind(faithful, glossary);
 
         assertThat(faithful.census())
@@ -255,7 +259,8 @@ class WholePackRoundTripTest {
      */
     @Test
     void theBuiltInPacksAssetsTemplatesAndDocumentRoundTrip(@TempDir Path temp) {
-        PackRoundTripResult result = PackRoundTrip.run(ExamplePacks.pack(BUILT_IN), temp.resolve(BUILT_IN));
+        PackRoundTripResult result =
+                PackRoundTrip.run(BUILT_IN_ID, ExamplePacks.pack(BUILT_IN), temp.resolve(BUILT_IN));
         SortedMap<String, String> census = result.census();
         Map<String, Optional<String>> observed = RoundTripObservation.of(result).observed();
         Evaluation evaluation = WholePackExpectation.fromClasspath()
@@ -296,9 +301,10 @@ class WholePackRoundTripTest {
         Path pack = ExamplePacks.pack(BUILT_IN);
         AtomicReference<PackDocument> loaded = new AtomicReference<>();
 
-        RoundTripObservation faithful = RoundTripObservation.of(PackRoundTrip.run(pack, temp.resolve("faithful")));
+        RoundTripObservation faithful =
+                RoundTripObservation.of(PackRoundTrip.run(BUILT_IN_ID, pack, temp.resolve("faithful")));
         RoundTripObservation lossy =
-                RoundTripObservation.of(RoundTripControls.beforeSave(pack, temp.resolve("lossy"), read -> {
+                RoundTripObservation.of(RoundTripControls.beforeSave(BUILT_IN_ID, pack, temp.resolve("lossy"), read -> {
                     PackDocument document = read.document().orElseThrow();
                     loaded.set(document);
                     return read.toBuilder()
@@ -332,7 +338,7 @@ class WholePackRoundTripTest {
         Path pack = ExamplePacks.pack(BUILT_IN);
         Urn locked = new Urn(NodeKind.AGENT_PROFILE, "generic-agent");
 
-        PackRoundTripResult faithfulRun = PackRoundTrip.run(pack, temp.resolve("faithful"));
+        PackRoundTripResult faithfulRun = PackRoundTrip.run(BUILT_IN_ID, pack, temp.resolve("faithful"));
         Map<String, Optional<String>> faithful =
                 RoundTripObservation.of(faithfulRun).observed();
         assertThat(faithfulRun.census()).containsEntry(POLICY, "policy");
@@ -345,7 +351,7 @@ class WholePackRoundTripTest {
         losses.put("template", policy -> withKindDefault(policy, NodeKind.TEMPLATE, MutabilityLevel.OPEN));
         losses.forEach((lost, loss) -> {
             Map<String, Optional<String>> lossy = RoundTripObservation.of(RoundTripControls.beforePolicySave(
-                            pack, temp.resolve("lossy-" + lost.replace(':', '-')), loss))
+                            BUILT_IN_ID, pack, temp.resolve("lossy-" + lost.replace(':', '-')), loss))
                     .observed();
 
             assertThat(lossy.get(POLICY))
@@ -411,16 +417,17 @@ class WholePackRoundTripTest {
         Path pack = ExamplePacks.pack(BUILT_IN);
         AtomicReference<Pack> loaded = new AtomicReference<>();
 
-        PackRoundTripResult faithfulRun = PackRoundTrip.run(pack, temp.resolve("faithful"));
+        PackRoundTripResult faithfulRun = PackRoundTrip.run(BUILT_IN_ID, pack, temp.resolve("faithful"));
         Map<String, Optional<String>> faithful =
                 RoundTripObservation.of(faithfulRun).observed();
         Map<String, Optional<String>> flipped = RoundTripObservation.of(
-                        RoundTripControls.beforeSave(pack, temp.resolve("flipped"), read -> {
+                        RoundTripControls.beforeSave(BUILT_IN_ID, pack, temp.resolve("flipped"), read -> {
                             loaded.set(read);
                             return withPayloads(read, WholePackRoundTripTest::flipMiddleByte);
                         }))
                 .observed();
         Map<String, Optional<String>> truncated = RoundTripObservation.of(RoundTripControls.beforeSave(
+                        BUILT_IN_ID,
                         pack,
                         temp.resolve("truncated"),
                         read -> withPayloads(read, bytes -> Arrays.copyOf(bytes, bytes.length - 1))))
@@ -505,7 +512,7 @@ class WholePackRoundTripTest {
                 "assets/fonts/body.otf", "asset-payload",
                 "templates/cover.png", "template"));
 
-        PackRoundTripResult result = RoundTripControls.inPlace(source, written, census, false);
+        PackRoundTripResult result = RoundTripControls.inPlace(BUILT_IN_ID, source, written, census, false);
         RoundTripObservation observation = RoundTripObservation.of(result);
 
         assertThat(result.outcomes().values())
@@ -548,7 +555,7 @@ class WholePackRoundTripTest {
                 .forEach(name -> census.put("notes/" + name, "notes"));
 
         RoundTripObservation observation =
-                RoundTripObservation.of(RoundTripControls.inPlace(source, written, census, true));
+                RoundTripObservation.of(RoundTripControls.inPlace(BUILT_IN_ID, source, written, census, true));
 
         assertThat(observation.observed())
                 .containsEntry("notes/same.md", Optional.empty())
@@ -614,11 +621,15 @@ class WholePackRoundTripTest {
     void aLossyWriterTurnsTheRealCorpusRed(@TempDir Path temp) throws IOException {
         Path pack = ExamplePacks.pack(BUILT_IN);
 
-        PackRoundTripResult faithfulRun = PackRoundTrip.run(pack, temp.resolve("faithful"));
+        PackRoundTripResult faithfulRun = PackRoundTrip.run(BUILT_IN_ID, pack, temp.resolve("faithful"));
         Map<String, Optional<String>> faithful =
                 RoundTripObservation.of(faithfulRun).observed();
         Map<String, Optional<String>> observed = RoundTripObservation.of(RoundTripControls.rewritingWrites(
-                        pack, temp.resolve("lossy"), ArtifactKind.TACTIC, WholePackRoundTripTest::withoutPurpose))
+                        BUILT_IN_ID,
+                        pack,
+                        temp.resolve("lossy"),
+                        ArtifactKind.TACTIC,
+                        WholePackRoundTripTest::withoutPurpose))
                 .observed();
 
         List<String> declaringPurpose = faithfulRun.census().entrySet().stream()
