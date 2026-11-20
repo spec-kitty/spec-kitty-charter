@@ -341,6 +341,42 @@ class PackSetCheckTest {
         }
 
         @Test
+        @DisplayName("a pack whose pack_version is malformed: CLOSURE is skipped and names it, never handed it (#624)")
+        void aMalformedDescriptorSkipsClosure(@TempDir Path dir) throws IOException {
+            Path org = ExamplePacks.copyOf(ExamplePacks.ORG, dir);
+            Path descriptor = org.resolve("pack.yaml");
+            Files.writeString(
+                    descriptor,
+                    Files.readString(descriptor).replace("pack_version: 1.0.0", "pack_version: not-a-version"),
+                    StandardCharsets.UTF_8);
+
+            PackSetVerdict verdict = CHECK.check(
+                    List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, org, Optional.of(PackLevel.ORG))));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK);
+            assertThat(verdict.faults()).isEmpty();
+            assertThat(verdict.skipped()).singleElement().satisfies(skip -> {
+                assertThat(skip.check()).isEqualTo(Check.CLOSURE);
+                assertThat(skip.packs())
+                        .containsExactly(new Unjudged(
+                                ExamplePacks.ORG,
+                                "its composition facts cannot be read: pack_unreadable: pack.yaml of org-base:"
+                                        + " pack_version 'not-a-version' is not a PEP 440 version"));
+            });
+            PackResult malformed = verdict.packs().get(1);
+            assertThat(malformed.verdict().findings())
+                    .as("PACK reports the fault once, at pack.yaml, under the precheck's code")
+                    .filteredOn(finding -> finding.code().value().equals("pack_version_invalid"))
+                    .singleElement()
+                    .satisfies(finding -> assertThat(finding.location().file()).isEqualTo("pack.yaml"));
+            assertThat(malformed.failing()).isTrue();
+            assertThat(malformed.unreportedRefusal())
+                    .as("its verdict already reports the fault, so the refusal is not a second problem")
+                    .isEmpty();
+            assertThat(verdict.packs().getFirst().failing()).isFalse();
+        }
+
+        @Test
         @DisplayName("a pack whose facts cannot be read keeps the level its read pack.yaml declares")
         void anUnreadablePackKeepsItsDeclaredLevel(@TempDir Path dir) throws IOException {
             Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, dir);

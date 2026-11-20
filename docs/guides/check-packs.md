@@ -115,9 +115,12 @@ Give its dependencies too, or use a config root that holds them.
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), the output cannot be written, or `pack-check` failed internally. Nothing is on standard output; the cause is on standard error. |
+| `2` | The command line is wrong (an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory or the output cannot be read or written, or `pack-check` has a defect (`pack-check: internal error:`). Nothing is on standard output; the cause is on standard error. |
 
-A pack it cannot read is a problem (`1`), not a failure (`2`).
+What a pack holds is never a failure (`2`). A pack it cannot read, a malformed `pack.yaml` field (a `pack_version`
+that is not a version, a `depends_on` range or `requires_core` that is not a range, a `pack_level` the schema does not
+know) or a file it refuses is a problem (`1`), at the file that holds it. An `internal error` is a defect of
+`pack-check` itself, whatever the packs hold; report it.
 
 ## The report
 
@@ -125,11 +128,12 @@ The report goes to standard output, as one JSON object. Its schema is the contra
 (`contracts/charter/schemas/PackCheckReport.yaml`):
 
 - **`checks`:** the checks that ran over the set, in order: `PACK` always, `CLOSURE` when every pack's composition
-  could be read, and `ROUND_TRIP` with `--round-trip`.
+  could be read and its `pack.yaml` is well formed, and `ROUND_TRIP` with `--round-trip`.
 - **`packs`:** each pack checked, with its pack id as `name` (its `=<id>`, or its directory's name), its level and
   its path as you gave it.
 - **`skipped`:** present only when a check was asked for and did not run. Today that is `CLOSURE`, when a pack could
-  not be read; its `reason` names the pack.
+  not be read, its `pack.yaml` is malformed, or its level is unknown; its `reason` names the pack. The pack's own
+  fault is its one problem, under `PACK`.
 - **`problems`:** each a `Problem` of the contract, with the code and the shape a registration answers for the same
   fault. A pack's violations are one `validation_failed` problem, with each violation's code, file and detail. Its
   `instance` is the `file:` URI of the pack's directory, so you can tell the packs apart. A composition fault has its
