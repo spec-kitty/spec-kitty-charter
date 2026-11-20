@@ -291,3 +291,13 @@ substeps
 # pack closure rulesets (#554): S2 "prechecks are edge"
 precheck
 prechecks
+javac
+javadocs
+ncss
+nloc
+nosonar
+packvalidation
+pytest
+stringly
+ucfgs
+unasserted
