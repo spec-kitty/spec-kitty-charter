@@ -4,6 +4,8 @@ title: The pack-name part of a reference is a pack id
 dependencies:
 - WP01
 requirement_refs:
+- C-001
+- C-002
 - FR-001
 - FR-002
 - FR-004
@@ -12,11 +14,11 @@ requirement_refs:
 - FR-007
 - FR-008
 - FR-009
+- FR-010
+- FR-011
 - NFR-001
 - NFR-002
 - NFR-003
-- C-001
-- C-002
 - SC-001
 - SC-002
 - SC-004
@@ -24,6 +26,7 @@ planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this mission were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks:
+- T004
 - T006
 - T007
 - T008
@@ -31,6 +34,8 @@ subtasks:
 - T010
 - T011
 - T012
+- T013
+- T014
 phase: Phase 2 - The change
 history:
 - at: '2026-11-20T19:15:00Z'
@@ -39,6 +44,7 @@ history:
 agent_profile: java-jenny
 authoritative_surface: contracts/charter/schemas/
 create_intent:
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/QualifierLoadTest.java
 - contracts/charter/changes/2026-11-20-pack-name-reference-grammar.md
 - docs/changelog/2026-11-20-pack-name-reference-grammar.md
 execution_mode: code_change
@@ -48,6 +54,12 @@ owned_files:
 - service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/GuardTest.java
+- service/missions/src/main/java/ai/speckitty/charter/missions/domain/GuardReference.java
+- service/missions/src/test/java/ai/speckitty/charter/missions/domain/IdentifierBoundsTest.java
+- contracts/src/test/java/ai/speckitty/charter/contracts/identifiers/**
+- contracts/packs/schemas/guard.schema.json
+- contracts/packs/schemas/lifecycle.schema.json
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/QualifierLoadTest.java
 - contracts/charter/schemas/PackQualifiedReference.yaml
 - contracts/charter/schemas/PackQualifiedReferenceWrite.yaml
 - contracts/charter/schemas/GlossaryTerm.yaml
@@ -90,8 +102,7 @@ WP01 owns these files, and this WP must change them:
 
 - `PackQualifiedReference.java` and `IdentifierGrammar.java`: the grammar change itself;
 - `SubstepCandidate.java`: only if its message names the old grammar;
-- `PackSchemasTest.java`: the descriptor pin;
-- `KernelGrammar.java`, `IdentifierPatternParityTest.java` and the qualifier check: the documented exception.
+- `PackSchemasTest.java`: the descriptor pin.
 
 WP02 depends on WP01 and runs after it on the same branch, so the edits do not collide.
 
@@ -101,6 +112,21 @@ WP02 depends on WP01 and runs after it on the same branch, so the edits do not c
 - Implement with `spec-kitty agent action implement WP02 --agent claude --mission pack-name-reference-grammar-01M7X5QX`.
 
 ## Subtasks
+
+### T004 — Parity test discovers qualifier sites (moved from WP01, plan D4)
+
+- In `contracts/src/test/.../identifiers/`, add a qualifier check:
+  - A **qualifier site** is any `IdentifierSite` whose pattern contains `::`.
+  - Every `(<form>::` group in the pattern is a qualifier, wherever it sits. There are 15 sites:
+    - 13 with the group at the start;
+    - guard `implemented_by`, with the group inside an alternation;
+    - lifecycle `ref`, as `(<form>::guard:)?`.
+  - Every `<form>` must equal `IdentifierGrammar.SLUG_AS_WRITTEN`. A `::` site with no such group fails, naming its
+    `location` and pattern.
+  - **Verdict:** `^<form>$`, compiled as an `EcmaPattern`, agrees with `PackQualifiedReference.isPackName` over the
+    corpus and the cap rows for every row of at most 63 characters. Over 63 is the documented exception (T010).
+  - Assert the site count per file. The sites are discovered from the files, not from a hand-kept list.
+- **Planted break:** put `_` into one qualifier. The test must fail, naming the site. Restore it.
 
 ### T006 — Red test first (C-002)
 
@@ -143,6 +169,28 @@ WP02 depends on WP01 and runs after it on the same branch, so the edits do not c
   - a qualifier of 63 characters is accepted;
   - a qualifier of 64 characters is refused.
 
+### T013 — GuardReference follows (plan D5)
+
+- The pack part's cap becomes `PackIdentifier.MAX_LENGTH` (63), checked before the match. The match stays possessive;
+  the pack part is then checked with `PackQualifiedReference.isPackName`.
+- `MAX_SPELLING_LENGTH` becomes 63 + 8 + 64 = 135.
+- In `IdentifierBoundsTest`, `aGuardReferenceIsCappedAtItsPartsAndItsTotal` becomes:
+  - a 63-character pack is accepted;
+  - a 64-character pack is refused;
+  - the total is capped at 135;
+  - `a_b::guard:x` and `a--b::guard:x` are refused.
+- `lifecycle.schema.json` guard `ref`: `maxLength` goes from 136 to 135 (breaking line in the packs CHANGELOG).
+
+### T014 — Load path refuses a 64-character qualifier (plan D8, FR-011)
+
+- Add `QualifierLoadTest` in `:packs`, or the nearest existing load test.
+- A pack whose graph shard has an edge `target: <64 p's>::directive:D1` passes the schema, and is refused at load. The
+  refusal names the pack-id detail and is not reshaped silently.
+- Positive control: 63 `p`s is not refused for its qualifier. It may still fail as an unresolved pack; assert the code
+  that differs.
+- If `FileSystemPackInspector`'s step-enhancement fallback (`target.replace("::", ":")`) hides the refusal, fix it at the
+  root.
+
 ### T009 — Contract and pack schemas
 
 - Replace the qualifier `([a-z0-9][a-z0-9_-]*::)?` with `([a-z0-9]+(-[a-z0-9]+)*::)?` at all 13 sites:
@@ -156,6 +204,8 @@ WP02 depends on WP01 and runs after it on the same branch, so the edits do not c
     paragraph on `name`;
   - `PackRegistration.name`: drop `$ref: Slug.yaml` and inline the pattern, keeping its description and `x-derived`;
   - `RequiringPack.packId` and `via.items`.
+- In each of the five charter qualifier sites' `description`, state: "The pack name is a pack id: a kebab slug of at
+  most 63 characters; the service refuses a longer one." (FR-010)
 - Do not touch `Slug.yaml` itself, `fallback_profile`, `role_pins`, `MissionSubstepDelegation.kind`, or `Artifact`/
   `ArtifactSummary` `kind` (C-004).
 - `PackSchemasTest.theDescriptorSchemaConstrainsNameToThePackQualifiedReferenceGrammar`: pin the descriptor `name`
@@ -168,7 +218,8 @@ WP02 depends on WP01 and runs after it on the same branch, so the edits do not c
 - The qualifier check from WP01 now gets a documented exception for rows over 63 characters: the schema accepts them and
   the kernel refuses them. Add a dedicated test, as `aSlotPartOverSixtyFourPasses…` does: a 64-character qualifier
   passes every qualifier site's pattern, and `PackQualifiedReference.parse` refuses it.
-- The descriptor `name`, `PackRegistration.name` and `RequiringPack` are now identifier-like with `maxLength` 63, so the
+- The descriptor `name`, `PackRegistration.name` (`charter/schemas/PackRegistration.yaml`) and `RequiringPack` are now
+  identifier-like with `maxLength` 63, so the
   existing rule maps them to `PACK_ID`. Assert that `theDiscoveryReachesEveryGrammarAndTheNamedSchemas` now includes
   `packs/schemas/pack-descriptor.schema.json` and `_shared/schemas/RequiringPack.yaml`.
 - Run the planted break: put `_` back into one qualifier, see the test fail naming the site, and restore it.
@@ -190,7 +241,10 @@ WP02 depends on WP01 and runs after it on the same branch, so the edits do not c
   - The `<pack>::` qualifier of graph-shard, org-fragment, glossary `see_also` and mission-type `candidates` follows.
   - Census: spec-kitty-open-packs `main` 3bedeef has 0 of 24 names and 0 of 607 references to change.
 - `docs/changelog/2026-11-20-pack-name-reference-grammar.md`: a dated entry. Copy the frontmatter shape of
-  `2026-11-19-tensions.md`.
+  `2026-11-19-tensions.md`. Say that it supersedes the 64-character qualifier cap of
+  `2026-11-09-pack-id-length-caps.md`; that entry stays unedited.
+- Note in the review notes: `-PcontractBaseline=none` skips the oasdiff comparison, so CI is the first compatibility
+  check.
 - Living docs that state the old grammar for the pack `name`:
   - `docs/glossary/charter/README.md` (~l.626);
   - `docs/guides/compose-packs.md` (~l.51);

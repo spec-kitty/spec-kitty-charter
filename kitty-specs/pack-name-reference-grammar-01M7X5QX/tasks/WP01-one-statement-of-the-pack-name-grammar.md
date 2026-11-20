@@ -4,7 +4,6 @@ title: One statement of the pack-name grammar (tidy-first)
 dependencies: []
 requirement_refs:
 - FR-003
-- FR-007
 - SC-003
 planning_base_branch: main
 merge_target_branch: main
@@ -13,7 +12,6 @@ subtasks:
 - T001
 - T002
 - T003
-- T004
 - T005
 phase: Phase 1 - Tidy first
 history:
@@ -30,7 +28,6 @@ owned_files:
 - service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepCandidate.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackSchemasTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java
-- contracts/src/test/java/ai/speckitty/charter/contracts/identifiers/**
 role: implementer
 tags: []
 tracker_refs: []
@@ -47,7 +44,7 @@ Load the `java-jenny` profile with the `/spk-charter-profile-load` skill before 
 ## Objective
 
 Make the pack-name part of a reference stated **once**, in the kernel, as a written form that both Java and the contract
-pin tests read. Teach `IdentifierPatternParityTest` to see `::` qualifier sites. **No behavior changes in this WP.** The
+pin tests read. **No behavior changes in this WP.** The
 grammar stays `[a-z0-9][a-z0-9_-]*`, so WP02's change becomes a one-line kernel edit plus the schemas, with tests
 already in place to catch drift.
 
@@ -92,35 +89,25 @@ already in place to catch drift.
 - `VocabularyEqualityTest`: `ALTERNATION` and `TARGET_ONLY_PREFIX` build their qualifier prefix from
   `Pattern.quote("^" + QUALIFIER)` (or a literal-prefix strip) instead of a hand-escaped copy of the grammar.
 
-### T004 — Parity test discovers qualifier sites
+### T004 — moved to WP02
 
-- In `contracts/src/test/.../identifiers/`, add a qualifier check (a new test method, or a small `QualifierSite` helper):
-  - A **qualifier site** is any `IdentifierSite` whose pattern contains `::`.
-  - Strip a leading `^` and the newline guard `(?!.*\n)`. The remainder must start with `PackQualifiedReference.QUALIFIER`.
-    A `::` site that does not fails the test, naming `location` and pattern.
-  - Verdict: compile `^` + the qualifier's inner group + `$` as an `EcmaPattern`. Over the existing corpus and cap rows, it
-    must agree with `PackQualifiedReference.isPackName` for every row of at most 63 characters (`PackIdentifier.MAX_LENGTH`).
-    In WP01 the two agree at every length, because the old grammar has no cap; assert that too, and let WP02 add the
-    exception.
-  - Assert that the discovery finds at least the 13 known qualifier sites (count them by file).
-- Keep `KernelGrammar.identifierLike` unchanged: qualifier sites are a separate check, not a new `KernelGrammar` form.
+The qualifier parity check lands in WP02 (plan D4): the guard `implemented_by` and lifecycle `ref` sites already use
+the slug, so a check against today's grammar would need a temporary allowlist.
 
-### T005 — Planted break and blast radius
+### T005 — Blast radius
 
-- **Planted break** (do not commit it): change `_` to `.` in the qualifier of `GlossaryTerm.yaml` `seeAlso`. The
-  qualifier test must fail and name `charter/schemas/GlossaryTerm.yaml#/properties/seeAlso/items`. Restore the file.
-- **Run:**
-  - `./gradlew :kernel:test :missions:test :packs:test --tests '*PackSchemasTest' --tests '*VocabularyEqualityTest'`;
-  - `:contracts:test --tests '*IdentifierPatternParityTest'`;
-  - then `:kernel:check :missions:check :contracts:check -PcontractBaseline=none`, and the style gates (Spotless,
-    Checkstyle, Error Prone).
+- Run `./gradlew :kernel:test :missions:test :packs:test --tests '*PackSchemasTest' --tests '*VocabularyEqualityTest'`
+  and `:contracts:test --tests '*IdentifierPatternParityTest'` (unchanged, still green).
+- Then run `:kernel:check :missions:check`, and the style gates (Spotless, Checkstyle, Error Prone).
+- **Planted break** (do not commit it): change one character of `QUALIFIER`. `SubstepTest.theGrammarIsTheSchemas` and
+  the `PackSchemasTest` pins must fail. Restore it.
 - No PIT.
 
 ## Definition of Done
 
 - `QUALIFIER` exists. `SubstepCandidate`, `PackSchemasTest` and `VocabularyEqualityTest` read it. No `substring(1, …)`
   anchor stripping remains (check with `grep -rn "PACK_NAME_GRAMMAR" service contracts`).
-- The parity test checks all qualifier sites and fails on a planted break, naming the site.
+- The pin tests fail on a planted change to `QUALIFIER`.
 - Every suite named above passes, and no behavior changes: no production refusal or acceptance differs.
 
 ## Risks
@@ -131,5 +118,4 @@ already in place to catch drift.
 ## Reviewer guidance
 
 - Confirm that no behavior changes: diff the refusal messages and patterns.
-- Confirm that the qualifier parity discovers sites from the files, not from a hand-kept list.
 - Confirm that the planted break was run, and that its output is in the WP's commit or review notes.
