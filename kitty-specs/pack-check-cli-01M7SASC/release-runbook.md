@@ -162,6 +162,11 @@ In a follow-up PR, reopen the development version. Set `version=0.1.0-SNAPSHOT` 
 `bbf7f4385` did after `0.1.0-rc.1`. `0.1.0-SNAPSHOT` still sorts below `0.1.0`, so it stays the next development
 version. The gate never publishes a `-SNAPSHOT`.
 
+In the same PR, reopen the two contracts cut with it (#615), as `6191484` did after the first candidates: in
+`contracts/charter/`, set `info.version` of `openapi.yaml` to `0.2.0-SNAPSHOT` and add a `## 0.2.0-SNAPSHOT` heading
+above `## 0.2.0-rc.3` in `CHANGELOG.md`, together; in `contracts/packs/CHANGELOG.md`, add a `## 0.1.0-SNAPSHOT`
+heading above `## 0.1.0-rc.2`.
+
 In the same PR, update the service release named in the status line of `docs/architecture/contract-and-dtos.md`
 (line 25 on 2026-11-19), as `bbf7f4385` did for that file. The line now says "the service `0.1.0-rc.1` bundles the
 second". Add `0.1.0-rc.2` with the contract it bundled. The release notes' contract note from step 4 states that
