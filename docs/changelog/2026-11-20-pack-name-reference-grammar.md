@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: The pack name of a reference is a pack id
-description: A pack-qualified reference names its pack by a pack id, at most 63 characters, so a reference to a pack no pack id can name is refused when it is read; the descriptor name follows.
+description: A qualified reference names its pack by a pack id, at most 63 characters, so a reference to a pack no pack id can name is refused when it is read; the descriptor name follows.
 doc_status: active
 updated: 2026-11-20T00:00:00Z
 type: Changelog
@@ -14,12 +14,12 @@ audience:
   - profile: contract-consumer
     guidance_text: Read this for the reference and pack-name patterns that changed in the charter contract.
   - profile: pack-author
-    guidance_text: Read this if a pack name or a <pack>:: qualifier you wrote is refused.
+    guidance_text: "Read this if a pack name or a <pack>:: qualifier you wrote is refused."
 ---
 
 # 2026-11-20 — The pack name of a reference is a pack id
 
-**A pack-qualified reference names its pack by a pack id** (#582,
+**A qualified reference names its pack by a pack id** (#582,
 [ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 2). A pack id is a kebab
 slug: lower-case letters and digits in hyphen-separated runs, at most 63 characters. Before this change, the `<pack>::`
 part of a reference took `[a-z0-9][a-z0-9_-]*`, so `a_b::directive:D1` was accepted and then failed later as an
