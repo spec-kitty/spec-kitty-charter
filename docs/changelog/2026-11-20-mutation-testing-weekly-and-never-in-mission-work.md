@@ -20,8 +20,8 @@ audience:
 2026-11-20). The cron is unchanged (`43 2 * * 1`), and `workflow_dispatch` starts a manual run. Documents that said
 "nightly" now say "weekly scheduled run (or a manual dispatch)".
 
-**No PIT in mission work.** Agent sessions had been running PIT inside implement and review steps, for up to 1h 21m a
-run, because briefs, acceptance criteria and the open-packs testing doctrine asked for it.
+**No PIT in mission work.** Agent sessions had been running PIT inside implement and review steps, for 5 minutes to
+about 85 minutes a run, because briefs, acceptance criteria and the open-packs testing doctrine asked for it.
 
 - The charter's "How work lands" now says so, and the bootstrap render of every action's charter context (its first
   load) shows it.
