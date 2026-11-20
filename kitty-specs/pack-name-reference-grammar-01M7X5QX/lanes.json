@@ -23,6 +23,8 @@
         "contracts/packs/CHANGELOG.md",
         "contracts/packs/schemas/glossary.schema.json",
         "contracts/packs/schemas/graph-shard.schema.json",
+        "contracts/packs/schemas/guard.schema.json",
+        "contracts/packs/schemas/lifecycle.schema.json",
         "contracts/packs/schemas/mission-type.schema.json",
         "contracts/packs/schemas/org-fragment.schema.json",
         "contracts/packs/schemas/pack-descriptor.schema.json",
@@ -36,10 +38,13 @@
         "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackQualifiedReference.java",
         "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java",
         "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/PackQualifiedReferenceTest.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/GuardReference.java",
         "service/missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepCandidate.java",
+        "service/missions/src/test/java/ai/speckitty/charter/missions/domain/IdentifierBoundsTest.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/domain/GuardTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackSchemasTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/QualifierLoadTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java",
         "site/.contextive/definitions.yaml"
       ],
@@ -48,7 +53,7 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-11-20T19:13:35.971912+00:00",
+  "computed_at": "2026-11-20T19:18:00.601975+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
   "planning_commit_sha": "17d5ca2613dd5619676e72a1dd6af02ef47f6914"
