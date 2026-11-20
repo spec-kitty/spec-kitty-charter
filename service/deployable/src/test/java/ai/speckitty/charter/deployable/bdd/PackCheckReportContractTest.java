@@ -167,7 +167,7 @@ class PackCheckReportContractTest {
         return copy;
     }
 
-    /** The five example packs under {@code root/packs}, a config root. */
+    /** The example packs under {@code root/packs}, a config root. */
     private Path configRoot() {
         Path root = temp.resolve("root");
         ExamplePacks.names().forEach(name -> ExamplePacks.copyOf(name, root.resolve("packs")));
@@ -384,6 +384,32 @@ class PackCheckReportContractTest {
             assertThat(refusal.violations()).hasSizeGreaterThan(100);
             assertThat(run.problems()).hasSize(1);
             assertThat(withoutInstance(run.problems().getFirst())).isEqualTo(registrationProblem(refusal));
+        }
+
+        /**
+         * Error handling (#583, D5): a pack in a directory whose name is not a pack id. {@code pack_id_invalid} is a
+         * violation code of the storage rules, so the registration answers it as a {@code validation_failed} refusal
+         * whose one violation it is, and pack-check's problem is that refusal as {@link RefusalHandler} renders it.
+         */
+        @Test
+        @DisplayName("validation_failed holding pack_id_invalid: a pack in a directory named Bad_Name")
+        void packIdInvalid() throws IOException {
+            Path pack = Files.move(
+                    ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs")),
+                    temp.resolve("packs").resolve("Bad_Name"));
+
+            Run run = run("--pack", pack.toString());
+
+            assertThat(run.exit()).isEqualTo(1);
+            assertConforms(run, pack);
+            CharterRefusal refusal = registrationRefusalOf(pack, Optional.empty());
+            assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+            assertThat(refusal.violations())
+                    .singleElement()
+                    .satisfies(violation -> assertThat(violation.code()).isEqualTo("pack_id_invalid"));
+            assertThat(run.problems())
+                    .singleElement()
+                    .satisfies(problem -> assertThat(withoutInstance(problem)).isEqualTo(registrationProblem(refusal)));
         }
 
         @Test

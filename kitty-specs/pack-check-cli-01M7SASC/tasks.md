@@ -95,7 +95,7 @@
 - **Prompt**: [tasks/WP03-pack-set-check.md](tasks/WP03-pack-set-check.md)
 - **Goal**: `pack-validation` runs validate mode per pack, then `CLOSURE` over the set as given, skips it when a pack
   has no facts, and optionally runs the round trip through a port.
-- **Priority**: P1. **Independent test**: the five example packs pass, `project` alone fails
+- **Priority**: P1. **Independent test**: the example packs pass, `project` alone fails
   `pack_dependency_unknown`, and an unreadable pack skips `CLOSURE` and is reported once.
 - **Subtasks**:
 

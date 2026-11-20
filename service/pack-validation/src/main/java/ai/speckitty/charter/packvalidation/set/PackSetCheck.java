@@ -47,8 +47,14 @@ import java.util.stream.Collectors;
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
  *       validate mode found: the two are independent checks, but a round-trip reason at a file where validate mode
  *       already has a violation is dropped, so one cause is one problem. A pack the flow refuses is that pack's result,
- *       never an exception: one problem, its validate-mode violation or else a {@code round_trip_red}.
+ *       never an exception: one problem, its validate-mode violation or else a {@code round_trip_red}. A pack whose
+ *       name is not a pack id is not round-tripped: the round trip configures a pack under its name (#583, D2b), and
+ *       validate mode's {@code pack_id_invalid} at the pack is already its one problem.
  * </ol>
+ *
+ * <p>A pack's identity is its entry's name (#583, D5). A name that is not a pack id never throws: the read refuses the
+ * pack with one {@code pack_id_invalid} violation, its facts are {@link PackReadout.Unreadable}, and so {@code CLOSURE}
+ * is skipped and names it (D3).
  *
  * <p>No rule is defined here: {@code CLOSURE} has one derivation, in {@link PackRulesets}.
  */
@@ -97,8 +103,10 @@ public final class PackSetCheck {
         List<PackResult> results = new ArrayList<>();
         for (PackSetEntry entry : entries) {
             PackCheck.Checked checked = check.check(entry.root());
-            List<Reason> reasons =
-                    roundTripping.map(flow -> roundTrip(flow, entry, checked)).orElse(List.of());
+            List<Reason> reasons = roundTripping
+                    .filter(flow -> PackIdentifier.isPackId(entry.name()))
+                    .map(flow -> roundTrip(flow, entry, checked))
+                    .orElse(List.of());
             Optional<PackLevel> level = levelOf(entry, checked.readout());
             results.add(new PackResult(
                     entry,
@@ -239,7 +247,11 @@ public final class PackSetCheck {
                 set, pack -> presetIds.getOrDefault(pack.configured().id().value(), List.of()));
     }
 
-    /** How the set configures a pack: the one place a pack's identity is taken, from the entry's name. */
+    /**
+     * How the set configures a pack: the one place a pack's identity is taken, from the entry's name. Only a pack with
+     * {@link PackReadout.Built} facts reaches it, and the reader builds facts only for a pack named by a pack id
+     * (#583, D5), so the name is one.
+     */
     private static ConfiguredPack configured(PackSetEntry entry, PackLevel level) {
         return new ConfiguredPack(new PackIdentifier(entry.name()), level);
     }

@@ -177,7 +177,7 @@ class PackCheckJarTest {
         return text.lines().toList();
     }
 
-    /** The five example packs under {@code root/packs/}, a config root. */
+    /** The example packs under {@code root/packs/}, a config root. */
     private Path configRoot() {
         Path root = temp.resolve("root");
         ExamplePacks.names().forEach(name -> ExamplePacks.copyOf(name, root.resolve("packs")));

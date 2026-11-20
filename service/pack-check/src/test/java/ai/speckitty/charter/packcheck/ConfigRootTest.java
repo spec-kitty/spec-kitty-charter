@@ -31,7 +31,7 @@ class ConfigRootTest {
     }
 
     @Test
-    void theFiveExamplePacksAreFiveRootsInNameOrderWithNoConfiguredLevel() throws IOException {
+    void theExamplePacksAreOneRootEachInNameOrderWithNoConfiguredLevel() throws IOException {
         ExamplePacks.names().forEach(name -> ExamplePacks.copyOf(name, temp.resolve(ConfigRoot.PACKS)));
 
         ConfigRoot.Listing listing = ConfigRoot.packs(temp);
@@ -39,8 +39,7 @@ class ConfigRootTest {
         assertThat(listing.packs())
                 .extracting(PackRoot::name)
                 .containsExactlyElementsOf(
-                        ExamplePacks.names().stream().sorted().toList())
-                .hasSize(5);
+                        ExamplePacks.names().stream().sorted().toList());
         assertThat(listing.packs()).allSatisfy(root -> {
             assertThat(root.configuredLevel()).isEmpty();
             assertThat(root.locator())

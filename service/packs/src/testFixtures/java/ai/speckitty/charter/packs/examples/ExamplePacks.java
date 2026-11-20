@@ -61,7 +61,7 @@ public final class ExamplePacks {
     private ExamplePacks() {}
 
     /**
-     * The directory that holds the five packs, one sub-directory each.
+     * The directory that holds the example packs, one sub-directory each.
      *
      * @return a real directory
      */
