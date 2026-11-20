@@ -256,23 +256,14 @@ class PackCheckTest {
                 .toList();
     }
 
-    /** Validate mode over the project example pack in a directory named {@code name}, which names no id: read under it. */
+    /**
+     * Validate mode over the project example pack in a directory named {@code name}, read under a root of that name, as
+     * pack-check's directory-name default builds it.
+     */
     private static List<Reason> violationsNamed(Path dir, String name) throws IOException {
+        Path pack = projectCopiedTo(dir, name);
         return violations(new PackCheck(new FileSystemPackInspector())
-                .validate(Optional.of(ExamplePacks.level(ExamplePacks.PROJECT)), projectCopiedTo(dir, name)));
-    }
-
-    @Test
-    void aCheckWithNoIdReadsThePackUnderItsDirectoryName() {
-        FakeReading reading = new FakeReading(
-                readout(root(Optional.empty()), new FileRead.Read<>(PACK_YAML, DESCRIPTOR), EMPTY_FRAGMENT, List.of()));
-        Path directory = Path.of("packs", "qa-pack");
-
-        new PackCheck(reading).validate(Optional.of(PackLevel.ORG), directory);
-
-        assertThat(reading.roots)
-                .as("#583 D2b: no id named, the directory's name")
-                .containsExactly(new PackRoot("qa-pack", Optional.of(PackLevel.ORG), directory.toString()));
+                .validate(new PackRoot(name, Optional.of(ExamplePacks.level(ExamplePacks.PROJECT)), pack.toString())));
     }
 
     @Test
