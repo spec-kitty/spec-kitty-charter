@@ -686,8 +686,8 @@ final class FilesystemPackStore {
      */
     private static List<PackElementViolation> retiredViolations(PackFileSet.Listing listing) {
         List<PackElementViolation> out = new ArrayList<>();
-        listing.retired()
-                .forEach((file, reason) -> out.add(new PackElementViolation(file, StorageCodes.RETIRED, reason)));
+        listing.refused()
+                .forEach((file, refused) -> out.add(new PackElementViolation(file, refused.code(), refused.reason())));
         return out;
     }
 

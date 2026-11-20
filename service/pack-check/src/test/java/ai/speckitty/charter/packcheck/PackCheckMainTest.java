@@ -414,6 +414,24 @@ class PackCheckMainTest {
     }
 
     @Test
+    void aCaseVariantDescriptorIsRefusedAsACaseVariant() throws IOException {
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+        Files.copy(builtIn.resolve("pack.yaml"), builtIn.resolve("Pack.yaml"));
+
+        Run run = run("--pack", builtIn + ":built-in");
+
+        assertThat(run.exit()).as(run.out()).isEqualTo(PackCheckMain.PROBLEMS);
+        assertThat(run.codes()).containsExactly("validation_failed");
+        List<String> atVariant = new ArrayList<>();
+        run.report().get("problems").get(0).get("violations").forEach(violation -> {
+            if (violation.get("pointer").asString().equals("Pack.yaml")) {
+                atVariant.add(violation.get("code").asString());
+            }
+        });
+        assertThat(atVariant).as(run.out()).containsExactly("case_variant");
+    }
+
+    @Test
     void aFileNotHeldIsAWarningOnStandardErrorNotAProblem() {
         Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
 

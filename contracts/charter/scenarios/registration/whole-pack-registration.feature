@@ -466,6 +466,25 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme"
     Then the response status is 404
 
+  # ADR-0073 decision 3, #624: a root file that differs only in letter case from a root rule's file is refused by name
+  # under its own code, case_variant, never as retired and never merely not held.
+  Scenario: A case variant of README.md is refused as a case variant
+    Given the archive "variant" is a copy of the archive "v1"
+    And the archive "variant" holds the file "Readme.md":
+      """
+      # acme
+      """
+    When I PUT "/packs/acme" with the archive "variant"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "case_variant"
+    And the field at "/problem/violations/0/pointer" is "Readme.md"
+    When I GET "/packs/acme"
+    Then the response status is 404
+
   # FR-009, FR-011 (#431): the org charter is retired, so it is refused by name, never merely not held as a file nothing
   # models (Q1, #554).
   Scenario: The retired org-charter.yaml is refused as retired, never merely not held

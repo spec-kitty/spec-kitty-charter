@@ -85,9 +85,12 @@ class OrgCharterRetirementTest {
         @Test
         @DisplayName("the digest takes the file in its retired tail, after the held files, and the census names it")
         void theDigestAndTheCensusCoverIt() {
-            assertThat(PackFileSet.listing(pack).retired())
+            assertThat(PackFileSet.listing(pack).refused())
                     .containsOnlyKeys(FILE)
-                    .containsEntry(FILE, REASON);
+                    .hasEntrySatisfying(FILE, refused -> {
+                        assertThat(refused.reason()).isEqualTo(REASON);
+                        assertThat(refused.code()).isEqualTo(StorageCodes.RETIRED);
+                    });
             assertThat(PackFileSet.digested(pack)).last().isEqualTo(FILE);
             assertThat(WholePackCensus.of(pack)).containsEntry(FILE, WholePackCensus.RETIRED + "*/" + FILE);
         }
