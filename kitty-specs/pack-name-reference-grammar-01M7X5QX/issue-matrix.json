@@ -61,15 +61,15 @@
       "wp": null
     },
     "#583": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "8a44dfc: activations PackRef is a PackIdentifier (slug(63)); the PackRef part of #582 needs no work",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "Split PackIdentifier into the registered pack id and the descriptor identity",
+      "verdict": "verified-already-fixed",
       "wp": null
     },
     "#585": {
