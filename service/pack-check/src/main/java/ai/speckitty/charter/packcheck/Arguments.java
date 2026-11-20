@@ -273,6 +273,11 @@ final class Arguments {
         }
         Given withId = levelled(rest);
         if (withId.named() && plain.named()) {
+            if (withId.root().isEmpty()) {
+                // The id reading is itself ambiguous (x:org and x are both directories): no one spelling names it.
+                return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
+                        + " under its own name, and " + rest + " is itself ambiguous; rename one of the directories");
+            }
             PackRoot idReading = withId.root().orElseThrow();
             return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
                     + " under its own name, and the directory " + idReading.locator() + " under the id " + id
