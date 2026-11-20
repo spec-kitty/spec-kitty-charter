@@ -32,12 +32,12 @@ It is one file, `pack-check-<version>.jar`, and it needs **Java 25**. It has no 
 
 ## Download and verify
 
-The jar is an asset of every service release, `service-v<version>`, from `service-v0.1.0-rc.2` on
+The jar is an asset of every service release, `service-v<version>`, from `service-v0.1.0-rc.3` on
 ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/), amendment of 2026-11-19). Download it with
 `SHA256SUMS` into an empty directory, then check its digest and its build provenance:
 
 ```bash
-tag=service-v0.1.0-rc.2
+tag=service-v0.1.0-rc.3
 version="${tag#service-v}"
 gh release download "$tag" --repo spec-kitty/spec-kitty-charter \
   --pattern "pack-check-$version.jar" --pattern SHA256SUMS
@@ -65,10 +65,10 @@ the model and compared by meaning ([ADR-0036](/adr/0036-round-trip-fidelity-is-e
 
 ```bash
 # A config root: packs/built-in, packs/org-base and packs/project under ./governance
-java -jar pack-check-0.1.0-rc.2.jar --config-root governance --round-trip
+java -jar pack-check-0.1.0-rc.3.jar --config-root governance --round-trip
 
 # The same packs, given one by one with their levels
-java -jar pack-check-0.1.0-rc.2.jar \
+java -jar pack-check-0.1.0-rc.3.jar \
   --pack governance/packs/built-in:built-in \
   --pack governance/packs/org-base:org \
   --pack governance/packs/project:project \
@@ -85,7 +85,7 @@ then read, composed and round-tripped under that id, the report and its problems
 directory's name plays no part:
 
 ```bash
-java -jar pack-check-0.1.0-rc.2.jar --pack build/staging:org=org-base --pack vendor/built-in
+java -jar pack-check-0.1.0-rc.3.jar --pack build/staging:org=org-base --pack vendor/built-in
 ```
 
 How a `--pack` value is read:
