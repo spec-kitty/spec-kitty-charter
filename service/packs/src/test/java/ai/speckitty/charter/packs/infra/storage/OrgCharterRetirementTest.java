@@ -87,7 +87,10 @@ class OrgCharterRetirementTest {
         void theDigestAndTheCensusCoverIt() {
             assertThat(PackFileSet.listing(pack).retired())
                     .containsOnlyKeys(FILE)
-                    .containsEntry(FILE, REASON);
+                    .hasEntrySatisfying(FILE, refused -> {
+                        assertThat(refused.reason()).isEqualTo(REASON);
+                        assertThat(refused.code()).isEqualTo(StorageCodes.RETIRED);
+                    });
             assertThat(PackFileSet.digested(pack)).last().isEqualTo(FILE);
             assertThat(WholePackCensus.of(pack)).containsEntry(FILE, WholePackCensus.RETIRED + "*/" + FILE);
         }

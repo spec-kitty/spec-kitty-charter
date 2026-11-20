@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
+import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import ai.speckitty.charter.packvalidation.placement.LevelRules;
@@ -41,8 +42,9 @@ import java.util.stream.Collectors;
  *       facts (S1), so no pack is read twice.
  *   <li>Over the set as given (D5), {@code CLOSURE} with its preset phase ({@link PackRulesets#closureFaults}, the
  *       faults of {@code PackRulesets.closure(presetIdsOf)}), on those facts. A pack's dependencies must be in the set.
- *       It runs only when every pack's facts are {@link PackReadout.Built} and every pack has a level; otherwise it is
- *       skipped and the verdict names the packs that stopped it (D3).
+ *       It runs only when every pack's facts are {@link PackReadout.Built}, every pack's descriptor passes the format
+ *       prechecks ({@link DescriptorChecks}, #624) and every pack has a level; otherwise it is skipped and the verdict
+ *       names the packs that stopped it (D3).
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
  *       validate mode found: the two are independent checks, but a round-trip reason at a file where validate mode
@@ -214,22 +216,42 @@ public final class PackSetCheck {
         return List.of(LevelRules.unknownLevel(entry.name()));
     }
 
-    /** Each pack {@code CLOSURE} cannot judge, in the order the set was given: no facts, or no level. */
+    /**
+     * Each pack {@code CLOSURE} cannot judge, in the order the set was given: no facts, a descriptor the format
+     * prechecks refuse, or no level. A refused descriptor is already the pack's problem in {@code PACK} (its
+     * {@code pack_version_invalid}, {@code dependency_range_invalid} or {@code requires_core_invalid} at
+     * {@code pack.yaml}); the resolver takes only a well-formed one, so {@code CLOSURE} is skipped rather than handed it
+     * (#624).
+     */
     private static List<Unjudged> unjudged(List<PackResult> results) {
         List<Unjudged> unjudged = new ArrayList<>();
         for (PackResult result : results) {
+            String name = result.entry().name();
+            Optional<String> malformed = malformed(name, result.facts());
             if (result.facts() instanceof PackReadout.Unreadable unreadable) {
                 unjudged.add(new Unjudged(
-                        result.entry().name(),
+                        name,
                         "its composition facts cannot be read: "
                                 + unreadable.code().token()
                                 + ": "
                                 + unreadable.detail()));
+            } else if (malformed.isPresent()) {
+                unjudged.add(new Unjudged(name, "its descriptor is malformed: " + malformed.get()));
             } else if (result.level().isEmpty()) {
-                unjudged.add(new Unjudged(result.entry().name(), NO_LEVEL));
+                unjudged.add(new Unjudged(name, NO_LEVEL));
             }
         }
         return unjudged;
+    }
+
+    /** The first format fault of a built pack's descriptor ({@link DescriptorChecks}); empty when it has none. */
+    private static Optional<String> malformed(String name, PackReadout.Facts facts) {
+        if (!(facts instanceof PackReadout.Built built)) {
+            return Optional.empty();
+        }
+        return DescriptorChecks.faults(name, built.descriptor()).stream()
+                .findFirst()
+                .map(DescriptorChecks.Fault::detail);
     }
 
     /** {@code CLOSURE} with its preset phase over packs that all have built facts and a level. */

@@ -279,7 +279,8 @@ exclusions:
 # (pack.md, PROVENANCE.md), the org charter #431 retires (org-charter.yaml), the glossary_pack shape ADR-0049 replaces and
 # the step contracts slice F folds. Files of these families are refused by
 # name, in the load and in validate mode, so a stale one cannot hide. A root file that differs only in letter case from a root-anchored `files`
-# or `retired` rule's file (Readme.md, Pack.md, PROVENANCE.MD) is refused by name under that rule as well (FR-022). Each rule
+# or `retired` rule's file (Readme.md, Pack.md, PROVENANCE.MD) is refused by name under that rule as well (FR-022), with the
+# violation code `case_variant` rather than `retired` (#624). Each rule
 # but the last three is anchored to a layout the pinned packs held (the mission tier at the pack root, as qa and cave-kitty
 # had it, or under missions/, as the built-in pack had it), so a payload elsewhere that merely shares a name (an asset
 # called governance-profile.yaml, a template under templates/mission-steps/) is never retired. The glossary_pack rule

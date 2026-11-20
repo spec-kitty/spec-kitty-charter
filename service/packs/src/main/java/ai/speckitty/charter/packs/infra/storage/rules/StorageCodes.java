@@ -43,6 +43,12 @@ public final class StorageCodes {
     /** A file the file-kinds table retires: refused by name, never read (ADR-0044 decision 6). */
     public static final ReasonCode RETIRED = violation("retired");
 
+    /**
+     * A root file that differs only in letter case from a root rule's file ({@code Pack.yaml}, {@code Readme.md}): refused
+     * by name under that rule, never read (ADR-0073 decision 3, #624).
+     */
+    public static final ReasonCode CASE_VARIANT = violation("case_variant");
+
     /** A companion file an artifact names cannot be read, leaves the pack, or is named by two artifacts. */
     public static final ReasonCode COMPANION = violation("companion");
 
@@ -81,6 +87,7 @@ public final class StorageCodes {
             PACK_ID_INVALID,
             UNREADABLE,
             RETIRED,
+            CASE_VARIANT,
             COMPANION,
             REQUIRES_CORE_INVALID,
             PACK_VERSION_INVALID,

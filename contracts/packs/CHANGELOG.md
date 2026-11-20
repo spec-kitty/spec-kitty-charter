@@ -19,6 +19,13 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after the release candidate
 `0.1.0-rc.2`.
 
+### Breaking
+
+- A root case variant (`Pack.yaml`, `Readme.md`, `PROVENANCE.MD`) is refused under the violation code
+  `case_variant`, no longer `retired` (#624). Its classification is unchanged: it is still refused by name under the
+  root rule whose file it differs from (`file-kinds.yaml`, `conformance/classifier-cases.yaml`, ADR-0073 decision 3).
+  A consumer that matches a case variant's refusal by its code matches `case_variant`.
+
 ## 0.1.0-rc.2
 
 The second release candidate, cut together with the charter contract `0.2.0-rc.3` and the service

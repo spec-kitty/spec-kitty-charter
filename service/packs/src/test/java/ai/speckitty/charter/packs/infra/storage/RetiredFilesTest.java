@@ -122,7 +122,24 @@ class RetiredFilesTest {
                     .as(file)
                     .isEqualTo(new PackFileKind.Retired(
                             match,
-                            "differs only in letter case from '" + match.substring(match.indexOf('/') + 1) + "'")));
+                            "differs only in letter case from '" + match.substring(match.indexOf('/') + 1) + "'",
+                            true)));
+        }
+
+        @Test
+        @DisplayName("a case variant is refused as case_variant, a file of a retired family as retired (#624)")
+        void aCaseVariantHasItsOwnCode() {
+            RetiredFileFixture.CASE_VARIANTS
+                    .keySet()
+                    .forEach(file -> assertThat(TABLE.classify("qa/" + file))
+                            .as(file)
+                            .isInstanceOfSatisfying(
+                                    PackFileKind.Retired.class,
+                                    refused -> assertThat(refused.code()).isEqualTo(StorageCodes.CASE_VARIANT)));
+            assertThat(TABLE.classify("qa/pack.md"))
+                    .isInstanceOfSatisfying(
+                            PackFileKind.Retired.class,
+                            refused -> assertThat(refused.code()).isEqualTo(StorageCodes.RETIRED));
         }
 
         @Test
@@ -244,7 +261,8 @@ class RetiredFilesTest {
     class ThePackLevelFiles {
 
         @Test
-        @DisplayName("a pack.md, a PROVENANCE.md and every case variant is a retired violation naming its reason")
+        @DisplayName(
+                "a pack.md and a PROVENANCE.md are retired violations, every case variant a case_variant one (#624)")
         void theStoreRefusesThemByName(@TempDir Path host) {
             FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
             Path exact = RetiredFileFixture.plant(host.resolve("qa"), List.of());
@@ -271,7 +289,7 @@ class RetiredFilesTest {
                         .as(variant.getKey())
                         .containsExactly(new PackElementViolation(
                                 variant.getKey(),
-                                StorageCodes.RETIRED,
+                                StorageCodes.CASE_VARIANT,
                                 "differs only in letter case from '"
                                         + variant.getValue()
                                                 .substring(variant.getValue().indexOf('/') + 1) + "'"));

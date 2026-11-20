@@ -163,7 +163,8 @@ public record PackSetVerdict(
          * @return the reason, in one line
          */
         public String reason() {
-            return check + " needs the composition facts and the level of every pack; it has none for "
+            return check
+                    + " needs a well-formed descriptor, the composition facts and the level of every pack; it has none for "
                     + packs.stream().map(Unjudged::text).collect(Collectors.joining("; "));
         }
     }

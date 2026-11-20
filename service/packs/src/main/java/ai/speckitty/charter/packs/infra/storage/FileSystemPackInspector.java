@@ -772,8 +772,8 @@ public final class FileSystemPackInspector implements PackReading {
             listPayloads(listing, prefix);
             refuseSidecarsWithoutPayload(listing);
             listing.retired()
-                    .forEach((file, reason) -> unreadable.add(new FileRead.Unreadable<>(
-                            file, ParseFailure.refused(file, reason, StorageCodes.RETIRED), List.of())));
+                    .forEach((file, refused) -> unreadable.add(new FileRead.Unreadable<>(
+                            file, ParseFailure.refused(file, refused.reason(), refused.code()), List.of())));
             notHeld.addAll(FileSystemPackInspector.notHeld(directory, walk, table, unnamedPolicy));
             // An unnamed file, a policy file or a companion nothing names though a rule maps it, is listed once, as not
             // held, never also as classified (open case 9, WP05 review); an excluded file is listed with its rule both

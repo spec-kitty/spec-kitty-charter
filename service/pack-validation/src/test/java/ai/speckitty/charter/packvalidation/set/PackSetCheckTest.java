@@ -305,7 +305,7 @@ class PackSetCheckTest {
     }
 
     @Nested
-    @DisplayName("D3: a pack with no facts or no level skips CLOSURE")
+    @DisplayName("D3: a pack with no facts, a malformed descriptor or no level skips CLOSURE")
     class Skipped {
 
         @Test
@@ -327,9 +327,10 @@ class PackSetCheckTest {
                                 "its composition facts cannot be read: pack_unreadable: a graph document of built-in"
                                         + " cannot be read"));
                 assertThat(skip.reason())
-                        .isEqualTo("CLOSURE needs the composition facts and the level of every pack; it has none for "
-                                + "built-in (its composition facts cannot be read: pack_unreadable: a graph document"
-                                + " of built-in cannot be read)");
+                        .isEqualTo(
+                                "CLOSURE needs a well-formed descriptor, the composition facts and the level of every pack; it has none for "
+                                        + "built-in (its composition facts cannot be read: pack_unreadable: a graph document"
+                                        + " of built-in cannot be read)");
             });
             PackResult broken = verdict.packs().getFirst();
             assertThat(broken.failing()).isTrue();
@@ -338,6 +339,39 @@ class PackSetCheckTest {
                     .isEmpty();
             assertThat(verdict.packs().get(1).failing()).isFalse();
             assertThat(verdict.failing()).isTrue();
+        }
+
+        @Test
+        @DisplayName("a pack whose pack_version is malformed: CLOSURE is skipped and names it, never handed it (#624)")
+        void aMalformedDescriptorSkipsClosure(@TempDir Path dir) throws IOException {
+            Path org = ExamplePacks.copyOf(ExamplePacks.ORG, dir);
+            Path descriptor = org.resolve("pack.yaml");
+            Files.writeString(
+                    descriptor,
+                    Files.readString(descriptor).replace("pack_version: 1.0.0", "pack_version: not-a-version"),
+                    StandardCharsets.UTF_8);
+
+            PackSetVerdict verdict = CHECK.check(
+                    List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, org, Optional.of(PackLevel.ORG))));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK);
+            assertThat(verdict.faults()).isEmpty();
+            assertThat(verdict.skipped()).singleElement().satisfies(skip -> {
+                assertThat(skip.check()).isEqualTo(Check.CLOSURE);
+                assertThat(skip.packs())
+                        .containsExactly(new Unjudged(
+                                ExamplePacks.ORG,
+                                "its descriptor is malformed: pack.yaml of org-base: pack_version 'not-a-version' is"
+                                        + " not a PEP 440 version"));
+            });
+            PackResult malformed = verdict.packs().get(1);
+            assertThat(malformed.verdict().findings())
+                    .as("PACK reports the fault once, at pack.yaml, under the precheck's code")
+                    .filteredOn(finding -> finding.code().value().equals("pack_version_invalid"))
+                    .singleElement()
+                    .satisfies(finding -> assertThat(finding.location().file()).isEqualTo("pack.yaml"));
+            assertThat(malformed.failing()).isTrue();
+            assertThat(verdict.packs().getFirst().failing()).isFalse();
         }
 
         @Test

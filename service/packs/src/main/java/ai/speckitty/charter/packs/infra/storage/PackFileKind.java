@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -113,13 +115,37 @@ final class PackFileKind {
     record Excluded(String exclusionClass, String reason) implements Classification {}
 
     /**
-     * A file of a retired family (ADR-0044 decision 6): the store's load and validate mode refuse it by name, the gate reports it
-     * in its own bucket, and the fingerprint digests it, so a stale file cannot hide.
+     * A file refused by name: a file of a retired family (ADR-0044 decision 6), or a root file that differs only in
+     * letter case from a root rule's file (ADR-0073 decision 3). The store's load and validate mode refuse it by name,
+     * the gate reports it in its own bucket, and the fingerprint digests it, so a stale file cannot hide. Its violation
+     * code says which it is ({@link #code()}).
      *
-     * @param match the {@code retired} rule's glob, which names the family
-     * @param reason why the family is retired
+     * @param match the rule's glob: the {@code retired} rule that names the family, or the root rule whose file a case
+     *     variant differs from
+     * @param reason why the family is retired, or which file the case variant differs from
+     * @param caseVariant whether the file is a case variant of the rule's file rather than a file of a retired family
      */
-    record Retired(String match, String reason) implements Classification {}
+    record Retired(String match, String reason, boolean caseVariant) implements Classification {
+        /**
+         * A file of a retired family.
+         *
+         * @param match the {@code retired} rule's glob
+         * @param reason why the family is retired
+         */
+        Retired(String match, String reason) {
+            this(match, reason, false);
+        }
+
+        /**
+         * The violation code the load and validate mode refuse the file under: {@code case_variant} for a case variant
+         * (#624), {@code retired} for a file of a retired family.
+         *
+         * @return the code
+         */
+        ReasonCode code() {
+            return caseVariant ? StorageCodes.CASE_VARIANT : StorageCodes.RETIRED;
+        }
+    }
 
     /** A file that no rule covers. */
     enum Unclassified implements Classification {
@@ -390,7 +416,7 @@ final class PackFileKind {
             Matcher root = ROOT_FILE.matcher(rule.match());
             if (root.matches() && rule.folded().matcher(folded).matches()) {
                 return Optional.of(
-                        new Retired(rule.match(), "differs only in letter case from '" + root.group(1) + "'"));
+                        new Retired(rule.match(), "differs only in letter case from '" + root.group(1) + "'", true));
             }
         }
         return Optional.empty();

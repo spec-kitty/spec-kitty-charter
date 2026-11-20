@@ -118,8 +118,9 @@ final class PackFileSet {
      *     {@code missions/<type>/templates/}, ADR-0044)
      * @param presets the activation presets, pack-relative ({@code presets/<stem>.yaml})
      * @param document the pack document, {@code README.md}, when the pack has one
-     * @param retired the files of a retired family (ADR-0044 decision 6), each with its rule's reason, which the load and
-     *     validate mode refuse by name
+     * @param retired the files refused by name, each with its classification: a file of a retired family (ADR-0044
+     *     decision 6) or a root case variant (ADR-0073 decision 3), which the load and validate mode refuse under its
+     *     {@linkplain PackFileKind.Retired#code() code}
      */
     record Listing(
             Map<ArtifactKind, List<String>> byKind,
@@ -127,7 +128,7 @@ final class PackFileSet {
             List<String> templates,
             List<String> presets,
             Optional<String> document,
-            SequencedMap<String, String> retired) {
+            SequencedMap<String, PackFileKind.Retired> retired) {
         /**
          * Copies the collections.
          *
@@ -136,7 +137,7 @@ final class PackFileSet {
          * @param templates the templates
          * @param presets the presets
          * @param document the pack document, if any
-         * @param retired the retired files, path to reason
+         * @param retired the files refused by name, path to classification
          */
         Listing {
             Map<ArtifactKind, List<String>> copy = new EnumMap<>(ArtifactKind.class);
@@ -495,11 +496,11 @@ final class PackFileSet {
         List<String> templates = new ArrayList<>();
         List<String> presets = new ArrayList<>();
         List<String> documents = new ArrayList<>();
-        SequencedMap<String, String> retired = new LinkedHashMap<>();
+        SequencedMap<String, PackFileKind.Retired> retired = new LinkedHashMap<>();
         for (String file : regularFiles) {
             PackFileKind.Classification classification = table.classify(prefix + file);
             if (classification instanceof PackFileKind.Retired family) {
-                retired.put(file, family.reason());
+                retired.put(file, family);
             }
             if (!(classification instanceof PackFileKind.Mapped mapped)) {
                 continue;
