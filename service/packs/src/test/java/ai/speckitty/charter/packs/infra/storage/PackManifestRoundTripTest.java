@@ -40,7 +40,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("Pack manifest round trip (#195, ADR-0042)")
 class PackManifestRoundTripTest {
 
-    private static final String FIXTURE = "manifest-pack";
+    static final String FIXTURE = "manifest-pack";
     static final String TACTIC = "tactics/refactoring/refactoring-inline-temp.tactic.yaml";
 
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
@@ -352,7 +352,7 @@ class PackManifestRoundTripTest {
 
     private static Map<String, Outcome> gate(SerializationStrategy strategy, Path pack, Path target)
             throws IOException {
-        return new DomainRoundTrip(strategy).roundTrip(pack, target, WholePackCensus.of(pack));
+        return new DomainRoundTrip(strategy).roundTrip(FIXTURE, pack, target, WholePackCensus.of(pack));
     }
 
     /**

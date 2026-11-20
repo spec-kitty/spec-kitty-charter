@@ -2,6 +2,7 @@ package ai.speckitty.charter.packvalidation.roundtrip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -47,7 +48,8 @@ class OpenPacksDriftTest {
         for (Path pack : dirs) {
             String name = String.valueOf(pack.getFileName());
             try {
-                problems.addAll(WholePackDrift.problems(store, pack, PackRoundTrip.run(pack, host.resolve(name))));
+                problems.addAll(WholePackDrift.problems(
+                        store, pack, PackRoundTrip.run(new PackIdentifier(name), pack, host.resolve(name))));
             } catch (RuntimeException e) {
                 problems.add(name + ": the round trip threw " + e);
             }

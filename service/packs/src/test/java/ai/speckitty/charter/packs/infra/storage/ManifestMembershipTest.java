@@ -331,7 +331,7 @@ class ManifestMembershipTest {
 
     private Outcome gate(Path pack, Path target) throws IOException {
         return new DomainRoundTrip(strategy)
-                .roundTrip(pack, target, WholePackCensus.of(pack))
+                .roundTrip(PROJECT, pack, target, WholePackCensus.of(pack))
                 .get(PackFileSet.MANIFEST);
     }
 

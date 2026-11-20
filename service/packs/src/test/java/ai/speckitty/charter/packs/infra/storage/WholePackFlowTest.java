@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.domain.roundtrip.Reading;
@@ -29,6 +30,9 @@ import org.junit.jupiter.api.io.TempDir;
 class WholePackFlowTest {
 
     private static final String BUILT_IN = ExamplePacks.BUILT_IN;
+
+    /** The id of {@link PackManifestRoundTripTest#fixture}, also the name of its directory. */
+    private static final PackIdentifier MANIFEST_PACK = new PackIdentifier(PackManifestRoundTripTest.FIXTURE);
 
     /**
      * The mission templates under {@code missions/<type>/templates/} census as {@code template} (#194, ADR-0044, which
@@ -81,7 +85,7 @@ class WholePackFlowTest {
         Path pack = ExamplePacks.pack(BUILT_IN);
         Path target = temp.resolve(BUILT_IN);
 
-        PackRoundTripResult result = PackRoundTrip.run(pack, target);
+        PackRoundTripResult result = PackRoundTrip.run(new PackIdentifier(BUILT_IN), pack, target);
 
         assertThat(result.census()).isEqualTo(PackRoundTrip.census(pack));
         assertThat(result.modelledKinds()).isEqualTo(PackRoundTrip.modelledKinds());
@@ -131,16 +135,17 @@ class WholePackFlowTest {
         SerializationStrategy yaml = new YamlSerializationStrategy();
 
         Map<String, Optional<String>> clean = RoundTripObservation.of(
-                        PackRoundTrip.run(new DomainRoundTrip(yaml), fresh, temp.resolve("out/clean")))
+                        PackRoundTrip.run(new DomainRoundTrip(yaml), MANIFEST_PACK, fresh, temp.resolve("out/clean")))
                 .observed();
         PackRoundTripResult copiedRun = PackRoundTrip.run(
                 new DomainRoundTrip(new PackManifestRoundTripTest.StaleManifestWriter(yaml, fresh)),
+                MANIFEST_PACK,
                 fresh,
                 temp.resolve("out/copied"));
         Map<String, Optional<String>> copied =
                 RoundTripObservation.of(copiedRun).observed();
         Map<String, Optional<String>> sourceStale = RoundTripObservation.of(
-                        PackRoundTrip.run(new DomainRoundTrip(yaml), edited, temp.resolve("out/edited")))
+                        PackRoundTrip.run(new DomainRoundTrip(yaml), MANIFEST_PACK, edited, temp.resolve("out/edited")))
                 .observed();
 
         assertThat(clean).allSatisfy((path, red) -> assertThat(red).as(path).isEmpty());
