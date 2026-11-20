@@ -6,7 +6,7 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
-    // The nightly mutation floor (#239, ADR-0062 as amended 2026-11-06). Never charter.domain-conventions: it refuses
+    // The weekly mutation floor (#239, ADR-0062 as amended 2026-11-06). Never charter.domain-conventions: it refuses
     // the external dependencies a ring of the edge needs.
     id("charter.mutation-conventions")
 }
@@ -32,7 +32,7 @@ dependencies {
     testImplementation(testFixtures(project(":packs")))
 }
 
-// The nightly mutation floor (#239): one group for the whole module, at the floor of :activations (85); the score
+// The weekly mutation floor (#239): one group for the whole module, at the floor of :activations (85); the score
 // measured at its work package is 100 % (121 mutants), see the profiles-edge amendment of ADR-0062. Raised by PR once the
 // nightly score clears it by 5.
 mutationFloors {

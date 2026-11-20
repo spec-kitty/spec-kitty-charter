@@ -3,7 +3,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
-/** The nightly mutation floor (#239): lenient reading of PIT's mutations.xml, scoring per group, and the verdict. */
+/** The weekly mutation floor (#239): lenient reading of PIT's mutations.xml, scoring per group, and the verdict. */
 class MutationFloorsTest {
 
     private val kernel = MutationFloors.Group("kernel", listOf("ai.speckitty.charter.kernel"), emptyList(), 65)

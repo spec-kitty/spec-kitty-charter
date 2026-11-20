@@ -1,8 +1,8 @@
 ---
-title: "ADR-0062: Nightly mutation floor"
-description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
+title: "ADR-0062: Weekly mutation floor"
+description: "The scheduled PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the weekly run red, never a pull request."
 doc_status: active
-updated: 2026-11-19T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -15,12 +15,12 @@ related:
   - plans/engineering-notes/test-suite-assessment-2026-11-03
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this when the mutation nightly is red, before you change a floor, or when you triage a surviving mutant.
+    guidance_text: Read this when the weekly mutation run is red, before you change a floor, or when you triage a surviving mutant.
   - profile: governance-lead
-    guidance_text: Read this for why mutation testing gates the nightly but never a pull request, and how a floor moves.
+    guidance_text: Read this for why mutation testing gates the weekly scheduled run but never a pull request, and how a floor moves.
 ---
 
-# ADR-0062: Nightly mutation floor
+# ADR-0062: Weekly mutation floor
 
 ## Status
 
@@ -39,7 +39,7 @@ a merge gate.
 
 It also amends [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/), whose Context and
 References describe `mutation-nightly.yml` as gating nothing and as the report-only shape the SonarCloud nightly
-follows. From this ADR on, the mutation nightly turns red when a floor is missed; it still gates no pull request and is
+follows. From this ADR on, the scheduled mutation run turns red when a floor is missed; it still gates no pull request and is
 no part of the required check. The SonarCloud nightly stays report-only, as ADR-0058 decides.
 
 ## Context
@@ -119,7 +119,7 @@ characters in mutator descriptions, so it is not well-formed XML.
      running, a large piece of code arriving untested. It does not catch a single weakened test, which costs a few
      mutants, well inside every packs and kernel margin.
    - **Missions is near the trigger.** A margin of 7 mutants means a small change there, even moving a few lines of
-     covered code, can turn the nightly red. Profiles had a margin of 2 in the first run; after #384 and the raise to 90 it has 4, so it is near the trigger too.
+     covered code, can turn the weekly run red. Profiles had a margin of 2 in the first run; after #384 and the raise to 90 it has 4, so it is near the trigger too.
 4. **The packs scope.** PIT mutates `packs.domain.*`, `packs.application.*`, `packs.infra.storage.*`
    (`infra.storage.config` included, operator ruling) and `packs.infra.fetch.*` (operator ruling), and never the
    Spring wiring (`application.config.*`, `infra.fetch.config.*`) or `infra.api.*` (the REST adapter). It runs only
@@ -131,7 +131,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    A group without mutants, a missing report and `<mutation>` elements that cannot be read each fail too, so a broken
    run is never scored as a pass.
 6. **Moving a floor.**
-   - **Raise** a floor by pull request when the nightly score is 5 or more points above it.
+   - **Raise** a floor by pull request when the weekly score is 5 or more points above it.
    - **Lower** a floor only by an amendment to this ADR.
    - [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) has merged, so kernel and profiles qualified
      under the raise rule; they are raised to 75 and 90 (see the amendment below).
@@ -147,7 +147,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    `kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP05-kernel-survivor-triage/triage.md`. Stock PIT, as configured
    here, cannot mark a mutant equivalent: the `EQUIVALENT` status comes only from PIT extensions. So an equivalent
    mutant still counts as SURVIVED: it stays in the score's denominator and in every run's survivor count.
-8. **The nightly** (`.github/workflows/mutation-nightly.yml`) runs on a schedule and on `workflow_dispatch` only.
+8. **The weekly scheduled run (or a manual dispatch)** (`.github/workflows/mutation-testing.yml`, `mutation-nightly.yml` until 2026-11-12) runs on a schedule and on `workflow_dispatch` only.
    - It syncs open-packs at the pin, then runs `./gradlew pitest --continue`, so every module reports even when one
      fails. The summary script's unit tests run after PIT, whatever its result, so they never keep PIT from running.
    - An `if: always()` step writes a job summary of every module and group from the `floors.json` files: mutants,
@@ -160,7 +160,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    - `timeout-minutes` is 90 (operator ruling). The mutation step has 80 of them, so the summary and the upload
      still run when PIT runs out of time.
 9. **Never on a pull request.** No pull-request or `merge_group` trigger runs PIT, `verifyAll` contains no `pitest` or
-   `checkMutationFloors` task, and the nightly is never part of the required check of
+   `checkMutationFloors` task, and the scheduled run is never part of the required check of
    [ADR-0023](/adr/0023-ci-gate-required-check/).
 
 A run narrowed with `service/packs/pit-targets.init.gradle` (`-Dpit.classes`, `-Dpit.tests`) is not a floor
@@ -170,14 +170,14 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 
 ### Positive
 
-- A fall in a mutation score that takes a group below its floor turns the nightly red, names the module and group,
-  and raises one issue. A smaller fall, inside the group's margin, leaves the nightly green.
+- A fall in a mutation score that takes a group below its floor turns the weekly run red, names the module and group,
+  and raises one issue. A smaller fall, inside the group's margin, leaves the weekly run green.
 - The logic in `packs` is mutated, with floors where its scores are.
 - The floors ratchet up by ordinary pull requests and only move down by a recorded decision.
 
 ### Negative
 
-- The nightly takes about 51 minutes of mutation testing on four cores, 48 of them `:packs:pitest`, plus the
+- A scheduled run takes about 51 minutes of mutation testing on four cores, 48 of them `:packs:pitest`, plus the
   set-up steps.
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
 - The missions floor of 70 sits well below the packs `domain+application` and `infra.storage` floors until its
@@ -187,7 +187,7 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 
 ### Risks
 
-- A red nightly can be ignored. The single open issue keeps it visible until a maintainer closes it.
+- A red weekly run can be ignored. The single open issue keeps it visible until a maintainer closes it.
 - `packs` growth can push the run toward its 90-minute timeout. A timeout raises the issue like a failed floor.
 - The score counts uncovered mutants, so moving code between modules can move a score without any test changing.
 
@@ -217,7 +217,7 @@ The first design of [#239](https://github.com/spec-kitty/spec-kitty-charter/issu
 module, and asked whether the thresholds should live in `gradle.properties`. Not chosen:
 
 - PIT's threshold is one rounded integer per module, so it cannot hold the packs groups to their own floors;
-- it writes no machine-readable summary for the nightly's job summary and issue;
+- it writes no machine-readable summary for the scheduled run's job summary and issue;
 - a floor belongs in the build file of the module it holds, beside that module's PIT scope, not in a shared
   properties file.
 
@@ -420,3 +420,19 @@ problems, the report and the main). No other group holds the package.
 
 The `others` shard's `pitest` reaches the module, and `mutationModules` lists it, so the workflow needs no change. The
 other floors are unchanged.
+
+## Amendment, 2026-11-20 (operator): weekly cadence, and no PIT in mission work
+
+Status: Accepted, as an amendment of this accepted ADR. No floor is moved.
+
+- **Cadence.** The operator ruled that the mutation run stays weekly, on the cron it has today (`43 2 * * 1`), with
+  `workflow_dispatch` for a manual run. This ADR and the documents that follow it say "weekly scheduled run (or a
+  manual dispatch)" where they said "nightly". The file name and the ids of earlier amendments stay as they are.
+- **No PIT in mission work.** Implement, review, squad and closeout steps never run `pitest` or `checkMutationFloors`,
+  a narrowed run (`pit-targets.init.gradle`) or a `-PmutationGroups` shard included, and no brief, acceptance criterion
+  or NFR asks for a mutation score, margin or floor (charter, "How work lands"). Agent sessions had run whole `:packs`
+  shards for up to 1h 21m inside reviews.
+- **Floors and margins** are measured and moved only from the weekly or dispatched run's report, in a follow-up pull
+  request after it. The amendments of 2026-11-17 and 2026-11-19 took their measurements from runs made inside missions;
+  they stand, and later margins come from the scheduled run. How a new module takes its first floor without such a
+  measurement is left to the operator.

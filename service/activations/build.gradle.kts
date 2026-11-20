@@ -4,7 +4,7 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
-    // The nightly mutation floor (#239, ADR-0062 as amended 2026-11-06).
+    // The weekly mutation floor (#239, ADR-0062 as amended 2026-11-06).
     id("charter.mutation-conventions")
 }
 
@@ -56,7 +56,7 @@ tasks.register<Test>("timingBudgets") {
     testLogging { showStandardStreams = true }
 }
 
-// The nightly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
+// The weekly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
 // (a trial run scored 91.4 %); raised by PR once the score clears it by 5.
 mutationFloors {
     group("activations") {

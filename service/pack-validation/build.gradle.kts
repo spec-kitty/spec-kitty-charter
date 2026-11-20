@@ -15,7 +15,7 @@ import net.ltgt.gradle.errorprone.errorprone
 plugins {
     id("charter.java-base")
     id("charter.hand-written")
-    // The nightly mutation floor (#239). Never charter.domain-conventions: it refuses the external dependencies this
+    // The weekly mutation floor (#239). Never charter.domain-conventions: it refuses the external dependencies this
     // module declares.
     id("charter.mutation-conventions")
 }
@@ -52,7 +52,7 @@ dependencies {
     testImplementation(catalog.lib("jackson-databind"))
 }
 
-// The nightly mutation floor (#239; ADR-0062, amendments of 2026-11-13 and 2026-11-17): one group for the whole module,
+// The weekly mutation floor (#239; ADR-0062, amendments of 2026-11-13 and 2026-11-17): one group for the whole module,
 // the validation edge (PackCheck, PackVerdicts, the placement rules and PlacementCodes, #554) and the whole-pack round
 // trip's verdict (#578). Measured on #554's head: 330 of 372 mutants detected (88.7 %), so floor5(score - 3) is 85 and
 // the margin is 13 mutants (it was 0 on #553's one mutant). #554's classes kill every mutant; the survivors and the

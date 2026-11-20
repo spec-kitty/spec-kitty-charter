@@ -2,7 +2,7 @@
 title: "ADR-0060: The native executables are built nightly and per release, not on each pull request"
 description: "Operator ruling of 2026-11-05: the slow native build leaves CI gate / gate and runs nightly on main, on each service release and on demand."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -43,7 +43,7 @@ is the slowest part of a pull request, and it is paid again on each merge queue 
    - **nightly** on `main`, at 03:11 UTC, by `schedule`;
    - **per release**, called by `service-release.yml`, as before: a failed target still blocks the release;
    - **on demand**, by `workflow_dispatch` on any branch.
-3. **A red night is a red run of the workflow,** as the mutation nightly's is. No notification is wired.
+3. **A red night is a red run of the workflow,** as the weekly mutation run's is. No notification is wired.
 
 ## Consequences
 
