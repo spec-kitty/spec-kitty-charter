@@ -244,7 +244,7 @@ cost on every change to a hotspot; LOW is local. Each finding cites its lens pag
   containment rule (`ExpectedArtifact.java:49`), which the schema refuses on the YAML route but no
   domain test reaches.
 - **MEDIUM. Sleep-timed tests** (L3 finding 2). `RegistryLockOrderTest:110` sleeps 300 ms beside
-  its own `awaitQueued` helper (`:143`). #593's `MixedReadConcurrencyTest` shows the shape to copy:
+  its own `awaitQueued` helper (`:143`). #593's `MixedReadConcurrencyTest` shows the shape to copy, in its form after `d04a8573` (at the baseline one of its cases still released a swap after a fixed 15 ms):
   - a bounded wait under the lock's own limit;
   - a named failure;
   - `@Timeout` only to catch a hang;
@@ -272,7 +272,8 @@ cost on every change to a hotspot; LOW is local. Each finding cites its lens pag
 - **LOW. Suppressions are few, and some lack a reason** (L4).
   - Main code has 7, the same as on 11-12; one of them suppresses a check that does not exist.
   - Test code has 48 `@SuppressWarnings`, and 24 of the `unchecked` ones have no reason.
-- **LOW. `verifyAll` takes 13 min 18 s against a 20-minute CI budget** (L4 F10). #596 tracks the build-image remedy.
+- **LOW. `verifyAll` takes 13 min 18 s with a warm cache, against the `verify` job's 20-minute limit at the baseline** (L4 F10).
+  A release build runs without the cache and hit that limit; `35511d02` raised it to 40 minutes. #596 tracks the build-image remedy.
 
 ## Ranked actions
 
