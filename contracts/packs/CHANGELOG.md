@@ -14,6 +14,11 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 `contracts/packs/README.md` ("Releasing the packs contract") has the procedure, and
 `docs/guides/pin-the-packs-contract.md` how a consumer pins and checks a release.
 
+## 0.1.0-SNAPSHOT
+
+The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after the release candidate
+`0.1.0-rc.2`.
+
 ## 0.1.0-rc.2
 
 The second release candidate, cut together with the charter contract `0.2.0-rc.3` and the service
