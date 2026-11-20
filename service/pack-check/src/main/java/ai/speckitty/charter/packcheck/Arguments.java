@@ -310,10 +310,7 @@ final class Arguments {
         String suffix = colon < 0 ? "" : value.substring(colon + 1);
         Optional<PackLevel> level = PackLevel.fromToken(suffix);
         String path = level.isPresent() ? value.substring(0, colon) : value;
-        if (level.isPresent()
-                && !path.isEmpty()
-                && Files.isDirectory(Path.of(value))
-                && Files.isDirectory(Path.of(path))) {
+        if (level.isPresent() && Files.isDirectory(Path.of(value)) && Files.isDirectory(Path.of(path))) {
             return Given.ambiguous(PACK + " " + value + " is ambiguous: " + value + " and " + path
                     + " are both directories; rename one, or write " + value + ":<level>");
         }
@@ -323,17 +320,14 @@ final class Arguments {
         }
         if (level.isPresent() && Files.isDirectory(Path.of(value)) && !Files.isDirectory(Path.of(path))) {
             // x:org is a directory and x is not: the value names the directory x:org, at no configured level.
-            return directoryOf(value, Optional.empty());
+            return directoryOf(value, Optional.empty(), value);
         }
-        if (path.isEmpty()) {
-            // :org, or an empty value: an empty path would name the working directory.
-            return emptyDirectory(value);
-        }
+        // An empty path (:org, or an empty value) names the working directory and passes here; directoryOf refuses it.
         if (level.isPresent() && !Files.isDirectory(Path.of(path))) {
             // Neither x:org nor x is a directory: name the value as given, and the directory it was read as.
             return Given.refused(PACK + " " + value + " is not a directory, and nor is " + path);
         }
-        return directoryOf(path, level);
+        return directoryOf(path, level, value);
     }
 
     /**
@@ -345,8 +339,19 @@ final class Arguments {
                 + " <dir>[:<level>][=<id>]");
     }
 
-    /** The pack in {@code path}, at {@code level} when one is given; refused when {@code path} is no pack directory. */
-    private static Given directoryOf(String path, Optional<PackLevel> level) {
+    /**
+     * The pack in {@code path}, at {@code level} when one is given; refused when {@code path} is empty or no pack
+     * directory.
+     *
+     * @param path the directory part of the value
+     * @param level the configured level, when one is given
+     * @param given the {@code --pack} value {@code path} was read from, which a refusal of an empty path names
+     * @return the pack, or why there is none
+     */
+    private static Given directoryOf(String path, Optional<PackLevel> level, String given) {
+        if (path.isEmpty()) {
+            return emptyDirectory(given);
+        }
         Path directory = Path.of(path);
         if (!Files.isDirectory(directory)) {
             return Given.refused(PACK + " " + path + " is not a directory");
