@@ -21,9 +21,12 @@ steps:
     PIT runs only in mutation-testing.yml, in its weekly scheduled run (or a
     manual dispatch) (ADR-0062). Implement, review, squad and closeout steps never run pitest or
     checkMutationFloors, a narrowed run (pit-targets.init.gradle) or a
-    -PmutationGroups shard included, unless the operator asks for that run by
-    name. This overrides the open-packs testing doctrine's "run it on the changed
-    scope under review".
+    -PmutationGroups shard included. This overrides the open-packs testing
+    doctrine's "run it on the changed scope under review". Two exceptions, and
+    no other (operator, 2026-11-20): a new module may take one in-mission PIT
+    run, scoped to that module only, solely to set its first floor; and PIT
+    tuning work (#530, #531), where PIT is the subject, may run narrowed PIT
+    locally, with its confirmation run through workflow_dispatch.
   title: Leave mutation testing to the weekly scheduled run (or a manual dispatch)
 - description: >-
     A brief, acceptance criterion, NFR or Definition of Done never asks for a
