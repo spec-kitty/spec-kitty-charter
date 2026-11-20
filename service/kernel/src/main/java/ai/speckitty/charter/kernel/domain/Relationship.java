@@ -96,7 +96,7 @@ public final class Relationship {
      * @param type what the relationship means
      * @param when the authored edge condition that must round-trip; empty when absent, never {@code null}
      * @param rationale the authored reason; empty when absent, never {@code null}
-     * @throws IllegalArgumentException when any argument is {@code null}, a qualifier breaks the pack-name grammar, or
+     * @throws IllegalArgumentException when any argument is {@code null}, a qualifier is no pack id, or
      *     {@code from} equals {@code to} with neither endpoint pack-qualified (a self-loop; a qualified endpoint names
      *     another pack's artifact of the same id, which is legal for a structural relation), or a {@code tension}'s two
      *     sides have the same bare URN, qualified or not (two versions of one artifact are not two rules, ADR-0045
@@ -126,7 +126,7 @@ public final class Relationship {
         if (requireArg(pack, name)
                 .filter(value -> !PackQualifiedReference.isPackName(value))
                 .isPresent()) {
-            throw new IllegalArgumentException(name + " follows the pack-name grammar: " + pack.get());
+            throw new IllegalArgumentException(name + ": " + PackQualifiedReference.refusal(pack.get()));
         }
         return pack;
     }
@@ -183,7 +183,7 @@ public final class Relationship {
      * @param when the authored edge condition; empty when absent
      * @param rationale the authored reason; empty when absent
      * @return the relationship
-     * @throws IllegalArgumentException when an argument is {@code null}, a qualifier breaks the pack-name grammar, the
+     * @throws IllegalArgumentException when an argument is {@code null}, a qualifier is no pack id, the
      *     relationship is a bare self-loop, or the relation does not allow the endpoint kinds (the fault's message)
      */
     public static Relationship of(
@@ -213,7 +213,7 @@ public final class Relationship {
      * @param newFromPack the pack the source reference names; empty for a bare reference
      * @param newToPack the pack the target reference names; empty for a bare reference
      * @return a copy carrying them
-     * @throws IllegalArgumentException when a qualifier breaks the pack-name grammar, or both are empty and the
+     * @throws IllegalArgumentException when a qualifier is no pack id, or both are empty and the
      *     endpoints are equal (a self-loop)
      */
     public Relationship qualified(Optional<String> newFromPack, Optional<String> newToPack) {

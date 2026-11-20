@@ -48,7 +48,8 @@ no dependency relates keep the configured-level, then pack-id order.
 unreadable (`pack_unreadable`):
 
 - `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member` are ULIDs;
-- `name` matches `^[a-z0-9][a-z0-9_-]*$`, because the name is the qualifier of a cross-pack reference;
+- `name` is a pack id, `^[a-z0-9]+(-[a-z0-9]+)*$` and at most 63 characters, because the name is the qualifier of a
+  cross-pack reference and equals the id the pack is registered under;
 - `pack_level` is present whenever `depends_on` is non-empty.
 
 An **org or project pack that references a built-in artifact bare is now refused**

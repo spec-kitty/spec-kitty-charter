@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -16,8 +18,8 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
     Pattern SPELLING_SHAPE = Pattern.compile("builtin:(" + IdentifierGrammar.SLUG + ")|(?:(" + IdentifierGrammar.SLUG
             + ")::)?asset:([A-Za-z0-9_/.-]++)");
 
-    /** The longest pack name an asset-backed spelling may qualify with (#440). */
-    int MAX_PACK_LENGTH = IdentifierGrammar.MAX_SLUG_LENGTH;
+    /** The longest pack name an asset-backed spelling may qualify with: a pack id (#440, #582). */
+    int MAX_PACK_LENGTH = PackIdentifier.MAX_LENGTH;
 
     /**
      * Reads the authored spelling.
@@ -25,7 +27,7 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
      * @param text the {@code implemented_by} value
      * @return the implementation
      * @throws IllegalArgumentException when the text is neither spelling, names a built-in not on the list, or qualifies
-     *     with a pack name over 64 characters
+     *     with a pack name that is no pack id (over 63 characters included)
      */
     static GuardImplementation parse(String text) {
         // The qualifier ends at the first "::" (an asset id holds no colon), so its length is known before matching;
@@ -85,12 +87,16 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
         /**
          * Checks the parts.
          *
-         * @param pack the other pack's name, possibly empty
+         * @param pack the other pack's name, possibly empty; a pack id (#582)
          * @param assetId the asset id
+         * @throws IllegalArgumentException when the pack name is no pack id
          */
         public AssetBacked {
             Objects.requireNonNull(pack, "pack");
             Objects.requireNonNull(assetId, "assetId");
+            pack.filter(name -> !PackQualifiedReference.isPackName(name)).ifPresent(name -> {
+                throw new IllegalArgumentException(PackQualifiedReference.refusal(name));
+            });
         }
 
         @Override

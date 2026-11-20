@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -311,6 +312,30 @@ class GraphBindingTest {
                             "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"));
             assertThat(details(build(List.of(edge("nope", "tactic:a", "requires")))))
                     .containsExactly("tactic.graph.yaml: edge endpoint 'nope' is not a URN");
+        }
+
+        /**
+         * A qualifier the schema accepts but no pack id can be (#582): over 63 characters, the pack schemas' pattern
+         * cannot cap it, so the binding refuses it and says why. One of 63 binds, on the same edge.
+         */
+        @Test
+        void aQualifierOverTheLongestPackIdIsAFindingThatNamesThePackIdGrammar() {
+            String overCap = "p".repeat(PackIdentifier.MAX_LENGTH + 1);
+            GraphBuild refused = build(List.of(edge("tactic:a", overCap + "::directive:b", "requires")));
+            assertThat(refused.graph().relationships()).isEmpty();
+            assertThat(refused.findings()).singleElement().satisfies(finding -> {
+                assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
+                assertThat(finding.detail())
+                        .contains("edge endpoint is not a reference")
+                        .contains(PackIdentifier.GRAMMAR_DETAIL);
+            });
+
+            String atCap = "p".repeat(PackIdentifier.MAX_LENGTH);
+            GraphBuild bound = build(List.of(edge("tactic:a", atCap + "::directive:b", "requires")));
+            assertThat(bound.findings()).isEmpty();
+            assertThat(bound.graph().relationships()).singleElement().satisfies(relationship -> assertThat(
+                            relationship.toPack())
+                    .contains(atCap));
         }
 
         @Test

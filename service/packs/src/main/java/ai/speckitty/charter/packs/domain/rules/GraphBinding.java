@@ -237,6 +237,10 @@ public final class GraphBinding {
      * @param relation the edge's relation type
      */
     private static Object endpoints(RawEdge raw, String origin, RelationType relation) {
+        Optional<String> malformed = malformed(raw.source(), origin).or(() -> malformed(raw.target(), origin));
+        if (malformed.isPresent()) {
+            return malformed.get();
+        }
         Optional<PackQualifiedReference> source = reference(raw.source());
         Optional<Urn> sourceUrn = source.flatMap(PackQualifiedReference::asUrn);
         if (sourceUrn.isEmpty()) {
@@ -277,6 +281,22 @@ public final class GraphBinding {
     }
 
     /** The endpoint text split by {@link PackQualifiedReference}; empty when its qualifier is malformed. */
+    /**
+     * The finding for an endpoint written as a pack-qualified reference that does not parse, a pack name that is no
+     * pack id among them (#582), with the parser's reason, so the refusal says what a reference must be.
+     */
+    private static Optional<String> malformed(String text, String origin) {
+        if (!text.contains("::")) {
+            return Optional.empty();
+        }
+        try {
+            PackQualifiedReference.parse(text);
+            return Optional.empty();
+        } catch (IllegalArgumentException refused) {
+            return Optional.of(origin + ": edge endpoint is not a reference: " + refused.getMessage());
+        }
+    }
+
     private static Optional<PackQualifiedReference> reference(String text) {
         try {
             return Optional.of(PackQualifiedReference.parse(text));

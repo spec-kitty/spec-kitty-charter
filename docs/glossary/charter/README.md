@@ -623,7 +623,7 @@ The ULID a pack declares as `pack_id` in `pack.yaml`; `parent_pack`, `depends_on
 
 ## Pack name
 
-The `name` in `pack.yaml`, matching `^[a-z0-9][a-z0-9_-]*$`. It is the `<pack-name>` qualifier of a cross-pack reference, not an identity: unique across a compose without exception (`pack_name_conflict`), and distinct from both the configured pack id and the descriptor pack id.
+The `name` in `pack.yaml`, a pack id: a kebab slug of at most 63 characters (`^[a-z0-9]+(-[a-z0-9]+)*$`, #582). It is the `<pack-name>` qualifier of a cross-pack reference, not an identity: unique across a compose without exception (`pack_name_conflict`), and distinct from both the configured pack id and the descriptor pack id.
 
 **Meta:**
 

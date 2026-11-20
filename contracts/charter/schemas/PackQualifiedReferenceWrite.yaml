@@ -2,10 +2,11 @@ title: PackQualifiedReferenceWrite
 description: >-
   A PackQualifiedReference as a request writes it: the same grammar, at most 255 characters as written, the qualifier
   included (#443). Only requests carry this cap; a reference a pack writes and a response answers is a
-  PackQualifiedReference, which the pack schemas do not cap.
+  PackQualifiedReference, which the pack schemas do not cap. The pack name is a pack id of at most 63 characters, as
+  in PackQualifiedReference; the pattern cannot cap it, so a longer one is refused 422 validation_failed (#582).
 type: string
 maxLength: 255
-pattern: '^([a-z0-9][a-z0-9_-]*::)?[a-z_]+:.+$'
+pattern: '^([a-z0-9]+(-[a-z0-9]+)*::)?[a-z_]+:.+$'
 x-source:
   path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipWire.java
   symbol: RelationshipWire.MAX_ENDPOINT_LENGTH

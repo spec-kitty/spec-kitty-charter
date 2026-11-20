@@ -43,12 +43,12 @@ public final class KindRef<K extends Kind> {
     /**
      * The same reference, qualified by the pack that holds the node.
      *
-     * @param packName the pack name, in the pack-name grammar
+     * @param packName the pack name, a pack id
      * @return the qualified reference
      */
     public KindRef<K> inPack(String packName) {
         if (!PackQualifiedReference.isPackName(packName)) {
-            throw new IllegalArgumentException("pack follows the pack-name grammar: " + packName);
+            throw new IllegalArgumentException(PackQualifiedReference.refusal(packName));
         }
         return new KindRef<>(urn, Optional.of(packName));
     }

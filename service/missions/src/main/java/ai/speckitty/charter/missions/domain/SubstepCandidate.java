@@ -1,5 +1,6 @@
 package ai.speckitty.charter.missions.domain;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -47,8 +48,7 @@ public record SubstepCandidate(Optional<String> packName, String id) {
                     text -> ID.matcher(text).matches()));
     private static final ModularRuleset<String> PACK_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A substep delegation candidate names its pack as " + PackQualifiedReference.PACK_NAME_GRAMMAR
-                            + ".",
+                    "A substep delegation candidate names its pack by a pack id. " + PackIdentifier.GRAMMAR_DETAIL,
                     PackQualifiedReference::isPackName));
 
     /**

@@ -15,6 +15,25 @@ import org.junit.jupiter.api.Test;
 class GuardTest {
 
     @Test
+    @DisplayName("an asset-backed spelling qualifies with a pack id, at most 63 characters (#582)")
+    void anAssetQualifierIsAPackId() {
+        String atCap = "p".repeat(PackIdentifier.MAX_LENGTH);
+
+        assertThat(GuardImplementation.parse("a-b::asset:x"))
+                .isEqualTo(new GuardImplementation.AssetBacked(Optional.of("a-b"), "x"));
+        assertThat(GuardImplementation.parse(atCap + "::asset:x"))
+                .isEqualTo(new GuardImplementation.AssetBacked(Optional.of(atCap), "x"));
+        for (String refused : List.of("a_b::asset:x", "a--b::asset:x", atCap + "p::asset:x")) {
+            assertThatThrownBy(() -> GuardImplementation.parse(refused))
+                    .as(refused)
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+        assertThatThrownBy(() -> new GuardImplementation.AssetBacked(Optional.of("a-"), "x"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
+    }
+
+    @Test
     @DisplayName("implemented_by reads a built-in, a bare asset or a pack-qualified asset, and writes it back the same")
     void implementationSpellingsRoundTrip() {
         for (String spelling : List.of("builtin:review-approved", "asset:qa-traceability-lint", "qa::asset:lint")) {

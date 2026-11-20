@@ -186,7 +186,7 @@
         "candidates": {
           "items": {
             "type": "string",
-            "pattern": "^([a-z0-9][a-z0-9_-]*::)?[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
           },
           "minItems": 1,
           "title": "Candidates",
