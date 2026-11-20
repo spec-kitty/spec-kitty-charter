@@ -9,11 +9,369 @@ here too.
 A contract change does not edit this file: it adds a fragment under `changes/`, which the release
 pull request assembles into the top version section (`changes/README.md`, ADR-0047).
 
-## 0.2.0-SNAPSHOT
+## 0.2.0-rc.3
 
-The work toward the next candidate (`0.2.0-rc.3`) or the final `0.2.0`, after the release candidate
-`0.2.0-rc.2`. What changes is recorded in the fragments under `changes/`, assembled here at
-release; the `### Breaking` of `0.2.0-rc.1` already lists what the 0.2 line breaks.
+The third release candidate, cut together with the second service release candidate, `0.1.0-rc.2`, so
+that the service bundles a published contract (operator ruling, 2026-11-20). It collects the changes made
+since `0.2.0-rc.2`. The `### Breaking` below lists what breaks against `0.2.0-rc.2`; a consumer that
+moves its pin from that candidate applies them in the same change.
+
+### Breaking
+
+- A tension is a relation of its own, `tension`, and it is answered where the graph is (#602, ADR-0045, rulings G1 to
+  G3). Each item names what core's seam regenerates or changes:
+  - `Relation` gains `tension`, so every schema that carries it does: `EffectiveGraphEdge`, `ReferencedArtifact`, the
+    governance entries and `RelationRow` of `getKindTaxonomy`, whose tension row is now `tension` (it was the
+    `in_tension_with` row, held as a `Tension`). Regenerate the client's `Relation` enum.
+  - The pack schemas no longer read `in_tension_with`: a pack file that writes it is refused at load (unknown
+    relation), and `putPackRelationship` refuses it `422 validation_failed` with `relationship_type_unknown`. Packs
+    write `tension` (spec-kitty-open-packs #316).
+  - A pack whose graph documents write a tension twice, against its stored orientation, or from an artifact to itself
+    is refused at load with `tension_duplicated`, `tension_orientation` or `tension_self` (new codes of
+    `validation_failed`). The stored orientation: the side the pack holds is the source; when it holds both, or
+    neither, the smaller bare URN.
+  - `EffectiveGraphEdge` gains `when`, `reason` and `reconciledBy` on a tension edge, and only there; a tension edge
+    always carries `reconciledBy`. The graph's tension edges are the tensions in force, each once, from the smaller
+    URN.
+  - `EffectiveActionContext` gains the required `tensions`: the tensions in force whose two sides the context lists in
+    force. A client with a closed schema reads the new member.
+  - The effective-read entity tag's domain moves to `v4`: every effective read's tag changes once for unchanged inputs,
+    so a stored `If-None-Match` from before answers `200`.
+  - The `governanceFingerprint` text of `EffectiveGraph` and `EffectiveActionContext` now says what both reads answered
+    already, the closure digest (not `ServiceInfo.sourceFingerprint`); no value changes.
+
+- A pack is removed whole, its writes have a dry run, and a replacement moves its version forward (#517, ADR-0081,
+  amending ADR-0065 D2, D4 and D9):
+  - **The version order.** `registerPackFromArchive` and `registerPackFromSource` refuse a replacement whose
+    `pack_version` is not newer than the stored pack's by PEP 440 precedence, the same version included, with
+    `409 pack_version_conflict` (the problem of a refused status); before, any version replaced, an older one included.
+    Sending the stored content is still `unchanged`. `PackRegistration` gains `previousVersion`, the version a replace
+    moved from. The version history matches labels by PEP 440 equality, so `1.1` and `1.1.0` are one label.
+  - **`deletePack`.** `DELETE /packs/{packId}` removes a registered org or project pack whole and answers `204`. It
+    requires `If-Match` (`428`, `412`, `*` accepted), answers `404 pack_not_found` for a pack that is not there,
+    `409 registration_conflict` for a built-in, read-only or linked pack, the new `409 pack_has_dependents` while a pack
+    (`depends_on`, `parent_pack`), an activation that names it, or another pack's artifact depends on it, and `422`
+    when a closure that holds it no longer composes without it. It keeps the version history.
+  - **Dry runs.** `?dryRun=true` (`parameters/DryRun.yaml`) on `deletePack`, `registerPackFromArchive` and
+    `registerPackFromSource` judges the write and writes nothing. `deletePack` answers `200` with the new `PackImpact`;
+    a registration's job ends with `dryRun: true` in its result.
+- Core's seam: a client that registered an older `pack_version` over a newer one now reads `409`; publish the content
+  under a newer version, or delete the pack first. A client that removes a pack calls `deletePack`; one that wants to
+  know first sends `dryRun=true`.
+
+- An activation pin's `packId` (`PackPin`, in `ActivationConfig.schema.json` and its mirror `PackPin.yaml`) follows
+  the pack id grammar: a kebab slug of at most 63 characters, `^[a-z0-9]+(-[a-z0-9]+)*$` (ADR-0075 decision 2; #583,
+  FR-011). It was the URN segment `Slug`, which also allows `_` and 64 characters. No registered pack carries such an
+  id, so a pin naming one could never be configured: the write was refused `422 activation_invalid` when the pin was
+  used. It is now refused by the schema, at validation (`422 activation_invalid` as before). The unused `Slug` entry
+  of the offering schema's `$defs` is removed. Core's seam: a pin is written with the registered pack id, as the pack
+  registry names it. Corpus documents added: `invalid/20-pack-id-underscore.json` and
+  `invalid/21-pack-id-sixty-four-characters.json`.
+
+- A pack holds no symbolic link below its root (#597, rulings D1 and D6 of #478). A link inside a pack, to a file, a
+  directory or nothing, is never read through, and is refused with the new violation code `pack_entry_linked`
+  (`validation_failed`, `422`), one violation per link at the link's pack-relative path, in the words
+  `<path>: is a symbolic link; a pack holds no links`:
+  - a registration of a staged tree holding a link is refused, and nothing is stored (#597's probe registered such a
+    tree `CREATED`, with no diagnostic);
+  - validate mode reports the same violation;
+  - the service's load of a pack in a configured directory refuses a pack holding a link: the composing read answers
+    `pack_unreadable` naming the link, as for another fault of the pack's content.
+
+  The pack root itself may still be a link. Hard links and Windows junctions are not symbolic links and are out of
+  this rule.
+- Core's seam: a client that registered, validated or configured a pack holding a link now reads the refusal above;
+  remove the link from the pack and put the file it led to in its place.
+
+- The routing catalog kind (ADR-0080 decision 5 and its amendment, #108). `NodeKind` gains `routing_catalog`, so
+  `NodeReference`, `EffectiveGraphNode` and `PackGovernanceEntry` may carry it: an activation holds a catalog, layers
+  it and reports its same-id override, though no graph declares one and no edge names one. A guard and a lifecycle
+  stay unlisted.
+- The kind joins every closed kind enum: `ActivatableKind`, `ArtifactKindToken`, `TaxonomyKind` and `CascadeKind` gain
+  `routing_catalog`, so `?kind=routing_catalog` filters `listPackArtifacts` and `listEffectiveArtifacts`, and
+  `Artifact` gains the member `routingCatalog` (`RoutingCatalog`), which only the catalog's own literal reads answer.
+- An activation selects and denies catalogs: `SelectedArtifacts` and `DeactivatedArtifacts` gain `routing_catalog`, and
+  `Preset` gains `activatedRoutingCatalogs` (`activated_routing_catalogs` in the file), which a preset's `must_have`
+  can require.
+- Four catalog reads (ADR-0080 decision 6): `listPackRoutingCatalogs` and `getPackRoutingCatalog` (tag
+  `RoutingCatalogs`), and `listEffectiveRoutingCatalogs` and `getEffectiveRoutingCatalog` (tag
+  `EffectiveRoutingCatalogs`), with the schemas `RoutingCatalog` and its parts, `RoutingCatalogSummary`,
+  `RoutingCatalogList` and `EffectiveRoutingCatalogRead`. A score, a weight and a price are exact decimals on the wire,
+  in plain notation with trailing zeros stripped.
+- The model recommendation (ADR-0080 decisions 7 to 13): `getModelRecommendation`,
+  `GET /activations/{activationId}/task-types/{taskType}/model-recommendation?agentProfile=&missionType=&step=&modelTier=`
+  (tag `ModelRecommendations`), answering `ModelRecommendation` with its `ModelRecommendationCatalog`,
+  `ModelRecommendationTier` and `ModelRecommendationCandidate`s, an `EffectiveETag` and `304`. It is advisory and
+  deterministic.
+- Three refusal codes in `CharterRefusalCode`: `routing_catalog_not_in_force` (409), `routing_catalog_conflict` (409,
+  naming the ids in force) and `task_type_not_found` (404), all raised by `getModelRecommendation`.
+- `MissionStep` gains `modelTier` (`CostTier`, new: `low`, `medium`, `high`, `premium`), the tier of model a step
+  advises.
+- The link relations `routing-catalogs` (on the activation), `catalog`, `agent-profile` and `step` join the relation
+  table and `link-relations-are-known`.
+- Core's seam (DIV-701 to DIV-707):
+  - regenerate the DTOs; handle `routing_catalog` wherever a kind enum or a `NodeKind` is switched on; map the three
+    refusal codes;
+  - replace `charter.model_routing.load` and `evaluate` with the activation's `getModelRecommendation`: the catalog is
+    read under the activation, never loaded from a file by core, and the profile is named by id (`agentProfile`), not
+    passed as an object;
+  - choose among the candidates: the answer is zero or more catalog candidates, every tied model among them and none
+    filtered by a tier, each flagged `withinTierConstraint` and `withinModelTier`, then the profile's model, where core
+    took one pick; a client that honors the tiers takes the candidates flagged inside them;
+  - read the step's tier as `model_tier` (`modelTier`), a cost tier, in place of the free-string
+    `recommended_model_tier`, and pass a runtime override as `modelTier`; the resolution's `source` is `step` or
+    `request`, in place of `offer` or `override`;
+  - treat `404 task_type_not_found` where core answered no candidate, and honor the `ETag` and `304`;
+  - migrate the seed catalog to the pack file: an `id`, no `schema_version`, `source_snapshot`, `override_policy` or
+    `freshness_policy`, and the content rules the registration judges (declared task types, no duplicates, an ISO-8601
+    `generated_at`).
+
+- One reference closure judges every path (#355, ADR-0042 decision 7 as amended). A guard that names an asset the pack
+  does not hold, an asset with no executable block or of another pack, an invalid `config_schema`, a lifecycle that
+  names a missing guard or another pack's guard, a `config` its guard's schema does not fit or has no schema for, and
+  a mission type whose template is missing were left out at load with `artifact_schema_error` while registration
+  accepted the pack. Now:
+  - `PUT /packs` (whole-pack registration) refuses such a pack: one `artifact_schema_error` at the file, in the
+    load's words, among the pack's other faults in the order the load records them.
+  - Validate mode reports the same finding, an error, in the same words and order.
+  - A per-file write or removal that would leave a pack that does not close is refused with `409
+    registration_conflict` and the load's reason, before anything is staged; removing an asset a guard names is
+    refused, not cascaded. No route reaches this yet: the routes that write or remove assets, guards, lifecycles or
+    templates (work-breakdown item 13) must declare the `409`.
+  - The load and the whole-pack write answer as before. No refusal code is added.
+- Core's seam: a client that registered a pack with a dangling guard, lifecycle, asset or template reference, or read
+  validate mode as clean for it, now reads the refusal above; fix the reference in the pack.
+
+- A per-file write or removal is judged on the whole pack it leaves (#605, operator ruling of 2026-11-18). The `PUT`,
+  `POST` and `DELETE` routes under `/packs/{packId}/artifacts` and `/packs/{packId}/relationships` judged a write only
+  on the rules each route states. For example, a `DELETE` of a step enhancement's one registered `enhances` edge
+  answered `204` and left a pack that every read then refused. Now:
+  - The commit store reads the copy it would swap in with the registration's full read. A write that would add a
+    violation the stored pack does not already hold is refused `422 validation_failed`, one violation per new fault at
+    its file, in the registration's words, and nothing is written. Each of these routes already declares `422
+    validation_failed` for a write that breaks a pack invariant or schema, or whose resulting pack does not revalidate.
+  - A fault the stored pack already held does not block a write. A fault of the copy is taken as held when the stored
+    pack has one of the same code at the same file, one for one, first in the same words and then in any words. So a
+    write that adds a fault is refused. A write that removes one fault and adds another of the same code at the same
+    file is not: the pack holds no more faults there than it did.
+  - `deletePackRelationship`'s description no longer says that removing a step enhancement's only registered
+    `enhances` edge answers `500 pack_unreadable`: it is the `422` above, at the enhancement's file. A violation's
+    `pointer` (`RefusalViolation`, `Problem.violations`) is a pack file on this refusal, as on a registration.
+  - No refusal code is added.
+- Core's seam: a client that wrote or removed an artifact or relationship that left the pack invalid, and read `200`,
+  `201` or `204`, now reads the `422`; fix the pack, or register it whole.
+
+- Only the distribution pack settles a sibling contest (#358, ADR-0048 decisions 8, 9 and 12, operator ruling (a) of
+  2026-11-17, refined on 2026-11-18). The distribution pack is derived, not declared: for a contest at a level, it is
+  the pack that depends on every contestant (over `depends_on` and `parent_pack`), that is not one of them, and that no
+  pack of the contest's level depends on. A dependent at another level does not count. Before this change, any pack of the
+  compose could settle a contest with an `overrides` entry, a contestant included. Now:
+  - An `overrides` entry that names a contestant is refused `pack_sibling_conflict` when any other pack declares it:
+    a member, a contestant, or a pack that does not depend on every contestant. This holds even beside the
+    distribution pack's entry. The detail names the declaring pack, and `packs` lists it first.
+  - Two distribution packs that both settle one contested artifact are refused `pack_sibling_conflict`, naming both
+    first, even when they name the same winner. This answers the question data-model.md left open, "two distribution
+    packs". The detail wording "overrides edges settling it name different winners" is gone: this refusal replaces
+    it.
+  - The refusal is the same on every path that composes: `GET /offering`, the activation reads, and the closures that a
+    whole-pack registration (`PUT /packs`) or a per-file write judges. The layer merge settles through the same rule,
+    so a step contest whose entry comes from a pack that is not the distribution pack is refused at read, naming that
+    pack.
+  - A step `action:<M>/<step>` that two or more packs of a level hold, where two or more packs of that level hold `M`,
+    is settled by `M`'s settlement: it is in force only from the pack whose `M` won. When that pack does not hold the
+    step, the level holds no copy of it, and a copy at another level, if any, wins. Before, the merge refused such a
+    step contest although the compose served it. A step only one pack of the level holds keeps its place (DIV-243).
+  - No refusal code, field or status is added.
+- Core's seam: a set of packs that settled a contest from a member, a contestant or an unrelated pack is now refused.
+  So is one where two packs settle the same contest. Move the `overrides` entry to the one pack that depends on both
+  contestants and that no pack of their level depends on.
+
+- Validate mode (`pack-validation`'s `PackCheck`, the pack doctor's check) judges the one read of the pack that the
+  registration judges, so it answers the faults only the registration answered before (#554, operator rulings R2 and
+  S6; R2 rows 24, 29 and 30 in `docs/development/notes/pack-code-unification.md`):
+  - A pack with no `pack.yaml` is refused: one `pack_unreadable` finding at `pack.yaml`, `pack <name> has no
+    pack.yaml`, first among the pack's findings (row 24). Core reports nothing for a missing descriptor: DIV-028.
+  - A manifest that lists a file the pack does not hold, or leaves out one it holds, is `manifest_membership` at the
+    manifest, in the registration's words, when nothing else of the pack is a violation (row 29).
+  - A manifest that is not a regular file is `unreadable`, `<manifest>: the manifest is not a regular file` (row 30).
+- Core's seam: a client of the pack doctor that treated a pack without `pack.yaml` as valid reads the refusal above.
+
+- A registration of a pack whose `pack.yaml` is missing or cannot be read answers every fault of the pack, not that
+  one refusal (#554, operator ruling S8; R2 rows 22 to 24). The descriptor's `pack_unreadable` at `pack.yaml` follows
+  the graph faults and comes before the pack's other faults (validate mode lists it first, before the graph faults,
+  so the two surfaces order a missing descriptor's fault differently), and the problem `detail` is the one of every
+  refused registration, `The pack cannot be registered: N fault(s), the first at <file>.`, where it was `The pack
+  cannot be registered: <the descriptor's fault>`. Validate mode answered the same faults already. 38 golden rows change: every
+  planted pack without a `pack.yaml`, and `c9-pack-version-missing-at-the-org-level`,
+  `control-retired-pack-key-is-a-warning`, `control-unknown-pack-key-is-a-warning` and `pack-yaml-tilde-is-null`.
+- The faults only the store's assembly met are faults of the one read, so registration and validate mode answer each
+  once, in one wording (#554, A-M1; R2 rows 16 to 19 and 32):
+  - Validate mode now answers a template read twice (`duplicate_artifact_id`), a value-object breach and a reference
+    that does not close (`artifact_schema_error`), as the registration does (rows 16 to 18).
+  - A policy file that `mutability_policy` names and that is missing or cannot be read is `unreadable`, `<file>: named
+    by mutability_policy, the file is missing` or `the file cannot be read: <why>`, on both surfaces; validate mode
+    answered nothing for a missing one and the policy file's own parse or schema fault for a broken one (row 32).
+  - A prompt fragment that cannot be read (blank, with frontmatter, a codec fault) is one `prompt_fragment_invalid` at
+    the step enhancement that names it, as `prompt-fragment-refusals.feature` pins; validate mode answered it at the
+    fragment, a fault per finding (row 19). One exception: when the store refuses the enhancement itself (its id is
+    not its file stem, or it breaks its schema), it reads none of its fragments, and a fragment that cannot be read is
+    answered at the fragment, one fault per finding, beside the enhancement's own fault.
+  - Any other companion (a guide, a skill body, a step prompt) is answered at the companion's own file, as validate
+    mode answered it: in the reader's code and words when the reader reads it (`companion` for a file that does not
+    parse, `artifact_schema_error` for one that breaks its structure schema), and `companion`, `<companion>: missing`
+    or `<companion>: is not valid UTF-8`, when only the store meets it. The registration answered each at the artifact
+    that names it, `companion`, `<artifact>: <companion path>: <why>` (row 19).
+  - A graph edge that joins an artifact to itself through the pack's own name is `unreadable` at pointer `pack` on both
+    surfaces; validate mode answered nothing.
+- The read faults at `pack-manifest.yaml` and at the named policy file are listed after the pack's rule faults and
+  before its orphan prompt fragments, as the registration listed them (WP07 review MINOR-3).
+
+- Validate mode (`pack-validation`'s `PackCheck`, the pack doctor's check) answers each fault with the code and the
+  wording the registration answers for it (#554, operator ruling R2, the R2 table in
+  `docs/development/notes/pack-code-unification.md`). Its findings change as follows (old → new):
+  - A detail names the file pack-relative and no longer opens with the pack's name: `qa/tactics/a.tactic.yaml: 'role'
+    does not match its pattern` becomes `tactics/a.tactic.yaml: 'role' does not match its pattern`, for every schema,
+    graph, endpoint, mission-step, substep-delegation and prompt-fragment finding (rows 2, 4 to 8 and 20). The
+    descriptor's findings keep `pack.yaml of qa`.
+  - An artifact file that is not YAML or not UTF-8: `artifact_schema_error`, `qa/<file> is not valid YAML: <why>` →
+    `unreadable`, `<file>: <why>` (row 1).
+  - A glossary context whose id is not its file stem: `'id' has an unsupported value 'b'` → `glossary id 'b' is not its
+    file stem 'a'`, the store's words; a misnamed artifact, a misnamed preset and a manifest preset entry at the wrong
+    path read the same way (rows 3 and 31).
+  - A retired file: `artifact_schema_error`, `qa/<file> is retired: <why>` → `retired`, `<file>: <why>` (row 11).
+  - An asset sidecar whose payload is missing: `artifact_schema_error` → `asset`, `<file>: payload <path> does not
+    exist` (row 12).
+  - An asset path that escapes `assets/`: the two findings `artifact_schema_error` and `asset_path_escape` → one
+    `asset`, `<file>: asset path '<p>' escapes the pack's assets/ root` (row 13). The code `asset_path_escape` is no
+    longer answered.
+  - A slot that holds text in a pack whose descriptor declares no `schema_version`: the warning
+    `prompt_slot_not_empty_unversioned` → the warning `prompt_slot_not_empty`, the registration's diagnostic (row 21).
+  - A Markdown companion that does not parse, is not UTF-8 or breaks its kind's own rule (a guide with no `##
+    Overview`): `artifact_schema_error`, `qa/<file> is not valid Markdown: <why>` → `companion`, `<file>: <why>`, the
+    registration's code (row 19). A step enhancement's prompt fragment keeps `prompt_fragment_invalid`.
+  - A `registered.graph.yaml` no registration wrote: `drg_schema_error` → `reserved_shard`, in the registration's words
+    (row 28).
+  - A `pack.yaml` that is not YAML: `pack.yaml of qa is not valid YAML` → `pack.yaml of qa is not valid YAML: <parser
+    line>` (row 23, open case 5).
+  - A finding's severity is the kernel's: `blocking` is spelled `violation`.
+- Core's seam: a client of the pack doctor that matched `asset_path_escape`, `prompt_slot_not_empty_unversioned` or
+  `artifact_schema_error` for a parse failure, a retired file or an asset payload reads the codes above.
+
+- A file no pack file kind models is not refused at registration and is not held (#554, operator ruling Q1). Pack
+  authors may keep docs and reference files beside the pack content that do not affect the service, so such a file,
+  Markdown or not (`notes.txt`, a `LICENSE`, a spreadsheet, a stray `charter.yaml` or a shard under `drg/` the service
+  does not read), is warned about, then ignored. The registration removes it from the staged tree before it computes
+  the revision and commits, as it removes an excluded file (#451), so the stored pack and its revision are those of
+  the pack without it, and the round trip never sees it. The answer's `diagnostics` report it as a `file_not_held`
+  warning whose `detail` names the file and the reason: `notes.txt: not held (no pack file kind models this file)`.
+  The files not held are one path-sorted list, excluded and unmodelled files merged, after the load's own warnings.
+  The violation code `unmodelled` is no longer answered; a retired file is still refused as `retired`, and an orphan
+  prompt fragment as `prompt_fragment_invalid`. A pack whose only other fault was such a file is now judged on its
+  manifest, so an uploaded `pack-manifest.yaml` whose lists differ from the pack is refused as `manifest_membership`
+  where the refusal used to name only the unmodelled file. Core's seam: a registration that used to answer `422
+  validation_failed` with an `unmodelled` violation now answers a 2xx with a `file_not_held` warning; a client that
+  matched `unmodelled` drops it and reads `file_not_held` to learn what was left out.
+
+- A refused registration (`422 validation_failed`) names each fault of the pack by its specific code, in the one
+  wording validate mode uses for the same fault (#554, operator ruling R2, the R2 table in
+  `docs/development/notes/pack-code-unification.md`). A detail names the file pack-relative and is never prefixed with
+  the pack's name. The violation codes change as follows (old → new):
+  - `schema` → `artifact_schema_error` for an artifact file that breaks its schema or a rule of its kind (a file stem,
+    a preset entry's path in the manifest), and the detail names the key in validate mode's words: `pattern violated at
+    /role` becomes `'role' does not match its pattern`, `required violated at the document` becomes `missing
+    'explicit_allowances'`, `additionalProperties violated at /x: undeclared key 'k'` becomes `unknown key 'k'` (rows 2,
+    3 and 31). A graph document's faults keep `drg_schema_error` and take the same vocabulary: `edge endpoint 'X' is not
+    a URN`, `node directive:X declares kind 'tactic'`, `node x has unknown kind 'mission_type'` (row 4). A schema fault
+    is one violation per fault, and two identical faults at one place are one.
+  - `domain` → `artifact_schema_error`, at the artifact's file, not at its id (row 17).
+  - `reference` → `artifact_schema_error`, for an artifact that names a file, a template or a guard reference the pack
+    does not hold (row 18; the kept code is checked against a plant of its own before the slice lands, open case 4).
+  - `template` → `duplicate_artifact_id`, for a template read twice; the detail is unchanged (row 16).
+  - A repeated artifact id was the aggregate's `validation_failed` at pointer `pack` (`Constraint breached: A pack must
+    not hold two tactics with the same identifier.`); it is now `duplicate_artifact_id` at the second file, `<file>:
+    tactic id 'same' is already declared in <first file>` (row 10). The composing read answers the same fault as `500
+    pack_unreadable` naming the file, where it answered a 500 with no detail (operator ruling S5).
+  - A `pack.yaml` that is missing, is not YAML or breaks its schema is still `pack_unreadable`, now at pointer
+    `pack.yaml` instead of `pack`, in validate mode's words: `pack.yaml of qa: unknown key 'mystery'`, `pack.yaml of qa
+    has no pack_version`, `pack.yaml of qa is not valid YAML: <parser line>` and `pack qa has no pack.yaml` (rows 22 to
+    24). The refusal's `detail` and the composing read's `pack_unreadable` detail carry the same wording.
+  - A violation code is always a typed code's token: the `invalid` fallback for a kind that was no snake-case token is
+    gone (row 27).
+- A composing read's `500 pack_unreadable` detail embeds the fault's new wording (`the file <f> of qa cannot be read:
+  'role' does not match its pattern`); its code and its choice of fault are unchanged.
+- Core's seam: a client that matched `schema`, `domain`, `reference`, `template` or `invalid` reads the codes above; a
+  client that read the pack's descriptor fault at pointer `pack` reads it at `pack.yaml`.
+- Scenarios rewritten (10): `registration/whole-pack-registration.feature` (the retired `active_charter` key: pointer
+  `pack.yaml`, `unknown key 'active_charter'`), `prompt-fragment-refusals.feature` (four step enhancements that break
+  their schema or stem: `artifact_schema_error`), `offering.feature` (an agent profile's role pattern, in the composing
+  read's detail) and `pack-id-length.feature` (four over-long values, in the composing read's detail: `'/id' breaks
+  schema keyword 'maxLength'`, the fixed fallback of a keyword the vocabulary has no row for).
+
+- A registration (`PUT` of a whole pack, an archive or a source) now refuses, as validate mode already does, the
+  repeated asset id and the format checks of the one read (#554, operator ruling S2; R2 rows 14, 15 and 38 in
+  `docs/development/notes/pack-code-unification.md`). Each is a violation of the `422 validation_failed` refusal at
+  its file, in validate mode's words:
+  - `duplicate_artifact_id` at the second asset sidecar that declares an id (row 15);
+  - `requires_core_invalid`, `pack_version_invalid` and `dependency_range_invalid` at `pack.yaml`, for a
+    `requires_core`, a `pack_version` or a `depends_on` range that is not PEP 440 (row 38);
+  - `asset_mime_invalid` at the sidecar, for an asset `mime` that is not `type/subtype` or differs from the type its
+    extension implies (row 14).
+
+  A pack registered before with such a format answered `200`; it is now refused. Golden rows:
+  `asset-mime-does-not-match-the-extension`, `asset-mime-malformed`, `asset-repeated-id-only-the-first-owner-is-checked`
+  and `asset-repeated-id-the-first-owner-escapes` (each bare and `+pack.yaml`) and `requires-core-invalid`.
+- The composing read keeps serving a stored pack with those formats (operator ruling S4): it reads the store half of
+  the one read, which never judges them, so its answers are unchanged.
+- Scenarios added: `assets.feature` (registration of a sidecar with a malformed mime is refused `asset_mime_invalid`,
+  while a stored one keeps composing) and `registration/whole-pack-registration.feature` (one per S2 code).
+
+### Added
+
+- `getActivationTensions`, `GET /activations/{activationId}/tensions` (#602, ADR-0045 decisions 11 and 12): every
+  tension the activation puts in force (`ActivationTensions.tensions`, each a `ContextTension`) and one
+  `unreconciled_tension` finding (`TensionFinding`) per tension no artifact in force reconciles. A finding offers
+  `reconcile` always and `deactivate_one_side` when the exclusion write would accept a side; it links
+  `effective-source` and `effective-target`, and `exclude-source` or `exclude-target` (a concrete `PUT`) for each side
+  that write accepts. A finding never refuses. The read has its own entity tag, never the skipped report's. The
+  `Activation` answer links it as `tensions`; the relations `tensions`, `effective-source`, `effective-target`,
+  `exclude-source` and `exclude-target` join the relation table. New schemas: `ActivationTensions`, `TensionFinding`,
+  `ContextTension`, `TensionCondition`, `TensionReason`, `TensionReconcilers`.
+
+- `PackCheckReport` (`schemas/PackCheckReport.yaml`): what the `pack-check` CLI writes on standard output, the checks
+  that ran, the packs checked, a skipped check and the problems (issue #478, ADR-0075 decision 9). No operation serves
+  it, so it is in no bundle and generates no DTO. Its problems are `Problem`s with the codes, titles, statuses and
+  details the registration (`getPackRegistration`) answers for the same fault. The round trip, which the
+  registration does not run, has its own lead sentence, its violations in the registration's wording. A pack's problems
+  carry the `file:` URI of the pack's directory as their `instance`.
+
+### Changed
+
+- A registered relationship may be a tension (#602, ADR-0045 decisions 1 and 5). `putPackRelationship` accepts
+  `type: tension`, whose `from` may name another pack's artifact; it stores the tension in its stored orientation and
+  answers it as written. A tension and the structural relationship of the same pair are two slots: each answers `201`
+  when new and `200` when it replaces the edge of its own slot. A tension the pack's own graph documents already join
+  is `422 validation_failed` with `tension_duplicated` at `/to`. `deletePackRelationship` takes an optional `relation`:
+  given, it removes only the registered edge of that relation on the pair (`404 relationship_not_found` when there is
+  none); absent, every registered edge of the pair, and a pair with an author-written edge of either class is `409
+  relationship_not_registered`, whose detail tells the client to pass `relation`. A whole-pack registration keeps a
+  pack's tensions, judged on each side by the write policy.
+
+- The `packId` path parameter (`PackId.yaml`) is described as the id the Charter Pack is registered under: the name
+  the service's pack registry gives it, a kebab slug of at most 63 characters (ADR-0075 decision 2; #583, FR-012). It
+  said "the identity of the Charter Pack, as the pack declares it", which read as the `pack.yaml`'s `pack_id` (a ULID
+  the parameter's own pattern refuses). Wording only: the schema, the pattern and every answer are unchanged.
+
+- The `offering.feature` scenario "The packs are ordered by configured level, then by pack id in code-point order"
+  configures its packs under pack ids (#583, FR-010). It configured `Zeta`, `Omega` and `Kilo`, which are no pack ids:
+  the service now refuses such a directory on read (`pack_id_invalid`), so it would never be offered. They are
+  `a-zeta`, `b-zulu` and `c-kilo`, and the scenario shows that a hyphen sorts before a letter by code point. The
+  `Offering` schema and `getOffering` descriptions say "a-zeta comes before alpha". The order rule is unchanged.
+
+- `artifact_referenced` names every referring pack by the id it is registered under, in each violation's `pointer`
+  (`<packId>/<referrer>`) and in `packs[].packId`, a pack the registration stages included (#583, FR-008). The inbound
+  scan named a staged pack the registry does not hold yet by its descriptor `name`, which may hold `_` and so is no
+  pack id a client can address; it now names it by the id the upload targets. No answer the service gives changes
+  today: a registration runs the scan only when it replaces a stored pack, whose id it already named.
 
 ## 0.2.0-rc.2
 

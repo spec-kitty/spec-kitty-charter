@@ -14,11 +14,11 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 `contracts/packs/README.md` ("Releasing the packs contract") has the procedure, and
 `docs/guides/pin-the-packs-contract.md` how a consumer pins and checks a release.
 
-## 0.1.0-SNAPSHOT
+## 0.1.0-rc.2
 
-The work toward the next packs release, after the release candidate `0.1.0-rc.1`. That release is
-`0.1.0-rc.2` or the final `0.1.0`. The changes below break `0.1.0-rc.1`: a consumer pinned to
-`contract-packs-v0.1.0-rc.1` breaks when it moves its pin to that release, and must apply the
+The second release candidate, cut together with the charter contract `0.2.0-rc.3` and the service
+`0.1.0-rc.2` (operator ruling, 2026-11-20). The changes below break `0.1.0-rc.1`: a consumer pinned to
+`contract-packs-v0.1.0-rc.1` breaks when it moves its pin to this release, and must apply the
 `### Breaking` entries below in the same change.
 
 ### Breaking
