@@ -518,6 +518,29 @@ class PackCheckMainTest {
         }
     }
 
+    /** Error handling (PR #608 review L5): a failure while reading the arguments is an internal error, exit 2. */
+    @Test
+    void anInternalErrorWhileReadingTheArgumentsExitsTwoWithNothingOnStandardOutput() {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        int exit = PackCheckMain.run(
+                new String[] {"--help"},
+                new PrintStream(out, true, StandardCharsets.UTF_8),
+                new PrintStream(err, true, StandardCharsets.UTF_8),
+                temp,
+                new PackCheckMain.Composition(new FileSystemPackInspector(), PackRoundTrip::run),
+                args -> {
+                    throw new IllegalStateException("the parser broke on " + args[0]);
+                });
+
+        assertThat(exit).isEqualTo(PackCheckMain.FAILED);
+        assertThat(out.toString(StandardCharsets.UTF_8)).isEmpty();
+        assertThat(err.toString(StandardCharsets.UTF_8))
+                .startsWith("pack-check: internal error: java.lang.IllegalStateException: the parser broke on --help")
+                .contains("\tat ");
+    }
+
     /** Error handling: a reader that fails as no canonical pack makes it fail, an internal error of the run. */
     @Test
     void anInternalErrorExitsTwoWithNothingOnStandardOutput() {

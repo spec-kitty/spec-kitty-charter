@@ -24,6 +24,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 /**
  * The pack-check CLI (ADR-0075 decision 9, #478, FR-001, FR-006, T017): the composition root of the pack-set check.
@@ -141,9 +142,31 @@ public final class PackCheckMain {
      * @return the exit code
      */
     static int run(String[] args, PrintStream out, PrintStream err, Path temporary, Composition composition) {
+        return run(args, out, err, temporary, composition, Arguments::parse);
+    }
+
+    /**
+     * Runs pack-check with the given argument reader; the seam lets a test prove that a failure while reading the
+     * arguments exits {@link #FAILED}, never {@link #PROBLEMS} (PR #608 review L5).
+     *
+     * @param args the command line
+     * @param out where the report goes
+     * @param err where the usage, the warnings and the failures go
+     * @param temporary the directory the round trip's run directory is made in
+     * @param composition the reader and the round trip
+     * @param parser what reads the command line, {@link Arguments#parse} outside tests
+     * @return the exit code
+     */
+    static int run(
+            String[] args,
+            PrintStream out,
+            PrintStream err,
+            Path temporary,
+            Composition composition,
+            Function<String[], Outcome> parser) {
         Outcome outcome;
         try {
-            outcome = Arguments.parse(args);
+            outcome = parser.apply(args);
         } catch (RuntimeException failure) {
             // An internal error while reading the arguments exits FAILED too, never PROBLEMS (PR #608 review MEDIUM-B).
             err.println("pack-check: internal error: " + failure);
