@@ -31,6 +31,7 @@
   "purpose_context": "This mission advances pack name reference grammar on main so stakeholders can track the work from mission creation onward.",
   "purpose_tldr": "pack name reference grammar",
   "slug": "pack-name-reference-grammar-01M7X5QX",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "single_branch",
   "topology_decision": {
