@@ -27,8 +27,9 @@ if (providers.gradleProperty("charter.native").orNull == "true") {
             // every module is (charter.java-base), and an executable needs the main class, bootJar's.
             sharedLibrary = false
             mainClass = tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar").flatMap { it.mainClass }
-            // native-image's own heap: a Spring Boot web image needs several GB, and the macOS runner has 7 GB in all.
-            buildArgs.add("-J-Xmx5g")
+            // native-image's own heap: a Spring Boot web image needs several GB. A runner short of memory passes a
+            // smaller one with -Pcharter.nativeImageHeap (service-native.yml: the macOS runner has 7 GB in all).
+            buildArgs.add(providers.gradleProperty("charter.nativeImageHeap").orElse("5g").map { "-J-Xmx$it" })
         }
     }
 
