@@ -1,15 +1,15 @@
 {
   "rows": {
     "#440": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: NFR-001 keeps its rule (length checked before the match); no work owed",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "title": "Overlong ids and recursion: possessive repeats, length before match",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#549": {
