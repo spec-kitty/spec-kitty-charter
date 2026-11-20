@@ -467,12 +467,7 @@ public final class FileSystemPackInspector implements PackReading {
      * the storage edge builds for the value it is about.
      */
     private static Reason precheck(DescriptorChecks.Fault fault) {
-        ReasonCode code = switch (fault.check()) {
-            case REQUIRES_CORE -> StorageCodes.REQUIRES_CORE_INVALID;
-            case PACK_VERSION -> StorageCodes.PACK_VERSION_INVALID;
-            case DEPENDENCY_RANGE -> StorageCodes.DEPENDENCY_RANGE_INVALID;
-        };
-        return Findings.at(code, PackFileSet.PACK_YAML, fault.place(), fault.detail());
+        return Findings.at(StorageCodes.precheck(fault.check()), PackFileSet.PACK_YAML, fault.place(), fault.detail());
     }
 
     /**
