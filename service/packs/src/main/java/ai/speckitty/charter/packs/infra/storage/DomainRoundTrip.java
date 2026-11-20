@@ -181,11 +181,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     }
 
     @Override
-    public Map<String, Outcome> roundTrip(Path source, Path target, Map<String, String> kindOf) {
-        String name = String.valueOf(source.getFileName());
+    public Map<String, Outcome> roundTrip(String name, Path source, Path target, Map<String, String> kindOf) {
         if (!PackIdentifier.isPackId(name)) {
-            // The source directory's name is the registered id the round trip configures and loads under (D2b), so a
-            // name that is no pack id refuses every modelled file instead of posing as one.
+            // The name is the registered id the round trip configures and loads under (D2b), so a name that is no
+            // pack id refuses every modelled file instead of posing as one.
             return refusedAsNoPackId(name, kindOf);
         }
         PackIdentifier id = new PackIdentifier(name);

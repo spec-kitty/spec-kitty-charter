@@ -102,7 +102,7 @@ public final class RoundTripControls {
             }
 
             @Override
-            public Map<String, Outcome> roundTrip(Path from, Path to, Map<String, String> kindOf) {
+            public Map<String, Outcome> roundTrip(String name, Path from, Path to, Map<String, String> kindOf) {
                 return kindOf.keySet().stream().collect(Collectors.toMap(path -> path, Written::new));
             }
         };
