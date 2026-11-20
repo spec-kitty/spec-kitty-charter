@@ -268,6 +268,9 @@ final class Arguments {
                     + ", and " + value + " is not a directory; write " + PACK + " <dir>[:<level>]=<id>. "
                     + PackIdentifier.GRAMMAR_DETAIL);
         }
+        if (rest.isEmpty() && !plain.named()) {
+            return emptyDirectory(value);
+        }
         Given withId = levelled(rest);
         if (withId.named() && plain.named()) {
             return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
@@ -296,7 +299,10 @@ final class Arguments {
         String suffix = colon < 0 ? "" : value.substring(colon + 1);
         Optional<PackLevel> level = PackLevel.fromToken(suffix);
         String path = level.isPresent() ? value.substring(0, colon) : value;
-        if (level.isPresent() && Files.isDirectory(Path.of(value)) && Files.isDirectory(Path.of(path))) {
+        if (level.isPresent()
+                && !path.isEmpty()
+                && Files.isDirectory(Path.of(value))
+                && Files.isDirectory(Path.of(path))) {
             return Given.ambiguous(PACK + " " + value + " is ambiguous: " + value + " and " + path
                     + " are both directories; rename one, or write " + value + ":<level>");
         }
@@ -308,11 +314,24 @@ final class Arguments {
             // x:org is a directory and x is not: the value names the directory x:org, at no configured level.
             return directoryOf(value, Optional.empty());
         }
+        if (path.isEmpty()) {
+            // :org, or an empty value: an empty path would name the working directory.
+            return emptyDirectory(value);
+        }
         if (level.isPresent() && !Files.isDirectory(Path.of(path))) {
             // Neither x:org nor x is a directory: name the value as given, and the directory it was read as.
             return Given.refused(PACK + " " + value + " is not a directory, and nor is " + path);
         }
         return directoryOf(path, level);
+    }
+
+    /**
+     * A {@code --pack} value whose directory part is empty ({@code =<id>}, {@code :<level>}): refused, never read as the
+     * working directory, which the empty path names.
+     */
+    private static Given emptyDirectory(String value) {
+        return Given.refused(PACK + " " + value + " names no directory: its directory part is empty; write " + PACK
+                + " <dir>[:<level>][=<id>]");
     }
 
     /** The pack in {@code path}, at {@code level} when one is given; refused when {@code path} is no pack directory. */
