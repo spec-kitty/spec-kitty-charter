@@ -105,8 +105,9 @@ key is refused as an unknown key, on every surface. With WP10 and WP11 this deli
 
 ## Context
 
-- WP10 has landed in your base: no example styleguide or procedure carries `anti_patterns` (`ExamplePackCoverageTest`).
-  Check first; if one does, stop.
+- WP10 has landed in your base: the 18 anti-pattern files, their nodes and their `rejects` edges exist. The five built-in
+  owners still carry their inline `anti_patterns` blocks: removing them is your T047a (re-sliced from WP10 T042), in the
+  same commit as T047's schema drop. Check the 18 files first; if any is missing, stop.
 - **The refusal is the closed schema's.** Both roots are closed (`procedure.schema.json:69`,
   `styleguide.schema.json:121`). Once the property is gone, the one validated read
   (`YamlSerializationStrategy.readValidated`, `:69-91`) answers `artifact_schema_error` at the file, pointer the root,
@@ -214,7 +215,7 @@ key is refused as an unknown key, on every surface. With WP10 and WP11 this deli
   before validation): stop and report. D14 rests on the closed schema answering it.
 - A test can only pass by keeping the field optional, by excluding it from a round-trip or parity check, or by
   exempting a fixture: stop and report (charter).
-- An example pack still carries an inline block: WP10 is incomplete in your base; stop.
+- An example pack still carries an inline block after T047a: the removal is incomplete; finish it, never exempt it.
 
 ## Risks and reviewer guidance
 - A reviewer checks that nothing tolerates the old key (no `@JsonIgnoreProperties`, no lenient reader), that the
