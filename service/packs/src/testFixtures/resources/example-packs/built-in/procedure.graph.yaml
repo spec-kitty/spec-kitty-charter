@@ -14,4 +14,88 @@ nodes:
 - urn: procedure:git-flow
   kind: procedure
   label: Git Flow Branching Workflow
-edges: []
+- urn: anti_pattern:persona-without-profile
+  kind: anti_pattern
+  label: Persona without profile
+- urn: anti_pattern:unbounded-squad
+  kind: anti_pattern
+  label: Unbounded squad
+- urn: anti_pattern:casting-by-habit
+  kind: anti_pattern
+  label: Casting by habit
+- urn: anti_pattern:averaging-divergent-verdicts
+  kind: anti_pattern
+  label: Averaging divergent verdicts
+- urn: anti_pattern:trusting-a-biased-delegate
+  kind: anti_pattern
+  label: Trusting a biased delegate
+- urn: anti_pattern:model-tier-mismatch
+  kind: anti_pattern
+  label: Model-tier mismatch
+- urn: anti_pattern:hard-wiring-the-squad-as-a-gate
+  kind: anti_pattern
+  label: Hard-wiring the squad as a gate
+- urn: anti_pattern:silently-dropped-finding
+  kind: anti_pattern
+  label: Silently dropped finding
+- urn: anti_pattern:example-theater
+  kind: anti_pattern
+  label: Example theater
+- urn: anti_pattern:implementation-leakage
+  kind: anti_pattern
+  label: Implementation leakage
+- urn: anti_pattern:happy-path-only
+  kind: anti_pattern
+  label: Happy-path only
+- urn: anti_pattern:unvalidated-examples
+  kind: anti_pattern
+  label: Unvalidated examples
+edges:
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:persona-without-profile
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:unbounded-squad
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:casting-by-habit
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:averaging-divergent-verdicts
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:trusting-a-biased-delegate
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:model-tier-mismatch
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:hard-wiring-the-squad-as-a-gate
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:adversarial-squad-deployment
+  target: anti_pattern:silently-dropped-finding
+  relation: rejects
+  reason: the procedure adversarial-squad-deployment names this anti-pattern
+- source: procedure:example-mapping-workshop
+  target: anti_pattern:example-theater
+  relation: rejects
+  reason: the procedure example-mapping-workshop names this anti-pattern
+- source: procedure:example-mapping-workshop
+  target: anti_pattern:implementation-leakage
+  relation: rejects
+  reason: the procedure example-mapping-workshop names this anti-pattern
+- source: procedure:example-mapping-workshop
+  target: anti_pattern:happy-path-only
+  relation: rejects
+  reason: the procedure example-mapping-workshop names this anti-pattern
+- source: procedure:example-mapping-workshop
+  target: anti_pattern:unvalidated-examples
+  relation: rejects
+  reason: the procedure example-mapping-workshop names this anti-pattern

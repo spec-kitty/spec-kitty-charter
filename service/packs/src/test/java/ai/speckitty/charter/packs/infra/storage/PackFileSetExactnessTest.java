@@ -364,6 +364,7 @@ class PackFileSetExactnessTest {
         typed.put(Kind.LIFECYCLE, ids(read.dsos(LifecycleBinding.INSTANCE), LifecycleDso::id));
         typed.put(Kind.STEP_ENHANCEMENT, ids(read.dsos(StepEnhancementBinding.INSTANCE), StepEnhancementDso::id));
         typed.put(Kind.ROUTING_CATALOG, ids(read.dsos(RoutingCatalogBinding.INSTANCE), RoutingCatalogDso::id));
+        typed.put(Kind.ANTI_PATTERN, ids(read.dsos(AntiPatternBinding.INSTANCE), AntiPatternDso::id));
         typed.put(Kind.ASSET, ids(read.dsos(AssetBinding.INSTANCE), AssetDso::id));
         return typed;
     }

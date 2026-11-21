@@ -1,0 +1,14 @@
+schema_version: '1.0'
+id: clever-over-direct
+title: Clever over direct
+description: |
+  Using a clever language feature when a direct, familiar idiom would be easier to review and change.
+severity: smell
+bad_example: |
+  result = next((v for v in xs if pred(v)), None)
+good_example: |
+  result = None
+  for v in xs:
+      if pred(v):
+          result = v
+          break

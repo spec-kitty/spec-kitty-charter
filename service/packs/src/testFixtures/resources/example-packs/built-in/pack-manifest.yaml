@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 9f347d473bdc3fb648d0d4187215f0fa118d3f79d80a832a041461c82ac51852
+manifest_hash: 25d24d8748b6a34fb0010e460ec49b073099636a965442bb7109f34da7eecc97
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -21,6 +21,78 @@ constituents:
   id: reviewer-renata
   path: agent_profiles/reviewer-renata.agent.yaml
   content_hash: 0bee3de90c36de4c75a997f0db0840f7af1a2a730adb9163b2d31875f0653bba
+- kind: anti_pattern
+  id: averaging-divergent-verdicts
+  path: anti_patterns/averaging-divergent-verdicts.anti-pattern.yaml
+  content_hash: 9b0c599caef1dae238854e01daf8afd2f4296c4e0fb2bbec597c9ce33986742e
+- kind: anti_pattern
+  id: casting-by-habit
+  path: anti_patterns/casting-by-habit.anti-pattern.yaml
+  content_hash: a1d7f33a9bb089215179134534e31e6ddd4a355d25ec1149e90f5987a19ea162
+- kind: anti_pattern
+  id: clever-over-direct
+  path: anti_patterns/clever-over-direct.anti-pattern.yaml
+  content_hash: 609e7d235a0737f42edb4d26e047fb820da8093c796f52273bc1833a40cf2eb3
+- kind: anti_pattern
+  id: direct-object-references
+  path: anti_patterns/direct-object-references.anti-pattern.yaml
+  content_hash: 5d48df9ae23fdf663386343ce1a9d1129538d40539c1c46914f93b9d1a5696a8
+- kind: anti_pattern
+  id: duplicated-business-rules-called-acceptable-repetition
+  path: anti_patterns/duplicated-business-rules-called-acceptable-repetition.anti-pattern.yaml
+  content_hash: 8aba9fee0c25b4f6db19ad10a26dec57fe84d474f1e91ee10bdda44c646a90dc
+- kind: anti_pattern
+  id: example-theater
+  path: anti_patterns/example-theater.anti-pattern.yaml
+  content_hash: f022b05d1b706752cfa00860035a92cab792b8a8ff79b16a8d3ca23c2abf7bc6
+- kind: anti_pattern
+  id: happy-path-only
+  path: anti_patterns/happy-path-only.anti-pattern.yaml
+  content_hash: 96ec927a17acf33c96dea2fde3257005edb535450e3e56aa634a9bd344a95e74
+- kind: anti_pattern
+  id: hard-wiring-the-squad-as-a-gate
+  path: anti_patterns/hard-wiring-the-squad-as-a-gate.anti-pattern.yaml
+  content_hash: c3595b5dc583a02d87de48628b0447eae23399683fb257357d0b7f6d171a5a25
+- kind: anti_pattern
+  id: implementation-leakage
+  path: anti_patterns/implementation-leakage.anti-pattern.yaml
+  content_hash: 93199528c4653db5a61a835caf21cf0bf31611d240e88c067d5c7cc894f7054a
+- kind: anti_pattern
+  id: indirection-for-repetition
+  path: anti_patterns/indirection-for-repetition.anti-pattern.yaml
+  content_hash: e8f7da94c6a23f292bb20e77da3ba8382cea40e21f31c3540df356286e5c948c
+- kind: anti_pattern
+  id: model-tier-mismatch
+  path: anti_patterns/model-tier-mismatch.anti-pattern.yaml
+  content_hash: a768059efe739d0792f1a41c89cc4aeb3e701184cf361228dc36ccfaf2ffd265
+- kind: anti_pattern
+  id: persona-without-profile
+  path: anti_patterns/persona-without-profile.anti-pattern.yaml
+  content_hash: f3033b723ba1a2bc44cecc35a01882cab349d032b048494a62901eab2974360b
+- kind: anti_pattern
+  id: silently-dropped-finding
+  path: anti_patterns/silently-dropped-finding.anti-pattern.yaml
+  content_hash: 0e86f80b77c161e9027aad340571a440cd8d01e659bd0bb11088a4b820c3c38a
+- kind: anti_pattern
+  id: swallowed-exception
+  path: anti_patterns/swallowed-exception.anti-pattern.yaml
+  content_hash: 33b25a3aba9f003582fb128f237446fd9bc65307112010ccf1e5cbd1d526e80b
+- kind: anti_pattern
+  id: transaction-spanning
+  path: anti_patterns/transaction-spanning.anti-pattern.yaml
+  content_hash: 5627f169ecefeb4e89c93d4f3764539b5a510ec542bad2eeb4133bf5bde18457
+- kind: anti_pattern
+  id: trusting-a-biased-delegate
+  path: anti_patterns/trusting-a-biased-delegate.anti-pattern.yaml
+  content_hash: 344a2e5637f0accb144a0b2758fd6322105ccaba5e752b497c1b4e5ade38dc5c
+- kind: anti_pattern
+  id: unbounded-squad
+  path: anti_patterns/unbounded-squad.anti-pattern.yaml
+  content_hash: 32169bb5b1f730ce1af830997067d3c6d9c3b34a8e5ff9a4ae83f3174ea3a251
+- kind: anti_pattern
+  id: unvalidated-examples
+  path: anti_patterns/unvalidated-examples.anti-pattern.yaml
+  content_hash: 1781e14263b457386a59e90776d948ed7f5f6bca2caaecf9e85c4f3aeb16cc59
 - kind: asset
   id: carrier-lint
   path: assets/carrier_lint.py.asset.yaml
@@ -46,6 +118,10 @@ constituents:
   path: directives/010-specification-fidelity-requirement.directive.yaml
   content_hash: 950b30ca27d33bf2229409052012b430de651cb579281c960fc286bb41b999d3
 - kind: directive
+  id: DIRECTIVE_024
+  path: directives/024-locality-of-change.directive.yaml
+  content_hash: 51ff43e7ca3e2703929cef790b08495e8b1438f225d7504bbe6ccc676590078b
+- kind: directive
   id: DIRECTIVE_030
   path: directives/030-test-and-typecheck-quality-gate.directive.yaml
   content_hash: 201c160f0ca0497cd467b41cd6c300c094b62e71cd9e11e393ab402b693516a9
@@ -53,14 +129,14 @@ constituents:
   id: DIRECTIVE_037
   path: directives/037-living-documentation-sync.directive.yaml
   content_hash: f8cc220e158fb455fed30bbe4e26ce89b6b3d95945e2bbf18245aaf45bc2170b
-- kind: directive
-  id: DIRECTIVE_024
-  path: directives/024-locality-of-change.directive.yaml
-  content_hash: 51ff43e7ca3e2703929cef790b08495e8b1438f225d7504bbe6ccc676590078b
 - kind: glossary
   id: spec-kitty-core
   path: glossaries/spec-kitty-core.glossary.yaml
   content_hash: e0c94b2baef8d200da60c50c71af56fcdebc0328e98322b9fe474638f125b53c
+- kind: guard
+  id: spec-kitty-pre-review
+  path: guards/spec-kitty-pre-review.guard.yaml
+  content_hash: 111594aaa9a0dd8d01d0c4bd05b6105a3ff8614702b7f6033510bdc971dbcd23
 - kind: guard
   id: subtasks-ready
   path: guards/subtasks-ready.guard.yaml
@@ -69,10 +145,6 @@ constituents:
   id: traceability-ready
   path: guards/traceability-ready.guard.yaml
   content_hash: fffca74b8d2dc9982319feca7dc685a481dcc190c81d0b3c91bfe62fea581557
-- kind: guard
-  id: spec-kitty-pre-review
-  path: guards/spec-kitty-pre-review.guard.yaml
-  content_hash: 111594aaa9a0dd8d01d0c4bd05b6105a3ff8614702b7f6033510bdc971dbcd23
 - kind: lifecycle
   id: work-package
   path: lifecycles/work-package.lifecycle.yaml
@@ -129,6 +201,10 @@ constituents:
   id: git-flow
   path: procedures/git-flow.procedure.yaml
   content_hash: 4b44d69a755a240970e128ba12a52c430ec5a7c392675a2bb01ad8a98d053d96
+- kind: routing_catalog
+  id: default
+  path: routing_catalogs/default.routing-catalog.yaml
+  content_hash: 415b761f9c072b18da4e2cb4dec62420339e0b9d55dbd9501515ea72eb12022a
 - kind: skill
   id: review-checklist
   path: skills/review-checklist.skill.yaml
@@ -146,6 +222,14 @@ constituents:
   path: styleguides/java-conventions.styleguide.yaml
   content_hash: 322066c38b930bf1b098008bf924c211f5c2d6417ee5826f652721f4da3805c4
 - kind: tactic
+  id: acceptance-test-first
+  path: tactics/acceptance-test-first.tactic.yaml
+  content_hash: f46f6e12a838898b281f2460da03c41abccbbc5e4d36dfa24c6606ad82aa3b72
+- kind: tactic
+  id: adr-drafting-workflow
+  path: tactics/adr-drafting-workflow.tactic.yaml
+  content_hash: ba6d2ed3f1f6ab2c84adef50d230805fbf7f55e83e650910317e84e99adb8303
+- kind: tactic
   id: adversarial-qa-handoff
   path: tactics/adversarial-qa-handoff.tactic.yaml
   content_hash: 7b5e5c1873dadcac01104186f416b4a6f35a70ad57e86391c5f06e45a5f7f559
@@ -158,41 +242,25 @@ constituents:
   path: tactics/autonomous-operation-protocol.tactic.yaml
   content_hash: 1a50ad533d46d870be5df64262205cd4147dbfbfb2288d06d8ceb374f4c39184
 - kind: tactic
-  id: tdd-red-green-refactor
-  path: tactics/tdd-red-green-refactor.tactic.yaml
-  content_hash: f7b80628d0f8727636ac436487848646b430f503ce892f863581609386476bf9
-- kind: tactic
-  id: acceptance-test-first
-  path: tactics/acceptance-test-first.tactic.yaml
-  content_hash: f46f6e12a838898b281f2460da03c41abccbbc5e4d36dfa24c6606ad82aa3b72
-- kind: tactic
   id: change-apply-smallest-viable-diff
   path: tactics/change-apply-smallest-viable-diff.tactic.yaml
   content_hash: d6da622d0a7b6fa756fc4516884be737fa54880ab78ebda8567f1c96a533e039
-- kind: tactic
-  id: requirements-validation-workflow
-  path: tactics/requirements-validation-workflow.tactic.yaml
-  content_hash: 46d388bb2fe63332a16b52c95fe77e72b9b2d90b0629f86a78ca8a2b70f0b073
-- kind: tactic
-  id: adr-drafting-workflow
-  path: tactics/adr-drafting-workflow.tactic.yaml
-  content_hash: ba6d2ed3f1f6ab2c84adef50d230805fbf7f55e83e650910317e84e99adb8303
-- kind: tactic
-  id: usage-examples-sync
-  path: tactics/usage-examples-sync.tactic.yaml
-  content_hash: 2fb0bb8639377f03144f317e628e3c54900fb1be74186e4690d45d0f1d2cb004
 - kind: tactic
   id: problem-decomposition
   path: tactics/problem-decomposition.tactic.yaml
   content_hash: 86f0103faa8ca1cf5cb71bc177f8044eeda81d98e0d4551ba15946a7830f2b14
 - kind: tactic
-  id: review-intent-and-risk-first
-  path: tactics/review-intent-and-risk-first.tactic.yaml
-  content_hash: 11ab916a30e25df3ff6e0076ecda65cd584062a3a8bdcd0478c09da7965e9f5e
-- kind: tactic
   id: quality-gate-verification
   path: tactics/quality-gate-verification.tactic.yaml
   content_hash: 1ea589e4c4b69dbd112bca95aa4d9659aa921a44e62ccfbfa0891caafa585c45
+- kind: tactic
+  id: requirements-validation-workflow
+  path: tactics/requirements-validation-workflow.tactic.yaml
+  content_hash: 46d388bb2fe63332a16b52c95fe77e72b9b2d90b0629f86a78ca8a2b70f0b073
+- kind: tactic
+  id: review-intent-and-risk-first
+  path: tactics/review-intent-and-risk-first.tactic.yaml
+  content_hash: 11ab916a30e25df3ff6e0076ecda65cd584062a3a8bdcd0478c09da7965e9f5e
 - kind: tactic
   id: stopping-conditions
   path: tactics/stopping-conditions.tactic.yaml
@@ -201,6 +269,14 @@ constituents:
   id: supply-chain-install-safety
   path: tactics/supply-chain-install-safety.tactic.yaml
   content_hash: 9a1062e074a22224ce4ec85b97d3db74eb562cdf958d6f0d0af053b4982e4e58
+- kind: tactic
+  id: tdd-red-green-refactor
+  path: tactics/tdd-red-green-refactor.tactic.yaml
+  content_hash: f7b80628d0f8727636ac436487848646b430f503ce892f863581609386476bf9
+- kind: tactic
+  id: usage-examples-sync
+  path: tactics/usage-examples-sync.tactic.yaml
+  content_hash: 2fb0bb8639377f03144f317e628e3c54900fb1be74186e4690d45d0f1d2cb004
 - kind: template
   id: writing/meeting-discussion-notes.md
   path: templates/writing/meeting-discussion-notes.md
@@ -217,10 +293,6 @@ constituents:
   id: execution-lanes
   path: toolguides/execution-lanes.toolguide.yaml
   content_hash: 9732e16dcd12c422c432bfc86d3a54b4e90ff725404083356102873391aa2749
-- kind: routing_catalog
-  id: default
-  path: routing_catalogs/default.routing-catalog.yaml
-  content_hash: 415b761f9c072b18da4e2cb4dec62420339e0b9d55dbd9501515ea72eb12022a
 presets:
 - id: default
   path: presets/default.yaml
