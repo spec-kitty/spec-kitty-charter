@@ -1,0 +1,4 @@
+{"event": "started", "invocation_id": "01M801S1EN0PBTYVZ8VGWXR6ES", "profile_id": "implementer-ivan", "action": "generate", "request_text": "Regenerate docs/glossary after #602 (issue #612): Reconciler is missing from docs/glossary", "actor": "claude", "mode_of_work": "task_execution", "governance_context_hash": "070730be0c5857ad", "governance_context_available": true, "started_at": "2026-11-21T21:56:41.383625+00:00"}
+{"event": "completed", "invocation_id": "01M801S1EN0PBTYVZ8VGWXR6ES", "completed_at": "2026-11-21T22:04:06.220497+00:00", "outcome": "done", "closed_by": "agent"}
+{"event": "artifact_link", "invocation_id": "01M801S1EN0PBTYVZ8VGWXR6ES", "at": "2026-11-21T22:04:06.240882+00:00", "kind": "artifact", "ref": "docs/glossary/charter/README.md"}
+{"event": "commit_link", "invocation_id": "01M801S1EN0PBTYVZ8VGWXR6ES", "at": "2026-11-21T22:04:06.242172+00:00", "sha": "f0f10abcdd3aa2fa0eeff6abe2a9c2efd41defae"}
