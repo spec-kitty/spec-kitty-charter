@@ -111,9 +111,9 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -124,7 +124,8 @@
         "Ready for review: manifest_stale at the storage manifest gate (registration, validate/pack-doctor, round trip); round trip drops source-stale, keeps written-stale; scenarios rewritten; contract + Breaking fragment; built-in/org-base manifests restamped to path order via ManifestMembership.stamp. Restamp: CHARTER_RESTAMP_EXAMPLE_MANIFESTS=true ./gradlew :packs:test --tests '*ManifestStampHelper*' --rerun. #636 fold not done (not ruled).",
         "Review passed: manifest_stale in the manifest gate after membership on every surface; round trip reports written-stale only; gates fresh: packs 7183, pack-validation 482, pack-doctor 286, deployable 2377 (feature 49 scenarios), wholePackRoundTrip 17/17. LOW: data-model.md:60 pointer form drift (WP08 fixes docs); TreeCensus.Manifest 4-arg overload used only by ABSENT and tests",
         "Reopened by operator ruling R-t: fold #636's round-trip-codes slice",
-        "- 2026-11-21T22:12:22Z – claude – Cycle 2 (operator ruling R-t): Refs #636 (round-trip-codes slice). EXCLUDED_WRITTEN retired into NOT_HELD_WRITTEN (reason from NotHeldFile); STALE_BASELINE/STALE_KNOWN_FAILURE not-held wordings merged; commit 3a2c61081."
+        "- 2026-11-21T22:12:22Z – claude – Cycle 2 (operator ruling R-t): Refs #636 (round-trip-codes slice). EXCLUDED_WRITTEN retired into NOT_HELD_WRITTEN (reason from NotHeldFile); STALE_BASELINE/STALE_KNOWN_FAILURE not-held wordings merged; commit 3a2c61081.",
+        "Cycle 2 (R-t, Refs #636 round-trip-codes slice): EXCLUDED_WRITTEN retired into NOT_HELD_WRITTEN with the census reason; STALE_* not-held wordings merged; change fragment 2026-11-21-round-trip-not-held-code.md. Commit 3a2c61081. Gates green: pack-validation:test 466, wholePackRoundTrip 17, pack-doctor test/surfaceTest/jarTest 267/4/15, contracts:test 314, deployable:test 2377, spotlessCheck. Cycle-1 work kept; T017-T021 re-verified."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
