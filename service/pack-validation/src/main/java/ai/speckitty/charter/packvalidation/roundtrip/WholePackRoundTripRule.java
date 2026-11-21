@@ -15,12 +15,13 @@ import java.util.stream.Collectors;
 
 /**
  * The whole-pack round trip's rule (ADR-0036; ADR-0075 decision 8, as amended by operator ruling 2 of 2026-11-15): over
- * the flow's result, every file of a modelled kind means the same after the round trip, every excluded file stays
- * unwritten, and no written file is left unpaired, unless the expectation pins it.
+ * the flow's result, every file of a modelled kind means the same after the round trip, every file the census does not
+ * hold stays unwritten, and no written file is left unpaired, unless the expectation pins it.
  *
  * <p>The expectation decides what is pinned. The gate passes the checked-in baseline scoped to one example pack; the
- * drift test passes {@link WholePackExpectation#none()}, so every red is a problem. Either way every census file that is
- * not excluded needs an outcome: a file of a kind the round trip does not model fails, naming its kind and path (#547).
+ * drift test passes {@link WholePackExpectation#none()}, so every red is a problem. Either way every census file the
+ * census holds needs an outcome: a held file of a kind the round trip does not model fails, naming its kind and path
+ * (#547). A file the census does not hold (an excluded file, a file no rule covers) is left out, never red (#631).
  */
 public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
 
@@ -112,7 +113,7 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
     public Verdict judge(PackRoundTripResult result) {
         RoundTripObservation observation = RoundTripObservation.of(result);
         WholePackExpectation.Evaluation evaluation =
-                expectation.evaluate(result.census(), result.modelledKinds(), observation.observed());
+                expectation.evaluate(result.census(), result.notHeld(), result.modelledKinds(), observation.observed());
         // The written copy of a file the expectation lists as refused may stay unpaired: its source never paired.
         Set<String> refusedAsExpected = evaluation.files().stream()
                 .filter(file -> file.status() == WholePackExpectation.Status.EXPECTED_RED)

@@ -14,8 +14,9 @@ import java.util.List;
  * the files nothing models. Those are not held (operator ruling Q1, #554): the round trip never sees them, so the drift
  * names each one, as the registration warns about it. A file an exclusion names is not drift.
  *
- * <p>Judging through {@link WholePackExpectation#evaluate} (#547) means every census file that is not excluded needs an
- * outcome: a file of a kind the round trip does not model fails as {@code no adapter models kind <kind>}, and a file of
+ * <p>Judging through {@link WholePackExpectation#evaluate} (#547) means every file the census holds needs an outcome
+ * (the round trip leaves out the files it does not hold, #631; the drift names each above): a file of a kind the round
+ * trip does not model fails as {@code no adapter models kind <kind>}, and a file of
  * a modelled kind the round trip skipped fails as {@code the round trip gave no outcome for this file}, each naming its
  * path and kind.
  */

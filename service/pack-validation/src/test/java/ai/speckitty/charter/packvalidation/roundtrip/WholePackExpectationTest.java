@@ -30,6 +30,9 @@ class WholePackExpectationTest {
     private static final Set<String> MODELLED = Set.of("tactic", "pack-descriptor");
     private static final String NO_EXCLUSIONS = "exclusions: []\n";
 
+    /** No census path is not held: every file is judged as a held file. */
+    private static final Set<String> HOLDS_EVERY_FILE = Set.of();
+
     private static SortedMap<String, String> census(String... pathsAndKinds) {
         SortedMap<String, String> census = new TreeMap<>();
         for (int i = 0; i < pathsAndKinds.length; i += 2) {
@@ -72,12 +75,12 @@ class WholePackExpectationTest {
             """;
 
     private static Evaluation evaluate(String red, String exclusions, Map<String, Optional<String>> observed) {
-        return WholePackExpectation.load(red, exclusions).evaluate(PACK, MODELLED, observed);
+        return WholePackExpectation.load(red, exclusions).evaluate(PACK, HOLDS_EVERY_FILE, MODELLED, observed);
     }
 
     private static Evaluation evaluate(
             String red, String exclusions, String known, Map<String, Optional<String>> observed) {
-        return WholePackExpectation.load(red, exclusions, known).evaluate(PACK, MODELLED, observed);
+        return WholePackExpectation.load(red, exclusions, known).evaluate(PACK, HOLDS_EVERY_FILE, MODELLED, observed);
     }
 
     private static final String NO_KNOWN_FAILURES = "known_failures: []\n";
@@ -209,7 +212,7 @@ class WholePackExpectationTest {
         void aFileOfAnUnmodelledKindIsRedWhetherOrNotItsKindIsListed() {
             for (String red : List.of("kinds: []\nfiles: []\n", MATCHING_RED)) {
                 Evaluation evaluation = WholePackExpectation.load(red, MATCHING_EXCLUSIONS)
-                        .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+                        .evaluate(WITH_PROCEDURE_FILE, HOLDS_EVERY_FILE, MODELLED, ALL_GREEN);
 
                 assertThat(evaluation.problems())
                         .as(red)
@@ -230,7 +233,7 @@ class WholePackExpectationTest {
                     """);
 
             Evaluation evaluation = WholePackExpectation.load(red, MATCHING_EXCLUSIONS)
-                    .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+                    .evaluate(WITH_PROCEDURE_FILE, HOLDS_EVERY_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(
@@ -469,7 +472,7 @@ class WholePackExpectationTest {
                             MATCHING_RED,
                             MATCHING_EXCLUSIONS,
                             known(path, "no adapter models kind procedure", OPEN_PACKS_ISSUE))
-                    .evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+                    .evaluate(WITH_PROCEDURE_FILE, HOLDS_EVERY_FILE, MODELLED, ALL_GREEN);
 
             assertThat(evaluation.problems())
                     .containsExactly(
@@ -609,6 +612,24 @@ class WholePackExpectationTest {
                     .containsExactly("STALE_EXCLUSION **/.gitkeep: matches no file");
         }
 
+        /**
+         * #631 review: the gate never compares a file the census does not hold (operator ruling R34), so an exclusion
+         * over only such files is redundant. It is stale, and says why, not that it matches no file.
+         */
+        @Test
+        void anExclusionThatMatchesOnlyFilesTheCensusDoesNotHoldIsStaleAsRedundant() {
+            Map<String, Optional<String>> observed = new TreeMap<>(ALL_GREEN);
+            observed.put("README.md", Optional.empty());
+
+            Evaluation evaluation = WholePackExpectation.load("kinds: []\nfiles: []\n", MATCHING_EXCLUSIONS)
+                    .evaluate(PACK, Set.of("README.md"), MODELLED, observed);
+
+            assertThat(statuses(evaluation)).containsEntry("README.md", Status.EXCLUDED);
+            assertThat(evaluation.problems())
+                    .containsExactly("STALE_EXCLUSION **/README.md: matches only files the census does not hold, which"
+                            + " the gate never compares; remove it from " + WholePackExpectation.EXCLUSIONS_RESOURCE);
+        }
+
         @Test
         void anExclusionOverAModelledFileFails() {
             String exclusions = MATCHING_EXCLUSIONS + """
@@ -624,8 +645,8 @@ class WholePackExpectationTest {
 
         @Test
         void anEmptyPackCannotPass() {
-            Evaluation evaluation =
-                    WholePackExpectation.load("{}", NO_EXCLUSIONS).evaluate(new TreeMap<>(), MODELLED, Map.of());
+            Evaluation evaluation = WholePackExpectation.load("{}", NO_EXCLUSIONS)
+                    .evaluate(new TreeMap<>(), HOLDS_EVERY_FILE, MODELLED, Map.of());
 
             assertThat(evaluation.problems())
                     .containsExactly("EMPTY_PACK: the census has no file, so the run proves nothing");
@@ -673,13 +694,13 @@ class WholePackExpectationTest {
 
             assertThat(expectation
                             .forPack("built-in")
-                            .evaluate(pack, MODELLED, red)
+                            .evaluate(pack, HOLDS_EVERY_FILE, MODELLED, red)
                             .problems())
                     .as("built-in: its entry pins the red, and org-base's entry is not stale here")
                     .isEmpty();
             assertThat(expectation
                             .forPack("org-base")
-                            .evaluate(pack, MODELLED, red)
+                            .evaluate(pack, HOLDS_EVERY_FILE, MODELLED, red)
                             .problems())
                     .containsExactly(
                             "UNEXPECTED_RED tactics/a.tactic.yaml (tactic): l: [], <absent>",
@@ -727,6 +748,7 @@ class WholePackExpectationTest {
             Evaluation evaluation = WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS)
                     .evaluate(
                             WITH_PROCEDURE_FILE,
+                            HOLDS_EVERY_FILE,
                             WITH_PROCEDURE,
                             Map.of(
                                     "pack.yaml", Optional.empty(),
@@ -753,12 +775,17 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void withNoExpectationAFileOfAnUnmodelledKindFailsByKindAndPath() {
-            Evaluation evaluation = WholePackExpectation.none().evaluate(WITH_PROCEDURE_FILE, MODELLED, ALL_GREEN);
+        void withNoExpectationAHeldFileOfAnUnmodelledKindFailsByKindAndPathAndAFileNotHeldDoesNot() {
+            Map<String, Optional<String>> observed = new TreeMap<>(ALL_GREEN);
+            observed.put("README.md", Optional.empty());
+
+            Evaluation evaluation =
+                    WholePackExpectation.none().evaluate(WITH_PROCEDURE_FILE, Set.of("README.md"), MODELLED, observed);
 
             assertThat(evaluation.problems())
+                    .as(
+                            "#547: the held procedure fails; #631: the README no rule covers is not held, so it never fails")
                     .containsExactly(
-                            "UNEXPECTED_RED README.md (other:README.md): no adapter models kind other:README.md",
                             "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure");
         }
 
@@ -768,7 +795,7 @@ class WholePackExpectationTest {
             observed.remove("tactics/b.tactic.yaml");
 
             assertThat(WholePackExpectation.none()
-                            .evaluate(PACK, WITH_PROCEDURE, observed)
+                            .evaluate(PACK, HOLDS_EVERY_FILE, WITH_PROCEDURE, observed)
                             .problems())
                     .contains("UNEXPECTED_RED tactics/b.tactic.yaml (tactic): the round trip gave no outcome for this"
                             + " file");
@@ -911,8 +938,9 @@ class WholePackExpectationTest {
     }
 
     /**
-     * A file the table excludes is checked, not compared (#451): it is absent from the tree the store wrote, it is never
-     * red and it needs no entry in a baseline list; a file nothing models that is not Markdown stays red.
+     * A file the census does not hold is checked, not compared (#451; operator ruling R34, #631): a file the table
+     * excludes and a file no rule covers alike. It is absent from the tree the store wrote, it is never red and it
+     * needs no entry in a baseline list. A held file of a schema the round trip does not model stays red (#547).
      */
     @Nested
     class TheExcludedFiles {
@@ -923,11 +951,15 @@ class WholePackExpectationTest {
                 "pack.yaml", "pack-descriptor",
                 "tactics/a.tactic.yaml", "tactic",
                 "docs/notes.md", NOTE_KIND,
-                "notes.txt", "other:notes.txt");
+                "notes.txt", "other:notes.txt",
+                "procedures/p.procedure.yaml", "procedure");
+
+        /** The census does not hold the note and the text file; it holds the procedure. */
+        private static final Set<String> NOT_HELD = Set.of("docs/notes.md", "notes.txt");
 
         private Evaluation judged(Map<String, Optional<String>> observed) {
             return WholePackExpectation.load("kinds: []\nfiles: []\n", NO_EXCLUSIONS)
-                    .evaluate(census, MODELLED, observed);
+                    .evaluate(census, NOT_HELD, MODELLED, observed);
         }
 
         @Test
@@ -941,16 +973,51 @@ class WholePackExpectationTest {
                     .satisfies(file ->
                             assertThat(file.detail()).contains("**/*.md").contains("not written"));
             assertThat(evaluation.problems())
-                    .as("the note is judged apart; only the control is a problem")
+                    .as("the note is judged apart; only the held control of an unmodelled schema is a problem")
                     .containsExactly(
-                            "UNEXPECTED_RED notes.txt (other:notes.txt): no adapter models kind other:notes.txt");
+                            "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure");
         }
 
         @Test
-        void aTextFileNothingModelsStaysRedWhileTheNoteIsExcluded() {
+        void aTextFileNothingModelsIsNotHeldSoItIsNeverRedAndNeedsNoBaselineEntry() {
             Evaluation evaluation = judged(withNoteAbsent());
 
+            assertThat(evaluation.files())
+                    .filteredOn(file -> file.path().equals("notes.txt"))
+                    .singleElement()
+                    .satisfies(file -> {
+                        assertThat(file.status()).isEqualTo(Status.EXCLUDED);
+                        assertThat(file.detail()).isEqualTo("not held: not written");
+                    });
+            assertThat(evaluation.problems()).noneMatch(problem -> problem.contains("notes.txt"));
+        }
+
+        @Test
+        void aHeldFileOfASchemaTheRoundTripDoesNotModelStaysRed() {
+            assertThat(statuses(judged(withNoteAbsent()))).containsEntry("procedures/p.procedure.yaml", Status.RED);
+        }
+
+        @Test
+        void aFileNothingModelsTheStoreWroteIsRed() {
+            Map<String, Optional<String>> observed = withNoteAbsent();
+            observed.put("notes.txt", Optional.of("the store wrote the not-held file notes.txt"));
+
+            Evaluation evaluation = judged(observed);
+
             assertThat(statuses(evaluation)).containsEntry("notes.txt", Status.RED);
+            assertThat(evaluation.problems())
+                    .contains(
+                            "NOT_HELD_WRITTEN notes.txt (other:notes.txt): the store wrote the not-held file notes.txt");
+        }
+
+        @Test
+        void aRunThatNeverCheckedAFileNothingModelsDoesNotPass() {
+            Map<String, Optional<String>> observed = withNoteAbsent();
+            observed.remove("notes.txt");
+
+            assertThat(judged(observed).problems())
+                    .anyMatch(problem ->
+                            problem.startsWith("NOT_HELD_WRITTEN notes.txt") && problem.contains("did not check"));
         }
 
         @Test
@@ -978,15 +1045,15 @@ class WholePackExpectationTest {
 
         @Test
         void aBaselineEntryOverAnExcludedFileIsStale() {
-            Evaluation evaluation =
-                    WholePackExpectation.load("""
+            Evaluation evaluation = WholePackExpectation.load("""
                             kinds: []
                             files:
                               - path: docs/notes.md
                                 at: refused
                                 reason: Should never be listed.
                                 issue: "#451"
-                            """, NO_EXCLUSIONS).evaluate(census, MODELLED, withNoteAbsent());
+                            """, NO_EXCLUSIONS)
+                    .evaluate(census, NOT_HELD, MODELLED, withNoteAbsent());
 
             assertThat(evaluation.problems())
                     .contains("STALE_BASELINE docs/notes.md: the file is excluded; remove it from "
@@ -997,6 +1064,7 @@ class WholePackExpectationTest {
             Map<String, Optional<String>> observed = new TreeMap<>(ALL_GREEN);
             observed.remove("tactics/b.tactic.yaml");
             observed.put("docs/notes.md", Optional.empty());
+            observed.put("notes.txt", Optional.empty());
             return observed;
         }
     }
