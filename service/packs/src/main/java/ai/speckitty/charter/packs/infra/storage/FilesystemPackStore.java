@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.AssetFile;
@@ -14,9 +15,11 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
@@ -32,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -272,34 +276,39 @@ final class FilesystemPackStore {
         }
 
         /**
-         * The refusal of a pack whose graph documents could not all be read: {@code PACK_UNREADABLE}, naming the first
-         * document and the store's reason, in the words every read uses.
+         * The refusal of a pack whose graph documents could not all be read ({@link #graphUnreadable}).
          *
          * @param pack the pack
          * @return the refusal
          * @throws IllegalStateException when every document was read
          */
         CharterRefusal unreadable(PackIdentifier pack) {
-            PackElementViolation first = violations.stream()
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("every graph document was read"));
-            return graphUnreadable(pack, Optional.of(pack.value() + "/" + first.file() + ": " + first.reason()));
+            if (violations.isEmpty()) {
+                throw new IllegalStateException("every graph document was read");
+            }
+            return graphUnreadable(pack, violations);
         }
     }
 
     /**
-     * The refusal of a pack with a graph document that cannot be read, with the first document and its reason when
-     * the read knows them (#582: the edge read, the composing read and removal give one detail).
+     * The refusal of a pack with graph documents that cannot be read (#617, #628): each fault as a finding at its
+     * document, refused through the domain's one mapping ({@link PackRefusalMapping#graphUnreadable}). The edge read,
+     * the composing read and removal's authored read refuse through here, so each names the first document and its
+     * reason and lists the violations a registration lists, in its order: by document path.
      *
      * @param pack the pack
-     * @param detail {@code <pack>/<file>: <reason>}, or empty
+     * @param faults the unreadable documents' violations, at least one
      * @return the refusal
+     * @throws IllegalArgumentException when there is no fault
      */
-    static CharterRefusal graphUnreadable(PackIdentifier pack, Optional<String> detail) {
-        return new CharterRefusal(
-                RefusalCode.PACK_UNREADABLE,
-                "a graph document of " + pack.value() + " cannot be read"
-                        + detail.map(d -> ": " + d).orElse(""));
+    static CharterRefusal graphUnreadable(PackIdentifier pack, List<PackElementViolation> faults) {
+        // Registration lists the graph faults by path ({@code StorageRulesets.inRegistrationOrder}), a stable sort.
+        return PackRefusalMapping.graphUnreadable(
+                pack,
+                new Rationale(faults.stream()
+                        .sorted(Comparator.comparing(PackElementViolation::file))
+                        .map(fault -> Findings.at(fault.kind(), fault.file(), List.of(), fault.reason()))
+                        .toList()));
     }
 
     /** The code of a violation of a companion the store refuses; the load seat reads it back to remap it. */
@@ -874,11 +883,22 @@ final class FilesystemPackStore {
                         violations.addAll(refused);
                     }
                 }
-                case FileRead.Unreadable<GraphDocument> bad -> violations.addAll(violationsOf(bad));
+                case FileRead.Unreadable<GraphDocument> bad -> violations.addAll(graphViolationsOf(bad));
                 case FileRead.Absent<GraphDocument> absent -> {}
             }
         }
         return new GraphRead(documents, violations);
+    }
+
+    /**
+     * The violations of a graph document that cannot be read, in registration's words ({@link Wording#unreadable}): a
+     * parse failure is the document's {@code drg_schema_error}, as a registration lists it, so a read that refuses the
+     * pack lists the violations a registration of it lists (#617).
+     */
+    private static List<PackElementViolation> graphViolationsOf(FileRead.Unreadable<GraphDocument> bad) {
+        return Wording.unreadable("", bad).stream()
+                .map(finding -> new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding)))
+                .toList();
     }
 
     /**
@@ -1581,7 +1601,9 @@ final class FilesystemPackStore {
      * The violations of an unreadable file, one for its parse failure ({@code unreadable}, the parser's first line) or
      * one per schema fault, in validate mode's detail vocabulary and under the code of the file's kind
      * ({@link Wording#schemaFindings}): one fault, one code and one wording on every surface (#554, R2 rows 1 to 4).
-     * The whole-pack seam reuses it for the manifest it owns.
+     * The whole-pack seam reuses it for the manifest it owns. A graph document is worded by {@link #graphViolationsOf}
+     * instead, on purpose: its parse failure is the {@code drg_schema_error} a registration lists (#617), not
+     * {@code unreadable}.
      *
      * @param bad the unreadable file
      * @return the violations, in validate mode's order, each reason without the file it is at

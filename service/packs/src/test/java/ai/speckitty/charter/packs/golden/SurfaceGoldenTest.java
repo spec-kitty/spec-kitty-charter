@@ -62,6 +62,48 @@ class SurfaceGoldenTest {
     }
 
     @Test
+    @DisplayName(
+            "a compose read refused for an unreadable graph document lists the violations a registration lists at its graph"
+                    + " documents, file, pointer and reason (#617)")
+    void anUnreadableGraphIsRefusedWithRegistrationsViolations() {
+        assumeFalse(Golden.updating(), "golden.update is true: the file is being rewritten, not compared");
+        JsonNode recorded = Golden.read(Golden.SURFACES);
+        List<String> graphRefusals = new ArrayList<>();
+        for (String key : recorded.propertyNames()) {
+            JsonNode refused = recorded.get(key).path("composeRead").path("refused");
+            if (!refused.path("detail").asString("").startsWith("a graph document of ")) {
+                continue;
+            }
+            graphRefusals.add(key);
+            List<JsonNode> atGraphs = new ArrayList<>();
+            recorded.get(key)
+                    .path("registration")
+                    .path("refused")
+                    .path("violations")
+                    .forEach(violation -> {
+                        if (isGraphDocument(violation.path("pointer").asString(""))) {
+                            atGraphs.add(violation);
+                        }
+                    });
+            List<JsonNode> composed = new ArrayList<>();
+            refused.path("violations").forEach(composed::add);
+
+            assertThat(composed)
+                    .as("%s: the compose read's violations are registration's at its graph documents", key)
+                    .isNotEmpty()
+                    .containsExactlyElementsOf(atGraphs);
+        }
+        assertThat(graphRefusals)
+                .as("the planted graph faults the compose read refuses")
+                .hasSizeGreaterThan(16);
+    }
+
+    /** A root graph shard or the fragment: the documents a pack's graph is read from. */
+    private static boolean isGraphDocument(String pointer) {
+        return pointer.equals("drg/fragment.yaml") || (pointer.endsWith(".graph.yaml") && !pointer.contains("/"));
+    }
+
+    @Test
     @DisplayName("the file holds one entry per subject and nothing else, written as the writer writes it")
     void theFileHoldsExactlyTheSubjects() {
         assumeFalse(Golden.updating(), "golden.update is true: the file is being rewritten, not compared");

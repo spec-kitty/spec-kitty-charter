@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -70,9 +71,16 @@ class CommitStorePackWriteStoreAuthoredTest {
         CommitStorePackWriteStore store = storeOver(host, "../outside.directive.yaml");
 
         assertThatThrownBy(() -> store.authored(PACK))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    // #617: a per-file write or removal lists the violation a registration lists.
+                    assertThat(refusal.violations())
+                            .containsExactly(new RefusalViolation(
+                                    "drg/fragment.yaml",
+                                    "drg_schema_error",
+                                    "drg/fragment.yaml: node D1 body_path '../outside.directive.yaml' escapes"
+                                            + " the pack root"));
+                })
                 .hasMessage("a graph document of qa cannot be read: qa/drg/fragment.yaml: node D1 body_path"
                         + " '../outside.directive.yaml' escapes the pack root");
     }

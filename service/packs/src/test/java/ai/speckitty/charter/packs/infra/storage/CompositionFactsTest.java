@@ -143,6 +143,7 @@ class CompositionFactsTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.getMessage())
-                                .isEqualTo("a graph document of " + PACK + " cannot be read"));
+                                .startsWith("a graph document of " + PACK + " cannot be read: " + PACK
+                                        + "/broken.graph.yaml: "));
     }
 }

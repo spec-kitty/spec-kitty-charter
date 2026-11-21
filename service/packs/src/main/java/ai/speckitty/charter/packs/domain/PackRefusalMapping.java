@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Rationale;
@@ -10,9 +11,10 @@ import java.util.List;
 
 /**
  * The one mapping of a pack's verdict to what its caller answers (#478, S3; #554, FR-008, S6): the refusal of a verdict
- * that fails ({@link #of}) and the diagnostics of one that passes ({@link #diagnostics}). Registration
- * ({@code PackRefusals}) and pack-check both call it, so a pack the service would refuse is refused in the same words
- * wherever it is checked. It keeps the order it is given, which is registration's, and names no storage code: it reads
+ * that fails ({@link #of}), the diagnostics of one that passes ({@link #diagnostics}), and the refusal of a pack whose
+ * graph documents cannot be read ({@link #graphUnreadable}, #617). Registration ({@code PackRefusals}), pack-check and
+ * the reads that refuse an unreadable graph document all call it, so a pack the service would refuse is refused in the
+ * same words wherever it is checked. It keeps the order it is given, which is registration's, and names no storage code: it reads
  * the verdict's failures only.
  */
 public final class PackRefusalMapping {
@@ -38,6 +40,30 @@ public final class PackRefusalMapping {
                 "The pack cannot be registered: " + violations.size() + " fault(s), the first at "
                         + violations.getFirst().pointer() + ".",
                 violations);
+    }
+
+    /**
+     * The refusal of a pack whose graph documents cannot all be read (#617, #628): {@code pack_unreadable}, one
+     * violation per violation of the graph faults, in their order, in the words {@link #of} gives a registration of the
+     * same pack, and the problem detail
+     * {@code a graph document of <pack> cannot be read: <pack>/<file>: <reason>}, naming the first. The edge read, the
+     * composing read and removal's authored read all refuse through here, so a broken pack is refused alike by each and
+     * its author reads the same violations a registration lists.
+     *
+     * @param pack the pack, as the refusal names it
+     * @param faults the graph faults, each at its pack-relative document with its reason
+     * @return the refusal
+     * @throws IllegalArgumentException when the faults hold no violation
+     */
+    public static CharterRefusal graphUnreadable(PackIdentifier pack, Rationale faults) {
+        Reason first = faults.violations().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("graph faults with no violation refuse nothing"));
+        return CharterRefusal.withViolations(
+                RefusalCode.PACK_UNREADABLE,
+                "a graph document of " + pack.value() + " cannot be read: " + pack.value() + "/"
+                        + first.location().file() + ": " + first.detail(),
+                violations(faults));
     }
 
     /**

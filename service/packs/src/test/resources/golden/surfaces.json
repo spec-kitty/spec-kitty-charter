@@ -946,7 +946,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: tactic.graph.yaml edge: unknown key 'provenance'",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
+        } ]
       }
     }
   },
@@ -965,7 +970,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: tactic.graph.yaml edge: unknown key 'provenance'",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
+        } ]
       }
     }
   },
@@ -1056,7 +1066,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'local-t' is not a URN",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
+        } ]
       }
     }
   },
@@ -1075,7 +1090,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
+        } ]
       }
     }
   },
@@ -1098,7 +1118,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+        } ]
       }
     }
   },
@@ -1117,7 +1142,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
+        } ]
       }
     }
   },
@@ -1144,7 +1174,16 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+        }, {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        } ]
       }
     }
   },
@@ -1167,7 +1206,16 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
+        }, {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
+        } ]
       }
     }
   },
@@ -1250,7 +1298,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node directive:X declares kind 'tactic'",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        } ]
       }
     }
   },
@@ -1269,7 +1322,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node directive:X declares kind 'tactic'",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
+        } ]
       }
     }
   },
@@ -1296,7 +1354,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: node x has unknown kind 'mission_steps'",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
+        } ]
       }
     }
   },
@@ -1315,7 +1378,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: node x has unknown kind 'mission_type'",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_type'"
+        } ]
       }
     }
   },
@@ -1334,7 +1402,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
+        } ]
       }
     }
   },
@@ -1353,7 +1426,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: unknown key 'pack_name'",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: unknown key 'pack_name'"
+        } ]
       }
     }
   },
@@ -1372,7 +1450,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: unknown relation 'extends'",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: unknown relation 'extends'"
+        } ]
       }
     }
   },
@@ -1395,7 +1478,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: unknown relation 'extends'",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: unknown relation 'extends'"
+        } ]
       }
     }
   },
@@ -1414,7 +1502,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: unknown relation 'extends'",
+        "violations" : [ {
+          "pointer" : "tactic.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "tactic.graph.yaml: unknown relation 'extends'"
+        } ]
       }
     }
   },
@@ -1839,7 +1932,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: 'relation' has an unsupported value 'refines'",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
+        } ]
       }
     }
   },
@@ -1858,7 +1956,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
+        } ]
       }
     }
   },
@@ -1980,7 +2083,12 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN",
+        "violations" : [ {
+          "pointer" : "drg/fragment.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
+        } ]
       }
     }
   },
@@ -2007,7 +2115,16 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>",
+        "violations" : [ {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
+        }, {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+        } ]
       }
     }
   },
@@ -2030,7 +2147,16 @@
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "a graph document of qa cannot be read"
+        "detail" : "a graph document of qa cannot be read: qa/glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>",
+        "violations" : [ {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
+        }, {
+          "pointer" : "glossary.graph.yaml",
+          "code" : "drg_schema_error",
+          "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
+        } ]
       }
     }
   },

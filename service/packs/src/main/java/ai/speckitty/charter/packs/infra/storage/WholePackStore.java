@@ -19,6 +19,7 @@ import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.Assembly;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
@@ -261,9 +262,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         FileSystemPackInspector.OneRead one =
                 reader.readWithStore(new PackRoot(name, Optional.empty(), packDir.toString()));
         StoreRead read = one.store();
-        read.graphRefusal().ifPresent(refusal -> {
-            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, refusal);
-        });
+        requireReadableGraphs(name, read);
         if (!(read.assembly() instanceof Assembly.Assembled held)) {
             throw refusalOf(read);
         }
@@ -377,13 +376,26 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         }
         StoreRead read = StoreRead.of(
                 packDir, pack, PackFileSet.walk(packDir, pack.value()), strategy, bindings, companionRules);
-        read.graphRefusal().ifPresent(refusal -> {
-            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, refusal);
-        });
+        requireReadableGraphs(pack.value(), read);
         if (!(read.assembly() instanceof Assembly.Assembled held)) {
             throw refusalOf(read);
         }
         return contentsOf(pack, held);
+    }
+
+    /**
+     * The strict load's refusal of a pack whose graph documents the assembly could not read: {@code DRG_SCHEMA_ERROR},
+     * naming the first ({@code <pack_id>/<file>: <reason>}), from the assembly's own graph faults.
+     */
+    private static void requireReadableGraphs(String id, StoreRead read) {
+        List<PackElementViolation> faults = switch (read.assembly()) {
+            case Assembly.Assembled held -> held.graphFaults();
+            case Assembly.Refused refused -> refused.graphFaults();
+            case Assembly.None none -> List.of();
+        };
+        faults.stream().findFirst().ifPresent(first -> {
+            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, id + "/" + first.file() + ": " + first.reason());
+        });
     }
 
     /** What a salvage has read so far. */
