@@ -66,17 +66,21 @@ placeholder:
   `charter_pin.py rederive --derive-manifest` with it (#632 item 2).
 - (d) `TBD-retire-python-rules`: which `validate_pack_schemas.py` rules (`cross_pack_violations` around lines
   1460-1518, `derived_manifest`) retire with this release, and which stay as house rules (re-declaration across
-  levels, unheld bare endpoints, slots outside an activation, and the `--full` remainder per the ruling).
+  levels, unheld bare endpoints, slots outside an activation, and the `--full` remainder of ruling R-s: the
+  `specializes_from` cycle stays an open-packs rule until #636 lands it).
 - (e) `TBD-report-format`: the report file and the new stdout keys, for any parser.
 - (f) `TBD-anti-pattern-files`: carry the draft already written in `research/open-packs-TBD-anti-pattern-files.md`
-  (plan D12) into this file, and update it with what WP10 shipped.
+  (plan D12-D14, ruling R-r) into this file, and update it with what WP10, WP11 and WP12 shipped: the 60 files with
+  inline blocks and the 13 file-less nodes it lists are refused at the repin until curated.
 
 ### T036 — Closure evidence (`research/closure-evidence.md`)
 - Per issue, list the PR file or scenario that shows the behavior:
-  - #614, #629 and #630: `Closes`;
-  - #632: `Closes` or `Refs`, per the `--full` ruling;
+  - #614, #629, #630 and #154: `Closes` (#154 per acceptance criterion: the closed schema, the dropped fields, the
+    store binding, the four refusal tests with their codes, the canonical example packs);
+  - #632: `Refs` (R-s), naming the remainder: item 3's `specializes_from` cycle, relation, edge-index and
+    own-closure-walk checks, for #636 slices 2-4 and 7;
   - #52 item 3 and #535: closed with evidence (R-g);
-  - #549: the epic ticks;
+  - #549 and #142: the epics tick (#142 for #154);
   - #158: kept in view; say what `manifest_stale` delivers toward it.
 - This is the source for the PR body's issue section.
 
