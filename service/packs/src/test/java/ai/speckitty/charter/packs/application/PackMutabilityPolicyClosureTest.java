@@ -11,11 +11,13 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy.Member;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +71,27 @@ class PackMutabilityPolicyClosureTest {
         // Same closure, a target Q does not name: the registration is allowed.
         assertThatCode(() -> authorize(gate, pack, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aRefusedWriteIsAboutTheArtifactWrittenIntoTheWrittenPackNotTheCheck() {
+        Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
+        PackIdentifier q = new PackIdentifier("q");
+        Map<PackIdentifier, MutabilityPolicySource> policies = Map.of(
+                q,
+                        MutabilityPolicySource.builder()
+                                .entry(locked, MutabilityLevel.LOCKED)
+                                .build(),
+                PACK, MutabilityPolicySource.empty());
+        List<Member> closure = List.of(member(q, "Q", List.of(), locked), member(PACK, "P", List.of("Q")));
+        MutabilityCheck gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+
+        ClosureFault fault = gate.judge(MutabilityCheck.Live.of(packWithDescriptor(), Operation.REGISTER, locked))
+                .faults()
+                .getFirst();
+
+        assertThat(fault.origin()).isEqualTo(PackOrigins.of(PACK, locked));
+        assertThat(fault.reason().rule()).isEqualTo(ClosureFault.RULE);
     }
 
     @Test

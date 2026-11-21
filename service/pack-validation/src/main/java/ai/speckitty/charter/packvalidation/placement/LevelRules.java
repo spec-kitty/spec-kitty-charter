@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
@@ -75,8 +76,11 @@ public final class LevelRules {
                 PACK_YAML + " of " + name + " declares no pack_level and none is configured");
     }
 
-    /** A placement finding: at {@code pack.yaml} as a whole, its rule named by its code's token. */
+    /**
+     * A placement finding: at {@code pack.yaml} as a whole, its rule named by its code's token, about no element
+     * ({@link Origin#NONE}).
+     */
     static Reason finding(ReasonCode code, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(PACK_YAML), detail);
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(PACK_YAML), detail);
     }
 }

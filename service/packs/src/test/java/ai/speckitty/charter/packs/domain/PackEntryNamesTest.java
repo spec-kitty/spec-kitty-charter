@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** {@link PackEntryNames#canBeAPack}: the entry rule the service's listing and pack-check share (#478). */
+/** {@link PackEntryNames#canBeAPack}: the entry rule the service's listing and pack-doctor share (#478). */
 class PackEntryNamesTest {
 
     @ParameterizedTest

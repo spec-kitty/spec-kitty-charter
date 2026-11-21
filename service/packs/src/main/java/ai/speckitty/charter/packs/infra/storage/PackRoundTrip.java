@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  *
  * <p>It judges nothing. The verdict, equality of meaning against an expected baseline, is {@code pack-validation}'s,
  * over the {@link PackRoundTripResult} this returns. A composition root calls it: the whole-pack gate and the drift test,
- * and later {@code pack-check --round-trip} (#478).
+ * and later {@code pack-doctor validate --round-trip} (#478).
  */
 public final class PackRoundTrip {
 
