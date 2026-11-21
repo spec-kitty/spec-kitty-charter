@@ -35,6 +35,10 @@ class NoPackCheckSurfaceTest {
 
     private static final Path ROOT = Path.of(System.getProperty("charter.test.repo-root", ""));
 
+    /** The command line's working directory: its example pack and its temporary directory. */
+    @TempDir
+    Path temp;
+
     /**
      * The old tool's names: its hyphenated, snake and upper-case names, its package, and its classes. The bare
      * {@code PackCheck} of pack-validation (validate mode over one pack), {@code PackCheckTest} and
@@ -165,9 +169,6 @@ class NoPackCheckSurfaceTest {
 
     @Nested
     class TheCommandLine {
-
-        @TempDir
-        Path temp;
 
         /** What one run answered. */
         private record Run(int exit, String out, String err) {}
