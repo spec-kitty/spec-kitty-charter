@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/pack-doctor-coverage
 merge_target_branch: feat/pack-doctor-coverage
 branch_strategy: Planning artifacts for this mission were generated on feat/pack-doctor-coverage. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/pack-doctor-coverage unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-pack-doctor-coverage-01M7YMQK
+base_commit: ca934845ddf378ebf693997edff7c0c8c6c92f0d
+created_at: '2026-11-21T13:05:28.727094+00:00'
 subtasks:
 - T001
 - T002
