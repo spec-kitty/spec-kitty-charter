@@ -419,6 +419,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-21T21:55:48.763689Z",
+      "decision_id": "01M801QGCV2GW4DCF0KTRFBNHH",
+      "final_answer": "Yes, fold into WP04",
+      "input_key": "round_trip_codes_fold",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "Yes, fold into WP04",
+        "No, leave for #636"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Fold #636's round-trip-codes slice (retire EXCLUDED_WRITTEN, merge the STALE_* wordings in WholePackExpectation) into WP04?",
+      "rationale": "Operator ruling R-t (2026-11-21), source: operator via dispatcher, operator words \"2. as recommended\". Fold #636's round-trip-codes slice into WP04 so WholePackExpectation changes once: retire EXCLUDED_WRITTEN beside NOT_HELD_WRITTEN (~506) and merge the STALE_* wordings (~241/246/251). It changes an existing code: contract changelog fragment and PR body note it; red-first tests; WP04 gets a fresh review cycle. PR writes Refs #636 for the slice.",
+      "resolved_at": "2026-11-21T21:55:50.996781Z",
+      "resolved_by": "operator via dispatcher",
+      "slot_key": "round-trip-codes-fold",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
