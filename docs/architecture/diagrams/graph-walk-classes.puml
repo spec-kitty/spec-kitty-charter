@@ -1,0 +1,174 @@
+@startuml graph-walk-classes
+' Sources:
+'   service/kernel (kernel.domain): GraphWalker, Descent, CharterRefusal
+'   service/kernel (kernel.validation): Rule, ModularRuleset, Constraint, Rationale, Reason, ReasonCode, Severity, Location
+'   service/packs (packs.domain.rules): PackRulesets; (packs.application): PackRefusals
+'   service/packs (packs.infra.api): PackRegistrationController
+'   service/pack-validation: PackVerdicts, PackCheck
+'   Decided: ADR-0082 (the domain owns every graph walk). Proposed: the type design on architectural-patterns-applied.md.
+' Notation: a <<proposed>> class is part of the proposed design, pending operator approval; every other class exists.
+!include _style.iuml
+set separator none
+skinparam class<<proposed>> {
+  BackgroundColor #E8F4EA
+  BorderColor #2E7D32
+}
+skinparam enum<<proposed>> {
+  BackgroundColor #E8F4EA
+  BorderColor #2E7D32
+}
+skinparam interface<<proposed>> {
+  BackgroundColor #E8F4EA
+  BorderColor #2E7D32
+}
+title One graph walk, domain rules, one rationale (ADR-0082)
+
+package "kernel (generic, framework-free)" {
+  interface GraphWalker {
+    + onNode(node) : Descent
+    + onRelationship(relationship) : Descent
+  }
+  enum Descent {
+    CONTINUE
+    SKIP
+    STOP
+  }
+  interface "Rule<T>" as Rule {
+    + apply(subject : T) : List<Reason>
+    + on(focus) / forEach(parts) / when(applicable)
+    + check(subject : T) : Rationale
+    + guard(subject : T)
+  }
+  class "ModularRuleset<T>" as ModularRuleset {
+    + {static} of(rules) : ModularRuleset<T>
+    + guard(subject : T) (overrides)
+  }
+  class "Constraint<T>" as Constraint {
+    a Rule with a predicate
+    that explains its verdict
+  }
+  class Rationale {
+    every Reason, in order
+  }
+  class Reason <<record>> {
+    + rule : String
+    + result : Evaluation
+    + code : ReasonCode
+    + location : Location
+    + detail : String
+    + origin : Origin <<proposed>>
+  }
+  class ReasonCode <<record>> {
+    + value : String
+    + severity : Severity
+  }
+  enum Severity {
+    VIOLATION
+    WARNING
+    NOTICE
+  }
+  class Location <<record>> {
+    + file
+    + pointer
+  }
+  class Origin <<proposed>> {
+    an opaque element identifier
+    the kernel never names a pack
+  }
+  class "ValidationWalker<N>" as ValidationWalker <<proposed>> {
+    rules and predicates per node kind
+    phases: a violation gates later phases
+    + rationale() : Rationale
+  }
+}
+
+package "packs.domain (owns HOW to walk)" {
+  interface PackGraphNode <<proposed>> {
+    sealed
+  }
+  class PackNode <<proposed>>
+  class ArtifactNode <<proposed>>
+  class EdgeNode <<proposed>>
+  enum EdgeKind <<proposed>> {
+    DEPENDS_ON
+    PARENT_PACK
+    OVERRIDES
+    ENHANCES
+    SPECIALIZES
+    REFERENCES
+    STEP_LINK
+    DELEGATES
+  }
+  class Scope <<proposed>> {
+    + roots
+    + selection : Predicate<PackGraphNode>
+    given by the caller; a selection filter only
+  }
+  class PackGraph <<proposed>> {
+    built once per session
+    + walk(scope, walker)
+    stable order, cycles, strongly connected groups
+  }
+  class PackRulesets <<rule factory>> {
+    + {static} content()
+    + {static} closure()
+    + {static} relations() <<proposed>>
+    + {static} ownClosure() <<proposed>>
+    + {static} mutability(policies) <<proposed>>
+    + {static} dependents() <<proposed>>
+    + {static} activeSet(..) / selection(..) <<proposed>>
+    + {static} ancestorsOf(..) / closuresHolding(..) <<proposed>>
+  }
+}
+
+package "edge (ports and adapters)" {
+  class PackRegistrationController <<driving adapter>>
+  class PackCheck <<CLI>>
+  class PackRefusals {
+    Rationale -> CharterRefusal
+  }
+  class PackVerdicts {
+    Rationale -> report and exit code
+  }
+  class CharterRefusal <<kernel.domain>> {
+    the edge's refusal: code + violations
+  }
+}
+
+ValidationWalker ..|> GraphWalker
+GraphWalker ..> Descent
+ModularRuleset ..|> Rule
+Constraint ..|> Rule
+ModularRuleset o-- Rule
+ValidationWalker o-- Rule : runs when the predicate holds
+ValidationWalker --> Rationale : appends
+Rationale o-- Reason
+Reason --> ReasonCode
+ReasonCode --> Severity
+Reason --> Location
+Reason --> Origin
+
+PackNode ..|> PackGraphNode
+ArtifactNode ..|> PackGraphNode
+EdgeNode ..|> PackGraphNode
+EdgeNode --> EdgeKind
+PackRulesets ..> EdgeKind : each check decides\nwhich edges it follows
+PackRulesets ..> Origin : fills from a pack id,\nor pack id + URN
+PackGraph --> Scope : walks within
+PackGraph --> GraphWalker : drives (the one driver)
+PackRulesets ..> Scope : builds
+PackRulesets ..> ModularRuleset : builds
+
+PackRegistrationController ..> PackRulesets : imports rules and scope
+PackCheck ..> PackRulesets : imports rules and scope
+PackRegistrationController ..> PackRefusals
+PackCheck ..> PackVerdicts
+PackRefusals ..> CharterRefusal
+PackRefusals ..> Rationale
+PackVerdicts ..> Rationale
+
+legend right
+  Green <<proposed>>: proposed design, pending operator approval (ADR-0082 records only the principle).
+  Every other class exists today.
+endlegend
+@enduml

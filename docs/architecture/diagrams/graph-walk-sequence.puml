@@ -1,0 +1,62 @@
+@startuml graph-walk-sequence
+' Sources:
+'   service/packs (packs.infra.api): PackRegistrationController
+'   service/packs (packs.domain.rules): PackRulesets; (packs.application): PackRefusals
+'   service/kernel: Rationale, Reason, CharterRefusal
+'   Decided: ADR-0082. Proposed (pending operator approval): ValidationWalker, PackGraph, Scope, Origin.
+'   The refusal mapping keeps ADR-0075 / PR #618 D1: one fault answers exactly as before.
+!include _style.iuml
+title API pack registration through one graph walk (proposed design, ADR-0082)
+
+actor Client
+participant "PackRegistrationController\n(driving adapter)" as API
+participant "Registration use case\n(packs.application)" as App
+participant "PackRulesets\n(rule factory)" as Factory
+participant "ValidationWalker\n<<proposed>>" as Walker
+participant "PackGraph\n<<proposed>>" as Graph
+participant "PackRefusals" as Refusals
+
+Client -> API : POST /packs (pack archive)
+API -> App : submit(pack)
+App --> API : job
+API --> Client : 202 Accepted, Location: /pack-registrations/{id}
+note over App : the registration job runs the walk
+App -> App : resolve the active set to pack ids\n(before the walk; no repository call from a predicate)
+App -> Factory : rules and scope for a registration
+Factory --> App : rules per node kind, predicates, the edges each check follows,\nScope(roots, selection)
+App -> Walker : build(rules, predicates, phases)
+App -> Graph : walk(scope, walker)
+loop each node, in stable order (pack id, then URN; edges in declared order)
+  Graph -> Walker : onNode(node)
+  Walker -> Walker : predicate holds? then rule.apply(node)
+  Walker -> Walker : append each Reason, with its Origin,\nto the Rationale
+  Walker --> Graph : Descent
+  Graph -> Walker : onRelationship(edge)
+  Walker -> Walker : domain edge filter: does this check follow this EdgeKind?
+  Walker --> Graph : Descent
+end
+Graph --> App
+App -> Walker : rationale()
+Walker --> App : Rationale
+note right of Walker
+  Phase gate: a violation in one phase
+  (compose, relations including the edge-index
+  rules, own closure) skips the later phases,
+  so a client sees the root cause.
+end note
+
+alt the Rationale holds no violation
+  App -> App : commit the pack; the job ends succeeded
+else the Rationale holds a violation
+  App -> Refusals : of(rationale)
+  Refusals --> App : CharterRefusal (code of the first fault, every violation)
+  App -> App : the job ends refused, carrying the refusal
+end
+Client -> API : GET /pack-registrations/{id}
+API --> Client : PackRegistrationStatus: succeeded, or refused\nwith the problem (code, every violation)
+
+note over Client, Refusals
+  pack-check takes the same path: PackCheck asks PackRulesets for the rules and a determined selection,
+  walks with the same ValidationWalker, and PackVerdicts maps the Rationale to the report and the exit code.
+end note
+@enduml
