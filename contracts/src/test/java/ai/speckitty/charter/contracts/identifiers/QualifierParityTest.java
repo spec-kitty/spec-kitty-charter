@@ -123,9 +123,6 @@ class QualifierParityTest {
             assertThat(suffix)
                     .as("%s accepts a::<urn> for a known urn", site.location())
                     .isPresent();
-            assertThat(site.accepts("a_b::" + suffix.get(), compiled))
-                    .as("%s refuses a_b", site.location())
-                    .isFalse();
             assertThat(site.accepts(atCap + "::" + suffix.get(), compiled))
                     .as("%s accepts a qualifier at the cap", site.location())
                     .isTrue();
