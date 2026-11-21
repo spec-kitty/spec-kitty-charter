@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-doctor-coverage-01M7YMQK
 mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
-generated_at: '2026-11-21T22:13:26.317962+00:00'
+generated_at: '2026-11-21T22:14:04.615173+00:00'
 analyzer_agent: claude
 input_artifacts:
   spec.md:
@@ -19,23 +19,12 @@ input_artifacts:
   charter:
     path: .kittify/charter/charter.yaml
     sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
-verdict: unknown
-issue_counts:
-  high:
-  info:
-  medium:
-  critical:
-  low:
-findings: []
----
-
----
 verdict: ready
 issue_counts:
-  critical: 0
-  high: 0
   medium: 4
   low: 8
+  high: 0
+  critical: 0
   info: 0
 findings:
 - id: Q2
@@ -49,7 +38,7 @@ findings:
 - id: U2
   severity: medium
   category: underspecification
-  summary: 'Out-of-map edits widen: WP10 edits three built-in styleguides (WP03''s glob) and the built-in manifest (WP04''s); WP12 edits the packs CHANGELOG (WP10''s) and docs/conformance (WP02''s); WP05 edits Arguments, PackSetCheck and service.yml.'
+  summary: "Out-of-map edits widen: WP10 edits three built-in styleguides (WP03's glob) and the built-in manifest (WP04's); WP12 edits the packs CHANGELOG (WP10's) and docs/conformance (WP02's); WP05 edits Arguments, PackSetCheck and service.yml."
 - id: U3
   severity: medium
   category: underspecification
@@ -81,7 +70,7 @@ findings:
 - id: C2
   severity: low
   category: coverage
-  summary: 'No HTTP read of the anti_pattern kind; not in #154''s acceptance criteria; additive later.'
+  summary: "No HTTP read of the anti_pattern kind; not in #154's acceptance criteria; additive later."
 - id: N2
   severity: low
   category: coverage
