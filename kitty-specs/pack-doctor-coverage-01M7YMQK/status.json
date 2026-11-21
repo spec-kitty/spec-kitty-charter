@@ -123,7 +123,8 @@
       "notes": [
         "Ready for review: manifest_stale at the storage manifest gate (registration, validate/pack-doctor, round trip); round trip drops source-stale, keeps written-stale; scenarios rewritten; contract + Breaking fragment; built-in/org-base manifests restamped to path order via ManifestMembership.stamp. Restamp: CHARTER_RESTAMP_EXAMPLE_MANIFESTS=true ./gradlew :packs:test --tests '*ManifestStampHelper*' --rerun. #636 fold not done (not ruled).",
         "Review passed: manifest_stale in the manifest gate after membership on every surface; round trip reports written-stale only; gates fresh: packs 7183, pack-validation 482, pack-doctor 286, deployable 2377 (feature 49 scenarios), wholePackRoundTrip 17/17. LOW: data-model.md:60 pointer form drift (WP08 fixes docs); TreeCensus.Manifest 4-arg overload used only by ABSENT and tests",
-        "Reopened by operator ruling R-t: fold #636's round-trip-codes slice"
+        "Reopened by operator ruling R-t: fold #636's round-trip-codes slice",
+        "- 2026-11-21T22:12:22Z – claude – Cycle 2 (operator ruling R-t): Refs #636 (round-trip-codes slice). EXCLUDED_WRITTEN retired into NOT_HELD_WRITTEN (reason from NotHeldFile); STALE_BASELINE/STALE_KNOWN_FAILURE not-held wordings merged; commit 3a2c61081."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -137,11 +138,11 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T017": "planned",
-        "T018": "planned",
-        "T019": "planned",
-        "T020": "planned",
-        "T021": "planned"
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done"
       }
     },
     "WP05": {
