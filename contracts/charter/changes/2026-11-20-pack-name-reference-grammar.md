@@ -26,3 +26,5 @@
     read and a removal name the file and the reason, the composing read does not yet (#628), and the lenient load
     leaves the document out. One registered by archive whose descriptor `name` is no pack id is `500 pack_unreadable`
     on every read of its descriptor. Core re-registers such a pack; the spec-kitty-open-packs packs hold none.
+    A pack stored with such a qualifier is refused on read, single-relationship and single-artifact removal included;
+    it is recovered by uninstalling the pack, or by registering it again with pack ids.

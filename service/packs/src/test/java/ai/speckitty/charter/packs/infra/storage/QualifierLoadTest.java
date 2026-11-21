@@ -8,6 +8,13 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.packs.application.ActivationImpact;
+import ai.speckitty.charter.packs.application.ClosurePackDependents;
+import ai.speckitty.charter.packs.application.InboundReferences;
+import ai.speckitty.charter.packs.application.PackRegistrationService.Mode;
+import ai.speckitty.charter.packs.application.PackUninstallService;
+import ai.speckitty.charter.packs.application.RegistrationImpact;
+import ai.speckitty.charter.packs.application.RevisionTrail;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -69,6 +76,39 @@ class QualifierLoadTest {
         assertThat(over(held).edges(new PackIdentifier(DESCRIPTOR_ONLY)))
                 .containsExactly(new PackEdge(
                         "tactic:gamma-tactic", AT_CAP + "::directive:DIRECTIVE_043", RelationType.REQUIRES));
+    }
+
+    @Test
+    @DisplayName("a pack stored with a qualifier no pack id names, as before #582, is still uninstalled whole")
+    void aPackStoredBeforeTheGrammarIsRecoveredByUninstallingIt(@TempDir Path host) throws IOException {
+        Path stored = PackFixtures.copyOf(DESCRIPTOR_ONLY, host);
+        WholePackStoreTest.write(stored, SHARD, shard("a_b"));
+        PackIdentifier pack = new PackIdentifier(DESCRIPTOR_ONLY);
+        StorageRootLocations locations = new StorageRootLocations(host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackCommitStore commits = new PackCommitStore(locations, strategy);
+        CommitStorePackWriteStore writes = new CommitStorePackWriteStore(locations, strategy, commits);
+        DomainRepositoryService repository = new DomainRepositoryService(locations, strategy);
+        StagedPackViewFactory views = new StagedPackViewFactory(locations, strategy);
+        PackUninstallService uninstall = new PackUninstallService(
+                writes,
+                commits,
+                store,
+                views,
+                new ClosurePackDependents(
+                        new InboundReferences(repository, repository, repository), ActivationImpact.NONE),
+                new RegistrationImpact(views, ActivationImpact.NONE));
+
+        assertThatThrownBy(() -> writes.authored(pack))
+                .as("the single-relationship and single-artifact removals read this, and refuse the pack")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+
+        PackUninstallService.Outcome outcome = uninstall.uninstall(pack, "*", Mode.COMMIT, RevisionTrail.NONE);
+
+        assertThat(outcome.refused()).isEmpty();
+        assertThat(stored).doesNotExist();
     }
 
     private static String shard(String qualifier) {
