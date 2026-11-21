@@ -220,6 +220,13 @@ The shape is ruled (ADR-0052 d8, ADR-0053 d30): `anti_patterns/<id>.anti-pattern
 - `./gradlew :pack-validation:wholePackRoundTrip`: green, with the new file round-tripping in its canonical form.
 
 ### T042 — Every example inline anti-pattern becomes a file (R-r)
+
+> **Re-sliced 2026-11-21 (orchestrator, sequencing only; the model is R-r's).** Removing the inline blocks while the
+> schemas still declare `anti_patterns` turns `ExamplePackCoverageTest.everySchemaPropertyHasAnExample` red, and the only
+> other way out is an exclusion, which the charter forbids. So **the inline-block removal and the "no styleguide or
+> procedure carries an `anti_patterns` key" test move to WP12 (T047a)**, beside the schema drop. T042 in WP10 is done
+> when the 17 files, their nodes and their `rejects` edges exist, the node-names-a-held-file and severity-coverage tests
+> pass, and the inline blocks are still present (harmless: `StyleguideAntiPattern`/`AntiPatternEntry` produce no URNs).
 - Red first, in `ExamplePackCoverageTest`:
   - no styleguide or procedure file of any example pack carries an `anti_patterns` key (a text scan of the YAML
     keys; red: five files carry one);

@@ -1,0 +1,155 @@
+diff --git a/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/adversarial-squad-deployment.procedure.yaml b/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/adversarial-squad-deployment.procedure.yaml
+index 186c8b59e..321bbeeb8 100644
+--- a/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/adversarial-squad-deployment.procedure.yaml
++++ b/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/adversarial-squad-deployment.procedure.yaml
+@@ -31,26 +31,6 @@ steps:
+ - title: Record and disposition every finding, then proceed regardless
+   description: |
+     Capture the confirmed findings and disposition each one per the findings disposition contract (see notes). The squad's value is convergent evidence that survived independent scrutiny, not a single opinion; the squad is advisory, so work proceeds once every finding is recorded and dispositioned.
+-anti_patterns:
+-- title: Persona without profile
+-  content: Naming a persona without loading its agent profile — a persona label is not a lens.
+-  bad_example: Deploy "a security expert" with no profile loaded.
+-  good_example: Load the security reviewer profile, then deploy it as the security lens.
+-- title: Unbounded squad
+-  content: Dozens of delegates for a question that a small, distinct set of lenses would answer; more delegates is not better.
+-- title: Casting by habit
+-  content: Reusing the same cast regardless of the point-cut's question instead of choosing profiles whose declared focus actually answers it.
+-- title: Averaging divergent verdicts
+-  content: Averaging conflicting verdicts instead of adjudicating from the source or taking a focused second opinion.
+-- title: Trusting a biased delegate
+-  content: Accepting a delegate's prescription despite a known bias (e.g. a duct-tape-prone reducer) without a critical pass.
+-- title: Model-tier mismatch
+-  content: Top-tier model on mechanical or tracker delegates, or a weak tier on the hardest adversarial lens.
+-- title: Hard-wiring the squad as a gate
+-  content: |
+-    Turning the squad into a required mission gate instead of optional, charter- or memory-activated enrichment. Bad: a status transition blocked until squad evidence is present, e.g. raising a StatusGateError before a work package can be claimed. Good: the squad runs at the point-cut as guidance and the work proceeds independently of the squad's outcome — the squad enriches, it never blocks.
+-- title: Silently dropped finding
+-  content: Recording a finding without a disposition under the findings-disposition contract — every finding must be accepted, changed, or deferred with a rationale, never dropped.
+ notes: |
+   This procedure is the single owner of the squad playbook; the `adversarial-squad`
+   skill is a harness alias that points here for the when, who, and how.
+diff --git a/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/example-mapping-workshop.procedure.yaml b/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/example-mapping-workshop.procedure.yaml
+index d8ca7b94c..9931f4d6e 100644
+--- a/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/example-mapping-workshop.procedure.yaml
++++ b/service/packs/src/testFixtures/resources/example-packs/built-in/procedures/example-mapping-workshop.procedure.yaml
+@@ -44,26 +44,6 @@ steps:
+   description: 'Record the approved examples, their linked requirement or task IDs, and the chosen verification
+     approach so later implementation and review work can follow the chain.
+ 
+-    '
+-anti_patterns:
+-- title: Example theater
+-  content: 'Producing many examples that are never used for acceptance or review, turning the workshop into documentation
+-    overhead instead of a delivery aid.
+-
+-    '
+-- title: Implementation leakage
+-  content: 'Writing examples in terms of database fields, internal services, or UI widgets rather than observable
+-    business behavior.
+-
+-    '
+-- title: Happy-path only
+-  content: 'Capturing only success stories and missing the boundaries, exceptions, and rejection cases that actually
+-    define the contract.
+-
+-    '
+-- title: Unvalidated examples
+-  content: 'Treating agent-generated examples as authoritative without stakeholder or source validation.
+-
+     '
+ title: Example Mapping Workshop
+ description: 'Turn a behavior request into concrete rules, examples, and open questions that stakeholders and implementers
+diff --git a/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/aggregate-design-rules.styleguide.yaml b/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/aggregate-design-rules.styleguide.yaml
+index e1917d7fd..acdd25a5d 100644
+--- a/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/aggregate-design-rules.styleguide.yaml
++++ b/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/aggregate-design-rules.styleguide.yaml
+@@ -50,27 +50,4 @@ patterns:
+           db.commit()
+           # Inventory reacts to OrderPlaced event in its own transaction
+ 
+-anti_patterns:
+-  - name: Direct Object References
+-    description: "Holding in-memory references to other aggregates, creating hidden transactional coupling that violates aggregate independence."
+-    bad_example: |
+-      class Order:
+-          customer: Customer  # loads and locks Customer aggregate
+-    good_example: |
+-      class Order:
+-          customer_id: UUID  # independent loading
+-
+-  - name: Transaction Spanning
+-    description: "Using database transactions across multiple aggregates instead of domain events. Creates contention and couples aggregate lifecycles."
+-    bad_example: |
+-      with db.transaction():
+-          order.confirm()
+-          billing.create_invoice(order)
+-          shipping.schedule(order)
+-    good_example: |
+-      with db.transaction():
+-          order.confirm()
+-          order.publish(OrderConfirmed(...))
+-      # Billing and Shipping react via event handlers
+-
+ quality_test: "Can each aggregate be loaded, modified, and persisted in a single transaction without touching any other aggregate's state?"
+diff --git a/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/boring-code-review.styleguide.yaml b/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/boring-code-review.styleguide.yaml
+index b9f88ea90..161e7e991 100644
+--- a/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/boring-code-review.styleguide.yaml
++++ b/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/boring-code-review.styleguide.yaml
+@@ -31,39 +31,6 @@ patterns:
+       comment where the implementation diverges from the obvious pattern or
+       encodes a non-obvious constraint.
+ 
+-anti_patterns:
+-  - name: Indirection to remove a few repeated lines
+-    description: >
+-      Adding a helper or wrapper solely to remove a few repeated lines
+-      rather than to preserve a single source of truth for business meaning.
+-    bad_example: |
+-      def _plus_one(x):
+-          return x + 1
+-      # introduced to avoid "duplicating" a one-line expression used once
+-    good_example: |
+-      # inline the one-line expression at its single call site instead
+-  - name: Clever over direct
+-    description: >
+-      Using a clever language feature when a direct, familiar idiom would
+-      be easier to review and change.
+-    bad_example: |
+-      result = next((v for v in xs if pred(v)), None)
+-    good_example: |
+-      result = None
+-      for v in xs:
+-          if pred(v):
+-              result = v
+-              break
+-  - name: Duplicated business rules called acceptable repetition
+-    description: >
+-      Duplicating business rules, state rules, or fragile constants across
+-      modules and calling it acceptable repetition instead of consolidating
+-      the single source of truth.
+-    bad_example: |
+-      # tax_rate repeated as a literal constant in three separate modules
+-    good_example: |
+-      # tax_rate sourced from one shared constant, imported by all callers
+-
+ tooling:
+   linters: "Boring-code-review is a review discipline, not a lint rule; apply it in human or agent code review."
+ applies_to_languages:
+diff --git a/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/java-conventions.styleguide.yaml b/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/java-conventions.styleguide.yaml
+index 0b6128b6c..cf4563e05 100644
+--- a/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/java-conventions.styleguide.yaml
++++ b/service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/java-conventions.styleguide.yaml
+@@ -17,12 +17,4 @@ patterns:
+     good_example: |
+       Optional<User> find(String id) { return Optional.ofNullable(users.get(id)); }
+ 
+-anti_patterns:
+-  - name: Swallowed Exception
+-    description: "Catching an exception and doing nothing hides the failure from the caller."
+-    bad_example: |
+-      try { write(file); } catch (IOException e) { }
+-    good_example: |
+-      try { write(file); } catch (IOException e) { throw new UncheckedIOException(e); }
+-
+ quality_test: "Does every lookup that may find nothing say so in its return type, and is every opened resource closed on every path?"
