@@ -106,7 +106,11 @@ public final class FragmentRules {
     /** The faults of the read's facts, the edge rules only when every graph document was read, as reasons. */
     static List<Reason> reasons(PackContents contents, boolean orphans) {
         List<Reason> findings = new ArrayList<>();
+        Set<String> unjudged = unjudgedEnhancements(contents);
         for (Finding fault : judge(contents.stepEnhancements(), GraphRules.graphsRead(contents))) {
+            if (EDGE_RULES.contains(fault.rule()) && unjudged.contains(fault.path())) {
+                continue;
+            }
             if ((fault.rule() == StepEnhancementFault.COMPANION_ORPHAN) == orphans) {
                 findings.add(Findings.at(
                         PackCodes.PROMPT_FRAGMENT_INVALID,
@@ -116,6 +120,21 @@ public final class FragmentRules {
             }
         }
         return findings;
+    }
+
+    /**
+     * The files of the step enhancements an edge with a malformed endpoint starts at (#582): the binding refuses that
+     * edge, which is the fault; the edge rules do not judge the enhancement a second time on an edge it wrote.
+     */
+    private static Set<String> unjudgedEnhancements(PackContents contents) {
+        Set<String> ids = GraphRules.enhancementsWithMalformedEdges(contents);
+        Set<String> files = new HashSet<>();
+        for (Enhancement enhancement : contents.stepEnhancements().enhancements()) {
+            if (ids.contains(enhancement.id())) {
+                files.add(enhancement.path());
+            }
+        }
+        return files;
     }
 
     /**

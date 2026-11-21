@@ -420,8 +420,7 @@ public final class DomainRepositoryService
     private static List<PackEdge> edges(PackIdentifier pack, Resolved resolved) {
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
         if (!graphs.violations().isEmpty()) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+            throw graphs.unreadable(pack);
         }
         List<PackEdge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
@@ -570,6 +569,9 @@ public final class DomainRepositoryService
     }
 
     private static Pack assemble(PackIdentifier pack, Resolved resolved) {
+        // The lenient load: a graph document the store refuses (a schema fault, a body_path escape, or an edge
+        // endpoint whose qualifier is no pack id, #582) is left out, and its violation is not carried. A removal still
+        // fails closed: it reads the pack's authored edges too, and that read refuses such a pack (authored()).
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
         // One walk, shared with the store's read, so the load records each link as StoreRead.of does (D6).
         PackFileSet.Walk walk = PackFileSet.walk(resolved.directory, pack.value());

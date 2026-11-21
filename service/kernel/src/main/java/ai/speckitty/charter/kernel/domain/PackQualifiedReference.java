@@ -2,7 +2,6 @@ package ai.speckitty.charter.kernel.domain;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /**
  * A reference an artifact makes to another artifact of the offering: bare ({@code <urn>}), a reference inside the
@@ -14,31 +13,25 @@ import java.util.regex.Pattern;
  */
 public record PackQualifiedReference(Optional<String> packName, String urn) {
 
-    /** The pack-name grammar without its anchors, the one text {@link #PACK_NAME_GRAMMAR} and {@link #QUALIFIER} share. */
-    private static final String PACK_NAME_FORM = "[a-z0-9][a-z0-9_-]*";
-
     /**
-     * The grammar a pack name follows: a lower-case token that starts with a letter or digit. The pack descriptor
-     * schema constrains {@code name} to the same pattern, so every authored pack can be referenced.
+     * The optional {@code <pack-name>::} qualifier as the contracts write it in a reference pattern, and as {@code
+     * SubstepCandidate} writes its grammar: a pack id ({@link PackIdentifier}) spelled as {@link
+     * IdentifierGrammar#SLUG_AS_WRITTEN}. It is the one written form of the qualifier, and the schema pin tests and the
+     * contract parity test read it. A pattern cannot cap one part of a longer string without lookahead, so the written
+     * form leaves out the {@value PackIdentifier#MAX_LENGTH}-character cap; {@link #isPackName} enforces it (#582).
      */
-    public static final String PACK_NAME_GRAMMAR = "^" + PACK_NAME_FORM + "$";
+    public static final String QUALIFIER = "(" + IdentifierGrammar.SLUG_AS_WRITTEN + "::)?";
 
-    /**
-     * The optional {@code <pack-name>::} qualifier as the contracts write it at the start of a reference pattern, and as
-     * {@code SubstepCandidate} writes its grammar. It is the one written form of the qualifier: the schema pin tests read
-     * it, and no site rebuilds it from {@link #PACK_NAME_GRAMMAR}.
-     */
-    public static final String QUALIFIER = "(" + PACK_NAME_FORM + "::)?";
-
-    private static final Pattern PACK_NAME = Pattern.compile(PACK_NAME_GRAMMAR);
+    /** The longest pack name a refusal repeats; a longer one is cut, since the text is unbounded. */
+    private static final int ECHO_LENGTH = PackIdentifier.MAX_LENGTH + 1;
 
     /**
      * Checks the parts.
      *
      * @param packName the pack a qualified reference names; empty for a bare reference
      * @param urn the URN part
-     * @throws IllegalArgumentException when the URN is empty or holds the {@code ::} qualifier, or a named pack
-     *     breaks the pack-name grammar
+     * @throws IllegalArgumentException when the URN is empty or holds the {@code ::} qualifier, or a named pack is no
+     *     pack id
      */
     public PackQualifiedReference {
         Objects.requireNonNull(packName, "packName");
@@ -49,20 +42,32 @@ public record PackQualifiedReference(Optional<String> packName, String urn) {
         if (urn.contains("::")) {
             throw new IllegalArgumentException("The URN part of a reference holds no :: qualifier");
         }
-        if (packName.isPresent() && !PACK_NAME.matcher(packName.get()).matches()) {
-            throw new IllegalArgumentException(
-                    "A pack-qualified reference names its pack as " + PACK_NAME.pattern() + ": " + packName.get());
+        if (packName.isPresent() && !isPackName(packName.get())) {
+            throw new IllegalArgumentException(refusal(packName.get()));
         }
     }
 
     /**
-     * Whether a text is a pack name under the grammar.
+     * Whether a text is a pack name: the pack-name part of a reference is a pack id, the name a pack is registered
+     * under (ADR-0075 decision 2, #582).
      *
      * @param name the candidate pack name
-     * @return {@code true} when it follows {@link #PACK_NAME_GRAMMAR}
+     * @return {@code true} when it is a pack id ({@link PackIdentifier#isPackId})
      */
     public static boolean isPackName(String name) {
-        return PACK_NAME.matcher(name).matches();
+        return PackIdentifier.isPackId(name);
+    }
+
+    /**
+     * The refusal of a pack name that is no pack id, for a caller that refuses one in the same words.
+     *
+     * @param name the refused pack name
+     * @return the refusal: the pack-id grammar, then the name, cut after {@value #ECHO_LENGTH} characters
+     */
+    public static String refusal(String name) {
+        String shown = name.length() > ECHO_LENGTH ? name.substring(0, ECHO_LENGTH) + "..." : name;
+        return "A pack-qualified reference names its pack by a pack id. " + PackIdentifier.GRAMMAR_DETAIL
+                + " It names '" + shown + "'.";
     }
 
     /**
@@ -71,7 +76,7 @@ public record PackQualifiedReference(Optional<String> packName, String urn) {
      * @param text the reference, for example {@code writing::directive:DIRECTIVE_009}
      * @return the reference, bare or pack-qualified
      * @throws IllegalArgumentException when the qualified form is malformed: no pack name before {@code ::}, an empty
-     *     URN after it, more than one {@code ::} qualifier, or a pack name outside the pack-name grammar
+     *     URN after it, more than one {@code ::} qualifier, or a pack name that is no pack id
      */
     public static PackQualifiedReference parse(String text) {
         Objects.requireNonNull(text, "text");

@@ -129,7 +129,8 @@ final class RelationshipWire {
         try {
             return PackQualifiedReference.parse(reference);
         } catch (IllegalArgumentException malformed) {
-            throw new IllegalArgumentException("not a URN of a known kind: " + reference, malformed);
+            throw new IllegalArgumentException(
+                    "not a URN of a known kind: " + reference + " (" + malformed.getMessage() + ")", malformed);
         }
     }
 

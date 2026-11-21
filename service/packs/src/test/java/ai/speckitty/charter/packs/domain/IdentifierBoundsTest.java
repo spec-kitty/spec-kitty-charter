@@ -107,20 +107,20 @@ class IdentifierBoundsTest {
     }
 
     @Test
-    @DisplayName("an asset-backed guard's pack name is capped at 64 and still captured whole at the cap")
-    void aGuardImplementationPackIsCappedAt64() {
-        String pack = "q" + "a".repeat(63);
+    @DisplayName("an asset-backed guard's pack name is a pack id, capped at 63 and still captured whole at the cap")
+    void aGuardImplementationPackIsCappedAt63() {
+        String pack = "q" + "a".repeat(PackIdentifier.MAX_LENGTH - 1);
         assertThat(GuardImplementation.parse(pack + "::asset:lint"))
                 .isEqualTo(new GuardImplementation.AssetBacked(Optional.of(pack), "lint"));
         assertThatThrownBy(() -> GuardImplementation.parse(pack + "x::asset:lint"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("longer than 64")
+                .hasMessageContaining("longer than 63")
                 .hasMessageNotContaining(pack);
         // The cap is checked before the spelling is matched, so an over-long qualifier is refused for its length even
         // when the rest of the text is no spelling at all, and the refusal never echoes the text.
         assertThatThrownBy(() -> GuardImplementation.parse(pack + "x::asset:!"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("longer than 64")
+                .hasMessageContaining("longer than 63")
                 .hasMessageNotContaining(pack);
     }
 

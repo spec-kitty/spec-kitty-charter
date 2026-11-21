@@ -9,12 +9,12 @@
         "source": {
           "title": "Source",
           "type": "string",
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|glossary_context|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|glossary_context|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
         },
         "target": {
           "title": "Target",
           "type": "string",
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|glossary_context|term|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|glossary_context|term|skill|anti_pattern|asset|template|action|mission_type|step_enhancement):[A-Za-z0-9_/.-]+$"
         },
         "relation": {
           "$ref": "#/$defs/Relation"
@@ -55,7 +55,7 @@
           "if": {
             "properties": {
               "target": {
-                "pattern": "^([a-z0-9][a-z0-9_-]*::)?term:"
+                "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?term:"
               }
             },
             "required": [

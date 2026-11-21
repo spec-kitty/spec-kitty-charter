@@ -170,8 +170,7 @@ final class CompositionFactsBuilder {
     }
 
     private static CharterRefusal graphUnreadable(PackIdentifier pack) {
-        return new CharterRefusal(
-                RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+        return FilesystemPackStore.graphUnreadable(pack, Optional.empty());
     }
 
     /**

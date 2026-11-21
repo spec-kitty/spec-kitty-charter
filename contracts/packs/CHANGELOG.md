@@ -19,6 +19,28 @@ while the major is 0 a minor may break and a patch may not, and a minor bump ove
 The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after the release candidate
 `0.1.0-rc.2`.
 
+### Breaking
+
+- The pack-name part of a reference is a pack id (#582, ADR-0075 decision 2): a kebab slug, lower-case letters and
+  digits in hyphen-separated runs, at most 63 characters, the id a pack is registered under.
+  - The `<pack>::` qualifier of `graph-shard.schema.json` and `org-fragment.schema.json` (edge `source`, `target` and
+    the term-target branch), of `glossary.schema.json` `see_also` and of `mission-type.schema.json` substep
+    `candidates` is written `[a-z0-9]+(-[a-z0-9]+)*`. A qualifier with `_`, a leading, trailing or doubled hyphen no
+    longer validates. The qualifiers of `guard.schema.json` `implemented_by` and `lifecycle.schema.json` guard `ref`
+    were already written so.
+  - The charter contract writes no lookahead, and the packs contract follows the same rule for the qualifier, so no
+    schema caps it (a decision, though `glossary.schema.json` uses lookahead for its term parts): a
+    pack name of more than 63 characters passes the schema, and the service refuses the pack at load.
+  - The descriptor `name` (`pack-descriptor.schema.json`) is a pack id: `^[a-z0-9]+(-[a-z0-9]+)*$`, 1 to 63
+    characters, where it was `^[a-z0-9][a-z0-9_-]*$` with at most 64. The service already required a source pack's
+    `name` to equal its registered id.
+  - The lifecycle guard `ref` (`<pack>::guard:<id>`) is at most 135 characters, where it was 136: a pack id of 63, the
+    separator and a guard id of 64.
+  - A pack the service stored before this change with such a qualifier, or with a descriptor `name` that is no pack
+    id, is refused by the reads that judge it until it is registered again.
+  - A consumer rewrites a pack name that is not a pack id. The spec-kitty-open-packs census at `3bedeef` found none:
+    24 pack names and 607 qualified references, all pack ids.
+
 ## 0.1.0-rc.2
 
 The second release candidate, cut together with the charter contract `0.2.0-rc.3` and the service

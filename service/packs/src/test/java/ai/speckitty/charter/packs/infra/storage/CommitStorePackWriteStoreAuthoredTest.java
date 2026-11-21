@@ -73,6 +73,7 @@ class CommitStorePackWriteStoreAuthoredTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("a graph document of qa cannot be read");
+                .hasMessage("a graph document of qa cannot be read: qa/drg/fragment.yaml: node D1 body_path"
+                        + " '../outside.directive.yaml' escapes the pack root");
     }
 }

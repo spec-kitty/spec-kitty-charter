@@ -85,7 +85,7 @@
         "see_also": {
           "description": "Related terms, each a term reference whose two ids are Slugs: term:<context-id>/<term-id> for a term of this pack, or <pack>::term:<context-id>/<term-id> for a term another pack holds (the pack-qualified reference grammar). A bare entry that only another pack holds is refused as an unqualified reference; one that no held context resolves is a broken reference.",
           "items": {
-            "pattern": "^(?!.*\\n)([a-z0-9][a-z0-9_-]*::)?term:(?=[a-z0-9-]{1,64}/)[a-z][a-z0-9]*(-[a-z0-9]+)*/(?=[a-z0-9-]{1,64}$)[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "pattern": "^(?!.*\\n)([a-z0-9]+(-[a-z0-9]+)*::)?term:(?=[a-z0-9-]{1,64}/)[a-z][a-z0-9]*(-[a-z0-9]+)*/(?=[a-z0-9-]{1,64}$)[a-z][a-z0-9]*(-[a-z0-9]+)*$",
             "type": "string"
           },
           "minItems": 1,

@@ -30,9 +30,10 @@ properties:
         - the project configuration that lists the pack
   name:
     type: string
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
     minLength: 1
-    maxLength: 64
-    description: The name the pack's pack.yaml gives, the handle a pack-qualified reference uses.
+    maxLength: 63
+    description: The name the pack's pack.yaml gives, the handle a pack-qualified reference uses, shaped as a pack id (#582).
     x-derived:
       rule: The name of the pack's descriptor.
       inputs:

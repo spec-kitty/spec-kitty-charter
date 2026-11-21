@@ -647,6 +647,7 @@ public final class FileSystemPackInspector implements PackReading {
             return Optional.of(new StepEnhancementFacts.Edge(type.get(), bare, reference.urn(), reference.packName()));
         } catch (IllegalArgumentException malformed) {
             // Not a reference: the graph document is judged where it is read; the rule sees a target that is no step.
+            // A qualifier that is no pack id (#582) keeps the edge rules from judging the pack (GraphRules.graphsRead).
             return Optional.of(
                     new StepEnhancementFacts.Edge(type.get(), bare, target.replace("::", ":"), Optional.empty()));
         }
