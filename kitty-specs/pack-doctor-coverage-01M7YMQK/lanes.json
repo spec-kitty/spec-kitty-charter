@@ -1,0 +1,312 @@
+{
+  "version": 1,
+  "mission_slug": "pack-doctor-coverage-01M7YMQK",
+  "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+  "mission_branch": "kitty/mission-pack-doctor-coverage-01M7YMQK",
+  "target_branch": "feat/pack-doctor-coverage",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/validation/Origin.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/validation/Reason.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/validation/ReasonTest.java",
+        "service/pack-check/src/main/java/ai/speckitty/charter/packcheck/Problems.java",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/ProblemsTest.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/PackSetVerdict.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureFault.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureVerdict.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/CompositionRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ClosureFaultTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/CompositionRulesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PackRulesetsClosureTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        ".github/workflows/mutation-testing.yml",
+        ".github/workflows/service-release.yml",
+        ".github/workflows/service.yml",
+        "build-logic/**",
+        "contracts/charter/changes/2026-11-20-pack-check-skipped-reasons.md",
+        "contracts/charter/changes/2026-11-21-pack-doctor.md",
+        "contracts/src/test/**",
+        "docs/architecture/diagrams/graph-walk-classes.puml",
+        "docs/architecture/diagrams/graph-walk-classes.svg",
+        "docs/architecture/diagrams/graph-walk-sequence.puml",
+        "docs/architecture/diagrams/graph-walk-sequence.svg",
+        "docs/architecture/hexagonal-service.md",
+        "docs/conformance/**",
+        "docs/development/notes/pack-code-unification.md",
+        "docs/guides/check-packs.md",
+        "docs/guides/service-build.md",
+        "gradle.properties",
+        "scripts/release/**",
+        "service/charter-reports/build.gradle.kts",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/CharterWiringTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackCheckReportContractTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/packcheck/**",
+        "service/deployable/src/test/java/ai/speckitty/charter/packdoctor/**",
+        "service/pack-check/build.gradle.kts",
+        "service/pack-check/licenses/**",
+        "service/pack-check/src/main/java/ai/speckitty/charter/packcheck/Arguments.java",
+        "service/pack-check/src/main/java/ai/speckitty/charter/packcheck/ConfigRoot.java",
+        "service/pack-check/src/main/java/ai/speckitty/charter/packcheck/PackCheckMain.java",
+        "service/pack-check/src/main/java/ai/speckitty/charter/packcheck/ReportWriter.java",
+        "service/pack-check/src/main/java/ai/speckitty/charter/packcheck/package-info.java",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/ArgumentsTest.java",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/ConfigRootTest.java",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/MalformedDescriptorTest.java",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/PackCheckMainTest.java",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/jar/**",
+        "service/pack-check/src/test/java/ai/speckitty/charter/packcheck/parity/**",
+        "service/pack-doctor/build.gradle.kts",
+        "service/pack-doctor/licenses/**",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/Arguments.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/ConfigRoot.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/PackDoctorMain.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/package-info.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ArgumentsTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ConfigRootTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/MalformedDescriptorTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/NoPackCheckSurfaceTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/PackDoctorMainTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/jar/**",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/parity/**",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-21-preset-item-refusals.md",
+        "contracts/charter/scenarios/activation-deny-satisfied.feature",
+        "contracts/charter/scenarios/activation-kind-model.feature",
+        "contracts/charter/scenarios/activation-register.feature",
+        "contracts/charter/scenarios/activation-ruling-changes.feature",
+        "contracts/charter/scenarios/activation-selections.feature",
+        "contracts/charter/scenarios/composition.feature",
+        "contracts/charter/scenarios/effective-context-scoping.feature",
+        "contracts/charter/scenarios/effective-overriders.feature",
+        "contracts/charter/scenarios/effective-reads.feature",
+        "contracts/charter/scenarios/layer-merge.feature",
+        "contracts/charter/scenarios/pack-presets.feature",
+        "contracts/charter/scenarios/pack-removal.feature",
+        "contracts/charter/scenarios/registration/preset-items.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackRegistrationSteps.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/RequiredNotHeldCoverageTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/PackSetCheck.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/set/PackSetCheckTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureImpactCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/WriteFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCodes.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PackRulesets.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PresetItemRules.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompositionFactsBuilder.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/WriteFactsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PresetItemRulesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/golden/CompositionGoldenTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompositionFactsBuilderTest.java",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/anti_patterns/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/presets/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/**",
+        "service/packs/src/testFixtures/resources/example-packs/org-base/presets/**",
+        "service/packs/src/testFixtures/resources/example-packs/org-base/tactics/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-21-manifest-stale.md",
+        "contracts/charter/scenarios/registration/whole-pack-registration.feature",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/RoundTripObservation.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackExpectation.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/roundtrip/RoundTripObservationTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackManifests.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackRoundTrip.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/ManifestRules.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageCodes.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageRulesets.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/TreeCensus.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ManifestStampHelper.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackFlowTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/rules/ManifestRulesTest.java",
+        "service/packs/src/testFixtures/resources/example-packs/*/pack-manifest.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/FullPassParityTest.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/ClosureWalkPhase.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/EnhancementCompose.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/EnhancementComposeTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-21-pack-doctor-report.md",
+        "contracts/charter/schemas/PackDoctorReport.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackDoctorReportContractTest.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/Problems.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/ReportWriter.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/report/**",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ProblemsTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ReportWriterTest.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/report/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java",
+        "service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/Remediate.java",
+        "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/RemediateTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackRemediation.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackRemediationTest.java"
+      ],
+      "predicted_surfaces": [
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-f"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "docs/_meta/spelling-words.txt",
+        "docs/adr/0042-*.md",
+        "docs/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check.md",
+        "docs/adr/0083-*.md",
+        "docs/adr/README.md",
+        "docs/architecture/architectural-patterns-applied.md",
+        "docs/architecture/composition-and-activation-rules.md",
+        "docs/changelog/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-d",
+        "lane-f",
+        "lane-g"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "kitty-specs/pack-doctor-coverage-01M7YMQK/research/closure-evidence.md",
+        "kitty-specs/pack-doctor-coverage-01M7YMQK/research/open-packs-drafts.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-h"
+      ],
+      "parallel_group": 6
+    }
+  ],
+  "computed_at": "2026-11-21T13:04:09.649868+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP09"
+  ],
+  "planning_commit_sha": "172ed233f0a9d2d6f8ebaa7ae04e01a97fd1ff4a"
+}

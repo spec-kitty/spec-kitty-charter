@@ -1,4 +1,8 @@
 {
+  "change_mode": "bulk_edit",
+  "contracts": "none",
+  "contracts_rationale": "The mission changes the repository's own contract under contracts/charter (refusal codes, the PackDoctorReport schemas, scenarios, change fragments); it defines no separate planning-time interface contracts.",
+  "coordination_branch": "kitty/mission-pack-doctor-coverage-01M7YMQK",
   "create_return_branch": "feat/pack-doctor-coverage",
   "created_at": "2026-11-21T08:49:26.777275+00:00",
   "flattened": false,
@@ -14,13 +18,18 @@
   "purpose_context": "Open-packs still runs a Python copy of the charter's cross-pack rules because pack-check misses some faults that registration refuses and both accept some faults the operator now rules must be refused. This mission renames pack-check to pack-doctor (validate and remediate), makes registration and pack-doctor refuse unheld or undeclared preset ids and stale manifest hashes, adds the closure walk under --full, and adds a structured report and a manifest and canonical-form remediation, so open-packs can retire its Python rules.",
   "purpose_tldr": "One answer on every surface: pack-doctor and registration refuse the same pack faults, and pack-doctor can repair manifests.",
   "slug": "pack-doctor-coverage-01M7YMQK",
-  "target_branch": "feat/pack-doctor-coverage",
-  "topology": "single_branch",
-  "topology_settled": false,
-  "topology_source": "default",
-  "change_mode": "bulk_edit",
-  "vcs": "git",
   "source_description": "#629, #630, #632, #614 (epic #549); operator rulings R-a..R-m",
-  "contracts": "none",
-  "contracts_rationale": "The mission changes the repository's own contract under contracts/charter (refusal codes, the PackDoctorReport schemas, scenarios, change fragments); it defines no separate planning-time interface contracts."
+  "target_branch": "feat/pack-doctor-coverage",
+  "topology": "lanes_with_coord",
+  "topology_decision": {
+    "code_lane_count": 8,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 9
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git"
 }
