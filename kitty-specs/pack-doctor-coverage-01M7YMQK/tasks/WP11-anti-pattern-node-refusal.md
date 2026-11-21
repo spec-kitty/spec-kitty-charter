@@ -1,6 +1,6 @@
 ---
 work_package_id: WP11
-title: A file-less anti_pattern node is refused (R-r;
+title: A file-less anti_pattern node is refused (R-r; issue 154)
 dependencies:
 - WP10
 requirement_refs:
@@ -20,7 +20,7 @@ phase: Phase 1 - Foundation
 history:
 - at: '2026-11-21T22:30:00Z'
   actor: planner-priti
-  action: Prompt generated for ruling R-r (all of #154 in this PR) - the file-less node refusal, ADR-0052 d14 and ADR-0053 d31
+  action: Prompt generated for ruling R-r (all of issue 154 in this PR) - the file-less node refusal, ADR-0052 d14 and ADR-0053 d31
 agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/
 create_intent:

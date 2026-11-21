@@ -121,7 +121,9 @@ registration and write, **never on a composing read**.
 
 ### T011 — `held` and `declared` replace `defined`
 - Red first: a `CompositionFactsBuilderTest` case where a pack holds `directive:X` as a file and only a graph node for
-  `anti_pattern:Y`. Assert `held` = {X}, and `declared` ⊇ {X, Y}.
+  `action:M/Y` (a mission type step). Assert `held` = {X}, and `declared` ⊇ {X, action:M/Y}. Do not use a graph-only
+  `anti_pattern` node: under ruling R-r it is refused once WP11 lands (plan D13); an anti-pattern case has its file
+  and is in both sets.
 - Replace `PackCompositionFacts.defined` outright with `held` (artifact files) and `declared` (every graph-node URN
   plus `held`). Move every reader of `defined` to the one it means: `PackRegistrationService`,
   `PackUninstallService`, `OfferingReadService`, `StepHolding`, `PackReadout`, `WriteFacts` and the tests. Read each

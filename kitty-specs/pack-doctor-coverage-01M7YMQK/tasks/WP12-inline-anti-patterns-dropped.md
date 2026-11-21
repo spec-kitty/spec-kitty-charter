@@ -1,6 +1,6 @@
 ---
 work_package_id: WP12
-title: The procedure and styleguide shapes drop anti_patterns (R-r; closes
+title: The procedure and styleguide shapes drop anti_patterns (R-r; closes issue 154)
 dependencies:
 - WP10
 requirement_refs:
@@ -22,7 +22,7 @@ phase: Phase 1 - Foundation
 history:
 - at: '2026-11-21T22:30:00Z'
   actor: planner-priti
-  action: Prompt generated for ruling R-r (all of #154 in this PR) - the inline drop, ADR-0052 d16
+  action: Prompt generated for ruling R-r (all of issue 154 in this PR) - the inline drop, ADR-0052 d16
 agent_profile: java-jenny
 authoritative_surface: contracts/packs/schemas/
 create_intent:

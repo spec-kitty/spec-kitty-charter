@@ -1,6 +1,6 @@
 ---
 work_package_id: WP10
-title: The anti_pattern file kind and the example anti-patterns as files (R-p, R-q, R-r;
+title: The anti_pattern file kind and the example anti-patterns as files (R-p, R-q, R-r; issue 154)
 dependencies:
 - WP02
 requirement_refs:
@@ -26,7 +26,7 @@ history:
   action: Prompt generated for rulings R-p and R-q (a new WP builds the anti_pattern file kind before WP03)
 - at: '2026-11-21T22:30:00Z'
   actor: planner-priti
-  action: Re-planned for ruling R-r (all of #154 in this PR) - every example inline anti-pattern becomes a file (T042); the refusal and the inline drop are WP11 and WP12
+  action: Re-planned for ruling R-r (all of issue 154 in this PR) - every example inline anti-pattern becomes a file (T042); the refusal and the inline drop are WP11 and WP12
 agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/
 create_intent:

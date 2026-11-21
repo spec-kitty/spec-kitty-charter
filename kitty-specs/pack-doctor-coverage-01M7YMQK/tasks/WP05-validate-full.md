@@ -1,6 +1,6 @@
 ---
 work_package_id: WP05
-title: validate --full - delegations, references, enhancement targets (#632 item 3, ruling R-s)
+title: 'validate --full: delegations, references, enhancement targets (#632 item 3, ruling R-s)'
 dependencies:
 - WP03
 - WP11

@@ -26,7 +26,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 - at: '2026-11-21T22:30:00Z'
   actor: planner-priti
-  action: Rulings R-r (all of #154) and R-s (narrowed --full) added to the ADR notes; ADR-0017 note
+  action: Rulings R-r (all of issue 154) and R-s (narrowed --full) added to the ADR notes; ADR-0017 note
 agent_profile: architect-alphonso
 authoritative_surface: docs/
 create_intent:
