@@ -230,6 +230,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 continue;
             }
             Optional<ClosureView> now = judge(new ClosureRoots.Roots(left), afterViews, after, faults);
+            if (faults.halted()) {
+                break;
+            }
             if (now.isEmpty()) {
                 continue;
             }
@@ -270,6 +273,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
         Faults faults = new Faults();
         for (ClosureRoots.Roots roots : found.closures()) {
             Optional<ClosureView> now = judge(roots, after, staged, faults);
+            if (faults.halted()) {
+                break;
+            }
             if (now.isEmpty()) {
                 continue;
             }
@@ -277,7 +283,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
             diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now.get()));
             changes.put(roots, new ActivationImpact.ClosureChange(was, now.get()));
         }
-        walkFaults(found, replacement, changes, staged, session).forEach(faults::add);
+        if (!faults.halted()) {
+            walkFaults(found, replacement, changes, staged, session, faults);
+        }
         if (!faults.isEmpty()) {
             return new Impact(faults.verdict(), Notices.NONE);
         }
@@ -427,18 +435,18 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * first, then the pins, then the enhancements ({@link ClosureWalk}), every breach (#556, FR-005). A closure that did
      * not compose or broke a relation has no view, and is not walked.
      */
-    private List<ClosureFault> walkFaults(
+    private void walkFaults(
             ClosureRoots.Found found,
             Replacement replacement,
             Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> judged,
             StagedPackViews.View staged,
-            StagedPackViews.Session session) {
+            StagedPackViews.Session session,
+            Faults faults) {
         PackIdentifier written = replacement.configured().id();
         ClosureWalk.Profiles profiles =
                 (holder, id) -> holder.equals(written) && replacement.pack().isPresent()
                         ? profileIn(replacement.pack().get(), id)
                         : profileIn(storeOf(session).load(holder), id);
-        List<ClosureFault> breaches = new ArrayList<>();
         for (ClosureRoots.Roots roots : found.closures()) {
             if (roots.ids().size() != 1 || !judged.containsKey(roots)) {
                 continue;
@@ -449,11 +457,20 @@ public final class ClosureImpactCheck implements ImpactCheck {
                     : staged.descriptors().get(declaring);
             ClosureView own = Objects.requireNonNull(judged.get(roots), "a judged closure")
                     .after();
-            walk.walk(new ClosureWalk.OwnClosure(declaring, descriptor, own, profiles, session.enhancements()))
-                    .faults()
-                    .forEach(breach -> breaches.add(withinClosure(roots, breach, staged)));
+            List<ClosureFault> breaches;
+            try {
+                ClosureWalk.OwnClosure ownClosure =
+                        new ClosureWalk.OwnClosure(declaring, descriptor, own, profiles, session.enhancements());
+                breaches = walk.walk(ownClosure).faults();
+            } catch (CharterRefusal unreadable) {
+                // A read failure of a later closure's walk never displaces a fault already found (D1).
+                if (faults.isEmpty()) {
+                    throw unreadable;
+                }
+                return;
+            }
+            breaches.forEach(breach -> faults.add(withinClosure(roots, breach, staged)));
         }
-        return breaches;
     }
 
     /** The store that loads the aggregates; a session that has none cannot judge a fallback, which is a defect, not a refusal. */
@@ -481,7 +498,8 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * Composes the closure with the write in place and judges its relations, adding every fault to {@code faults}
      * (#556, FR-003, FR-009). A closure that does not compose, or breaks a relation, has no view: its notices and its
      * walk are not judged. Each fault of a compose phase is placed in the closure one by one, never as one refusal
-     * inside another (PR #618 review B1). A refusal that is no closure check's (a pack that cannot be read) propagates.
+     * inside another (PR #618 review B1). A refusal that is no closure check's (a pack that cannot be read) propagates
+     * when no fault was found yet, and otherwise halts the walk of the closures, the faults found standing (D1).
      *
      * @return the closure's view, which carries its floor and locks; empty when it has a fault
      */
@@ -491,7 +509,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
         try {
             judged = views.offering().judged(roots.ids());
         } catch (CharterRefusal refused) {
-            place(roots, lifted(refused), staged, faults);
+            settle(roots, refused, staged, faults);
             return Optional.empty();
         }
         if (judged.closure().isEmpty()) {
@@ -512,14 +530,25 @@ public final class ClosureImpactCheck implements ImpactCheck {
         try {
             return Optional.of(views.queries().snapshot(Optional.of(roots.ids())));
         } catch (CharterRefusal refused) {
-            place(roots, lifted(refused), staged, faults);
+            settle(roots, refused, staged, faults);
             return Optional.empty();
         }
     }
 
-    /** A closure's refusal as one of its faults; a refusal that is none (a read failure) propagates as it is. */
-    private static ClosureFault lifted(CharterRefusal refused) {
-        return ClosureFault.lift(refused).orElseThrow(() -> refused);
+    /**
+     * A closure's refusal placed as one of its faults. A refusal that is none (a read failure) propagates as it is when
+     * no fault was found yet, and halts the judging when an earlier closure has one, so that fault stays the answer.
+     */
+    private static void settle(
+            ClosureRoots.Roots roots, CharterRefusal refused, StagedPackViews.View staged, Faults faults) {
+        Optional<ClosureFault> lifted = ClosureFault.lift(refused);
+        if (lifted.isPresent()) {
+            place(roots, lifted.get(), staged, faults);
+        } else if (faults.isEmpty()) {
+            throw refused;
+        } else {
+            faults.halt();
+        }
     }
 
     /** The closure before the write; none when it did not exist or cannot be composed. */
@@ -568,6 +597,15 @@ public final class ClosureImpactCheck implements ImpactCheck {
     private static final class Faults {
         private final List<ClosureFault> found = new ArrayList<>();
         private final List<UnaryOperator<ClosureFault>> besideOthers = new ArrayList<>();
+        private boolean halted;
+
+        void halt() {
+            halted = true;
+        }
+
+        boolean halted() {
+            return halted;
+        }
 
         void add(ClosureFault fault) {
             add(fault, UnaryOperator.identity());

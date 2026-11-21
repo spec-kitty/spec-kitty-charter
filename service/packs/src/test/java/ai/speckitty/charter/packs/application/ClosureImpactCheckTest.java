@@ -659,6 +659,34 @@ class ClosureImpactCheckTest {
     }
 
     @Test
+    void aLaterClosureThatCannotBeReadNeverDisplacesTheFaultOfAnEarlierOne(@TempDir Path host) {
+        // #556, D1 (PR #618 squad, correctness lens): a write that one closure refuses answers that refusal, as it did
+        // when the first faulting closure threw, even when a stored pack of a later closure cannot be read.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        rig.register(
+                "derived",
+                rig.stage(derived("1.0.0").file("relations.graph.yaml", overridesFrom("OPEN_ONE"))),
+                Preconditions.none());
+        rig.install(
+                "later",
+                Packs.of(PackRegistrationServiceTest.ulid('W'), "later", "1.0.0", "project", DEPENDS_ON_BASE)
+                        .directive("LATER_ONE", "Later")
+                        .file(
+                                "directives/LATER_ONE.directive.yaml",
+                                Packs.directiveText("LATER_ONE", "Later") + "references:\n  - directive:X\n"));
+        Packs locking = Packs.of(BASE_ID, "base", "2.0.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nartifacts:\n  directive:OPEN_ONE: locked\n")
+                .directive("LOCKED_ONE", "Locked")
+                .directive("OPEN_ONE", "Open");
+
+        CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(locking), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(refused.getMessage()).contains("rooted at derived");
+    }
+
+    @Test
     void closuresWithSeveralComposeFaultsEachAreOneFlatRefusalNamingEveryFaultInItsClosure(@TempDir Path host) {
         // #556, FR-008, US1.3 (PR #618 review B1): a compose phase's faults are placed in their closure one by one,
         // never nested as one refusal inside another, so the count is every fault's and each one names its closure.
