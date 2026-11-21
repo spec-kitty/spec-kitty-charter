@@ -3,7 +3,7 @@ title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, pa
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
 updated: 2026-11-21T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082)
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -48,8 +48,10 @@ note under decision 2.
 
 **Status note 2026-11-21** ([#631](https://github.com/spec-kitty/spec-kitty-charter/issues/631), operator ruling
 R34): a stray or unmodelled file in a pack never fails; it stays a `file_not_held` warning in both `pack-check` modes.
-The round trip leaves out every file the census does not hold (`TreeCensus.notHeld`: an excluded file, a file no rule
-covers, a mapped file nothing names). `PackRoundTripResult` carries those paths. The adapter is never handed them, and
+The round trip leaves out every file the census does not hold (`TreeCensus.notHeld`, ADR-0073: an excluded file, a file no rule
+covers, a mapped file nothing names). `PackRoundTripResult` carries the census's `NotHeldFile` for each, with its kind and
+reason, so pack-validation never re-derives why a file is not held. ADR-0070's whole-pack round trip stays the gate,
+now over the files the census holds. The adapter is never handed them, and
 the verdict checks only that the store did not write them. "#547 holds" below now reads "every file the census holds
 needs an outcome": a held file of a schema the round trip does not model still fails.
 
