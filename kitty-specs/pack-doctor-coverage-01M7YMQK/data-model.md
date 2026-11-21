@@ -20,7 +20,7 @@ The own closure is the declaring pack plus everything it reaches over `depends_o
 (`PackCompositionFacts.held`), so an `anti_pattern` is held only by its anti-pattern file. Declared items are every
 graph-node URN plus the held items (`PackCompositionFacts.declared`). These two fields replace `defined` outright.
 
-## Anti-pattern file (pack content, `anti_patterns/<id>.anti-pattern.yaml`; plan D12, FR-013)
+## Anti-pattern file (pack content, `anti_patterns/<id>.anti-pattern.yaml`; plan D12, FR-013; ruling R-r)
 
 The file form of the existing `anti_pattern` kind (ADR-0052 decision 8, as amended by ADR-0053 decision 30). Schema
 `contracts/packs/schemas/anti-pattern.schema.json`, closed (`additionalProperties: false`).
@@ -43,14 +43,44 @@ Domain: `AntiPattern` (a `CharterArtifact` of `ArtifactKind.ANTI_PATTERN`, URN `
 
 Invariants:
 
-- The file holds the artifact. A graph node of the same URN declares it and is an edge endpoint; it holds nothing.
-  After WP03, a node alone is in `declared`, never in `held`.
+- The file is the only form of an anti-pattern, and it holds the artifact. A graph node of the same URN in the same
+  pack declares it and is an edge endpoint; it holds nothing. A node without the file is refused (below).
 - A file whose `id` is not its stem, or that is not at `anti_patterns/<id>.anti-pattern.yaml`, is refused by the
-  existing stem and placement rule (`FileStems`); a schema breach (a missing `severity` or `bad_example`, an unknown
-  `severity`, an unknown key) by the existing schema answer.
-- A graph-only `anti_pattern` node is still accepted. Refusing it (ADR-0053 decision 31) waits for the open-packs
-  migration, and so does dropping the inline `anti_patterns` of styleguides and procedures (ADR-0052 decision 16).
-- The kind is activatable and served by no HTTP read, as `step_enhancement` is.
+  existing stem and placement rule (`FileStems`).
+- A schema breach is `artifact_schema_error` at the file and the breaching pointer, the existing answer of the one
+  validated read: a missing `severity` (no default, ADR-0053 d32) or `bad_example` (ADR-0053 d30), an unknown
+  `severity`, an unknown key.
+- Guidance rejects it with a `rejects` edge in its own pack's graph documents (ADR-0064 d12). Across packs the
+  target is pack-qualified and its pack is in the rejecting pack's `depends_on` (`pack_reference_pack_missing`
+  otherwise, ADR-0052 d11).
+- The kind is activatable; activating guidance that rejects it does not activate it (`rejects` is no cascade
+  relation, ADR-0052 d13). It is served by no HTTP read, as `step_enhancement` is.
+
+## File-less `anti_pattern` node (domain content rule, `GraphRules`; plan D13, FR-014)
+
+| Field | Value |
+|---|---|
+| code | `drg_schema_error` (`PackCodes.DRG_SCHEMA_ERROR`, VIOLATION; an existing contract code) |
+| location | the graph document (a `*.graph.yaml` shard or the fragment), pointer `/nodes/<n>` |
+| detail | `<origin>: anti_pattern:<id> is declared with no file; an anti-pattern is held by anti_patterns/<id>.anti-pattern.yaml in the same pack` |
+
+Invariants:
+
+- One finding per `anti_pattern` node of the pack's own graph documents whose URN the pack holds no file for, in
+  document order (shards, then the fragment), after the other graph rules.
+- A pack-qualified edge endpoint is no node, so it is never judged here.
+- `action` nodes are unaffected (a mission type step is a value of its type's file).
+
+## Inline `anti_patterns` block (storage edge, closed schema; plan D14, FR-015)
+
+| Field | Value |
+|---|---|
+| code | `artifact_schema_error` (the schema answer, `Wording.codeFor`) |
+| location | the styleguide or procedure file, pointer the root |
+| detail | `<origin>: unknown key 'anti_patterns'` |
+
+The procedure and styleguide shapes have no `anti_patterns` (pack schemas) and no `antiPatterns` (charter contract:
+`Styleguide`, `StyleguideRegistration`, `Procedure`). `AntiPatternEntry` and `StyleguideAntiPattern` do not exist.
 
 ## `manifest_stale` (storage edge, `Reason`)
 
@@ -66,17 +96,20 @@ Invariants:
 - A path that `manifest_membership` already names gets no `manifest_stale`.
 - A written-stale round-trip red is a separate cause.
 
-## `--full` phase (domain) — held pending the operator's ruling (plan D5)
+## `--full` phase (domain; plan D5, ruled R-s)
 
-The phase's faults are the existing codes:
+The phase's faults are the existing codes, from the existing collect-all functions, in registration's phase order:
 
-- `pack_reference_unqualified`;
-- `pack_reference_pack_missing`;
-- `pack_reference_artifact_missing`;
-- `specialization_cycle`.
+1. delegations (`PackCompositionResolver.unresolvedDelegations`): `pack_unreadable` with the violation
+   `substep_delegation_unresolved` at the mission type file;
+2. references (`PackCompositionResolver.referenceFaults`): `pack_reference_unqualified`,
+   `pack_reference_pack_missing`, `pack_reference_artifact_missing`;
+3. enhancement targets (`EnhancementCompose.targetFaults`): `pack_reference_pack_missing`,
+   `pack_reference_artifact_missing`.
 
-It runs in this order: references, enhancement targets, cycle. Every fault is collected, and each pack is judged
-within its own closure. `PackSetVerdict.Check` gains `CLOSURE_WALK`.
+Every fault is collected, and each pack is judged within its own closure. `PackSetVerdict.Check` gains one value for
+the phase, named per the operator's answer to analysis Q2 (recommended `REFERENCES`). The `specializes_from` cycle,
+relations, edge-index and own-closure-walk checks are not part of it (#636 slices 2-4 and 7).
 
 ## pack-doctor report (`PackDoctorReport`: JSON on stdout, YAML or XML with `--report`)
 
@@ -85,7 +118,7 @@ One tree, the existing stdout problem JSON renamed, with three new top-level key
 ```
 tool: {name: pack-doctor, version}            # new
 inputs: {config_root | packs: [...], options: {full, round_trip}}   # new
-checks: [PACK, CLOSURE, ROUND_TRIP?, ...]     # as today, plus the --full value if ruled
+checks: [PACK, CLOSURE, ROUND_TRIP?, ...]     # as today, plus the --full value (D5)
 packs: [...]                                  # as today
 skipped: [...]                                # as today
 problems: [Problem]                           # Problems.Problem, verbatim

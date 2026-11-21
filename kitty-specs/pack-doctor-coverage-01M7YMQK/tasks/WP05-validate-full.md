@@ -1,10 +1,14 @@
 ---
 work_package_id: WP05
-title: validate --full (#632 item 3) - HELD pending the operator
+title: validate --full - delegations, references, enhancement targets (#632 item 3, ruling R-s)
 dependencies:
 - WP03
+- WP11
+- WP12
 requirement_refs:
 - FR-006
+- NFR-002
+- NFR-003
 - SC-001
 planning_base_branch: feat/pack-doctor-coverage
 merge_target_branch: feat/pack-doctor-coverage
@@ -18,6 +22,9 @@ history:
 - at: '2026-11-21T13:30:00Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
+- at: '2026-11-21T22:30:00Z'
+  actor: planner-priti
+  action: Unheld by ruling R-s (DM-01M801NHF0BFAX05EA3F19KHV7) - option (a); specializes_from cycle dropped from this WP
 agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/
 create_intent:
@@ -37,30 +44,24 @@ tags: []
 tracker_refs: []
 ---
 
-# Work Package Prompt: WP05 - validate --full (#632 item 3) - HELD pending the operator
+# Work Package Prompt: WP05 - validate --full: delegations, references, enhancement targets (ruling R-s)
 
 ## ⚡ Do This First: Load Agent Profile
 
 Load the `java-jenny` profile with the `/spk-charter-profile-load` skill before you read anything else. Then read
-`AGENTS.md`, `.kittify/charter/charter.md`, ADR-0082, the mission `spec.md` and `plan.md` (the decisions this WP
-names), and `research/squad-dispositions.md`.
+`AGENTS.md`, `.kittify/charter/charter.md`, ADR-0082, the mission `spec.md` (FR-006, US3), `plan.md` (**D5**, and D11
+for the CI timing), `data-model.md` ("`--full` phase"), `research/squad-dispositions.md` and ruling R-s in
+`decisions/` (`DM-01M801NHF0BFAX05EA3F19KHV7`).
 
-## Objective — HELD
+## Objective
 
-**Do not start this WP until the dispatcher relays the operator's ruling on plan D5.** The squad found that a
-`--full` matching everything registration judges needs ADR-0082 slices 2-4 and 7. The `specializes_from` cycle check
-would be a new walk outside `PackGraph`.
+Ruling R-s (2026-11-21, the operator via the dispatcher: "1. as recommended", option (a) of plan D5):
+"validate --full = delegations + references + enhancement targets only, each an existing domain function run per own
+closure in registration's phase order, no new walk; registration/offering use the same collect-all forms."
 
-Proposal (a), recommended:
-
-- `--full` adds delegations, references and enhancement targets: existing domain functions, run per own closure, in
-  registration's phase order, with no new walk.
-- Registration and the offering take the first fault of the same collect-all forms.
-- The PR writes `Refs #632`.
-
-Alternative (b): this WP is dropped, and `--full` stays design-only until slice 7.
-
-If (a) is ruled, update this prompt with the ruling's quote before claiming it.
+`pack-doctor validate --full` adds one domain phase with exactly those three checks. The `specializes_from` cycle,
+relations, edge-index and own-closure-walk checks are **not** this WP: they land in the factory with #636 slices 2-4
+and 7 (WP08 records them in ADR-0083), and the PR writes `Refs #632`.
 
 ## Branch Strategy
 
@@ -70,30 +71,68 @@ If (a) is ruled, update this prompt with the ruling's quote before claiming it.
   `spec-kitty agent action implement WP05 --agent claude --mission pack-doctor-coverage-01M7YMQK`.
 - Commits: no model names and no Co-Authored-By trailer (repository rule). Never push to `main`.
 
-## Subtasks (under proposal a)
+## Context
 
-### T022 — Collect-all forms
-- `PackCompositionResolver`: a collect-all `referenceFaults(...)` beside the existing `checkReferences`, which then
-  becomes `referenceFaults(...).getFirst()`, so one body remains. Do the same for `EnhancementCompose.targetFaults`
-  and the delegation check (`unresolvedDelegations`).
-- `OfferingReadService.judged` phases 2-4 and `ClosureImpactCheck` call the collect-all forms and keep their
-  first-phase-refuses behavior. The existing scenarios stay green unchanged.
+- The three collect-all functions already exist and return every fault:
+  - `PackCompositionResolver.unresolvedDelegations` (`PackCompositionResolver.java:634`): one `ClosureFault` per
+    candidate, `pack_unreadable` with the violation `substep_delegation_unresolved`;
+  - `PackCompositionResolver.referenceFaults` (`:582`): `pack_reference_unqualified`, `pack_reference_pack_missing`,
+    `pack_reference_artifact_missing`;
+  - `EnhancementCompose.targetFaults` (`EnhancementCompose.java:218`): `pack_reference_pack_missing`,
+    `pack_reference_artifact_missing`.
+
+  Read each first-fault caller (`OfferingReadService.judged` phases 2-4, `ClosureImpactCheck`, the
+  `checkReferences`-style wrappers) and make sure each takes the first element of these forms, with no second body.
+- The own closure is `PackCompositionResolver.compositionClosure` rooted at the pack, as WP03's phase uses it. Write
+  no traversal (NFR-003).
+- Registration's phase order is delegations, then references, then targets (plan D5).
+
+## Subtasks
+
+### T022 — One body per check
+- Red first: a test per check that a pack with two faults of that check gets both from the collect-all form, and that
+  the first-fault caller answers the first of them (where a caller still has its own loop, the test is red).
+- Remove any duplicate first-fault body so each caller reads the collect-all form. The existing scenarios and
+  `PackCompositionResolverTest`/`EnhancementComposeTest` expectations stay unchanged.
+- Refresh the two comments in `PackCompositionResolverTest` that say an anti-pattern is "held only as a graph node"
+  (`:479`, `:636`): after WP10 and WP11 it is held by its file (comment-only).
 
 ### T023 — `validate --full`
-- `Arguments` gains `--full` (owned by WP02; a justified edit). `PackSetCheck` runs the phase per pack over its own
-  closure after CLOSURE, gated on no CLOSURE violation, and adds the `PackSetVerdict.Check` value (name it after the
-  ruling: `CLOSURE_WALK`, or `REFERENCES`).
-- Fill the second timed CI step that WP02 left inert (NFR-002, 30 s).
+- `ClosureWalkPhase` (new, `pack-validation`): per pack, over its own closure, runs the three checks in order and
+  collects every fault; `PackSetCheck` runs it after CLOSURE, only when CLOSURE has no violation, and only under
+  `--full`.
+- `PackSetVerdict.Check` gains one value for it. Its name is the operator's answer to analysis Q2 (recommended
+  `REFERENCES`; not `CLOSURE_WALK`, which would name the deferred own-closure walk). If Q2 is unanswered when you
+  start, use `REFERENCES` and list it in the review notes.
+- `Arguments` gains `--full` (WP02's file; a justified out-of-map edit). `PackSetCheck` is WP03's file; the call is a
+  justified out-of-map edit, listed.
+- Fill the second timed CI step that WP02 left inert: `validate --round-trip --full` over the example packs within
+  30 s (NFR-002; `.github/workflows/service.yml`, WP02's file, a justified out-of-map edit).
 
 ### T024 — Parity table (SC-001)
-- `FullPassParityTest`: one parameterized table of planted faults (an unqualified reference, a missing referenced
-  artifact, a missing target step, an unresolved delegation, plus WP03's preset items and WP04's `manifest_stale`).
-  It drives both registration (through the deployable test harness) and `pack-doctor validate --full`, and asserts
-  equal codes per row.
+- `FullPassParityTest`: one parameterized table of planted faults: an unqualified reference, a missing referenced
+  artifact, a missing target step, an unresolved delegation, plus WP03's two preset-item codes, WP04's
+  `manifest_stale`, and WP10-WP12's anti-pattern refusals (a file missing `severity`, an inline block, a file-less
+  node). It drives registration (the deployable harness) and `pack-doctor validate --full`, and asserts equal codes
+  per row.
+- A row with a `specializes_from` cycle asserts that registration refuses it and that `--full` does **not** report
+  it yet, with a comment naming #636. When #636 lands it, the row flips.
+
+## Test commands
+
+```bash
+./gradlew :packs:test :pack-validation:test :pack-doctor:test
+./gradlew :deployable:test
+```
 
 ## Definition of Done
-- [ ] Ruling quoted here.
-- [ ] One body per check.
-- [ ] Parity table green.
-- [ ] No new traversal.
-- [ ] The CI step is timed.
+- [ ] R-s quoted here (done) and in the PR body.
+- [ ] One body per check; first-fault callers read the collect-all forms.
+- [ ] `--full` runs the three checks per own closure, in registration's order; no new traversal.
+- [ ] The parity table is green, with the cycle row documenting the remainder.
+- [ ] The `--full` CI step is timed within 30 s.
+
+## Stop conditions
+- A check needs a walk that no existing domain function performs: stop. R-s rules no new walk.
+- A first-fault caller's code or order changes on an existing scenario: stop and report.
+- The `specializes_from` cycle check is asked of this WP: it is not (R-s); refer it to #636.
