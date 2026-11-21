@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,7 +30,9 @@ import org.junit.jupiter.api.io.TempDir;
  * {@code remediate} is not available yet, and the old flat form, options with no command word, is a usage fault.
  *
  * <p>The scan reads the tracked files ({@code git ls-files}) of the repository root the build hands over as
- * {@code charter.test.repo-root}; the build declares their candidate lines as an input, so a new mention reruns it.
+ * {@code charter.test.repo-root}; the build declares their candidate lines as an input, so a new mention reruns it. It
+ * is tagged {@code surface} and runs in {@code surfaceTest}, inside {@code check}, never in {@code test} or PIT, whose
+ * minions get no repository root (#461).
  */
 class NoPackCheckSurfaceTest {
 
@@ -40,12 +43,14 @@ class NoPackCheckSurfaceTest {
     Path temp;
 
     /**
-     * The old tool's names: its hyphenated, snake and upper-case names, its package, and its classes. The bare
-     * {@code PackCheck} of pack-validation (validate mode over one pack), {@code PackCheckTest} and
-     * {@code PackCheckReadoutTest} are a domain term and stay (occurrence map: do_not_change).
+     * The old tool's names: its hyphenated, snake and upper-case names, its package, and any identifier that holds
+     * {@code PackCheck} inside a longer name, a camel-case compound included ({@code PackCheckMain},
+     * {@code theTableOfPackCheckHolds}). Three identifiers stay: the bare {@code PackCheck} of pack-validation (validate
+     * mode over one pack), and its tests {@code PackCheckTest} and {@code PackCheckReadoutTest}, a domain term
+     * (occurrence map: do_not_change).
      */
-    private static final Pattern OLD_NAME =
-            Pattern.compile("(?i:pack[-_]check)|packcheck|packCheck|\\bPackCheck(?!\\b|Test\\b|ReadoutTest\\b)\\w");
+    private static final Pattern OLD_NAME = Pattern.compile(
+            "(?i:pack[-_]check)|packcheck|packCheck|\\wPackCheck|PackCheck(?!\\b|Test\\b|ReadoutTest\\b)\\w");
 
     /** A path or path prefix the scan leaves out, and why. */
     private record Kept(String path, String reason) {
@@ -86,7 +91,9 @@ class NoPackCheckSurfaceTest {
             // ADR-0075's file name: ADR file names never change (docs/adr/README.md); WP08 amends its decision 9.
             "0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check",
             // The unreleased change fragment keeps its dated file name; its text names pack-doctor.
-            "2026-11-20-pack-check-skipped-reasons");
+            "2026-11-20-pack-check-skipped-reasons",
+            // This test's own name, which the mission's tasks name (WP02 T006, WP08 T033) and the build cites.
+            "NoPackCheckSurfaceTest");
 
     private static String withoutKeptNames(String text) {
         String stripped = text;
@@ -97,6 +104,7 @@ class NoPackCheckSurfaceTest {
     }
 
     @Nested
+    @Tag("surface")
     class TheLiveSurfaces {
 
         @Test
@@ -135,7 +143,11 @@ class NoPackCheckSurfaceTest {
                             "COMPOSED_BY_THE_PACK_CHECK_MAIN",
                             "PackCheckMain",
                             "PackCheckReport.yaml",
-                            "PackCheckLicences"))
+                            "PackCheckLicences",
+                            "fooOfPackCheckBar",
+                            "theStatusTableOfPackCheckHoldsExactlyTheseCodes",
+                            "aPackCheck",
+                            "PackCheckReadoutTests"))
                     .allSatisfy(text ->
                             assertThat(OLD_NAME.matcher(text).find()).as(text).isTrue());
         }
@@ -146,7 +158,7 @@ class NoPackCheckSurfaceTest {
                             "PackCheck.validate(root)",
                             "class PackCheckTest",
                             "PackCheckReadoutTest.java",
-                            "theStatusTableOfPackCheckHoldsExactlyTheseCodes",
+                            "NoPackCheckSurfaceTest",
                             "/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/",
                             "pack-doctor validate"))
                     .allSatisfy(text -> assertThat(

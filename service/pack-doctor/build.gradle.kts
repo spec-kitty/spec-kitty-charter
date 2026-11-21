@@ -64,9 +64,9 @@ tasks.test {
 }
 
 /**
- * Hands the repository root to NoPackCheckSurfaceTest, which scans the tracked files for the old tool's name (FR-007,
- * plan D11). The candidate lines (every tracked line that holds a spelling of it, history left out) are an input, so a
- * new or changed mention reruns the scan rather than leaving a stale pass in the build cache.
+ * Hands the repository root to NoPackCheckSurfaceTest's scan, which reads the tracked files for the old tool's name
+ * (FR-007, plan D11). The candidate lines (every tracked line that holds a spelling of it, history left out) are an
+ * input, so a new or changed mention reruns the scan rather than leaving a stale pass in the build cache.
  */
 abstract class SurfaceScanArguments : CommandLineArgumentProvider {
     @get:Internal abstract val root: DirectoryProperty
@@ -77,7 +77,21 @@ abstract class SurfaceScanArguments : CommandLineArgumentProvider {
     override fun asArguments(): List<String> = listOf("-Dcharter.test.repo-root=${root.get().asFile.absolutePath}")
 }
 
+// The scan (tag `surface`) reads the repository through git, so it runs in surfaceTest alone, inside `check` and so
+// `verifyAll`, never in `test` or PIT: PIT's minions take `test`'s excluded tags and its system properties, not its
+// argument providers, so the scan would fail there unmutated and leave the module with no report (#461).
 tasks.test {
+    useJUnitPlatform { excludeTags("surface") }
+}
+
+val surfaceTestSourceSet = sourceSets.test.get()
+val surfaceTest = tasks.register<Test>("surfaceTest") {
+    group = "verification"
+    description = "Scans the tracked files for the checker's old name (tag surface; FR-007)."
+    testClassesDirs = surfaceTestSourceSet.output.classesDirs
+    classpath = surfaceTestSourceSet.runtimeClasspath
+    useJUnitPlatform { includeTags("surface") }
+    shouldRunAfter(tasks.test)
     val repository = rootProject.layout.projectDirectory
     val git = listOf("git", "-C", repository.asFile.absolutePath)
     jvmArgumentProviders.add(objects.newInstance<SurfaceScanArguments>().apply {
@@ -97,3 +111,5 @@ tasks.test {
         )
     })
 }
+
+tasks.check { dependsOn(surfaceTest) }

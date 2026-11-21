@@ -640,7 +640,7 @@ class PackDoctorReportContractTest {
         }
 
         @Test
-        void theStatusTableOfPackCheckHoldsExactlyTheseCodes() {
+        void theStatusTableOfPackDoctorHoldsExactlyTheseCodes() {
             assertThat(PackDoctorSeam.statusTableCodes()).containsExactlyInAnyOrderElementsOf(emitted());
         }
     }
