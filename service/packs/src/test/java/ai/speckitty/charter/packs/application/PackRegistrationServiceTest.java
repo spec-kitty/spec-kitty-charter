@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -16,12 +17,13 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -671,7 +673,7 @@ class PackRegistrationServiceTest {
         assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).doesNotContainKey("registered.graph.yaml");
     }
 
-    // ---- the level table of the write gate: REMOVE joins the operations (ADR-0012 decision 1, ADR-0030 D3) -------
+    // ---- the mutability levels: REMOVE joins the operations (ADR-0012 decision 1, ADR-0030 D3) --------------------
 
     @Test
     void removeIsPermittedOnOpenAndExtendableAndRefusedOnLocked() {
@@ -680,7 +682,7 @@ class PackRegistrationServiceTest {
         assertThat(MutabilityLevel.LOCKED.permits(Operation.REMOVE)).isFalse();
     }
 
-    // ---- step 7: the write gate over the staged closure (ADR-0065 D5, ADR-0063 D3) ---------------------------------
+    // ---- step 7: the mutability check over the staged closure (ADR-0065 D5, ADR-0063 D3) --------------------------
 
     private static final String BASE_ID = ulid('C');
     private static final String DERIVED_ID = ulid('D');
@@ -745,6 +747,46 @@ class PackRegistrationServiceTest {
                         .outcome())
                 .as("the control: the same pack without the locked id")
                 .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aRegistrationThatWritesTwoLockedArtifactsIsOneRefusalNamingBothInDiffOrder(@TempDir Path host) {
+        // #556, US4.1: every write the levels forbid is one violation of the one 409.
+        Rig rig = rigWithBase(host);
+        StagedPack both =
+                rig.stage(derived("1.0.0").directive("LOCKED_ONE", "Mine").directive("EXT_ONE", "Mine"));
+
+        CharterRefusal refused =
+                catchThrowableOfType(CharterRefusal.class, () -> rig.register("derived", both, Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::code)
+                .containsExactly("governance_policy_violation", "governance_policy_violation");
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::detail)
+                .satisfiesExactly(
+                        first -> assertThat(first).contains("directive:EXT_ONE"),
+                        second -> assertThat(second).contains("directive:LOCKED_ONE"));
+        assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
+        assertThat(rig.packs.resolve("derived")).as("nothing was created").doesNotExist();
+    }
+
+    @Test
+    void aRegistrationThatWritesOneLockedArtifactIsRefusedAsBefore(@TempDir Path host) {
+        // #556, US4.2 (SC-002): one refused write answers the one fault, with no violation list.
+        Rig rig = rigWithBase(host);
+        StagedPack one = rig.stage(derived("1.0.0").directive("LOCKED_ONE", "Mine"));
+
+        CharterRefusal refused =
+                catchThrowableOfType(CharterRefusal.class, () -> rig.register("derived", one, Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(refused.violations()).isEmpty();
+        assertThat(refused.packs()).isEmpty();
+        assertThat(refused.getMessage())
+                .startsWith("Operation REPLACE on directive:LOCKED_ONE is refused: pack " + BASE_ID)
+                .endsWith("declares it locked, which does not permit this write (ADR-0012, ADR-0063).");
     }
 
     @Test
@@ -1126,7 +1168,7 @@ class PackRegistrationServiceTest {
         final PackCommitStore commits;
         final CommitStorePackWriteStore writeStore;
         final PackRegistrationService service;
-        final RegistrationImpact impact;
+        final ClosureImpactCheck impact;
 
         /** The activations port the impact check asks, over {@link #activations}. */
         final ActivationImpact activationPort;
@@ -1165,7 +1207,7 @@ class PackRegistrationServiceTest {
                     SlowSwapCommitStores.pausingMidSwap(locations, strategy, live -> midSwap.run(), lock, generation);
             this.writeStore = new CommitStorePackWriteStore(locations, strategy, commits, lock, generation);
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations), generation);
-            WritePolicyGate gate = new PackMutabilityPolicy(
+            MutabilityCheck gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
             this.activationPort = new ActivationImpact() {
                 @Override
@@ -1178,7 +1220,7 @@ class PackRegistrationServiceTest {
                 }
 
                 @Override
-                public void registered(String packId, RegistrationImpact.Notices notices) {
+                public void registered(String packId, ImpactCheck.Notices notices) {
                     registered.add(packId);
                 }
 
@@ -1188,7 +1230,7 @@ class PackRegistrationServiceTest {
                     return List.copyOf(affected);
                 }
             };
-            this.impact = new RegistrationImpact(new StagedPackViewFactory(locations, strategy), activationPort);
+            this.impact = new ClosureImpactCheck(new StagedPackViewFactory(locations, strategy), activationPort);
             this.service = new PackRegistrationService(
                     reading,
                     new WholePackStore(strategy),

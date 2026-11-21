@@ -14,11 +14,13 @@ properties:
       violation of a registration, and on a per-file write or removal refused because the pack it would leave does not
       revalidate, it is the pack-relative path of the file at fault, for example
       missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml, or pack when the fault is the pack's as a
-      whole.
+      whole. A refusal of the closure checks that names several faults (#556) holds, for each fault, a header violation
+      whose pointer is empty and whose code and detail are the fault's, followed by that fault's own violations.
     x-derived:
       rule: >-
         The JSON Pointer of the refused part of the request body; on a registration, or a per-file write whose pack would
-        not revalidate, a file path of the pack or pack.
+        not revalidate, a file path of the pack or pack; empty on the header violation of each fault of a closure-check
+        refusal that names several.
       inputs:
         - the request body and the packs the activation names
         - the staged pack of a registration

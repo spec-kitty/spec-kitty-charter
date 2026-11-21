@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
@@ -116,6 +117,10 @@ class EdgeIndexTest {
         }
 
         EdgeIndex index() {
+            return indexed().orRefuse();
+        }
+
+        EdgeIndex.Indexed indexed() {
             return EdgeIndex.of(packs, facts);
         }
 
@@ -281,6 +286,57 @@ class EdgeIndexTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING));
+    }
+
+    @Test
+    void everyPacksQualifiedEdgeFaultIsAFaultOfTheIndexNeverAnAggregatedRefusal() {
+        // #556, PR #618 review residual (operator ruling): the index answers its faults, so a caller places each one.
+        Closure closure = new Closure()
+                .pack("beta", List.of("tactic:T"))
+                .pack("alpha", List.of("directive:D"), edge("directive:D", RelationType.REQUIRES, "beta::tactic:T"))
+                .pack("gamma", List.of("directive:G"), edge("directive:G", RelationType.REQUIRES, "beta::tactic:T"));
+
+        EdgeIndex.Indexed indexed = closure.indexed();
+
+        assertThat(indexed.index()).as("no index of a closure with a fault").isEmpty();
+        assertThat(indexed.faults())
+                .as("every pack's fault, not only the first pack's, and none of them a refusal of several")
+                .extracting(ClosureFault::code)
+                .containsExactly(RefusalCode.PACK_REFERENCE_PACK_MISSING, RefusalCode.PACK_REFERENCE_PACK_MISSING);
+        assertThat(indexed.faults())
+                .noneSatisfy(fault -> assertThat(fault.detail()).contains("fault(s)"));
+    }
+
+    @Test
+    void anIndexedAnswerIsEitherAnIndexOrFaultsNeverBothNorNeither() {
+        ClosureFault fault = ClosureFault.of(RefusalCode.PACK_REFERENCE_PACK_MISSING, "outside", List.of());
+
+        assertThatThrownBy(() -> new EdgeIndex.Indexed(java.util.Optional.empty(), List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EdgeIndex.Indexed(java.util.Optional.of(EdgeIndex.empty()), List.of(fault)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(new EdgeIndex.Indexed(java.util.Optional.of(EdgeIndex.empty()), List.of()).orRefuse())
+                .isNotNull();
+    }
+
+    @Test
+    void everyQualifiedEndpointOutsideTheClosureIsInTheOneRefusal() {
+        Closure closure = new Closure()
+                .pack("beta", List.of("tactic:T", "tactic:U"))
+                .pack(
+                        "alpha",
+                        List.of("directive:D"),
+                        edge("directive:D", RelationType.REQUIRES, "beta::tactic:T"),
+                        edge("directive:D", RelationType.REQUIRES, "beta::tactic:U"));
+
+        assertThatThrownBy(closure::index).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+            assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
+            assertThat(refused.violations())
+                    .extracting(violation -> violation.code())
+                    .containsExactly("pack_reference_pack_missing", "pack_reference_pack_missing");
+            assertThat(refused.violations().get(1).detail()).contains("beta::tactic:U");
+        });
     }
 
     @Test

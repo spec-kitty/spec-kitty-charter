@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
@@ -79,7 +80,7 @@ class ImpactRelationsEnhancementTest {
     }
 
     /** A base holding software-dev and its step plan under a policy, and an org pack enhancing plan. */
-    private Optional<ImpactRelations.Violation> enhancingPlanUnder(
+    private List<ClosureFault> enhancingPlanUnder(
             MutabilityPolicySource basePolicy, MutabilityPolicySource enhancerPolicy) {
         pack("base", List.of(), basePolicy, List.of("mission_type:software-dev", "action:software-dev/plan"));
         pack(
@@ -93,10 +94,10 @@ class ImpactRelationsEnhancementTest {
 
     @Test
     void anEnhancementOfAStepWhoseMissionTypeIsLockedIsOverrideNotPermittedNamingBothPacks() {
-        Optional<ImpactRelations.Violation> broken = enhancingPlanUnder(
+        List<ClosureFault> broken = enhancingPlanUnder(
                 level("mission_type:software-dev", MutabilityLevel.LOCKED), MutabilityPolicySource.empty());
 
-        assertThat(broken).hasValueSatisfying(violation -> {
+        assertThat(broken).singleElement().satisfies(violation -> {
             assertThat(violation.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
             assertThat(violation.detail())
                     .contains("step_enhancement:spdd-plan")
@@ -104,7 +105,7 @@ class ImpactRelationsEnhancementTest {
                     .contains("locked");
             assertThat(violation.packs())
                     .as("the enhancing pack first, then the pack that locks the mission type")
-                    .extracting(pack -> pack.configured().id().value())
+                    .extracting(pack -> pack.packId().value())
                     .containsExactly("enhancer", "base");
         });
     }

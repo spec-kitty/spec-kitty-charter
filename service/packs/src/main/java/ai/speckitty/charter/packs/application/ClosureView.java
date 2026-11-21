@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.StepRoles;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -30,6 +31,7 @@ import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.RolePins;
 import ai.speckitty.charter.packs.domain.SlotCompose;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
@@ -90,7 +92,8 @@ public record ClosureView(
         String fingerprint,
         EdgeIndex edges,
         MergeInputs mergeInputs,
-        String closureFingerprint) {
+        String closureFingerprint)
+        implements ClosureFacts {
 
     /**
      * What the layer merge is built from: the composed closure and the facts the verified read holds, with the merge
@@ -1026,6 +1029,7 @@ public record ClosureView(
      * @param id the artifact's id
      * @return the winner's pack; empty when no pack of the closure holds the artifact
      */
+    @Override
     public Optional<PackIdentifier> winnerPackOf(ArtifactKind kind, String id) {
         return heldWinner(kind, id).map(MergedClosure.Winner::packId);
     }
@@ -1128,6 +1132,7 @@ public record ClosureView(
      * @param id the artifact's id
      * @return {@code true} when the closure holds it
      */
+    @Override
     public boolean holds(ArtifactKind kind, String id) {
         return heldIds.getOrDefault(kind, Set.of()).contains(id);
     }
@@ -1148,8 +1153,57 @@ public record ClosureView(
      * @param urn the target
      * @return {@code true} when its level along the closure is {@link MutabilityLevel#LOCKED}
      */
+    @Override
     public boolean isLocked(Urn urn) {
         return lockOf(urn).level() == MutabilityLevel.LOCKED;
+    }
+
+    // ---- what the closure walk reads (#556, ClosureFacts) ----------------------------------------------------------
+
+    @Override
+    public RolePins pinsOf(PackIdentifier pack) {
+        return ClosureRoleFacts.of(this).pinsOf(pack);
+    }
+
+    @Override
+    public List<String> pinnedRoles() {
+        return ClosureRoleFacts.of(this).pinnedRoles();
+    }
+
+    @Override
+    public List<PackIdentifier> pinConflict(String role) {
+        return ClosureRoleFacts.of(this).pinFor(role) instanceof ClosureRoleFacts.PinFact.Conflict conflict
+                ? conflict.packs()
+                : List.of();
+    }
+
+    @Override
+    public Optional<ProfileEnhancements> profileEnhancements() {
+        boolean anyProfileEnhanced = edges.links().stream()
+                .anyMatch(link -> link.relation() == RelationType.ENHANCES
+                        && link.source().kind() == NodeKind.of(ArtifactKind.AGENT_PROFILE)
+                        && link.target().kind() == NodeKind.of(ArtifactKind.AGENT_PROFILE));
+        if (!anyProfileEnhanced) {
+            return Optional.empty();
+        }
+        MergedView view;
+        try {
+            view = merged();
+        } catch (CharterRefusal unmerged) {
+            // A closure whose layers do not merge is not the walk's to judge: the write that leaves it so is refused by
+            // the rules and the stores that own the layer merge, with their own code.
+            return Optional.empty();
+        }
+        return Optional.of(
+                new ProfileEnhancements(view.closure().winners(), ProfileEnhancers.of(view, closurePackIds)));
+    }
+
+    @Override
+    public List<RefusalPack> named(List<PackIdentifier> named) {
+        return named.stream()
+                .flatMap(id -> packs.stream().filter(entry -> entry.id().equals(id)).findFirst().stream())
+                .map(entry -> new RefusalPack(entry.descriptorPackId(), entry.id(), entry.name()))
+                .toList();
     }
 
     /**

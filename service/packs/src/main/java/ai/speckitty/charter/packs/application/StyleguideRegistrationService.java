@@ -6,10 +6,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Styleguide;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,17 +33,17 @@ public final class StyleguideRegistrationService {
 
     private final PackRepository packs;
     private final PackWriteStore writeStore;
-    private final WritePolicyGate policy;
+    private final MutabilityCheck policy;
 
     /**
      * A service over the injected ports.
      *
      * @param packs the port that loads the pack aggregate to mutate and revalidate
      * @param writeStore the write-path seam that commits the aggregate atomically and holds the relationship shard
-     * @param policy the mutability gate consulted before a write (permissive by default; WP06 supplies ADR-0012)
+     * @param policy the mutability check judged before a write (ADR-0012)
      */
     @Autowired
-    public StyleguideRegistrationService(PackRepository packs, PackWriteStore writeStore, WritePolicyGate policy) {
+    public StyleguideRegistrationService(PackRepository packs, PackWriteStore writeStore, MutabilityCheck policy) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.writeStore = Objects.requireNonNull(writeStore, "writeStore");
         this.policy = Objects.requireNonNull(policy, "policy");
@@ -91,10 +91,10 @@ public final class StyleguideRegistrationService {
                         "Pack " + pack.value() + " already has a styleguide "
                                 + styleguide.id().value() + ".");
             }
-            policy.authorize(
+            PackRefusals.require(policy.judge(MutabilityCheck.Live.of(
                     current,
-                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                    styleguide.urn());
+                    exists ? MutabilityCheck.Operation.REPLACE : MutabilityCheck.Operation.REGISTER,
+                    styleguide.urn())));
             Pack mutated = revalidated(current, styleguide);
             PackRevision revision =
                     writeStore.commit(pack, ifMatch, PackWriteStore.Change.artifact(mutated, styleguide));

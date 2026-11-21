@@ -431,7 +431,7 @@ class ClosureViewSessionArtifactTest {
                     List.of(),
                     Map.of(),
                     "sha256:merged",
-                    EdgeIndex.of(packs, facts),
+                    EdgeIndex.of(packs, facts).orRefuse(),
                     new ClosureView.MergeInputs(packs, facts, (pack, kind, id) -> source.read(pack, kind, id)),
                     "sha256:merged");
             return new ClosureViewSession(view, PacksAvailability.snapshotOf(view));

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -71,7 +72,7 @@ public interface ActivationImpact {
      * @param packId the name the pack is stored under
      * @param notices the floor and lock changes of the registration
      */
-    default void registered(String packId, RegistrationImpact.Notices notices) {}
+    default void registered(String packId, ImpactCheck.Notices notices) {}
 
     /**
      * The closure of one root set, before and after the registration being judged, as the impact check composed it.

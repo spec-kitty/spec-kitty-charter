@@ -68,12 +68,12 @@ class RemovalConcurrencyTest {
         ArtifactRemovalService deletes = new ArtifactRemovalService(
                 rig.repository,
                 rig.writeStore,
-                new PermissiveWritePolicyGate(),
+                new PackMutabilityPolicy(),
                 new InboundReferences(rig.repository, rig.repository, rig.repository),
                 new StagedPackViewFactory(rig.locations, new YamlSerializationStrategy()),
                 rig.impact);
         RelationshipRegistrationService puts = new RelationshipRegistrationService(
-                rig.repository, rig.writeStore, new PermissiveWritePolicyGate(), (source, target) -> {});
+                rig.repository, rig.writeStore, new PackMutabilityPolicy(), (source, target) -> {});
         String revisionOfB =
                 rig.writeStore.currentRevision(new PackIdentifier("b")).token();
         CyclicBarrier start = new CyclicBarrier(2);

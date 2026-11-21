@@ -1,19 +1,16 @@
 package ai.speckitty.charter.packs.application;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ClosureFacts;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -23,61 +20,34 @@ import java.util.Optional;
  * ({@link ClosureView.MergedView#resolutionEdges()}), names an enhancer whose merge with the profile it enhances
  * (the profiles slice's merge, through {@link ProfileEnhancementGateway}) loses no content ({@code profile_enhancement_drops_field}). Each enhanced profile is
  * merged with all its enhancers in closure order, the nearest pack last, so a later enhancer must keep what an earlier
- * one added. The enhanced profiles are judged in URN order.
+ * one added. The enhanced profiles are judged in URN order, each enhanced profile its own fault (#556, FR-005): the
+ * merge names the first field an enhancer drops.
  */
 final class ProfileEnhancementRule {
-
-    private static final NodeKind PROFILE = NodeKind.of(ArtifactKind.AGENT_PROFILE);
-
-    /**
-     * A breach of the rule.
-     *
-     * @param code the refusal code
-     * @param detail what is wrong, naming the enhancing pack first and the field
-     * @param packs the enhancing pack
-     */
-    record Breach(RefusalCode code, String detail, List<PackIdentifier> packs) {
-        Breach {
-            Objects.requireNonNull(code, "code");
-            Objects.requireNonNull(detail, "detail");
-            packs = List.copyOf(packs);
-        }
-    }
 
     private ProfileEnhancementRule() {}
 
     /**
-     * Judges the profile enhancements of one closure.
+     * Judges the profile enhancements of one closure, every enhanced profile that loses content (#556, FR-005).
      *
      * @param closure the declaring pack's own closure
-     * @param profiles where each winning profile's entity is read
-     * @param merge the profile enhancement merge, when the caller has one
-     * @return the first breach; empty when every enhancement keeps what it enhances
-     * @throws IllegalStateException when the closure holds an enhancer of a profile and there is no merge to judge it
+     * @param profiles where the winning profiles' entities are read
+     * @param merge the profiles slice's merge; needed only when a profile enhances a profile
+     * @return one fault per enhanced profile whose merge drops part of it, in URN order; empty when none does
+     * @throws IllegalStateException when a profile enhances a profile and the deployment has no merge to judge it
      */
-    static Optional<Breach> check(
-            ClosureView closure, FallbackProfileRule.Profiles profiles, Optional<ProfileEnhancementGateway> merge) {
-        boolean anyProfileEnhanced = closure.edges().links().stream()
-                .anyMatch(link -> link.relation() == RelationType.ENHANCES
-                        && link.source().kind() == PROFILE
-                        && link.target().kind() == PROFILE);
-        if (!anyProfileEnhanced) {
-            return Optional.empty();
+    static List<ClosureFault> check(
+            ClosureFacts closure, ClosureWalk.Profiles profiles, Optional<ProfileEnhancementGateway> merge) {
+        Optional<ClosureFacts.ProfileEnhancements> enhancements = closure.profileEnhancements();
+        if (enhancements.isEmpty()) {
+            return List.of();
         }
         ProfileEnhancementGateway judge = merge.orElseThrow(() -> new IllegalStateException(
                 "The staged packs cannot merge agent profiles, so a profile enhancement cannot be judged"));
-        ClosureView.MergedView merged;
-        try {
-            merged = closure.merged();
-        } catch (CharterRefusal unmerged) {
-            // A closure whose layers do not merge is not this rule's to judge: the write that leaves it so is refused
-            // by
-            // the rules and the stores that own the layer merge, with their own code.
-            return Optional.empty();
-        }
-        Map<Urn, MergedClosure.Winner> winners = merged.closure().winners();
+        Map<Urn, MergedClosure.Winner> winners = enhancements.get().winners();
+        List<ClosureFault> breaches = new ArrayList<>();
         for (Map.Entry<Urn, List<MergedClosure.Winner>> enhanced :
-                ProfileEnhancers.of(merged, closure.closurePackIds()).entrySet()) {
+                enhancements.get().enhancersOf().entrySet()) {
             Optional<CharterArtifact> base = profileOf(enhanced.getKey(), winners, profiles);
             if (base.isEmpty()) {
                 continue;
@@ -87,20 +57,17 @@ final class ProfileEnhancementRule {
                     .forEach(winner -> profileOf(winner.urn(), winners, profiles)
                             .ifPresent(profile ->
                                     enhancers.add(new ProfileEnhancementGateway.Enhancing(profile, winner.packId()))));
-            Optional<ProfileEnhancementGateway.Dropped> dropped = judge.firstDrop(base.get(), enhancers);
-            if (dropped.isPresent()) {
-                return Optional.of(new Breach(
-                        RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
-                        dropped.get().detail(),
-                        List.of(dropped.get().pack())));
-            }
+            judge.firstDrop(base.get(), enhancers)
+                    .ifPresent(dropped -> breaches.add(ClosureFault.of(
+                            RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
+                            dropped.detail(),
+                            closure.named(List.of(dropped.pack())))));
         }
-        return Optional.empty();
+        return List.copyOf(breaches);
     }
 
-    /** The winning entity of a profile, when the closure holds it and its pack can read it. */
     private static Optional<CharterArtifact> profileOf(
-            Urn urn, Map<Urn, MergedClosure.Winner> winners, FallbackProfileRule.Profiles profiles) {
+            Urn urn, Map<Urn, MergedClosure.Winner> winners, ClosureWalk.Profiles profiles) {
         return Optional.ofNullable(winners.get(urn)).flatMap(winner -> profiles.read(winner.packId(), urn.id()));
     }
 }

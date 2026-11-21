@@ -18,10 +18,11 @@ import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
+import ai.speckitty.charter.packs.application.PackRefusals;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -117,17 +118,17 @@ class PackMutabilityPolicyTest {
         MutabilityPolicySource source = MutabilityPolicySource.builder()
                 .entry(target, MutabilityLevel.EXTENDABLE)
                 .build();
-        WritePolicyGate gate = new PackMutabilityPolicy(source);
+        MutabilityCheck gate = new PackMutabilityPolicy(source);
         Pack pack = packWithDescriptor();
 
-        assertThatThrownBy(() -> gate.authorize(pack, Operation.REPLACE, target))
+        assertThatThrownBy(() -> authorize(gate, pack, Operation.REPLACE, target))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refusal.getMessage()).contains("extendable").contains(target.toString());
                 });
 
         // Same fixture, within level: a relationship edge is enhance-level and is allowed.
-        assertThatCode(() -> gate.authorize(pack, Operation.RELATIONSHIP, target))
+        assertThatCode(() -> authorize(gate, pack, Operation.RELATIONSHIP, target))
                 .doesNotThrowAnyException();
     }
 
@@ -138,11 +139,11 @@ class PackMutabilityPolicyTest {
         MutabilityPolicySource source = MutabilityPolicySource.builder()
                 .entry(locked, MutabilityLevel.LOCKED)
                 .build();
-        WritePolicyGate gate = new PackMutabilityPolicy(source);
+        MutabilityCheck gate = new PackMutabilityPolicy(source);
         Pack pack = packWithDescriptor();
 
         for (Operation operation : Operation.values()) {
-            assertThatThrownBy(() -> gate.authorize(pack, operation, locked))
+            assertThatThrownBy(() -> authorize(gate, pack, operation, locked))
                     .as("locked refuses " + operation)
                     .isInstanceOfSatisfying(
                             CharterRefusal.class,
@@ -151,19 +152,49 @@ class PackMutabilityPolicyTest {
 
         // Same source, an unlisted target defaults to open: every operation is allowed.
         for (Operation operation : Operation.values()) {
-            assertThatCode(() -> gate.authorize(pack, operation, open))
+            assertThatCode(() -> authorize(gate, pack, operation, open))
                     .as("open target allows " + operation)
                     .doesNotThrowAnyException();
         }
     }
 
     @Test
+    void everyRefusedWriteOfOneRequestIsAFaultInTheOrderGivenAndAPermittedOneIsNot() {
+        // #556, FR-007: the check names every write the levels forbid, not only the first.
+        Urn locked = new Urn(NodeKind.DIRECTIVE, "LOCKED");
+        Urn extendable = new Urn(NodeKind.DIRECTIVE, "EXT");
+        Urn open = new Urn(NodeKind.DIRECTIVE, "OPEN");
+        MutabilityCheck check = new PackMutabilityPolicy(MutabilityPolicySource.builder()
+                .entry(locked, MutabilityLevel.LOCKED)
+                .entry(extendable, MutabilityLevel.EXTENDABLE)
+                .build());
+        MutabilityCheck.Live writes = new MutabilityCheck.Live(
+                packWithDescriptor(),
+                List.of(
+                        new MutabilityCheck.Write(Operation.REPLACE, extendable),
+                        new MutabilityCheck.Write(Operation.REPLACE, open),
+                        new MutabilityCheck.Write(Operation.RELATIONSHIP, locked)));
+
+        List<ClosureFault> faults = check.judge(writes).faults();
+
+        assertThat(faults)
+                .extracting(ClosureFault::code)
+                .containsExactly(RefusalCode.GOVERNANCE_POLICY_VIOLATION, RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(faults.get(0).detail()).startsWith("Operation REPLACE on directive:EXT is refused");
+        assertThat(faults.get(1).detail()).startsWith("Operation RELATIONSHIP on directive:LOCKED is refused");
+        assertThat(check.rule().apply(writes))
+                .as("the rule view gives one failing reason per refused write, in the same order")
+                .extracting(ai.speckitty.charter.kernel.validation.Reason::detail)
+                .containsExactly(faults.get(0).detail(), faults.get(1).detail());
+    }
+
+    @Test
     void aTargetWithNoDeclaredLevelDefaultsToOpenAndEveryWriteIsAuthorized() {
-        WritePolicyGate gate = new PackMutabilityPolicy(MutabilityPolicySource.empty());
+        MutabilityCheck gate = new PackMutabilityPolicy(MutabilityPolicySource.empty());
         Pack pack = packWithDescriptor();
         Urn target = new Urn(NodeKind.DIRECTIVE, "UNDECLARED");
         for (Operation operation : Operation.values()) {
-            assertThatCode(() -> gate.authorize(pack, operation, target)).doesNotThrowAnyException();
+            assertThatCode(() -> authorize(gate, pack, operation, target)).doesNotThrowAnyException();
         }
     }
 
@@ -171,9 +202,9 @@ class PackMutabilityPolicyTest {
     void theDefaultBeanIsPermissiveSoExistingOpenPacksKeepWriting() {
         // The no-arg (Spring) constructor wires an empty source: ADR-0012's migration reality is that no pack ships
         // a policy file yet, so every artifact is open and today's writes keep working (tighten never loosen).
-        WritePolicyGate gate = new PackMutabilityPolicy();
+        MutabilityCheck gate = new PackMutabilityPolicy();
         Pack pack = packWithDescriptor();
-        assertThatCode(() -> gate.authorize(pack, Operation.REPLACE, new Urn(NodeKind.DIRECTIVE, "ANY")))
+        assertThatCode(() -> authorize(gate, pack, Operation.REPLACE, new Urn(NodeKind.DIRECTIVE, "ANY")))
                 .doesNotThrowAnyException();
     }
 
@@ -207,12 +238,12 @@ class PackMutabilityPolicyTest {
     // ---- the wired gate reads the closure and its policies in one verified read -------------------------
 
     /** q (descriptor Q) locks directive:X; pack-a depends on Q. Facts are read only through the compose. */
-    private static WritePolicyGate wiredGate(Supplier<String> fingerprint, List<String> factsRead) {
+    private static MutabilityCheck wiredGate(Supplier<String> fingerprint, List<String> factsRead) {
         return wiredGate(fingerprint, factsRead, MutabilityPolicySource.empty(), List.of());
     }
 
     /** As {@link #wiredGate(Supplier, List)}, with pack-a's own policy and the artifacts pack-a holds. */
-    private static WritePolicyGate wiredGate(
+    private static MutabilityCheck wiredGate(
             Supplier<String> fingerprint, List<String> factsRead, MutabilityPolicySource own, List<String> ownHeld) {
         Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
         PackIdentifier q = new PackIdentifier("q");
@@ -273,19 +304,35 @@ class PackMutabilityPolicyTest {
     }
 
     @Test
+    void aRequestWithNoWriteReadsNoClosure() {
+        // #556: an empty request passes before the closure is composed, on the wired check that reads one.
+        List<String> factsRead = new ArrayList<>();
+        MutabilityCheck check = wiredGate(() -> "sha256:same", factsRead);
+
+        assertThat(check.judge(new MutabilityCheck.Live(packWithDescriptor(), List.of()))
+                        .isPassing())
+                .isTrue();
+        assertThat(check.judge(new MutabilityCheck.Staged(packWithDescriptor(), List.of()))
+                        .isPassing())
+                .isTrue();
+        assertThat(factsRead).as("no closure was read").isEmpty();
+    }
+
+    @Test
     void theWiredGateTakesEachMembersPolicyFromTheComposeItJudgesTheClosureOn() {
         List<String> factsRead = new ArrayList<>();
-        WritePolicyGate gate = wiredGate(() -> "sha256:same", factsRead);
+        MutabilityCheck gate = wiredGate(() -> "sha256:same", factsRead);
         Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
 
-        assertThatThrownBy(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, locked))
+        assertThatThrownBy(() -> authorize(gate, packWithDescriptor(), Operation.REGISTER, locked))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refusal.getMessage()).contains("Q").contains("locked");
                 });
         assertThat(factsRead).as("one compose, each member's facts read once").containsExactlyInAnyOrder("q", "pack-a");
 
-        assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+        assertThatCode(() ->
+                        authorize(gate, packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .as("positive control on the same fixture")
                 .doesNotThrowAnyException();
     }
@@ -298,15 +345,15 @@ class PackMutabilityPolicyTest {
         MutabilityPolicySource locksOwn = MutabilityPolicySource.builder()
                 .entry(own, MutabilityLevel.LOCKED)
                 .build();
-        WritePolicyGate gate = wiredGate(() -> "sha256:same", new ArrayList<>(), locksOwn, List.of("directive:OWN"));
+        MutabilityCheck gate = wiredGate(() -> "sha256:same", new ArrayList<>(), locksOwn, List.of("directive:OWN"));
 
         for (Operation operation : Operation.values()) {
-            assertThatCode(() -> gate.authorize(packWithDescriptor(), operation, own))
+            assertThatCode(() -> authorize(gate, packWithDescriptor(), operation, own))
                     .as("pack-a's own lock does not bind pack-a's %s", operation)
                     .doesNotThrowAnyException();
         }
         assertThatThrownBy(() ->
-                        gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "X")))
+                        authorize(gate, packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "X")))
                 .as("same fixture: Q's lock on what Q holds still binds pack-a")
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
@@ -315,7 +362,7 @@ class PackMutabilityPolicyTest {
 
     @Test
     void aWriteIntoAPackNoPackIsConfiguredAsIsRefusedPackNotFoundLikeTheOtherReads() {
-        WritePolicyGate gate = wiredGate(() -> "sha256:same", new ArrayList<>());
+        MutabilityCheck gate = wiredGate(() -> "sha256:same", new ArrayList<>());
         PackIdentifier ghost = new PackIdentifier("ghost");
         Pack unconfigured = Pack.builder()
                 .id(ghost)
@@ -328,12 +375,13 @@ class PackMutabilityPolicyTest {
                         Optional.empty()))
                 .build();
 
-        assertThatThrownBy(() -> gate.authorize(unconfigured, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+        assertThatThrownBy(() -> authorize(gate, unconfigured, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(refusal.getMessage()).isEqualTo("Pack ghost was not found.");
                 });
-        assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+        assertThatCode(() ->
+                        authorize(gate, packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .as("positive control: the configured pack on the same fixture")
                 .doesNotThrowAnyException();
     }
@@ -341,11 +389,11 @@ class PackMutabilityPolicyTest {
     @Test
     void aPackChangeWhileTheGateReadsTheClosureAnswersStaleInputNeverAMixedAnswer() {
         AtomicInteger digests = new AtomicInteger();
-        WritePolicyGate gate =
+        MutabilityCheck gate =
                 wiredGate(() -> digests.incrementAndGet() == 1 ? "sha256:before" : "sha256:after", new ArrayList<>());
 
         assertThatThrownBy(() ->
-                        gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                        authorize(gate, packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
@@ -423,5 +471,10 @@ class PackMutabilityPolicyTest {
             commits++;
             return currentRevision(pack);
         }
+    }
+
+    /** One write judged as a pack write judges it, its refusal thrown (#556). */
+    private static void authorize(MutabilityCheck check, Pack pack, Operation operation, Urn target) {
+        PackRefusals.require(check.judge(MutabilityCheck.Live.of(pack, operation, target)));
     }
 }

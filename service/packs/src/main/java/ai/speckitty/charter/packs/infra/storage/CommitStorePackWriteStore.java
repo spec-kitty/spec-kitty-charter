@@ -10,13 +10,15 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.ActivationImpact;
+import ai.speckitty.charter.packs.application.ClosureImpactCheck;
+import ai.speckitty.charter.packs.application.PackRefusals;
 import ai.speckitty.charter.packs.application.PackRemovalStore;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore;
-import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.WriteFacts;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.MissionTypeFacts;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -83,7 +85,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     private final PackCommitStore commitStore;
     private final RegistryWriteLock registryLock;
     private final PackWriteGeneration generation;
-    private final RegistrationImpact impact;
+    private final ImpactCheck impact;
 
     /**
      * An adapter over the configured locations and WP04's commit store, judging each write with an impact check over
@@ -112,7 +114,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
-            ObjectProvider<RegistrationImpact> impact) {
+            ObjectProvider<ImpactCheck> impact) {
         this(
                 locations,
                 strategy,
@@ -120,7 +122,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
                 RegistryWriteLock.shared(),
                 PackWriteGeneration.shared(),
                 impact.getIfAvailable(() ->
-                        new RegistrationImpact(new StagedPackViewFactory(locations, strategy), ActivationImpact.NONE)));
+                        new ClosureImpactCheck(new StagedPackViewFactory(locations, strategy), ActivationImpact.NONE)));
     }
 
     /**
@@ -145,7 +147,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
                 commitStore,
                 registryLock,
                 generation,
-                new RegistrationImpact(new StagedPackViewFactory(locations, strategy), ActivationImpact.NONE));
+                new ClosureImpactCheck(new StagedPackViewFactory(locations, strategy), ActivationImpact.NONE));
     }
 
     /**
@@ -165,7 +167,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             PackCommitStore commitStore,
             RegistryWriteLock registryLock,
             PackWriteGeneration generation,
-            RegistrationImpact impact) {
+            ImpactCheck impact) {
         this.impact = Objects.requireNonNull(impact, "impact");
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
@@ -318,7 +320,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     private void requireClosuresCompose(PackIdentifier pack, Change change) {
         List<Relationship> registeredBefore =
                 change.relationships().isPresent() ? registeredRelationships(pack) : List.of();
-        impact.check(
+        PackRefusals.noticesOrRefuse(impact.judge(new ImpactCheck.Write(
                 pack,
                 facts -> {
                     PackCompositionFacts written = change.artifact()
@@ -328,7 +330,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
                             .map(after -> WriteFacts.withRegisteredEdges(written, registeredBefore, after))
                             .orElse(written);
                 },
-                Optional.of(change.revalidated()));
+                Optional.of(change.revalidated()))));
     }
 
     @Override

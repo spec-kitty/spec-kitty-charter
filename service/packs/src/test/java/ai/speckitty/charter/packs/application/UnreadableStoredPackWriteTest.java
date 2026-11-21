@@ -83,7 +83,7 @@ class UnreadableStoredPackWriteTest {
         ArtifactRemovalService service = new ArtifactRemovalService(
                 rig.repository,
                 rig.writeStore,
-                new PermissiveWritePolicyGate(),
+                new PackMutabilityPolicy(),
                 new InboundReferences(rig.repository, rig.repository, rig.repository),
                 new StagedPackViewFactory(rig.locations, new YamlSerializationStrategy()),
                 rig.impact);
@@ -99,8 +99,8 @@ class UnreadableStoredPackWriteTest {
     @Test
     void aRelationshipDeleteIsRefusedPackUnreadable(@TempDir Path host) {
         Rig rig = rigWithBothPacks(host);
-        RelationshipRemovalService service = new RelationshipRemovalService(
-                rig.repository, rig.writeStore, new PermissiveWritePolicyGate(), rig.impact);
+        RelationshipRemovalService service =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, new PackMutabilityPolicy(), rig.impact);
         PackQualifiedReference from = PackQualifiedReference.parse("directive:KEPT_ONE");
         PackQualifiedReference to = PackQualifiedReference.parse("directive:KEPT_TWO");
 
@@ -116,7 +116,7 @@ class UnreadableStoredPackWriteTest {
     void aPutOfAnArtifactIsRefusedPackUnreadable(@TempDir Path host) {
         Rig rig = rigWithBothPacks(host);
         DirectiveRegistrationService service =
-                new DirectiveRegistrationService(rig.repository, rig.writeStore, new PermissiveWritePolicyGate());
+                new DirectiveRegistrationService(rig.repository, rig.writeStore, new PackMutabilityPolicy());
 
         assertUnreadable(
                 () -> service.registerDirective(
@@ -133,7 +133,7 @@ class UnreadableStoredPackWriteTest {
     void aPostOfAnArtifactIsRefusedPackUnreadable(@TempDir Path host) {
         Rig rig = rigWithBothPacks(host);
         DirectiveRegistrationService service =
-                new DirectiveRegistrationService(rig.repository, rig.writeStore, new PermissiveWritePolicyGate());
+                new DirectiveRegistrationService(rig.repository, rig.writeStore, new PackMutabilityPolicy());
 
         assertUnreadable(
                 () -> service.registerDirective(
@@ -150,7 +150,7 @@ class UnreadableStoredPackWriteTest {
     void aPackRelationshipPutIsRefusedPackUnreadable(@TempDir Path host) {
         Rig rig = rigWithBothPacks(host);
         RelationshipRegistrationService service = new RelationshipRegistrationService(
-                rig.repository, rig.writeStore, new PermissiveWritePolicyGate(), (source, target) -> {});
+                rig.repository, rig.writeStore, new PackMutabilityPolicy(), (source, target) -> {});
         Relationship edge = Relationship.of(
                 new Urn(NodeKind.DIRECTIVE, "KEPT_TWO"),
                 new Urn(NodeKind.DIRECTIVE, "KEPT_ONE"),

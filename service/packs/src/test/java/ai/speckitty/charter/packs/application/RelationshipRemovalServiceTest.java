@@ -15,7 +15,7 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import java.nio.file.Path;
@@ -53,7 +53,7 @@ class RelationshipRemovalServiceTest {
     }
 
     /** The real mutability gate, over the rig's packs. */
-    private static WritePolicyGate gateOf(Rig rig) {
+    private static MutabilityCheck gateOf(Rig rig) {
         ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
         return new PackMutabilityPolicy(
                 new OfferingReadService(rig.repository, rig.repository, rig.repository, read),

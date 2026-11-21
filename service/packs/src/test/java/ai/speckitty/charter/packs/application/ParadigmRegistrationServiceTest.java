@@ -10,11 +10,11 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +32,7 @@ class ParadigmRegistrationServiceTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private final FakeStore store = new FakeStore();
-    private final WritePolicyGate policy = new PermissiveWritePolicyGate();
+    private final MutabilityCheck policy = new PackMutabilityPolicy();
     private final ParadigmRegistrationService service = new ParadigmRegistrationService(store, store, policy);
 
     // ---- FR-014 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0064) -----------

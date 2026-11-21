@@ -10,8 +10,8 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
@@ -91,7 +91,7 @@ class PerFileWriteContentTest {
 
     private static PackRevision remove(Rig rig, String from, String to) {
         ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
-        WritePolicyGate gate = new PackMutabilityPolicy(
+        MutabilityCheck gate = new PackMutabilityPolicy(
                 new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
                 rig.repository,
                 rig.repository,

@@ -12,11 +12,11 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ public final class RelationshipRegistrationService {
 
     private final PackRepository packs;
     private final PackWriteStore writeStore;
-    private final WritePolicyGate policy;
+    private final MutabilityCheck policy;
     private final RelationshipTargetCheck targets;
 
     /**
@@ -52,12 +52,12 @@ public final class RelationshipRegistrationService {
      *
      * @param packs the port that loads the pack aggregate
      * @param writeStore the write-path seam that commits atomically and holds the relationship shard
-     * @param policy the mutability gate consulted before a write (permissive by default; WP06 supplies ADR-0012)
+     * @param policy the mutability check judged before a write (ADR-0012)
      * @param targets the check that the compose can resolve a relationship's {@code to}, made before anything is written
      */
     @Autowired
     public RelationshipRegistrationService(
-            PackRepository packs, PackWriteStore writeStore, WritePolicyGate policy, RelationshipTargetCheck targets) {
+            PackRepository packs, PackWriteStore writeStore, MutabilityCheck policy, RelationshipTargetCheck targets) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.writeStore = Objects.requireNonNull(writeStore, "writeStore");
         this.policy = Objects.requireNonNull(policy, "policy");
@@ -139,15 +139,20 @@ public final class RelationshipRegistrationService {
             if (tension) {
                 refuseSecondTension(pack, relationship);
                 // A tension names two rules; each side, the stored source as much as the target, must resolve in the
-                // compose as a target does (a bare side another pack holds is unqualified), and the gate judges each
-                // side (ADR-0045 decision 1, the paths that key on a source).
+                // compose as a target does (a bare side another pack holds is unqualified), and the mutability check
+                // judges each side (ADR-0045 decision 1, the paths that key on a source).
                 targets.require(pack, relationship.fromReference());
                 targets.require(pack, relationship.toReference());
-                policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
-                policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.to());
+                PackRefusals.require(policy.judge(new MutabilityCheck.Live(
+                        current,
+                        List.of(
+                                new MutabilityCheck.Write(MutabilityCheck.Operation.RELATIONSHIP, relationship.from()),
+                                new MutabilityCheck.Write(
+                                        MutabilityCheck.Operation.RELATIONSHIP, relationship.to())))));
             } else {
                 targets.require(pack, relationship.toReference());
-                policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
+                PackRefusals.require(policy.judge(
+                        MutabilityCheck.Live.of(current, MutabilityCheck.Operation.RELATIONSHIP, relationship.from())));
             }
             // Identity is the slot (pair and pair class): a tension on a pair with a requires is a new slot.
             boolean created = existing.stream().noneMatch(relationship::equals);

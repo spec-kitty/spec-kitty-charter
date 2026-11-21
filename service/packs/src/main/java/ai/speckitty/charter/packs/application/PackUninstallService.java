@@ -8,10 +8,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -50,7 +50,7 @@ public final class PackUninstallService {
             PackIdentifier pack,
             Optional<String> version,
             PackRevision revision,
-            RegistrationImpact.Notices notices,
+            ImpactCheck.Notices notices,
             boolean dryRun,
             Optional<CharterRefusal> refused) {
 
@@ -77,8 +77,7 @@ public final class PackUninstallService {
     private final WholePackWriteStore packs;
     private final WholePackWriteStore.Loader loader;
     private final StagedPackViews views;
-    private final PackDependents dependents;
-    private final RegistrationImpact impact;
+    private final ClosureImpactCheck impact;
 
     /**
      * A removal over its ports.
@@ -87,8 +86,7 @@ public final class PackUninstallService {
      * @param packs the live directory of a stored pack
      * @param loader reads what a stored pack holds, or what can still be read of it
      * @param views the stored packs, read through one session per removal
-     * @param dependents what depends on a pack
-     * @param impact the compose of the closures left
+     * @param impact the impact check: the dependents, then the compose of the closures left (#556, D3)
      */
     @Autowired
     public PackUninstallService(
@@ -96,13 +94,11 @@ public final class PackUninstallService {
             WholePackWriteStore packs,
             WholePackWriteStore.Loader loader,
             StagedPackViews views,
-            PackDependents dependents,
-            RegistrationImpact impact) {
+            ClosureImpactCheck impact) {
         this.store = Objects.requireNonNull(store, "store");
         this.packs = Objects.requireNonNull(packs, "packs");
         this.loader = Objects.requireNonNull(loader, "loader");
         this.views = Objects.requireNonNull(views, "views");
-        this.dependents = Objects.requireNonNull(dependents, "dependents");
         this.impact = Objects.requireNonNull(impact, "impact");
     }
 
@@ -147,14 +143,14 @@ public final class PackUninstallService {
         Optional<PackDescriptor> descriptor = descriptorOf(stored, name);
         Optional<String> version = descriptor.map(PackDescriptor::packVersion);
         boolean dryRun = mode == PackRegistrationService.Mode.DRY_RUN;
-        RegistrationImpact.Notices notices;
+        ImpactCheck.Notices notices;
         try {
             notices = judge(session, configured, descriptor, name);
         } catch (CharterRefusal refused) {
             if (!dryRun || !isJudgement(refused)) {
                 throw refused;
             }
-            return new Outcome(name, version, revision, RegistrationImpact.Notices.NONE, true, Optional.of(refused));
+            return new Outcome(name, version, revision, ImpactCheck.Notices.NONE, true, Optional.of(refused));
         }
         if (!dryRun) {
             store.removeWhole(name);
@@ -162,18 +158,17 @@ public final class PackUninstallService {
         return new Outcome(name, version, revision, notices, dryRun, Optional.empty());
     }
 
-    /** The dependents, then the closures left: the judgement a dry run answers as a body (ADR-0081 D5, P6). */
-    private RegistrationImpact.Notices judge(
+    /**
+     * The dependents, then the closures left: the judgement a dry run answers as a body (ADR-0081 D5, P6), made by the
+     * impact check in this removal's own session (#556, D3, squad A3), so each stored pack is read once per delete.
+     */
+    private ImpactCheck.Notices judge(
             StagedPackViews.Session session,
             ConfiguredPack configured,
             Optional<PackDescriptor> descriptor,
             PackIdentifier name) {
-        PackDependents.Removed removed = new PackDependents.Removed(configured, descriptor, heldBy(name));
-        List<PackDependents.Dependent> found = dependents.of(session.stored(), removed);
-        if (!found.isEmpty()) {
-            throw PackDependents.refusal(name.value(), found);
-        }
-        return impact.checkRemoval(session, configured, removed.packId());
+        return PackRefusals.noticesOrRefuse(
+                impact.judge(session, new ImpactCheck.Removal(configured, descriptor, heldBy(name))));
     }
 
     /**

@@ -6,10 +6,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,17 +35,17 @@ public final class ParadigmRegistrationService {
 
     private final PackRepository packs;
     private final PackWriteStore writeStore;
-    private final WritePolicyGate policy;
+    private final MutabilityCheck policy;
 
     /**
      * A service over the injected ports.
      *
      * @param packs the port that loads the pack aggregate to mutate and revalidate
      * @param writeStore the write-path seam that commits the aggregate atomically and holds the relationship shard
-     * @param policy the mutability gate consulted before a write (permissive by default; WP06 supplies ADR-0012)
+     * @param policy the mutability check judged before a write (ADR-0012)
      */
     @Autowired
-    public ParadigmRegistrationService(PackRepository packs, PackWriteStore writeStore, WritePolicyGate policy) {
+    public ParadigmRegistrationService(PackRepository packs, PackWriteStore writeStore, MutabilityCheck policy) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.writeStore = Objects.requireNonNull(writeStore, "writeStore");
         this.policy = Objects.requireNonNull(policy, "policy");
@@ -92,10 +92,10 @@ public final class ParadigmRegistrationService {
                         "Pack " + pack.value() + " already has a paradigm "
                                 + paradigm.id().value() + ".");
             }
-            policy.authorize(
+            PackRefusals.require(policy.judge(MutabilityCheck.Live.of(
                     current,
-                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                    paradigm.urn());
+                    exists ? MutabilityCheck.Operation.REPLACE : MutabilityCheck.Operation.REGISTER,
+                    paradigm.urn())));
             Pack mutated = revalidated(current, paradigm);
             PackWriteStore.Change change = PackWriteStore.Change.artifact(mutated, paradigm);
             PackRevision revision = writeStore.commit(pack, ifMatch, change);

@@ -159,8 +159,8 @@ class PackCompositionResolverTest {
         }
 
         private void check(List<PackUnderResolution> packs, Map<String, List<String>> mentions) {
-            PackCompositionResolver.refuseCaseOnlyMatches(
-                    packs, pack -> mentions.getOrDefault(pack.descriptor().packId(), List.of()));
+            PackCompositionResolver.refuseFirst(PackCompositionResolver.caseOnlyMatches(
+                    packs, pack -> mentions.getOrDefault(pack.descriptor().packId(), List.of())));
         }
 
         @Test
@@ -181,6 +181,33 @@ class PackCompositionResolverTest {
                             registeredIdOf("01HNZKZD000000000000000000").value());
             assertThat(refusal.detail())
                     .contains("directive:directive_001", "directive:DIRECTIVE_001", "differ only by case");
+        }
+
+        @Test
+        void everyCaseOnlyMentionIsFoundInThePacksOrder() {
+            PackUnderResolution holder = holding(
+                    "01HNZKZD000000000000000000",
+                    "holder",
+                    PackLevel.ORG,
+                    "directive:DIRECTIVE_001",
+                    "directive:DIRECTIVE_002");
+            PackUnderResolution mentioner = holding("01MENT00000000000000000000", "mentioner", PackLevel.ORG);
+
+            List<PackCompositionResolver.Refusal> faults = PackCompositionResolver.caseOnlyMatches(
+                    List.of(holder, mentioner),
+                    pack -> Map.of(
+                                    "01MENT00000000000000000000",
+                                    List.of(
+                                            "directive:directive_001",
+                                            "directive:DIRECTIVE_001",
+                                            "directive:directive_002"))
+                            .getOrDefault(pack.descriptor().packId(), List.of()));
+
+            assertThat(faults)
+                    .extracting(PackCompositionResolver.Refusal::detail)
+                    .satisfiesExactly(
+                            first -> assertThat(first).contains("directive:directive_001"),
+                            second -> assertThat(second).contains("directive:directive_002"));
         }
 
         @Test
@@ -503,6 +530,40 @@ class PackCompositionResolverTest {
     }
 
     @Test
+    void everyReferenceFaultOfAPackIsFoundInTheReferencesOrder() {
+        PackUnderResolution writing =
+                defining("01WRHZ00000000000000000000", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
+        PackUnderResolution reader = pack(
+                "01REA000000000000000000000",
+                "reader",
+                "1.0.0",
+                PackLevel.PROJECT,
+                List.of(new PackDependency("01WRHZ00000000000000000000", ">=1.0")));
+        List<PackUnderResolution> packs = List.of(writing, reader);
+        PackIdentifier from = registeredIdOf("01REA000000000000000000000");
+
+        List<PackCompositionResolver.Refusal> faults = PackCompositionResolver.referenceFaults(
+                packs,
+                "01REA000000000000000000000",
+                java.util.stream.Stream.of(
+                                "writing::directive:DIRECTIVE_001",
+                                "writing::directive:DIRECTIVE_009",
+                                "gone::directive:DIRECTIVE_009",
+                                "directive:DIRECTIVE_009")
+                        .map(text -> PackCompositionResolver.resolveReference(
+                                packs, from, PackQualifiedReference.parse(text)))
+                        .toList());
+
+        assertThat(faults)
+                .extracting(PackCompositionResolver.Refusal::failure)
+                .containsExactly(
+                        Failure.REFERENCE_ARTIFACT_MISSING,
+                        Failure.REFERENCE_PACK_MISSING,
+                        Failure.REFERENCE_UNQUALIFIED);
+        assertThat(faults.getFirst().detail()).contains("directive:DIRECTIVE_001");
+    }
+
+    @Test
     void aQualifiedReferenceToAPackOnlyAnotherPackDependsOnIsRefusedNamingThatPack() {
         PackUnderResolution writing =
                 defining("01WRHZ00000000000000000000", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
@@ -625,7 +686,10 @@ class PackCompositionResolverTest {
         private final PackUnderResolution gamma = pack("01GAMMA0000000000000000000", "gamma", "1.0.0", PackLevel.ORG);
 
         private List<PackUnderResolution> rooted(List<PackUnderResolution> available, String... roots) {
-            return PackCompositionResolver.resolveRooted(available, configuredIds(roots));
+            PackCompositionResolver.Rooted composed =
+                    PackCompositionResolver.composeRooted(available, configuredIds(roots));
+            PackCompositionResolver.refuseFirst(composed.faults());
+            return composed.order();
         }
 
         @Test
@@ -649,6 +713,38 @@ class PackCompositionResolverTest {
 
             assertThat(ids(rooted(List.of(gamma, alpha, beta, child), "01ACHHZKZD0000000000000000")))
                     .containsExactly("01BETA00000000000000000000", "01ACHHZKZD0000000000000000");
+        }
+
+        @Test
+        void theRootedComposeKeepsEveryFaultOfItsClosureAndResolveRootedRefusesTheFirst() {
+            PackUnderResolution twoUnknown = pack(
+                    "01TWZ00000000000000000000Z",
+                    "two",
+                    "1.0.0",
+                    PackLevel.ORG,
+                    List.of(
+                            new PackDependency("01NZNE00000000000000000000", ">=1.0"),
+                            new PackDependency("01NZNE00000000000000000001", ">=1.0")));
+
+            PackCompositionResolver.Rooted rooted = PackCompositionResolver.composeRooted(
+                    List.of(twoUnknown, gamma), configuredIds("01TWZ00000000000000000000Z"));
+
+            assertThat(rooted.faults())
+                    .extracting(PackCompositionResolver.Refusal::failure)
+                    .containsExactly(Failure.UNKNOWN_DEPENDENCY, Failure.UNKNOWN_DEPENDENCY);
+            assertThat(refusalOf(() -> rooted(List.of(twoUnknown, gamma), "01TWZ00000000000000000000Z"))
+                            .detail())
+                    .isEqualTo(rooted.faults().getFirst().detail());
+        }
+
+        @Test
+        void aRootedComposeThatResolvesHasNoFaultAndTheOrderResolveRootedGives() {
+            List<PackUnderResolution> all = List.of(gamma, alpha, beta);
+            PackCompositionResolver.Rooted rooted =
+                    PackCompositionResolver.composeRooted(all, configuredIds("01AKZPHA000000000000000000"));
+
+            assertThat(rooted.faults()).isEmpty();
+            assertThat(rooted.order()).isEqualTo(rooted(all, "01AKZPHA000000000000000000"));
         }
 
         @Test
@@ -810,12 +906,12 @@ class PackCompositionResolverTest {
     /** The references one pack writes, each with the pack the compose says holds it, checked as the offering checks. */
     private static void check(List<PackUnderResolution> packs, String referring, String... written) {
         PackIdentifier from = registeredIdOf(referring);
-        PackCompositionResolver.checkReferences(
+        PackCompositionResolver.refuseFirst(PackCompositionResolver.referenceFaults(
                 packs,
                 referring,
                 Arrays.stream(written)
                         .map(text -> PackCompositionResolver.resolveReference(
                                 packs, from, PackQualifiedReference.parse(text)))
-                        .toList());
+                        .toList()));
     }
 }
