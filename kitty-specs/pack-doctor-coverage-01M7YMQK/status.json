@@ -56,9 +56,9 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -66,7 +66,8 @@
       "last_transition_at": "2026-11-21T17:44:03.798586+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "pack-check renamed to pack-doctor (validate/remediate, no alias). NoPackCheckSurfaceTest red first (6/8 failed, 452 findings in 73 files), green after. validate stdout byte-identical to old pack-check on 84 runs (example packs +/- round-trip, 80 planted packs, faults). Out-of-map: HexagonalArchitectureTest rule names (WP07-owned); Javadoc in packs/pack-validation and docs/guides/README.md (outside owned_files). --full timed CI step left as a commented placeholder for WP05. verifyAll green with -PcontractBaseline=none (shallow clone)."
+        "pack-check renamed to pack-doctor (validate/remediate, no alias). NoPackCheckSurfaceTest red first (6/8 failed, 452 findings in 73 files), green after. validate stdout byte-identical to old pack-check on 84 runs (example packs +/- round-trip, 80 planted packs, faults). Out-of-map: HexagonalArchitectureTest rule names (WP07-owned); Javadoc in packs/pack-validation and docs/guides/README.md (outside owned_files). --full timed CI step left as a commented placeholder for WP05. verifyAll green with -PcontractBaseline=none (shallow clone).",
+        "Cycle 1 fixes (926a4dd6d): [HIGH] the scan's nested class is tagged surface, excluded from test (so PIT's excludedGroups, taken from test's excludeTags in charter.mutation-conventions, leaves it out) and run in a new surfaceTest task wired into check with the git ls-files/grep inputs; :pack-doctor:test runs 263 tests without it, :pack-doctor:check runs surfaceTest (4) and jarTest (15). [LOW] theStatusTableOfPackCheck... renamed to ...OfPackDoctor...; the pattern now catches camel-case compounds (\\wPackCheck), with positive controls, keeping PackCheck, PackCheckTest, PackCheckReadoutTest and this test's own name allowed."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
