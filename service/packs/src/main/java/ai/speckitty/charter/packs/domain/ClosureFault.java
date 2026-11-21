@@ -140,17 +140,29 @@ public record ClosureFault(
     }
 
     /**
-     * Whether a refusal says a pack could not be read: any {@code pack_unreadable} but the substep delegation's, whose
-     * every violation is {@value SubstepDelegationRule#UNRESOLVED} and which is a fault of the closure.
+     * Whether a refusal says a pack could not be read: any {@code pack_unreadable} but the substep delegation's
+     * ({@link #isUnresolvedDelegation()}), which is a fault of the closure.
      *
      * @param refused the refusal
      * @return true for a read failure
      */
-    public static boolean isReadFailure(CharterRefusal refused) {
-        return refused.code() == RefusalCode.PACK_UNREADABLE
-                && (refused.violations().isEmpty()
-                        || !refused.violations().stream()
-                                .allMatch(violation -> SubstepDelegationRule.UNRESOLVED.equals(violation.code())));
+    static boolean isReadFailure(CharterRefusal refused) {
+        return refused.code() == RefusalCode.PACK_UNREADABLE && !unresolvedDelegation(refused.violations());
+    }
+
+    /**
+     * Whether this is the substep delegation's {@code pack_unreadable}: every violation it carries is
+     * {@value SubstepDelegationRule#UNRESOLVED}, which makes it a fault of the closure and no read failure.
+     *
+     * @return true for an unresolved delegation
+     */
+    public boolean isUnresolvedDelegation() {
+        return code() == RefusalCode.PACK_UNREADABLE && unresolvedDelegation(violations);
+    }
+
+    private static boolean unresolvedDelegation(List<RefusalViolation> violations) {
+        return !violations.isEmpty()
+                && violations.stream().allMatch(violation -> SubstepDelegationRule.UNRESOLVED.equals(violation.code()));
     }
 
     /**

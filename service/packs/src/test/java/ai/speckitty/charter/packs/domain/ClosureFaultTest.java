@@ -115,6 +115,8 @@ class ClosureFaultTest {
 
         assertThat(ClosureFault.isReadFailure(delegation)).isFalse();
         assertThat(ClosureFault.lift(delegation)).isPresent();
+        assertThat(ClosureFault.lift(delegation).orElseThrow().isUnresolvedDelegation())
+                .isTrue();
     }
 
     @Test
