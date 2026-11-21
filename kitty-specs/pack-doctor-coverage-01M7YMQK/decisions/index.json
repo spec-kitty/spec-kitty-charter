@@ -347,6 +347,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-21T18:57:15.125909Z",
+      "decision_id": "01M7ZQGHVNQXAQ0S3DMTK7EZCB",
+      "final_answer": "New WP in this mission",
+      "input_key": "anti_pattern_file_kind_home",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "New WP in this mission",
+        "Separate mission; PR ships without WP03",
+        "Split WP03"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "With WP03 held until the anti_pattern file kind exists, where is the file kind (ADR-0052 d8) built?",
+      "rationale": "Operator ruling R-q (2026-11-21): a new WP builds the anti_pattern file kind (schema, file-kinds rule, storage binding, kernel facts, contract, the built-in fixture file) before WP03; WP03 then runs as planned and #629/#632 still close in this PR.",
+      "resolved_at": "2026-11-21T18:57:18.121979Z",
+      "resolved_by": "operator",
+      "slot_key": "anti-pattern-file-kind-home",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
