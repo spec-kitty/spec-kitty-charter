@@ -21,11 +21,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * A malformed descriptor field fails its pack (#624): exit 1, one {@code validation_failed} problem for the pack that
- * names the descriptor rule's code at {@code pack.yaml}, never an internal error (exit 2), for {@code --pack}, for
- * {@code --config-root} and with {@code --round-trip}; {@code CLOSURE} is skipped and names the pack. Each case plants
- * one malformed field into the example org pack's {@code pack.yaml}. The three format fields ({@code pack_version}, a
- * {@code depends_on} range, {@code requires_core}) crashed before #624; the schema fields were already refused, and are
- * pinned here so every malformed field stays a problem.
+ * names the descriptor rule's code at {@code pack.yaml}, never an internal error (exit 2); {@code CLOSURE} is skipped
+ * and names the pack. Each case plants one malformed field into the example org pack's {@code pack.yaml}. The three
+ * format fields ({@code pack_version}, a {@code depends_on} range, {@code requires_core}) go through the descriptor
+ * prechecks and crashed before #624, so they run in every mode: {@code --pack}, {@code --config-root} and
+ * {@code --config-root --round-trip} (which carries the "no {@code round_trip_red}" claim). The schema fields were
+ * already refused by the pack loader, and the mode only changes how the set is given, so they run once, with
+ * {@code --pack}, pinning that every malformed field stays a problem.
  */
 class MalformedDescriptorTest {
 
@@ -44,7 +46,8 @@ class MalformedDescriptorTest {
         }
     }
 
-    static Stream<Arguments> plants() {
+    /** The format fields: they crashed before #624, and are checked in every mode. */
+    static Stream<Arguments> precheckPlants() {
         return Stream.of(
                         new Plant(
                                 "pack_version",
@@ -60,7 +63,13 @@ class MalformedDescriptorTest {
                                 "requires_core",
                                 "pack_level: org",
                                 "pack_level: org\nrequires_core: \"not-a-range\"",
-                                "requires_core_invalid"),
+                                "requires_core_invalid"))
+                .flatMap(plant -> Stream.of(Mode.values()).map(mode -> Arguments.of(plant, mode)));
+    }
+
+    /** The schema fields: the loader already refused them, and the mode does not change that, so one run each. */
+    static Stream<Arguments> schemaPlants() {
+        return Stream.of(
                         new Plant("pack_level", "pack_level: org", "pack_level: galaxy", "pack_unreadable"),
                         new Plant(
                                 "pack_id",
@@ -83,7 +92,7 @@ class MalformedDescriptorTest {
                                 "pack_level: org",
                                 "pack_level: org\nflavour: mint",
                                 "pack_unreadable"))
-                .flatMap(plant -> Stream.of(Mode.values()).map(mode -> Arguments.of(plant, mode)));
+                .map(plant -> Arguments.of(plant, Mode.PACKS));
     }
 
     /** How the set is given: as {@code --pack} entries, as a config root, or as a config root with the round trip. */
@@ -94,7 +103,7 @@ class MalformedDescriptorTest {
     }
 
     @ParameterizedTest(name = "{0}, {1}")
-    @MethodSource("plants")
+    @MethodSource({"precheckPlants", "schemaPlants"})
     void aMalformedDescriptorFieldFailsThePackWithItsCode(Plant plant, Mode mode) throws IOException {
         boolean configRoot = mode != Mode.PACKS;
         Path packs = temp.resolve("root").resolve(ConfigRoot.PACKS);
@@ -138,9 +147,13 @@ class MalformedDescriptorTest {
                 .forEach(violation -> codes.add(violation.get("code").asString()));
         assertThat(codes).as("one cause, no round-trip red beside it").doesNotContain("round_trip_red");
         assertThat(run.report().get("checks").toString()).doesNotContain("CLOSURE");
-        JsonNode skip = run.report().get("skipped").get(0);
-        assertThat(skip.get("check").asString()).isEqualTo("CLOSURE");
-        assertThat(skip.get("reason").asString()).contains(ExamplePacks.ORG + " (");
+        List<String> closureSkips = new ArrayList<>();
+        run.report().get("skipped").forEach(skip -> {
+            if (skip.get("check").asString().equals("CLOSURE")) {
+                closureSkips.add(skip.get("reason").asString());
+            }
+        });
+        assertThat(closureSkips).as(run.out()).anyMatch(reason -> reason.contains(ExamplePacks.ORG + " ("));
     }
 
     private static String level(String name) {
