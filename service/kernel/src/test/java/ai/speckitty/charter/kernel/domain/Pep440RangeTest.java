@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -105,11 +106,105 @@ class Pep440RangeTest {
                 "==1.0.dev1|<=1.0|true",
                 // the next post-release or development release after an operand's own is a version between them
                 ">1.0.post0|<1.0.post2|true",
-                ">1.0.dev0|<1.0a1|true"
+                ">1.0.dev0|<1.0a1|true",
+                // the lowest development release of an operand's post-release lies between it and the one before
+                ">1.0.post0|<1.0.post1|true",
+                ">1.0a1.post0|<1.0a1.post1|true",
+                // 1.0.post0.dev0 sits between them, as admits orders it (the >V post-release caveat is not modelled)
+                ">1.0|<1.0.post0|true"
             })
     void twoRangesOverlapWhenSomeVersionSatisfiesBoth(String first, String second, boolean overlap) {
         assertThat(Pep440Range.overlaps(first, second)).isEqualTo(overlap);
         assertThat(Pep440Range.overlaps(second, first)).isEqualTo(overlap);
+    }
+
+    /** Operands with pre, post, development, epoch and local segments, for the overlap grid. */
+    private static final List<String> GRID_OPERANDS = List.of(
+            "1.0",
+            "1.0.post0",
+            "1.0.post1",
+            "1.0a1",
+            "1.0a1.post0",
+            "1.0a1.post1",
+            "1.0.dev0",
+            "1.0.post1.dev1",
+            "1.0rc1.dev2",
+            "1.0.1",
+            "2.0",
+            "1!1.0",
+            "1.0+abc");
+
+    /** Versions at and around each grid operand, past it in every segment, and in another epoch. */
+    private static final List<String> GRID_PROBES = List.of(
+            "0.dev0",
+            "0.9",
+            "1.0.dev1",
+            "1.0a1.dev0",
+            "1.0a1.post0.dev0",
+            "1.0a1.post1.dev0",
+            "1.0a1.post2",
+            "1.0a2",
+            "1.0rc1.dev0",
+            "1.0rc1.dev3",
+            "1.0rc1",
+            "1.0.post0.dev0",
+            "1.0.post1.dev0",
+            "1.0.post1.dev2",
+            "1.0.post2",
+            "1.0.0.1",
+            "1.0.1.dev0",
+            "1.1",
+            "2.0.dev0",
+            "3.0",
+            "1!0.dev0",
+            "1!1.0.1",
+            "1.0+xyz");
+
+    /**
+     * The overlap property over a grid: whenever some probe version satisfies both sets under
+     * {@link Pep440Range#admits}, {@link Pep440Range#overlaps} says they overlap. The grid crosses every operator
+     * with operands that carry pre, post, development, epoch and local segments, and the probes sit at and around each
+     * of them (#386).
+     */
+    @Test
+    void twoRangesOverlapWheneverSomeVersionSatisfiesBoth() {
+        List<String> refused = new ArrayList<>();
+        List<String> ranges = gridRanges(refused);
+        assertThat(ranges).allMatch(Pep440Range::isWellFormed);
+        assertThat(refused).hasSize(23).noneMatch(Pep440Range::isWellFormed);
+        List<String> probes = new ArrayList<>(GRID_OPERANDS);
+        probes.addAll(GRID_PROBES);
+        List<String> misses = new ArrayList<>();
+        for (String first : ranges) {
+            for (String second : ranges) {
+                probes.stream()
+                        .filter(probe -> Pep440Range.admits(first, probe) && Pep440Range.admits(second, probe))
+                        .findFirst()
+                        .filter(shared -> !Pep440Range.overlaps(first, second))
+                        .ifPresent(shared -> misses.add(first + " | " + second + " share " + shared));
+            }
+        }
+        assertThat(misses).isEmpty();
+    }
+
+    /**
+     * Every operator, and the {@code ==} and {@code !=} wildcards, on every grid operand; the combinations PEP 440
+     * refuses go to {@code refused} instead.
+     */
+    private static List<String> gridRanges(List<String> refused) {
+        List<String> ranges = new ArrayList<>();
+        for (String operand : GRID_OPERANDS) {
+            boolean plainRelease = operand.matches("(\\d+!)?\\d+(\\.\\d+)*");
+            for (String operator : List.of("==", "!=", "<", "<=", ">", ">=", "~=")) {
+                // PEP 440 compares a local operand only under == and !=
+                boolean wellFormed = !operand.contains("+") || operator.equals("==") || operator.equals("!=");
+                (wellFormed ? ranges : refused).add(operator + operand);
+            }
+            // and takes a wildcard only after a plain release
+            (plainRelease ? ranges : refused).add("==" + operand + ".*");
+            (plainRelease ? ranges : refused).add("!=" + operand + ".*");
+        }
+        return ranges;
     }
 
     @Test
