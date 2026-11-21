@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Origin;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +38,18 @@ class PackOriginsTest {
 
         assertThat(PackOrigins.of(ACME, directive)).isEqualTo(new Origin("acme::" + directive));
         assertThat(PackOrigins.of(ACME, directive)).isNotEqualTo(PackOrigins.of(ACME));
+    }
+
+    @Test
+    @DisplayName("an artifact's origin parses back, as a pack-qualified reference, to the same pack and URN")
+    void anArtifactOriginRoundTripsThroughTheReferenceGrammar() {
+        Urn directive = new Urn(NodeKind.DIRECTIVE, "DIR-1");
+
+        PackQualifiedReference parsed =
+                PackQualifiedReference.parse(PackOrigins.of(ACME, directive).id());
+
+        assertThat(parsed.packName()).isEqualTo(Optional.of(ACME.value()));
+        assertThat(parsed.asUrn()).contains(directive);
     }
 
     @Test
