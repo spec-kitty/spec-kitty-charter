@@ -12,6 +12,18 @@
       "verdict": "not-applicable",
       "wp": "WP04"
     },
+    "#478": {
+      "evidence_ref": "Context only: plan.md cites the existing #478 CI timing step, relabelled; no WP delivers it",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#52": {
       "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
       "fr": null,
