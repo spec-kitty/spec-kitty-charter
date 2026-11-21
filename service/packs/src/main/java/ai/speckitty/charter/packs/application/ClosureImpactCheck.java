@@ -15,7 +15,6 @@ import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -575,10 +574,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
     private static void place(
             ClosureRoots.Roots roots, ClosureFault fault, StagedPackViews.View staged, Faults faults) {
         String detail = "In the closure rooted at " + roots.label() + ": " + fault.detail();
-        if (fault.code() == RefusalCode.PACK_UNREADABLE
-                && !fault.violations().isEmpty()
-                && fault.violations().stream()
-                        .allMatch(violation -> SubstepDelegationRule.UNRESOLVED.equals(violation.code()))) {
+        if (fault.isUnresolvedDelegation()) {
             faults.add(ClosureFault.of(
                     RefusalCode.VALIDATION_FAILED, detail, fault.packs(), fault.violations(), fault.requiredBy()));
         } else if (!fault.violations().isEmpty() || !fault.requiredBy().isEmpty()) {
