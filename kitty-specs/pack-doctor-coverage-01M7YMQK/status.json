@@ -56,7 +56,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -69,6 +69,7 @@
         "pack-check renamed to pack-doctor (validate/remediate, no alias). NoPackCheckSurfaceTest red first (6/8 failed, 452 findings in 73 files), green after. validate stdout byte-identical to old pack-check on 84 runs (example packs +/- round-trip, 80 planted packs, faults). Out-of-map: HexagonalArchitectureTest rule names (WP07-owned); Javadoc in packs/pack-validation and docs/guides/README.md (outside owned_files). --full timed CI step left as a commented placeholder for WP05. verifyAll green with -PcontractBaseline=none (shallow clone)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP02-pack-check-becomes-pack-doctor/review-cycle-1.md",
         "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP02-pack-check-becomes-pack-doctor/review-cycle-1.md",
@@ -76,14 +77,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 24053,
-      "shell_pid_created_at": "1795280950.56",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done",
-        "T010": "done"
+        "T006": "planned",
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned",
+        "T010": "planned"
       }
     },
     "WP03": {
