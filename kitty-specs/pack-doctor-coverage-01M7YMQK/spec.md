@@ -3,7 +3,7 @@
 **Mission Branch**: `kitty/mission-pack-doctor-coverage-01M7YMQK` (merges into `feat/pack-doctor-coverage`, PR to `main`)
 **Created**: 2026-11-21
 **Status**: Draft
-**Input**: #629, #630, #632 and #614 (epic #549), with the operator's design rulings R-a to R-m
+**Input**: #629, #630, #632 and #614 (epic #549), with the operator's design rulings R-a to R-q
 (`decisions/`) and the research in `research/rule-coverage.md`.
 
 ## Purpose
@@ -29,6 +29,7 @@ The aim is that open-packs can retire its Python rules.
 | held | An id of a kind exists in a closure as an artifact file. | present |
 | preset item | One entry of a preset's `activated_<kinds>` list. A `must_have` item is a required one. | activation token |
 | full pass | `validate --full`: everything registration judges about a set of packs. | deep check |
+| anti-pattern file | An anti-pattern authored as its own artifact, `anti_patterns/<id>.anti-pattern.yaml` (ADR-0052 decision 8, as amended by ADR-0053 decision 30). It is what holds an `anti_pattern`. A graph node of the same URN declares it and is a `rejects` edge's endpoint, but holds nothing. | inline anti-pattern (a styleguide's or procedure's `anti_patterns` entry, a value of its owner with no id) |
 
 ## User Scenarios & Testing
 
@@ -136,6 +137,8 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 - An item of one kind does not satisfy a preset entry of another kind.
 - A preset item held only by a dependent pack, which is outside the own closure, is refused at the declaring pack.
 - A `parent_pack` that holds the item satisfies it.
+- An `anti_pattern` item counts as held only through its anti-pattern file. A graph node alone declares it, so a
+  `must_have` anti-pattern with only a node answers `preset_item_not_held`.
 - When the round trip and the manifest gate both see the same stale field, there is one problem. A "written stale"
   red, where the writer itself is wrong, still reports.
 - A `specializes_from` cycle that crosses the own closures of two packs is reported once.
@@ -156,9 +159,10 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 | FR-007 | pack-check is renamed pack-doctor: the module, the jar, the main class, the release asset and checksum, the CI steps, the release scripts and the live docs. It has the commands `validate` (with `--config-root`/`--pack`, `--round-trip`, `--full`, `--report`, `--format`) and `remediate`. No alias or old name remains as a live surface. | Proposed | [build] | no |
 | FR-008 | `validate --report <file> [--format yaml\|xml]` writes one report model in either format, with YAML as the default. Each format is checked against a schema in `contracts/`. | Proposed | [build] | no |
 | FR-009 | `remediate <pack-dir>...` writes each pack's manifest through the service's own derivation and stamp, and rewrites each modelled file in the round trip's canonical form, through a public storage-edge entry point. It judges nothing new. It refuses, writing nothing, when the pack has a fault it does not repair. | Proposed | [build] | no |
-| FR-010 | The example packs, the contract scenarios and the whole-pack gate carry the canonical shape, and fixtures are fixed, never exempted. `built-in` gains the anti-pattern artifact its default preset requires. `org-base` gains, or drops, the two tactics its `spdd` preset activates. Example manifests are restamped. | Proposed | [build] | no |
+| FR-010 | The example packs, the contract scenarios and the whole-pack gate carry the canonical shape, and fixtures are fixed, never exempted. `built-in` gains the anti-pattern artifact its default preset requires, as a file of the kind FR-013 builds. `org-base` gains, or drops, the two tactics its `spdd` preset activates. Example manifests are restamped. | Proposed | [build] | no |
 | FR-011 | The contract gains `preset_item_not_held`, `preset_item_undeclared` and `manifest_stale` with their statuses. The report schemas are added, and the registration scenarios that pinned the old behavior are rewritten. Each comes with a change fragment (`### Breaking` where a valid input is now refused). | Proposed | [build] | no |
 | FR-012 | ADR-0083 records rulings R-a to R-m. It amends ADR-0075 (decisions 6, 7 and 9), ADR-0042 (the 2026-11-12 amendment), rules A10 and C31, and the patterns page's scope table. It records #535 and #52 item 3 as not the charter's to judge. | Proposed | [build] | no |
+| FR-013 | The `anti_pattern` kind has a file form (rulings R-p and R-q; ADR-0052 decision 8 as amended by ADR-0053 decision 30): `anti_patterns/<id>.anti-pattern.yaml`, a closed shape with `schema_version`, `id` (the file stem), `title`, `description`, `severity` (`smell`, `severe` or `breaking`) and `bad_example` required, and `good_example` optional. The packs contract gains its schema, its `files` rule and a classifier case. The store binds, reads and writes it in one canonical form. Registration and `pack-doctor validate` hold a valid file and refuse an invalid or misplaced one with the existing schema and placement answers. `built-in` holds `indirection-for-repetition` as a file, and its graph node stays as the `rejects` edge's target. A node with no file is still declared: refusing it waits for the open-packs migration (ADR-0053 decision 31). | Proposed | [build] | no: a planted file is `file_not_held` before, held after |
 
 ### Non-Functional Requirements
 
@@ -202,4 +206,5 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 ## Issues
 
 Closes #614, #629, #630 and #632. #52 item 3 and #535 are closed by ruling R-g. Parent epic: #549. Kept in view:
-#158.
+#158. Refs #154: FR-013 delivers the `anti_pattern` file kind (rulings R-p and R-q). The rest of #154 stays open (the
+inline `anti_patterns` drop and the file-less node refusal, which wait for the open-packs migration).

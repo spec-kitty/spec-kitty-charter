@@ -68,6 +68,8 @@ placeholder:
   1460-1518, `derived_manifest`) retire with this release, and which stay as house rules (re-declaration across
   levels, unheld bare endpoints, slots outside an activation, and the `--full` remainder per the ruling).
 - (e) `TBD-report-format`: the report file and the new stdout keys, for any parser.
+- (f) `TBD-anti-pattern-files`: carry the draft already written in `research/open-packs-TBD-anti-pattern-files.md`
+  (plan D12) into this file, and update it with what WP10 shipped.
 
 ### T036 — Closure evidence (`research/closure-evidence.md`)
 - Per issue, list the PR file or scenario that shows the behavior:
@@ -79,5 +81,5 @@ placeholder:
 - This is the source for the PR body's issue section.
 
 ## Definition of Done
-- [ ] Five drafts, each with a placeholder.
+- [ ] Six drafts, each with a placeholder.
 - [ ] An evidence row for every issue the mission touched.
