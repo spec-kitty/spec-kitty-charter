@@ -121,7 +121,7 @@ public final class RoundTripControls {
                 source,
                 written,
                 new TreeMap<>(census),
-                Set.of(),
+                new TreeMap<>(),
                 path -> markdown
                         ? ContentForm.MARKDOWN
                         : WholePackCensus.contentFormOf(String.valueOf(source.getFileName()), path));

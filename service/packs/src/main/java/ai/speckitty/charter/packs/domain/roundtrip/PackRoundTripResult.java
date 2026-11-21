@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain.roundtrip;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -17,16 +18,16 @@ import java.util.TreeSet;
  *
  * @param census every pack-relative path ({@code /}-separated) to its gate kind: a {@code file-kinds.yaml} schema name, or
  *     {@link #OTHER}, {@link #RETIRED}, {@link #EXCLUDED} or {@link #SYMLINK}
- * @param notHeld every census path the census does not hold ({@code TreeCensus.notHeld}): an excluded file, a file no
- *     rule covers, and a mapped file nothing names (a {@code policy.yaml} the descriptor does not name, a companion no
- *     artifact names)
+ * @param notHeld every census file the census does not hold ({@code TreeCensus.notHeld}), by path: an excluded file, a
+ *     file no rule covers, and a mapped file nothing names (a {@code policy.yaml} the descriptor does not name, a
+ *     companion no artifact names), each with the census's own kind and reason
  * @param modelledKinds the gate kinds the round trip models
  * @param outcomes one outcome per source path of a modelled kind that the round trip answered
  * @param written every regular file under the target, target-relative and {@code /}-separated
  */
 public record PackRoundTripResult(
         SortedMap<String, String> census,
-        SortedSet<String> notHeld,
+        SortedMap<String, NotHeldFile> notHeld,
         Set<String> modelledKinds,
         SortedMap<String, FileOutcome> outcomes,
         SortedSet<String> written) {
@@ -57,22 +58,12 @@ public record PackRoundTripResult(
      */
     public PackRoundTripResult {
         census = Collections.unmodifiableSortedMap(new TreeMap<>(Objects.requireNonNull(census, "census")));
-        notHeld = Collections.unmodifiableSortedSet(new TreeSet<>(Objects.requireNonNull(notHeld, "notHeld")));
-        if (!census.keySet().containsAll(notHeld)) {
-            throw new IllegalArgumentException("a path not held is not in the census: " + notHeld);
+        notHeld = Collections.unmodifiableSortedMap(new TreeMap<>(Objects.requireNonNull(notHeld, "notHeld")));
+        if (!census.keySet().containsAll(notHeld.keySet())) {
+            throw new IllegalArgumentException("a path not held is not in the census: " + notHeld.keySet());
         }
         modelledKinds = Set.copyOf(modelledKinds);
         outcomes = Collections.unmodifiableSortedMap(new TreeMap<>(Objects.requireNonNull(outcomes, "outcomes")));
         written = Collections.unmodifiableSortedSet(new TreeSet<>(Objects.requireNonNull(written, "written")));
-    }
-
-    /**
-     * Whether a census kind names an excluded file.
-     *
-     * @param kind a census kind
-     * @return whether it starts with {@link #EXCLUDED}
-     */
-    public static boolean isExcluded(String kind) {
-        return kind.startsWith(EXCLUDED);
     }
 }

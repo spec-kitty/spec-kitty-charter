@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
@@ -10,9 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.Function;
 
 /**
@@ -135,15 +134,15 @@ final class WholePackCensus {
     }
 
     /**
-     * The paths a census does not hold ({@link TreeCensus#notHeld}): what the round trip leaves out (#631).
+     * The files a census does not hold ({@link TreeCensus#notHeld}): what the round trip leaves out (#631).
      *
      * @param census the census
-     * @return the pack-relative paths, sorted
+     * @return each file by its pack-relative path, sorted
      */
-    static SortedSet<String> notHeld(TreeCensus census) {
-        SortedSet<String> paths = new TreeSet<>();
-        census.notHeld().forEach(file -> paths.add(file.path()));
-        return paths;
+    static SortedMap<String, NotHeldFile> notHeld(TreeCensus census) {
+        SortedMap<String, NotHeldFile> files = new TreeMap<>();
+        census.notHeld().forEach(file -> files.put(file.path(), file));
+        return files;
     }
 
     /**
