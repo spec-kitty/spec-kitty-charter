@@ -2163,7 +2163,7 @@
   since: 2026-11-08
   evidence:
     - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (A registration that leaves a closure unable to compose is refused naming the packs); contracts/charter/scenarios/pack-removal.feature (A removal that leaves a closure of a stored activation broken is refused 422)"
-    - "charter: RegistrationImpactTest; PerArtifactImpactTest; PackRegistrationServiceTest (aStoredPackThatCannotBeReadIsReplacedByAFixedUpload)"
+    - "charter: ClosureImpactCheckTest; PerArtifactImpactTest; PackRegistrationServiceTest (aStoredPackThatCannotBeReadIsReplacedByAFixedUpload)"
 - id: DIV-605
   surface: The notices of a succeeded registration
   core: >-

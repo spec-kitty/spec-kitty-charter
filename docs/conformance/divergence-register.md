@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-19T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -865,7 +865,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 - **Status:** open, since 2026-11-08
 - **Evidence:**
   - Charter: `contracts/charter/scenarios/registration/whole-pack-registration.feature` (A registration that leaves a closure unable to compose is refused naming the packs); `contracts/charter/scenarios/pack-removal.feature` (A removal that leaves a closure of a stored activation broken is refused 422)
-  - Charter: `RegistrationImpactTest`; `PerArtifactImpactTest`; `PackRegistrationServiceTest` (aStoredPackThatCannotBeReadIsReplacedByAFixedUpload)
+  - Charter: `ClosureImpactCheckTest`; `PerArtifactImpactTest`; `PackRegistrationServiceTest` (aStoredPackThatCannotBeReadIsReplacedByAFixedUpload)
 
 ### DIV-605: Registration notices name activatable kinds only
 

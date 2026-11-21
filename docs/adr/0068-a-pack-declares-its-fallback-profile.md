@@ -2,8 +2,8 @@
 title: "ADR-0068: A pack declares its fallback profile in pack.yaml"
 description: "pack.yaml names the fallback agent profile: found in the closure, locked along it, with the reserved role generic. A derived pack may name a more specific one."
 doc_status: active
-updated: 2026-11-15T00:00:00Z
-decision_status: Accepted, with Amendment 2026-11-14 (ADR-0078, an agent-performed fallback)
+updated: 2026-11-20T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-14 (ADR-0078, an agent-performed fallback) and Amendment 2026-11-20 (#556, where the rule runs)
 decision_date: '2026-11-10'
 type: ADR
 kind: ADR
@@ -16,6 +16,7 @@ related:
   - adr/0063-pack-mutability-policy-file
   - adr/0065-pack-registration-replaces-the-whole-pack
   - adr/0069-a-profile-has-one-primary-role-and-optional-alt-roles
+  - adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check
   - adr/0078-agent-profile-selection-performer-and-effective-profile
 audience:
   - profile: pack-author
@@ -48,6 +49,17 @@ annotated:
   every role but `operator`, which never falls back.
 - decision 7: the selection reads are built (`selectAgentProfile`, `selectAgentProfileForStep`), so
   `fallback_profile_conflict` (`422`) and `no_profile_matched` (`404`) are raised.
+
+### Amendment 2026-11-20
+
+Slice 7 of [ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/)
+([#556](https://github.com/spec-kitty/spec-kitty-charter/issues/556)) moves where the registration checks of this ADR
+run, not what they judge. `FallbackProfileRule` runs behind the `ClosureWalk` port, first in the walk of a declaring
+pack's own closure, before the role pins and the profile enhancements. It reports every breach of the declared profile
+instead of the first: a profile that is held but neither locked nor role-neutral answers `422
+fallback_profile_not_locked` with both `fallback_profile_not_locked` and `fallback_profile_not_role_neutral` in its
+violations, beside any role-pin breach of the same closure. A profile the closure does not hold is
+`fallback_profile_unknown` alone, since nothing more can be judged of it. One breach answers as before.
 
 ## Context
 
