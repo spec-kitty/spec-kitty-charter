@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -405,6 +406,34 @@ class PackRegistrationServiceTest {
                 .as("the pack without the file is the pack held")
                 .isEqualTo(Outcome.UNCHANGED);
         assertThat(again.revision()).isEqualTo(noted.revision());
+    }
+
+    /**
+     * Operator ruling R34 (#631): an extra file in a pack, one no pack file kind models beside one the {@code ignored}
+     * fallback takes, is not processed on ingest: the registration succeeds, warns {@code file_not_held} at each, and
+     * the held pack has neither.
+     */
+    @Test
+    void extraFilesInPacksAreNotProcessedAndAWarningIsLoggedOnIngest(@TempDir Path host) {
+        Rig rig = new Rig(host);
+
+        RegistrationOutcome outcome = rig.register(
+                "pack-x",
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                        .directive("DIRECTIVE_001", "One")
+                        .file("qa/notes.txt", "a stray log line\n")
+                        .file("qa/notes.md", "# A stray note\n")),
+                Preconditions.none());
+
+        assertThat(outcome.outcome()).isEqualTo(Outcome.CREATED);
+        assertThat(outcome.diagnostics())
+                .extracting(Diagnostic::code, diagnostic -> diagnostic.detail().split(":", 2)[0])
+                .containsExactly(
+                        tuple(Diagnostic.Code.FILE_NOT_HELD, "qa/notes.md"),
+                        tuple(Diagnostic.Code.FILE_NOT_HELD, "qa/notes.txt"));
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x")))
+                .as("neither extra file is held")
+                .doesNotContainKeys("qa/notes.txt", "qa/notes.md");
     }
 
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------
