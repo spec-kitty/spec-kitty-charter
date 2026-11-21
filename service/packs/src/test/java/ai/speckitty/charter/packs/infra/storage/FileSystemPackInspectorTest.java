@@ -1377,6 +1377,152 @@ class FileSystemPackInspectorTest {
         assertThat(promptFragmentFindings(dir)).isEmpty();
     }
 
+    /**
+     * An enhances edge whose target qualifier is no pack id (#582): the schema accepts a 64-character qualifier, the
+     * binding refuses it, and that is the one fault. The step-enhancement edge rules do not judge it a second time; with
+     * a qualifier of 63 the pack holds no fault.
+     */
+    @Test
+    void anEnhancesTargetWhoseQualifierIsNoPackIdIsOneFaultNamingThePackIdGrammar(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        String edge = SPDD_EDGE.replace("base::action:software-dev/specify", "%s");
+
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                edge.formatted("p".repeat(PackIdentifier.MAX_LENGTH + 1) + "::action:software-dev/specify"));
+        // The fixture holds no pack.yaml, a fault of its own at pack.yaml in both cases; the graph's are the rest.
+        assertThat(faultsBesidesTheDescriptor(dir)).singleElement().satisfies(finding -> {
+            assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
+            assertThat(finding.detail()).contains("is not a reference").contains(PackIdentifier.GRAMMAR_DETAIL);
+        });
+
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                edge.formatted("p".repeat(PackIdentifier.MAX_LENGTH) + "::action:software-dev/specify"));
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+        assertThat(faultsBesidesTheDescriptor(dir)).isEmpty();
+    }
+
+    /**
+     * The malformed qualifier leaves only its own enhancement unjudged (#582): a genuine fault of another enhancement in
+     * the same graph document still stands. spdd-review has no enhances edge, so it is "0 enhances edges".
+     */
+    @Test
+    void aMalformedQualifierLeavesAnotherEnhancementsFaultInTheSameDocumentStanding(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        reviewEnhancement(dir);
+        String overCap = "p".repeat(PackIdentifier.MAX_LENGTH + 1);
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE.replace("base::", overCap + "::"));
+
+        assertThat(faultsBesidesTheDescriptor(dir))
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file())
+                .containsExactlyInAnyOrder(
+                        tuple(PackCodes.DRG_SCHEMA_ERROR.value(), ENHANCEMENT_GRAPH),
+                        tuple(PackCodes.PROMPT_FRAGMENT_INVALID.value(), yaml("spdd-review")));
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.detail()).contains("0 enhances edges"));
+    }
+
+    /**
+     * The same when the genuine fault comes from another graph document: spdd-review's enhances edge, in its own shard,
+     * targets a tactic, while spdd-specify's malformed edge sits in the enhancements shard.
+     */
+    @Test
+    void aMalformedQualifierLeavesAnotherEnhancementsFaultInAnotherDocumentStanding(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        reviewEnhancement(dir);
+        String overCap = "p".repeat(PackIdentifier.MAX_LENGTH + 1);
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE.replace("base::", overCap + "::"));
+        write(
+                dir,
+                "review.graph.yaml",
+                SPDD_EDGE
+                        .replace("spdd-specify", "spdd-review")
+                        .replace("base::action:software-dev/specify", "base::tactic:x"));
+
+        assertThat(faultsBesidesTheDescriptor(dir))
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file())
+                .containsExactlyInAnyOrder(
+                        tuple(PackCodes.DRG_SCHEMA_ERROR.value(), ENHANCEMENT_GRAPH),
+                        tuple(PackCodes.PROMPT_FRAGMENT_INVALID.value(), yaml("spdd-review")));
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.detail()).contains("not an action:<type>/<step>"));
+    }
+
+    /**
+     * Only an enhances or overrides edge the step-enhancement rules read leaves its enhancement unjudged: a malformed
+     * suggests edge from spdd-specify does not, so spdd-specify's genuine "0 enhances edges" still stands.
+     */
+    @Test
+    void aMalformedSuggestsEdgeLeavesItsEnhancementJudged(@TempDir Path dir) throws IOException {
+        validPair(dir);
+        String overCap = "p".repeat(PackIdentifier.MAX_LENGTH + 1);
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                SPDD_EDGE
+                        .replace("base::action:software-dev/specify", overCap + "::directive:D1")
+                        .replace("relation: enhances", "relation: suggests"));
+
+        assertThat(faultsBesidesTheDescriptor(dir))
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file())
+                .containsExactlyInAnyOrder(
+                        tuple(PackCodes.DRG_SCHEMA_ERROR.value(), ENHANCEMENT_GRAPH),
+                        tuple(PackCodes.PROMPT_FRAGMENT_INVALID.value(), yaml("spdd-specify")));
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.detail()).contains("0 enhances edges"));
+    }
+
+    /**
+     * A malformed edge from another pack's enhancement of the same id leaves this pack's spdd-specify judged: its
+     * genuine "0 enhances edges" still stands.
+     */
+    @Test
+    void aMalformedEdgeFromAnotherPacksEnhancementLeavesTheLocalOneJudged(@TempDir Path dir) throws IOException {
+        validPair(dir);
+        String overCap = "p".repeat(PackIdentifier.MAX_LENGTH + 1);
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                SPDD_EDGE
+                        .replace("source: step_enhancement:", "source: other::step_enhancement:")
+                        .replace("base::", overCap + "::"));
+
+        assertThat(faultsBesidesTheDescriptor(dir))
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file())
+                .containsExactlyInAnyOrder(
+                        tuple(PackCodes.DRG_SCHEMA_ERROR.value(), ENHANCEMENT_GRAPH),
+                        tuple(PackCodes.PROMPT_FRAGMENT_INVALID.value(), yaml("spdd-specify")));
+    }
+
+    private static void reviewEnhancement(Path dir) throws IOException {
+        write(dir, yaml("spdd-review"), SPDD_ENHANCEMENT.replace("spdd-specify", "spdd-review"));
+        write(dir, fragment("spdd-review"), "## Review guidance\n\nCheck the reasons.\n");
+    }
+
+    private static List<Reason> faultsBesidesTheDescriptor(Path dir) {
+        return verdict(dir).stream()
+                .filter(finding ->
+                        !PackFileSet.PACK_YAML.equals(finding.location().file()))
+                .toList();
+    }
+
     @Test
     void anEnhancesEdgeToANonStepAndAnAbsentEdgeAndAMismatchedDirectoryAreEachPromptFragmentInvalidAtTheYaml(
             @TempDir Path dir) throws IOException {

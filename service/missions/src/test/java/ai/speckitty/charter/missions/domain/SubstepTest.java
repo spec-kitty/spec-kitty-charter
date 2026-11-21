@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.io.IOException;
@@ -153,6 +154,20 @@ class SubstepTest {
     @ValueSource(strings = {"", "::tdd", "a::b::c", "Writing::tdd", "tdd!", "-tdd", "writing::"})
     void malformedCandidatesAreRefused(String written) {
         assertThatThrownBy(() -> SubstepCandidate.parse(written)).isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
+    @DisplayName(
+            "a candidate qualified by a pack name that is no pack id is refused, and a very long one cannot recurse")
+    void aQualifierThatIsNoPackIdIsRefusedWithoutRecursion() {
+        assertThat(SubstepCandidate.parse("a-b::tdd").packName()).contains("a-b");
+        assertThatThrownBy(() -> SubstepCandidate.parse("a_b::tdd")).isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> SubstepCandidate.parse("p".repeat(64) + "::tdd"))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
+        // #440: the qualifier is matched with the kernel's possessive slug, so 20,000 runs do not overflow the stack.
+        assertThatThrownBy(() -> SubstepCandidate.parse("a-".repeat(20_000) + "a::tdd"))
+                .isInstanceOf(ConstraintBreachException.class);
     }
 
     @Test

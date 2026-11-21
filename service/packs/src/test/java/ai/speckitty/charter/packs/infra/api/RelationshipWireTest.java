@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -33,11 +34,28 @@ class RelationshipWireTest {
         RelationshipDraft mapped = RelationshipWire.fromWire(wire(URN_AT_THE_CAP, "directive:D1"));
         assertThat(mapped.from().toString()).hasSize(255);
 
-        String qualifiedAtTheCap = "p".repeat(64) + "::directive:" + "D".repeat(255 - 64 - 2 - 10);
+        String pack = "p".repeat(PackIdentifier.MAX_LENGTH);
+        String qualifiedAtTheCap = pack + "::directive:" + "D".repeat(255 - PackIdentifier.MAX_LENGTH - 2 - 10);
         assertThat(qualifiedAtTheCap).hasSize(255);
         assertThat(RelationshipWire.fromWire(wire("directive:D1", qualifiedAtTheCap))
                         .toPack())
-                .contains("p".repeat(64));
+                .contains(pack);
+    }
+
+    /** A pack name over the longest pack id is no pack id (#582): the contract's pattern cannot cap it, the wire does. */
+    @Test
+    void aPackNameOverTheLongestPackIdIsAValidationFailedRefusal() {
+        String overCap = "p".repeat(PackIdentifier.MAX_LENGTH + 1) + "::directive:D1";
+        assertThatThrownBy(() -> RelationshipWire.fromWire(wire("directive:D1", overCap)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refused.getMessage()).contains(PackIdentifier.GRAMMAR_DETAIL);
+                });
+        assertThatThrownBy(() -> RelationshipWire.fromWire(wire("a_b::directive:D1", "directive:D2")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refused.getMessage()).contains(PackIdentifier.GRAMMAR_DETAIL);
+                });
     }
 
     @Test

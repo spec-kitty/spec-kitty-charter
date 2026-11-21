@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.IdentifierGrammar;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
@@ -242,13 +244,31 @@ class PackSchemasTest {
                 .isEmpty();
     }
 
-    /** The schema and {@code PackQualifiedReference} read one name grammar, so every authored pack can be referenced. */
+    /**
+     * The descriptor's {@code name} is a pack id, as the pack name of a reference is (#582): the slug, capped at the
+     * longest pack id, so every authored pack can be referenced and registered under its name.
+     */
     @Test
-    void theDescriptorSchemaConstrainsNameToThePackQualifiedReferenceGrammar() throws IOException {
-        assertThat(MAPPER.readTree(bundledText("pack-descriptor"))
-                        .at("/properties/name/pattern")
-                        .asString())
-                .isEqualTo(PackQualifiedReference.PACK_NAME_GRAMMAR);
+    void theDescriptorSchemaConstrainsNameToThePackIdGrammar() throws IOException {
+        JsonNode name = MAPPER.readTree(bundledText("pack-descriptor")).at("/properties/name");
+
+        assertThat(name.get("pattern").asString()).isEqualTo("^" + IdentifierGrammar.SLUG_AS_WRITTEN + "$");
+        assertThat(name.get("maxLength").asInt()).isEqualTo(PackIdentifier.MAX_LENGTH);
+        for (String refused : List.of("my_pack", "a--b", "p".repeat(PackIdentifier.MAX_LENGTH + 1))) {
+            assertThat(PackSchemas.bundled().validate("pack-descriptor", "pack.yaml", descriptorNamed(refused)))
+                    .as("the name %s is no pack id", refused)
+                    .singleElement()
+                    .satisfies(violation -> assertThat(violation.pointer()).containsExactly("name"));
+        }
+        assertThat(PackSchemas.bundled()
+                        .validate(
+                                "pack-descriptor", "pack.yaml", descriptorNamed("p".repeat(PackIdentifier.MAX_LENGTH))))
+                .as("a name of 63 characters is a pack id")
+                .isEmpty();
+    }
+
+    private static Object descriptorNamed(String name) {
+        return Yaml.load("pack_id: 01ARZ3NDEKTSV4RRFFQ69G5FAV\nname: " + name + "\npack_version: 1.0.0\n");
     }
 
     /** Every schema that lets a reference carry a {@code <pack-name>::} qualifier spells it as the Java grammar does. */
@@ -260,8 +280,12 @@ class PackSchemasTest {
         "org-fragment,/$defs/_OrgDRGEdge/properties/target/pattern"
     })
     void aReferencePatternQualifiesWithThePackNameGrammar(String kind, String pointer) throws IOException {
-        assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString())
-                .startsWith("^" + PackQualifiedReference.QUALIFIER);
+        String pattern = MAPPER.readTree(bundledText(kind)).at(pointer).asString();
+        String prefix = "^" + PackQualifiedReference.QUALIFIER;
+
+        // The whole qualifier group, then the kind alternation: a truncated QUALIFIER cannot pass as a prefix.
+        assertThat(pattern).startsWith(prefix);
+        assertThat(pattern.substring(prefix.length())).startsWith("(directive|");
     }
 
     /**
@@ -351,7 +375,7 @@ class PackSchemasTest {
         assertThat(parsed).isInstanceOf(Map.class);
         assertThat(((Map<?, ?>) parsed).get("pattern"))
                 .as("the schema's parsed pattern value, whatever the YAML quoting")
-                .isEqualTo("^" + PackQualifiedReference.QUALIFIER + "[a-z_]+:.+$");
+                .isEqualTo("^" + PackQualifiedReference.QUALIFIER + "[a-z_]+:[^:\\n\\r].*$");
     }
 
     @Test

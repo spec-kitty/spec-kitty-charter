@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain.rules;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -207,6 +208,56 @@ public final class GraphRules {
      */
     static boolean graphsRead(PackContents contents) {
         return documents(contents).stream().noneMatch(FileRead.Unreadable.class::isInstance);
+    }
+
+    /**
+     * The step enhancements whose edges have an endpoint written as a pack-qualified reference that does not parse, a
+     * qualifier that is no pack id among them (#582), by id. The schemas cannot cap the qualifier, so the binding
+     * refuses such an edge; the step-enhancement edge rules then leave that one enhancement unjudged rather than count
+     * an edge the pack wrote, and every other element of the pack is judged as before.
+     *
+     * @param contents the pack's contents
+     * @return the ids of the step enhancements an edge with a malformed endpoint starts at
+     */
+    static Set<String> enhancementsWithMalformedEdges(PackContents contents) {
+        String prefix = NodeKind.STEP_ENHANCEMENT.token() + ":";
+        String own = MissionTypeRules.ownName(contents);
+        return documents(contents).stream()
+                .filter(document -> document instanceof FileRead.Read<RawGraph>)
+                .flatMap(document -> ((FileRead.Read<RawGraph>) document).value().edges().stream())
+                .filter(edge -> RelationType.fromToken(edge.relation())
+                        .filter(type -> type == RelationType.ENHANCES || type == RelationType.OVERRIDES)
+                        .isPresent())
+                .filter(edge -> malformed(edge.source()) || malformed(edge.target()))
+                .flatMap(edge -> ownSource(edge.source(), own).stream())
+                .filter(source -> source.startsWith(prefix))
+                .map(source -> source.substring(prefix.length()))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * The URN of an edge's source when the source is this pack's: bare, qualified with the pack's own name, or written
+     * with a qualifier that does not parse (that edge is refused, so its enhancement is left unjudged); empty for a
+     * source another pack holds, whose enhancement this pack's rules do not judge.
+     */
+    private static Optional<String> ownSource(String source, String own) {
+        Optional<PackQualifiedReference> parsed = reference(source);
+        if (parsed.isEmpty()) {
+            return Optional.of(urnPart(source));
+        }
+        return parsed.get().packName().filter(name -> !name.equals(own)).isPresent()
+                ? Optional.empty()
+                : Optional.of(parsed.get().urn());
+    }
+
+    /** The text after the last {@code ::}, or the whole text when it holds none. */
+    private static String urnPart(String endpoint) {
+        int qualifier = endpoint.lastIndexOf("::");
+        return qualifier < 0 ? endpoint : endpoint.substring(qualifier + 2);
+    }
+
+    private static boolean malformed(String endpoint) {
+        return endpoint.contains("::") && reference(endpoint).isEmpty();
     }
 
     /** The graph documents of the pack, in merge order: the shards, then the fragment. */

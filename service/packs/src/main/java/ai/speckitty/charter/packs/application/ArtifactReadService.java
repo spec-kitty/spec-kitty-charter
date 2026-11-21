@@ -539,7 +539,8 @@ public final class ArtifactReadService {
             String packName,
             CharterArtifact referrer,
             List<PackEdge> edges) {
-        // The schemas refuse a malformed endpoint when a pack is read, so the grammar's parser cannot refuse one here.
+        // The store's graph read refuses a malformed endpoint, a qualifier that is no pack id among them (#582), so the
+        // grammar's parser cannot refuse one here: a pack holding one is refused pack_unreadable before it is read.
         PackQualifiedReference self =
                 new PackQualifiedReference(Optional.empty(), referrer.urn().toString());
         Map<String, Reference> references = new LinkedHashMap<>();

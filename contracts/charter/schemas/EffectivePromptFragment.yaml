@@ -24,9 +24,12 @@ properties:
       - schemas/ActivationConfig.yaml
   packName:
     type: string
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
     minLength: 1
+    maxLength: 63
     description: >-
-      The descriptor name of that pack (the name its pack.yaml declares), the second ordering key. Distinct from
+      The descriptor name of that pack (the name its pack.yaml declares), shaped as a pack id (#582), the second
+      ordering key. Distinct from
       packId, the configured identifier: two packs may sort one way by id and the other by name.
     x-derived:
       rule: The name of the descriptor of the winning pack after the layer merge.

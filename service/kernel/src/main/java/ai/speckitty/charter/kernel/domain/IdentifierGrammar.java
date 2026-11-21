@@ -11,8 +11,8 @@ import org.jspecify.annotations.Nullable;
  * grammars is possessive, so an over-long text is refused cheaply and cannot overflow the stack (#440). An identifier
  * type checks its text through one of these, never through a copy of the grammar.
  *
- * <p>The pack name of a {@link PackQualifiedReference} follows a grammar of its own, {@link
- * PackQualifiedReference#PACK_NAME_GRAMMAR}, which allows underscores.
+ * <p>The pack name of a {@link PackQualifiedReference} is a pack id ({@link PackIdentifier}), the slug capped at {@value
+ * PackIdentifier#MAX_LENGTH} (#582).
  */
 public final class IdentifierGrammar {
 
@@ -27,6 +27,13 @@ public final class IdentifierGrammar {
      * digit.
      */
     public static final String SLUG = "[a-z0-9]++(?:-[a-z0-9]++)*+";
+
+    /**
+     * The {@link #SLUG} as the contracts write it, in ECMA-262 without possessive repeats: {@code [a-z0-9]+(-[a-z0-9]+)*}.
+     * A schema pattern that restates a slug inside a longer pattern, such as the qualifier of a reference ({@link
+     * PackQualifiedReference#QUALIFIER}), spells it so.
+     */
+    public static final String SLUG_AS_WRITTEN = "[a-z0-9]+(-[a-z0-9]+)*";
 
     /** A {@link #SLUG} that starts with a letter: {@code ^[a-z][a-z0-9]*(-[a-z0-9]+)*$}. */
     public static final String LETTER_FIRST_SLUG = "[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+";

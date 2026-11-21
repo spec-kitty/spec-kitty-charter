@@ -76,10 +76,11 @@ class RegexRecursionGuardTest {
             "IdentifierGrammar.SLUG is the kernel's shared kebab grammar (#444), possessive, and judged by this guard"
                 + " where IdentifierGrammar compiles it; here it sits in capture groups, one optional, none repeated",
         ),
-        "missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepCandidate.java:GRAMMAR" to Allowed(
-            "cannot judge `GRAMMAR`",
-            "PackQualifiedReference.PACK_NAME_GRAMMAR without its anchors is one character class repeated, no group;"
-                + " GRAMMAR adds one optional group (pack name and ::) and a bounded id class {0,63}, none repeated",
+        "missions/src/main/java/ai/speckitty/charter/missions/domain/SubstepCandidate.java:WRITTEN" to Allowed(
+            "cannot judge `\"(?:\" + IdentifierGrammar.SLUG + \"::)?+\" + ID_GRAMMAR`",
+            "IdentifierGrammar.SLUG is the kernel's shared kebab grammar (#444), possessive, and judged by this guard"
+                + " where IdentifierGrammar compiles it; here it sits in one possessive optional group, and ID_GRAMMAR"
+                + " is a bounded class {0,63}. GRAMMAR, the written form the schema is pinned to, is not compiled (#582)",
         ),
     )
 

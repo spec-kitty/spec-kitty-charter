@@ -86,8 +86,9 @@ properties:
         most 64 characters, as glossary.schema.json bounds them; the contract's pattern holds no lookahead, which its
         validator does not read, so the 64-character bound of each id is the pack schema's. The pattern writes the
         slash as [/], not as a bare slash, because OpenAPI Generator corrupts a star-slash inside the comments it
-        generates.
-      pattern: '^([a-z0-9][a-z0-9_-]*::)?term:[a-z][a-z0-9]*(-[a-z0-9]+)*[/][a-z][a-z0-9]*(-[a-z0-9]+)*$'
+        generates. The pack name of a qualified reference is a pack id of at most 63 characters (ADR-0075 decision 2);
+        the pattern does not cap it, and the service refuses a longer one (#582).
+      pattern: '^([a-z0-9]+(-[a-z0-9]+)*::)?term:[a-z][a-z0-9]*(-[a-z0-9]+)*[/][a-z][a-z0-9]*(-[a-z0-9]+)*$'
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java
       symbol: GlossaryTerm.seeAlso

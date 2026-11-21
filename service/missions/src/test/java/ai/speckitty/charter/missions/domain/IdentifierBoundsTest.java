@@ -4,10 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,18 +62,47 @@ class IdentifierBoundsTest {
     }
 
     @Test
-    @DisplayName("a guard reference is captured whole at the caps; a part over 64, or a total over 136, is refused")
+    @DisplayName("a guard reference is capped: a pack over 63, an id over 64 or a total over 135 is refused")
     void aGuardReferenceIsCappedAtItsPartsAndItsTotal() {
-        String atLimit = AT_64 + "::guard:" + AT_64;
-        assertThat(atLimit).hasSize(136);
-        assertThat(GuardReference.parse(atLimit)).isEqualTo(new GuardReference(Optional.of(AT_64), AT_64));
+        String packAtCap = "a" + "b".repeat(PackIdentifier.MAX_LENGTH - 1);
+        String atLimit = packAtCap + "::guard:" + AT_64;
+        assertThat(atLimit).hasSize(135);
+        assertThat(GuardReference.parse(atLimit)).isEqualTo(new GuardReference(Optional.of(packAtCap), AT_64));
         assertThat(GuardReference.parse(AT_64)).isEqualTo(new GuardReference(Optional.empty(), AT_64));
         assertThatThrownBy(() -> GuardReference.parse(AT_64 + "c")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> GuardReference.parse(AT_64 + "c::guard:review"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> GuardReference.parse(AT_64 + "::guard:review"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
         assertThatThrownBy(() -> GuardReference.parse(atLimit + "c"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not longer than 136");
+                .hasMessageContaining("not longer than 135");
+    }
+
+    @Test
+    @DisplayName("a guard reference's pack is a pack id (#582)")
+    void aGuardReferencePackIsAPackId() {
+        assertThat(GuardReference.parse("a-b::guard:x")).isEqualTo(new GuardReference(Optional.of("a-b"), "x"));
+        assertThatThrownBy(() -> new GuardReference(Optional.of("a_b"), "x"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
+        assertThatThrownBy(() -> GuardReference.parse("a--b::guard:x"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
+        assertThatThrownBy(() -> GuardReference.parse("a_b::guard:x"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
+    }
+
+    @Test
+    @DisplayName("the lifecycle schema caps a guard ref at the longest spelling the domain reads, 135 characters")
+    void theLifecycleSchemaCapsAGuardRefAtTheDomainsLongestSpelling() throws IOException {
+        String schema = Files.readString(
+                Path.of("../../contracts/packs/schemas/lifecycle.schema.json"), StandardCharsets.UTF_8);
+        Matcher ref = Pattern.compile("::guard:\\)\\?[^\"]*\",\\s*\"maxLength\": (\\d+)")
+                .matcher(schema);
+
+        assertThat(ref.find()).as("the guard ref's pattern and cap").isTrue();
+        assertThat(Integer.parseInt(ref.group(1))).isEqualTo(GuardReference.MAX_SPELLING_LENGTH);
     }
 
     @Test

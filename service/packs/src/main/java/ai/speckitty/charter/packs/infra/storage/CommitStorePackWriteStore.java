@@ -373,8 +373,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         if (!read.violations().isEmpty()) {
             // Fail closed, as the edges and the composition facts do: what an unread document declares or joins cannot
             // be judged, and a removal that skipped it would pass what it never saw.
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+            throw read.unreadable(pack);
         }
         Set<Urn> declared = new LinkedHashSet<>();
         List<Relationship> edges = new ArrayList<>();

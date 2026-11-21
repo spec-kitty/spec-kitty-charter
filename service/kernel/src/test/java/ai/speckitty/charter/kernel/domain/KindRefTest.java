@@ -61,9 +61,12 @@ class KindRefTest {
     }
 
     @Test
-    @DisplayName("a pack qualifier follows the pack-name grammar")
+    @DisplayName("a pack qualifier is a pack id")
     void aBadPackNameIsRefused() {
         assertThatThrownBy(() -> KindRef.directive("d").inPack("Not A Pack"))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> KindRef.directive("d").inPack("org_base"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(PackIdentifier.GRAMMAR_DETAIL);
     }
 }

@@ -250,7 +250,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Pack name"
-        definition: "The `name` in `pack.yaml`, matching `^[a-z0-9][a-z0-9_-]*$`. It is the `<pack-name>` qualifier of a cross-pack reference, not an identity: unique across a compose without exception (`pack_name_conflict`), and distinct from both the configured pack id and the descriptor pack id."
+        definition: "The `name` in `pack.yaml`, shaped as a configured pack id: a kebab slug of at most 63 characters (`^[a-z0-9]+(-[a-z0-9]+)*$`, #582). It is the `<pack-name>` qualifier of a cross-pack reference, not an identity: unique across a compose without exception (`pack_name_conflict`), and distinct from both the configured pack id and the descriptor pack id."
         meta:
           status: "canonical"
       - name: "PEP 440 range"

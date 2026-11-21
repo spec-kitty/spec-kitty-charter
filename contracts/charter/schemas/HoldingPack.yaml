@@ -26,8 +26,10 @@ properties:
       symbol: PackDescriptor.packId
   name:
     type: string
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
     minLength: 1
-    description: The holding pack's name, which is the qualifier a pack-qualified reference spells.
+    maxLength: 63
+    description: The holding pack's name, which is the qualifier a pack-qualified reference spells, shaped as a pack id (#582).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackDescriptor.java
       symbol: PackDescriptor.name

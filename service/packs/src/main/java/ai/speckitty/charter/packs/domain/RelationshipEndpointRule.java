@@ -171,7 +171,7 @@ public final class RelationshipEndpointRule {
                     Optional.empty(),
                     Optional.empty());
         } catch (IllegalArgumentException malformed) {
-            // A qualifier that breaks the pack-name grammar, or a tension of an artifact with another version of
+            // A qualifier that is no pack id (#582), or a tension of an artifact with another version of
             // itself: the graph rules refuse the edge on their own.
             return Optional.empty();
         }

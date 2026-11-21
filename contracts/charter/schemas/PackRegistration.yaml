@@ -36,10 +36,12 @@ properties:
       inputs:
       - the pack.yaml of the pack
   name:
-    allOf:
-    - $ref: Slug.yaml
+    type: string
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    minLength: 1
+    maxLength: 63
     description: The name the pack's pack.yaml declares, the handle a pack-qualified reference uses. It is unique among the
-      configured packs.
+      configured packs, and a pack id, a kebab slug of at most 63 characters (ADR-0075 decision 2, #582).
     x-derived:
       rule: The name of the pack's descriptor.
       inputs:

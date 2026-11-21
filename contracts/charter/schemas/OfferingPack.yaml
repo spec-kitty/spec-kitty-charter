@@ -49,7 +49,10 @@ properties:
       symbol: ConfiguredPack.level
   name:
     type: string
-    description: The human-readable name the pack's pack.yaml gives (name).
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    minLength: 1
+    maxLength: 63
+    description: The human-readable name the pack's pack.yaml gives (name), shaped as a pack id (#582).
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java
       symbol: OfferingReadService.OfferingEntry.name
