@@ -61,16 +61,16 @@
       "wp": "WP01"
     },
     "#629": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP03: preset_item_not_held on registration and pack-doctor validate",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "pack-check passes a preset must_have id that the closure does not hold",
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#630": {
       "evidence_ref": "<link or commit>",
