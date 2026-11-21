@@ -12,7 +12,7 @@ requirement_refs:
 - SC-001
 planning_base_branch: feat/pack-doctor-coverage
 merge_target_branch: feat/pack-doctor-coverage
-branch_strategy: Planning artifacts for this mission were generated on feat/pack-doctor-coverage (Mission topic branch kitty/mission-pack-doctor-coverage-01M7YMQK). During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/pack-doctor-coverage, which is PR'd to main.
+branch_strategy: Planning artifacts for this mission were generated on feat/pack-doctor-coverage. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/pack-doctor-coverage unless the human explicitly redirects the landing branch.
 subtasks:
 - T011
 - T012
@@ -21,7 +21,6 @@ subtasks:
 - T015
 - T016
 phase: Phase 2 - The rules
-agent: claude
 history:
 - at: '2026-11-21T13:30:00Z'
   actor: system
