@@ -87,6 +87,33 @@ Feature: A whole-pack registration holds a valid anti-pattern file and refuses a
       | no bad_example       | severity: smell | good_example: write the loop  | missing 'bad_example'                        |
       | an unknown severity  | severity: minor | bad_example: next(...)        | 'severity' has an unsupported value 'minor'  |
 
+  Scenario: An anti-pattern file with a key the closed schema does not declare refuses the pack at the file
+    Given the archive "bad" is a copy of the archive "v1"
+    And the archive "bad" holds the file "anti_patterns/clever-over-direct.anti-pattern.yaml":
+      """
+      schema_version: '1.0'
+      id: clever-over-direct
+      title: Clever over direct
+      description: Using a clever language feature when a direct, familiar idiom would be easier to review.
+      severity: smell
+      bad_example: result = next((v for v in xs if pred(v)), None)
+      rejected_by: styleguide:boring-code-review
+      """
+    When I PUT "/packs/acme" with the archive "bad"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "artifact_schema_error"
+    And the field at "/problem/violations/0/pointer" is "anti_patterns/clever-over-direct.anti-pattern.yaml"
+    And the field at "/problem/violations/0/detail" contains "unknown key 'rejected_by'"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   Scenario Outline: An anti-pattern file <case> is refused by the placement and stem rule
     Given the archive "bad" is a copy of the archive "v1"
     And the archive "bad" lacks the file "anti_patterns/clever-over-direct.anti-pattern.yaml"

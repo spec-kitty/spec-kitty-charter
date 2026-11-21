@@ -100,6 +100,18 @@ class AntiPatternFileCheckTest {
     }
 
     @Test
+    void anUnknownKeyIsAnArtifactSchemaErrorAtTheFile() throws IOException {
+        assertThat(validateWith(FILE, VALID + "rejected_by: styleguide:boring-code-review\n"))
+                .as("the schema is closed (additionalProperties: false)")
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file(),
+                        finding -> finding.location().pointer(),
+                        Reason::detail)
+                .containsExactly(tuple("artifact_schema_error", FILE, "", FILE + ": unknown key 'rejected_by'"));
+    }
+
+    @Test
     void aFileOutsideAntiPatternsIsRefusedByPlacement() throws IOException {
         String misplaced = "clever-over-direct.anti-pattern.yaml";
 
