@@ -2,7 +2,7 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-19T00:00:00Z
+updated: 2026-11-21T00:00:00Z
 decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478)
 decision_date: '2026-11-13'
 type: ADR
@@ -15,6 +15,7 @@ related:
   - adr/0046-service-release-line-and-native-packaging
   - adr/0068-a-pack-declares-its-fallback-profile
   - adr/0070-charter-tests-own-example-packs-not-open-packs-content
+  - adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you add or change a pack check, a refusal code, or anything in kernel.validation.
@@ -133,6 +134,10 @@ Slice 5 ([#554](https://github.com/spec-kitty/spec-kitty-charter/issues/554)) pl
 R3 on 2026-11-16 (the rules stay in the packs domain, with no judging port), then, after a shaping squad, S1 to S3 and
 S6, which supersede part of R3. This amendment records R3 as S1 to S3 and S6 left it. It replaces decision 3's "every
 pack check in pack-validation", decision 4's pipeline and the 2026-11-13 amendment's ports, and decision 7's wording.
+
+See [ADR-0082](/adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface/) (2026-11-21): the
+closure checks and every other graph walk are domain rules run by the domain's one walk; judging ports are not where
+rules live.
 
 - **The consistency rules live in the packs domain** (`packs.domain.rules`). Each pack file kind's checks are a kernel
   ruleset over the canonical domain objects (`PackContents`), and `CLOSURE` judges the composition facts of a set of
