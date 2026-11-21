@@ -3,9 +3,9 @@ package ai.speckitty.charter.packvalidation.set;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackVerdict;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -17,14 +17,14 @@ import java.util.stream.Collectors;
  * order the set was given, the composition faults of {@code CLOSURE}, the checks that ran and the checks skipped.
  *
  * @param packs each pack's result, in the order the set was given
- * @param faults the composition faults of {@code CLOSURE} and its preset phase, in the order the ruleset reports them;
+ * @param faults the closure faults of {@code CLOSURE} and its preset phase, in the order the ruleset reports them;
  *     empty when {@code CLOSURE} passed or did not run
  * @param checks the checks that ran over the whole set: {@link Check#PACK}, then {@link Check#CLOSURE} when it ran, then
  *     {@link Check#ROUND_TRIP} when it was asked for
  * @param skipped the checks skipped, with why; empty when every check asked for ran
  */
 public record PackSetVerdict(
-        List<PackResult> packs, List<CompositionFault> faults, List<Check> checks, List<Skip> skipped) {
+        List<PackResult> packs, List<ClosureFault> faults, List<Check> checks, List<Skip> skipped) {
 
     /**
      * Copies the lists.

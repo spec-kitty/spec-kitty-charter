@@ -7,14 +7,14 @@ import org.gradle.api.artifacts.ProjectDependency
 
 /**
  * The only dependencies a module may declare (ADR-0075 decision 3): charter projects by path and external modules by
- * `group:name`. `pack-validation` and `pack-check` pin theirs with it, judging every configuration in the hierarchy of
+ * `group:name`. `pack-validation` and `pack-doctor` pin theirs with it, judging every configuration in the hierarchy of
  * the module's main compile and runtime classpaths ([CLASSPATHS]), custom ones they extend from included, so a module
  * cannot declare a Spring starter, or any project or library its list leaves out, at compile time or riding along at
  * run time. Only the dependencies a module declares are judged: what they bring in transitively is not, so
  * `pack-validation`'s allowed `:packs` brings Spring onto its classpath. `HexagonalArchitectureTest`'s
  * `PACK_VALIDATION_IS_FRAMEWORK_FREE` pins, directly and transitively, that the classes the modules use never touch it.
  *
- * A convention that adds a resolvable configuration of its own (`charter.pack-check-jar`'s `packCheckJarClasspath`,
+ * A convention that adds a resolvable configuration of its own (`charter.pack-doctor-jar`'s `packDoctorJarClasspath`,
  * #478) names it with [judgeAlso], so a dependency declared on it directly is judged as the main classpaths' are (J6).
  *
  * @property projects the charter project paths allowed, such as `:kernel`

@@ -1,8 +1,8 @@
 ---
 title: Check packs
-description: "Download and verify the pack-check jar, check a set of packs on your machine with no service, read its report and exit codes, and know what only the service checks."
+description: "Download and verify the pack-doctor jar, check a set of packs on your machine with no service, read its report and exit codes, and know what only the service checks."
 doc_status: draft
-updated: 2026-11-19T00:00:00Z
+updated: 2026-11-21T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -22,13 +22,13 @@ audience:
 
 # Check packs
 
-`pack-check` checks a set of packs on your machine, with no service to build or start
-([ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 9). It
-runs the checks a registration runs, in the same codes and words, plus the placement checks, the composition of the
+`pack-doctor` checks a set of packs on your machine, with no service to build or start
+([ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 9). Its
+`validate` command runs the checks a registration runs, in the same codes and words, plus the placement checks, the composition of the
 set (`CLOSURE`) and, when you ask, the round trip through the charter's model. It writes one report, in the contract's
 problem JSON.
 
-It is one file, `pack-check-<version>.jar`, and it needs **Java 25**. It has no native build.
+It is one file, `pack-doctor-<version>.jar`, and it needs **Java 25**. It has no native build.
 
 ## Download and verify
 
@@ -40,9 +40,9 @@ The jar is an asset of every service release, `service-v<version>`, from `servic
 tag=service-v0.1.0-rc.3
 version="${tag#service-v}"
 gh release download "$tag" --repo spec-kitty/spec-kitty-charter \
-  --pattern "pack-check-$version.jar" --pattern SHA256SUMS
+  --pattern "pack-doctor-$version.jar" --pattern SHA256SUMS
 sha256sum --check --ignore-missing SHA256SUMS
-gh attestation verify "pack-check-$version.jar" --repo spec-kitty/spec-kitty-charter \
+gh attestation verify "pack-doctor-$version.jar" --repo spec-kitty/spec-kitty-charter \
   --signer-workflow spec-kitty/spec-kitty-charter/.github/workflows/service-release.yml \
   --source-ref "refs/tags/$tag"
 ```
@@ -52,7 +52,14 @@ tag and the jar's SHA-256, as you pin any other tool.
 
 ## Run it
 
-Give it the packs in one of two forms:
+`pack-doctor` takes a command first:
+
+- **`validate`** checks a set of packs and writes the report. Everything below is about it.
+- **`remediate`** is not available yet: it exits `2` and says so.
+
+A command line with no command, such as the options alone, is a usage fault (`2`).
+
+Give `validate` the packs in one of two forms:
 
 - **A config root:** `--config-root <dir>` checks every pack under `<dir>/packs/<name>/`, each at the level its
   `pack.yaml` declares and under its directory's name, as the service reads it. A hidden entry (`.git`) is not a pack.
@@ -65,10 +72,10 @@ the model and compared by meaning ([ADR-0036](/adr/0036-round-trip-fidelity-is-e
 
 ```bash
 # A config root: packs/built-in, packs/org-base and packs/project under ./governance
-java -jar pack-check-0.1.0-rc.3.jar --config-root governance --round-trip
+java -jar pack-doctor-0.1.0-rc.3.jar validate --config-root governance --round-trip
 
 # The same packs, given one by one with their levels
-java -jar pack-check-0.1.0-rc.3.jar \
+java -jar pack-doctor-0.1.0-rc.3.jar validate \
   --pack governance/packs/built-in:built-in \
   --pack governance/packs/org-base:org \
   --pack governance/packs/project:project \
@@ -85,7 +92,7 @@ then read, composed and round-tripped under that id, the report and its problems
 directory's name plays no part:
 
 ```bash
-java -jar pack-check-0.1.0-rc.3.jar --pack build/staging:org=org-base --pack vendor/built-in
+java -jar pack-doctor-0.1.0-rc.3.jar validate --pack build/staging:org=org-base --pack vendor/built-in
 ```
 
 How a `--pack` value is read:
@@ -102,7 +109,7 @@ How a `--pack` value is read:
   names a directory. It is never read as part of a path that does not exist.
 - Two packs under one id, given or taken from the directory's name, are refused.
 
-`--config-root` and `--pack` cannot be mixed. `java -jar pack-check-<version>.jar --help` prints the usage. A
+`--config-root` and `--pack` cannot be mixed. `java -jar pack-doctor-<version>.jar --help` prints the usage. A
 directory whose name starts with `--` goes after `--`, which ends the options.
 
 **Check a pack with the packs it depends on.** `CLOSURE` judges the set as given and never fetches a pack. A pack
@@ -115,17 +122,17 @@ Give its dependencies too, or use a config root that holds them.
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, or `pack-check` has a defect (`pack-check: internal error:`). Nothing is on standard output; the cause is on standard error. |
+| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, `remediate` was asked for, which is not available yet, or `pack-doctor` has a defect (`pack-doctor: internal error:`). Nothing is on standard output; the cause is on standard error. |
 
 What a pack holds is never a failure (`2`). A pack it cannot read, a malformed `pack.yaml` field (a `pack_version`
 that is not a version, a `depends_on` range or `requires_core` that is not a range, a `pack_level` the schema does not
 know) or a file it refuses is a problem (`1`), at the file that holds it. An `internal error` is a defect of
-`pack-check` itself, whatever the packs hold; report it.
+`pack-doctor` itself, whatever the packs hold; report it.
 
 ## The report
 
-The report goes to standard output, as one JSON object. Its schema is the contract's `PackCheckReport`
-(`contracts/charter/schemas/PackCheckReport.yaml`):
+The report goes to standard output, as one JSON object. Its schema is the contract's `PackDoctorReport`
+(`contracts/charter/schemas/PackDoctorReport.yaml`):
 
 - **`checks`:** the checks that ran over the set, in order: `PACK` always, `CLOSURE` when every pack's composition
   could be read and its `pack.yaml` is well formed, and `ROUND_TRIP` with `--round-trip`.
@@ -167,7 +174,7 @@ it the same way. Replace the link with the file it points to.
 
 ## What only the service checks
 
-`pack-check` runs no closure walk and reaches no service state. These stay in the service (ADR-0075, decision 6), so a
+`pack-doctor` runs no closure walk and reaches no service state. These stay in the service (ADR-0075, decision 6), so a
 pack that passes here can still be refused when you register it:
 
 - the closure walk over the composed graph;

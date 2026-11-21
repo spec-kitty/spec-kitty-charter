@@ -62,7 +62,7 @@ final class CompositionFactsBuilder {
      * holds and the terms it holds), read and judged as the composing read reads a stored pack, so a pack read
      * without the service is judged on the facts the service judges.
      *
-     * <p>It makes a read of its own, so it is for tests and for the composing read's parity checks. pack-check (#478)
+     * <p>It makes a read of its own, so it is for tests and for the composing read's parity checks. pack-doctor (#478)
      * takes a pack's facts from the readout of its one read ({@code PackReadout.facts}, {@link #readoutFacts}), never
      * from here: both build through {@link #built}, so the facts are the same.
      *
