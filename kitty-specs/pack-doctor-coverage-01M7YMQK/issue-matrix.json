@@ -85,16 +85,16 @@
       "wp": "WP04"
     },
     "#632": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP03 item 1, WP07 item 2 (remediate), WP05 item 3 per the operator's ruling",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "pack-check covers the cross-pack rules open-packs still runs in Python",
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#636": {
       "evidence_ref": "<link or commit>",
