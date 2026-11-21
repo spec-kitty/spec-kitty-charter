@@ -13,16 +13,16 @@
       "wp": null
     },
     "#52": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Closure checker and YAML adapter follow-ups",
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#535": {
       "evidence_ref": "<link or commit>",
