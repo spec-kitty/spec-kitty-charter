@@ -4,6 +4,37 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-doctor-coverage-01M7YMQK
 mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
+generated_at: '2026-11-21T23:42:00.861696+00:00'
+analyzer_agent: claude
+input_artifacts:
+  spec.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/spec.md
+    sha256: 85f4dd72626bd3d641339a0c86c1f126f159868aee015ce43dcc2513fab841c0
+  plan.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/plan.md
+    sha256: d153d185e77fdd0d45dfe821aaa98f7f0e0ee4533fd3a1049eb175d12152f4dc
+  tasks.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks.md
+    sha256: 211c721cec51cea4e8991999e97ef538e2311b9ff586df8aa1c0db747d3ea085
+  charter:
+    path: .kittify/charter/charter.yaml
+    sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
+verdict: unknown
+issue_counts:
+  info:
+  medium:
+  high:
+  critical:
+  low:
+findings: []
+---
+
+---
+schema_version: 1
+artifact_type: spec-kitty.analysis-report
+command: /spec-kitty.analyze
+mission_slug: pack-doctor-coverage-01M7YMQK
+mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
 generated_at: '2026-11-21T22:14:04.615173+00:00'
 analyzer_agent: claude
 input_artifacts:
@@ -21,16 +52,20 @@ input_artifacts:
     sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
 verdict: ready
 issue_counts:
-  medium: 4
-  low: 8
+  medium: 3
+  low: 10
   high: 0
   critical: 0
   info: 0
 findings:
-- id: Q2
-  severity: medium
-  category: ambiguity
-  summary: The PackSetVerdict.Check value of the narrowed --full phase (R-s) is a report-contract value; CLOSURE_WALK would name the deferred own-closure walk. Asked of the operator; WP05 defaults to REFERENCES.
+- id: R2
+  severity: low
+  category: sequencing
+  summary: WP10 T042's inline-block removal moved to WP12 T047a (beside the schema drop) so everySchemaPropertyHasAnExample stays green without an exclusion; WP10/WP12 stop and done lines updated.
+- id: D1
+  severity: low
+  category: coverage
+  summary: A new pack schema needs a docs/architecture/pack-schemas page (site prebuild check); WP10 cycle 2 adds anti-pattern.md.
 - id: U1
   severity: medium
   category: underspecification
@@ -104,7 +139,8 @@ No contract code is minted: each refusal is an existing answer of the closed sch
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| Q2 | Ambiguity | MEDIUM | plan D5; data-model `--full`; WP05 T023 | The `PackSetVerdict.Check` value of the narrowed `--full` phase is a report-contract value; `CLOSURE_WALK` would name the deferred own-closure walk | Ask the operator (below). WP05 defaults to `REFERENCES` and lists it if unanswered |
+| R2 | Sequencing | LOW | WP10 T042; WP12 T047a | Removing the example packs' inline blocks while the schemas declare `anti_patterns` turns `everySchemaPropertyHasAnExample` red; an exclusion is forbidden | Moved to WP12 T047a, same commit as T047's schema drop; patch and test in `research/` |
+| D1 | Coverage | LOW | WP10 | The docs-site prebuild needs a `docs/architecture/pack-schemas/` page per schema | WP10 cycle 2 adds `anti-pattern.md` (review finding) |
 | U1 | Underspecification | MEDIUM | WP10 T040/T042; WP03 T015; WP04 T021 | New example-pack files (18 in built-in, 2 tactics in org-base) vs the manifest restamp, across lanes i, c and d | Each WP stamps its own constituents through `ManifestMembership.stamp`; the lane that merges last re-runs the stamp |
 | U2 | Underspecification | MEDIUM | WP10, WP12, WP05, WP03, WP06, WP07 | Out-of-map edits widen: WP10 edits three built-in styleguides (WP03's glob) and the built-in manifest (WP04's); WP12 edits the packs CHANGELOG (WP10's) and `docs/conformance/**` (WP02's); WP05 edits `Arguments`, `PackSetCheck` and `service.yml` | Merge lanes in dependency order; reviewers check each out-of-map edit is minimal and listed |
 | U3 | Underspecification | MEDIUM | WP11 T044; WP03 T011 | `CompositionFactsTest` is WP11's (canonical nodes) and WP03 renames its `defined` reads out-of-map; lanes j and c run in parallel, so the second merge meets a small conflict. `facts/example-packs.json` is re-recorded by WP10 then WP03 | Merge lane-j before lane-c where possible; otherwise WP03 resolves on rebase. WP03's T011 example now uses an `action` node (edited) |
@@ -166,13 +202,7 @@ lanes a, b, c and d are unchanged in members, dependencies and write scope.
 
 ## Operator question
 
-**Q2 — What is the `PackSetVerdict.Check` value of the narrowed `--full` phase?** It appears in the stdout problem
-JSON and the report's `checks` list (a contract value of `PackDoctorReport`). The phase runs delegations, references
-and enhancement targets only (R-s).
-
-- (a) **Recommended.** `REFERENCES`: names what the phase resolves; the own-closure walk keeps its name for #636.
-- (b) `CLOSURE_WALK`: the name the plan used before R-s; it would later cover more than it does now.
-- (c) `FULL`: names the option, not the checks.
+None open. Q2 was answered by ruling R-u (DM-01M8035FAMHXG0A04SCBD7QTKD): the `--full` check value is `REFERENCES`.
 
 ## Next Actions
 
