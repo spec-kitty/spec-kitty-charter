@@ -49,16 +49,16 @@
       "wp": null
     },
     "#614": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP01: Origin on Reason, one ClosureFault factory, CompositionFault deleted",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "ADR-0082 slice 1: Origin on Reason, one ClosureFault factory, ClosureVerdict as a Rationale view",
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#629": {
       "evidence_ref": "<link or commit>",
