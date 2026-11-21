@@ -184,7 +184,7 @@
     },
     "WP10": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -198,6 +198,7 @@
         "T037-T042 done; T042's inline-block removal re-sliced to WP12 T047a (keeps everySchemaPropertyHasAnExample green without an exclusion). Commit a80f3e4a7. Gates: kernel 3118, packs 7197, pack-validation 471, wholePackRoundTrip 17, pack-doctor 263/15/4, contracts 314, deployable 2382"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP10-anti-pattern-file-kind/review-cycle-1.md",
         "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP10-anti-pattern-file-kind/review-cycle-1.md",
@@ -205,15 +206,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 1440,
-      "shell_pid_created_at": "1795303693.79",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T037": "done",
-        "T038": "done",
-        "T039": "done",
-        "T040": "done",
-        "T041": "done",
-        "T042": "done"
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned",
+        "T040": "planned",
+        "T041": "planned",
+        "T042": "planned"
       }
     },
     "WP11": {
