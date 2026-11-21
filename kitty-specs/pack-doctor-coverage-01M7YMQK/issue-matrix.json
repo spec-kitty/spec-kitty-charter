@@ -1,16 +1,16 @@
 {
   "rows": {
     "#158": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: kept in view; manifest_stale is its first step, the rest stays open",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Pack authoring: content-hash integrity protection",
+      "verdict": "not-applicable",
+      "wp": "WP04"
     },
     "#52": {
       "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
