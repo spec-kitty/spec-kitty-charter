@@ -138,6 +138,39 @@ class FallbackProfileImpactTest {
                 .isEqualTo(Outcome.CREATED);
     }
 
+    @Test
+    void everyFallbackBreachAndEveryPinBreachIsInTheOneRefusal(@TempDir Path host) {
+        // #556, FR-005, US2.1 and US2.3: a held fallback that is neither locked nor role-neutral is two breaches, and a
+        // pin to a profile the closure does not hold is a third, after them.
+        Rig rig = new Rig(host);
+        String unlocked = "schema_version: 1\nrole_pins:\n  reviewer: nobody-holds-this\n";
+
+        CharterRefusal refused = refusal(
+                () -> rig.register("org-base", rig.stage(org("role: implementer\n", unlocked)), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.FALLBACK_PROFILE_NOT_LOCKED);
+        assertThat(refused.getMessage()).endsWith("(3 fault(s); every one is in violations)");
+        assertThat(refused.violations())
+                .extracting(violation -> violation.code())
+                .containsExactly(
+                        "fallback_profile_not_locked", "fallback_profile_not_role_neutral", "role_pin_unknown");
+        assertThat(refused.violations().get(1).detail()).contains("declares role implementer");
+        assertThat(rig.packs.resolve("org-base")).as("nothing was stored").doesNotExist();
+    }
+
+    @Test
+    void anUnknownFallbackIsOneBreachForNothingMoreCanBeJudgedOfIt(@TempDir Path host) {
+        // #556, US2.2: fallback_profile_unknown alone, though the profile would also be unlocked and not role-neutral.
+        Rig rig = new Rig(host);
+        Packs unheld = Packs.of(ORG_ID, "org-base", "1.0.0", "org", DECLARES).file("policy.yaml", LOCK_GENERIC);
+
+        CharterRefusal refused = refusal(() -> rig.register("org-base", rig.stage(unheld), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.FALLBACK_PROFILE_UNKNOWN);
+        assertThat(refused.violations()).isEmpty();
+        assertThat(refused.getMessage()).doesNotContain("fault(s)");
+    }
+
     private static AgentProfile agentProfile(String role) {
         return AgentProfile.builder()
                 .id(new AgentProfileIdentifier("generic-agent"))

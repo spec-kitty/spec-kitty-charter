@@ -5,8 +5,13 @@ import ai.speckitty.charter.kernel.domain.EndpointRule;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -101,6 +106,18 @@ public final class PackCodes {
             violation(RefusalCode.PACK_DUPLICATE_ID.token()),
             violation(RefusalCode.PACK_SIBLING_CONFLICT.token()));
 
+    /**
+     * A pack that cannot be read, or, with violations of its own, a substep delegation the closure does not hold: built
+     * here once, and named by the storage edge's {@code StorageCodes} (#556).
+     */
+    public static final ReasonCode PACK_UNREADABLE = violation(RefusalCode.PACK_UNREADABLE.token());
+
+    /**
+     * A pack refused for faults of its own content: built here once, and named by the storage edge's
+     * {@code StorageCodes} for the assembly's refusal (#556).
+     */
+    public static final ReasonCode VALIDATION_FAILED = violation(RefusalCode.VALIDATION_FAILED.token());
+
     /** The codes of the content rules, in this class's order. */
     public static final List<ReasonCode> CONTENT = List.of(
             DRG_SCHEMA_ERROR,
@@ -121,7 +138,15 @@ public final class PackCodes {
             PROMPT_SLOT_NOT_EMPTY,
             PROMPT_SLOT_NOT_EMPTY_WARNING);
 
-    /** Every code this class builds: the content codes, then the {@code CLOSURE} codes. */
+    /**
+     * The codes a closure check can find a fault with (#556, ADR-0075 decision 6), each a violation: the {@code CLOSURE}
+     * codes, {@code pack_unreadable} and {@code validation_failed}, the qualified references, the relation rules, the
+     * ADR-0068 fallback profile, the role pins, the profile enhancements, the mutability policy and the dependents of a
+     * removal. A {@code ClosureFault} carries one of them, and nothing else.
+     */
+    private static final Map<RefusalCode, ReasonCode> CLOSURE_CHECKS = buildClosureChecks();
+
+    /** Every code this class builds: the content codes, the {@code CLOSURE} codes, then the other closure-check codes. */
     public static final Set<ReasonCode> ALL = all();
 
     private PackCodes() {}
@@ -156,9 +181,96 @@ public final class PackCodes {
         return new ReasonCode(token, Severity.VIOLATION);
     }
 
+    /**
+     * The code a closure check finds a fault of a refusal code with.
+     *
+     * @param code a refusal code of the closure checks
+     * @return its one code
+     * @throws IllegalArgumentException when no closure check finds a fault with that code
+     */
+    public static ReasonCode closure(RefusalCode code) {
+        ReasonCode found = CLOSURE_CHECKS.get(Objects.requireNonNull(code, "code"));
+        if (found == null) {
+            throw new IllegalArgumentException(code.token() + " is no code of a closure check");
+        }
+        return found;
+    }
+
+    /**
+     * Whether a closure check finds faults with a refusal code.
+     *
+     * @param code the refusal code
+     * @return true for a code of {@link #closure(RefusalCode)}'s set
+     */
+    public static boolean isClosureCheck(RefusalCode code) {
+        return CLOSURE_CHECKS.containsKey(code);
+    }
+
+    /**
+     * The refusal code of a closure check's code: the inverse of {@link #closure(RefusalCode)}.
+     *
+     * @param code a code of the closure checks
+     * @return its refusal code
+     * @throws IllegalArgumentException when the code is no closure check's
+     */
+    public static RefusalCode refusalOf(ReasonCode code) {
+        return CLOSURE_CHECKS.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(code))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(code.value() + " is no code of a closure check"));
+    }
+
+    /**
+     * Every refusal code of the closure checks, in a stable order.
+     *
+     * @return the codes
+     */
+    public static Set<RefusalCode> closureChecks() {
+        return CLOSURE_CHECKS.keySet();
+    }
+
+    private static Map<RefusalCode, ReasonCode> buildClosureChecks() {
+        Map<RefusalCode, ReasonCode> checks = new LinkedHashMap<>();
+        for (ReasonCode code : CLOSURE) {
+            checks.put(
+                    Arrays.stream(RefusalCode.values())
+                            .filter(candidate -> candidate.token().equals(code.value()))
+                            .findFirst()
+                            .orElseThrow(),
+                    code);
+        }
+        checks.put(RefusalCode.PACK_UNREADABLE, PACK_UNREADABLE);
+        checks.put(RefusalCode.VALIDATION_FAILED, VALIDATION_FAILED);
+        for (RefusalCode code : List.of(
+                RefusalCode.PACK_REFERENCE_UNQUALIFIED,
+                RefusalCode.PACK_REFERENCE_PACK_MISSING,
+                RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,
+                RefusalCode.SELF_OVERRIDE,
+                RefusalCode.CONFLICTING_RELATIONS,
+                RefusalCode.OVERRIDE_NOT_PERMITTED,
+                RefusalCode.OVERRIDE_CYCLE,
+                RefusalCode.ENHANCES_CYCLE,
+                RefusalCode.SPECIALIZATION_CYCLE,
+                RefusalCode.FALLBACK_PROFILE_UNKNOWN,
+                RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
+                RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
+                RefusalCode.FALLBACK_PROFILE_NOT_AGENT,
+                RefusalCode.ROLE_PIN_UNKNOWN,
+                RefusalCode.ROLE_PIN_NOT_FITTING,
+                RefusalCode.ROLE_PIN_CONFLICT,
+                RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
+                RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                RefusalCode.PACK_HAS_DEPENDENTS)) {
+            checks.put(code, violation(code.token()));
+        }
+        return Collections.unmodifiableMap(checks);
+    }
+
     private static Set<ReasonCode> all() {
         Set<ReasonCode> all = new LinkedHashSet<>(CONTENT);
         all.addAll(CLOSURE);
+        all.addAll(CLOSURE_CHECKS.values());
         return Set.copyOf(all);
     }
 }

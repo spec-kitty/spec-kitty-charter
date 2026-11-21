@@ -8,7 +8,9 @@ import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -21,10 +23,21 @@ class PackCodesTest {
     private static final Set<String> PLACEMENT =
             Set.of("pack_level_missing", "pack_level_mismatch", "org_fragment_missing");
 
+    /**
+     * Every constant of the two tables, each once: {@code StorageCodes} names two of {@code PackCodes}' constants
+     * ({@code pack_unreadable} and {@code validation_failed}, #556), which is one constant named twice, not a token
+     * built twice.
+     */
     private static List<ReasonCode> bothTables() {
-        List<ReasonCode> both = new ArrayList<>(PackCodes.CONTENT);
-        both.addAll(PackCodes.CLOSURE);
-        both.addAll(StorageCodes.ORDERED);
+        Set<ReasonCode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        List<ReasonCode> both = new ArrayList<>();
+        for (List<ReasonCode> table : List.of(
+                PackCodes.CONTENT,
+                PackCodes.CLOSURE,
+                PackCodes.closureChecks().stream().map(PackCodes::closure).toList(),
+                StorageCodes.ORDERED)) {
+            table.stream().filter(seen::add).forEach(both::add);
+        }
         return both;
     }
 
@@ -93,10 +106,37 @@ class PackCodesTest {
     }
 
     @Test
-    @DisplayName("ALL holds the content and CLOSURE codes and nothing else")
+    @DisplayName("ALL holds the content, CLOSURE and closure-check codes and nothing else")
     void allHoldsTheContentAndClosureCodes() {
-        assertThat(PackCodes.ALL).hasSize(PackCodes.CONTENT.size() + PackCodes.CLOSURE.size());
-        assertThat(PackCodes.ALL).containsAll(PackCodes.CONTENT).containsAll(PackCodes.CLOSURE);
+        List<ReasonCode> checks =
+                PackCodes.closureChecks().stream().map(PackCodes::closure).toList();
+        Set<ReasonCode> expected = new HashSet<>(PackCodes.CONTENT);
+        expected.addAll(PackCodes.CLOSURE);
+        expected.addAll(checks);
+
+        assertThat(PackCodes.ALL).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    @DisplayName("every closure-check code is a violation spelt as its refusal code, and maps back to it (#556)")
+    void everyClosureCheckCodeIsItsRefusalCodesToken() {
+        assertThat(PackCodes.closureChecks()).isNotEmpty().allSatisfy(code -> {
+            ReasonCode reason = PackCodes.closure(code);
+            assertThat(reason.value()).isEqualTo(code.token());
+            assertThat(reason.severity()).isEqualTo(Severity.VIOLATION);
+            assertThat(PackCodes.refusalOf(reason)).isEqualTo(code);
+        });
+        assertThat(PackCodes.closureChecks())
+                .containsAll(List.of(
+                        RefusalCode.PACK_UNREADABLE,
+                        RefusalCode.VALIDATION_FAILED,
+                        RefusalCode.PACK_REFERENCE_UNQUALIFIED,
+                        RefusalCode.SELF_OVERRIDE,
+                        RefusalCode.FALLBACK_PROFILE_NOT_AGENT,
+                        RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                        RefusalCode.PACK_HAS_DEPENDENTS));
+        assertThat(StorageCodes.PACK_UNREADABLE).isSameAs(PackCodes.PACK_UNREADABLE);
+        assertThat(StorageCodes.ASSEMBLY_REFUSED).isSameAs(PackCodes.VALIDATION_FAILED);
     }
 
     @Test

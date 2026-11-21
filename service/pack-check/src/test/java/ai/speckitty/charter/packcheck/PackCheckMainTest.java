@@ -3,6 +3,7 @@ package ai.speckitty.charter.packcheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -442,6 +443,53 @@ class PackCheckMainTest {
         assertThat(run.err().lines().toList())
                 .isNotEmpty()
                 .allSatisfy(line -> assertThat(line).startsWith("warning: built-in: file_not_held "));
+    }
+
+    /**
+     * Operator ruling R34 (#631): an extra file in a pack (one no pack file kind models, beside one the {@code ignored}
+     * fallback takes) is never processed and never fails. Reading the pack warns {@code file_not_held} at each, and the
+     * round trip leaves both out: neither gets an outcome or a written copy, and the run is valid.
+     */
+    @Test
+    void extraFilesInPacksAreNotProcessedAndAWarningIsLoggedOnIngest() throws IOException {
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+        Files.createDirectories(builtIn.resolve("qa"));
+        Files.writeString(builtIn.resolve("qa/notes.txt"), "a stray log line\n");
+        Files.writeString(builtIn.resolve("qa/notes.md"), "# A stray note\n");
+        List<PackRoundTripResult> results = new ArrayList<>();
+        PackCheckMain.Composition recording =
+                new PackCheckMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
+                    PackRoundTripResult result = PackRoundTrip.run(packId, source, target);
+                    results.add(result);
+                    return result;
+                });
+
+        for (boolean roundTrip : new boolean[] {false, true}) {
+            Path temporary = Files.createDirectories(temp.resolve("tmp-" + roundTrip));
+            Run run = roundTrip
+                    ? run(temporary, recording, "--pack", builtIn + ":built-in", "--round-trip")
+                    : run(temporary, recording, "--pack", builtIn + ":built-in");
+
+            assertThat(run.exit()).as("round trip %s: %s", roundTrip, run.out()).isEqualTo(PackCheckMain.VALID);
+            assertThat(run.report().get("problems"))
+                    .as("round trip %s", roundTrip)
+                    .isEmpty();
+            assertThat(run.err().lines())
+                    .as("round trip %s: one file_not_held warning names each extra file", roundTrip)
+                    .anySatisfy(line -> assertThat(line)
+                            .startsWith("warning: built-in: file_not_held ")
+                            .contains("qa/notes.txt"))
+                    .anySatisfy(line -> assertThat(line)
+                            .startsWith("warning: built-in: file_not_held ")
+                            .contains("qa/notes.md"));
+        }
+        assertThat(results)
+                .as("only the --round-trip run round-trips")
+                .singleElement()
+                .satisfies(result -> {
+                    assertThat(result.outcomes()).doesNotContainKeys("qa/notes.txt", "qa/notes.md");
+                    assertThat(result.written()).doesNotContain("qa/notes.txt", "qa/notes.md");
+                });
     }
 
     @Test

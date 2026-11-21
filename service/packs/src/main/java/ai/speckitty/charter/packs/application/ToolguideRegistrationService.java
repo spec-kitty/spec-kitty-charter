@@ -9,11 +9,11 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Guide;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.net.URI;
 import java.util.Objects;
 import java.util.function.Function;
@@ -48,7 +48,7 @@ public final class ToolguideRegistrationService {
 
     private final PackRepository packs;
     private final PackWriteStore writeStore;
-    private final WritePolicyGate policy;
+    private final MutabilityCheck policy;
     private final GuideFetcher fetcher;
     private final GuideFormat format;
 
@@ -57,7 +57,7 @@ public final class ToolguideRegistrationService {
      *
      * @param packs the port that loads the pack aggregate to mutate and revalidate
      * @param writeStore the write-path seam that commits the aggregate atomically and holds the relationship shard
-     * @param policy the mutability gate consulted before a write (permissive by default; WP06 supplies ADR-0012)
+     * @param policy the mutability check judged before a write (ADR-0012)
      * @param fetcher the port that fetches a guide a registration names by URI
      * @param format the port that reads a guide's Markdown, inline or fetched
      */
@@ -65,7 +65,7 @@ public final class ToolguideRegistrationService {
     public ToolguideRegistrationService(
             PackRepository packs,
             PackWriteStore writeStore,
-            WritePolicyGate policy,
+            MutabilityCheck policy,
             GuideFetcher fetcher,
             GuideFormat format) {
         this.packs = Objects.requireNonNull(packs, "packs");
@@ -201,10 +201,10 @@ public final class ToolguideRegistrationService {
                     RefusalCode.REGISTRATION_CONFLICT,
                     "Pack " + pack.value() + " already has a toolguide " + id.value() + ".");
         }
-        policy.authorize(
+        PackRefusals.require(policy.judge(MutabilityCheck.Live.of(
                 current,
-                exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                new Urn(NodeKind.of(ArtifactKind.TOOLGUIDE), id.value()));
+                exists ? MutabilityCheck.Operation.REPLACE : MutabilityCheck.Operation.REGISTER,
+                new Urn(NodeKind.of(ArtifactKind.TOOLGUIDE), id.value()))));
         return current;
     }
 

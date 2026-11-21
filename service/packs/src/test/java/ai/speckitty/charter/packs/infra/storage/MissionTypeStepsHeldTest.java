@@ -107,7 +107,7 @@ class MissionTypeStepsHeldTest {
         PackCompositionFacts facts = service.compositionFacts(id);
         PackUnderResolution pack = new PackUnderResolution(
                 new ConfiguredPack(id, PackLevel.ORG), service.get(id), facts.changed(), facts.defined());
-        EdgeIndex index = EdgeIndex.of(List.of(pack), Map.of(PACK, facts));
+        EdgeIndex index = EdgeIndex.of(List.of(pack), Map.of(PACK, facts)).orRefuse();
 
         ReachResult result = Reachability.reach(
                 index,

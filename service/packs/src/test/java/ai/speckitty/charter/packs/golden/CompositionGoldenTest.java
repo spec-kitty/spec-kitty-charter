@@ -35,12 +35,15 @@ import tools.jackson.databind.JsonNode;
  * The golden snapshot of the offering's composition refusals (#554, IC-01, T005): for every refusal case of
  * {@code PackCompositionResolverTest}, and for multi-fault sets built here, what the offering's composition sequence
  * answers today: the refusal's code, its detail and its {@link RefusalPack} list, or the composed order. WP08's
- * collect-all checks must reproduce {@code golden/composition.json} byte for byte, the first refusal included.
+ * collect-all checks must reproduce {@code golden/composition.json} byte for byte, the first refusal included. Since
+ * #556 the offering answers every fault of a phase; this golden pins the first fault of each phase, which is the
+ * offering's code and the prefix of its detail (several faults add a count to the detail, and name each one in the
+ * violations).
  *
  * <p>The sequence is the resolver's part of {@code OfferingReadService#composed}, in its order: {@link
- * PackCompositionResolver#resolveRooted}, then each member's references ({@link PackCompositionResolver#checkReferences}
- * over {@link PackCompositionResolver#resolveReference}), then the first of {@link PackCompositionResolver#presetContests},
- * then {@link PackCompositionResolver#refuseCaseOnlyMatches}. The delegation and step-enhancement checks the offering
+ * PackCompositionResolver#composeRooted}, then each member's references ({@link PackCompositionResolver#referenceFaults}
+ * over {@link PackCompositionResolver#resolveReference}), then {@link PackCompositionResolver#presetContests},
+ * then {@link PackCompositionResolver#caseOnlyMatches}. The delegation and step-enhancement checks the offering
  * runs between them are not the resolver's, and no case here writes either. Nor is the offering's
  * {@code refuseTargetOnlyAnUnreadablePackCouldDeclare}: every pack here is readable, so it never refuses.
  *
@@ -486,23 +489,25 @@ class CompositionGoldenTest {
                 ? compose.packs().stream().map(pack -> pack.configured().id()).toList()
                 : compose.roots().stream().map(FixtureUlids::registeredIdOf).toList();
         try {
-            List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(compose.packs(), roots);
+            PackCompositionResolver.Rooted rooted = PackCompositionResolver.composeRooted(compose.packs(), roots);
+            PackCompositionResolver.refuseFirst(rooted.faults());
+            List<PackUnderResolution> composed = rooted.order();
             for (PackUnderResolution pack : composed) {
                 String packId = pack.descriptor().packId();
-                PackCompositionResolver.checkReferences(
+                PackCompositionResolver.refuseFirst(PackCompositionResolver.referenceFaults(
                         composed,
                         packId,
                         compose.references().getOrDefault(packId, List.of()).stream()
                                 .map(written -> PackCompositionResolver.resolveReference(
                                         composed, pack.configured().id(), PackQualifiedReference.parse(written)))
-                                .toList());
+                                .toList()));
             }
             PackCompositionResolver.refuseFirst(PackCompositionResolver.presetContests(
                     composed,
                     pack -> compose.presets().getOrDefault(pack.descriptor().packId(), List.of())));
-            PackCompositionResolver.refuseCaseOnlyMatches(
+            PackCompositionResolver.refuseFirst(PackCompositionResolver.caseOnlyMatches(
                     composed,
-                    pack -> compose.mentions().getOrDefault(pack.descriptor().packId(), List.of()));
+                    pack -> compose.mentions().getOrDefault(pack.descriptor().packId(), List.of())));
             return Map.of(
                     "composed",
                     composed.stream()

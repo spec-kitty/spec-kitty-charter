@@ -2,7 +2,7 @@
 title: "ADR-0081: A registered pack is removed whole, its writes have a dry run, and a replacement moves its version forward"
 description: "#517: DELETE /packs/{packId} with a dependents check, a dry run of the delete and of both registrations, and a PEP 440 version order on a replace. Amends ADR-0065 D2, D4 and D9."
 doc_status: active
-updated: 2026-11-19T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-19'
 type: ADR
@@ -52,6 +52,12 @@ and the activations' root sets) and every artifact of another pack that refers t
 
 `PackDependents` (packs application) finds a pack's direct dependents over the existing finders. #556's `ImpactCheck`
 implements or absorbs it later; this decision adds no rule, no fault collection and no parity test of #556.
+
+*Note 2026-11-20 ([#556](https://github.com/spec-kitty/spec-kitty-charter/issues/556)):* `ImpactCheck` absorbed it.
+`PackDependents` and `ClosurePackDependents` are deleted; the finders moved into the impact check
+(`ClosureImpactCheck`, `RemovalDependents`), which judges a removal's dependents first, as one
+`409 pack_has_dependents` naming every dependent, and composes nothing when there is one. The refusal and the dry run
+answer as before.
 
 ### 2. A replacement moves the version forward (amends ADR-0065 D2)
 
@@ -187,4 +193,5 @@ Not chosen: one activation that lists no packs would make every pack undeletable
 - `contracts/charter/paths/packs_packId.yaml` (`deletePack`), `contracts/charter/schemas/PackImpact.yaml`,
   `contracts/charter/parameters/DryRun.yaml`
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/PackUninstallService.java`,
-  `PackDependents.java`, `PackRegistrationService.java`
+  `ClosureImpactCheck.java` and `RemovalDependents.java` (which absorbed `PackDependents.java`, #556),
+  `PackRegistrationService.java`

@@ -230,9 +230,10 @@ Feature: The compose resolves the configured packs' dependency graph
 
   Scenario: Two ranges on one pack that share no version refuse the compose
     Left asks apex for <2 and right asks apex for >=2: the compose holds one copy of apex, so no
-    version can satisfy both, and the refusal comes before the held version is checked against either
-    range. It names both declaring packs and both ranges. The control is the diamond above, whose two
-    ranges on apex overlap.
+    version can satisfy both, and that fault comes first: it names both declaring packs and both ranges.
+    The held version 1.0.0 is then outside right's range too, and since #556 (FR-006) the one refusal
+    names every fault of the phase: the first's code and detail, and a header violation per fault. The
+    control is the diamond above, whose two ranges on apex overlap.
     Given the org pack "apex" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -266,7 +267,10 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_dependency_out_of_range"
-    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943S) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943T) require pack `apex-pack` (01M4P01D5TWB5FKZGNNQG3943R) in ranges `<2` and `>=2`, which no version satisfies together"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943S) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943T) require pack `apex-pack` (01M4P01D5TWB5FKZGNNQG3943R) in ranges `<2` and `>=2`, which no version satisfies together (2 fault(s); every one is in violations)"
+    And the field at "/violations" holds exactly 2 items
+    And the field at "/violations/0/code" is "pack_dependency_out_of_range"
+    And the field at "/violations/1/code" is "pack_dependency_out_of_range"
     And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943T"
     And the field at "/packs/0/packId" is "right"
     And the field at "/packs/0/name" is "right-pack"
@@ -1444,6 +1448,65 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
+
+  Scenario: Every reference fault of the compose is named in the one refusal
+    #556 (FR-006, D1, US5): alpha declares no depends_on and writes three faulty references, a bare one that
+    resolves only in beta, one qualified with beta (outside alpha's closure) and one qualified with a pack the
+    compose does not hold. The offering is refused once with the first fault's code, and its violations name
+    every fault, a header per fault. The negative control is the scenario before: one fault is answered with
+    no violations and the plain detail.
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      """
+    And the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: beta-pack
+      pack_level: org
+      """
+    And the org pack "alpha" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges:
+      - source: action:software-dev/implement
+        target: directive:SHARE
+        relation: scope
+      - source: action:software-dev/implement
+        target: beta-pack::directive:SHARE
+        relation: scope
+      - source: action:software-dev/implement
+        target: gone-pack::directive:SHARE
+        relation: scope
+      """
+    And the org pack "beta" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_reference_unqualified"
+    And the field at "/violations" holds exactly 3 items
+    And the field at "/violations/0/code" is "pack_reference_unqualified"
+    And the field at "/violations/1/code" is "pack_reference_pack_missing"
+    And the field at "/violations/2/code" is "pack_reference_pack_missing"
+    And the field at "/packs/0/packId" is "alpha"
+    And the field at "/packs/1/packId" is "beta"
 
   Scenario: A pack-qualified reference inside the closure resolves
     SC-004's control (FR-013, FR-017), on the same fixture: alpha now declares depends_on beta, so the

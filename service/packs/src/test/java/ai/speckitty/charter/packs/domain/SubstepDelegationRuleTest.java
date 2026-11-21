@@ -2,10 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -144,19 +141,40 @@ class SubstepDelegationRuleTest {
                 "top",
                 List.of(new PackDependency("01BASE00000000000000000000", ">=1.0")));
 
-        assertThatThrownBy(() -> PackCompositionResolver.refuseUnresolvedDelegations(
+        assertThat(PackCompositionResolver.unresolvedDelegations(
                         List.of(base, top), "01TNZP00000000000000000000", candidates("base::tdd")))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-                    assertThat(refusal.getMessage())
+                .singleElement()
+                .satisfies(fault -> {
+                    assertThat(fault.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(fault.detail())
                             .contains("delegates to base::tactic:tdd")
                             .contains(SubstepDelegationRule.UNRESOLVED);
-                    assertThat(refusal.violations()).singleElement().satisfies(violation -> {
+                    assertThat(fault.violations()).singleElement().satisfies(violation -> {
                         assertThat(violation.pointer()).isEqualTo(FILE);
                         assertThat(violation.code()).isEqualTo(SubstepDelegationRule.UNRESOLVED);
                     });
-                    assertThat(refusal.packs()).extracting(pack -> pack.name()).containsExactly("top", "base");
+                    assertThat(fault.packs()).extracting(pack -> pack.name()).containsExactly("top", "base");
                 });
+    }
+
+    @Test
+    @DisplayName("every candidate the named pack does not hold is a fault of its own, in order (#556, FR-006)")
+    void everyUnheldCandidateIsAFault() {
+        PackUnderResolution base = pack("01BASE00000000000000000000", "base", List.of(), "tactic:other");
+        PackUnderResolution top = pack(
+                "01TNZP00000000000000000000",
+                "top",
+                List.of(new PackDependency("01BASE00000000000000000000", ">=1.0")));
+        List<SubstepDelegationRule.QualifiedCandidate> both = new java.util.ArrayList<>(candidates("base::tdd"));
+        both.addAll(candidates("base::other"));
+        both.addAll(candidates("base::bdd"));
+
+        assertThat(PackCompositionResolver.unresolvedDelegations(
+                        List.of(base, top), "01TNZP00000000000000000000", both))
+                .extracting(fault -> fault.detail())
+                .satisfiesExactly(
+                        first -> assertThat(first).contains("base::tactic:tdd"),
+                        second -> assertThat(second).contains("base::tactic:bdd"));
     }
 
     @Test
@@ -171,14 +189,14 @@ class SubstepDelegationRuleTest {
         PackUnderResolution loose = pack("01KZNZNZSE0000000000000000", "top", List.of());
         PackUnderResolution other = pack("01NZTHER000000000000000000", "other", List.of());
 
-        assertThatCode(() -> PackCompositionResolver.refuseUnresolvedDelegations(
+        assertThat(PackCompositionResolver.unresolvedDelegations(
                         List.of(base, top), "01TNZP00000000000000000000", candidates("base::tdd")))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> PackCompositionResolver.refuseUnresolvedDelegations(
+                .isEmpty();
+        assertThat(PackCompositionResolver.unresolvedDelegations(
                         List.of(other, loose), "01KZNZNZSE0000000000000000", candidates("other::tdd")))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> PackCompositionResolver.refuseUnresolvedDelegations(
+                .isEmpty();
+        assertThat(PackCompositionResolver.unresolvedDelegations(
                         List.of(loose), "01KZNZNZSE0000000000000000", candidates("nowhere::tdd")))
-                .doesNotThrowAnyException();
+                .isEmpty();
     }
 }

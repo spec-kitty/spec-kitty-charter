@@ -11,6 +11,8 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +29,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * is paired with a positive control on the same fixture, and a refusal is shown to change nothing on disk.
  */
 @org.junit.jupiter.api.extension.ExtendWith(org.springframework.boot.test.system.OutputCaptureExtension.class)
-class RegistrationImpactTest {
+class ClosureImpactCheckTest {
 
     static final String BASE_ID = PackRegistrationServiceTest.ulid('E');
     static final String DERIVED_ID = PackRegistrationServiceTest.ulid('F');
@@ -315,17 +317,17 @@ class RegistrationImpactTest {
                 .filter(pack -> pack.id().value().equals("chain-0"))
                 .findFirst()
                 .orElseThrow();
-        RegistrationImpact.Replacement same = new RegistrationImpact.Replacement(
+        ImpactCheck.Replacement same = new ImpactCheck.Replacement(
                 first, rig.repository.get(first.id()), rig.repository.compositionFacts(first.id()));
 
-        new RegistrationImpact(
+        new ClosureImpactCheck(
                         new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
                                 rig.repository, rig.repository, pack -> {
                                     factReads.merge(pack.value(), 1, Integer::sum);
                                     return rig.repository.compositionFacts(pack);
                                 }),
                         ActivationImpact.NONE)
-                .check(same);
+                .judge(new ImpactCheck.Registration(same));
 
         assertThat(factReads)
                 .as("ten closures hold chain-0, and no pack's files are read twice for them")
@@ -616,6 +618,121 @@ class RegistrationImpactTest {
     }
 
     @Test
+    void aReplacementThatBreaksTwoClosuresIsOneRefusalNamingTheFaultsOfBoth(@TempDir Path host) {
+        // #556, FR-003, FR-009, US1.3: every closure a write joins is judged, and the refusal names every fault.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        rig.register(
+                "derived",
+                rig.stage(derived("1.0.0").file("relations.graph.yaml", overridesFrom("OPEN_ONE"))),
+                Preconditions.none());
+        rig.register(
+                "second",
+                rig.stage(Packs.of(PackRegistrationServiceTest.ulid('W'), "second", "1.0.0", "project", DEPENDS_ON_BASE)
+                        .directive("SECOND_ONE", "Second")
+                        .file(
+                                "relations.graph.yaml",
+                                graph("{source: 'directive:SECOND_ONE', target: 'base::directive:OPEN_ONE',"
+                                        + " relation: overrides}"))),
+                Preconditions.none());
+        Packs locking = Packs.of(BASE_ID, "base", "2.0.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nartifacts:\n  directive:OPEN_ONE: locked\n")
+                .directive("LOCKED_ONE", "Locked")
+                .directive("OPEN_ONE", "Open");
+
+        CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(locking), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
+        assertThat(refused.violations())
+                .extracting(
+                        violation -> violation.code(),
+                        violation -> violation.detail().startsWith("In the closure rooted at "))
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("override_not_permitted", true),
+                        org.assertj.core.groups.Tuple.tuple("override_not_permitted", true));
+        assertThat(refused.violations())
+                .extracting(violation -> violation.detail())
+                .anySatisfy(detail -> assertThat(detail).contains("rooted at derived"))
+                .anySatisfy(detail -> assertThat(detail).contains("rooted at second"));
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("derived", "second", "base");
+    }
+
+    @Test
+    void aLaterClosureThatCannotBeReadNeverDisplacesTheFaultOfAnEarlierOne(@TempDir Path host) {
+        // #556, D1 (PR #618 squad, correctness lens): a write that one closure refuses answers that refusal, as it did
+        // when the first faulting closure threw, even when a stored pack of a later closure cannot be read.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        rig.register(
+                "derived",
+                rig.stage(derived("1.0.0").file("relations.graph.yaml", overridesFrom("OPEN_ONE"))),
+                Preconditions.none());
+        rig.install(
+                "later",
+                Packs.of(PackRegistrationServiceTest.ulid('W'), "later", "1.0.0", "project", DEPENDS_ON_BASE)
+                        .directive("LATER_ONE", "Later")
+                        .file(
+                                "directives/LATER_ONE.directive.yaml",
+                                Packs.directiveText("LATER_ONE", "Later") + "references:\n  - directive:X\n"));
+        Packs locking = Packs.of(BASE_ID, "base", "2.0.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nartifacts:\n  directive:OPEN_ONE: locked\n")
+                .directive("LOCKED_ONE", "Locked")
+                .directive("OPEN_ONE", "Open");
+
+        CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(locking), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(refused.getMessage()).contains("rooted at derived");
+    }
+
+    @Test
+    void closuresWithSeveralComposeFaultsEachAreOneFlatRefusalNamingEveryFaultInItsClosure(@TempDir Path host) {
+        // #556, FR-008, US1.3 (PR #618 review B1): a compose phase's faults are placed in their closure one by one,
+        // never nested as one refusal inside another, so the count is every fault's and each one names its closure.
+        String belowTwo = "depends_on:\n  - pack_id: " + BASE_ID + "\n    range: '<2.0'\n";
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+        rig.register("derived", rig.stage(org(DERIVED_ID, "derived", "1.0.0", belowTwo)), Preconditions.none());
+        rig.register(
+                "second",
+                rig.stage(org(PackRegistrationServiceTest.ulid('W'), "second", "1.0.0", belowTwo)),
+                Preconditions.none());
+        Packs dangling = org(
+                        BASE_ID,
+                        "base",
+                        "2.0.0",
+                        "depends_on:\n  - pack_id: " + PackRegistrationServiceTest.ulid('X') + "\n    range: '>=1.0'\n")
+                .directive("BASE_ONE", "Base");
+
+        CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(dangling), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_UNKNOWN);
+        assertThat(refused.getMessage()).endsWith("(5 fault(s); every one is in violations)");
+        assertThat(refused.violations())
+                .extracting(violation -> violation.code())
+                .containsExactly(
+                        "pack_dependency_unknown",
+                        "pack_dependency_unknown",
+                        "pack_dependency_out_of_range",
+                        "pack_dependency_unknown",
+                        "pack_dependency_out_of_range");
+        assertThat(refused.violations())
+                .extracting(violation -> violation.detail())
+                .as("no row is itself a refusal of several faults")
+                .noneSatisfy(detail -> assertThat(detail).contains("fault(s)"))
+                .as("every fault names its closure")
+                .allSatisfy(detail -> assertThat(detail).startsWith("In the closure rooted at "));
+        assertThat(refused.violations())
+                .extracting(violation -> violation.detail())
+                .filteredOn(detail -> detail.contains("out of range") || detail.contains("in range"))
+                .satisfiesExactly(
+                        first -> assertThat(first).startsWith("In the closure rooted at derived"),
+                        second -> assertThat(second).startsWith("In the closure rooted at second"));
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).contains("base", "derived", "second");
+    }
+
+    @Test
     void aReplacedAncestorThatLocksATargetRefusesTheOverridesEdgeOfAStoredDescendant(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
@@ -709,8 +826,8 @@ class RegistrationImpactTest {
         PackRegistrationService.RegistrationOutcome renamed =
                 rig.register("acme", rig.stage(noticing("1.0.1", true, true)), Preconditions.none());
 
-        assertThat(same.notices()).isEqualTo(RegistrationImpact.Notices.NONE);
-        assertThat(renamed.notices()).isEqualTo(RegistrationImpact.Notices.NONE);
+        assertThat(same.notices()).isEqualTo(ImpactCheck.Notices.NONE);
+        assertThat(renamed.notices()).isEqualTo(ImpactCheck.Notices.NONE);
     }
 
     private static final String GOVERNING_X = governing("X_ONE");
@@ -792,15 +909,45 @@ class RegistrationImpactTest {
         rig.install("acme", storedAcme(CYCLE));
         rig.install("base", base("1.0.0"));
 
-        List<RegistrationImpact.Finding> findings = rig.impact.census();
+        List<ClosureImpactCheck.Finding> findings = rig.impact.census();
 
         assertThat(findings)
-                .extracting(RegistrationImpact.Finding::pack, RegistrationImpact.Finding::code)
+                .extracting(ClosureImpactCheck.Finding::pack, ClosureImpactCheck.Finding::code)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("acme", RefusalCode.ENHANCES_CYCLE));
         assertThat(findings.getFirst().detail()).contains("acme");
         assertThat(rig.filesOf(rig.packs.resolve("acme")))
                 .as("the census reads and writes nothing")
                 .containsKey("relations.graph.yaml");
+    }
+
+    @Test
+    void theCensusKeepsOneFindingPerPackWithEveryFaultOfItsClosure(@TempDir Path host) {
+        // #556, FR-011: two separate enhances cycles are two faults of acme's one finding.
+        Rig rig = new Rig(host);
+        rig.install(
+                "acme",
+                Packs.of(ACME_ID, "acme", "1.0.0", "org")
+                        .directive("A", "A")
+                        .directive("B", "B")
+                        .directive("C", "C")
+                        .directive("D", "D")
+                        .file(
+                                "relations.graph.yaml",
+                                graph(
+                                        edge("A", "enhances", "B"),
+                                        edge("B", "enhances", "A"),
+                                        edge("C", "enhances", "D"),
+                                        edge("D", "enhances", "C"))));
+
+        List<ClosureImpactCheck.Finding> findings = rig.impact.census();
+
+        assertThat(findings).singleElement().satisfies(finding -> {
+            assertThat(finding.pack()).isEqualTo("acme");
+            assertThat(finding.code()).isEqualTo(RefusalCode.ENHANCES_CYCLE);
+            assertThat(finding.refusal().violations())
+                    .extracting(violation -> violation.code())
+                    .containsExactly("enhances_cycle", "enhances_cycle");
+        });
     }
 
     @Test
@@ -817,7 +964,7 @@ class RegistrationImpactTest {
         rig.install("derived", derived("1.0.0"));
 
         assertThat(rig.impact.census())
-                .extracting(RegistrationImpact.Finding::pack, RegistrationImpact.Finding::code)
+                .extracting(ClosureImpactCheck.Finding::pack, ClosureImpactCheck.Finding::code)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("derived", RefusalCode.PACK_DEPENDENCY_UNKNOWN));
     }
 
@@ -938,7 +1085,7 @@ class RegistrationImpactTest {
                 }
 
                 @Override
-                public View with(RegistrationImpact.Replacement written) {
+                public View with(ImpactCheck.Replacement written) {
                     return counted(session.with(written));
                 }
 
@@ -996,10 +1143,10 @@ class RegistrationImpactTest {
                 .filter(pack -> pack.id().value().equals("base"))
                 .findFirst()
                 .orElseThrow();
-        RegistrationImpact.Replacement same = new RegistrationImpact.Replacement(
+        ImpactCheck.Replacement same = new ImpactCheck.Replacement(
                 configured, rig.repository.get(configured.id()), rig.repository.compositionFacts(configured.id()));
 
-        new RegistrationImpact(views, ActivationImpact.NONE).check(same);
+        new ClosureImpactCheck(views, ActivationImpact.NONE).judge(new ImpactCheck.Registration(same));
 
         return views.descriptorAsks.get();
     }
@@ -1038,14 +1185,14 @@ class RegistrationImpactTest {
                 .filter(pack -> pack.id().value().equals("base"))
                 .findFirst()
                 .orElseThrow();
-        RegistrationImpact.Replacement same = new RegistrationImpact.Replacement(
+        ImpactCheck.Replacement same = new ImpactCheck.Replacement(
                 base, rig.repository.get(base.id()), rig.repository.compositionFacts(base.id()));
-        RegistrationImpact impact = new RegistrationImpact(
+        ClosureImpactCheck impact = new ClosureImpactCheck(
                 new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
                         counting, new ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy()),
                 ActivationImpact.NONE);
 
-        impact.check(same);
+        impact.judge(new ImpactCheck.Registration(same));
 
         assertThat(listings.get())
                 .as("each listing parses every pack.yaml, so one per pack read is a square; the session lists once")
@@ -1083,19 +1230,19 @@ class RegistrationImpactTest {
     private static final CharterRefusal SLOT_MISSING =
             new CharterRefusal(RefusalCode.PROMPT_SLOT_MISSING, "Under the activation `a-1`: the slot is missing");
 
-    private static RegistrationImpact gated(Rig rig, Gate gate) {
-        return new RegistrationImpact(
+    private static ClosureImpactCheck gated(Rig rig, Gate gate) {
+        return new ClosureImpactCheck(
                 new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
                         rig.repository, rig.repository, rig.repository),
                 gate);
     }
 
-    private static RegistrationImpact.Replacement storedAs(Rig rig, String name) {
+    private static ImpactCheck.Replacement storedAs(Rig rig, String name) {
         ai.speckitty.charter.packs.domain.ConfiguredPack configured = rig.repository.configured().stream()
                 .filter(pack -> pack.id().value().equals(name))
                 .findFirst()
                 .orElseThrow();
-        return new RegistrationImpact.Replacement(
+        return new ImpactCheck.Replacement(
                 configured, rig.repository.get(configured.id()), rig.repository.compositionFacts(configured.id()));
     }
 
@@ -1105,7 +1252,8 @@ class RegistrationImpactTest {
         rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
         Gate gate = new Gate(Optional.of(SLOT_MISSING));
 
-        assertThat(refusal(() -> gated(rig, gate).check(storedAs(rig, "base")))).isSameAs(SLOT_MISSING);
+        assertThat(refusal(() -> gated(rig, gate).judge(new ImpactCheck.Registration(storedAs(rig, "base")))))
+                .isSameAs(SLOT_MISSING);
         assertThat(gate.judged).singleElement().satisfies(change -> {
             assertThat(change.before()).isPresent();
             assertThat(change.after().closurePackIds()).containsExactly(new PackUlid(BASE_ID));
@@ -1118,14 +1266,37 @@ class RegistrationImpactTest {
         Rig rig = new Rig(host);
         rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
         Gate gate = new Gate(Optional.of(SLOT_MISSING));
-        RegistrationImpact impact = gated(rig, gate);
+        ClosureImpactCheck impact = gated(rig, gate);
         ai.speckitty.charter.kernel.domain.PackIdentifier base =
                 new ai.speckitty.charter.kernel.domain.PackIdentifier("base");
 
-        assertThat(refusal(() -> impact.check(base, facts -> facts))).isSameAs(SLOT_MISSING);
-        assertThat(refusal(() -> impact.check(base, facts -> facts, Optional.empty())))
+        assertThat(refusal(() -> impact.judge(new ImpactCheck.Write(base, facts -> facts, Optional.empty()))))
                 .isSameAs(SLOT_MISSING);
-        assertThat(gate.judged).hasSize(2);
+        assertThat(gate.judged).hasSize(1);
+    }
+
+    @Test
+    void theGateIsNotAskedWhenAClosureFailsAndTheClosuresRefusalStands(@TempDir Path host) {
+        // #556, FR-009: the activations are judged only when no closure failed.
+        Rig rig = new Rig(host);
+        rig.install(
+                "acme",
+                Packs.of(ACME_ID, "acme", "1.0.0", "org")
+                        .directive("A", "A")
+                        .directive("B", "B")
+                        .file("relations.graph.yaml", graph(edge("A", "enhances", "B"), edge("B", "enhances", "A"))));
+        Gate gate = new Gate(Optional.of(SLOT_MISSING));
+        ClosureImpactCheck impact = gated(rig, gate);
+        ai.speckitty.charter.kernel.domain.PackIdentifier acme =
+                new ai.speckitty.charter.kernel.domain.PackIdentifier("acme");
+
+        ImpactCheck.Impact judged = impact.judge(new ImpactCheck.Write(acme, facts -> facts, Optional.empty()));
+
+        assertThat(judged.verdict().faults())
+                .as("the closure's fault, not the gate's refusal")
+                .extracting(ClosureFault::code)
+                .containsExactly(RefusalCode.ENHANCES_CYCLE);
+        assertThat(gate.judged).as("the gate was not asked").isEmpty();
     }
 
     @Test
@@ -1133,12 +1304,16 @@ class RegistrationImpactTest {
         Rig rig = new Rig(host);
         rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
         Gate gate = new Gate(Optional.empty());
-        RegistrationImpact impact = gated(rig, gate);
+        ClosureImpactCheck impact = gated(rig, gate);
         ai.speckitty.charter.kernel.domain.PackIdentifier base =
                 new ai.speckitty.charter.kernel.domain.PackIdentifier("base");
 
-        assertThat(impact.check(storedAs(rig, "base"))).isEqualTo(RegistrationImpact.Notices.NONE);
-        assertThat(impact.check(base, facts -> facts)).isEqualTo(RegistrationImpact.Notices.NONE);
+        assertThat(impact.judge(new ImpactCheck.Registration(storedAs(rig, "base")))
+                        .notices())
+                .isEqualTo(ImpactCheck.Notices.NONE);
+        assertThat(impact.judge(new ImpactCheck.Write(base, facts -> facts, Optional.empty()))
+                        .notices())
+                .isEqualTo(ImpactCheck.Notices.NONE);
         assertThat(gate.judged).hasSize(2);
     }
 

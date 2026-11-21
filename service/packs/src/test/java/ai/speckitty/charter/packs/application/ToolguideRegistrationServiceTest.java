@@ -13,11 +13,11 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal.Reason;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService.GuideSource;
 import ai.speckitty.charter.packs.domain.Guide;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +42,7 @@ class ToolguideRegistrationServiceTest {
 
     private final FakeStore store = new FakeStore();
     private final StubFetcher fetcher = new StubFetcher(store);
-    private final WritePolicyGate policy = new PermissiveWritePolicyGate();
+    private final MutabilityCheck policy = new PackMutabilityPolicy();
     private final ToolguideRegistrationService service =
             new ToolguideRegistrationService(store, store, policy, fetcher, new OverviewFormat());
 

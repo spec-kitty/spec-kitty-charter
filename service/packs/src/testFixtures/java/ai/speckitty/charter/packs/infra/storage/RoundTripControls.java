@@ -97,7 +97,7 @@ public final class RoundTripControls {
      * @param packId the registered id the pack is configured under
      * @param source the source directory, whose name roots the file-kind globs that pick each file's content form
      * @param written the directory that already holds the written side
-     * @param census the files to answer, with their gate kinds
+     * @param census the files to answer, with their gate kinds, each one held
      * @param markdown whether every file is read as Markdown
      * @return what the round trip observed
      */
@@ -121,6 +121,7 @@ public final class RoundTripControls {
                 source,
                 written,
                 new TreeMap<>(census),
+                new TreeMap<>(),
                 path -> markdown
                         ? ContentForm.MARKDOWN
                         : WholePackCensus.contentFormOf(String.valueOf(source.getFileName()), path));

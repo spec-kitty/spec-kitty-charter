@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
@@ -22,7 +23,8 @@ import java.util.function.Function;
  * <p>A file that {@code contracts/packs/file-kinds.yaml} maps to a schema takes the schema's name ({@code directive},
  * {@code graph-shard}, {@code pack-descriptor}, {@code agent-profile}, …). Any other file takes
  * {@code other:<top-level directory>}, or {@code other:<file name>} at the pack root, so files without a schema are
- * grouped where they live ({@code other:missions}, {@code other:notes.txt}). A file the table excludes (an
+ * grouped where they live ({@code other:missions}, {@code other:notes.txt}); the census does not hold such a file, so
+ * the gate leaves it out and never fails it (operator ruling R34, #631). A file the table excludes (an
  * {@code exclusions} rule, or the {@code ignored} fallback for Markdown nothing models) takes
  * {@code excluded:<rule's glob>}: it is not pack content, so it is never {@code other:} and never red (#451).
  *
@@ -129,6 +131,18 @@ final class WholePackCensus {
         SortedMap<String, String> kinds = new TreeMap<>();
         census.entries().forEach(entry -> kinds.put(entry.path(), kindOf(entry)));
         return kinds;
+    }
+
+    /**
+     * The files a census does not hold ({@link TreeCensus#notHeld}): what the round trip leaves out (#631).
+     *
+     * @param census the census
+     * @return each file by its pack-relative path, sorted
+     */
+    static SortedMap<String, NotHeldFile> notHeld(TreeCensus census) {
+        SortedMap<String, NotHeldFile> files = new TreeMap<>();
+        census.notHeld().forEach(file -> files.put(file.path(), file));
+        return files;
     }
 
     /**

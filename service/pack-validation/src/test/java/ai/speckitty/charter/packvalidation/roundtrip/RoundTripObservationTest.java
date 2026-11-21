@@ -1,11 +1,13 @@
 package ai.speckitty.charter.packvalidation.roundtrip;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
@@ -34,9 +36,23 @@ class RoundTripObservationTest {
 
     private static PackRoundTripResult result(
             Map<String, String> census, Map<String, FileOutcome> outcomes, Set<String> written) {
-        Set<String> kinds = new TreeSet<>(census.values());
-        kinds.removeIf(PackRoundTripResult::isExcluded);
-        return new PackRoundTripResult(new TreeMap<>(census), kinds, new TreeMap<>(outcomes), new TreeSet<>(written));
+        return result(census, Map.of(), outcomes, written);
+    }
+
+    /** A result whose modelled kinds are the kinds of the files the census holds. */
+    private static PackRoundTripResult result(
+            Map<String, String> census,
+            Map<String, NotHeldFile> notHeld,
+            Map<String, FileOutcome> outcomes,
+            Set<String> written) {
+        Set<String> kinds = new TreeSet<>();
+        census.forEach((path, kind) -> {
+            if (!notHeld.containsKey(path)) {
+                kinds.add(kind);
+            }
+        });
+        return new PackRoundTripResult(
+                new TreeMap<>(census), new TreeMap<>(notHeld), kinds, new TreeMap<>(outcomes), new TreeSet<>(written));
     }
 
     @Nested
@@ -167,12 +183,50 @@ class RoundTripObservationTest {
             String excluded = PackRoundTripResult.EXCLUDED + "**/*.md";
             RoundTripObservation observation = RoundTripObservation.of(result(
                     Map.of("docs/kept.md", excluded, "docs/written.md", excluded),
+                    Map.of(
+                            "docs/kept.md", NotHeldFile.excluded("docs/kept.md", "notes"),
+                            "docs/written.md", NotHeldFile.excluded("docs/written.md", "notes")),
                     Map.of(),
                     Set.of("docs/written.md")));
 
             assertThat(observation.observed())
                     .containsEntry("docs/kept.md", Optional.empty())
                     .containsEntry("docs/written.md", Optional.of("the store wrote the excluded file docs/written.md"));
+        }
+
+        @Test
+        void aFileNoRuleCoversIsNotHeldSoItIsRedOnlyWhenTheStoreWroteIt() {
+            RoundTripObservation observation = RoundTripObservation.of(result(
+                    Map.of("qa/kept.txt", PackRoundTripResult.OTHER + "qa", "notes.txt", "other:notes.txt"),
+                    Map.of(
+                            "qa/kept.txt", NotHeldFile.unmodelled("qa/kept.txt"),
+                            "notes.txt", NotHeldFile.unmodelled("notes.txt")),
+                    Map.of(),
+                    Set.of("notes.txt")));
+
+            assertThat(observation.observed())
+                    .containsEntry("qa/kept.txt", Optional.empty())
+                    .containsEntry("notes.txt", Optional.of("the store wrote the not-held file notes.txt"));
+        }
+
+        @Test
+        void heldnessIsTheCensussNotTheKindsSoAStrayFileNamedSymlinkIsNotHeldAndAPolicyNothingNamesToo() {
+            // #631 squad: a root file named symlink takes the link's kind, and an unnamed policy.yaml a modelled kind;
+            // the census does not hold either, so each is checked as not held, never compared.
+            RoundTripObservation observation = RoundTripObservation.of(result(
+                    Map.of(
+                            "symlink", PackRoundTripResult.SYMLINK,
+                            "policy.yaml", "policy",
+                            "procedures/p.procedure.yaml", "procedure"),
+                    Map.of(
+                            "symlink", NotHeldFile.unmodelled("symlink"),
+                            "policy.yaml", NotHeldFile.unnamedPolicy("policy.yaml")),
+                    Map.of(),
+                    Set.of()));
+
+            assertThat(observation.observed())
+                    .as("a held file of an unmodelled schema gets no not-held check: the verdict fails it (#547)")
+                    .containsOnly(entry("symlink", Optional.empty()), entry("policy.yaml", Optional.empty()));
         }
 
         @Test
@@ -228,6 +282,7 @@ class RoundTripObservationTest {
         void anUnmodelledKindAndAnUnpairedFileAreViolationsWithTheirCodes() {
             PackRoundTripResult result = new PackRoundTripResult(
                     new TreeMap<>(Map.of("pack.yaml", "pack-descriptor", "drg/fragment.yaml", "org-fragment")),
+                    new TreeMap<>(),
                     Set.of("pack-descriptor"),
                     new TreeMap<>(green.outcomes()),
                     new TreeSet<>(Set.of("pack.yaml", "extra.yaml")));

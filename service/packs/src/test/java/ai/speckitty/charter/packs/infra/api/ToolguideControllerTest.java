@@ -15,10 +15,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal;
 import ai.speckitty.charter.packs.application.GuideFetcher;
+import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
-import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -61,7 +61,7 @@ class ToolguideControllerTest {
     private final StubFetcher fetcher = new StubFetcher();
     private final MarkdownGuideFormat format = new MarkdownGuideFormat();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ToolguideController(
-                    new ToolguideRegistrationService(store, store, new PermissiveWritePolicyGate(), fetcher, format),
+                    new ToolguideRegistrationService(store, store, new PackMutabilityPolicy(), fetcher, format),
                     format,
                     new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler(), new ToolguideRegistrationBodyAdvice())
@@ -449,8 +449,7 @@ class ToolguideControllerTest {
     @Test
     void theInlineCapIsTheConfiguredGuideSize() throws Exception {
         MockMvc halfMib = MockMvcBuilders.standaloneSetup(new ToolguideController(
-                        new ToolguideRegistrationService(
-                                store, store, new PermissiveWritePolicyGate(), fetcher, format),
+                        new ToolguideRegistrationService(store, store, new PackMutabilityPolicy(), fetcher, format),
                         format,
                         new Hypermedia("/api/v1"),
                         DataSize.ofKilobytes(512)))

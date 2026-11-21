@@ -72,6 +72,32 @@ class SpecializationCycleImpactTest {
     }
 
     @Test
+    void twoSeparateCyclesAreTwoFaultsOfTheOneRefusal(@TempDir Path host) {
+        Rig rig = new Rig(host);
+
+        CharterRefusal refused = refusal(() -> rig.register(
+                "org-base",
+                rig.stage(org(
+                                "1.0.0",
+                                lineage(
+                                        "spring-sam", "java-jenny",
+                                        "java-jenny", "spring-sam",
+                                        "implementer-ivan", "python-pedro",
+                                        "python-pedro", "implementer-ivan"))
+                        .file("agent_profiles/python-pedro.agent.yaml", profile("python-pedro"))),
+                Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.SPECIALIZATION_CYCLE);
+        assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
+        assertThat(refused.violations())
+                .extracting(violation -> violation.code())
+                .containsExactly("specialization_cycle", "specialization_cycle");
+        assertThat(refused.violations().get(0).detail()).contains("spring-sam -> java-jenny -> spring-sam");
+        assertThat(refused.violations().get(1).detail())
+                .contains("implementer-ivan -> python-pedro -> implementer-ivan");
+    }
+
+    @Test
     void anAcyclicLineageOfTheSameProfilesIsStored(@TempDir Path host) {
         Rig rig = new Rig(host);
 

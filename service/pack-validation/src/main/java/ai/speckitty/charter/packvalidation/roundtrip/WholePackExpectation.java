@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packvalidation.roundtrip;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,15 +40,16 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * ({@link #unscopedEntries}), and every {@code file-kinds.yaml} schema is modelled or listed in {@code kinds} with a
  * reason ({@link #schemaProblems}).
  *
- * <p>A file the table excludes (census kind {@code excluded:<glob>}) is judged apart, and is never red for being
- * unmodelled: the run checks that the store did not write it ({@link Status#EXCLUDED}), and the file needs no entry in
- * any of the lists above (#451).
+ * <p>A file the census does not hold ({@link PackRoundTripResult#notHeld}: an excluded file, a file no rule covers, a
+ * mapped file nothing names) is judged apart, before any gate exclusion, and is never red for what it holds: the run
+ * checks that the store did not write it ({@link Status#EXCLUDED}), and an entry for it in any of the lists above is
+ * stale (#451; operator ruling R34, #631). Validate mode warns {@code file_not_held} at it.
  *
  * <p>The gate passes only when the observed reds are exactly the expected ones: an unlisted red fails, and so does a
  * listed item that now round-trips, so a fix is recorded the moment it lands. Stale entries, an exclusion over a
  * modelled file and an empty pack fail too, so the gate cannot pass vacuously. With no lists at all
  * ({@link #none}) every red is a problem: the open-packs drift test judges each pack that way, so a file of a kind the
- * round trip does not model fails it by kind and path.
+ * round trip does not model, held by the census, fails it by kind and path.
  */
 public final class WholePackExpectation {
 
@@ -393,15 +395,19 @@ public final class WholePackExpectation {
      * Judges one pack's gate run against lists scoped to it ({@link #forPack}, or {@link #none}).
      *
      * @param census every file of the pack with its gate kind
+     * @param notHeld the census files the census does not hold, by path, each judged apart (#451, #631)
      * @param modelledKinds the gate kinds the round trip models
-     * @param observed for each file of a modelled kind, empty when it round-tripped, else the red detail, which starts
+     * @param observed for each file of a modelled kind and each file not held, empty when it round-tripped, else the red detail, which starts
      *     with where the file first differs followed by {@code ": "} (for example {@code steps[2].title: …} or
      *     {@code refused: …})
      * @return every file's verdict, and every problem
      */
     public Evaluation evaluate(
-            SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
-        Judgement judgement = new Judgement(census, modelledKinds, observed);
+            SortedMap<String, String> census,
+            Map<String, NotHeldFile> notHeld,
+            Set<String> modelledKinds,
+            Map<String, Optional<String>> observed) {
+        Judgement judgement = new Judgement(census, notHeld, modelledKinds, observed);
         census.forEach(judgement::judge);
         judgement.checkFileEntries();
         judgement.checkKnownFailures();
@@ -417,6 +423,7 @@ public final class WholePackExpectation {
      */
     private final class Judgement {
         private final SortedMap<String, String> census;
+        private final Map<String, NotHeldFile> notHeld;
         private final Set<String> modelledKinds;
         private final Map<String, Optional<String>> observed;
         private final Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
@@ -426,10 +433,17 @@ public final class WholePackExpectation {
         private final List<FileResult> results = new ArrayList<>();
         private final List<String> problems = new ArrayList<>();
         private final Set<Integer> usedExclusions = new HashSet<>();
+        private final Set<Integer> redundantExclusions = new HashSet<>();
         private final Set<String> excludedPaths = new HashSet<>();
+        private final Set<String> notHeldPaths = new HashSet<>();
 
-        Judgement(SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
+        Judgement(
+                SortedMap<String, String> census,
+                Map<String, NotHeldFile> notHeld,
+                Set<String> modelledKinds,
+                Map<String, Optional<String>> observed) {
             this.census = census;
+            this.notHeld = notHeld;
             this.modelledKinds = modelledKinds;
             this.observed = observed;
             files.forEach(entry -> fileEntries.put(entry.path(), entry));
@@ -441,19 +455,20 @@ public final class WholePackExpectation {
 
         /** Judges one file of the census. */
         void judge(String path, String kind) {
-            if (kind.startsWith(PackRoundTripResult.EXCLUDED)) {
-                judgeExcludedFile(path, kind);
+            NotHeldFile notHeldFile = notHeld.get(path);
+            if (notHeldFile != null) {
+                judgeNotHeldFile(path, kind, notHeldFile);
                 return;
             }
             boolean modelled = modelledKinds.contains(kind);
-            Optional<String> red = modelled
-                    ? observed.getOrDefault(path, Optional.of("the round trip gave no outcome for this file"))
-                    : Optional.of("no adapter models kind " + kind);
             int exclusion = firstMatch(patterns, path);
             if (exclusion >= 0) {
                 judgeExclusion(path, kind, modelled, exclusion);
                 return;
             }
+            Optional<String> red = modelled
+                    ? observed.getOrDefault(path, Optional.of("the round trip gave no outcome for this file"))
+                    : Optional.of("no adapter models kind " + kind);
             if (red.isEmpty()) {
                 judgeGreen(path, kind);
                 return;
@@ -461,20 +476,35 @@ public final class WholePackExpectation {
             judgeRed(path, kind, modelled, red.get());
         }
 
-        /** An excluded file is not pack content: checked, not compared. The store must not have written it. */
-        private void judgeExcludedFile(String path, String kind) {
-            excludedPaths.add(path);
+        /**
+         * A file the census does not hold is not pack content: checked, not compared, never red for what it holds
+         * (#451; operator ruling R34, #631). The store must not have written it. A gate exclusion over it is redundant:
+         * one that matches only such files is stale, and says so.
+         */
+        private void judgeNotHeldFile(String path, String kind, NotHeldFile notHeldFile) {
+            boolean excluded = notHeldFile.kind() == NotHeldFile.Kind.EXCLUDED;
+            (excluded ? excludedPaths : notHeldPaths).add(path);
+            for (int i = 0; i < patterns.size(); i++) {
+                if (patterns.get(i).matcher(path).matches()) {
+                    redundantExclusions.add(i);
+                }
+            }
             Optional<String> written = observed.getOrDefault(
-                    path, Optional.of("the gate did not check whether the store wrote this excluded file"));
+                    path,
+                    Optional.of("the gate did not check whether the store wrote this "
+                            + (excluded ? "excluded" : "not-held") + " file"));
             if (written.isEmpty()) {
                 results.add(new FileResult(
                         path,
                         kind,
                         Status.EXCLUDED,
-                        "excluded by " + kind.substring(PackRoundTripResult.EXCLUDED.length()) + ": not written"));
+                        excluded
+                                ? "excluded by " + notHeldFile.reason() + ": not written"
+                                : "not held (" + notHeldFile.reason() + "): not written"));
             } else {
                 results.add(new FileResult(path, kind, Status.RED, written.get()));
-                problems.add("EXCLUDED_WRITTEN " + path + " (" + kind + "): " + written.get());
+                problems.add((excluded ? "EXCLUDED_WRITTEN " : "NOT_HELD_WRITTEN ") + path + " (" + kind + "): "
+                        + written.get());
             }
         }
 
@@ -539,6 +569,9 @@ public final class WholePackExpectation {
                 } else if (excludedPaths.contains(entry.path())) {
                     problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
                             + EXPECTED_RED_RESOURCE);
+                } else if (notHeldPaths.contains(entry.path())) {
+                    problems.add("STALE_BASELINE " + entry.path() + ": the file is not held; remove it from "
+                            + EXPECTED_RED_RESOURCE);
                 } else if (!modelledKinds.contains(census.get(entry.path()))) {
                     problems.add("FILE_ENTRY_UNMODELLED " + entry.path() + " (" + census.get(entry.path())
                             + "): no adapter models this kind, and an entry never excuses such a file; remove it from "
@@ -555,6 +588,9 @@ public final class WholePackExpectation {
                             + KNOWN_FAILURES_RESOURCE);
                 } else if (excludedPaths.contains(entry.path())) {
                     problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is excluded; remove it from "
+                            + KNOWN_FAILURES_RESOURCE);
+                } else if (notHeldPaths.contains(entry.path())) {
+                    problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is not held; remove it from "
                             + KNOWN_FAILURES_RESOURCE);
                 } else if (!modelledKinds.contains(kind)) {
                     problems.add("KNOWN_FAILURE_UNMODELLED " + entry.path() + " (" + kind
@@ -583,9 +619,14 @@ public final class WholePackExpectation {
 
         void checkExclusions() {
             for (int i = 0; i < exclusions.size(); i++) {
-                if (!usedExclusions.contains(i)) {
-                    problems.add("STALE_EXCLUSION " + exclusions.get(i).match() + ": matches no file");
+                if (usedExclusions.contains(i)) {
+                    continue;
                 }
+                problems.add("STALE_EXCLUSION " + exclusions.get(i).match()
+                        + (redundantExclusions.contains(i)
+                                ? ": matches only files the census does not hold, which the gate never compares;"
+                                        + " remove it from " + EXCLUSIONS_RESOURCE
+                                : ": matches no file"));
             }
         }
 

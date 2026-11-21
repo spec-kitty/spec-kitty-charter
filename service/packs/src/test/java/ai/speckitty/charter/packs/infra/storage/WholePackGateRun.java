@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripObservation;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -46,13 +48,26 @@ final class WholePackGateRun {
             Set<String> paired,
             Function<String, ContentForm> formOf) {
         PackRoundTripResult result = PackRoundTrip.run(
-                roundTrip, new PackIdentifier(String.valueOf(pack.getFileName())), pack, written, census, formOf);
+                roundTrip,
+                new PackIdentifier(String.valueOf(pack.getFileName())),
+                pack,
+                written,
+                census,
+                notHeldOf(pack, census),
+                formOf);
         RoundTripObservation observation = RoundTripObservation.of(result);
         information.putAll(observation.information());
         result.written().stream()
                 .filter(file -> !observation.unpaired().contains(file))
                 .forEach(paired::add);
         return observation.observed();
+    }
+
+    /** The files of {@code census} the pack's own census does not hold. */
+    private static SortedMap<String, NotHeldFile> notHeldOf(Path pack, SortedMap<String, String> census) {
+        SortedMap<String, NotHeldFile> notHeld = new TreeMap<>(WholePackCensus.notHeld(WholePackCensus.census(pack)));
+        notHeld.keySet().retainAll(census.keySet());
+        return notHeld;
     }
 
     /**

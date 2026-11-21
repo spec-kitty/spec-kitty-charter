@@ -12,6 +12,8 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
@@ -155,28 +157,65 @@ public final class EdgeIndex implements ComposeResolver {
     }
 
     /**
+     * What indexing a closure's edges answers (#556): the index, or every fault of its qualified endpoints, so a
+     * caller places each fault and never receives one refusal of several inside another.
+     *
+     * @param index the index; empty when an endpoint is at fault
+     * @param faults every qualified endpoint outside its writer's {@code depends_on} closure, pack by pack, in closure
+     *     order; empty when the closure indexes
+     */
+    public record Indexed(Optional<EdgeIndex> index, List<ClosureFault> faults) {
+
+        /**
+         * Checks the fields and copies the faults.
+         *
+         * @param index the index, when every endpoint resolves
+         * @param faults the faults, when one does not
+         */
+        public Indexed {
+            Objects.requireNonNull(index, "index");
+            faults = List.copyOf(Objects.requireNonNull(faults, "faults"));
+            if (index.isPresent() == !faults.isEmpty()) {
+                throw new IllegalArgumentException("a closure either indexes or has faults");
+            }
+        }
+
+        /**
+         * The index, or the closure edge's one refusal of every fault (#556, D1), as a read refuses it.
+         *
+         * @return the index
+         * @throws ai.speckitty.charter.kernel.domain.CharterRefusal every fault, when an endpoint is at fault
+         */
+        public EdgeIndex orRefuse() {
+            return index.orElseThrow(() -> PackRefusals.of(new ClosureVerdict(faults)));
+        }
+    }
+
+    /**
      * Indexes the edges of a composed closure. The holding pack of an edge's source is the pack whose facts carry the
      * edge, unless the source is written {@code <pack>::}: then it is that pack, and a bare target keeps meaning the
-     * writer's artifact.
+     * writer's artifact. A {@code <pack>::} reference outside the writer's {@code depends_on} closure is a fault, as
+     * the compose judges it; that cannot happen after a successful compose.
      *
      * @param closure the composed closure, in closure order
      * @param factsByConfiguredId the facts each pack was read with, by configured identifier
-     * @return the index
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as the compose refuses a {@code <pack>::} reference
-     *     outside the writer's {@code depends_on} closure, which cannot happen after a successful compose
+     * @return the index, or every pack's faults
      */
-    public static EdgeIndex of(
-            List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
+    public static Indexed of(List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
         EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of(), Visits.NONE);
+        List<ClosureFault> faults = new ArrayList<>();
         for (PackUnderResolution pack : index.closure) {
             List<Relationship> edges = factsByConfiguredId
                     .getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
                     .edges();
-            index.checkQualified(pack, edges);
-            edges.forEach(edge -> index.add(pack, edge));
+            List<ClosureFault> outside = index.qualifiedFaults(pack, edges);
+            faults.addAll(outside);
+            if (outside.isEmpty()) {
+                edges.forEach(edge -> index.add(pack, edge));
+            }
         }
-        return index;
+        return faults.isEmpty() ? new Indexed(Optional.of(index), List.of()) : new Indexed(Optional.empty(), faults);
     }
 
     /**
@@ -185,7 +224,7 @@ public final class EdgeIndex implements ComposeResolver {
      * @return an index that holds nothing
      */
     public static EdgeIndex empty() {
-        return of(List.of(), Map.of());
+        return of(List.of(), Map.of()).orRefuse();
     }
 
     /**
@@ -609,8 +648,11 @@ public final class EdgeIndex implements ComposeResolver {
                 : Optional.empty();
     }
 
-    /** Refuses, as the compose does, a qualified endpoint outside the writer's {@code depends_on} closure. */
-    private void checkQualified(PackUnderResolution pack, List<Relationship> edges) {
+    /**
+     * Every qualified endpoint a pack writes outside its {@code depends_on} closure, as the compose judges it (#556,
+     * FR-006).
+     */
+    private List<ClosureFault> qualifiedFaults(PackUnderResolution pack, List<Relationship> edges) {
         List<ResolvedReference> qualified = edges.stream()
                 .flatMap(edge -> Stream.of(edge.fromReference(), edge.toReference()))
                 .filter(PackQualifiedReference::qualified)
@@ -618,11 +660,11 @@ public final class EdgeIndex implements ComposeResolver {
                 .map(reference -> PackCompositionResolver.resolveReference(
                         closure, pack.configured().id(), reference))
                 .toList();
-        try {
-            PackCompositionResolver.checkReferences(closure, pack.descriptor().packId(), qualified);
-        } catch (PackCompositionResolver.Refusal refusal) {
-            throw refusal.toCharterRefusal();
-        }
+        return PackCompositionResolver.referenceFaults(
+                        closure, pack.descriptor().packId(), qualified)
+                .stream()
+                .map(ClosureFault::of)
+                .toList();
     }
 
     private void add(PackUnderResolution writer, Relationship edge) {

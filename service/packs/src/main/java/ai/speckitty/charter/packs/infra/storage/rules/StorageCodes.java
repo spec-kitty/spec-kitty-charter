@@ -22,14 +22,18 @@ import java.util.Set;
  */
 public final class StorageCodes {
 
-    /** The pack's descriptor is missing, is not YAML or breaks its schema; or the pack root cannot be read. */
-    public static final ReasonCode PACK_UNREADABLE = violation(RefusalCode.PACK_UNREADABLE.token());
+    /**
+     * The pack's descriptor is missing, is not YAML or breaks its schema; or the pack root cannot be read. The closure
+     * checks state the same token, so it is built once, in {@link PackCodes#PACK_UNREADABLE} (#556).
+     */
+    public static final ReasonCode PACK_UNREADABLE = PackCodes.PACK_UNREADABLE;
 
     /**
      * The store cannot assemble the pack as a whole: an aggregate invariant its readable artifacts break (R2 row 26),
-     * placed at the pack after the graph faults. No planted pack reaches it: the read withholds what would breach.
+     * placed at the pack after the graph faults. No planted pack reaches it: the read withholds what would breach. The
+     * closure checks state the same token, so it is built once, in {@link PackCodes#VALIDATION_FAILED} (#556).
      */
-    public static final ReasonCode ASSEMBLY_REFUSED = violation(RefusalCode.VALIDATION_FAILED.token());
+    public static final ReasonCode ASSEMBLY_REFUSED = PackCodes.VALIDATION_FAILED;
 
     /**
      * A pack directory whose name is not a pack id ({@code PackIdentifier#isPackId}, #583, D5): the store never wrote

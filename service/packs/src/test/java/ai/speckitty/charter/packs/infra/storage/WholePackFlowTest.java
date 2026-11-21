@@ -7,15 +7,18 @@ import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.domain.roundtrip.Reading;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripObservation;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Nested;
@@ -160,6 +163,54 @@ class WholePackFlowTest {
                                 + "presets{presets/governing.yaml}.content_hash");
         assertThat(sourceStale.get(PackFileSet.MANIFEST))
                 .contains("source stale: constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash");
+    }
+
+    /**
+     * Operator ruling R34 (#631): extra files in packs are not processed. The production round trip, behind a spy that
+     * records what the adapter is handed, never hands it a file the census does not hold: an unmodelled file at any
+     * depth, an unnamed {@code policy.yaml} and an unnamed companion, each of which maps to a modelled kind or none. It
+     * hands it every file the census holds.
+     */
+    @Test
+    void extraFilesInPacksAreNeverHandedToTheRoundTripAdapter(@TempDir Path temp) throws IOException {
+        Path org = ExamplePacks.copyOf(ExamplePacks.ORG, temp.resolve("packs"));
+        List<String> extras =
+                List.of("qa/notes.txt", "qa/Deep/Er/NOTES.TXT", "policy.yaml", "toolguides/ghost.guide.md");
+        for (String extra : extras) {
+            Files.createDirectories(org.resolve(extra).getParent());
+            Files.writeString(org.resolve(extra), "schema_version: '1.0'\n");
+        }
+        DomainRoundTrip production = new DomainRoundTrip(new YamlSerializationStrategy());
+        List<Map<String, String>> handed = new ArrayList<>();
+        WholePackRoundTrip spy = new WholePackRoundTrip() {
+            @Override
+            public Set<String> modelledKinds() {
+                return production.modelledKinds();
+            }
+
+            @Override
+            public Map<String, Outcome> roundTrip(String name, Path source, Path target, Map<String, String> kindOf) {
+                handed.add(Map.copyOf(kindOf));
+                return production.roundTrip(name, source, target, kindOf);
+            }
+        };
+
+        PackRoundTripResult result =
+                PackRoundTrip.run(spy, new PackIdentifier(ExamplePacks.ORG), org, temp.resolve("written"));
+
+        assertThat(result.notHeld().keySet())
+                .as("the census holds none of the extra files")
+                .containsAll(extras);
+        assertThat(handed).singleElement().satisfies(kindOf -> {
+            assertThat(kindOf)
+                    .as("no file the census does not hold")
+                    .doesNotContainKeys(result.notHeld().keySet().toArray(String[]::new));
+            SortedMap<String, String> held = new TreeMap<>(result.census());
+            held.keySet().removeAll(result.notHeld().keySet());
+            assertThat(kindOf).as("every file the census holds").containsExactlyInAnyOrderEntriesOf(held);
+        });
+        assertThat(result.outcomes()).doesNotContainKeys(extras.toArray(String[]::new));
+        assertThat(result.written()).doesNotContainAnyElementsOf(extras);
     }
 
     /** The census: every file of a pack with its gate kind (#451, ADR-0044 decision 6). */

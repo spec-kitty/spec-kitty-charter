@@ -111,6 +111,26 @@ public final class CharterRefusal extends RuntimeException {
     }
 
     /**
+     * A refusal with every part a refusal can name: the closure checks' one refusal of a write (#556), which may name
+     * packs, violations and the packs whose floor requires what it refuses, all at once.
+     *
+     * @param code the refusal code
+     * @param detail what the caller needs to read
+     * @param packs the packs it names
+     * @param violations its violations
+     * @param requiredBy the packs whose floor requires what it refuses
+     * @return the refusal
+     */
+    public static CharterRefusal of(
+            RefusalCode code,
+            String detail,
+            List<RefusalPack> packs,
+            List<RefusalViolation> violations,
+            List<RequiringPack> requiredBy) {
+        return new CharterRefusal(code, detail, packs, violations, requiredBy);
+    }
+
+    /**
      * The code of the refusal.
      *
      * @return what is refused

@@ -6,8 +6,8 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Write;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Write;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

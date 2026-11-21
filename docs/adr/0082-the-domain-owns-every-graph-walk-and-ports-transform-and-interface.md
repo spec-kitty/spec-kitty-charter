@@ -31,7 +31,8 @@ with no judging port"). A design squad then read the code and proposed a target 
 
 The decision below records the steer. The type design and the migration slices on
 [Architectural patterns applied](/architecture/architectural-patterns-applied/)
-are **proposed and pending operator approval**. They are not part of this decision.
+were proposed by the design squad and are **approved as the target by the operator** (2026-11-21; see the amendment
+below). They are a design to build toward, recorded on that page, not part of this decision's text.
 
 **Relation to ADR-0075.** This ADR confirms ruling R3 of
 [ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/)'s 2026-11-16
@@ -120,6 +121,12 @@ page and wait for the operator.
 ### Keep the judging ports of PR #618
 
 Not chosen: each port hides a walk of its own, and rules end up outside the domain, against R3.
+
+## Amendment 2026-11-21 (operator): the type design and the slices are approved
+
+The operator approved the type design and the migration slices on
+[Architectural patterns applied](/architecture/architectural-patterns-applied/) as the target. *Proposed* on that page
+now means "approved, not built yet". Each slice still lands as its own change, and replaces what it supersedes outright.
 
 ## References
 

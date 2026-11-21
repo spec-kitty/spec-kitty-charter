@@ -78,13 +78,13 @@ class PerArtifactImpactTest {
     }
 
     private static String dependsOnBase() {
-        return "depends_on:\n  - pack_id: " + RegistrationImpactTest.BASE_ID + "\n    range: '>=1.0'\n";
+        return "depends_on:\n  - pack_id: " + ClosureImpactCheckTest.BASE_ID + "\n    range: '>=1.0'\n";
     }
 
     @Test
     void aPutOfAnIdThatAPackBelowHoldsAtTheSameLevelIsRefusedAndAnIdNobodyHoldsIsNot(@TempDir Path host) {
         Rig rig = new Rig(host);
-        rig.register("base", rig.stage(RegistrationImpactTest.base("1.0.0")), Preconditions.none());
+        rig.register("base", rig.stage(ClosureImpactCheckTest.base("1.0.0")), Preconditions.none());
         rig.register("mid", rig.stage(mid()), Preconditions.none());
         Writes writes = new Writes(rig);
         PackIdentifier mid = new PackIdentifier("mid");
@@ -112,8 +112,8 @@ class PerArtifactImpactTest {
     @Test
     void anOverridesEdgeOntoANonOpenTargetThroughTheRelationshipWriteIsRefusedAndAnOpenOneIsNot(@TempDir Path host) {
         Rig rig = new Rig(host);
-        rig.register("base", rig.stage(RegistrationImpactTest.basePolicy("1.0.0")), Preconditions.none());
-        rig.register("derived", rig.stage(RegistrationImpactTest.derived("1.0.0")), Preconditions.none());
+        rig.register("base", rig.stage(ClosureImpactCheckTest.basePolicy("1.0.0")), Preconditions.none());
+        rig.register("derived", rig.stage(ClosureImpactCheckTest.derived("1.0.0")), Preconditions.none());
         Writes writes = new Writes(rig);
         PackIdentifier derived = new PackIdentifier("derived");
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
@@ -153,8 +153,8 @@ class PerArtifactImpactTest {
     @Test
     void aWriteThatLeavesEveryClosureComposingStillSucceeds(@TempDir Path host) {
         Rig rig = new Rig(host);
-        rig.register("base", rig.stage(RegistrationImpactTest.base("1.0.0")), Preconditions.none());
-        rig.register("derived", rig.stage(RegistrationImpactTest.derived("1.0.0")), Preconditions.none());
+        rig.register("base", rig.stage(ClosureImpactCheckTest.base("1.0.0")), Preconditions.none());
+        rig.register("derived", rig.stage(ClosureImpactCheckTest.derived("1.0.0")), Preconditions.none());
         Writes writes = new Writes(rig);
         PackIdentifier derived = new PackIdentifier("derived");
 
@@ -278,7 +278,7 @@ class PerArtifactImpactTest {
                         rig.lock,
                         rig.generation);
         DirectiveRegistrationService puts = new DirectiveRegistrationService(
-                repository, store, new ai.speckitty.charter.packs.application.PermissiveWritePolicyGate());
+                repository, store, new ai.speckitty.charter.packs.application.PackMutabilityPolicy());
 
         puts.registerDirective(new PackIdentifier("target"), directive("target", "T_TWO"), false, null);
 

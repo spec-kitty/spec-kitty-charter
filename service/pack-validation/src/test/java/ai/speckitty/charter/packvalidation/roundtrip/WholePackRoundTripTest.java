@@ -216,7 +216,7 @@ class WholePackRoundTripTest {
                 .containsEntry(file, Optional.empty());
         assertThat(WholePackExpectation.fromClasspath()
                         .forPack(BUILT_IN)
-                        .evaluate(faithful.census(), faithful.modelledKinds(), observed.observed())
+                        .evaluate(faithful.census(), faithful.notHeld(), faithful.modelledKinds(), observed.observed())
                         .byKind()
                         .get(glossary))
                 .isEqualTo(Map.of(Status.GREEN, 1));
@@ -249,7 +249,7 @@ class WholePackRoundTripTest {
                 written.remove(w.writtenPath());
             }
         });
-        return new PackRoundTripResult(census, kinds, outcomes, new TreeSet<>(written));
+        return new PackRoundTripResult(census, result.notHeld(), kinds, outcomes, new TreeSet<>(written));
     }
 
     /**
@@ -265,7 +265,7 @@ class WholePackRoundTripTest {
         Map<String, Optional<String>> observed = RoundTripObservation.of(result).observed();
         Evaluation evaluation = WholePackExpectation.fromClasspath()
                 .forPack(BUILT_IN)
-                .evaluate(census, result.modelledKinds(), observed);
+                .evaluate(census, result.notHeld(), result.modelledKinds(), observed);
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
 
         // Every file the census classes as a kind is green, and the kind is not empty (top-level templates and

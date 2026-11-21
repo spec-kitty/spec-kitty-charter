@@ -9,12 +9,12 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Kind;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Refused;
 import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Succeeded;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.time.Instant;
 import java.util.List;
@@ -45,7 +45,7 @@ class PackRegistrationMapperSourceTest {
                         Optional.empty()),
                 PackLevel.ORG,
                 PackRevision.compute(List.of("x")),
-                RegistrationImpact.Notices.NONE,
+                ImpactCheck.Notices.NONE,
                 List.of(),
                 false,
                 Optional.empty(),

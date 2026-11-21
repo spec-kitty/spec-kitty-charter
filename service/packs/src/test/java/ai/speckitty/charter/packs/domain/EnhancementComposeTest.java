@@ -93,12 +93,12 @@ class EnhancementComposeTest {
             PackUnderResolution base = base();
             PackUnderResolution enhancer = enhancer();
 
-            Optional<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetHeld(
+            List<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetFaults(
                     List.of(base, enhancer),
                     enhancer,
                     List.of(enhances("step_enhancement:x", "base::action:M/nosuch")));
 
-            assertThat(violation).hasValueSatisfying(found -> {
+            assertThat(violation).singleElement().satisfies(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
                 assertThat(found.enhancement()).isEqualTo(u("step_enhancement:x"));
                 assertThat(found.target()).isEqualTo(u("action:M/nosuch"));
@@ -117,7 +117,7 @@ class EnhancementComposeTest {
             PackUnderResolution base = base();
             PackUnderResolution enhancer = enhancer();
 
-            assertThat(EnhancementCompose.targetHeld(
+            assertThat(EnhancementCompose.targetFaults(
                             List.of(base, enhancer),
                             enhancer,
                             List.of(enhances("step_enhancement:x", "base::action:M/s"))))
@@ -130,12 +130,12 @@ class EnhancementComposeTest {
             PackUnderResolution other = pack("other", List.of(), "mission_type:M", "action:M/s");
             PackUnderResolution enhancer = enhancer();
 
-            Optional<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetHeld(
+            List<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetFaults(
                     List.of(base, other, enhancer),
                     enhancer,
                     List.of(enhances("step_enhancement:x", "other::action:M/s")));
 
-            assertThat(violation).hasValueSatisfying(found -> {
+            assertThat(violation).singleElement().satisfies(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
                 assertThat(found.packs())
                         .extracting(pack -> pack.packId().value())
@@ -149,7 +149,7 @@ class EnhancementComposeTest {
             PackUnderResolution other = pack("other", List.of(), "mission_type:M", "action:M/s");
             PackUnderResolution enhancer = enhancer();
 
-            assertThat(EnhancementCompose.targetHeld(
+            assertThat(EnhancementCompose.targetFaults(
                             List.of(base, other, enhancer),
                             enhancer,
                             List.of(enhances("step_enhancement:x", "base::action:M/s"))))
@@ -161,10 +161,10 @@ class EnhancementComposeTest {
             PackUnderResolution base = base();
             PackUnderResolution enhancer = enhancer();
 
-            Optional<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetHeld(
+            List<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetFaults(
                     List.of(base, enhancer), enhancer, List.of(enhances("step_enhancement:x", "gone::action:M/s")));
 
-            assertThat(violation).hasValueSatisfying(found -> {
+            assertThat(violation).singleElement().satisfies(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
                 assertThat(found.packs())
                         .extracting(pack -> pack.packId().value())
@@ -177,7 +177,7 @@ class EnhancementComposeTest {
             PackUnderResolution holding =
                     pack("enhancer", List.of(), "mission_type:M", "action:M/s", "step_enhancement:x");
 
-            assertThat(EnhancementCompose.targetHeld(
+            assertThat(EnhancementCompose.targetFaults(
                             List.of(holding), holding, List.of(enhances("step_enhancement:x", "action:M/s"))))
                     .as("the enhancing pack holds the step")
                     .isEmpty();
@@ -188,10 +188,10 @@ class EnhancementComposeTest {
             PackUnderResolution base = base();
             PackUnderResolution enhancer = enhancer();
 
-            Optional<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetHeld(
+            List<EnhancementCompose.TargetViolation> violation = EnhancementCompose.targetFaults(
                     List.of(base, enhancer), enhancer, List.of(enhances("step_enhancement:x", "action:M/s")));
 
-            assertThat(violation).hasValueSatisfying(found -> {
+            assertThat(violation).singleElement().satisfies(found -> {
                 assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
                 assertThat(found.packs())
                         .extracting(pack -> pack.packId().value())
@@ -204,11 +204,12 @@ class EnhancementComposeTest {
             PackUnderResolution base = pack("base", List.of(), "action:M/s");
             PackUnderResolution enhancer = enhancer();
 
-            assertThat(EnhancementCompose.targetHeld(
+            assertThat(EnhancementCompose.targetFaults(
                             List.of(base, enhancer),
                             enhancer,
                             List.of(enhances("step_enhancement:x", "base::action:M/s"))))
-                    .hasValueSatisfying(
+                    .singleElement()
+                    .satisfies(
                             found -> assertThat(found.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING));
         }
 
@@ -217,7 +218,7 @@ class EnhancementComposeTest {
             PackUnderResolution base = base();
             PackUnderResolution enhancer = pack("enhancer", List.of("base"), "step_enhancement:x");
 
-            assertThat(EnhancementCompose.targetHeld(
+            assertThat(EnhancementCompose.targetFaults(
                             List.of(base, enhancer),
                             enhancer,
                             List.of(
@@ -229,6 +230,29 @@ class EnhancementComposeTest {
                     .as("a tactic enhancing an action is a shape the endpoint table refuses (ADR-0064 decision 13)")
                     .isThrownBy(() -> enhances("tactic:t", "base::action:M/nosuch"))
                     .withMessageContaining("an enhances edge may not connect tactic to action");
+        }
+
+        @Test
+        void everyTargetFaultOfThePackIsFoundInTheOrderOfTheEdges() {
+            PackUnderResolution base = base();
+            PackUnderResolution enhancer = enhancer();
+
+            List<EnhancementCompose.TargetViolation> violations = EnhancementCompose.targetFaults(
+                    List.of(base, enhancer),
+                    enhancer,
+                    List.of(
+                            enhances("step_enhancement:x", "base::action:M/nosuch"),
+                            enhances("step_enhancement:y", "base::action:M/s"),
+                            enhances("step_enhancement:z", "gone::action:M/s")));
+
+            assertThat(violations)
+                    .extracting(EnhancementCompose.TargetViolation::code)
+                    .containsExactly(
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, RefusalCode.PACK_REFERENCE_PACK_MISSING);
+            assertThat(violations)
+                    .extracting(EnhancementCompose.TargetViolation::enhancement)
+                    .containsExactly(u("step_enhancement:x"), u("step_enhancement:z"));
+            assertThat(violations.getFirst().toFault().code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
         }
 
         @Test
@@ -260,7 +284,7 @@ class EnhancementComposeTest {
                 }
             };
 
-            assertThat(EnhancementCompose.targetHeld(List.of(base, enhancer), enhancer, counted))
+            assertThat(EnhancementCompose.targetFaults(List.of(base, enhancer), enhancer, counted))
                     .isEmpty();
             return visits.get();
         }

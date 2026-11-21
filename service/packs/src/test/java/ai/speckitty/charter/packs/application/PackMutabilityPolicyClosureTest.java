@@ -11,11 +11,11 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy.Member;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.List;
 import java.util.Map;
@@ -54,10 +54,10 @@ class PackMutabilityPolicyClosureTest {
                                 .build(),
                 PACK, MutabilityPolicySource.empty());
         List<Member> closure = List.of(member(q, "Q", List.of(), locked), member(PACK, "P", List.of("Q")));
-        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+        MutabilityCheck gate = new PackMutabilityPolicy(policies::get, pack -> closure);
         Pack pack = packWithDescriptor();
 
-        assertThatThrownBy(() -> gate.authorize(pack, Operation.REGISTER, locked))
+        assertThatThrownBy(() -> authorize(gate, pack, Operation.REGISTER, locked))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refusal.getMessage())
@@ -67,7 +67,7 @@ class PackMutabilityPolicyClosureTest {
                 });
 
         // Same closure, a target Q does not name: the registration is allowed.
-        assertThatCode(() -> gate.authorize(pack, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+        assertThatCode(() -> authorize(gate, pack, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .doesNotThrowAnyException();
     }
 
@@ -85,14 +85,14 @@ class PackMutabilityPolicyClosureTest {
                                 .entry(target, MutabilityLevel.OPEN)
                                 .build());
         List<Member> closure = List.of(member(q, "Q", List.of(), target), member(PACK, "P", List.of("Q")));
-        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+        MutabilityCheck gate = new PackMutabilityPolicy(policies::get, pack -> closure);
 
-        assertThatThrownBy(() -> gate.authorize(packWithDescriptor(), Operation.REPLACE, target))
+        assertThatThrownBy(() -> authorize(gate, packWithDescriptor(), Operation.REPLACE, target))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refusal.getMessage()).contains("extendable").contains(FixtureUlids.of("Q"));
                 });
-        assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.RELATIONSHIP, target))
+        assertThatCode(() -> authorize(gate, packWithDescriptor(), Operation.RELATIONSHIP, target))
                 .doesNotThrowAnyException();
     }
 
@@ -101,10 +101,10 @@ class PackMutabilityPolicyClosureTest {
         PackIdentifier q = new PackIdentifier("q");
         Urn x = new Urn(NodeKind.DIRECTIVE, "X");
         List<Member> closure = List.of(member(q, "Q", List.of(), x), member(PACK, "P", List.of("Q")));
-        WritePolicyGate gate = new PackMutabilityPolicy(any -> MutabilityPolicySource.empty(), pack -> closure);
+        MutabilityCheck gate = new PackMutabilityPolicy(any -> MutabilityPolicySource.empty(), pack -> closure);
 
         for (Operation operation : Operation.values()) {
-            assertThatCode(() -> gate.authorize(packWithDescriptor(), operation, x))
+            assertThatCode(() -> authorize(gate, packWithDescriptor(), operation, x))
                     .doesNotThrowAnyException();
         }
     }
@@ -138,11 +138,11 @@ class PackMutabilityPolicyClosureTest {
                 member(e, "E", List.of("B"), ofE),
                 member(u, "U", List.of(), ofU),
                 member(PACK, "P", List.of("E", "U")));
-        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+        MutabilityCheck gate = new PackMutabilityPolicy(policies::get, pack -> closure);
         Pack pack = packWithDescriptor();
 
         for (Urn enforced : List.of(ofB, ofE)) {
-            assertThatThrownBy(() -> gate.authorize(pack, Operation.REGISTER, enforced))
+            assertThatThrownBy(() -> authorize(gate, pack, Operation.REGISTER, enforced))
                     .as("E's lock reaches %s, which E or a pack E builds on holds", enforced)
                     .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                         assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
@@ -151,10 +151,10 @@ class PackMutabilityPolicyClosureTest {
                                 .contains("locked");
                     });
         }
-        assertThatCode(() -> gate.authorize(pack, Operation.REPLACE, ofU))
+        assertThatCode(() -> authorize(gate, pack, Operation.REPLACE, ofU))
                 .as("U is unrelated to E: E's lock does not reach what U holds")
                 .doesNotThrowAnyException();
-        assertThatCode(() -> gate.authorize(pack, Operation.REGISTER, fresh))
+        assertThatCode(() -> authorize(gate, pack, Operation.REGISTER, fresh))
                 .as("no pack of E's closure holds the id, so E declares nothing for it")
                 .doesNotThrowAnyException();
     }
@@ -170,10 +170,10 @@ class PackMutabilityPolicyClosureTest {
                         .entry(own, MutabilityLevel.LOCKED)
                         .build());
         List<Member> closure = List.of(member(PACK, "P", List.of(), own));
-        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+        MutabilityCheck gate = new PackMutabilityPolicy(policies::get, pack -> closure);
 
         for (Operation operation : Operation.values()) {
-            assertThatCode(() -> gate.authorize(packWithDescriptor(), operation, own))
+            assertThatCode(() -> authorize(gate, packWithDescriptor(), operation, own))
                     .as("the pack's own lock does not bind its own %s", operation)
                     .doesNotThrowAnyException();
         }
@@ -202,15 +202,15 @@ class PackMutabilityPolicyClosureTest {
                                 .build());
         List<Member> closure = List.of(
                 member(base, "BASE", List.of(), inherited), member(PACK, "P", List.of("BASE"), ownFirst, ownSecond));
-        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+        MutabilityCheck gate = new PackMutabilityPolicy(policies::get, pack -> closure);
         Pack pack = packWithDescriptor();
 
         for (Urn replaced : List.of(ownFirst, ownSecond)) {
-            assertThatCode(() -> gate.authorize(pack, Operation.REPLACE, replaced))
+            assertThatCode(() -> authorize(gate, pack, Operation.REPLACE, replaced))
                     .as("the own lock does not bind the replace of %s", replaced)
                     .doesNotThrowAnyException();
         }
-        assertThatThrownBy(() -> gate.authorize(pack, Operation.REPLACE, inherited))
+        assertThatThrownBy(() -> authorize(gate, pack, Operation.REPLACE, inherited))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refusal.getMessage())
@@ -225,5 +225,10 @@ class PackMutabilityPolicyClosureTest {
                 .descriptor(new PackDescriptor(
                         "P", "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty()))
                 .build();
+    }
+
+    /** One write judged as a pack write judges it, its refusal thrown (#556). */
+    private static void authorize(MutabilityCheck check, Pack pack, Operation operation, Urn target) {
+        PackRefusals.require(check.judge(MutabilityCheck.Live.of(pack, operation, target)));
     }
 }

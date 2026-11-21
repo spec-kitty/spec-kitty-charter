@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
  * hold the pack is none of the registration's concern, the closure of a pack that did not exist has no before, and the
  * per-artifact writes, whose answers declare no notices, do not ask.
  */
-class RegistrationImpactActivationsAffectedTest {
+class ClosureImpactCheckActivationsAffectedTest {
 
     private static final String BASE_ID = PackRegistrationServiceTest.ulid('E');
     private static final String LONE_ID = PackRegistrationServiceTest.ulid('K');
@@ -109,7 +110,8 @@ class RegistrationImpactActivationsAffectedTest {
         rig.activations.add(Optional.of(List.of("base")));
         rig.asked.clear();
 
-        rig.impact.check(new ai.speckitty.charter.kernel.domain.PackIdentifier("base"), facts -> facts);
+        rig.impact.judge(new ImpactCheck.Write(
+                new ai.speckitty.charter.kernel.domain.PackIdentifier("base"), facts -> facts, Optional.empty()));
 
         assertThat(rig.asked).isEmpty();
     }

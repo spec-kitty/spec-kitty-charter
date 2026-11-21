@@ -1,8 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.StagedPackViews;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -73,7 +73,7 @@ public final class StagedPackViewFactory implements StagedPackViews {
             }
 
             @Override
-            public View with(RegistrationImpact.Replacement written) {
+            public View with(ImpactCheck.Replacement written) {
                 return stored.with(written).view();
             }
 

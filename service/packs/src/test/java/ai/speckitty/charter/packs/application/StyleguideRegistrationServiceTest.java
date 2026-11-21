@@ -10,12 +10,12 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +35,7 @@ class StyleguideRegistrationServiceTest {
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private static final PackIdentifier OTHER = new PackIdentifier("other-pack");
     private final FakeStore store = new FakeStore();
-    private final WritePolicyGate policy = new PermissiveWritePolicyGate();
+    private final MutabilityCheck policy = new PackMutabilityPolicy();
     private final StyleguideRegistrationService service = new StyleguideRegistrationService(store, store, policy);
 
     // ---- FR-013 / SC-001: register, read back value-equal --------------------------------------------------------

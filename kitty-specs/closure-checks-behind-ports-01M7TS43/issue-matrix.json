@@ -1,0 +1,101 @@
+{
+  "rows": {
+    "#355": {
+      "evidence_ref": "Cited for context: ReferenceSubjects.firstRefusal stays out of scope (squad R6)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Reference closure of a pack",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#478": {
+      "evidence_ref": "Cited for context: PackRulesets.closure() and PackCheck are untouched, so #478 (PR #608) needs no change",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "pack-check CLI and service releases",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#517": {
+      "evidence_ref": "Cited for context: delivered by PR #609/#611; its PackDependents seam is absorbed by this mission's ImpactCheck (WP05)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Pack uninstall and update guard",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#549": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#554": {
+      "evidence_ref": "Cited for context: its CompositionRules, PackCodes and PackRefusals are the base this mission builds on",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "ADR-0075 slice 5: the pack rules",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#556": {
+      "evidence_ref": "This mission: ImpactCheck, ClosureWalk and MutabilityCheck in packs.domain, collect-all; the parity bullet is delivered by open-packs' charter_service_check.py (ruling D6)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "ADR-0075 slice 7: the walk and closure checks behind ports, collecting every fault",
+      "verdict": "in-mission",
+      "wp": "WP07"
+    },
+    "#608": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: pr_or_commit_ref>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#614": {
+      "evidence_ref": "Follow-up: #614, filed at the operator's ruling on squad finding P1",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": "Unify CompositionFault into ClosureFault once #478 lands",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}
