@@ -316,8 +316,8 @@ The shape is ruled (ADR-0052 d8, ADR-0053 d30): `anti_patterns/<id>.anti-pattern
 - [ ] The kind is bound, appended last; a file round-trips byte-equal; the stem and placement rules apply.
 - [ ] `built-in` holds `indirection-for-repetition` as a file; its node and `rejects` edge are unchanged; the
       example packs and the whole-pack gate are green, with no fixture exempted.
-- [ ] All 18 example inline anti-patterns are files with a node and a `rejects` edge; no example styleguide or
-      procedure carries `anti_patterns`; every severity is written; every `bad_example` is real text.
+- [ ] All 18 example inline anti-patterns are files with a node and a `rejects` edge (the inline blocks stay until
+      WP12 T047a removes them with the schema drop); every severity is written; every `bad_example` is real text.
 - [ ] Registration and `pack-doctor validate` hold a valid file and refuse an invalid one with the same code.
 - [ ] A `### Breaking` fragment; the live docs and the glossary no longer say the kind has no file.
 - [ ] Every behavior change had a test that was red first (NFR-001).
