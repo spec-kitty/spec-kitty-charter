@@ -1,7 +1,7 @@
 {
-  "event_count": 40,
-  "last_event_id": "01M7ZR6AYNNEWMEMC5MHB0DRY5",
-  "materialized_at": "2026-11-21T19:09:08.949632+00:00",
+  "event_count": 41,
+  "last_event_id": "01M7ZR75Z2HREF8DWF8QHCPTKF",
+  "materialized_at": "2026-11-21T19:09:36.610275+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 1,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 5
+    "planned": 6
   },
   "work_packages": {
     "WP01": {
@@ -169,6 +169,13 @@
       "lane": "planned",
       "last_event_id": "01M7Z3A05J2FNBDGPQ87GMZF4K",
       "last_transition_at": "2026-11-21T13:04:08.882683+00:00"
+    },
+    "WP10": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7ZR75Z2HREF8DWF8QHCPTKF",
+      "last_transition_at": "2026-11-21T19:09:36.610275+00:00"
     }
   }
 }
