@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The one mapping of a pack's verdict (#478, S3): the refusal of a failing verdict and the diagnostics of a passing one,
- * in the domain, so registration and pack-check answer a pack in the same words.
+ * in the domain, so registration and pack-doctor answer a pack in the same words.
  */
 @DisplayName("PackRefusalMapping: a pack's verdict as its refusal or its diagnostics (#478, S3)")
 class PackRefusalMappingTest {

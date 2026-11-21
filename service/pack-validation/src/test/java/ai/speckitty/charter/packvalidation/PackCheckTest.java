@@ -265,7 +265,7 @@ class PackCheckTest {
 
     /**
      * Validate mode over the project example pack in a directory named {@code name}, read under a root of that name, as
-     * pack-check's directory-name default builds it.
+     * pack-doctor's directory-name default builds it.
      */
     private static List<Reason> violationsNamed(Path dir, String name) throws IOException {
         Path pack = projectCopiedTo(dir, name);

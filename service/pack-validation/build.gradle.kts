@@ -4,12 +4,12 @@ import net.ltgt.gradle.errorprone.errorprone
 // edge. Validate mode is PackCheck: it reads a pack once through the packs domain's PackReading port, whose readout
 // carries the storage edge's verdict, adds its own placement rules (the configured level and the org fragment, with
 // their codes in PlacementCodes) and maps the findings (PackVerdicts). It also holds the whole-pack round trip (#578).
-// The service runs none of its main code; the pack-check CLI will (#478).
+// The service runs none of its main code; the pack-doctor CLI will (#478).
 //
 // It depends on :packs and names only the packs domain and the kernel: the packs domain model stays in :packs (operator
 // ruling of 2026-11-13, #553), and a composition root supplies the file-system reader. :packs brings Spring onto the
 // classpath, but nothing this module reaches uses it: HexagonalArchitectureTest's PACK_VALIDATION_IS_FRAMEWORK_FREE
-// pins that transitively. Leaving Spring off pack-check's runtime classpath is #478's, with the jar.
+// pins that transitively. Leaving Spring off pack-doctor's runtime classpath is #478's, with the jar.
 //
 // Not charter.domain-conventions: that refuses every external dependency. The module pins its own instead, below.
 plugins {
@@ -40,7 +40,7 @@ dependencies {
     api(project(":missions"))
     // The packs slice's Spring-free load and the domain it builds (operator ruling of 2026-11-13, #553).
     api(project(":packs"))
-    // Exported, so a consumer (pack-check) resolves :packs' versionless dependencies at the same versions.
+    // Exported, so a consumer (pack-doctor) resolves :packs' versionless dependencies at the same versions.
     api(platform(catalog.lib("spring-boot-bom")))
     // The whole-pack round trip's expected baseline lists (WholePackExpectation, ADR-0075 decision 8 as amended
     // 2026-11-15): plain YAML, not pack content, so no pack reader parses them.

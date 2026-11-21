@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The pack-set check's one composition (#478, FR-007, S4): {@link PackRulesets#closure(Function)} is {@code CLOSURE}
- * with its preset phase, so pack-check runs one named ruleset and defines no rule of its own.
+ * with its preset phase, so pack-doctor runs one named ruleset and defines no rule of its own.
  */
 @DisplayName("PackRulesets.closure(presetIdsOf): CLOSURE with its preset phase (#478, S4)")
 class PackRulesetsClosureTest {

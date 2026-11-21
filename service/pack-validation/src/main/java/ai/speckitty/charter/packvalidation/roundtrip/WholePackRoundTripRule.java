@@ -76,7 +76,7 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
         /**
          * Every reason the run fails, the evaluation's problems first. A problem about one census file
          * ({@code UNEXPECTED_RED <path> (<kind>): ...}, as {@link WholePackExpectation} words it) is placed at that
-         * file, so a surface that reports violations by file (pack-check, #478) points at it; a problem about the run
+         * file, so a surface that reports violations by file (pack-doctor, #478) points at it; a problem about the run
          * as a whole (a stale entry, an unmodelled schema) stays unplaced.
          *
          * @return the failing reasons; empty when the run passes
