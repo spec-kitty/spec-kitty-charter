@@ -97,16 +97,16 @@
       "wp": "WP03"
     },
     "#636": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: parent epic of the re-scoped #614 (slice 1); slices 2-7 are not this mission's",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "ADR-0082 migration epic",
+      "verdict": "not-applicable",
+      "wp": "WP01"
     }
   },
   "schema_version": 1
