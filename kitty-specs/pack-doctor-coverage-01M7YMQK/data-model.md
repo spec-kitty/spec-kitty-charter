@@ -17,8 +17,40 @@ Invariants:
 
 The own closure is the declaring pack plus everything it reaches over `depends_on` and `parent_pack`
 (`PackCompositionResolver.compositionClosure` rooted at the pack). Held items are the closure packs' artifact files
-(`PackCompositionFacts.held`). Declared items are every graph-node URN plus the held items
-(`PackCompositionFacts.declared`). These two fields replace `defined` outright.
+(`PackCompositionFacts.held`), so an `anti_pattern` is held only by its anti-pattern file. Declared items are every
+graph-node URN plus the held items (`PackCompositionFacts.declared`). These two fields replace `defined` outright.
+
+## Anti-pattern file (pack content, `anti_patterns/<id>.anti-pattern.yaml`; plan D12, FR-013)
+
+The file form of the existing `anti_pattern` kind (ADR-0052 decision 8, as amended by ADR-0053 decision 30). Schema
+`contracts/packs/schemas/anti-pattern.schema.json`, closed (`additionalProperties: false`).
+
+| Field | Required | Shape |
+|---|---|---|
+| `schema_version` | yes | `"1.0"` |
+| `id` | yes | kebab-case, `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64; equal to the file stem |
+| `title` | yes | string, not blank |
+| `description` | yes | string, not blank |
+| `severity` | yes | `smell` (worth a remark), `severe` (should block review) or `breaking` (must block); no default |
+| `bad_example` | yes | string, not blank |
+| `good_example` | no | string |
+
+Domain: `AntiPattern` (a `CharterArtifact` of `ArtifactKind.ANTI_PATTERN`, URN `anti_pattern:<id>`), its
+`AntiPatternIdentifier` and the closed `AntiPatternSeverity`. Storage: `AntiPatternBinding` (`fileToken` and
+`schemaName` `anti-pattern`; `fileName` `anti_patterns/<id>.anti-pattern.yaml`; `idIsFileStem` and
+`placedAtItsFileName` true), `AntiPatternDso` (a flat mirror, record equality is the round-trip assertion) and
+`AntiPatternYaml` (schema key order), each appended last to its registry.
+
+Invariants:
+
+- The file holds the artifact. A graph node of the same URN declares it and is an edge endpoint; it holds nothing.
+  After WP03, a node alone is in `declared`, never in `held`.
+- A file whose `id` is not its stem, or that is not at `anti_patterns/<id>.anti-pattern.yaml`, is refused by the
+  existing stem and placement rule (`FileStems`); a schema breach (a missing `severity` or `bad_example`, an unknown
+  `severity`, an unknown key) by the existing schema answer.
+- A graph-only `anti_pattern` node is still accepted. Refusing it (ADR-0053 decision 31) waits for the open-packs
+  migration, and so does dropping the inline `anti_patterns` of styleguides and procedures (ADR-0052 decision 16).
+- The kind is activatable and served by no HTTP read, as `step_enhancement` is.
 
 ## `manifest_stale` (storage edge, `Reason`)
 

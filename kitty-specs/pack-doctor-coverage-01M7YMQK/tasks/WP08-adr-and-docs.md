@@ -30,6 +30,7 @@ owned_files:
 - docs/adr/0083-*.md
 - docs/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check.md
 - docs/adr/0042-*.md
+- docs/adr/0052-*.md
 - docs/architecture/composition-and-activation-rules.md
 - docs/architecture/architectural-patterns-applied.md
 - docs/adr/README.md
@@ -68,7 +69,7 @@ Record the mission's decisions and keep living docs true (spec FR-012; plan D10;
 - Title: what the mission decides. One answer on every surface: preset items, stale manifests and the pack-doctor
   CLI.
 - Decisions:
-  - Quote each operator ruling R-a to R-n verbatim from `kitty-specs/pack-doctor-coverage-01M7YMQK/decisions/`, and
+  - Quote each operator ruling R-a to R-q verbatim from `kitty-specs/pack-doctor-coverage-01M7YMQK/decisions/`, and
     say what it decides.
   - The own closure (R-k); declared vs held (R-l); the codes (R-m); `manifest_stale` on incoming bytes (R-b).
   - pack-doctor's commands, options and report (R-c, R-e, R-h, R-i, R-n); `remediate` (R-j).
@@ -76,6 +77,9 @@ Record the mission's decisions and keep living docs true (spec FR-012; plan D10;
   - #535 and #52 item 3 are not the charter's to judge (R-g), with the evidence (identity is kind and id, never the
     file name; edge endpoints are URNs).
   - The XUnit form as a later option (R-n).
+  - The `anti_pattern` file kind built first, in this mission (R-p, R-q; plan D12): what it applies of ADR-0052, and
+    what stays for the open-packs migration (ADR-0052 d14 to d16, ADR-0053 d31), per the operator's answer to
+    analysis Q1.
   - The own-closure rules that join `PackRulesets` in #636 slice 3.
 - Relation to ADR-0082: this follows it (rules in the factory, no new walk), and supersedes nothing in it.
 - Alternatives considered: the options the operator declined in each batch.
@@ -87,6 +91,9 @@ Record the mission's decisions and keep living docs true (spec FR-012; plan D10;
   - decision 9: pack-doctor, `validate` and `remediate`, `--report`/`--format`.
 
   Write each as a dated amendment section, in the form the ADR already uses.
+- ADR-0052: a dated status note that decision 8 (as amended by ADR-0053 d30) is applied by WP10 (plan D12), and that
+  decisions 14 to 16 still wait for the migration, unless the operator's Q1 answer says otherwise. The original text
+  stands.
 - ADR-0042: an amendment to its 2026-11-12 amendment. Uploaded hashes are verified (`manifest_stale`), and writes
   still stamp.
 - `composition-and-activation-rules.md`: A10 and C31. The floor is still reported on reads, but a write is refused

@@ -2,7 +2,7 @@
 
 **Branch**: `kitty/mission-pack-doctor-coverage-01M7YMQK` → `feat/pack-doctor-coverage` → PR to `main` | **Date**: 2026-11-21 | **Spec**: [spec.md](spec.md)
 **Input**: [spec.md](spec.md); research in [research/rule-coverage.md](research/rule-coverage.md) and
-[research/squad-dispositions.md](research/squad-dispositions.md); rulings R-a to R-n in `decisions/`.
+[research/squad-dispositions.md](research/squad-dispositions.md); rulings R-a to R-q in `decisions/`.
 
 ## Summary
 
@@ -13,16 +13,17 @@ Give registration and the standalone checker one answer for the same pack, under
 
 The checker becomes `pack-doctor`, with `validate` and `remediate`.
 
-The work is eight ordered work packages in one PR (R-f):
+The work is nine ordered work packages in one PR (R-f):
 
 1. #614 (`ClosureFault` replaces `CompositionFault`).
 2. The rename.
-3. The preset-item rule.
-4. `manifest_stale`.
-5. The `--full` domain phase.
-6. The report.
-7. `remediate`.
-8. The ADR, the contract and the docs.
+3. The `anti_pattern` file kind (WP10, rulings R-p and R-q), which the preset-item rule needs.
+4. The preset-item rule.
+5. `manifest_stale`.
+6. The `--full` domain phase.
+7. The report.
+8. `remediate`.
+9. The ADR, the contract and the docs.
 
 ## Technical Context
 
@@ -199,7 +200,9 @@ example packs
   - `### Breaking` fragments:
     - the preset-item refusals (a valid input is now refused);
     - `manifest_stale` (an upload with stale hashes is now refused);
-    - the report schema rename.
+    - the report schema rename;
+    - the `anti_pattern` file kind (D12): an `*.anti-pattern.yaml` that registration warned `file_not_held` is now
+      judged, and an invalid one is refused. The packs contract gains an `### Added` line.
   - `### Changed` fragment: the report formats and the `CLOSURE_WALK` check value.
   - Core's regeneration consequence is stated in each fragment (ADR-0022).
 - **D9 — Dependencies.** Folded into D6: no new library, and no new verification metadata. If Jackson's YAML or XML dataformat is not already a verified dependency of
@@ -210,14 +213,67 @@ example packs
     pack-doctor, its commands, `--report`);
   - ADR-0042 (the 2026-11-12 amendment: hashes are verified on upload);
   - rules A10/C31 (`docs/architecture/composition-and-activation-rules.md`);
-  - the scope rows on `architectural-patterns-applied.md`.
+  - the scope rows on `architectural-patterns-applied.md`;
+  - ADR-0052 (a status note: decision 8 is applied by the file kind, D12; decisions 14 to 16 wait for the migration).
 
-  It records #535 and #52.3 as not the charter's to judge. ADR-0082 itself stays as it is.
+  It also records rulings R-p and R-q (D12). It records #535 and #52.3 as not the charter's to judge. ADR-0082 itself stays as it is.
+
+- **D12 — The `anti_pattern` file kind (WP10; rulings R-p and R-q, DM-01M7ZPVTTGHYCSC2Y39BZV0FXT and
+  DM-01M7ZQGHVNQXAQ0S3DMTK7EZCB; ADR-0052 decision 8 as amended by ADR-0053 decision 30; FR-013).**
+  - **Why.** R-l counts a `must_have` only when a closure pack holds it as a file. `anti_pattern` has no file form
+    today: `ArtifactKind.ANTI_PATTERN` says "never a standalone file" (`ArtifactKind.java:36`),
+    `CompositionFactsBuilder.declaredWithoutFile` takes it from graph nodes only (`CompositionFactsBuilder.java:445-462`),
+    `file-kinds.yaml` has no `files` rule for it (`file-kinds.yaml:141-227`), `contracts/packs/schemas/` has no schema
+    (`contracts/packs/README.md:5`: "a template and an anti-pattern have none"), and `KindBindings` binds no
+    anti-pattern (`KindBindings.java:19-34`). `built-in/presets/default.yaml` requires
+    `anti_pattern:indirection-for-repetition`, which is only a node of `built-in/styleguide.graph.yaml:16-18`. R-p: build
+    the file kind first. R-q: as a new WP of this mission, before WP03, so #629 and #632 still close here.
+  - **The shape (ADR-0052 d8, ADR-0053 d30).** `anti_patterns/<id>.anti-pattern.yaml`, closed:
+    `schema_version` (`"1.0"`), `id` (kebab-case, at most 64, the file stem), `title`, `description`, `severity`
+    (`smell`, `severe` or `breaking`, ADR-0052 d10; no default, ADR-0053 d32) and `bad_example` required;
+    `good_example` optional. The kind token stays `anti_pattern`; the file and schema token is `anti-pattern`.
+  - **The closest precedent is the routing catalog** (ADR-0080): a kind token with an underscore and a kebab file
+    token, placed at `<plural>/<id>.<token>.yaml` (`RoutingCatalogBinding.java:35-70`: `fileToken`, `schemaName`,
+    `fileName`, `idIsFileStem` and `placedAtItsFileName`), appended last to `KindBindings` and `YamlFormats`, with a
+    `files` rule (`file-kinds.yaml:172-175`), a classifier case, a packs `CHANGELOG` line and a digest-fixture file.
+    Its flat YAML form follows `GuardYaml` (`GuardYaml.java`: schema key order, `YamlDumpEmitter`). The kind facts
+    of the kernel (`NodeKind.ANTI_PATTERN`: an artifact kind, activatable, declarable in graphs, an edge target;
+    `NodeKind.java:48`) do not change, and no enum of kinds in either contract changes (the manifest constituent
+    enum, the preset's `activated_anti_patterns`, `policy`'s URN pattern and the kind taxonomy already list it).
+    Only `ArtifactKind.ANTI_PATTERN`'s documentation changes.
+  - **A node and a file at once is the norm.** Every file-held kind of the example packs is also a node of a graph
+    shard: `paradigm:atomic-design` is a node of `built-in/paradigm.graph.yaml` and the file
+    `paradigms/atomic-design.paradigm.yaml`; `styleguide:boring-code-review` is a node of `styleguide.graph.yaml:11-15`
+    and a file. A shard's name carries no kind (`file-kinds.yaml:144-147`, any `*/*.graph.yaml`), and the store
+    reads node and file under one URN. So the anti-pattern's node **stays** where it is, in `styleguide.graph.yaml`,
+    as the target of the `rejects` edge from `styleguide:boring-code-review` (`styleguide.graph.yaml:19-24`; ADR-0064
+    d12: an edge is authored only in graph documents, and its endpoints are declared there). The node declares; the
+    file holds. Moving the node to an `anti_pattern.graph.yaml` would change nothing the model sees.
+  - **What does not change here.** A graph-only `anti_pattern` node stays declared, and is still counted in
+    `CompositionFactsBuilder`'s graph-only set until WP03 replaces `defined` with `held` and `declared` (D3): after
+    WP03, a node alone is declared but not held, so R-l refuses a `must_have` that has no file. Refusing a file-less
+    node (ADR-0052 d14, ADR-0053 d31) is ruled "after the migration", and open-packs has 13 file-less nodes and no
+    anti-pattern file (`packs/architecture/drg/fragment.yaml`, `packs/refactoring/drg/fragment.yaml`). The inline
+    `anti_patterns` of styleguides and procedures are a different shape (a value of the owner, with no id), and
+    ADR-0052 d16 orders "the kind and its schema land first; the migration runs ... then a re-pin". Both stay on #154
+    (**Refs #154**, not Closes), pending the operator question recorded in `analysis-report.md` (Q1).
+  - **No HTTP read.** The charter API serves no `anti_pattern` body today (`ArtifactReadService.SERVED`;
+    `ArtifactKindToken.yaml`: "other kernel kinds are not served yet"), as for `step_enhancement`, which is also
+    activatable, graph-declared, file-held and unserved. A read path is additive (ADR-0052 follow-ups) and is not in
+    R-q's list. The charter contract changes only in what whole-pack registration holds: a `### Breaking` fragment,
+    since an `*.anti-pattern.yaml` that was warned `file_not_held` is now judged, and an invalid one is refused.
+  - **Fixture.** `built-in/anti_patterns/indirection-for-repetition.anti-pattern.yaml`, written from the inline entry
+    of `boring-code-review` (`styleguides/boring-code-review.styleguide.yaml`, "Indirection to remove a few repeated
+    lines"), with `severity: smell`, and the title the node's label carries. The built-in manifest lists it
+    (ADR-0042): WP10 stamps it with `ManifestMembership.stamp` as a justified out-of-map edit of WP04's manifest, and
+    the lane that merges second re-runs the stamp (as analysis U1 set out for WP03).
 
 ## Charter Check
 
 - **Canonical model (C-002):** the shapes are replaced outright: `presetIdsOf` → presets, `CompositionFault` deleted,
-  pack-check → pack-doctor, no alias. Fixtures are fixed (FR-010). Pass.
+  pack-check → pack-doctor, no alias. Fixtures are fixed (FR-010). The `anti_pattern` file kind (D12) adds the shape
+  ADR-0052 d8 rules, with no legacy reader; the inline entries and file-less nodes it leaves are the pre-migration
+  state ADR-0052 d16 orders, asked of the operator as Q1. Pass.
 - **Contract versioning (ADR-0022):** the `### Breaking` fragments are listed in D8. Pass.
 - **Round trip (ADR-0036/0070):** the whole-pack gate runs over the restamped example packs, and remediate keeps
   meaning. Pass.
@@ -254,12 +310,15 @@ kitty-specs/pack-doctor-coverage-01M7YMQK/
 ```
 service/packs/src/main/java/ai/speckitty/charter/packs/
 ├── domain/rules/        PackRulesets, CompositionRules, PresetItemRules (new), SpecializationCycleRule (moved)
-├── domain/              PackCompositionResolver, EnhancementCompose, PackCompositionFacts, ClosureFault, PackCodes
+├── domain/              PackCompositionResolver, EnhancementCompose, PackCompositionFacts, ClosureFault, PackCodes,
+│                        AntiPattern, AntiPatternIdentifier, AntiPatternSeverity (new, D12)
 ├── application/         ClosureImpactCheck, OfferingReadService (call the domain forms)
-└── infra/storage/       ManifestRules, StorageCodes, TreeCensus, PackRoundTrip, PackRemediation (new)
+└── infra/storage/       ManifestRules, StorageCodes, TreeCensus, PackRoundTrip, PackRemediation (new),
+                         AntiPatternBinding, AntiPatternDso, AntiPatternYaml (new, D12), KindBindings, YamlFormats
 service/pack-validation/  PackSetCheck, PackSetVerdict (CLOSURE_WALK), roundtrip
 service/pack-doctor/      (renamed from pack-check) PackDoctorMain, Arguments, Problems, ReportWriter, report/
 contracts/charter/        schemas (RefusalCode, PackDoctorReport.yaml/.xsd), scenarios, changes/
+contracts/packs/          anti-pattern.schema.json (new, D12), file-kinds.yaml, conformance/, CHANGELOG.md
 build-logic/, .github/workflows/, scripts/release/, docs/
 service/packs/src/testFixtures/resources/example-packs/ (built-in, org-base fixes; manifests restamped)
 ```
@@ -292,6 +351,21 @@ service/packs/src/testFixtures/resources/example-packs/ (built-in, org-base fixe
 
   Mitigation: run the release rehearsal and the build-logic tests in the WP.
 
+### IC-09 — The `anti_pattern` file kind
+- **Purpose**: D12.
+- **Relevant requirements**: FR-013, FR-010.
+- **Affected surfaces**: `anti-pattern.schema.json` (new), `file-kinds.yaml`, `classifier-cases.yaml`, the packs
+  `CHANGELOG` and `README`; `ArtifactKind` (documentation); `AntiPattern`, `AntiPatternIdentifier`,
+  `AntiPatternSeverity` and `Pack`; `AntiPatternBinding`, `AntiPatternDso`, `AntiPatternYaml`, `KindBindings`,
+  `YamlFormats`; the digest fixture; `built-in/anti_patterns/`; a registration scenario and a change fragment.
+- **Sequencing/depends-on**: IC-02. IC-03 depends on it.
+- **Risks**:
+  - The built-in manifest is WP04's file. Mitigation: stamp the one new constituent; the later lane re-stamps.
+  - The facts snapshot (`facts/example-packs.json`) moves the anti-pattern URN to the file kinds' order.
+    Mitigation: re-record it in WP10; WP03 re-records it again for `held`/`declared`.
+  - Open-packs' Python checker treats `anti_pattern` as graph-only (`validate_pack_schemas.py:84-88`, 447, 1181).
+    Mitigation: drafted as `open-packs#TBD-anti-pattern-files` (C-006).
+
 ### IC-03 — The preset-item rule
 - **Purpose**: D3.
 - **Relevant requirements**: FR-002, FR-003, FR-010, FR-011.
@@ -300,7 +374,7 @@ service/packs/src/testFixtures/resources/example-packs/ (built-in, org-base fixe
   - `ClosureImpactCheck`, `PackSetCheck`, `Problems`;
   - `CharterRefusalCode.yaml`, the registration scenarios;
   - the built-in and org-base example packs.
-- **Sequencing/depends-on**: IC-01, IC-02.
+- **Sequencing/depends-on**: IC-01, IC-02, IC-09 (the built-in anti-pattern must be held as a file, R-l).
 - **Risks**: open-packs content may break, which is expected and drafted (C-006). The case-only precedence must hold.
 
 ### IC-04 — `manifest_stale`
@@ -340,5 +414,5 @@ service/packs/src/testFixtures/resources/example-packs/ (built-in, org-base fixe
 - **Relevant requirements**: FR-011, FR-012.
 - **Affected surfaces**: ADR-0083, the ADR-0075/0042 amendments, the rules doc, the patterns page, `docs/guides/check-packs.md`
   (text only), `contracts/charter/changes/`, the open-packs drafts.
-- **Sequencing/depends-on**: IC-01 to IC-07.
+- **Sequencing/depends-on**: IC-01 to IC-07, IC-09.
 - **Risks**: the ADR number. Mitigation: check `main` and the open PRs when writing it.

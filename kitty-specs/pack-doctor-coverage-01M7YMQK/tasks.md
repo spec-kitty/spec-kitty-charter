@@ -1,9 +1,11 @@
 # Tasks: pack-doctor coverage
 
 **Mission**: `pack-doctor-coverage-01M7YMQK` · **Planning base / merge target**: `feat/pack-doctor-coverage` (PR to
-`main`) · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md) (D1-D11)
+`main`) · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md) (D1-D12)
 
-Execution order (one PR, R-f): WP01 → WP02 → {WP03, WP04} → WP06 → WP07 → WP08 → WP09. WP05 is **held**: its scope
+Execution order (one PR, R-f): WP01 → WP02 → {WP10 → WP03, WP04} → WP06 → WP07 → WP08 → WP09. WP10 (the
+`anti_pattern` file kind, rulings R-p and R-q, plan D12) comes before WP03, which needs the built-in anti-pattern held
+as a file. WP05 is **held**: its scope
 waits on the operator (plan D5) and it starts only on the ruling.
 
 Every behavior change is written red-first (NFR-001). No PIT (C-003). Rewrite a test that pins replaced behavior;
@@ -49,6 +51,11 @@ never delete or skip it. Fixtures are fixed, never exempted (C-002).
 | T034 | Guides and changelog: `check-packs.md`, docs changelog entry | WP08 | |
 | T035 | open-packs#TBD issue drafts (repin, refusals, remediate, retire Python rules, report) | WP09 | |
 | T036 | Issue-closure evidence list for the PR body | WP09 | |
+| T037 | Packs contract: `anti-pattern.schema.json`, the `files` rule, a classifier case, CHANGELOG and README | WP10 | |
+| T038 | Domain `AntiPattern`, `AntiPatternIdentifier`, `AntiPatternSeverity`; `Pack` accessor; `ArtifactKind` fact | WP10 | |
+| T039 | `AntiPatternBinding`/`Dso`/`Yaml` appended last; canonical round trip; stem and placement; digest fixture | WP10 | |
+| T040 | Built-in `indirection-for-repetition.anti-pattern.yaml`; node kept; manifest stamped; facts re-recorded | WP10 | |
+| T041 | Registration and `validate` hold or refuse the file; scenario; `### Breaking` fragment; docs and glossary | WP10 | |
 
 ## Phase 1 — Foundation
 
@@ -76,10 +83,23 @@ T010 The contract schema renamed `PackDoctorReport`; live docs renamed; a change
 Independent test: the T006 scan is red before and green after; `verifyAll` and the release rehearsal pass. Risks:
 release workflow, asset script and rehearsal must change together.
 
+### WP10 — The `anti_pattern` file kind (R-p, R-q; refs #154)
+Prompt: [tasks/WP10-anti-pattern-file-kind.md](tasks/WP10-anti-pattern-file-kind.md) · P1 · Depends on: WP02
+
+T037 Packs contract: schema, `files` rule, classifier case, CHANGELOG and README (WP10)
+T038 Domain entity, identifier and severity; `Pack` accessor; `ArtifactKind` fact (WP10)
+T039 Storage binding, DSO and YAML form appended last; round trip; stem and placement; digest fixture (WP10)
+T040 Built-in anti-pattern file; node kept; manifest stamped; facts re-recorded (WP10)
+T041 Registration and `validate` parity; scenario; `### Breaking` fragment; docs and glossary (WP10)
+
+Independent test: a planted `anti_patterns/x.anti-pattern.yaml` is `file_not_held` before and held after; one
+without `severity` is refused with the same code by registration and `pack-doctor validate`; the example packs and
+the whole-pack gate stay green. Risks: the built-in manifest is WP04's (stamp, then re-stamp in the later lane).
+
 ## Phase 2 — The rules
 
 ### WP03 — The preset-item rule (#629, #632 item 1)
-Prompt: [tasks/WP03-preset-item-rule.md](tasks/WP03-preset-item-rule.md) · P1 · Depends on: WP02
+Prompt: [tasks/WP03-preset-item-rule.md](tasks/WP03-preset-item-rule.md) · P1 · Depends on: WP02, WP10
 
 T011 `held`/`declared` replace `defined` (WP03)
 T012 New refusal codes (WP03)

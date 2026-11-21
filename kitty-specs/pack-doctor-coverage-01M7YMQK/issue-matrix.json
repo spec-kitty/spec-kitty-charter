@@ -1,5 +1,17 @@
 {
   "rows": {
+    "#154": {
+      "evidence_ref": "WP10: the anti_pattern file kind (schema, files rule, binding, kernel fact, built-in fixture), rulings R-p and R-q; Refs #154, which stays open for the inline-entry drop and the file-less node refusal (plan D12, analysis Q1)",
+      "fr": "FR-013",
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "The anti_pattern kind: its schema and refusals (ADR-0052)",
+      "verdict": "in-mission",
+      "wp": "WP10"
+    },
     "#158": {
       "evidence_ref": "Context only: kept in view; manifest_stale is its first step, the rest stays open",
       "fr": null,
