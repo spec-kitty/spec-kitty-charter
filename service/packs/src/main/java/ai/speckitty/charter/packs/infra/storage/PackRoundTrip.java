@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
@@ -120,7 +121,7 @@ public final class PackRoundTrip {
      * @param source the pack directory
      * @param target the directory to write to
      * @param census every source file's gate kind
-     * @param notHeld the census paths the census does not hold: the adapter is never handed them (#631)
+     * @param notHeld the census files the census does not hold, by path: the adapter is never handed them (#631)
      * @param formOf the content form of a source path
      * @return what the round trip observed
      */
@@ -130,10 +131,10 @@ public final class PackRoundTrip {
             Path source,
             Path target,
             SortedMap<String, String> census,
-            Set<String> notHeld,
+            SortedMap<String, NotHeldFile> notHeld,
             Function<String, ContentForm> formOf) {
         SortedMap<String, String> held = new TreeMap<>(census);
-        held.keySet().removeAll(notHeld);
+        held.keySet().removeAll(notHeld.keySet());
         Map<String, Outcome> outcomes = roundTrip.roundTrip(packId.value(), source, target, held);
         SortedMap<String, FileOutcome> read = new TreeMap<>();
         outcomes.forEach((path, outcome) -> read.put(
@@ -143,8 +144,7 @@ public final class PackRoundTrip {
                     case WholePackRoundTrip.Written w ->
                         written(formOf.apply(path), census.getOrDefault(path, ""), source, path, target, w, outcomes);
                 }));
-        return new PackRoundTripResult(
-                census, new TreeSet<>(notHeld), roundTrip.modelledKinds(), read, writtenFiles(target));
+        return new PackRoundTripResult(census, notHeld, roundTrip.modelledKinds(), read, writtenFiles(target));
     }
 
     private static FileOutcome written(

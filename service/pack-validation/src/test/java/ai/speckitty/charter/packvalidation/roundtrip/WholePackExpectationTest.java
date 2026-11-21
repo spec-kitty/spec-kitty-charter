@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.Evaluation;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackExpectation.FileResult;
@@ -31,7 +32,7 @@ class WholePackExpectationTest {
     private static final String NO_EXCLUSIONS = "exclusions: []\n";
 
     /** No census path is not held: every file is judged as a held file. */
-    private static final Set<String> HOLDS_EVERY_FILE = Set.of();
+    private static final Map<String, NotHeldFile> HOLDS_EVERY_FILE = Map.of();
 
     private static SortedMap<String, String> census(String... pathsAndKinds) {
         SortedMap<String, String> census = new TreeMap<>();
@@ -622,7 +623,7 @@ class WholePackExpectationTest {
             observed.put("README.md", Optional.empty());
 
             Evaluation evaluation = WholePackExpectation.load("kinds: []\nfiles: []\n", MATCHING_EXCLUSIONS)
-                    .evaluate(PACK, Set.of("README.md"), MODELLED, observed);
+                    .evaluate(PACK, Map.of("README.md", NotHeldFile.unmodelled("README.md")), MODELLED, observed);
 
             assertThat(statuses(evaluation)).containsEntry("README.md", Status.EXCLUDED);
             assertThat(evaluation.problems())
@@ -779,8 +780,12 @@ class WholePackExpectationTest {
             Map<String, Optional<String>> observed = new TreeMap<>(ALL_GREEN);
             observed.put("README.md", Optional.empty());
 
-            Evaluation evaluation =
-                    WholePackExpectation.none().evaluate(WITH_PROCEDURE_FILE, Set.of("README.md"), MODELLED, observed);
+            Evaluation evaluation = WholePackExpectation.none()
+                    .evaluate(
+                            WITH_PROCEDURE_FILE,
+                            Map.of("README.md", NotHeldFile.unmodelled("README.md")),
+                            MODELLED,
+                            observed);
 
             assertThat(evaluation.problems())
                     .as(
@@ -955,7 +960,9 @@ class WholePackExpectationTest {
                 "procedures/p.procedure.yaml", "procedure");
 
         /** The census does not hold the note and the text file; it holds the procedure. */
-        private static final Set<String> NOT_HELD = Set.of("docs/notes.md", "notes.txt");
+        private static final Map<String, NotHeldFile> NOT_HELD = Map.of(
+                "docs/notes.md", NotHeldFile.excluded("docs/notes.md", "operator notes"),
+                "notes.txt", NotHeldFile.unmodelled("notes.txt"));
 
         private Evaluation judged(Map<String, Optional<String>> observed) {
             return WholePackExpectation.load("kinds: []\nfiles: []\n", NO_EXCLUSIONS)
@@ -971,7 +978,7 @@ class WholePackExpectationTest {
                     .filteredOn(file -> file.path().equals("docs/notes.md"))
                     .singleElement()
                     .satisfies(file ->
-                            assertThat(file.detail()).contains("**/*.md").contains("not written"));
+                            assertThat(file.detail()).contains("operator notes").contains("not written"));
             assertThat(evaluation.problems())
                     .as("the note is judged apart; only the held control of an unmodelled schema is a problem")
                     .containsExactly(
@@ -987,7 +994,8 @@ class WholePackExpectationTest {
                     .singleElement()
                     .satisfies(file -> {
                         assertThat(file.status()).isEqualTo(Status.EXCLUDED);
-                        assertThat(file.detail()).isEqualTo("not held: not written");
+                        assertThat(file.detail())
+                                .isEqualTo("not held (" + NotHeldFile.UNMODELLED_REASON + "): not written");
                     });
             assertThat(evaluation.problems()).noneMatch(problem -> problem.contains("notes.txt"));
         }

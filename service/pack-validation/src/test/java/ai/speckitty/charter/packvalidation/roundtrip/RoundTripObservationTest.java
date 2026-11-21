@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
@@ -36,20 +37,23 @@ class RoundTripObservationTest {
 
     private static PackRoundTripResult result(
             Map<String, String> census, Map<String, FileOutcome> outcomes, Set<String> written) {
-        return result(census, Set.of(), outcomes, written);
+        return result(census, Map.of(), outcomes, written);
     }
 
     /** A result whose modelled kinds are the kinds of the files the census holds. */
     private static PackRoundTripResult result(
-            Map<String, String> census, Set<String> notHeld, Map<String, FileOutcome> outcomes, Set<String> written) {
+            Map<String, String> census,
+            Map<String, NotHeldFile> notHeld,
+            Map<String, FileOutcome> outcomes,
+            Set<String> written) {
         Set<String> kinds = new TreeSet<>();
         census.forEach((path, kind) -> {
-            if (!notHeld.contains(path)) {
+            if (!notHeld.containsKey(path)) {
                 kinds.add(kind);
             }
         });
         return new PackRoundTripResult(
-                new TreeMap<>(census), new TreeSet<>(notHeld), kinds, new TreeMap<>(outcomes), new TreeSet<>(written));
+                new TreeMap<>(census), new TreeMap<>(notHeld), kinds, new TreeMap<>(outcomes), new TreeSet<>(written));
     }
 
     @Nested
@@ -180,7 +184,9 @@ class RoundTripObservationTest {
             String excluded = PackRoundTripResult.EXCLUDED + "**/*.md";
             RoundTripObservation observation = RoundTripObservation.of(result(
                     Map.of("docs/kept.md", excluded, "docs/written.md", excluded),
-                    Set.of("docs/kept.md", "docs/written.md"),
+                    Map.of(
+                            "docs/kept.md", NotHeldFile.excluded("docs/kept.md", "notes"),
+                            "docs/written.md", NotHeldFile.excluded("docs/written.md", "notes")),
                     Map.of(),
                     Set.of("docs/written.md")));
 
@@ -193,7 +199,9 @@ class RoundTripObservationTest {
         void aFileNoRuleCoversIsNotHeldSoItIsRedOnlyWhenTheStoreWroteIt() {
             RoundTripObservation observation = RoundTripObservation.of(result(
                     Map.of("qa/kept.txt", PackRoundTripResult.OTHER + "qa", "notes.txt", "other:notes.txt"),
-                    Set.of("qa/kept.txt", "notes.txt"),
+                    Map.of(
+                            "qa/kept.txt", NotHeldFile.unmodelled("qa/kept.txt"),
+                            "notes.txt", NotHeldFile.unmodelled("notes.txt")),
                     Map.of(),
                     Set.of("notes.txt")));
 
@@ -211,7 +219,9 @@ class RoundTripObservationTest {
                             "symlink", PackRoundTripResult.SYMLINK,
                             "policy.yaml", "policy",
                             "procedures/p.procedure.yaml", "procedure"),
-                    Set.of("symlink", "policy.yaml"),
+                    Map.of(
+                            "symlink", NotHeldFile.unmodelled("symlink"),
+                            "policy.yaml", NotHeldFile.unnamedPolicy("policy.yaml")),
                     Map.of(),
                     Set.of()));
 
@@ -222,8 +232,11 @@ class RoundTripObservationTest {
 
         @Test
         void aPathNotHeldMustBeACensusPath() {
-            assertThatThrownBy(() ->
-                            result(Map.of("pack.yaml", "pack-descriptor"), Set.of("ghost.txt"), Map.of(), Set.of()))
+            assertThatThrownBy(() -> result(
+                            Map.of("pack.yaml", "pack-descriptor"),
+                            Map.of("ghost.txt", NotHeldFile.unmodelled("ghost.txt")),
+                            Map.of(),
+                            Set.of()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("ghost.txt");
         }
@@ -281,7 +294,7 @@ class RoundTripObservationTest {
         void anUnmodelledKindAndAnUnpairedFileAreViolationsWithTheirCodes() {
             PackRoundTripResult result = new PackRoundTripResult(
                     new TreeMap<>(Map.of("pack.yaml", "pack-descriptor", "drg/fragment.yaml", "org-fragment")),
-                    new TreeSet<>(),
+                    new TreeMap<>(),
                     Set.of("pack-descriptor"),
                     new TreeMap<>(green.outcomes()),
                     new TreeSet<>(Set.of("pack.yaml", "extra.yaml")));

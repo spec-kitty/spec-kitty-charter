@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packvalidation.roundtrip;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.domain.roundtrip.Reading;
@@ -69,9 +70,9 @@ public record RoundTripObservation(
                         }));
         // A file the census does not hold is not compared, it is checked: the store must not have written it (#451,
         // #631).
-        for (String path : result.notHeld()) {
-            String what =
-                    PackRoundTripResult.isExcluded(result.census().getOrDefault(path, "")) ? "excluded" : "not-held";
+        for (NotHeldFile file : result.notHeld().values()) {
+            String path = file.path();
+            String what = file.kind() == NotHeldFile.Kind.EXCLUDED ? "excluded" : "not-held";
             observed.put(
                     path,
                     result.written().contains(path)

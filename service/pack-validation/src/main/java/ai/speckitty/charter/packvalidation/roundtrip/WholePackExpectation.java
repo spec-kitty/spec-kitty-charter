@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packvalidation.roundtrip;
 
+import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import java.io.IOException;
 import java.io.InputStream;
@@ -394,7 +395,7 @@ public final class WholePackExpectation {
      * Judges one pack's gate run against lists scoped to it ({@link #forPack}, or {@link #none}).
      *
      * @param census every file of the pack with its gate kind
-     * @param notHeld the census paths the census does not hold, each judged apart (#451, #631)
+     * @param notHeld the census files the census does not hold, by path, each judged apart (#451, #631)
      * @param modelledKinds the gate kinds the round trip models
      * @param observed for each file of a modelled kind and each file not held, empty when it round-tripped, else the red detail, which starts
      *     with where the file first differs followed by {@code ": "} (for example {@code steps[2].title: …} or
@@ -403,7 +404,7 @@ public final class WholePackExpectation {
      */
     public Evaluation evaluate(
             SortedMap<String, String> census,
-            Set<String> notHeld,
+            Map<String, NotHeldFile> notHeld,
             Set<String> modelledKinds,
             Map<String, Optional<String>> observed) {
         Judgement judgement = new Judgement(census, notHeld, modelledKinds, observed);
@@ -422,7 +423,7 @@ public final class WholePackExpectation {
      */
     private final class Judgement {
         private final SortedMap<String, String> census;
-        private final Set<String> notHeld;
+        private final Map<String, NotHeldFile> notHeld;
         private final Set<String> modelledKinds;
         private final Map<String, Optional<String>> observed;
         private final Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
@@ -438,7 +439,7 @@ public final class WholePackExpectation {
 
         Judgement(
                 SortedMap<String, String> census,
-                Set<String> notHeld,
+                Map<String, NotHeldFile> notHeld,
                 Set<String> modelledKinds,
                 Map<String, Optional<String>> observed) {
             this.census = census;
@@ -454,8 +455,9 @@ public final class WholePackExpectation {
 
         /** Judges one file of the census. */
         void judge(String path, String kind) {
-            if (notHeld.contains(path)) {
-                judgeNotHeldFile(path, kind);
+            NotHeldFile notHeldFile = notHeld.get(path);
+            if (notHeldFile != null) {
+                judgeNotHeldFile(path, kind, notHeldFile);
                 return;
             }
             boolean modelled = modelledKinds.contains(kind);
@@ -479,8 +481,8 @@ public final class WholePackExpectation {
          * (#451; operator ruling R34, #631). The store must not have written it. A gate exclusion over it is redundant:
          * one that matches only such files is stale, and says so.
          */
-        private void judgeNotHeldFile(String path, String kind) {
-            boolean excluded = PackRoundTripResult.isExcluded(kind);
+        private void judgeNotHeldFile(String path, String kind, NotHeldFile notHeldFile) {
+            boolean excluded = notHeldFile.kind() == NotHeldFile.Kind.EXCLUDED;
             (excluded ? excludedPaths : notHeldPaths).add(path);
             for (int i = 0; i < patterns.size(); i++) {
                 if (patterns.get(i).matcher(path).matches()) {
@@ -497,9 +499,8 @@ public final class WholePackExpectation {
                         kind,
                         Status.EXCLUDED,
                         excluded
-                                ? "excluded by " + kind.substring(PackRoundTripResult.EXCLUDED.length())
-                                        + ": not written"
-                                : "not held: not written"));
+                                ? "excluded by " + notHeldFile.reason() + ": not written"
+                                : "not held (" + notHeldFile.reason() + "): not written"));
             } else {
                 results.add(new FileResult(path, kind, Status.RED, written.get()));
                 problems.add((excluded ? "EXCLUDED_WRITTEN " : "NOT_HELD_WRITTEN ") + path + " (" + kind + "): "

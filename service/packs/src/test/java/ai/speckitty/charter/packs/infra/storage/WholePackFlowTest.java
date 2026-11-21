@@ -198,15 +198,15 @@ class WholePackFlowTest {
         PackRoundTripResult result =
                 PackRoundTrip.run(spy, new PackIdentifier(ExamplePacks.ORG), org, temp.resolve("written"));
 
-        assertThat(result.notHeld())
+        assertThat(result.notHeld().keySet())
                 .as("the census holds none of the extra files")
                 .containsAll(extras);
         assertThat(handed).singleElement().satisfies(kindOf -> {
             assertThat(kindOf)
                     .as("no file the census does not hold")
-                    .doesNotContainKeys(result.notHeld().toArray(String[]::new));
+                    .doesNotContainKeys(result.notHeld().keySet().toArray(String[]::new));
             SortedMap<String, String> held = new TreeMap<>(result.census());
-            held.keySet().removeAll(result.notHeld());
+            held.keySet().removeAll(result.notHeld().keySet());
             assertThat(kindOf).as("every file the census holds").containsExactlyInAnyOrderEntriesOf(held);
         });
         assertThat(result.outcomes()).doesNotContainKeys(extras.toArray(String[]::new));
