@@ -15,16 +15,18 @@ import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -183,22 +185,63 @@ class CompositionRulesTest {
         }
 
         @Test
+        @DisplayName("a fault is about the pack that broke the rule first, its rule still the check's name (R-o)")
+        void aFaultsOriginIsThePackThatBrokeTheRuleFirst() {
+            PackUnderResolution dependent =
+                    pack(ordered("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(ordered("GONE"), ">=1.0"));
+
+            ClosureFault fault = CompositionRules.faults(List.of(dependent)).getFirst();
+
+            assertThat(fault.packs().getFirst().packId()).isEqualTo(registeredIdOf(ordered("DEP")));
+            assertThat(fault.origin())
+                    .isEqualTo(new Origin(registeredIdOf(ordered("DEP")).value()));
+            assertThat(fault.reason().rule()).isEqualTo(CompositionRules.RULE);
+        }
+
+        @Test
+        @DisplayName("a preset contest is about the first pack it names, its rule the preset phase's name (R-o)")
+        void aPresetFaultsOriginIsTheFirstPackItNames() {
+            PackUnderResolution left = pack(ordered("LEFT"), "left", "1.0.0", PackLevel.ORG);
+            PackUnderResolution right = pack(ordered("RIGHT"), "right", "1.0.0", PackLevel.ORG);
+            Map<String, List<String>> presets =
+                    Map.of(ordered("LEFT"), List.of("team"), ordered("RIGHT"), List.of("team"));
+
+            ClosureFault fault = CompositionRules.presetFaults(List.of(left, right), holding(presets))
+                    .getFirst();
+
+            assertThat(fault.origin())
+                    .isEqualTo(new Origin(fault.packs().getFirst().packId().value()))
+                    .isNotEqualTo(Origin.NONE);
+            assertThat(fault.reason().rule()).isEqualTo(CompositionRules.PRESETS_RULE);
+        }
+
+        @Test
         @DisplayName("a fault keeps its code, packs and detail; its pack list is copied")
         void aFaultKeepsItsFields() {
             List<RefusalPack> packs = new ArrayList<>(
                     List.of(new RefusalPack(new PackUlid(ordered("A")), registeredIdOf(ordered("A")), "a")));
-            CompositionFault fault = new CompositionFault(CYCLE, packs, "why");
+            ClosureFault fault = ClosureFault.of(
+                    PackOrigins.of(registeredIdOf(ordered("A"))), RefusalCode.PACK_DEPENDENCY_CYCLE, "why", packs);
             packs.clear();
 
+            assertThat(fault.reason().code()).isEqualTo(CYCLE);
+            assertThat(fault.detail()).isEqualTo("why");
             assertThat(fault.packs())
                     .containsExactly(new RefusalPack(new PackUlid(ordered("A")), registeredIdOf(ordered("A")), "a"));
             assertThatThrownBy(() -> fault.packs()
                             .add(new RefusalPack(new PackUlid(ordered("B")), registeredIdOf(ordered("B")), "b")))
                     .isInstanceOf(UnsupportedOperationException.class);
-            assertThatThrownBy(() -> new CompositionFault(null, List.of(), "d"))
+            assertThatThrownBy(
+                            () -> ClosureFault.of(PackOrigins.of(registeredIdOf(ordered("A"))), null, "d", List.of()))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> new CompositionFault(CYCLE, null, "d")).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> new CompositionFault(CYCLE, List.of(), null))
+            assertThatThrownBy(() -> ClosureFault.of(
+                            PackOrigins.of(registeredIdOf(ordered("A"))), RefusalCode.PACK_DEPENDENCY_CYCLE, "d", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> ClosureFault.of(
+                            PackOrigins.of(registeredIdOf(ordered("A"))),
+                            RefusalCode.PACK_DEPENDENCY_CYCLE,
+                            null,
+                            List.of()))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -216,7 +259,7 @@ class CompositionRulesTest {
                     pack(ordered("SELF"), "self", "1.0.0", PackLevel.ORG, depends(ordered("SELF"), ">=1.0"));
 
             assertThat(CompositionRules.faults(List.of(self))).singleElement().satisfies(fault -> {
-                assertThat(fault.code()).isEqualTo(CYCLE);
+                assertThat(reasonCode(fault)).isEqualTo(CYCLE);
                 assertThat(fault.packs()).containsExactly(refusalPack(ordered("SELF"), "self"));
                 assertThat(fault.detail()).isEqualTo("pack `self` (01SEKZF0000000000000000000) depends on itself");
             });
@@ -232,7 +275,7 @@ class CompositionRulesTest {
             PackUnderResolution loop = extending(ordered("LOOP"), "loop", PackLevel.ORG, ordered("LOOP"));
 
             assertThat(CompositionRules.faults(List.of(loop))).singleElement().satisfies(fault -> {
-                assertThat(fault.code()).isEqualTo(CYCLE);
+                assertThat(reasonCode(fault)).isEqualTo(CYCLE);
                 assertThat(fault.detail())
                         .isEqualTo("pack `loop` (01KZNZNZP00000000000000000) names itself as its parent_pack");
             });
@@ -250,7 +293,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(first, second)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(CYCLE);
+                        assertThat(reasonCode(fault)).isEqualTo(CYCLE);
                         assertThat(fault.packs())
                                 .containsExactly(
                                         refusalPack(ordered("FIRST"), "first"),
@@ -261,7 +304,7 @@ class CompositionRulesTest {
                                                 + " `first`");
                     });
             assertThat(CompositionRules.faults(List.of(parent, child)))
-                    .extracting(CompositionFault::code)
+                    .extracting(CompositionRulesTest::reasonCode)
                     .containsExactly(CYCLE);
         }
 
@@ -276,7 +319,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(downstream, b, c)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(CYCLE);
+                        assertThat(reasonCode(fault)).isEqualTo(CYCLE);
                         assertThat(fault.packs())
                                 .containsExactly(refusalPack(ordered("BBB"), "b"), refusalPack(ordered("CCC"), "c"));
                         assertThat(fault.detail())
@@ -304,11 +347,11 @@ class CompositionRulesTest {
             PackUnderResolution c = pack(ordered("CCC"), "c", "1.0.0", PackLevel.ORG, depends(ordered("AAA"), ">=1.0"));
             PackUnderResolution d = pack(ordered("DDD"), "d", "1.0.0", PackLevel.ORG, depends(ordered("AAA"), ">=1.0"));
 
-            List<CompositionFault> faults = CompositionRules.faults(List.of(d, c, b, a));
+            List<ClosureFault> faults = CompositionRules.faults(List.of(d, c, b, a));
 
-            assertThat(faults).allSatisfy(fault -> assertThat(fault.code()).isEqualTo(CYCLE));
+            assertThat(faults).allSatisfy(fault -> assertThat(reasonCode(fault)).isEqualTo(CYCLE));
             assertThat(faults)
-                    .extracting(CompositionFault::detail)
+                    .extracting(ClosureFault::detail)
                     .containsExactly(
                             "pack `a` (01AAA000000000000000000000) is on a dependency cycle: `a` -> `b` -> `a`",
                             "pack `c` (01CCC000000000000000000000) is on a dependency cycle: `c` -> `a` -> `c`");
@@ -345,7 +388,7 @@ class CompositionRulesTest {
                                     new PackDependency(ordered("AAA"), ">=1.0"))));
 
             assertThat(CompositionRules.faults(List.of(a, b, c, e)))
-                    .extracting(CompositionFault::detail)
+                    .extracting(ClosureFault::detail)
                     .containsExactly(
                             "pack `a` (01AAA000000000000000000000) is on a dependency cycle: `a` -> `b` -> `c` -> `a`",
                             "pack `e` (01EEE000000000000000000000) is on a dependency cycle: `e` -> `a` -> `e`");
@@ -368,7 +411,7 @@ class CompositionRulesTest {
             PackUnderResolution b = pack(ordered("BBB"), "b", "1.0.0", PackLevel.ORG, depends(ordered("AAA"), ">=1.0"));
 
             assertThat(CompositionRules.faults(List.of(a, b, base)))
-                    .extracting(CompositionFault::detail)
+                    .extracting(ClosureFault::detail)
                     .containsExactly(
                             "pack `a` (01AAA000000000000000000000) is on a dependency cycle: `a` -> `b` -> `a`");
         }
@@ -395,7 +438,7 @@ class CompositionRulesTest {
             PackUnderResolution z = pack(ordered("_Z"), "z", "1.0.0", PackLevel.ORG, depends(ordered("YYY"), ">=1.0"));
 
             assertThat(CompositionRules.faults(List.of(x, twin, y, z)))
-                    .extracting(CompositionFault::code)
+                    .extracting(CompositionRulesTest::reasonCode)
                     .containsExactly(DUPLICATE, CYCLE);
         }
 
@@ -408,7 +451,7 @@ class CompositionRulesTest {
             PackUnderResolution y = pack(ordered("YYY"), "y", "1.0.0", PackLevel.ORG, depends(ordered("XXX"), ">=1.0"));
 
             assertThat(CompositionRules.faults(List.of(y, x, b, a)))
-                    .extracting(CompositionFault::detail)
+                    .extracting(ClosureFault::detail)
                     .containsExactly(
                             "pack `a` (01AAA000000000000000000000) is on a dependency cycle: `a` -> `b` -> `a`",
                             "pack `x` (01XXX000000000000000000000) is on a dependency cycle: `x` -> `y` -> `x`");
@@ -434,7 +477,7 @@ class CompositionRulesTest {
 
             assertThat(CompositionRules.faults(List.of(downstream, a, b, x, y)))
                     .extracting(
-                            CompositionFault::code,
+                            CompositionRulesTest::reasonCode,
                             fault -> fault.packs().getFirst().descriptorPackId().value())
                     .containsExactly(
                             org.assertj.core.groups.Tuple.tuple(CYCLE, ordered("AAA")),
@@ -458,7 +501,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(dependent)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(UNKNOWN);
+                        assertThat(reasonCode(fault)).isEqualTo(UNKNOWN);
                         assertThat(fault.packs()).containsExactly(refusalPack(ordered("DEP"), "dependent"));
                     });
             assertThat(CompositionRules.faults(List.of(dependent, gone))).isEmpty();
@@ -471,7 +514,7 @@ class CompositionRulesTest {
             PackUnderResolution missing = pack(ordered("MISSING"), "missing", "1.0.0", PackLevel.ORG);
 
             assertThat(CompositionRules.faults(List.of(orphan))).singleElement().satisfies(fault -> {
-                assertThat(fault.code()).isEqualTo(PARENT_UNRESOLVED);
+                assertThat(reasonCode(fault)).isEqualTo(PARENT_UNRESOLVED);
                 assertThat(fault.detail())
                         .isEqualTo(
                                 "pack `orphan` (01NZRPH0000000000000000000) names parent_pack `01MHZSSHZNG000000000000000`, which no configured"
@@ -501,7 +544,7 @@ class CompositionRulesTest {
                                     new PackDependency(ordered("TWO"), ">=1.0"))));
 
             assertThat(CompositionRules.faults(List.of(dependent, base)))
-                    .extracting(CompositionFault::detail)
+                    .extracting(ClosureFault::detail)
                     .containsExactly(
                             "pack `dependent` (01DEP000000000000000000000) depends on pack `01NZNE00000000000000000000`, which no configured pack declares",
                             "pack `dependent` (01DEP000000000000000000000) depends on pack `01TWNZ00000000000000000000`, which no configured pack declares");
@@ -526,7 +569,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(dependent, base)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(OUT_OF_RANGE);
+                        assertThat(reasonCode(fault)).isEqualTo(OUT_OF_RANGE);
                         assertThat(fault.packs())
                                 .containsExactly(
                                         refusalPack(ordered("DEP"), "dependent"), refusalPack(ordered("BASE"), "base"));
@@ -554,13 +597,13 @@ class CompositionRulesTest {
             PackUnderResolution second =
                     pack(ordered("TWO"), "two", "1.0.0", PackLevel.ORG, depends(ordered("BASE"), secondRange));
 
-            List<CompositionFault> faults = CompositionRules.faults(List.of(second, first, base));
+            List<ClosureFault> faults = CompositionRules.faults(List.of(second, first, base));
 
             if (resolves) {
                 assertThat(faults).isEmpty();
                 return;
             }
-            assertThat(faults.getFirst().code()).isEqualTo(OUT_OF_RANGE);
+            assertThat(reasonCode(faults.getFirst())).isEqualTo(OUT_OF_RANGE);
             assertThat(faults.getFirst().packs())
                     .containsExactly(refusalPack(ordered("TWO"), "two"), refusalPack(ordered("ONE"), "one"));
             assertThat(faults.getFirst().detail())
@@ -569,7 +612,7 @@ class CompositionRulesTest {
                                     + firstRange + "` and `" + secondRange + "`, which no version satisfies together");
             assertThat(faults)
                     .as("the held version is then checked against each range: the second's is out of range too")
-                    .extracting(CompositionFault::code)
+                    .extracting(CompositionRulesTest::reasonCode)
                     .containsExactly(OUT_OF_RANGE, OUT_OF_RANGE);
         }
 
@@ -584,7 +627,7 @@ class CompositionRulesTest {
             PackUnderResolution three =
                     pack(ordered("TRE"), "three", "1.0.0", PackLevel.ORG, depends(ordered("BASE"), ">=3"));
 
-            List<CompositionFault> ranges = CompositionRules.faults(List.of(three, two, one, base)).stream()
+            List<ClosureFault> ranges = CompositionRules.faults(List.of(three, two, one, base)).stream()
                     .filter(fault -> fault.detail().contains("no version satisfies together"))
                     .toList();
 
@@ -627,14 +670,14 @@ class CompositionRulesTest {
                 ? extending(ordered("OWN0"), "own", own, ordered("TRGT"))
                 : pack(ordered("OWN0"), "own", "1.0.0", own, depends(ordered("TRGT"), ">=1.0"));
 
-        List<CompositionFault> faults = CompositionRules.faults(List.of(ownPack, targetPack));
+        List<ClosureFault> faults = CompositionRules.faults(List.of(ownPack, targetPack));
 
         if (allowed) {
             assertThat(faults).isEmpty();
             return;
         }
         assertThat(faults).singleElement().satisfies(fault -> {
-            assertThat(fault.code()).isEqualTo(LEVEL);
+            assertThat(reasonCode(fault)).isEqualTo(LEVEL);
             assertThat(fault.packs())
                     .containsExactly(refusalPack(ordered("OWN0"), "own"), refusalPack(ordered("TRGT"), "target"));
             assertThat(fault.detail())
@@ -665,7 +708,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(second, first)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(NAME);
+                        assertThat(reasonCode(fault)).isEqualTo(NAME);
                         assertThat(fault.packs())
                                 .containsExactly(
                                         refusalPack(ordered("BBB"), "shared-name"),
@@ -686,8 +729,8 @@ class CompositionRulesTest {
             PackUnderResolution triplet = configuredAs("zz-triplet", ordered("GAMMA"), "gamma-triplet");
 
             assertThat(CompositionRules.faults(List.of(triplet, twin, gamma)))
-                    .allSatisfy(fault -> assertThat(fault.code()).isEqualTo(DUPLICATE))
-                    .extracting(CompositionFault::packs)
+                    .allSatisfy(fault -> assertThat(reasonCode(fault)).isEqualTo(DUPLICATE))
+                    .extracting(ClosureFault::packs)
                     .containsExactly(
                             List.of(
                                     new RefusalPack(
@@ -713,7 +756,7 @@ class CompositionRulesTest {
                     List.of(DIRECTIVE));
 
             assertThat(CompositionRules.faults(List.of(twin, gamma)))
-                    .extracting(CompositionFault::code)
+                    .extracting(CompositionRulesTest::reasonCode)
                     .containsExactly(DUPLICATE);
         }
 
@@ -728,7 +771,7 @@ class CompositionRulesTest {
                     pack(ordered("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(ordered("BASE"), ">=2.0"));
 
             assertThat(CompositionRules.faults(List.of(base, twin, dependent)))
-                    .extracting(CompositionFault::code)
+                    .extracting(CompositionRulesTest::reasonCode)
                     .containsExactly(DUPLICATE, OUT_OF_RANGE);
         }
     }
@@ -749,7 +792,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(right, left)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.packs())
                                 .containsExactly(
                                         refusalPack(ordered("RIGHT"), "right"), refusalPack(ordered("LEFT"), "left"));
@@ -776,7 +819,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(right, left)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.detail())
                                 .contains("both define the artifact `mission_type:m`")
                                 .doesNotContain("action:");
@@ -792,7 +835,7 @@ class CompositionRulesTest {
             PackUnderResolution qualified = refining(ordered("RIGHT"), "right", PackLevel.ORG, "base::" + DIRECTIVE);
 
             assertThat(CompositionRules.faults(List.of(bare, qualified)))
-                    .extracting(CompositionFault::code)
+                    .extracting(CompositionRulesTest::reasonCode)
                     .containsExactly(SIBLING);
         }
 
@@ -810,7 +853,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(second, first, right, left)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.packs())
                                 .containsExactly(
                                         refusalPack(ordered("DONE"), "done"),
@@ -858,7 +901,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(namingLeft, namingRight, left, right)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.detail())
                                 .contains("more than one distribution pack", ordered("DSTR"), ordered("DTWO"));
                     });
@@ -877,7 +920,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(distribution, left, right)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.detail())
                                 .endsWith("and an overrides edge settling it names " + member
                                         + ", which is not a contestant");
@@ -922,7 +965,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(distribution, member, right, left)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.packs())
                                 .as("the declaring pack broke the rule, so it is named first")
                                 .containsExactly(
@@ -954,7 +997,7 @@ class CompositionRulesTest {
 
             for (List<PackUnderResolution> compose : List.of(List.of(left, right), List.of(flatLeft, right))) {
                 assertThat(CompositionRules.faults(compose)).singleElement().satisfies(fault -> {
-                    assertThat(fault.code()).isEqualTo(SIBLING);
+                    assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                     assertThat(fault.packs())
                             .containsExactly(
                                     refusalPack(ordered("LEFT"), "left"), refusalPack(ordered("RIGHT"), "right"));
@@ -986,7 +1029,7 @@ class CompositionRulesTest {
             assertThat(CompositionRules.faults(List.of(distribution, member, right, left)))
                     .singleElement()
                     .satisfies(fault -> {
-                        assertThat(fault.code()).isEqualTo(SIBLING);
+                        assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                         assertThat(fault.packs()).first().isEqualTo(refusalPack(ordered("MEMB"), "member"));
                         assertThat(fault.detail()).contains("declared by pack `member` (01MEMB00000000000000000000)");
                     });
@@ -1005,7 +1048,7 @@ class CompositionRulesTest {
                 assertThat(CompositionRules.faults(List.of(settler, right, left)))
                         .singleElement()
                         .satisfies(fault -> {
-                            assertThat(fault.code()).isEqualTo(SIBLING);
+                            assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                             assertThat(fault.packs().getFirst().packId().value())
                                     .isEqualTo(settler.configured().id().value());
                             assertThat(fault.detail()).contains("which is not the distribution pack");
@@ -1111,7 +1154,7 @@ class CompositionRulesTest {
                     List.of("styleguide:s"));
 
             assertThat(CompositionRules.faults(List.of(right, left)))
-                    .extracting(CompositionFault::detail)
+                    .extracting(ClosureFault::detail)
                     .extracting(detail -> detail.substring(detail.indexOf("both"), detail.indexOf(", and")))
                     .containsExactly(
                             "both change the artifact `directive:DIRECTIVE_009`",
@@ -1130,7 +1173,7 @@ class CompositionRulesTest {
                 return pack;
             }
 
-            private List<CompositionFault> check(PackUnderResolution... packs) {
+            private List<ClosureFault> check(PackUnderResolution... packs) {
                 return CompositionRules.presetFaults(List.of(packs), holding(presetIds));
             }
 
@@ -1145,7 +1188,7 @@ class CompositionRulesTest {
                         holdingPresets(pack(ordered("CREW"), "crew", "1.0.0", PackLevel.ORG), "crew");
 
                 assertThat(check(left, right)).singleElement().satisfies(fault -> {
-                    assertThat(fault.code()).isEqualTo(SIBLING);
+                    assertThat(reasonCode(fault)).isEqualTo(SIBLING);
                     assertThat(fault.packs())
                             .containsExactly(
                                     refusalPack(ordered("RIGHT"), "right"), refusalPack(ordered("LEFT"), "left"));
@@ -1167,7 +1210,7 @@ class CompositionRulesTest {
 
                 assertThat(check(top, middle, leaf)).isEmpty();
                 assertThat(check(top, other, middle, one))
-                        .extracting(CompositionFault::code)
+                        .extracting(CompositionRulesTest::reasonCode)
                         .containsExactly(SIBLING);
             }
 
@@ -1192,7 +1235,7 @@ class CompositionRulesTest {
                         pack(ordered("AAA"), "a", "1.0.0", PackLevel.ORG, depends(ordered("_Z"), ">=1.0")), "team");
                 PackUnderResolution last = holdingPresets(pack(ordered("_Z"), "z", "1.0.0", PackLevel.ORG), "team");
 
-                List<CompositionFault> given = check(first, last);
+                List<ClosureFault> given = check(first, last);
 
                 assertThat(given).singleElement().satisfies(fault -> {
                     assertThat(fault.packs())
@@ -1328,18 +1371,17 @@ class CompositionRulesTest {
     @MethodSource("multiFaultSets")
     @DisplayName("a set with several faults reports every one, and the first is the refusal resolve throws")
     void aSetWithSeveralFaultsReportsEveryOne(String name, List<PackUnderResolution> packs, List<ReasonCode> codes) {
-        List<CompositionFault> faults = CompositionRules.faults(packs);
+        List<ClosureFault> faults = CompositionRules.faults(packs);
 
-        assertThat(faults).extracting(CompositionFault::code).containsExactlyElementsOf(codes);
+        assertThat(faults).extracting(CompositionRulesTest::reasonCode).containsExactlyElementsOf(codes);
         assertThat(CompositionRules.closure().apply(packs))
                 .extracting(Reason::code, Reason::detail)
                 .containsExactlyElementsOf(faults.stream()
-                        .map(fault -> org.assertj.core.groups.Tuple.tuple(fault.code(), fault.detail()))
+                        .map(fault -> org.assertj.core.groups.Tuple.tuple(reasonCode(fault), fault.detail()))
                         .toList());
         assertThatThrownBy(() -> PackCompositionResolver.resolve(packs))
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
-                    assertThat(CompositionRules.codeOf(refusal.failure()))
-                            .isEqualTo(faults.getFirst().code());
+                    assertThat(CompositionRules.codeOf(refusal.failure())).isEqualTo(reasonCode(faults.getFirst()));
                     assertThat(refusal.packs()).isEqualTo(faults.getFirst().packs());
                     assertThat(refusal.detail()).isEqualTo(faults.getFirst().detail());
                 });
@@ -1358,6 +1400,11 @@ class CompositionRulesTest {
     }
 
     // ---- fixtures ------------------------------------------------------------------------------------------------
+
+    /** The {@code CLOSURE} code a fault's reason carries. */
+    private static ReasonCode reasonCode(ClosureFault fault) {
+        return fault.reason().code();
+    }
 
     private static ReasonCode code(RefusalCode refusal) {
         return new ReasonCode(refusal.token(), Severity.VIOLATION);

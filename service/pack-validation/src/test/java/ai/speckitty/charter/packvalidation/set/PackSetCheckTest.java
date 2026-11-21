@@ -12,9 +12,11 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackReading;
@@ -23,7 +25,6 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
@@ -84,8 +85,8 @@ class PackSetCheckTest {
         return java.util.Arrays.stream(names).map(PackSetCheckTest::example).toList();
     }
 
-    private static List<String> codes(List<CompositionFault> faults) {
-        return faults.stream().map(fault -> fault.code().value()).toList();
+    private static List<String> codes(List<ClosureFault> faults) {
+        return faults.stream().map(fault -> fault.reason().code().value()).toList();
     }
 
     private static boolean hasViolation(List<Reason> reasons) {
@@ -153,7 +154,7 @@ class PackSetCheckTest {
 
             assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE);
             assertThat(verdict.faults()).hasSize(2).allSatisfy(fault -> {
-                assertThat(fault.code().value()).isEqualTo(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token());
+                assertThat(fault.reason().code().value()).isEqualTo(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token());
                 assertThat(fault.packs()).extracting(RefusalPack::name).contains(ExamplePacks.PROJECT);
             });
             assertThat(verdict.packs())
@@ -189,7 +190,8 @@ class PackSetCheckTest {
 
             assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE);
             assertThat(verdict.faults())
-                    .filteredOn(fault -> fault.code().value().equals(RefusalCode.PACK_DEPENDENCY_CYCLE.token()))
+                    .filteredOn(
+                            fault -> fault.reason().code().value().equals(RefusalCode.PACK_DEPENDENCY_CYCLE.token()))
                     .singleElement()
                     .satisfies(fault -> assertThat(fault.packs())
                             .extracting(RefusalPack::name)
@@ -259,7 +261,7 @@ class PackSetCheckTest {
                     .apply(set);
 
             assertThat(verdict.faults())
-                    .extracting(fault -> fault.code(), CompositionFault::detail)
+                    .extracting(fault -> fault.reason().code(), ClosureFault::detail)
                     .containsExactlyElementsOf(reasons.stream()
                             .map(reason -> tuple(reason.code(), reason.detail()))
                             .toList());
@@ -622,18 +624,21 @@ class PackSetCheckTest {
                     .check(example(ExamplePacks.BUILT_IN).root());
             Reason warning = new Reason(
                     "test",
+                    Origin.NONE,
                     Evaluation.FAIL,
                     new ReasonCode("file_not_held", Severity.WARNING),
                     Location.in("notes.md"),
                     "w");
             Reason violation = new Reason(
                     "test",
+                    Origin.NONE,
                     Evaluation.FAIL,
                     new ReasonCode("pack_entry_linked", Severity.VIOLATION),
                     Location.in("tactics/linked.tactic.yaml"),
                     "linked");
             Reason unplaced = new Reason(
                     "test",
+                    Origin.NONE,
                     Evaluation.FAIL,
                     new ReasonCode("pack_unreadable", Severity.VIOLATION),
                     Location.NOWHERE,
@@ -643,7 +648,12 @@ class PackSetCheckTest {
             Reason atTheWarning = red("notes.md");
             Reason atTheViolation = red("tactics/linked.tactic.yaml");
             Reason ofTheRun = new Reason(
-                    "round-trip", Evaluation.FAIL, WholePackRoundTripRule.RED, Location.NOWHERE, "STALE_BASELINE x");
+                    "round-trip",
+                    Origin.NONE,
+                    Evaluation.FAIL,
+                    WholePackRoundTripRule.RED,
+                    Location.NOWHERE,
+                    "STALE_BASELINE x");
 
             assertThat(PackSetCheck.notReported(checked, List.of(atTheWarning, atTheViolation, ofTheRun)))
                     .containsExactly(atTheWarning, ofTheRun);
@@ -652,6 +662,7 @@ class PackSetCheckTest {
         private static Reason red(String file) {
             return new Reason(
                     "round-trip",
+                    Origin.NONE,
                     Evaluation.FAIL,
                     WholePackRoundTripRule.RED,
                     Location.in(file),
