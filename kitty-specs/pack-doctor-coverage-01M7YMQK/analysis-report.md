@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-doctor-coverage-01M7YMQK
 mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
-generated_at: '2026-11-21T22:13:07.953536+00:00'
+generated_at: '2026-11-21T22:13:26.317962+00:00'
 analyzer_agent: claude
 input_artifacts:
   spec.md:
@@ -21,12 +21,71 @@ input_artifacts:
     sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
 verdict: unknown
 issue_counts:
-  critical:
-  info:
   high:
-  low:
+  info:
   medium:
+  critical:
+  low:
 findings: []
+---
+
+---
+verdict: ready
+issue_counts:
+  critical: 0
+  high: 0
+  medium: 4
+  low: 8
+  info: 0
+findings:
+- id: Q2
+  severity: medium
+  category: ambiguity
+  summary: The PackSetVerdict.Check value of the narrowed --full phase (R-s) is a report-contract value; CLOSURE_WALK would name the deferred own-closure walk. Asked of the operator; WP05 defaults to REFERENCES.
+- id: U1
+  severity: medium
+  category: underspecification
+  summary: New example-pack files (18 anti-patterns in built-in by WP10, 2 org-base tactics by WP03) vs WP04's manifest restamp across lanes i, c and d.
+- id: U2
+  severity: medium
+  category: underspecification
+  summary: 'Out-of-map edits widen: WP10 edits three built-in styleguides (WP03''s glob) and the built-in manifest (WP04''s); WP12 edits the packs CHANGELOG (WP10''s) and docs/conformance (WP02''s); WP05 edits Arguments, PackSetCheck and service.yml.'
+- id: U3
+  severity: medium
+  category: underspecification
+  summary: CompositionFactsTest is WP11's and WP03 renames its defined reads out-of-map; lanes j and c run in parallel, so the second merge meets a small conflict; facts/example-packs.json is re-recorded by WP10 then WP03.
+- id: R1
+  severity: low
+  category: ownership
+  summary: WP03 owns built-in/styleguides/** but no subtask edits it; left unchanged because lane-c is started.
+- id: F1
+  severity: low
+  category: coverage
+  summary: WP10 writes 11 procedure bad_examples and 18 explicit severities for the example packs (ADR-0070 curation); the reviewer reads each.
+- id: K1
+  severity: low
+  category: coverage
+  summary: .kittify/charter-packs and .kittify/charter/generated carry inline anti_patterns; spec-kitty governance doctrine, not example packs; not edited.
+- id: O1
+  severity: low
+  category: coverage
+  summary: 'Open-packs is refused at its repin: 60 files (~267 inline entries) and 13 file-less nodes; drafted under C-006.'
+- id: I3
+  severity: low
+  category: inconsistency
+  summary: spec US5.2 says remediate refuses on a domain fault; plan D7 defines the storage-verdict precondition.
+- id: I4
+  severity: low
+  category: inconsistency
+  summary: R-p's '#629 does not close' and R-q's 'file kind only' are superseded by R-q and R-r; WP08 records which governs.
+- id: C2
+  severity: low
+  category: coverage
+  summary: 'No HTTP read of the anti_pattern kind; not in #154''s acceptance criteria; additive later.'
+- id: N2
+  severity: low
+  category: coverage
+  summary: 'WP10-WP12 fragments are ### Breaking per D8; a reviewer may read one as ### Changed.'
 ---
 
 ## Specification Analysis Report
