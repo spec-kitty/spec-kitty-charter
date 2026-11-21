@@ -27,6 +27,15 @@ authoritative_surface: service/pack-doctor/
 create_intent:
 - service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/NoPackCheckSurfaceTest.java
 - contracts/charter/changes/2026-11-21-pack-doctor.md
+- service/pack-doctor/build.gradle.kts
+- service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/PackDoctorMain.java
+- service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/Arguments.java
+- service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/ConfigRoot.java
+- service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/package-info.java
+- service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ArgumentsTest.java
+- service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ConfigRootTest.java
+- service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/MalformedDescriptorTest.java
+- service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/PackDoctorMainTest.java
 execution_mode: code_change
 owned_files:
 - service/pack-check/build.gradle.kts

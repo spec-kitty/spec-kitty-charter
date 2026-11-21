@@ -24,6 +24,11 @@ authoritative_surface: service/pack-doctor/src/main/java/ai/speckitty/charter/pa
 create_intent:
 - service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ReportWriterTest.java
 - contracts/charter/changes/2026-11-21-pack-doctor-report.md
+- service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/Problems.java
+- service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/ReportWriter.java
+- service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/ProblemsTest.java
+- contracts/charter/schemas/PackDoctorReport.yaml
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackDoctorReportContractTest.java
 execution_mode: code_change
 owned_files:
 - service/pack-doctor/src/main/java/ai/speckitty/charter/packdoctor/Problems.java

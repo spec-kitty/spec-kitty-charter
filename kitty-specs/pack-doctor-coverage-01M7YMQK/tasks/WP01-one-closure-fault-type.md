@@ -24,7 +24,9 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/
-create_intent: []
+create_intent:
+- service/kernel/src/main/java/ai/speckitty/charter/kernel/validation/Origin.java
+- service/kernel/src/test/java/ai/speckitty/charter/kernel/validation/ReasonTest.java
 execution_mode: code_change
 owned_files:
 - service/kernel/src/main/java/ai/speckitty/charter/kernel/validation/Reason.java
