@@ -17,5 +17,8 @@
   "target_branch": "feat/pack-doctor-coverage",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "default"
+  "topology_source": "default",
+  "change_mode": "bulk_edit",
+  "vcs": "git",
+  "source_description": "#629, #630, #632, #614 (epic #549); operator rulings R-a..R-m"
 }
