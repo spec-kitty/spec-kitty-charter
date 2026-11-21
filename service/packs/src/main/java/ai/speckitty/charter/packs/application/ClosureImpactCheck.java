@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,47 +205,22 @@ public final class ClosureImpactCheck implements ImpactCheck {
         List<RemovalDependents.Dependent> found = finder.of(session.stored(), removed);
         if (!found.isEmpty()) {
             return new Impact(
-                    new ClosureVerdict(List.of(RemovalDependents.fault(removed.configured().id().value(), found))),
+                    new ClosureVerdict(List.of(
+                            RemovalDependents.fault(removed.configured().id().value(), found))),
                     Notices.NONE);
         }
-        StagedPackViews.View stored = session.stored();
         StagedPackViews.View after = session.without(removed.configured().id());
         ClosureRoots.Found closures = removed.descriptor()
                 .map(descriptor ->
-                        ClosureRoots.of(stored, descriptor.packId(), rootSets(activations.activationRoots())))
+                        ClosureRoots.of(session.stored(), descriptor.packId(), rootSets(activations.activationRoots())))
                 .orElseGet(ClosureRoots.Found::none);
-        Views afterViews = Views.over(after);
-        Views beforeViews = Views.over(stored);
-        Set<PackIdentifier> configuredBefore = new HashSet<>();
-        stored.catalog().configured().forEach(pack -> configuredBefore.add(pack.id()));
-        ForceDiff diff = new ForceDiff();
-        Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
-        Faults faults = new Faults();
-        for (ClosureRoots.Roots roots : closures.closures()) {
+        Judged judged = judgeClosures(session.stored(), after, closures, roots -> {
             List<PackIdentifier> left = roots.ids().stream()
                     .filter(id -> !id.equals(removed.configured().id()))
                     .toList();
-            if (left.isEmpty()) {
-                continue;
-            }
-            Optional<ClosureView> now = judge(new ClosureRoots.Roots(left), afterViews, after, faults);
-            if (faults.halted()) {
-                break;
-            }
-            if (now.isEmpty()) {
-                continue;
-            }
-            Optional<ClosureView> was = viewBefore(roots, beforeViews, configuredBefore);
-            diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now.get()));
-            changes.put(roots, new ActivationImpact.ClosureChange(was, now.get()));
-        }
-        if (!faults.isEmpty()) {
-            return new Impact(faults.verdict(), Notices.NONE);
-        }
-        ActivationImpact.ClosureChanges joined =
-                roots -> closures.holding().apply(roots).map(changes::get);
-        activations.requireComposable(joined);
-        return new Impact(ClosureVerdict.PASSING, diff.notices(activations.activationsAffected(joined)));
+            return left.isEmpty() ? Optional.empty() : Optional.of(new ClosureRoots.Roots(left));
+        });
+        return concluded(closures, judged, true);
     }
 
     /** The root sets of the stored activations, as the closure finder takes them. */
@@ -258,40 +234,66 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * activations slice's gate. Only a closure that passed gives its notices and its change.
      */
     private Impact judgeWrite(StagedPackViews.Session session, Replacement replacement, boolean namingActivations) {
-        StagedPackViews.View stored = session.stored();
         StagedPackViews.View staged = session.with(replacement);
         ClosureRoots.Found found =
                 ClosureRoots.of(staged, replacement.descriptor().packId(), rootSets(activations.activationRoots()));
-        Views after = Views.over(staged);
-        Views before = Views.over(stored);
+        Judged judged = judgeClosures(session.stored(), staged, found, Optional::of);
+        if (!judged.faults().halted()) {
+            walkFaults(found, replacement, judged.changes(), staged, session, judged.faults());
+        }
+        return concluded(found, judged, namingActivations);
+    }
+
+    /** What judging the closures of a change found: the closures' changes, the force diff and every fault. */
+    private record Judged(
+            Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes, ForceDiff diff, Faults faults) {}
+
+    /**
+     * Judges each closure the change joins, in order, against the stored state it changes. A closure is judged under
+     * the roots {@code judgedAs} gives it (a removal drops the removed pack, and skips a closure left with no root), and
+     * keeps the roots it was found under for its change. A halt ends the loop with the faults found standing.
+     */
+    private Judged judgeClosures(
+            StagedPackViews.View stored,
+            StagedPackViews.View after,
+            ClosureRoots.Found found,
+            Function<ClosureRoots.Roots, Optional<ClosureRoots.Roots>> judgedAs) {
+        Views afterViews = Views.over(after);
+        Views beforeViews = Views.over(stored);
         Set<PackIdentifier> configuredBefore = new HashSet<>();
         stored.catalog().configured().forEach(pack -> configuredBefore.add(pack.id()));
         ForceDiff diff = new ForceDiff();
         Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
         Faults faults = new Faults();
         for (ClosureRoots.Roots roots : found.closures()) {
-            Optional<ClosureView> now = judge(roots, after, staged, faults);
+            Optional<ClosureRoots.Roots> judgedRoots = judgedAs.apply(roots);
+            if (judgedRoots.isEmpty()) {
+                continue;
+            }
+            Optional<ClosureView> now = judge(judgedRoots.get(), afterViews, after, faults);
             if (faults.halted()) {
                 break;
             }
             if (now.isEmpty()) {
                 continue;
             }
-            Optional<ClosureView> was = viewBefore(roots, before, configuredBefore);
+            Optional<ClosureView> was = viewBefore(roots, beforeViews, configuredBefore);
             diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now.get()));
             changes.put(roots, new ActivationImpact.ClosureChange(was, now.get()));
         }
-        if (!faults.halted()) {
-            walkFaults(found, replacement, changes, staged, session, faults);
-        }
-        if (!faults.isEmpty()) {
-            return new Impact(faults.verdict(), Notices.NONE);
+        return new Judged(changes, diff, faults);
+    }
+
+    /** The answer once the closures are judged: the faults, or else the activations' gate and the notices. */
+    private Impact concluded(ClosureRoots.Found found, Judged judged, boolean namingActivations) {
+        if (!judged.faults().isEmpty()) {
+            return new Impact(judged.faults().verdict(), Notices.NONE);
         }
         ActivationImpact.ClosureChanges joined =
-                roots -> found.holding().apply(roots).map(changes::get);
+                roots -> found.holding().apply(roots).map(judged.changes()::get);
         activations.requireComposable(joined);
         List<String> affected = namingActivations ? activations.activationsAffected(joined) : List.of();
-        return new Impact(ClosureVerdict.PASSING, diff.notices(affected));
+        return new Impact(ClosureVerdict.PASSING, judged.diff().notices(affected));
     }
 
     /**
