@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.kernel.validation.Rule;
 import java.util.List;
 import java.util.Objects;
 
@@ -126,13 +125,4 @@ public interface MutabilityCheck {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal when the closure cannot be read to judge them
      */
     ClosureVerdict judge(Writes writes);
-
-    /**
-     * The check as a kernel rule: one failing reason per refused write.
-     *
-     * @return the rule
-     */
-    default Rule<Writes> rule() {
-        return writes -> judge(writes).rationale().details();
-    }
 }

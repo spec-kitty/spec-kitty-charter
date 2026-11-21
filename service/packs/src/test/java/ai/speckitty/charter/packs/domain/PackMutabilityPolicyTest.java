@@ -182,10 +182,6 @@ class PackMutabilityPolicyTest {
                 .containsExactly(RefusalCode.GOVERNANCE_POLICY_VIOLATION, RefusalCode.GOVERNANCE_POLICY_VIOLATION);
         assertThat(faults.get(0).detail()).startsWith("Operation REPLACE on directive:EXT is refused");
         assertThat(faults.get(1).detail()).startsWith("Operation RELATIONSHIP on directive:LOCKED is refused");
-        assertThat(check.rule().apply(writes))
-                .as("the rule view gives one failing reason per refused write, in the same order")
-                .extracting(ai.speckitty.charter.kernel.validation.Reason::detail)
-                .containsExactly(faults.get(0).detail(), faults.get(1).detail());
     }
 
     @Test

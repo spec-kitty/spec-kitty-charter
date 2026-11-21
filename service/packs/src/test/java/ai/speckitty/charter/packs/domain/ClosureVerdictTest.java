@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,19 +14,9 @@ class ClosureVerdictTest {
     private static final ClosureFault CYCLE = ClosureFault.of(RefusalCode.ENHANCES_CYCLE, "cycle", List.of());
 
     @Test
-    @DisplayName("no fault passes, and its rationale passes too")
+    @DisplayName("no fault passes")
     void noFaultPasses() {
         assertThat(ClosureVerdict.PASSING.isPassing()).isTrue();
-        assertThat(ClosureVerdict.PASSING.rationale().isPassing()).isTrue();
-    }
-
-    @Test
-    @DisplayName("the rationale is one failing reason per fault, in order")
-    void theRationaleIsOneReasonPerFault() {
-        ClosureVerdict verdict = new ClosureVerdict(List.of(SELF, CYCLE));
-
-        assertThat(verdict.isPassing()).isFalse();
-        assertThat(verdict.rationale().violations()).extracting(Reason::detail).containsExactly("self", "cycle");
     }
 
     @Test

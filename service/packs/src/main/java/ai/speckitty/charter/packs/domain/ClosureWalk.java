@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.validation.Rule;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -24,15 +23,6 @@ public interface ClosureWalk {
      * @return every breach, the fallback's first, then the pins', then the enhancements'; passing when there is none
      */
     ClosureVerdict walk(OwnClosure closure);
-
-    /**
-     * The walk as a kernel rule: one failing reason per breach.
-     *
-     * @return the rule
-     */
-    default Rule<OwnClosure> rule() {
-        return closure -> walk(closure).rationale().details();
-    }
 
     /** Reads the agent profile of an id from the pack that holds the version in force. */
     @FunctionalInterface

@@ -12,7 +12,6 @@ import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureWalk;
@@ -233,20 +232,6 @@ class OwnClosureWalkTest {
     void aClosureThatDoesNotMergeHasNoEnhancementFault() {
         assertThat(new OwnClosureWalk().walk(own(Optional.empty(), new Facts())).isPassing())
                 .isTrue();
-    }
-
-    @Test
-    @DisplayName("the port's rule view gives one failing reason per breach, in the same order")
-    void theRuleViewGivesTheSameBreaches() {
-        ClosureWalk walk = new OwnClosureWalk();
-        ClosureWalk.OwnClosure closure = own(Optional.of("generic-agent"), pinningTwoUnknown());
-
-        assertThat(walk.rule().apply(closure))
-                .allSatisfy(reason -> assertThat(reason.isFailing()).isTrue())
-                .extracting(Reason::detail)
-                .containsExactlyElementsOf(walk.walk(closure).faults().stream()
-                        .map(ClosureFault::detail)
-                        .toList());
     }
 
     private static MergedClosure.Winner winner(Urn urn, PackIdentifier pack) {

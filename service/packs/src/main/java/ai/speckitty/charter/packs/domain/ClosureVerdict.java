@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.kernel.validation.Rationale;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,8 +7,7 @@ import java.util.Objects;
 /**
  * The verdict of the closure checks of a write (#556): every fault they found, in the order they judged them. A verdict
  * with no fault passes. It holds no refusal mapping: the closure edge's mapper ({@code PackRefusals.of}) turns a failing
- * verdict into the write's one refusal, and {@link #rationale()} is the same verdict in the kernel's terms, which the
- * ports' rule views return.
+ * verdict into the write's one refusal.
  *
  * @param faults the faults, in the order they were found
  */
@@ -53,14 +51,5 @@ public record ClosureVerdict(List<ClosureFault> faults) {
         List<ClosureFault> both = new ArrayList<>(faults);
         both.addAll(next.faults());
         return new ClosureVerdict(both);
-    }
-
-    /**
-     * The verdict as the kernel states it: one failing reason per fault, in order.
-     *
-     * @return the rationale
-     */
-    public Rationale rationale() {
-        return new Rationale(faults.stream().map(ClosureFault::reason).toList());
     }
 }
