@@ -152,8 +152,6 @@ Then the full module test tasks once before handing over.
 
 ## Origin (operator ruling R-o, 2026-11-21)
 
-## Origin (operator ruling R-o, review cycle 1)
-
 Decision for ADR-0083 to cite. `Origin` on `Reason` is an opaque element identifier (ADR-0082 decision 4), never a copy
 of `Reason.rule`. Cycle 1 made it the check's name, which always equalled `rule`; review cycle 1 rejected that, and
 the operator ruled "element id" (R-o, 2026-11-21).
