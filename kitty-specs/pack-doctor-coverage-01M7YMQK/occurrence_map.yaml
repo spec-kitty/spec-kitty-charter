@@ -29,6 +29,9 @@ categories:
     action: rename
     note: the CLI's stderr prefixes; no telemetry exists
 exceptions:
+  - path: "kitty-specs/pack-doctor-coverage-01M7YMQK/**"
+    action: manual_review
+    note: this mission's own planning artifacts (the occurrence map, WP files); not history
   - path: "kitty-specs/**"
     action: do_not_change
     note: earlier missions' records are history (C-004)
