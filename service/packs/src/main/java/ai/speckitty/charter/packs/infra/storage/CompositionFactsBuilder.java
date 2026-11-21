@@ -148,8 +148,8 @@ final class CompositionFactsBuilder {
      * @throws CharterRefusal with {@code PACK_UNREADABLE}, or the load's own refusal code, when the pack cannot be read
      */
     static PackCompositionFacts composeFacts(PackIdentifier pack, StoreRead read) {
-        if (read.graphsUnreadable()) {
-            throw graphUnreadable(pack);
+        if (!read.graphFaults().isEmpty()) {
+            throw FilesystemPackStore.graphUnreadable(pack, read.graphFaults());
         }
         return switch (read.assembly()) {
             case Assembly.Assembled held -> heldFacts(pack, held);
@@ -177,11 +177,7 @@ final class CompositionFactsBuilder {
         held.factsRefusal().ifPresent(refusal -> {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
         });
-        return held.facts().orElseThrow(() -> graphUnreadable(pack));
-    }
-
-    private static CharterRefusal graphUnreadable(PackIdentifier pack) {
-        return FilesystemPackStore.graphUnreadable(pack, Optional.empty());
+        return held.facts().orElseThrow(() -> FilesystemPackStore.graphUnreadable(pack, held.graphFaults()));
     }
 
     /**

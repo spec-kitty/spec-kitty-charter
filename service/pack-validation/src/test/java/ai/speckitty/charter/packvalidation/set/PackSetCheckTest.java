@@ -322,14 +322,16 @@ class PackSetCheckTest {
             assertThat(verdict.skipped()).singleElement().satisfies(skip -> {
                 assertThat(skip.check()).isEqualTo(Check.CLOSURE);
                 assertThat(skip.packs())
-                        .containsExactly(new Unjudged(
-                                ExamplePacks.BUILT_IN,
-                                "its composition facts cannot be read: pack_unreadable: a graph document of built-in"
-                                        + " cannot be read"));
+                        .containsExactly(
+                                new Unjudged(
+                                        ExamplePacks.BUILT_IN,
+                                        "its composition facts cannot be read: pack_unreadable: a graph document of built-in"
+                                                + " cannot be read: built-in/broken.graph.yaml: while parsing a flow sequence"));
                 assertThat(skip.reason())
                         .isEqualTo("CLOSURE needs the composition facts and the level of every pack; it has none for "
                                 + "built-in (its composition facts cannot be read: pack_unreadable: a graph document"
-                                + " of built-in cannot be read)");
+                                + " of built-in cannot be read: built-in/broken.graph.yaml: while parsing a flow"
+                                + " sequence)");
             });
             PackResult broken = verdict.packs().getFirst();
             assertThat(broken.failing()).isTrue();

@@ -84,7 +84,9 @@ class ReadoutFactsTest {
 
         assertThat(readout.facts())
                 .isEqualTo(new PackReadout.Unreadable(
-                        RefusalCode.PACK_UNREADABLE, "a graph document of built-in cannot be read"));
+                        RefusalCode.PACK_UNREADABLE,
+                        "a graph document of built-in cannot be read: built-in/broken.graph.yaml: while parsing a flow"
+                                + " sequence"));
     }
 
     @Test
@@ -113,8 +115,7 @@ class ReadoutFactsTest {
                 new PackLayout(Map.of()),
                 List.of(),
                 Optional.empty(),
-                Optional.empty(),
-                false);
+                List.of());
 
         PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts("built-in", refused);
 
@@ -124,7 +125,7 @@ class ReadoutFactsTest {
     @Test
     @DisplayName("an aggregate breach (StoreRead.breached): Unreadable(validation_failed), not pack_unreadable")
     void anAggregateBreachIsValidationFailed() {
-        StoreRead breached = StoreRead.breached(List.of(), "two artifacts share the id x", Optional.empty());
+        StoreRead breached = StoreRead.breached(List.of(), "two artifacts share the id x");
 
         PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts("built-in", breached);
 
@@ -135,8 +136,8 @@ class ReadoutFactsTest {
     @Test
     @DisplayName("a read with no assembly input: Unreadable(pack_unreadable) in the one wording, not an exception")
     void aReadWithNoAssemblyIsUnreadable() {
-        StoreRead none = new StoreRead(
-                new Assembly.None(), new PackLayout(Map.of()), List.of(), Optional.empty(), Optional.empty(), false);
+        StoreRead none =
+                new StoreRead(new Assembly.None(), new PackLayout(Map.of()), List.of(), Optional.empty(), List.of());
 
         PackReadout.Facts facts = CompositionFactsBuilder.readoutFacts("built-in", none);
 

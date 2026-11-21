@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Evaluation;
@@ -71,6 +72,43 @@ class PackRefusalMappingTest {
                 .isEqualTo(PackRefusalMapping.of(verdict).violations());
         assertThat(PackRefusalMapping.violations(new Rationale(List.of(Reason.passed("checked")))))
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "a pack's unreadable graph documents are pack_unreadable: the detail names the first document and its reason,"
+                    + " and the violations are registration's (#617, #628)")
+    void unreadableGraphDocumentsAreThePackUnreadableRefusal() {
+        Rationale faults = new Rationale(List.of(
+                failing(PackCodes.DRG_SCHEMA_ERROR, "directive.graph.yaml", "edges[0].relation: unknown relation"),
+                failing(PackCodes.DRG_SCHEMA_ERROR, "drg/fragment.yaml", "edge endpoint 'local-t' is not a URN")));
+
+        CharterRefusal refusal = PackRefusalMapping.graphUnreadable(new PackIdentifier("foundation"), faults);
+
+        assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+        assertThat(refusal.getMessage())
+                .isEqualTo("a graph document of foundation cannot be read: foundation/directive.graph.yaml:"
+                        + " edges[0].relation: unknown relation");
+        assertThat(refusal.violations())
+                .containsExactly(
+                        new RefusalViolation(
+                                "directive.graph.yaml",
+                                "drg_schema_error",
+                                "directive.graph.yaml: edges[0].relation: unknown relation"),
+                        new RefusalViolation(
+                                "drg/fragment.yaml",
+                                "drg_schema_error",
+                                "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"))
+                .isEqualTo(PackRefusalMapping.violations(faults));
+    }
+
+    @Test
+    @DisplayName("graph faults with no violation refuse nothing")
+    void noGraphFaultRefusesNothing() {
+        Rationale none = new Rationale(List.of(Reason.passed("checked")));
+
+        assertThatThrownBy(() -> PackRefusalMapping.graphUnreadable(new PackIdentifier("foundation"), none))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

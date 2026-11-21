@@ -330,8 +330,54 @@ Feature: The offering lists the configured packs in force
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-    # A composing read names no file for a graph fault (CharterRefusalCode); the registration names the escape.
-    And the field "detail" of the response body is "a graph document of docs cannot be read"
+    # A composing read names the graph document and the reason, and lists registration's violations (#617, #628).
+    And the field "detail" of the response body is "a graph document of docs cannot be read: docs/drg/fragment.yaml: node D1 body_path '/etc/passwd' escapes the pack root"
+    And the field at "/violations" holds exactly 1 item
+    And the field at "/violations/0/pointer" is "drg/fragment.yaml"
+    And the field at "/violations/0/code" is "drg_schema_error"
+    And the field at "/violations/0/detail" is "drg/fragment.yaml: node D1 body_path '/etc/passwd' escapes the pack root"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A composing read over a pack with an unknown relation names the graph document, the reason and its violation
+    #617: spec-kitty-open-packs' foundation pack carried in_tension_with edges, a relation charter does not know since
+    #602. The offering refuses the pack 500 pack_unreadable, as designed; the problem names the graph document and the
+    reason, and lists the violation a registration of the same pack lists (the pack-relative file as the pointer, the
+    code and the reason), so the author can see what to fix. The example pack built-in composes beside it (ADR-0070).
+    Given the example pack "built-in" of the charter
+    And the org pack "foundation" with the file "pack.yaml":
+      """
+      pack_id: 01ARWG13C0000000000000F0ND
+      pack_version: 1.0.0
+      parent_pack: null
+      name: foundation-pack
+      pack_level: org
+      """
+    And the org pack "foundation" with the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A
+      intent: A
+      enforcement: required
+      """
+    And the org pack "foundation" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:A
+        target: directive:A
+        relation: in_tension_with
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "a graph document of foundation cannot be read: foundation/directive.graph.yaml: unknown relation 'in_tension_with'"
+    And the field at "/violations" holds exactly 1 item
+    And the field at "/violations/0/pointer" is "directive.graph.yaml"
+    And the field at "/violations/0/code" is "drg_schema_error"
+    And the field at "/violations/0/detail" is "directive.graph.yaml: unknown relation 'in_tension_with'"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: An offering whose inputs change while it is answered is refused with stale_input

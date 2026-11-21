@@ -319,8 +319,7 @@ public final class FileSystemPackInspector implements PackReading {
                             new PackLayout(Map.of()),
                             List.of(),
                             Optional.empty(),
-                            Optional.empty(),
-                            false));
+                            List.of()));
         }
     }
 

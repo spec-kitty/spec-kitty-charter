@@ -54,18 +54,15 @@ import org.jspecify.annotations.Nullable;
  * @param layout each held artifact's pack-relative path; empty when the load refused the pack
  * @param graphs the graph documents read, the root shards by name then the fragment
  * @param manifest the manifest as read, when it is readable and names its presets' own files
- * @param graphRefusal the strict load's refusal of the first graph document that cannot be read
- *     ({@code <pack_id>/<file>: <reason>}), when one cannot
- * @param graphsUnreadable whether a graph document could not be read, known even when the load refused the pack after
- *     its graph read: the composing read refuses that first
+ * @param graphFaults the violations of the graph documents that could not be read, in {@code readGraphs} order, known
+ *     even when the load refused the pack after its graph read: the composing read refuses them first, naming each
  */
 record StoreRead(
         Assembly assembly,
         PackLayout layout,
         List<GraphDocument> graphs,
         Optional<PackManifestDso> manifest,
-        Optional<String> graphRefusal,
-        boolean graphsUnreadable) {
+        List<PackElementViolation> graphFaults) {
 
     private static final java.util.concurrent.atomic.LongAdder RUNS = new java.util.concurrent.atomic.LongAdder();
 
@@ -76,11 +73,11 @@ record StoreRead(
      * @param layout the layout
      * @param graphs the graph documents
      * @param manifest the manifest
-     * @param graphRefusal the strict load's graph refusal
-     * @param graphsUnreadable whether a graph document could not be read
+     * @param graphFaults the violations of the graph documents that could not be read
      */
     StoreRead {
         graphs = List.copyOf(graphs);
+        graphFaults = List.copyOf(graphFaults);
     }
 
     /**
@@ -127,7 +124,7 @@ record StoreRead(
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
         if (!PackIdentifier.isPackId(name)) {
-            return refused(List.of(), RefusalCode.PACK_UNREADABLE, packIdInvalid(name), false, false);
+            return refused(List.of(), RefusalCode.PACK_UNREADABLE, packIdInvalid(name), false, List.of());
         }
         return read(directory, new PackIdentifier(name), walk, strategy, bindings, companionRules);
     }
@@ -171,7 +168,6 @@ record StoreRead(
         }
         FilesystemPackStore.GraphRead graphs = dso.graphs();
         FilesystemPackStore.PackRead read = dso.read();
-        Optional<String> graphRefusal = graphRefusal(id, graphs);
         Map<Urn, String> places = new HashMap<>();
         List<Reason> warnings = new ArrayList<>();
         List<PackElementViolation> storeOnly = new ArrayList<>();
@@ -189,7 +185,7 @@ record StoreRead(
         try {
             pack = builder.build();
         } catch (ConstraintBreachException breach) {
-            return breached(graphs.violations(), String.valueOf(breach.getMessage()), graphRefusal);
+            return breached(graphs.violations(), String.valueOf(breach.getMessage()));
         }
         List<String> factsRefusal = new ArrayList<>();
         Optional<PackCompositionFacts> facts = facts(id, pack, read, graphs, policy, factsRefusal);
@@ -210,13 +206,7 @@ record StoreRead(
                 facts,
                 factsRefusal.stream().findFirst(),
                 references.stream().findFirst().orElse(ReferenceFacts.NONE));
-        return new StoreRead(
-                assembled,
-                new PackLayout(places),
-                graphs.documents(),
-                manifest,
-                graphRefusal,
-                !graphs.violations().isEmpty());
+        return new StoreRead(assembled, new PackLayout(places), graphs.documents(), manifest, graphs.violations());
     }
 
     /**
@@ -266,7 +256,11 @@ record StoreRead(
         Path parent = packDir.getParent();
         if (parent == null || packDir.getFileName() == null) {
             refusal.add(refused(
-                    List.of(), RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory", false, false));
+                    List.of(),
+                    RefusalCode.PACK_UNREADABLE,
+                    "a pack directory needs a parent directory",
+                    false,
+                    List.of()));
             return null;
         }
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
@@ -290,7 +284,7 @@ record StoreRead(
         try {
             graphs = store.readGraphs(key);
         } catch (CharterRefusal refused) {
-            refusal.add(refused(List.of(), refused.code(), String.valueOf(refused.getMessage()), false, false));
+            refusal.add(refused(List.of(), refused.code(), String.valueOf(refused.getMessage()), false, List.of()));
             return null;
         }
         try {
@@ -299,20 +293,9 @@ record StoreRead(
             // The graph read found the directory, so the rest of the read refuses only the descriptor: its fault is
             // placed at pack.yaml with no second read of the file (#554, WP04 review MINOR-4).
             refusal.add(refused(
-                    List.of(),
-                    refused.code(),
-                    String.valueOf(refused.getMessage()),
-                    true,
-                    !graphs.violations().isEmpty()));
+                    List.of(), refused.code(), String.valueOf(refused.getMessage()), true, graphs.violations()));
             return null;
         }
-    }
-
-    /** The strict load's refusal of the first graph document that cannot be read, when one cannot. */
-    private static Optional<String> graphRefusal(PackIdentifier id, FilesystemPackStore.GraphRead graphs) {
-        return graphs.violations().stream()
-                .findFirst()
-                .map(first -> id.value() + "/" + first.file() + ": " + first.reason());
     }
 
     /**
@@ -349,17 +332,15 @@ record StoreRead(
      *
      * @param graphFaults the graph faults read before the build
      * @param breach the breach's message
-     * @param graphRefusal the strict load's graph refusal
      * @return the refused read
      */
-    static StoreRead breached(List<PackElementViolation> graphFaults, String breach, Optional<String> graphRefusal) {
+    static StoreRead breached(List<PackElementViolation> graphFaults, String breach) {
         return new StoreRead(
                 new Assembly.Refused(graphFaults, RefusalCode.VALIDATION_FAILED, breach, false),
                 new PackLayout(Map.of()),
                 List.of(),
                 Optional.empty(),
-                graphRefusal,
-                !graphFaults.isEmpty());
+                graphFaults);
     }
 
     private static StoreRead refused(
@@ -367,14 +348,13 @@ record StoreRead(
             RefusalCode code,
             String message,
             boolean atDescriptor,
-            boolean graphsUnreadable) {
+            List<PackElementViolation> unreadGraphs) {
         return new StoreRead(
                 new Assembly.Refused(graphFaults, code, message, atDescriptor),
                 new PackLayout(Map.of()),
                 List.of(),
                 Optional.empty(),
-                Optional.empty(),
-                graphsUnreadable);
+                unreadGraphs);
     }
 
     /** Row 32: the fault of the policy file the descriptor names, among the trailing ones, is the store's alone. */

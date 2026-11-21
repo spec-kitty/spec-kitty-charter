@@ -32,8 +32,8 @@ import java.util.function.Function;
  *       WholePackStore(strategy)}); on a refusal its code, detail and violations (pointer, code, detail) in order, on
  *       success the diagnostics (code, detail) the registration answers, in order;
  *   <li>{@code composeRead}: the compose's read of the pack as a stored pack, {@link
- *       DomainRepositoryService#compositionFacts}; the refusal's code and detail ({@code pack_unreadable}, the first
- *       violation as {@code readable} words it), or {@code readable}.
+ *       DomainRepositoryService#compositionFacts}; the refusal's code and detail, and its violations when it lists any (a
+ *       graph document that cannot be read, #617), or {@code readable}.
  * </ul>
  *
  * <p>Validate mode's half moved with its subject to {@code :pack-validation}'s {@code ValidateGoldenTest} and
@@ -90,15 +90,7 @@ public final class SurfaceAnswers {
             return Map.of("accepted", Map.of("diagnostics", diagnostics));
         } catch (CharterRefusal refusal) {
             Map<String, Object> refused = refused(refusal, normaliser);
-            List<Map<String, Object>> violations = new ArrayList<>();
-            for (RefusalViolation violation : refusal.violations()) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("pointer", normaliser.apply(violation.pointer()));
-                row.put("code", violation.code());
-                row.put("detail", normaliser.apply(violation.detail()));
-                violations.add(row);
-            }
-            refused.put("violations", violations);
+            refused.put("violations", violations(refusal, normaliser));
             return Map.of("refused", refused);
         } catch (RuntimeException thrown) {
             return threw(thrown, normaliser);
@@ -112,7 +104,11 @@ public final class SurfaceAnswers {
                     .compositionFacts(new PackIdentifier(subject.name()));
             return READABLE;
         } catch (CharterRefusal refusal) {
-            return Map.of("refused", refused(refusal, normaliser));
+            Map<String, Object> refused = refused(refusal, normaliser);
+            if (!refusal.violations().isEmpty()) {
+                refused.put("violations", violations(refusal, normaliser));
+            }
+            return Map.of("refused", refused);
         } catch (RuntimeException thrown) {
             return threw(thrown, normaliser);
         }
@@ -123,6 +119,19 @@ public final class SurfaceAnswers {
         refused.put("code", refusal.code().token());
         refused.put("detail", normaliser.apply(String.valueOf(refusal.getMessage())));
         return refused;
+    }
+
+    /** A refusal's violations (pointer, code, detail), in order. */
+    private static List<Map<String, Object>> violations(CharterRefusal refusal, Normaliser normaliser) {
+        List<Map<String, Object>> violations = new ArrayList<>();
+        for (RefusalViolation violation : refusal.violations()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("pointer", normaliser.apply(violation.pointer()));
+            row.put("code", violation.code());
+            row.put("detail", normaliser.apply(violation.detail()));
+            violations.add(row);
+        }
+        return violations;
     }
 
     /** A surface that threw something other than a refusal: recorded as it is, so a change of it shows. */

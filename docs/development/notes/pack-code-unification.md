@@ -213,7 +213,7 @@ other golden row moves, and `composition.json` is byte-equal.
 
   Beside them, each bare plant answers `pack_unreadable` at `pack.yaml` (row 24) and each `+pack.yaml` subject
   `org_fragment_missing` in validate mode (row 37); the compose read refuses all six, `a graph document of qa cannot
-  be read`. Core never reads a root shard, so the twins are DIV-023 subjects, with their core verdicts to record.
+  be read` (since #617 and #628 it names the document and the reason, and lists the registration's violations at it). Core never reads a root shard, so the twins are DIV-023 subjects, with their core verdicts to record.
 - **The reverse subset names both.** `SurfaceSubsetTest` compares the registration with its frozen pre-WP12 baseline
   (`registration-before-wp12.json`, unchanged). It names the six twin subjects, which the baseline predates (the three
   bare ones are S8 rows, so the S8 count is WP12's 38 and those 3), and compares W1's `+pack.yaml` row with its

@@ -2093,8 +2093,8 @@ class FileSystemPackInspectorTest {
         PackElementViolation graphFault =
                 new PackElementViolation("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR, "not valid YAML");
 
-        StoreRead read = StoreRead.breached(
-                List.of(graphFault), "A pack must not hold two tactics with the same identifier.", Optional.of("x"));
+        StoreRead read =
+                StoreRead.breached(List.of(graphFault), "A pack must not hold two tactics with the same identifier.");
 
         assertThat(read.assembly()).isInstanceOfSatisfying(PackContents.Assembly.Refused.class, refused -> {
             assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
@@ -2104,8 +2104,7 @@ class FileSystemPackInspectorTest {
                     .isFalse();
             assertThat(refused.graphFaults()).containsExactly(graphFault);
         });
-        assertThat(read.graphsUnreadable()).isTrue();
-        assertThat(read.graphRefusal()).contains("x");
+        assertThat(read.graphFaults()).isNotEmpty();
         assertThat(read.graphs()).isEmpty();
     }
 }

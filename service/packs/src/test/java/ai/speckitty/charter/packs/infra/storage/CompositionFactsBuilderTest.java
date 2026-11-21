@@ -103,10 +103,17 @@ class CompositionFactsBuilderTest {
         ConfiguredPack configured = new ConfiguredPack(new PackIdentifier("built-in"), PackLevel.BUILT_IN);
 
         assertThatThrownBy(() -> CompositionFactsBuilder.underResolution(configured, pack, STRATEGY))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("a graph document of built-in cannot be read");
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    // #617, #628: the document, its reason and registration's violation of it.
+                    assertThat(refusal.getMessage())
+                            .startsWith("a graph document of built-in cannot be read: built-in/broken.graph.yaml: ");
+                    assertThat(refusal.violations()).singleElement().satisfies(violation -> {
+                        assertThat(violation.pointer()).isEqualTo("broken.graph.yaml");
+                        assertThat(violation.code()).isEqualTo("drg_schema_error");
+                        assertThat(violation.detail()).startsWith("broken.graph.yaml: ");
+                    });
+                });
     }
 
     private static PackUnderResolution underResolution(String name, Path host) {
