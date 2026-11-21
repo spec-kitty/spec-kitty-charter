@@ -191,7 +191,7 @@ class RoundTripObservationTest {
 
             assertThat(observation.observed())
                     .containsEntry("docs/kept.md", Optional.empty())
-                    .containsEntry("docs/written.md", Optional.of("the store wrote the excluded file docs/written.md"));
+                    .containsEntry("docs/written.md", Optional.of("the store wrote the not-held file docs/written.md"));
         }
 
         @Test

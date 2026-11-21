@@ -460,8 +460,8 @@ class WholePackExpectationTest {
                     evaluate(MATCHING_RED, MATCHING_EXCLUSIONS, known("README.md", "x", OPEN_PACKS_ISSUE), ALL_GREEN);
 
             assertThat(evaluation.problems())
-                    .containsExactly("STALE_KNOWN_FAILURE README.md: the file is excluded; remove it from "
-                            + "whole-pack/known-failures.yaml");
+                    .containsExactly("STALE_KNOWN_FAILURE README.md: excluded by whole-pack/exclusions.yaml; remove it"
+                            + " from whole-pack/known-failures.yaml");
             assertThat(statuses(evaluation)).containsEntry("README.md", Status.EXCLUDED);
         }
 
@@ -597,9 +597,8 @@ class WholePackExpectationTest {
                     """);
 
             assertThat(evaluate(red, MATCHING_EXCLUSIONS, ALL_GREEN).problems())
-                    .singleElement()
-                    .asString()
-                    .startsWith("STALE_BASELINE README.md: the file is excluded");
+                    .containsExactly("STALE_BASELINE README.md: excluded by whole-pack/exclusions.yaml; remove it from "
+                            + "whole-pack/expected-red.yaml");
         }
 
         @Test
@@ -610,7 +609,8 @@ class WholePackExpectationTest {
                     """;
 
             assertThat(evaluate(MATCHING_RED, exclusions, ALL_GREEN).problems())
-                    .containsExactly("STALE_EXCLUSION **/.gitkeep: matches no file");
+                    .containsExactly(
+                            "STALE_EXCLUSION **/.gitkeep: matches no file; remove it from whole-pack/exclusions.yaml");
         }
 
         /**
@@ -952,6 +952,10 @@ class WholePackExpectationTest {
 
         private static final String NOTE_KIND = PackRoundTripResult.EXCLUDED + "**/*.md";
 
+        /** The held control: a file of a schema the round trip does not model stays red (#547). */
+        private static final String UNMODELLED_CONTROL =
+                "UNEXPECTED_RED procedures/p.procedure.yaml (procedure): no adapter models kind procedure";
+
         private final SortedMap<String, String> census = census(
                 "pack.yaml", "pack-descriptor",
                 "tactics/a.tactic.yaml", "tactic",
@@ -977,8 +981,7 @@ class WholePackExpectationTest {
             assertThat(evaluation.files())
                     .filteredOn(file -> file.path().equals("docs/notes.md"))
                     .singleElement()
-                    .satisfies(file ->
-                            assertThat(file.detail()).contains("operator notes").contains("not written"));
+                    .satisfies(file -> assertThat(file.detail()).isEqualTo("not held (operator notes): not written"));
             assertThat(evaluation.problems())
                     .as("the note is judged apart; only the held control of an unmodelled schema is a problem")
                     .containsExactly(
@@ -1009,8 +1012,10 @@ class WholePackExpectationTest {
 
             assertThat(statuses(evaluation)).containsEntry("notes.txt", Status.RED);
             assertThat(evaluation.problems())
-                    .contains(
-                            "NOT_HELD_WRITTEN notes.txt (other:notes.txt): the store wrote the not-held file notes.txt");
+                    .containsExactly(
+                            "NOT_HELD_WRITTEN notes.txt (other:notes.txt): not held (" + NotHeldFile.UNMODELLED_REASON
+                                    + "); the store wrote the not-held file notes.txt",
+                            UNMODELLED_CONTROL);
         }
 
         @Test
@@ -1019,21 +1024,26 @@ class WholePackExpectationTest {
             observed.remove("notes.txt");
 
             assertThat(judged(observed).problems())
-                    .anyMatch(problem ->
-                            problem.startsWith("NOT_HELD_WRITTEN notes.txt") && problem.contains("did not check"));
+                    .containsExactly(
+                            "NOT_HELD_WRITTEN notes.txt (other:notes.txt): not held (" + NotHeldFile.UNMODELLED_REASON
+                                    + "); the gate did not check whether the store wrote this not-held file",
+                            UNMODELLED_CONTROL);
         }
 
         @Test
         void anExcludedFileTheStoreWroteIsRed() {
             Map<String, Optional<String>> observed = withNoteAbsent();
-            observed.put("docs/notes.md", Optional.of("the store wrote the excluded file docs/notes.md"));
+            observed.put("docs/notes.md", Optional.of("the store wrote the not-held file docs/notes.md"));
 
             Evaluation evaluation = judged(observed);
 
             assertThat(statuses(evaluation)).containsEntry("docs/notes.md", Status.RED);
             assertThat(evaluation.problems())
-                    .contains("EXCLUDED_WRITTEN docs/notes.md (" + NOTE_KIND
-                            + "): the store wrote the excluded file docs/notes.md");
+                    .as("#636: one code for a not-held file the store wrote, whatever the reason")
+                    .containsExactly(
+                            "NOT_HELD_WRITTEN docs/notes.md (" + NOTE_KIND
+                                    + "): not held (operator notes); the store wrote the not-held file docs/notes.md",
+                            UNMODELLED_CONTROL);
         }
 
         @Test
@@ -1042,8 +1052,11 @@ class WholePackExpectationTest {
             observed.remove("docs/notes.md");
 
             assertThat(judged(observed).problems())
-                    .anyMatch(problem ->
-                            problem.startsWith("EXCLUDED_WRITTEN docs/notes.md") && problem.contains("did not check"));
+                    .containsExactly(
+                            "NOT_HELD_WRITTEN docs/notes.md (" + NOTE_KIND
+                                    + "): not held (operator notes); the gate did"
+                                    + " not check whether the store wrote this not-held file",
+                            UNMODELLED_CONTROL);
         }
 
         @Test
@@ -1059,8 +1072,24 @@ class WholePackExpectationTest {
                     .evaluate(census, NOT_HELD, MODELLED, withNoteAbsent());
 
             assertThat(evaluation.problems())
-                    .contains("STALE_BASELINE docs/notes.md: the file is excluded; remove it from "
-                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
+                    .containsExactly(
+                            UNMODELLED_CONTROL,
+                            "STALE_BASELINE docs/notes.md: not held (operator notes); remove it from "
+                                    + WholePackExpectation.EXPECTED_RED_RESOURCE);
+        }
+
+        @Test
+        void aKnownFailureOverAFileNothingModelsIsStale() {
+            Evaluation evaluation = WholePackExpectation.load(
+                            "kinds: []\nfiles: []\n", NO_EXCLUSIONS, known("notes.txt", "x", OPEN_PACKS_ISSUE))
+                    .evaluate(census, NOT_HELD, MODELLED, withNoteAbsent());
+
+            assertThat(evaluation.problems())
+                    .as("#636: one wording for an entry over a not-held file, the reason from the census")
+                    .containsExactly(
+                            UNMODELLED_CONTROL,
+                            "STALE_KNOWN_FAILURE notes.txt: not held (" + NotHeldFile.UNMODELLED_REASON
+                                    + "); remove it from " + WholePackExpectation.KNOWN_FAILURES_RESOURCE);
         }
 
         private Map<String, Optional<String>> withNoteAbsent() {

@@ -72,11 +72,10 @@ public record RoundTripObservation(
         // #631).
         for (NotHeldFile file : result.notHeld().values()) {
             String path = file.path();
-            String what = file.kind() == NotHeldFile.Kind.EXCLUDED ? "excluded" : "not-held";
             observed.put(
                     path,
                     result.written().contains(path)
-                            ? Optional.of("the store wrote the " + what + " file " + path)
+                            ? Optional.of("the store wrote the not-held file " + path)
                             : Optional.empty());
         }
         SortedSet<String> unpaired = new TreeSet<>(result.written());
