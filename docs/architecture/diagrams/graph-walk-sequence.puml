@@ -3,7 +3,7 @@
 '   service/packs (packs.infra.api): PackRegistrationController
 '   service/packs (packs.domain.rules): PackRulesets; (packs.application): PackRefusals
 '   service/kernel: Rationale, Reason, CharterRefusal
-'   Decided: ADR-0082. Proposed (pending operator approval): ValidationWalker, PackGraph, Scope, Origin.
+'   Decided: ADR-0082. Proposed (approved 2026-11-21, not built yet): ValidationWalker, PackGraph, Scope, Origin.
 '   The refusal mapping keeps ADR-0075 / PR #618 D1: one fault answers exactly as before.
 !include _style.iuml
 title API pack registration through one graph walk (proposed design, ADR-0082)

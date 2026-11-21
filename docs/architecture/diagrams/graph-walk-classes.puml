@@ -6,7 +6,7 @@
 '   service/packs (packs.infra.api): PackRegistrationController
 '   service/pack-validation: PackVerdicts, PackCheck
 '   Decided: ADR-0082 (the domain owns every graph walk). Proposed: the type design on architectural-patterns-applied.md.
-' Notation: a <<proposed>> class is part of the proposed design, pending operator approval; every other class exists.
+' Notation: a <<proposed>> class is part of the approved target design, not built yet; every other class exists.
 !include _style.iuml
 set separator none
 skinparam class<<proposed>> {
@@ -168,7 +168,7 @@ PackRefusals ..> Rationale
 PackVerdicts ..> Rationale
 
 legend right
-  Green <<proposed>>: proposed design, pending operator approval (ADR-0082 records only the principle).
+  Green <<proposed>>: approved target design, not built yet (ADR-0082 and its 2026-11-21 amendment).
   Every other class exists today.
 endlegend
 @enduml

@@ -148,8 +148,8 @@ only transform formats and talk to users. This section explains the patterns beh
 onto the code.
 
 **What exists and what is proposed.** Each part below is marked. *Exists* means the type is in the code today.
-*Proposed* means it is part of the target design from the design squad of 2026-11-21. The proposed type design and the
-migration slices are **pending operator approval**; ADR-0082 does not decide them.
+*Proposed* means it is part of the target design from the design squad of 2026-11-21, approved by the operator the same
+day but not built yet. Each migration slice lands as its own change (ADR-0082, amendment of 2026-11-21).
 
 ### The problem, before and after
 
@@ -369,7 +369,7 @@ from the impact check into `PackRefusals`, so it is written in one place.
 - **The edge**: the ports and adapters layer. A **graph edge** is a relation between two nodes.
 - The code spells the artifact type `CharterArtifact`; the proposed node is `ArtifactNode`, to match.
 
-### Migration slices (proposed, pending operator approval)
+### Migration slices (approved, not built yet)
 
 Smallest first. Each replaces outright, with no deprecation window (the charter's rule). Within one slice the old
 walk and the new path never coexist: each slice deletes what it replaces. Slices 3, 5 and 6 assume PR #618 has
