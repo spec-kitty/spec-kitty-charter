@@ -41,6 +41,7 @@ final class FallbackProfileRule {
         Optional<RoleBearer> held = heldProfile(profileId, closure, profiles);
         if (held.isEmpty()) {
             return List.of(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                     named + " names no agent profile the pack or a pack it depends on holds",
                     List.of()));
@@ -49,12 +50,14 @@ final class FallbackProfileRule {
         List<ClosureFault> breaches = new ArrayList<>();
         if (!closure.isLocked(new Urn(NodeKind.of(ArtifactKind.AGENT_PROFILE), profileId))) {
             breaches.add(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
                     named + " is not locked by any pack of its closure; a fallback profile is locked",
                     List.of()));
         }
         if (!RoleBearer.GENERIC.equals(profile.role()) || !profile.altRoles().isEmpty()) {
             breaches.add(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
                     named + " declares role " + profile.role()
                             + (profile.altRoles().isEmpty() ? "" : " and alt-roles " + profile.altRoles())
@@ -64,6 +67,7 @@ final class FallbackProfileRule {
         }
         if (profile.humanPerformed()) {
             breaches.add(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.FALLBACK_PROFILE_NOT_AGENT,
                     named + " is human-performed; a fallback profile is agent-performed",
                     List.of()));

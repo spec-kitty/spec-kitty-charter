@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -103,7 +104,13 @@ class PackCheckTest {
     }
 
     private static Reason failing(ReasonCode code, String file, String pointer, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file).at(pointer), detail);
+        return new Reason(
+                code.value(),
+                new Origin(code.value()),
+                Evaluation.FAIL,
+                code,
+                Location.in(file).at(pointer),
+                detail);
     }
 
     @Test

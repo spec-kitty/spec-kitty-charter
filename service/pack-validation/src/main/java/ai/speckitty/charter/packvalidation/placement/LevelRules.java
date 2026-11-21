@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
@@ -77,6 +78,7 @@ public final class LevelRules {
 
     /** A placement finding: at {@code pack.yaml} as a whole, its rule named by its code's token. */
     static Reason finding(ReasonCode code, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(PACK_YAML), detail);
+        return new Reason(
+                code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(PACK_YAML), detail);
     }
 }

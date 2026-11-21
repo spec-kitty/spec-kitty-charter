@@ -1,11 +1,10 @@
 package ai.speckitty.charter.packs.domain.rules;
 
-import ai.speckitty.charter.kernel.domain.RefusalPack;
-import ai.speckitty.charter.kernel.validation.Evaluation;
-import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
@@ -29,8 +28,10 @@ import java.util.function.Function;
  * closure walk's (#556), and the delegation and step-enhancement checks stay in the offering's sequence: none of them
  * is {@code CLOSURE}.
  *
- * <p>A {@link Reason} has no slot for the packs a fault names, so {@link #faults} and {@link #presetFaults} keep a
- * typed {@link CompositionFault} beside it for the callers that need the list (A-M4).
+ * <p>A {@link Reason} has no slot for the packs a fault names, so {@link #faults} and {@link #presetFaults} answer
+ * {@link ClosureFault}s, the one fault type of the closure checks (#614), for the callers that need the list (A-M4). A
+ * fault's {@link Origin} is its phase: {@link #ORIGIN} for {@link #faults}, {@link #PRESETS_ORIGIN} for
+ * {@link #presetFaults}; its reason carries the origin's name as its rule name.
  */
 public final class CompositionRules {
 
@@ -40,52 +41,13 @@ public final class CompositionRules {
     /** The rule name of the preset phase's reasons ({@link #presetFaults}, as {@code PackRulesets} states them). */
     public static final String PRESETS_RULE = "closure.presets";
 
+    /** The origin of the {@code CLOSURE} composition's faults ({@link #faults}): the check named {@value #RULE}. */
+    public static final Origin ORIGIN = new Origin(RULE);
+
+    /** The origin of the preset phase's faults ({@link #presetFaults}): the check named {@value #PRESETS_RULE}. */
+    public static final Origin PRESETS_ORIGIN = new Origin(PRESETS_RULE);
+
     private CompositionRules() {}
-
-    /**
-     * One composition fault with the packs it names: the {@link Reason}'s code and detail, and the {@link RefusalPack}
-     * list the offering answers with, the pack that broke the graph first.
-     *
-     * @param code the {@code CLOSURE} code, one of {@link PackCodes#CLOSURE}
-     * @param packs the packs the fault names, the violating pack first; never empty
-     * @param detail what the caller needs to read
-     */
-    public record CompositionFault(ReasonCode code, List<RefusalPack> packs, String detail) {
-
-        /**
-         * Checks the fields and copies the list.
-         *
-         * @param code the code
-         * @param packs the packs it names
-         * @param detail the detail
-         */
-        public CompositionFault {
-            Objects.requireNonNull(code, "code");
-            Objects.requireNonNull(packs, "packs");
-            Objects.requireNonNull(detail, "detail");
-            packs = List.copyOf(packs);
-        }
-
-        /**
-         * The fault as the resolver reports it.
-         *
-         * @param refusal a refusal of a {@code CLOSURE} check
-         * @return the fault
-         */
-        static CompositionFault of(Refusal refusal) {
-            return new CompositionFault(codeOf(refusal.failure()), refusal.packs(), refusal.detail());
-        }
-
-        /**
-         * The fault as a kernel finding, unplaced: a composition fault belongs to a set of packs, not to a file.
-         *
-         * @param rule the rule name the reason carries
-         * @return the failing reason
-         */
-        Reason reason(String rule) {
-            return new Reason(rule, Evaluation.FAIL, code, Location.NOWHERE, detail);
-        }
-    }
 
     /**
      * {@code CLOSURE} over a set of packs: every fault {@link #faults} collects, as failing reasons in its order. A
@@ -94,20 +56,21 @@ public final class CompositionRules {
      * @return the ruleset
      */
     public static ModularRuleset<List<PackUnderResolution>> closure() {
-        return ModularRuleset.<List<PackUnderResolution>>emptyRules().must(packs -> reasons(faults(packs), RULE));
+        return ModularRuleset.<List<PackUnderResolution>>emptyRules().must(packs -> reasons(faults(packs)));
     }
 
     /**
-     * Every composition fault of a set of packs, in the resolver's order ({@link PackCompositionResolver#faults}).
+     * Every composition fault of a set of packs, in the resolver's order ({@link PackCompositionResolver#faults}), each
+     * from {@link #ORIGIN}.
      *
      * @param packs the packs with their descriptors
      * @return the faults; empty when the set resolves
      * @throws IllegalStateException when a descriptor is not well formed, as {@link PackCompositionResolver#resolve}
      *     refuses it
      */
-    public static List<CompositionFault> faults(List<PackUnderResolution> packs) {
+    public static List<ClosureFault> faults(List<PackUnderResolution> packs) {
         return PackCompositionResolver.faults(packs).stream()
-                .map(CompositionFault::of)
+                .map(refusal -> faultOf(refusal, ORIGIN))
                 .toList();
     }
 
@@ -115,18 +78,18 @@ public final class CompositionRules {
      * Every preset contest of a set of packs ({@link PackCompositionResolver#presetContests}), judged in the set's merge
      * order ({@link PackCompositionResolver#mergeOrder}): the order the offering judges a resolved set in, and the
      * stable order for the packs a set that does not resolve leaves unplaced. So the answer does not depend on the
-     * order the packs are given in.
+     * order the packs are given in. Each fault is from {@link #PRESETS_ORIGIN}.
      *
      * @param packs the packs, in any order
      * @param presetIdsOf the ids of the presets a pack holds
      * @return the faults; empty when no two unrelated packs of one level hold one preset id
      * @throws IllegalStateException when a descriptor is not well formed, as {@link #faults} refuses it
      */
-    public static List<CompositionFault> presetFaults(
+    public static List<ClosureFault> presetFaults(
             List<PackUnderResolution> packs, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
         Objects.requireNonNull(presetIdsOf, "presetIdsOf");
         return PackCompositionResolver.presetContests(PackCompositionResolver.mergeOrder(packs), presetIdsOf).stream()
-                .map(CompositionFault::of)
+                .map(refusal -> faultOf(refusal, PRESETS_ORIGIN))
                 .toList();
     }
 
@@ -146,7 +109,17 @@ public final class CompositionRules {
                 .orElseThrow(() -> new IllegalArgumentException(failure + " is no CLOSURE failure"));
     }
 
-    private static List<Reason> reasons(List<CompositionFault> faults, String rule) {
-        return faults.stream().map(fault -> fault.reason(rule)).toList();
+    /**
+     * The fault of a {@code CLOSURE} refusal from a phase: its {@link #codeOf} code, its detail and its packs.
+     *
+     * @throws IllegalArgumentException for a reference failure, which is no {@code CLOSURE} fault
+     */
+    private static ClosureFault faultOf(Refusal refusal, Origin origin) {
+        ReasonCode code = codeOf(refusal.failure());
+        return ClosureFault.of(origin, PackCodes.refusalOf(code), refusal.detail(), refusal.packs());
+    }
+
+    private static List<Reason> reasons(List<ClosureFault> faults) {
+        return faults.stream().map(ClosureFault::reason).toList();
     }
 }

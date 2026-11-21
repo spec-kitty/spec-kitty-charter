@@ -247,6 +247,7 @@ final class RemovalDependents {
                 .toList();
         String detail =
                 "The pack " + packId + " has " + dependents.size() + " dependent(s); remove or change them first.";
-        return ClosureFault.of(RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations, List.of());
+        return ClosureFault.of(
+                ClosureFault.ORIGIN, RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations, List.of());
     }
 }

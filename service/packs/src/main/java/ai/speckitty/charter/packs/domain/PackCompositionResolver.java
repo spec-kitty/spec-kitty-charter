@@ -659,6 +659,7 @@ public final class PackCompositionResolver {
             List<RefusalPack> named = referring == null ? named(target) : named(referring, target);
             faults.add(new ClosureFault(
                     ClosureFault.of(
+                                    ClosureFault.ORIGIN,
                                     RefusalCode.PACK_UNREADABLE,
                                     (referring == null ? "pack `" + referringPackId + "`" : label(referring)) + ": "
                                             + reason,

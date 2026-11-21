@@ -114,7 +114,7 @@ public final class EnhancementCompose {
          * @return the fault
          */
         public ClosureFault toFault() {
-            return ClosureFault.of(code, detail, packs);
+            return ClosureFault.of(ClosureFault.ORIGIN, code, detail, packs);
         }
     }
 

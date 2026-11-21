@@ -59,6 +59,7 @@ final class ProfileEnhancementRule {
                                     enhancers.add(new ProfileEnhancementGateway.Enhancing(profile, winner.packId()))));
             judge.firstDrop(base.get(), enhancers)
                     .ifPresent(dropped -> breaches.add(ClosureFault.of(
+                            ClosureFault.ORIGIN,
                             RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
                             dropped.detail(),
                             closure.named(List.of(dropped.pack())))));

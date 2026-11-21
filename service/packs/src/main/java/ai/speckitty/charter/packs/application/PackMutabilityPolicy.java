@@ -230,6 +230,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
             return Optional.empty();
         }
         return Optional.of(ClosureFault.of(
+                ClosureFault.ORIGIN,
                 RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                 "Operation " + operation + " on " + target + " is refused: pack "
                         + level.setBy().map(PackUlid::value).orElse(pack.id().value()) + " of the composition of "

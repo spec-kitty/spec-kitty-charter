@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RequiringPack;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -60,7 +61,7 @@ class PackRefusalsTest {
     private static final ReasonCode NOT_HELD = new ReasonCode("file_not_held", Severity.WARNING);
 
     private static Reason failing(ReasonCode code, String file, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), detail);
+        return new Reason(code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(file), detail);
     }
 
     @Test
@@ -307,7 +308,8 @@ class PackRefusalsTest {
         RefusalViolation own = new RefusalViolation("mission-types/a.yaml", "substep_delegation_unresolved", "why");
         RequiringPack requiring = new RequiringPack("base", List.of("acme"));
         ClosureFault fault = new ClosureFault(
-                ClosureFault.of(RefusalCode.VALIDATION_FAILED, "why", List.of()).reason(),
+                ClosureFault.of(ClosureFault.ORIGIN, RefusalCode.VALIDATION_FAILED, "why", List.of())
+                        .reason(),
                 List.of(ACME),
                 List.of(own),
                 List.of(requiring));
@@ -328,14 +330,14 @@ class PackRefusalsTest {
     @DisplayName("several faults: the first fault's code, a header per fault then its own violations, the unions")
     void severalFaultsAreRefusedByD1() {
         RefusalViolation own = new RefusalViolation("mission-types/a.yaml", "substep_delegation_unresolved", "why");
-        ClosureFault self = ClosureFault.of(RefusalCode.SELF_OVERRIDE, "self", List.of(ACME));
+        ClosureFault self = ClosureFault.of(ClosureFault.ORIGIN, RefusalCode.SELF_OVERRIDE, "self", List.of(ACME));
         ClosureFault delegation = new ClosureFault(
-                ClosureFault.of(RefusalCode.VALIDATION_FAILED, "delegation", List.of())
+                ClosureFault.of(ClosureFault.ORIGIN, RefusalCode.VALIDATION_FAILED, "delegation", List.of())
                         .reason(),
                 List.of(BASE, ACME),
                 List.of(own),
                 List.of(new RequiringPack("base", List.of())));
-        ClosureFault cycle = ClosureFault.of(RefusalCode.ENHANCES_CYCLE, "cycle", List.of(BASE));
+        ClosureFault cycle = ClosureFault.of(ClosureFault.ORIGIN, RefusalCode.ENHANCES_CYCLE, "cycle", List.of(BASE));
 
         CharterRefusal mapped = PackRefusals.of(new ClosureVerdict(List.of(self, delegation, cycle)));
 

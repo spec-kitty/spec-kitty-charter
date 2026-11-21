@@ -43,7 +43,7 @@ class LocationTest {
         // control: the same value at another severity is another code, and a reason takes its code's severity
         var warning = new ReasonCode("file_not_held", Severity.WARNING);
         assertThat(warning).isNotEqualTo(ReasonCode.of("file_not_held"));
-        assertThat(new Reason("r", Evaluation.FAIL, warning, Location.NOWHERE, "d").severity())
+        assertThat(new Reason("r", new Origin("r"), Evaluation.FAIL, warning, Location.NOWHERE, "d").severity())
                 .isEqualTo(Severity.WARNING);
     }
 

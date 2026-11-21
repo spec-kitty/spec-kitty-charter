@@ -309,7 +309,8 @@ class EdgeIndexTest {
 
     @Test
     void anIndexedAnswerIsEitherAnIndexOrFaultsNeverBothNorNeither() {
-        ClosureFault fault = ClosureFault.of(RefusalCode.PACK_REFERENCE_PACK_MISSING, "outside", List.of());
+        ClosureFault fault =
+                ClosureFault.of(ClosureFault.ORIGIN, RefusalCode.PACK_REFERENCE_PACK_MISSING, "outside", List.of());
 
         assertThatThrownBy(() -> new EdgeIndex.Indexed(java.util.Optional.empty(), List.of()))
                 .isInstanceOf(IllegalArgumentException.class);

@@ -2,6 +2,7 @@ package ai.speckitty.charter.packvalidation.roundtrip;
 
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
@@ -32,6 +33,9 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
     public static final ReasonCode UNPAIRED = new ReasonCode("round_trip_written_unpaired", Severity.VIOLATION);
 
     private static final String RULE = "whole-pack round trip (ADR-0036)";
+
+    /** The check its reasons come from: the rule itself. */
+    private static final Origin ORIGIN = new Origin(RULE);
 
     private final WholePackExpectation expectation;
 
@@ -84,10 +88,10 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
             List<Reason> reasons = new ArrayList<>();
             evaluation
                     .problems()
-                    .forEach(problem ->
-                            reasons.add(new Reason(RULE, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
-            unpaired.forEach(file -> reasons.add(
-                    new Reason(RULE, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
+                    .forEach(problem -> reasons.add(
+                            new Reason(RULE, ORIGIN, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
+            unpaired.forEach(file -> reasons.add(new Reason(
+                    RULE, ORIGIN, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
             return List.copyOf(reasons);
         }
     }
@@ -137,6 +141,7 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
     public static Reason refused(String code, String detail) {
         return new Reason(
                 RULE,
+                ORIGIN,
                 Evaluation.FAIL,
                 RED,
                 Location.NOWHERE,

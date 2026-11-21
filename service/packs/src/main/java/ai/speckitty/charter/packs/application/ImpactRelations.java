@@ -539,6 +539,7 @@ final class ImpactRelations {
     /** A fault naming packs of the closure, each as the refusal names a pack. */
     static ClosureFault fault(RefusalCode code, String detail, List<PackUnderResolution> packs) {
         return ClosureFault.of(
+                ClosureFault.ORIGIN,
                 code,
                 detail,
                 packs.stream()

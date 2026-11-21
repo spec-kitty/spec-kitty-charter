@@ -49,6 +49,7 @@ final class RolePinRule {
                             + closure.pinsOf(declaring).pinOf(role).orElseThrow())
                     .collect(Collectors.joining(", "));
             breaches.add(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.ROLE_PIN_CONFLICT,
                     "the role " + role + " is pinned to different profiles: " + pins
                             + "; pins are tighten-only, so every pack of a closure that pins a role pins it to one"
@@ -64,6 +65,7 @@ final class RolePinRule {
         Optional<RoleBearer> held = FallbackProfileRule.heldProfile(profileId, closure, profiles);
         if (held.isEmpty()) {
             return Optional.of(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.ROLE_PIN_UNKNOWN,
                     named + " names no agent profile the pack or a pack it depends on holds",
                     List.of()));
@@ -71,6 +73,7 @@ final class RolePinRule {
         RoleBearer profile = held.get();
         if (!role.equals(profile.role()) && !profile.altRoles().contains(role)) {
             return Optional.of(ClosureFault.of(
+                    ClosureFault.ORIGIN,
                     RefusalCode.ROLE_PIN_NOT_FITTING,
                     named + " names a profile of role " + profile.role()
                             + (profile.altRoles().isEmpty() ? "" : " and alt-roles " + profile.altRoles())

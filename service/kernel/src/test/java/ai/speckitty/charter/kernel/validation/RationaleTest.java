@@ -15,12 +15,14 @@ class RationaleTest {
     private static final Reason NO_TITLE = Reason.failed("A mission type needs a title that is not blank.");
     private static final Reason UNMODELLED = new Reason(
             "a pack holds only modelled files",
+            new Origin("a pack holds only modelled files"),
             Evaluation.FAIL,
             new ReasonCode("file_not_held", Severity.WARNING),
             Location.in("notes/README.md"),
             "The file 'notes/README.md' is not modelled.");
     private static final Reason ORDER_HINT = new Reason(
             "relations are sorted",
+            new Origin("relations are sorted"),
             Evaluation.FAIL,
             new ReasonCode("relations_unsorted", Severity.NOTICE),
             Location.in("drg/graph.yaml").at("/relations"),

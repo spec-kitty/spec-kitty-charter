@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public final class Findings {
                     pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
             where = where.at(pointer.toString());
         }
-        return new Reason(code.value(), Evaluation.FAIL, code, where, detail);
+        return new Reason(code.value(), new Origin(code.value()), Evaluation.FAIL, code, where, detail);
     }
 
     /**

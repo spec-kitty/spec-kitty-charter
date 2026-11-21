@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -21,7 +22,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class PackVerdictsTest {
 
     private static Reason at(ReasonCode code, String file) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), code.value());
+        return new Reason(
+                code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(file), code.value());
     }
 
     static List<ReasonCode> placementCodes() {

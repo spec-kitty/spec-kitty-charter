@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ class LevelRulesTest {
         assertThat(LevelRules.RULES.apply(Placements.of(ORG, NO_DESCRIPTOR, FRAGMENT)))
                 .containsExactly(new Reason(
                         "pack_level_missing",
+                        new Origin("pack_level_missing"),
                         Evaluation.FAIL,
                         PlacementCodes.PACK_LEVEL_MISSING,
                         Location.in("pack.yaml"),

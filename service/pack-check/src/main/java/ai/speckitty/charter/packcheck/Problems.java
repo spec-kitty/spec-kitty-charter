@@ -5,14 +5,13 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Rationale;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRefusalMapping;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict.PackResult;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -113,7 +112,7 @@ final class Problems {
         for (PackResult pack : verdict.packs()) {
             problems.addAll(ofPack(pack));
         }
-        for (CompositionFault fault : verdict.faults()) {
+        for (ClosureFault fault : verdict.faults()) {
             problems.add(ofFault(fault));
         }
         return List.copyOf(problems);
@@ -192,13 +191,8 @@ final class Problems {
     }
 
     /** A composition fault's problem: its code, its detail and the packs it names. */
-    private static Problem ofFault(CompositionFault fault) {
-        String token = fault.code().value();
-        RefusalCode code = Arrays.stream(RefusalCode.values())
-                .filter(candidate -> candidate.token().equals(token))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(token + " is no refusal code"));
-        return ofCharterRefusal(new CharterRefusal(code, fault.detail(), fault.packs()), Optional.empty());
+    private static Problem ofFault(ClosureFault fault) {
+        return ofCharterRefusal(new CharterRefusal(fault.code(), fault.detail(), fault.packs()), Optional.empty());
     }
 
     /** A refusal rendered as the registration renders it. */

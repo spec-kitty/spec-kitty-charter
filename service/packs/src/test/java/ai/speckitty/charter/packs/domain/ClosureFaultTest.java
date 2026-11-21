@@ -11,11 +11,11 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Refusal;
 import ai.speckitty.charter.packs.domain.rules.CompositionRules;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class ClosureFaultTest {
     @DisplayName("a fault takes every closure-check code, its reason carrying the code's one token, and no other code")
     void aFaultTakesExactlyTheClosureCheckCodes(RefusalCode code) {
         if (PackCodes.isClosureCheck(code)) {
-            ClosureFault fault = ClosureFault.of(code, "what is wrong", List.of(ACME));
+            ClosureFault fault = ClosureFault.of(ClosureFault.ORIGIN, code, "what is wrong", List.of(ACME));
 
             assertThat(fault.code()).isEqualTo(code);
             assertThat(fault.reason().code()).isSameAs(PackCodes.closure(code));
@@ -41,7 +41,7 @@ class ClosureFaultTest {
             assertThat(fault.detail()).isEqualTo("what is wrong");
             assertThat(fault.reason().location()).isEqualTo(Location.NOWHERE);
         } else {
-            assertThatThrownBy(() -> ClosureFault.of(code, "what is wrong", List.of(ACME)))
+            assertThatThrownBy(() -> ClosureFault.of(ClosureFault.ORIGIN, code, "what is wrong", List.of(ACME)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining(code.token());
         }
@@ -52,6 +52,7 @@ class ClosureFaultTest {
     void aPassingReasonIsNoFault() {
         Reason passing = new Reason(
                 ClosureFault.RULE,
+                ClosureFault.ORIGIN,
                 Evaluation.PASS,
                 PackCodes.closure(RefusalCode.SELF_OVERRIDE),
                 Location.NOWHERE,
@@ -65,7 +66,8 @@ class ClosureFaultTest {
     @DisplayName("a fault placed in its closure keeps its code, violations and requiring packs (PR #618 review B1)")
     void aFaultTakesAnotherDetailAndPacksKeepingTheRest() {
         RefusalViolation own = new RefusalViolation("mission-types/a.yaml", "substep_delegation_unresolved", "why");
-        ClosureFault alone = ClosureFault.of(RefusalCode.VALIDATION_FAILED, "why", List.of(), List.of(own), List.of());
+        ClosureFault alone = ClosureFault.of(
+                ClosureFault.ORIGIN, RefusalCode.VALIDATION_FAILED, "why", List.of(), List.of(own), List.of());
 
         ClosureFault placed = alone.with("In the closure rooted at acme: why", List.of(ACME));
 
@@ -127,14 +129,34 @@ class ClosureFaultTest {
     }
 
     @Test
-    @DisplayName("a resolver refusal and a CLOSURE fault lift to the same fault")
-    void aResolverRefusalAndACompositionFaultLiftAlike() {
+    @DisplayName("a resolver's CLOSURE failure is a fault of its CLOSURE code, from the check that found it")
+    void aResolverFailureIsAFaultOfItsClosureCode() {
         Refusal refusal = new Refusal(Failure.CYCLE, List.of(ACME), "acme depends on itself");
-        CompositionFault composition =
-                new CompositionFault(CompositionRules.codeOf(Failure.CYCLE), List.of(ACME), "acme depends on itself");
 
-        assertThat(ClosureFault.of(refusal)).isEqualTo(ClosureFault.of(composition));
-        assertThat(ClosureFault.of(refusal).code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_CYCLE);
+        ClosureFault fault =
+                ClosureFault.of(CompositionRules.ORIGIN, refusal.failure().code(), refusal.detail(), refusal.packs());
+
+        assertThat(fault.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_CYCLE);
+        assertThat(fault.reason().code()).isSameAs(CompositionRules.codeOf(Failure.CYCLE));
+        assertThat(fault.origin()).isEqualTo(CompositionRules.ORIGIN);
+    }
+
+    @Test
+    @DisplayName("a fault records the check that found it, its reason carrying the check's name as its rule (#614)")
+    void aFaultRecordsItsOrigin() {
+        ClosureFault preset = ClosureFault.of(
+                CompositionRules.PRESETS_ORIGIN, RefusalCode.PACK_SIBLING_CONFLICT, "both hold team", List.of(ACME));
+
+        assertThat(preset.origin()).isEqualTo(new Origin("closure.presets"));
+        assertThat(preset.reason().rule()).isEqualTo(CompositionRules.PRESETS_RULE);
+        assertThat(preset.with("placed", List.of()).origin())
+                .as("a placed fault keeps its origin")
+                .isEqualTo(CompositionRules.PRESETS_ORIGIN);
+        // control: a lifted refusal names no phase, so it is the closure checks' own origin
+        assertThat(ClosureFault.lift(new CharterRefusal(RefusalCode.SELF_OVERRIDE, "self"))
+                        .orElseThrow()
+                        .origin())
+                .isEqualTo(ClosureFault.ORIGIN);
     }
 
     @Test

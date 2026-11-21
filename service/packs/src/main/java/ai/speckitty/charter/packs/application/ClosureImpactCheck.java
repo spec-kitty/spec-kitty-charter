@@ -365,7 +365,10 @@ public final class ClosureImpactCheck implements ImpactCheck {
             OfferingReadService.ComposedClosure composed = composing.offering().composedWithFacts(List.of(pack.id()));
             List<ClosureFault> faults = relationFaults(composed).stream()
                     .map(broken -> ClosureFault.of(
-                            broken.code(), broken.detail() + " (packs " + packsOf(broken) + ")", broken.packs()))
+                            broken.origin(),
+                            broken.code(),
+                            broken.detail() + " (packs " + packsOf(broken) + ")",
+                            broken.packs()))
                     .toList();
             if (faults.isEmpty()) {
                 ClosureWalk.Profiles profiles =
@@ -577,7 +580,12 @@ public final class ClosureImpactCheck implements ImpactCheck {
         String detail = "In the closure rooted at " + roots.label() + ": " + fault.detail();
         if (fault.isUnresolvedDelegation()) {
             faults.add(ClosureFault.of(
-                    RefusalCode.VALIDATION_FAILED, detail, fault.packs(), fault.violations(), fault.requiredBy()));
+                    fault.origin(),
+                    RefusalCode.VALIDATION_FAILED,
+                    detail,
+                    fault.packs(),
+                    fault.violations(),
+                    fault.requiredBy()));
         } else if (!fault.violations().isEmpty() || !fault.requiredBy().isEmpty()) {
             faults.add(fault, alone -> alone.with(detail, withRoots(alone.packs(), roots, staged)));
         } else {
@@ -633,6 +641,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
     private static ClosureFault withinClosure(
             ClosureRoots.Roots roots, ClosureFault broken, StagedPackViews.View staged) {
         return ClosureFault.of(
+                broken.origin(),
                 broken.code(),
                 "In the closure rooted at " + roots.label() + ": " + broken.detail(),
                 withRoots(broken.packs(), roots, staged));
