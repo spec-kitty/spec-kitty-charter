@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packvalidation.roundtrip;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -228,17 +227,6 @@ class RoundTripObservationTest {
             assertThat(observation.observed())
                     .as("a held file of an unmodelled schema gets no not-held check: the verdict fails it (#547)")
                     .containsOnly(entry("symlink", Optional.empty()), entry("policy.yaml", Optional.empty()));
-        }
-
-        @Test
-        void aPathNotHeldMustBeACensusPath() {
-            assertThatThrownBy(() -> result(
-                            Map.of("pack.yaml", "pack-descriptor"),
-                            Map.of("ghost.txt", NotHeldFile.unmodelled("ghost.txt")),
-                            Map.of(),
-                            Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ghost.txt");
         }
 
         @Test

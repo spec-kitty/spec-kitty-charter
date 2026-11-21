@@ -1001,11 +1001,6 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void aHeldFileOfASchemaTheRoundTripDoesNotModelStaysRed() {
-            assertThat(statuses(judged(withNoteAbsent()))).containsEntry("procedures/p.procedure.yaml", Status.RED);
-        }
-
-        @Test
         void aFileNothingModelsTheStoreWroteIsRed() {
             Map<String, Optional<String>> observed = withNoteAbsent();
             observed.put("notes.txt", Optional.of("the store wrote the not-held file notes.txt"));

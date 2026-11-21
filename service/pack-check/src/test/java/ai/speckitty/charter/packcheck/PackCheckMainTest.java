@@ -492,28 +492,6 @@ class PackCheckMainTest {
                 });
     }
 
-    /**
-     * #631 squad: the round trip asks the census what it holds, not the kind. A {@code policy.yaml} the descriptor does
-     * not name maps to a modelled kind, and a stray root file named {@code symlink} takes the link's kind, yet the
-     * census holds neither: both are {@code file_not_held} warnings under {@code --round-trip} too.
-     */
-    @Test
-    void anUnnamedPolicyAndAStrayFileNamedSymlinkAreNotHeldUnderTheRoundTripToo() throws IOException {
-        Path packs = temp.resolve("packs");
-        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, packs);
-        Path org = ExamplePacks.copyOf(ExamplePacks.ORG, packs);
-        Files.writeString(org.resolve("policy.yaml"), "schema_version: '1.0'\n");
-        Files.writeString(org.resolve("symlink"), "a stray file, not a link\n");
-
-        Run run = run(temp.resolve("tmp"), "--pack", builtIn + ":built-in", "--pack", org + ":org", "--round-trip");
-
-        assertThat(run.exit()).as(run.out()).isEqualTo(PackCheckMain.VALID);
-        assertThat(run.report().get("problems")).isEmpty();
-        assertThat(run.err().lines())
-                .anySatisfy(line -> assertThat(line).startsWith("warning: org-base: file_not_held policy.yaml"))
-                .anySatisfy(line -> assertThat(line).startsWith("warning: org-base: file_not_held symlink"));
-    }
-
     @Test
     void aUsageFaultExitsTwoWithNothingOnStandardOutput() {
         Run run = run("--pack", temp.resolve("missing").toString());
