@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -105,11 +106,88 @@ class Pep440RangeTest {
                 "==1.0.dev1|<=1.0|true",
                 // the next post-release or development release after an operand's own is a version between them
                 ">1.0.post0|<1.0.post2|true",
-                ">1.0.dev0|<1.0a1|true"
+                ">1.0.dev0|<1.0a1|true",
+                // the lowest development release of an operand's post-release lies between it and the one before
+                ">1.0.post0|<1.0.post1|true",
+                ">1.0a1.post0|<1.0a1.post1|true"
             })
     void twoRangesOverlapWhenSomeVersionSatisfiesBoth(String first, String second, boolean overlap) {
         assertThat(Pep440Range.overlaps(first, second)).isEqualTo(overlap);
         assertThat(Pep440Range.overlaps(second, first)).isEqualTo(overlap);
+    }
+
+    /**
+     * The overlap property over a grid: whenever some probe version satisfies both sets under {@link Pep440Range#admits},
+     * {@link Pep440Range#overlaps} says they overlap. The grid crosses every operator with operands that carry pre,
+     * post, development, epoch and local segments, and the probes sit at and around each of them (#386).
+     */
+    @Test
+    void twoRangesOverlapWheneverSomeVersionSatisfiesBoth() {
+        List<String> operands = List.of(
+                "1.0",
+                "1.0.post0",
+                "1.0.post1",
+                "1.0a1",
+                "1.0a1.post0",
+                "1.0a1.post1",
+                "1.0.dev0",
+                "1.0.post1.dev1",
+                "1.0rc1.dev2",
+                "1.0.1",
+                "2.0",
+                "1!1.0",
+                "1.0+abc");
+        List<String> operators = List.of("==", "!=", "<", "<=", ">", ">=", "~=");
+        List<String> ranges = new ArrayList<>();
+        for (String operand : operands) {
+            for (String operator : operators) {
+                ranges.add(operator + operand);
+            }
+            ranges.add("==" + operand + ".*");
+            ranges.add("!=" + operand + ".*");
+        }
+        // PEP 440 takes no ~= on a local operand and no wildcard past a pre, post, dev or local segment
+        ranges.removeIf(range -> !Pep440Range.isWellFormed(range));
+        assertThat(ranges).hasSizeGreaterThan(90);
+        List<String> probes = new ArrayList<>(operands);
+        probes.addAll(List.of(
+                "0.dev0",
+                "0.9",
+                "1.0.dev1",
+                "1.0a1.dev0",
+                "1.0a1.post0.dev0",
+                "1.0a1.post1.dev0",
+                "1.0a1.post2",
+                "1.0a2",
+                "1.0rc1.dev0",
+                "1.0rc1.dev3",
+                "1.0rc1",
+                "1.0.post0.dev0",
+                "1.0.post1.dev0",
+                "1.0.post1.dev2",
+                "1.0.post2",
+                "1.0.0.1",
+                "1.0.1.dev0",
+                "1.1",
+                "2.0.dev0",
+                "3.0",
+                "1!0.dev0",
+                "1!1.0.1",
+                "1.0+xyz"));
+        List<String> misses = new ArrayList<>();
+        for (String first : ranges) {
+            for (String second : ranges) {
+                for (String probe : probes) {
+                    if (Pep440Range.admits(first, probe) && Pep440Range.admits(second, probe)) {
+                        if (!Pep440Range.overlaps(first, second)) {
+                            misses.add(first + " | " + second + " share " + probe);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        assertThat(misses).isEmpty();
     }
 
     @Test
