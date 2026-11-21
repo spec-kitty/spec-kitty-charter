@@ -120,6 +120,9 @@
       "last_event_id": "01M7ZR6AYNNEWMEMC5MHB0DRY5",
       "last_transition_at": "2026-11-21T19:09:08.949632+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: manifest_stale at the storage manifest gate (registration, validate/pack-doctor, round trip); round trip drops source-stale, keeps written-stale; scenarios rewritten; contract + Breaking fragment; built-in/org-base manifests restamped to path order via ManifestMembership.stamp. Restamp: CHARTER_RESTAMP_EXAMPLE_MANIFESTS=true ./gradlew :packs:test --tests '*ManifestStampHelper*' --rerun. #636 fold not done (not ruled)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 9644,
