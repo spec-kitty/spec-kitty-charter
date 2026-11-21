@@ -111,7 +111,7 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -121,7 +121,8 @@
       "last_transition_at": "2026-11-21T21:52:02.056335+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: manifest_stale at the storage manifest gate (registration, validate/pack-doctor, round trip); round trip drops source-stale, keeps written-stale; scenarios rewritten; contract + Breaking fragment; built-in/org-base manifests restamped to path order via ManifestMembership.stamp. Restamp: CHARTER_RESTAMP_EXAMPLE_MANIFESTS=true ./gradlew :packs:test --tests '*ManifestStampHelper*' --rerun. #636 fold not done (not ruled)."
+        "Ready for review: manifest_stale at the storage manifest gate (registration, validate/pack-doctor, round trip); round trip drops source-stale, keeps written-stale; scenarios rewritten; contract + Breaking fragment; built-in/org-base manifests restamped to path order via ManifestMembership.stamp. Restamp: CHARTER_RESTAMP_EXAMPLE_MANIFESTS=true ./gradlew :packs:test --tests '*ManifestStampHelper*' --rerun. #636 fold not done (not ruled).",
+        "Review passed: manifest_stale in the manifest gate after membership on every surface; round trip reports written-stale only; gates fresh: packs 7183, pack-validation 482, pack-doctor 286, deployable 2377 (feature 49 scenarios), wholePackRoundTrip 17/17. LOW: data-model.md:60 pointer form drift (WP08 fixes docs); TreeCensus.Manifest 4-arg overload used only by ABSENT and tests"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
