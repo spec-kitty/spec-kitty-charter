@@ -1,0 +1,133 @@
+{
+  "event_count": 72,
+  "last_event_id": "01M7WHJ6J1SSHN3QDBRMSVG54A",
+  "materialized_at": "2026-11-20T13:15:34.337735+00:00",
+  "mission_number": "",
+  "mission_slug": "closure-checks-behind-ports-01M7TS43",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHHKVZBDJ620WV4CHKXNXY",
+      "last_transition_at": "2026-11-20T13:15:15.200035+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP01-fault-model/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 4309,
+      "shell_pid_created_at": "1795151601.13"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHHPXS43G8WD8PNZQ7S2Z9",
+      "last_transition_at": "2026-11-20T13:15:18.329760+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP02-compose-phases/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1893,
+      "shell_pid_created_at": "1795156743.96"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHHSV5SJ6182WB9Y29HNZ9",
+      "last_transition_at": "2026-11-20T13:15:21.317854+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP03-relation-rules/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 23599,
+      "shell_pid_created_at": "1795158899.55"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHHWZCJSYQZW6JKPE4R5PZ",
+      "last_transition_at": "2026-11-20T13:15:24.524557+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP04-closure-walk/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 23032,
+      "shell_pid_created_at": "1795162645.64"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHJ0D9NZF63EJX8A6KHCJJ",
+      "last_transition_at": "2026-11-20T13:15:28.041142+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP05-impact-check/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 31290,
+      "shell_pid_created_at": "1795167245.75"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHJ3F3P77RS5T290AXZMDH",
+      "last_transition_at": "2026-11-20T13:15:31.171284+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP06-mutability-check/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 5100,
+      "shell_pid_created_at": "1795168593.83"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M7WHJ6J1SSHN3QDBRMSVG54A",
+      "last_transition_at": "2026-11-20T13:15:34.337735+00:00",
+      "review_result": {
+        "reference": "review-cycle://closure-checks-behind-ports-01M7TS43/WP07-contract-and-records/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 23129,
+      "shell_pid_created_at": "1795171442.91"
+    }
+  }
+}

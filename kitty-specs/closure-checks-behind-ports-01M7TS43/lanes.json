@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "mission_slug": "closure-checks-behind-ports-01M7TS43",
+  "mission_id": "01M7TS43JC8004K5SHG77XHSRN",
+  "mission_branch": "kitty/mission-closure-checks-behind-ports-01M7TS43",
+  "target_branch": "feat/556-closure-checks-behind-ports",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRefusals.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureFault.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureVerdict.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCodes.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRefusalsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ClosureFaultTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ClosureVerdictTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCodesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/composition.feature",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/CompositeComponentResolver.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/EnhancementCompose.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositeComponentResolverTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/EdgeIndexTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/OfferingReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/EnhancementComposeTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ImpactRelations.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/SpecializationCycleRule.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ImpactRelationsEnhancementTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ImpactRelationsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/SpecializationCycleImpactTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureRoleFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/FallbackProfileRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OwnClosureWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ProfileEnhancementRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ProfileEnhancers.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RolePinRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureWalk.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureRoleFactsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/FallbackProfileImpactTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/OwnClosureWalkTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ProfileEnhancementImpactTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RolePinImpactTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ActivationImpact.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactRemovalService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureImpactCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosurePackDependents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackDependents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackUninstallService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RegistrationImpact.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRemovalService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/StagedPackViews.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ImpactCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PackRegistrationMapper.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CommitStorePackWriteStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StagedPackViewFactory.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StagedPacks.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureImpactCheckTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRegistrationScaleTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackUninstallServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PerArtifactImpactTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationImpactActivationsAffectedTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationImpactTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/UninstallReadCountTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/PackRegistrationMapperNoticesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/PackRegistrationMapperSourceTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/DirectiveRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackMutabilityPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ParadigmRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PermissiveMutabilityCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PermissiveWritePolicyGate.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RelationshipRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/StyleguideRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ToolguideRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MutabilityCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MutabilityLevel.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/WritePolicyGate.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactRemovalServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/DirectiveRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackMutabilityPolicyClosureTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRegistrationEdgeDiffTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ParadigmRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PerFileWriteContentTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RefusedRemovalTrailTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRemovalServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RemovalConcurrencyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/StyleguideRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ToolguideRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/UnreadableStoredPackWriteTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackMutabilityPolicyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/DirectiveControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ParadigmControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RelationshipControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/StyleguideControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ToolguideControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackCommitStoreTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackManifestRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PresetRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-20-closure-refusals-name-every-fault.md",
+        "contracts/charter/scenarios/registration/closure-faults.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "docs/adr/0068-a-pack-declares-its-fallback-profile.md",
+        "docs/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check.md",
+        "docs/adr/0081-pack-uninstall-and-the-version-order.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-f"
+      ],
+      "parallel_group": 6
+    }
+  ],
+  "computed_at": "2026-11-20T05:12:08.517512+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "25e24c372bae838d95a9328be57ee2063f6c05d1"
+}

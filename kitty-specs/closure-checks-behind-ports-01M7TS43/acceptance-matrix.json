@@ -1,0 +1,149 @@
+{
+  "mission_slug": "closure-checks-behind-ports-01M7TS43",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MutabilityCheck/ClosureWalk/ImpactCheck in packs.domain; HexagonalArchitectureTest (95) green; WP04-WP06 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:11:38.186126+00:00",
+      "notes": "Three ports with Rule views, no Spring type."
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ClosureImpactCheckTest (50), PerArtifactImpactTest, PackRegistrationServiceTest; WP05 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:11:44.637683+00:00",
+      "notes": "One pass returns verdict and notices for every PackChange."
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ImpactRelationsTest (13), SpecializationCycleImpactTest, ClosureImpactCheckTest.aReplacementThatBreaksTwoClosures...; WP03/WP05 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:11:50.504774+00:00",
+      "notes": "Every relation fault of every joined closure; one fault per cyclic group."
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackUninstallServiceTest (13) incl. aRemovalNamesEveryFault..., pack-uninstall.feature green; WP05 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:11:56.289462+00:00",
+      "notes": "Dependents first, then closures; PackDependents deleted."
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "OwnClosureWalkTest (6), FallbackProfileImpactTest; closure-faults.feature US2; WP04 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:02.157901+00:00",
+      "notes": "Fallback, pins, enhancements, every breach."
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "OfferingReadServiceTest$EveryPhaseCollects, composition.feature US5; WP02 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:08.134732+00:00",
+      "notes": "Each compose phase collects."
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackMutabilityPolicyTest, PackRegistrationServiceTest US4.1/US4.2, closure-faults.feature US4.1; WP06 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:14.050289+00:00",
+      "notes": "MutabilityCheck replaces WritePolicyGate; every refused write."
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackRefusalsTest, ClosureVerdictTest; WP01 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:19.682626+00:00",
+      "notes": "One mapping PackRefusals.of(ClosureVerdict)."
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ClosureImpactCheckTest.theGateIsNotAskedWhenAClosureFails...; WP05 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:25.338033+00:00",
+      "notes": "Phase order; gate only when nothing failed."
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "pack-validation and pack-check untouched; :pack-validation:test green; verifyAll green",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:31.266311+00:00",
+      "notes": "Only deployable composes the ports."
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ClosureImpactCheckTest.theCensusKeepsOneFindingPerPack...; WP05 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:36.727443+00:00",
+      "notes": "One finding per pack with every fault."
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "contracts/charter/schemas/CharterRefusalCode.yaml; contracts/charter/changes/2026-11-20-closure-refusals-name-every-fault.md; WP07 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:42.155325+00:00",
+      "notes": "Contract paragraph and Changed fragment."
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/adr/0068, 0075 (slice-7 amendment, S1 flagged), 0081 note; check_docs adr ok; WP07 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:47.547717+00:00",
+      "notes": "ADR amendments recorded."
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "closure-faults.feature 5/5, composition.feature US5, pack-uninstall.feature; CharterContractSuite 1527 tests green incl. switch gate",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-20T13:12:53.234691+00:00",
+      "notes": "Contract scenarios pass the D1 gate."
+    }
+  ],
+  "negative_invariants": []
+}
