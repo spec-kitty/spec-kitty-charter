@@ -1,40 +1,40 @@
 {
   "rows": {
     "#158": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: kept in view; manifest_stale is its first step, the rest stays open",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Pack authoring: content-hash integrity protection",
+      "verdict": "not-applicable",
+      "wp": "WP04"
     },
     "#52": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Closure checker and YAML adapter follow-ups",
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#535": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Recorded as not the charter's to judge in ADR-0083 (ruling R-g); closed not_planned",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "Report a file-name collision across pack layers",
+      "verdict": "in-mission",
+      "wp": "WP08"
     },
     "#549": {
       "evidence_ref": "<auto-classified: no action required>",
@@ -49,64 +49,64 @@
       "wp": null
     },
     "#614": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP01: Origin on Reason, one ClosureFault factory, CompositionFault deleted",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "ADR-0082 slice 1: Origin on Reason, one ClosureFault factory, ClosureVerdict as a Rationale view",
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#629": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP03: preset_item_not_held on registration and pack-doctor validate",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "pack-check passes a preset must_have id that the closure does not hold",
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#630": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP04: manifest_stale at the manifest gate on every surface",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "pack-check passes a stale pack-manifest.yaml content_hash without --round-trip",
+      "verdict": "in-mission",
+      "wp": "WP04"
     },
     "#632": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP03 item 1, WP07 item 2 (remediate), WP05 item 3 per the operator's ruling",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "pack-check covers the cross-pack rules open-packs still runs in Python",
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#636": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: parent epic of the re-scoped #614 (slice 1); slices 2-7 are not this mission's",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "title": "ADR-0082 migration epic",
+      "verdict": "not-applicable",
+      "wp": "WP01"
     }
   },
   "schema_version": 1
