@@ -236,7 +236,9 @@ public final class Pep440Range {
 
     /**
      * Adds to {@code texts} the versions around one operand that an overlap is decided on: the operand itself (and
-     * with its local label), and its nearest neighbours in each segment. The epoch floor ({@code E!0.dev0}, the lowest
+     * with its local label), and its nearest neighbours in each segment. An operand with a post segment also gets the
+     * lowest development release of that post-release ({@code 1.0.post1.dev0}), which sits above every earlier
+     * post-release, so {@code >1.0.post0,<1.0.post1} finds it (#386). The epoch floor ({@code E!0.dev0}, the lowest
      * version of the operand's epoch) is added too, and for a {@code ~=} operand the bump of its parent release (the
      * first version past the prefix the operator implies).
      */
@@ -263,6 +265,9 @@ public final class Pep440Range {
                 operand.pre(),
                 Optional.of(operand.post().map(post -> post.add(BigInteger.ONE)).orElse(BigInteger.ZERO)),
                 Optional.empty()));
+        operand.post()
+                .ifPresent(post -> texts.add(canonical(
+                        operand.epoch(), release, operand.pre(), Optional.of(post), Optional.of(BigInteger.ZERO))));
         operand.dev()
                 .ifPresent(dev -> texts.add(canonical(
                         operand.epoch(),
