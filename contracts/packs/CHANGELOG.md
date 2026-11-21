@@ -33,7 +33,7 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
     pack name of more than 63 characters passes the schema, and the service refuses the pack at load.
   - The descriptor `name` (`pack-descriptor.schema.json`) is a pack id: `^[a-z0-9]+(-[a-z0-9]+)*$`, 1 to 63
     characters, where it was `^[a-z0-9][a-z0-9_-]*$` with at most 64. The service already required a source pack's
-    `name` to equal its registered id.
+    `name` to equal its registered pack id (the kebab slug, not the descriptor `pack_id` ULID).
   - The lifecycle guard `ref` (`<pack>::guard:<id>`) is at most 135 characters, where it was 136: a pack id of 63, the
     separator and a guard id of 64.
   - A pack the service stored before this change with such a qualifier, or with a descriptor `name` that is no pack
