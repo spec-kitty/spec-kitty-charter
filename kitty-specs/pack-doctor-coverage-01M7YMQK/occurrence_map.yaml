@@ -104,3 +104,6 @@ exceptions:
   - path: "scripts/release/**"
     action: rename
     note: service-release-assets.sh and rehearse-service-release.sh name the jar and its task (user_facing_strings, cli_commands)
+  - path: "contracts/charter/scenarios/**"
+    action: manual_review
+    note: behaviour scenarios change with the mission's rules (WP03 preset items, WP04 manifest_stale), not with the rename; reviewers check each scenario edit against the ruling it implements
