@@ -45,13 +45,16 @@ example packs
 
 ## Design decisions
 
-- **D1 — #614 first (WP01).**
-  - `CompositionRules.faults` and `presetFaults` return `List<ClosureFault>`.
-  - `PackRulesets.closureFaults` and `PackSetVerdict` carry `ClosureFault`.
-  - `Problems` maps `ClosureFault` through the one closure-refusal mapping that #618 built.
-  - `CompositionFault` and `ClosureFault.of(CompositionFault)` are deleted.
-  - `CompositionRulesTest`, `PackRulesetsClosureTest`, `ProblemsTest` and `PackCheckReportContractTest` pin the codes
-    and the order unchanged.
+- **D1 — #614 as slice 1 of epic #636 (WP01, re-scoped 2026-11-21).**
+  - `Reason` gains an `Origin`: which check produced it.
+  - One `ClosureFault.of(...)` factory replaces both `of(Refusal)` and `of(CompositionFault)`.
+  - `CompositionFault` is deleted, and `CompositionRules`, `PackRulesets`, `PackSetVerdict` and `Problems` carry
+    `ClosureFault`.
+  - `ClosureVerdict` becomes a view over `Rationale`, or is deleted.
+  - Codes and order are unchanged. The call sites change, but no expected code or order changes in
+    `CompositionRulesTest`, `PackRulesetsClosureTest`, `ProblemsTest` or `PackCheckReportContractTest`.
+  - An ArchUnit or reflection test asserts that `CompositionFault` is gone. Fixtures and contract examples assert
+    `Origin`, and no test excludes it.
 - **D2 — The rename is mechanical (WP02).** The occurrence map (`occurrence_map.yaml`) covers:
   - the module `service/pack-check` → `service/pack-doctor`;
   - the package `ai.speckitty.charter.packcheck` → `ai.speckitty.charter.packdoctor`;
@@ -67,63 +70,131 @@ example packs
 
   `pack-validation`'s `PackCheck` (validate mode over one pack) is a domain term, not the tool's name, and keeps its
   name: the map marks it `do_not_change`. History keeps the old name (C-004).
-- **D3 — One preset-item rule (WP03; R-a, R-k, R-l, R-m).**
-  - **The rule:** `PresetItemRules` in `packs.domain.rules`, exposed through `PackRulesets`.
-  - **Input:** per pack, its presets, its own closure and the closure's declared and held URNs. The own closure is
-    `PackCompositionResolver.compositionClosure` rooted at the pack (depends_on + parent_pack, R-k). No new walk
-    (NFR-003).
-  - **Held:** `PackCompositionFacts.defined` (artifact files).
-  - **Declared:** held plus the graph node URNs. If the facts do not yet carry graph nodes, `PackCompositionFacts`
-    gains `declared` (graph nodes) from the same assembly. The facts are built once, from the one read.
-  - **Faults:** one per item, in pack, preset and item order. Case-only takes precedence: an item the case-only phase
-    names gets no preset-item fault.
-  - **Codes:** a `must_have` item that is not held answers `preset_item_not_held`. Any other item that is not
-    declared answers `preset_item_undeclared`.
-  - **Where it runs:**
-    - in `CLOSURE`'s preset phase (`PackRulesets.closure(...)` takes `List<Preset>` per pack, replacing
-      `presetIdsOf` outright);
-    - in `ClosureImpactCheck`, on every write;
-    - never in `OfferingReadService.judged`, so a composing read is unchanged (A3). `RequiredFloor` and
-      `requiredNotHeld` stay (A2).
-  - **Contract:** new `RefusalCode` constants, `PackCodes.CLOSURE` membership and `Problems.statusOf` (422).
-- **D4 — `manifest_stale` at the storage edge (WP04; R-b).**
-  - The reader fills `TreeCensus.Manifest` with the stale fields from `PackManifests.stale` over the incoming bytes,
-    so `ManifestRules` derives nothing.
-  - `ManifestRules` states one `manifest_stale` per stale field, after membership, skipping the paths membership
-    names. `StorageCodes` owns the token.
-  - The post-write `stamp` stays.
-  - `PackRoundTrip` / `RoundTripObservation` drop the source-stale reason and keep written-stale (A8). The
-    `PackSetCheck.notReported` file dedupe is unchanged.
-  - Example manifests are restamped with the service's own stamp. A one-off test-scope helper or WP07's `remediate`
-    is acceptable; the result is committed in WP04.
-  - `whole-pack-registration.feature:560` is rewritten to a refusal.
-- **D5 — One collect-all domain phase for `--full` (WP05; R-d, R-h).**
-  - **The forms:**
-    - `PackCompositionResolver.referenceFaults` (the collect-all form of `checkReferences`);
-    - `EnhancementCompose.targetFaults` (collect-all `targetHeld`);
-    - `SpecializationCycleRule`, moved to `packs.domain.rules` over `List<PackUnderResolution>` plus facts.
-  - **The phase:** each check is exposed by `PackRulesets` as one phase, in today's order (references, targets,
-    cycle).
-  - **Callers:** `OfferingReadService.judged` (phases 3 and 4) and `ClosureImpactCheck` call the same forms and keep
-    their first-phase-refuses behavior. `PackSetCheck` runs the phase per pack over its own closure when `--full` is
-    given, and adds `Check.CLOSURE_WALK`.
-  - **No scope flag:** the CLI composes the phase or does not.
-  - **Tests:** a cross-sibling cycle is reported once (A6).
-- **D6 — The report (WP06; R-i, R-n).**
-  - One report model in `pack-doctor`: inputs, checks run and skipped, packs with problems, and a summary. Two
-    serializers: YAML (the default) and XML.
-  - Schemas: `contracts/charter/schemas/PackDoctorReport.yaml` (JSON Schema, which also validates the YAML form) and
-    `PackDoctorReport.xsd`. A contract test validates both against a run over the example packs.
-  - An XUnit-compatible form is out of scope (R-n), and is recorded as a later option in the ADR.
-- **D7 — `remediate` (WP07; R-j).**
-  - A public facade, `PackRemediation`, in `packs.infra.storage` over `PackManifestDerivation`,
-    `ManifestMembership.stamp`, `SerializationStrategy` and the round trip's canonical writer
-    (`DomainRoundTrip`/`PackRoundTrip`). Only `pack-doctor`'s composition root names it.
-  - **Precondition:** the pack's storage verdict, without the manifest gate and form findings, has no violation.
-    Otherwise remediate exits 1 and writes nothing.
-  - **Writes:** to a staged copy, then each file is replaced, so a failure leaves the pack as it was.
-  - **After writing:** remediate re-runs `validate` and reports the result.
-  - Stray files are untouched.
+- **D3 — One preset-item rule in an own-closure phase (WP03; R-a, R-k, R-l, R-m; post-plan squad A1-A3, A7, A8).**
+  - **The facts are split.** `PackCompositionFacts.defined` mixes files with graph-only nodes, so it is replaced
+    outright by two fields:
+    - `held`: artifact files;
+    - `declared`: every graph-node URN, plus `held`.
+
+    Every reader of `defined` moves to the one it means. Both `CompositionFactsBuilder` and `WriteFacts` (the write
+    path's rebuild) produce them, each with a test.
+  - **The rule.** `PresetItemRules` in `packs.domain.rules`, exposed by `PackRulesets` as one own-closure phase.
+    - Per pack, it takes the presets and the own closure. The own closure is
+      `PackCompositionResolver.compositionClosure` rooted at the pack, with no new walk.
+    - The phase first computes `caseOnlyMatches` (the existing domain function) over the own closure. It then judges
+      the items that check did not name, all in one phase function.
+    - A `must_have` item that is not held answers `preset_item_not_held`. Any other item that is not declared answers
+      `preset_item_undeclared`.
+    - It reports one fault per item, in pack-id order, then preset path order, then item order. The detail lists the
+      own closure's packs in `compositionClosure` order.
+  - **Where it runs.**
+    - In pack-doctor, in CLOSURE after the compose and the preset contests. `PackRulesets.closure(...)` takes each
+      pack's presets, replacing `presetIdsOf` outright.
+    - In registration and every write, from `ClosureImpactCheck.walkFaults` with `ComposedClosure.facts`, beside
+      `OwnClosureWalk`.
+    - Never in `OfferingReadService.judged`, whose phase 6 case-only check and the read path are unchanged.
+
+    `FallbackProfileRule`, `RolePinRule` and `ProfileEnhancementRule` join this phase in #636 slice 3, recorded in
+    ADR-0083.
+  - **Order.** Registration places preset-item faults after compose and the earlier phases. pack-doctor's default
+    order (compose, contests, case-only, items) is that same order restricted to what it runs.
+  - **The read path stays reachable.** Scenarios that need a stored pack which now breaks the rule (A10 at
+    `activation-ruling-changes.feature:513-540`, and the other `must_have` scenarios) use a test-only store seed that
+    bypasses the factory: an invalid-content path, which the charter allows. A test keeps a count of scenarios still
+    asserting `requiredNotHeld`, so the count cannot drop to zero.
+  - **Contract.** New `RefusalCode` constants, `PackCodes.CLOSURE` membership, and a 422 entry in `Problems.statusOf`.
+  - **Positive controls.** A test asserts that every preset item of `built-in` and `org-base` is held or declared, and
+    a planted variant of each asserts the exact code. `org-base` gains its two tactics rather than dropping the ids,
+    to keep the preset's intent.
+- **D4 — `manifest_stale` at the storage edge (WP04; R-b; squad A7, A10).**
+  - **Detection.** `FileSystemPackInspector.manifest` already holds the parsed manifest. The reader fills
+    `TreeCensus.Manifest` with `PackManifests.stale` over the incoming bytes, minus its `missing:` entries, which
+    membership owns. `ManifestRules` derives nothing.
+  - **Reporting.** `ManifestRules` states one `manifest_stale` per stale field, after membership. `StorageCodes` owns
+    the token. `ManifestRules.mismatch` returns the paths it names, so the stale check can skip them without parsing
+    prose.
+  - **Writes.** The post-write `stamp` stays.
+  - **The round trip.** `PackRoundTrip`/`RoundTripObservation` drop the source-stale reason and keep written-stale
+    (A8). Folding #636's round-trip-codes slice (retiring `EXCLUDED_WRITTEN`, merging the `STALE_*` wordings) needs
+    the operator's yes, which the dispatcher is asking for.
+  - **Tests to rewrite, not delete.**
+    - `WholePackFlowTest:127-166` and `RoundTripObservationTest:176`: the source-stale case moves to a `ManifestRules`
+      test that asserts `manifest_stale` with its field pointer.
+    - `MalformedDescriptorTest:148`, `ProblemsTest:193`, `PackCheckJarTest:227/310`, `PackSetCheckTest:756-781` and
+      `PackCheckReportContractTest:233/577` each gain a positive assertion.
+    - A source-stale pack under `--round-trip` yields exactly `["manifest_stale"]`, asserted by equality.
+  - **Scenarios.** In `whole-pack-registration.feature:528-584`:
+    - "partial" gets correct hashes, so it still isolates membership;
+    - the scenario at 560 becomes a `manifest_stale` refusal;
+    - a control scenario with a correctly hashed manifest registers.
+  - **Example manifests** are restamped in WP04 with a test-scope helper over `ManifestMembership.stamp`.
+- **D5 — `--full` (WP05; R-d, R-h). HELD pending the operator (scope adjustment via the dispatcher,
+  2026-11-21).**
+  - **The finding.** The post-plan squad found that "everything registration judges" is not reachable without
+    ADR-0082 slices 2-4 and 7. Registration also runs:
+    - delegations;
+    - `ImpactRelations` and the `EdgeIndex` refusals;
+    - the own-closure walk.
+  - **The cycle check.** The `specializes_from` cycle needs the set's composed closure, because siblings are not in
+    each other's own closure. It also needs `ImpactRelations.cyclesIn`, which is application code that slice 2 moves
+    into `PackGraph`.
+  - **Proposed (a).** `--full` adds only what existing domain functions give with no new walk:
+    - references (`PackCompositionResolver.referenceFaults`);
+    - enhancement targets (`EnhancementCompose.targetFaults`);
+    - delegations (`unresolvedDelegations`).
+
+    Each runs per own closure, in registration's phase order: delegations, references, targets. `OfferingReadService`
+    and `ClosureImpactCheck` take the first fault of the same collect-all forms, so one body remains. The spec's
+    "full pass" is narrowed to these, and the cycle, relations, edge-index and own-closure-walk checks are recorded in
+    ADR-0083 as landing in the factory with #636 slices 2-4 and 7. The PR says `Refs #632`.
+  - **Alternative (b).** `--full` stays design-only until slice 7.
+  - WP05 starts only on the ruling.
+- **D6 — The report (WP06; R-i, R-n; squad reducer 1, 2, 9).**
+  - **One model.** The report file is the same tree as the stdout problem JSON (`PackDoctorReport`, today's
+    `PackCheckReport` renamed). `Problems.Problem` is reused verbatim, with `tool`, `inputs` and `summary` added as
+    top-level keys. There is no second problem shape.
+  - **Formats.** Three serializers of that tree: JSON (stdout), YAML (`--report`, the default) and XML
+    (`--format xml`).
+  - **One normative schema.** `PackDoctorReport.yaml` (JSON Schema) is the only schema. The XML is a mechanical,
+    tested element-per-key mapping (R-n: our own shape, not JUnit). The contract test parses the XML back into the
+    tree and validates it against the same JSON Schema, so no XSD is maintained by hand. An XUnit-compatible form is
+    a later option, recorded in ADR-0083.
+  - **Serialization.** `pack-doctor` already uses Jackson 3 (`tools.jackson`). YAML and XML go through the Jackson 3
+    dataformat modules only if they are already verified. Otherwise XML uses `javax.xml.stream` and YAML uses the
+    service's existing emitter (SnakeYAML-engine via packs), with no new verification metadata (DIRECTIVE_051).
+    WP06 checks `gradle/verification-metadata.xml` first and records the choice.
+- **D7 — `remediate` (WP07; R-j; squad architect 9, reducer 3 and 4).**
+  - **The facade.** `PackRemediation`, a public facade in `packs.infra.storage` (not in `.rules`). It composes the
+    existing pieces:
+    - the canonical rewrite through `DomainRoundTrip`'s writer;
+    - then the stamp through `ManifestMembership.stamp`, run after the rewrite.
+
+    It adds no new serialization.
+  - **Staging.** It writes a staged sibling directory, then swaps the directory in one rename. It reuses
+    `PackCommitStore`'s staging helper if that is framework-free and free of locks. Otherwise it uses a minimal
+    atomic swap, without `PackCommitStore`'s locks or generation, so pack-doctor stays framework-free.
+  - **Precondition.** One `StorageRulesets` function: the storage verdict without the manifest gate and the form
+    findings. A violation means exit 1, nothing written, and the violations listed. The spec and the data model use
+    this wording.
+  - **Architecture tests.** `HexagonalArchitectureTest`'s pack-check main rules (`COMPOSED_BY_…`, `…NAMES_TWO_ADAPTERS`,
+    `ONION_…COMPOSES_TWO_ADAPTERS`) name a third adapter.
+  - **Tests.**
+    - Start from a pack red for both `manifest_stale` and a form finding, and assert that red first.
+    - After remediating, assert green, and assert the meaning is unchanged by a model comparison.
+    - Assert a stray file is untouched, by its bytes.
+    - Assert an unrepairable pack writes nothing, by a file-tree hash taken before and after.
+- **D11 — Test guards (post-plan reviewer).**
+  - **WP02 has its own red test.** The rename changes no behavior, so its first test is structural, written before
+    the rename. It scans the live surfaces outside the occurrence map's exceptions for `pack-check`/`packcheck`, with
+    an explicit allowlist: `PackCheck` in pack-validation, and history. It also asserts:
+    - `validate` works;
+    - `remediate` exits 2 with "not available" until WP07;
+    - a call with no command fails, so the old flat form is no alias.
+  - **CI timing.** CI runs `validate --round-trip` under its own timed step (the #478 step, relabelled), and
+    `validate --round-trip --full` under a second step with its own threshold (NFR-002).
+  - **SC-001.** One parameterized table of planted faults drives both registration and `validate`, and asserts that
+    the codes are equal.
+
 - **D8 — Contract versioning.**
   - `### Breaking` fragments:
     - the preset-item refusals (a valid input is now refused);
@@ -131,7 +202,7 @@ example packs
     - the report schema rename.
   - `### Changed` fragment: the report formats and the `CLOSURE_WALK` check value.
   - Core's regeneration consequence is stated in each fragment (ADR-0022).
-- **D9 — Dependencies.** No new library. If Jackson's YAML or XML dataformat is not already a verified dependency of
+- **D9 — Dependencies.** Folded into D6: no new library, and no new verification metadata. If Jackson's YAML or XML dataformat is not already a verified dependency of
   a module `pack-doctor` may use, the YAML writer reuses the service's existing YAML emitter, and the XML writer uses
   `javax.xml.stream`. DIRECTIVE_051: no supply-chain change, so no new verification metadata.
 - **D10 — The ADR.** ADR-0083 records rulings R-a to R-n, and amends:
@@ -268,6 +339,6 @@ service/packs/src/testFixtures/resources/example-packs/ (built-in, org-base fixe
 - **Purpose**: D8, D10, C-006.
 - **Relevant requirements**: FR-011, FR-012.
 - **Affected surfaces**: ADR-0083, the ADR-0075/0042 amendments, the rules doc, the patterns page, `docs/guides/check-packs.md`
-  (renamed), `contracts/charter/changes/`, the open-packs drafts.
+  (text only), `contracts/charter/changes/`, the open-packs drafts.
 - **Sequencing/depends-on**: IC-01 to IC-07.
 - **Risks**: the ADR number. Mitigation: check `main` and the open PRs when writing it.

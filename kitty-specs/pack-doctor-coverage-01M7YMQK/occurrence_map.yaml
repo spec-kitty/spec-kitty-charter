@@ -12,7 +12,7 @@ categories:
     note: the package ai.speckitty.charter.packcheck -> ai.speckitty.charter.packdoctor (main, test, and service/deployable's packcheck test package)
   filesystem_paths:
     action: rename
-    note: service/pack-check -> service/pack-doctor (with its licenses/ directory); build-logic charter.pack-check-jar.gradle.kts -> charter.pack-doctor-jar.gradle.kts; PackCheckLicences(.kt/Test) -> PackDoctorLicences; docs/guides/check-packs.md keeps its path (it names the task, not the tool) and its text is updated
+    note: service/pack-check -> service/pack-doctor (with its licenses/ directory); build-logic charter.pack-check-jar.gradle.kts -> charter.pack-doctor-jar.gradle.kts; PackCheckLicences(.kt/Test) -> PackDoctorLicences; docs/guides/check-packs.md keeps its path (it names the task, not the tool) and its text is updated; IC-08 edits its text only
   serialized_keys:
     action: rename
     note: the jar's META-INF/pack-check/libraries.txt -> META-INF/pack-doctor/libraries.txt; the contract schema file PackCheckReport.yaml -> PackDoctorReport.yaml and its _index.yaml entry. No wire refusal or finding code changes.
@@ -55,4 +55,37 @@ exceptions:
     note: Javadoc that names the tool is updated; the PackCheck class and its callers keep their names
   - path: "service/packs/**"
     action: manual_review
-    note: Javadoc mentions of the tool are updated; no symbol is renamed
+    note: Javadoc mentions of the tool are updated; no symbol is renamed by the rename (WP01 deletes CompositionFault separately)
+  - path: "service/charter-reports/build.gradle.kts"
+    action: rename
+    note: the package-mapped allowlist entry "pack-check" to ...packcheck breaks on rename
+  - path: "service/deployable/**"
+    action: rename
+    note: build.gradle.kts, CharterWiringTest, HexagonalArchitectureTest (rule names and the main class), the packcheck test package and PackCheckReportContractTest
+  - path: "contracts/src/test/**"
+    action: rename
+    note: ReachableContractFilesTest names the report schema
+  - path: ".github/workflows/mutation-testing.yml"
+    action: rename
+    note: the module list names pack-check
+  - path: "gradle.properties"
+    action: rename
+    note: a comment naming the tool
+  - path: "contracts/packs/conformance/classifier-cases.yaml"
+    action: do_not_change
+    note: names open-packs' own pack-check usage, history of that repository
+  - path: "contracts/charter/changes/2026-11-20-pack-check-skipped-reasons.md"
+    action: rename
+    note: an unreleased change fragment is live, not released history
+  - path: "docs/conformance/**"
+    action: rename
+    note: divergence-register.md and divergences.yaml name the tool as a live surface
+  - path: "docs/development/notes/pack-code-unification.md"
+    action: rename
+    note: live note
+  - path: "docs/architecture/**"
+    action: rename
+    note: hexagonal-service.md, architectural-patterns-applied.md (scope rows), graph-walk-*.puml; the .svg files are regenerated with the pinned PlantUML, never hand-edited
+  - path: ".kittify/evidence/**"
+    action: do_not_change
+    note: evidence records are history

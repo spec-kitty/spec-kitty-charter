@@ -15,9 +15,10 @@ Invariants:
 - The case-only answer precludes a preset-item fault for the same item.
 - An item of another kind never satisfies the entry.
 
-The own closure is the declaring pack plus everything it reaches over `depends_on` and `parent_pack`. Held items are
-the closure packs' artifact files (`PackCompositionFacts.defined`). Declared items are held items plus graph node
-URNs.
+The own closure is the declaring pack plus everything it reaches over `depends_on` and `parent_pack`
+(`PackCompositionResolver.compositionClosure` rooted at the pack). Held items are the closure packs' artifact files
+(`PackCompositionFacts.held`). Declared items are every graph-node URN plus the held items
+(`PackCompositionFacts.declared`). These two fields replace `defined` outright.
 
 ## `manifest_stale` (storage edge, `Reason`)
 
@@ -33,7 +34,7 @@ Invariants:
 - A path that `manifest_membership` already names gets no `manifest_stale`.
 - A written-stale round-trip red is a separate cause.
 
-## `--full` phase (domain)
+## `--full` phase (domain) — held pending the operator's ruling (plan D5)
 
 The phase's faults are the existing codes:
 
@@ -45,27 +46,29 @@ The phase's faults are the existing codes:
 It runs in this order: references, enhancement targets, cycle. Every fault is collected, and each pack is judged
 within its own closure. `PackSetVerdict.Check` gains `CLOSURE_WALK`.
 
-## pack-doctor report (`PackDoctorReport`, YAML or XML)
+## pack-doctor report (`PackDoctorReport`: JSON on stdout, YAML or XML with `--report`)
+
+One tree, the existing stdout problem JSON renamed, with three new top-level keys:
 
 ```
-report:
-  tool: {name: pack-doctor, version}
-  inputs: {config_root | packs: [{name, path, level?}], options: {full, round_trip}}
-  checks: {run: [PACK, CLOSURE, CLOSURE_WALK?, ROUND_TRIP?], skipped: [{check, packs: [{name, reason}]}]}
-  packs: [{name, level?, problems: [{code, severity, file, pointer, detail}]}]
-  set_problems: [{code, severity, packs, detail}]
-  summary: {packs, violations, warnings, notices, exit_code}
+tool: {name: pack-doctor, version}            # new
+inputs: {config_root | packs: [...], options: {full, round_trip}}   # new
+checks: [PACK, CLOSURE, ROUND_TRIP?, ...]     # as today, plus the --full value if ruled
+packs: [...]                                  # as today
+skipped: [...]                                # as today
+problems: [Problem]                           # Problems.Problem, verbatim
+summary: {packs, violations, warnings, notices, exit_code}   # new
 ```
 
-YAML is validated by `PackDoctorReport.yaml` (a JSON Schema), and XML by `PackDoctorReport.xsd`. Both are the same
-model. The JSON on stdout is unchanged in shape.
+`PackDoctorReport.yaml` (JSON Schema) is the only normative schema. The XML is an element-per-key mapping of the same
+tree, and is validated by parsing it back and checking it against the same schema.
 
 ## remediate outcome
 
 For each pack, remediate reports one of:
 
 - `rewritten`: the manifest and the files written in canonical form;
-- `refused`: the domain faults that block it, with nothing written;
+- `refused`: the storage verdict's violations, except the manifest gate and form findings, with nothing written;
 - `unchanged`: already canonical.
 
 After writing, it validates again and reports the result.
