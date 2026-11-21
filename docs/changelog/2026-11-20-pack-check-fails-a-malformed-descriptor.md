@@ -35,4 +35,4 @@ on malformed contents). Released `pack-check` 0.1.0-rc.3 exited `2` with `intern
 **A case variant has its own code.** A root file that differs only in letter case from a root rule's file
 (`Pack.yaml` beside `pack.yaml`, `Readme.md`) is refused under the new violation code `case_variant`, not `retired`.
 It is still refused by name under that rule ([ADR-0073](/adr/0073-real-packs-register-as-they-are/) decision 3). This
-breaks the charter and packs contracts: a consumer that matches the refusal by its code matches `case_variant`.
+breaks the charter contract: a consumer that matches the refusal by its code matches `case_variant`.

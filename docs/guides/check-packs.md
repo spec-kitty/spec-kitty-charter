@@ -115,7 +115,7 @@ Give its dependencies too, or use a config root that holds them.
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory or the output cannot be read or written, or `pack-check` has a defect (`pack-check: internal error:`). Nothing is on standard output; the cause is on standard error. |
+| `2` | The command line is wrong (an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, or `pack-check` has a defect (`pack-check: internal error:`). Nothing is on standard output; the cause is on standard error. |
 
 What a pack holds is never a failure (`2`). A pack it cannot read, a malformed `pack.yaml` field (a `pack_version`
 that is not a version, a `depends_on` range or `requires_core` that is not a range, a `pack_level` the schema does not

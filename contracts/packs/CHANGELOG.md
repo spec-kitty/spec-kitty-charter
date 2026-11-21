@@ -40,10 +40,14 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
     id, is refused by the reads that judge it until it is registered again.
   - A consumer rewrites a pack name that is not a pack id. The spec-kitty-open-packs census at `3bedeef` found none:
     24 pack names and 607 qualified references, all pack ids.
-- A root case variant (`Pack.yaml`, `Readme.md`, `PROVENANCE.MD`) is refused under the violation code
-  `case_variant`, no longer `retired` (#624). Its classification is unchanged: it is still refused by name under the
-  root rule whose file it differs from (`file-kinds.yaml`, `conformance/classifier-cases.yaml`, ADR-0073 decision 3).
-  A consumer that matches a case variant's refusal by its code matches `case_variant`.
+
+### Changed
+
+- The README and the comments of `file-kinds.yaml` and `conformance/classifier-cases.yaml` say that a root case
+  variant (`Pack.yaml`, `Readme.md`, `PROVENANCE.MD`) is refused under the violation code `case_variant`, no longer
+  `retired` (#624). The code is the charter contract's (`CharterRefusalCode`), and its change is breaking there. This
+  contract's classification is unchanged: a case variant is still refused by name under the root rule whose file it
+  differs from (ADR-0073 decision 3), and no conformance case asserts a code.
 
 ## 0.1.0-rc.2
 
