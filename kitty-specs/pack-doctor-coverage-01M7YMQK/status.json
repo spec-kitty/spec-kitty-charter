@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -33,6 +33,7 @@
         "Ready for review: #614 slice 1 in 2debe6d. Reason(rule, origin, result, code, location, detail); kernel Origin(name), non-blank. Origin choice (for ADR-0083): a closure fault's origin is the check that found it and its reason's rule name is the origin's name (CompositionRules.ORIGIN=closure, PRESETS_ORIGIN=closure.presets, ClosureFault.ORIGIN=closure for the other closure checks and lifted refusals, so no rule name changes); every non-closure reason's origin is its rule name (Constraint description, Reason.passed/failed, Findings code value). Note: this differs from architectural-patterns-applied.md's proposed Origin (an element id), as the WP prescribed a check name. One ClosureFault.of(origin, code, detail, packs) plus long form; CompositionFault deleted; ClosureVerdict is a Rationale view (rationale(), isPassing via it). Guard OneClosureFaultTypeTest and ReasonTest red-first. No expected value changed in pins; out-of-map edits are type/factory-only call sites."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP01-one-closure-fault-type/review-cycle-1.md",
         "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP01-one-closure-fault-type/review-cycle-1.md",
@@ -40,14 +41,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 28874,
-      "shell_pid_created_at": "1795268902.27",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned"
       }
     },
     "WP02": {
