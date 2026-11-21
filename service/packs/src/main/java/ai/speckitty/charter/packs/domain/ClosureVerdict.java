@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,24 +31,5 @@ public record ClosureVerdict(List<ClosureFault> faults) {
      */
     public boolean isPassing() {
         return faults.isEmpty();
-    }
-
-    /**
-     * This verdict, then another's faults.
-     *
-     * @param next the verdict judged after this one
-     * @return the faults of both, this verdict's first
-     */
-    public ClosureVerdict and(ClosureVerdict next) {
-        Objects.requireNonNull(next, "next");
-        if (next.isPassing()) {
-            return this;
-        }
-        if (isPassing()) {
-            return next;
-        }
-        List<ClosureFault> both = new ArrayList<>(faults);
-        both.addAll(next.faults());
-        return new ClosureVerdict(both);
     }
 }
