@@ -1,6 +1,6 @@
 ---
 work_package_id: WP10
-title: The anti_pattern file kind and the example anti-patterns as files (R-p, R-q, R-r; #154)
+title: The anti_pattern file kind and the example anti-patterns as files (R-p, R-q, R-r;
 dependencies:
 - WP02
 requirement_refs:

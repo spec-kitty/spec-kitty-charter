@@ -1,6 +1,6 @@
 ---
 work_package_id: WP11
-title: A file-less anti_pattern node is refused (R-r; #154)
+title: A file-less anti_pattern node is refused (R-r;
 dependencies:
 - WP10
 requirement_refs:

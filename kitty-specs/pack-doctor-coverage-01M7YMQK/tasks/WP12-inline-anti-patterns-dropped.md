@@ -1,6 +1,6 @@
 ---
 work_package_id: WP12
-title: The procedure and styleguide shapes drop anti_patterns (R-r; closes #154)
+title: The procedure and styleguide shapes drop anti_patterns (R-r; closes
 dependencies:
 - WP10
 requirement_refs:
