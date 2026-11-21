@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.kernel.validation.Rule;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,15 +29,6 @@ public interface ImpactCheck {
      *     ({@code prompt_slot_missing}) when the verdict passes but a stored activation would not compose
      */
     Impact judge(PackChange change);
-
-    /**
-     * The check as a kernel rule: one failing reason per fault.
-     *
-     * @return the rule
-     */
-    default Rule<PackChange> rule() {
-        return change -> judge(change).verdict().rationale().details();
-    }
 
     /**
      * What the check answers.
