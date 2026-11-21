@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -225,15 +226,15 @@ final class RemovalDependents {
     }
 
     /**
-     * The {@code 409 pack_has_dependents} that names them (ADR-0081 D7): its packs member names each dependent pack
+     * The {@code 409 pack_has_dependents} fault that names them (ADR-0081 D7): its packs member names each dependent pack
      * once, in the order of the first dependent that names it, and its violations name every dependent; the answer lists
      * at most 100 of each and counts the rest in its detail, as every refusal's does.
      *
      * @param packId the configured name of the pack the removal would remove
      * @param dependents the dependents; not empty
-     * @return the refusal
+     * @return the fault
      */
-    static CharterRefusal refusal(String packId, List<Dependent> dependents) {
+    static ClosureFault fault(String packId, List<Dependent> dependents) {
         if (dependents.isEmpty()) {
             throw new IllegalArgumentException("a refusal names at least one dependent");
         }
@@ -246,6 +247,6 @@ final class RemovalDependents {
                 .toList();
         String detail =
                 "The pack " + packId + " has " + dependents.size() + " dependent(s); remove or change them first.";
-        return CharterRefusal.withPacksAndViolations(RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations);
+        return ClosureFault.of(RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations, List.of());
     }
 }

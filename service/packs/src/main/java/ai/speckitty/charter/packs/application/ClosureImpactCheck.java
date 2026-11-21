@@ -203,10 +203,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 new IllegalStateException("This impact check has no dependents finder, so it cannot judge a removal"));
         List<RemovalDependents.Dependent> found = finder.of(session.stored(), removed);
         if (!found.isEmpty()) {
-            CharterRefusal refusal =
-                    RemovalDependents.refusal(removed.configured().id().value(), found);
             return new Impact(
-                    new ClosureVerdict(List.of(ClosureFault.lift(refusal).orElseThrow())), Notices.NONE);
+                    new ClosureVerdict(List.of(RemovalDependents.fault(removed.configured().id().value(), found))),
+                    Notices.NONE);
         }
         StagedPackViews.View stored = session.stored();
         StagedPackViews.View after = session.without(removed.configured().id());
