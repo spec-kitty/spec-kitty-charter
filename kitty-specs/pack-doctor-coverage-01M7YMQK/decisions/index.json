@@ -371,6 +371,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-21T21:52:20.621186Z",
+      "decision_id": "01M801H54DXR0447M3F2ZQWFPZ",
+      "final_answer": "All of #154 now",
+      "input_key": "issue_154_scope",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "File kind only",
+        "Plus graph-only refusal",
+        "All of #154 now"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "WP10 gives anti_pattern a file form, part of #154. How much of #154 does this PR deliver?",
+      "rationale": "Operator ruling R-r (2026-11-21): this PR delivers all of #154: the anti_pattern file kind, the graph-only anti_pattern node refusal, and dropping the inline anti_patterns entries from the procedure and styleguide schemas (Breaking packs-contract change). open-packs styleguides/procedures with inline entries are refused until curated (draft open-packs#TBD). The PR closes #154.",
+      "resolved_at": "2026-11-21T21:52:23.007080Z",
+      "resolved_by": "operator",
+      "slot_key": "issue-154-scope",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
