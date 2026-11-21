@@ -1,7 +1,7 @@
 {
-  "event_count": 26,
-  "last_event_id": "01M7ZDCBK69NPZZF9EDB1T1V64",
-  "materialized_at": "2026-11-21T16:00:11.674859+00:00",
+  "event_count": 28,
+  "last_event_id": "01M7ZHAVJ4W2K74MH3TYNPFDRS",
+  "materialized_at": "2026-11-21T17:09:16.996767+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 7
   },
   "work_packages": {
@@ -57,18 +57,28 @@
     "WP02": {
       "actor": "claude",
       "agent": "claude",
-      "agent_profile": "java-jenny",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M7ZDCBK69NPZZF9EDB1T1V64",
-      "last_transition_at": "2026-11-21T16:00:11.674859+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7ZHAVJ4W2K74MH3TYNPFDRS",
+      "last_transition_at": "2026-11-21T17:09:16.996767+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "pack-check renamed to pack-doctor (validate/remediate, no alias). NoPackCheckSurfaceTest red first (6/8 failed, 452 findings in 73 files), green after. validate stdout byte-identical to old pack-check on 84 runs (example packs +/- round-trip, 80 planted packs, faults). Out-of-map: HexagonalArchitectureTest rule names (WP07-owned); Javadoc in packs/pack-validation and docs/guides/README.md (outside owned_files). --full timed CI step left as a commented placeholder for WP05. verifyAll green with -PcontractBaseline=none (shallow clone)."
+      ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 26083,
-      "shell_pid_created_at": "1795276802.06"
+      "role": "reviewer",
+      "shell_pid": 24053,
+      "shell_pid_created_at": "1795280950.56",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
     },
     "WP03": {
       "actor": "finalize-tasks",

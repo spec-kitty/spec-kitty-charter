@@ -48,8 +48,8 @@ exceptions:
     action: do_not_change
     note: dated assessments are history
   - path: "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/PackCheck.java"
-    action: do_not_change
-    note: validate mode over one pack; a domain term, not the tool name. Javadoc mentions of the tool are updated
+    action: manual_review
+    note: validate mode over one pack; a domain term, not the tool name, so the class keeps its name. Javadoc mentions of the tool are updated
   - path: "service/pack-validation/**"
     action: manual_review
     note: Javadoc that names the tool is updated; the PackCheck class and its callers keep their names
@@ -89,3 +89,15 @@ exceptions:
   - path: ".kittify/evidence/**"
     action: do_not_change
     note: evidence records are history
+  - path: "service/pack-doctor/**"
+    action: rename
+    note: the renamed module (filesystem_paths), its build.gradle.kts and its licenses/ SOURCE files, which name the module path
+  - path: "build-logic/**"
+    action: rename
+    note: charter.pack-doctor-jar.gradle.kts, PackDoctorLicences and the build-logic allowlists (filesystem_paths, cli_commands)
+  - path: "settings.gradle.kts"
+    action: rename
+    note: the include of the renamed module (cli_commands)
+  - path: "scripts/release/**"
+    action: rename
+    note: service-release-assets.sh and rehearse-service-release.sh name the jar and its task (user_facing_strings, cli_commands)
