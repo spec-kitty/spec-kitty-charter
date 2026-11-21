@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.7.0"
-  at: "2026-11-12T09:07:53Z"
-  content_hash: "sha256:f84722b84d87"
+  at: "2026-11-21T22:01:27Z"
+  content_hash: "sha256:a58d35059ddf"
 ---
 
 # Charter
@@ -261,7 +261,7 @@ A constraint-oriented governance rule that applies across flows or phases. Direc
 
 ## Distribution pack
 
-A pack that holds no artifacts of its own and aggregates the packs it depends on. `built-in` becomes one, over a slimmed foundation pack (ADR-0048).
+A pack that holds no artifacts of its own and aggregates the packs it depends on. `built-in` becomes one, over a slimmed foundation pack (ADR-0048). It is derived, never declared: for a sibling contest, the pack that depends on every contestant by `depends_on` or `parent_pack`, is not one of them, and that no pack of the contest's level depends on. Only its overrides edge settles the contest (#358).
 
 **Meta:**
 
@@ -609,6 +609,16 @@ An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a s
 
 - **status:** `canonical`
 
+{#pair-class}
+
+## Pair class
+
+Which of a pair's two relationship slots an edge fills: structural (every relation but `tension`) or tension. A relationship's identity is its unordered pair and its pair class, so a pair holds at most one structural relationship and one tension, and a write replaces only the edge of its own class (ADR-0045 decision 1).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#pack-id-descriptor}
 
 ## Pack id (descriptor)
@@ -663,6 +673,16 @@ A cross-pack reference, an edge end in a graph document, written `<pack-name>::<
 
 A snapshot of a quality metric (failure count, symbol count, dead-module count) recorded in `tests/architectural/ratchet-baseline-*.md` and enforced by the corresponding architectural gate. A ratchet baseline only moves in the decreasing direction during normal development; any increase fails CI. Org packs may declare additional ratchet metrics via governance policies, but cannot lower an existing shipped baseline.
 
+{#reconciler}
+
+## Reconciler
+
+An artifact in force whose `reconciles_tension` edges in the merged closure reach both sides of a tension; an edge to one side only reconciles nothing. Every reconciler in force of a tension is answered with it as `reconciledBy` (ADR-0045 decision 9). Core calls it an arbiter.
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#recipe-ingredients}
 
 ## Recipe ingredients
@@ -677,7 +697,7 @@ The guidance a mission type names: the targets of its `scope` edges in the pack'
 
 ## Reconciliation — `reconciles_tension` (CRG Relation)
 
-A directional Three-layer CRG relation linking an active reconciliation artifact to one side of a declared Tension pair. A tension pair is treated as resolved only when an active artifact carries this edge to both sides of the pair — an edge to just one side leaves the pair half-reconciled and still flagged. It is authored explicitly and is never inferred from an `in_tension_with` edge. Canonical source: `RELATION_DESCRIPTIONS[Relation.RECONCILES_TENSION]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary").
+A directional Three-layer CRG relation linking an active reconciliation artifact to one side of a declared Tension pair. A tension pair is treated as resolved only when an active artifact carries this edge to both sides of the pair — an edge to just one side leaves the pair half-reconciled and still flagged. It is authored explicitly and is never inferred from a `tension` edge. An artifact in force that reaches both sides is the pair's reconciler (Reconciler). Canonical source: `RELATION_DESCRIPTIONS[Relation.RECONCILES_TENSION]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary").
 
 {#refinement-refines-crg-relation}
 
@@ -907,7 +927,7 @@ Retired (ADR-0077): "template" names only the template artifact kind. `template_
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless the distribution pack (the pack that depends on every contestant and that no pack of the contest's level depends on) settles it with an overrides edge naming a contesting member (ADR-0048 decision 9, ADR-0053 decision 5, #358); an edge naming a contestant from any other pack, or from two distribution packs, is refused. Across levels the same id is a legitimate layer override, not a conflict.
 
 **Meta:**
 
@@ -927,7 +947,7 @@ Superseded by Tension — `tension` (CRG Relation) (ADR-0028). The former name o
 
 ## Tension — `tension` (CRG Relation)
 
-An authored relationship between two rules that compete on the same decision; both stay valid. It is never derived from value impacts, and it may sit beside one structural relationship on the same pair (two rules can require each other and still be in tension). Replaces `in_tension_with` (ADR-0028).
+An authored relationship between two rules that compete on the same decision; both stay valid. It is never derived from value impacts, and it may sit beside one structural relationship on the same pair (two rules can require each other and still be in tension): a pair has at most one structural relationship and one tension, its two pair classes. It is stored with the side the pack holds as its source, the smaller URN when the pack holds both or neither. A tension is in force when both sides are, and every read answers it once from the smaller URN, with its first writer's words and its reconcilers (ADR-0045). Replaces `in_tension_with`, which the service no longer reads (ADR-0028, ADR-0045 decision 2).
 
 **Aliases:** in_tension_with
 
@@ -972,6 +992,16 @@ A full top-level pack in spec-kitty-open-packs for one subject, for example `fou
 ## Trigger Registry
 
 Canonical frozenset of agent-action tokens (e.g. `write_comment`, `write_docstring`, `rename_identifier`, `add_dependency`) the prompt builder knows how to emit "when you <token>, …" stanzas for. Any `triggers:` value declared on a shipped charter artifact must be a member of this set; the architectural test `test_trigger_registry_coverage.py` enforces no dead triggers. Mission B's WP05 populates the initial set.
+
+{#unreconciled-tension}
+
+## Unreconciled tension
+
+A tension in force that no artifact in force reconciles. The tensions read of an activation answers one `unreconciled_tension` finding for each, offering `reconcile` always and `deactivate_one_side` when the exclusion write would accept a side. A finding never refuses (ADR-0045 decisions 11 and 12).
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#usage-examples-sync-tactic}
 
