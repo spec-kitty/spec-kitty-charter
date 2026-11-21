@@ -20,5 +20,7 @@
   "topology_source": "default",
   "change_mode": "bulk_edit",
   "vcs": "git",
-  "source_description": "#629, #630, #632, #614 (epic #549); operator rulings R-a..R-m"
+  "source_description": "#629, #630, #632, #614 (epic #549); operator rulings R-a..R-m",
+  "contracts": "none",
+  "contracts_rationale": "The mission changes the repository's own contract under contracts/charter (refusal codes, the PackDoctorReport schemas, scenarios, change fragments); it defines no separate planning-time interface contracts."
 }

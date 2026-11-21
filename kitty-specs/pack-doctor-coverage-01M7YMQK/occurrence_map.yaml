@@ -1,0 +1,58 @@
+# Bulk edit: the standalone pack checker is renamed from pack-check to pack-doctor (operator rulings R-c, R-e, R-f).
+target:
+  term: pack-check
+  replacement: pack-doctor
+  operation: rename
+categories:
+  code_symbols:
+    action: rename
+    note: PackCheckMain -> PackDoctorMain, and the CLI module's other classes named after the tool, plus PackCheckReport -> PackDoctorReport (contract test and schema). pack-validation's PackCheck (validate mode over one pack) is a domain term and is NOT renamed (see exceptions).
+  import_paths:
+    action: rename
+    note: the package ai.speckitty.charter.packcheck -> ai.speckitty.charter.packdoctor (main, test, and service/deployable's packcheck test package)
+  filesystem_paths:
+    action: rename
+    note: service/pack-check -> service/pack-doctor (with its licenses/ directory); build-logic charter.pack-check-jar.gradle.kts -> charter.pack-doctor-jar.gradle.kts; PackCheckLicences(.kt/Test) -> PackDoctorLicences; docs/guides/check-packs.md keeps its path (it names the task, not the tool) and its text is updated
+  serialized_keys:
+    action: rename
+    note: the jar's META-INF/pack-check/libraries.txt -> META-INF/pack-doctor/libraries.txt; the contract schema file PackCheckReport.yaml -> PackDoctorReport.yaml and its _index.yaml entry. No wire refusal or finding code changes.
+  cli_commands:
+    action: rename
+    note: java -jar pack-check-<v>.jar [options] -> java -jar pack-doctor-<v>.jar validate [options]; Gradle task :pack-check:packCheckJar -> :pack-doctor:packDoctorJar; settings.gradle.kts include
+  user_facing_strings:
+    action: rename
+    note: usage text, error prefixes, release notes text, attestation text, CI step names and artifact names (pack-check-jar -> pack-doctor-jar), live docs and guides
+  tests_fixtures:
+    action: rename
+    note: test class names and assertions that name the tool or the jar (jar smoke test, parity test, contract test, build-logic allowlist tests); fixture pack content is unaffected
+  logs_telemetry:
+    action: rename
+    note: the CLI's stderr prefixes; no telemetry exists
+exceptions:
+  - path: "kitty-specs/**"
+    action: do_not_change
+    note: earlier missions' records are history (C-004)
+  - path: "kitty-ops/**"
+    action: do_not_change
+    note: Op records are history (C-004)
+  - path: "docs/changelog/**"
+    action: do_not_change
+    note: released changelog entries are history; a new entry names the rename
+  - path: "contracts/charter/CHANGELOG.md"
+    action: do_not_change
+    note: released contract history; the rename gets a new change fragment
+  - path: "docs/adr/**"
+    action: manual_review
+    note: ADR bodies keep their historical wording; ADR-0075 decision 9 gets an amendment naming pack-doctor, and ADR-0083 records the rename
+  - path: "docs/plans/engineering-notes/**"
+    action: do_not_change
+    note: dated assessments are history
+  - path: "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/PackCheck.java"
+    action: do_not_change
+    note: validate mode over one pack; a domain term, not the tool name. Javadoc mentions of the tool are updated
+  - path: "service/pack-validation/**"
+    action: manual_review
+    note: Javadoc that names the tool is updated; the PackCheck class and its callers keep their names
+  - path: "service/packs/**"
+    action: manual_review
+    note: Javadoc mentions of the tool are updated; no symbol is renamed
