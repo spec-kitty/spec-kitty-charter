@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -59,7 +60,7 @@ public interface StagedPackViews {
          * @param written the pack as it will be stored
          * @return the view, which shares what this session has read
          */
-        View with(RegistrationImpact.Replacement written);
+        View with(ImpactCheck.Replacement written);
 
         /**
          * The same stored packs without one of them, as a pack's removal would leave them (ADR-0081 D6).

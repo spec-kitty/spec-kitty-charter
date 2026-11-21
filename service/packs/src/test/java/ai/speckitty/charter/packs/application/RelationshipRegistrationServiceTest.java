@@ -17,9 +17,11 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.AssetIdentifier;
+import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -28,7 +30,6 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFragment;
 import ai.speckitty.charter.packs.domain.StepEnhancement;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
@@ -65,7 +66,7 @@ class RelationshipRegistrationServiceTest {
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private final FakeStore store = new FakeStore();
     private final RelationshipRegistrationService service = new RelationshipRegistrationService(
-            store, store, new PermissiveWritePolicyGate(), SinglePackCompose.check(PACK, () -> store.packs.get(PACK)));
+            store, store, new PackMutabilityPolicy(), SinglePackCompose.check(PACK, () -> store.packs.get(PACK)));
 
     // ---- FR-009: relationship upsert idempotent on the unordered pair, reverse replaces -------------------------
 
@@ -252,7 +253,7 @@ class RelationshipRegistrationServiceTest {
             }
         };
         RelationshipRegistrationService checked =
-                new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate(), compose);
+                new RelationshipRegistrationService(store, store, new PackMutabilityPolicy(), compose);
         seedDirective("DIR_A");
 
         assertThatThrownBy(() -> checked.registerRelationship(
@@ -347,14 +348,9 @@ class RelationshipRegistrationServiceTest {
         RelationshipRegistrationService gated = new RelationshipRegistrationService(
                 store,
                 store,
-                new WritePolicyGate() {
-                    @Override
-                    public void authorize(Pack pack, Operation operation, Urn target) {
-                        judged.add(target);
-                    }
-
-                    @Override
-                    public void authorizeStaged(Pack staged, List<Write> writes) {}
+                writes -> {
+                    writes.writes().forEach(write -> judged.add(write.target()));
+                    return ClosureVerdict.PASSING;
                 },
                 SinglePackCompose.check(PACK, () -> store.packs.get(PACK)));
 
@@ -703,7 +699,7 @@ class RelationshipRegistrationServiceTest {
             DirectiveRegistrationService directives,
             RelationshipRegistrationService relationships) {
 
-        static RealPack over(Path host, WritePolicyGate policy) throws IOException {
+        static RealPack over(Path host, MutabilityCheck policy) throws IOException {
             Path pack = host.resolve(PACK.value());
             write(
                     pack,

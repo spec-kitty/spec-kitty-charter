@@ -4,9 +4,9 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.StagedPackViews;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -81,11 +81,11 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
     }
 
     private final Stored stored;
-    private final Optional<RegistrationImpact.Replacement> replacement;
+    private final Optional<ImpactCheck.Replacement> replacement;
     private final Optional<PackIdentifier> removed;
 
     private StagedPacks(
-            Stored stored, Optional<RegistrationImpact.Replacement> replacement, Optional<PackIdentifier> removed) {
+            Stored stored, Optional<ImpactCheck.Replacement> replacement, Optional<PackIdentifier> removed) {
         this.stored = stored;
         this.replacement = replacement;
         this.removed = removed;
@@ -116,7 +116,7 @@ final class StagedPacks implements PackCatalogRepository, PackDescriptorReposito
      * @param written the pack as it will be
      * @return the view, which shares what this one has read
      */
-    StagedPacks with(RegistrationImpact.Replacement written) {
+    StagedPacks with(ImpactCheck.Replacement written) {
         return new StagedPacks(stored, Optional.of(Objects.requireNonNull(written, "written")), Optional.empty());
     }
 

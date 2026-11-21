@@ -17,9 +17,11 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ClosureVerdict;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.Preset;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
@@ -90,16 +92,16 @@ class ArtifactRemovalServiceTest {
     private static final class Removals {
         final Rig rig;
         final ArtifactRemovalService service;
-        final WritePolicyGate gate;
+        final MutabilityCheck gate;
 
         Removals(Rig rig) {
             this(rig, null);
         }
 
-        Removals(Rig rig, WritePolicyGate gate) {
+        Removals(Rig rig, MutabilityCheck gate) {
             this.rig = rig;
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
-            WritePolicyGate effective = gate != null
+            MutabilityCheck effective = gate != null
                     ? gate
                     : new PackMutabilityPolicy(
                             new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
@@ -374,22 +376,15 @@ class ArtifactRemovalServiceTest {
                 .isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND);
     }
 
-    /** D10: the write gate is asked about each part of the one removal: the type, then each of its skeletons. */
+    /** D10: the mutability check is asked about each part of the one removal: the type, then each of its skeletons. */
     @Test
-    void theWriteGateIsAskedToRemoveTheTypeAndEachOfItsSkeletons(@TempDir Path host) {
+    void theMutabilityCheckIsAskedToRemoveTheTypeAndEachOfItsSkeletons(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
         List<String> asked = new ArrayList<>();
-        WritePolicyGate recording = new WritePolicyGate() {
-            @Override
-            public void authorize(Pack pack, Operation operation, Urn target) {
-                asked.add(operation + " " + target);
-            }
-
-            @Override
-            public void authorizeStaged(Pack staged, List<Write> writes) {
-                asked.add("staged " + writes);
-            }
+        MutabilityCheck recording = writes -> {
+            writes.writes().forEach(write -> asked.add(write.operation() + " " + write.target()));
+            return ClosureVerdict.PASSING;
         };
 
         new Removals(rig, recording).remove("qa", "mission_type", "documentation");
@@ -406,19 +401,11 @@ class ArtifactRemovalServiceTest {
     void aGateThatRefusesOneSkeletonRefusesTheRemovalAndChangesNothing(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
-        WritePolicyGate refusingTheSkeleton = new WritePolicyGate() {
-            @Override
-            public void authorize(Pack pack, Operation operation, Urn target) {
-                if (target.toString().equals("template:documentation/spec-template.md")) {
-                    throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "the skeleton is locked");
-                }
-            }
-
-            @Override
-            public void authorizeStaged(Pack staged, List<Write> writes) {
-                // a removal stages nothing
-            }
-        };
+        MutabilityCheck refusingTheSkeleton = writes -> new ClosureVerdict(writes.writes().stream()
+                .filter(write -> write.target().toString().equals("template:documentation/spec-template.md"))
+                .map(write ->
+                        ClosureFault.of(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "the skeleton is locked", List.of()))
+                .toList());
         Removals removals = new Removals(rig, refusingTheSkeleton);
         Map<String, String> before = removals.filesOf("qa");
         PackRevision revision = rig.writeStore.currentRevision(QA);
@@ -429,6 +416,31 @@ class ArtifactRemovalServiceTest {
 
         assertThat(removals.filesOf("qa")).isEqualTo(before);
         assertThat(rig.writeStore.currentRevision(QA)).isEqualTo(revision);
+    }
+
+    /** #556, FR-007: a removal whose parts the levels all forbid names every refused part in one refusal. */
+    @Test
+    void aRemovalWhosePartsAreAllRefusedNamesEveryOneInOrder(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
+        MutabilityCheck lockedAll = writes -> new ClosureVerdict(writes.writes().stream()
+                .map(write -> ClosureFault.of(
+                        RefusalCode.GOVERNANCE_POLICY_VIOLATION, write.target() + " is locked", List.of()))
+                .toList());
+        Removals removals = new Removals(rig, lockedAll);
+        Map<String, String> before = removals.filesOf("qa");
+
+        CharterRefusal refused = refusal(() -> removals.remove("qa", "mission_type", "documentation"));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::detail)
+                .as("the type, then each of its skeletons")
+                .containsExactly(
+                        "mission_type:documentation is locked",
+                        "template:documentation/divio/howto-template.md is locked",
+                        "template:documentation/spec-template.md is locked");
+        assertThat(removals.filesOf("qa")).isEqualTo(before);
     }
 
     /**
@@ -1131,23 +1143,16 @@ class ArtifactRemovalServiceTest {
     }
 
     @Test
-    void theRemoveOperationOfTheWriteGateIsAskedAboutTheArtifactAndARefusalChangesNothing(@TempDir Path host) {
+    void theRemoveOperationOfTheMutabilityCheckIsAskedAboutTheArtifactAndARefusalChangesNothing(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("qa", rig.stage(qa()), Preconditions.none());
         List<String> asked = new ArrayList<>();
-        WritePolicyGate refusing = new WritePolicyGate() {
-            @Override
-            public void authorize(Pack pack, Operation operation, Urn target) {
-                asked.add(operation + " " + target);
-                throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor");
-            }
-
-            @Override
-            public void authorizeStaged(Pack staged, List<Write> writes) {
-                asked.add("staged " + writes);
-                throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor");
-            }
-        };
+        MutabilityCheck refusing = writes -> new ClosureVerdict(writes.writes().stream()
+                .map(write -> {
+                    asked.add(write.operation() + " " + write.target());
+                    return ClosureFault.of(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor", List.of());
+                })
+                .toList());
         Removals removals = new Removals(rig, refusing);
         Map<String, String> before = removals.filesOf("qa");
 
@@ -1158,7 +1163,7 @@ class ArtifactRemovalServiceTest {
         assertThat(asked.getFirst()).contains("REMOVE").contains("directive:D3");
         assertThat(removals.filesOf("qa")).isEqualTo(before);
 
-        new Removals(rig, new PermissiveWritePolicyGate()).remove("qa", "directive", "D3");
+        new Removals(rig, new PackMutabilityPolicy()).remove("qa", "directive", "D3");
         assertThat(removals.filesOf("qa"))
                 .as("the control: a gate that allows it")
                 .doesNotContainKey("directives/D3.directive.yaml");
@@ -1209,18 +1214,12 @@ class ArtifactRemovalServiceTest {
         Rig rig = new Rig(host);
         rig.register("qa", rig.stage(qaWithAProfile()), Preconditions.none());
         List<String> asked = new ArrayList<>();
-        WritePolicyGate refusing = new WritePolicyGate() {
-            @Override
-            public void authorize(Pack pack, Operation operation, Urn target) {
-                asked.add(operation + " " + target);
-                throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor");
-            }
-
-            @Override
-            public void authorizeStaged(Pack staged, List<Write> writes) {
-                throw new CharterRefusal(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor");
-            }
-        };
+        MutabilityCheck refusing = writes -> new ClosureVerdict(writes.writes().stream()
+                .map(write -> {
+                    asked.add(write.operation() + " " + write.target());
+                    return ClosureFault.of(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor", List.of());
+                })
+                .toList());
         Removals removals = new Removals(rig, refusing);
         Map<String, String> before = removals.filesOf("qa");
 

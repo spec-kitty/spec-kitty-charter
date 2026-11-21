@@ -13,10 +13,10 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
-import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.StyleguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -45,7 +45,7 @@ class StyleguideControllerTest {
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new StyleguideController(
-                    new StyleguideRegistrationService(store, store, new PermissiveWritePolicyGate()),
+                    new StyleguideRegistrationService(store, store, new PackMutabilityPolicy()),
                     new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler(), new RegistrationBodyAdvice())
             .build();

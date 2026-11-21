@@ -5,14 +5,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RequiringPack;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -267,5 +273,87 @@ class PackRefusalsTest {
             Files.delete(target);
         }
         assumeTrue(links || Boolean.getBoolean("charter.requireSymlinks"), "the file system cannot create links");
+    }
+
+    // ---- the closure edge's mapper (#556, D1) ----------------------------------------------------------------------
+
+    private static final RefusalPack ACME =
+            new RefusalPack(new PackUlid("01ACME00000000000000000000"), new PackIdentifier("acme"), "Acme");
+
+    private static final RefusalPack BASE =
+            new RefusalPack(new PackUlid("01BASE00000000000000000000"), new PackIdentifier("base"), "Base");
+
+    @Test
+    @DisplayName("one closure fault is refused exactly as its check refuses it alone (SC-002)")
+    void oneClosureFaultIsRefusedAsToday() {
+        CharterRefusal today = new CharterRefusal(
+                RefusalCode.SELF_OVERRIDE,
+                "In the closure rooted at acme: the overrides edge resolves to itself",
+                List.of(ACME, BASE));
+
+        CharterRefusal mapped = PackRefusals.of(
+                new ClosureVerdict(List.of(ClosureFault.lift(today).orElseThrow())));
+
+        assertThat(mapped.code()).isEqualTo(today.code());
+        assertThat(mapped.getMessage()).isEqualTo(today.getMessage());
+        assertThat(mapped.packs()).isEqualTo(today.packs());
+        assertThat(mapped.violations()).isEqualTo(today.violations()).isEmpty();
+        assertThat(mapped.requiredBy()).isEqualTo(today.requiredBy());
+    }
+
+    @Test
+    @DisplayName("one closure fault keeps its own violations and the packs that require it")
+    void oneClosureFaultKeepsItsParts() {
+        RefusalViolation own = new RefusalViolation("mission-types/a.yaml", "substep_delegation_unresolved", "why");
+        RequiringPack requiring = new RequiringPack("base", List.of("acme"));
+        ClosureFault fault = new ClosureFault(
+                ClosureFault.of(RefusalCode.VALIDATION_FAILED, "why", List.of()).reason(),
+                List.of(ACME),
+                List.of(own),
+                List.of(requiring));
+
+        CharterRefusal today = CharterRefusal.of(
+                RefusalCode.VALIDATION_FAILED, "why", List.of(ACME), List.of(own), List.of(requiring));
+
+        CharterRefusal mapped = PackRefusals.of(new ClosureVerdict(List.of(fault)));
+
+        assertThat(mapped.code()).isEqualTo(today.code());
+        assertThat(mapped.getMessage()).isEqualTo(today.getMessage());
+        assertThat(mapped.packs()).isEqualTo(today.packs());
+        assertThat(mapped.violations()).isEqualTo(today.violations()).containsExactly(own);
+        assertThat(mapped.requiredBy()).isEqualTo(today.requiredBy()).containsExactly(requiring);
+    }
+
+    @Test
+    @DisplayName("several faults: the first fault's code, a header per fault then its own violations, the unions")
+    void severalFaultsAreRefusedByD1() {
+        RefusalViolation own = new RefusalViolation("mission-types/a.yaml", "substep_delegation_unresolved", "why");
+        ClosureFault self = ClosureFault.of(RefusalCode.SELF_OVERRIDE, "self", List.of(ACME));
+        ClosureFault delegation = new ClosureFault(
+                ClosureFault.of(RefusalCode.VALIDATION_FAILED, "delegation", List.of())
+                        .reason(),
+                List.of(BASE, ACME),
+                List.of(own),
+                List.of(new RequiringPack("base", List.of())));
+        ClosureFault cycle = ClosureFault.of(RefusalCode.ENHANCES_CYCLE, "cycle", List.of(BASE));
+
+        CharterRefusal mapped = PackRefusals.of(new ClosureVerdict(List.of(self, delegation, cycle)));
+
+        assertThat(mapped.code()).isEqualTo(RefusalCode.SELF_OVERRIDE);
+        assertThat(mapped.getMessage()).isEqualTo("self (3 fault(s); every one is in violations)");
+        assertThat(mapped.violations())
+                .containsExactly(
+                        new RefusalViolation("", "self_override", "self"),
+                        new RefusalViolation("", "validation_failed", "delegation"),
+                        own,
+                        new RefusalViolation("", "enhances_cycle", "cycle"));
+        assertThat(mapped.packs()).containsExactly(ACME, BASE);
+        assertThat(mapped.requiredBy()).containsExactly(new RequiringPack("base", List.of()));
+    }
+
+    @Test
+    @DisplayName("a passing closure verdict refuses nothing")
+    void aPassingClosureVerdictRefusesNothing() {
+        assertThatThrownBy(() -> PackRefusals.of(ClosureVerdict.PASSING)).isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -319,8 +319,8 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Throws the first of a set of faults, as a caller that answers one refusal needs: the offering answers the first
-     * fault of each of its phases in turn.
+     * Throws the first of a set of faults, as a caller that answers one refusal needs. The offering answers every fault
+     * of a phase instead (#556, FR-006).
      *
      * @param faults the faults, in the order they were judged
      * @throws Refusal the first, when there is one
@@ -393,22 +393,42 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Resolves the compose rooted at a set of configured packs (#360): every check {@link #resolve} runs, over the
-     * {@linkplain #compositionClosure composition closure} of the roots only, so a pack outside it is never judged. A
-     * duplicate {@code pack_id} or {@code name} outside the closure does not refuse; one inside it does, naming both
-     * holders, because every pack declaring an id of the closure is selected. A {@code depends_on} or
-     * {@code parent_pack} target no available pack declares stays missing, and {@link #resolve} refuses it as it
-     * always has. With every available pack a root, the answer and every refusal are those of {@link #resolve}.
+     * A rooted compose with every fault, not the first (#556, FR-006): the closure's merge order, and every composition
+     * fault of the closure, in {@link #faults}' order.
      *
-     * @param available the packs the compose may draw on, each with its descriptor
-     * @param roots the configured identifiers of the packs the compose is rooted at
-     * @return the closure of the roots, dependencies first, each pack once
-     * @throws Refusal when the closure's graph cannot be served
-     * @throws IllegalArgumentException when a root names no available pack: the caller chose the roots, so it is the
-     *     caller's error, not a refusal of the graph
+     * @param order the closure in merge order; meaningful only when there is no fault
+     * @param faults every composition fault of the closure; empty when it resolves
      */
-    public static List<PackUnderResolution> resolveRooted(
-            List<PackUnderResolution> available, Collection<PackIdentifier> roots) {
+    public record Rooted(List<PackUnderResolution> order, List<Refusal> faults) {
+
+        /**
+         * Copies the lists.
+         *
+         * @param order the closure in merge order
+         * @param faults the faults
+         */
+        public Rooted {
+            order = List.copyOf(order);
+            faults = List.copyOf(faults);
+        }
+    }
+
+    /**
+     * The compose rooted at a set of configured packs (#360), with every composition fault of its closure (#556,
+     * FR-006): every check {@link #resolve} runs, over the {@linkplain #compositionClosure composition closure} of the
+     * roots only, so a pack outside it is never judged. A duplicate {@code pack_id} or {@code name} outside the closure
+     * is no fault; one inside it is, naming both holders, because every pack declaring an id of the closure is
+     * selected. A {@code depends_on} or {@code parent_pack} target no available pack declares stays missing, and is a
+     * fault as {@link #resolve} refuses it. With every available pack a root, the order and the faults are those of
+     * {@link #faults}. The offering refuses the phase with all of them; a caller that answers one refusal takes
+     * {@link #refuseFirst}.
+     *
+     * @param available the configured packs with their descriptors
+     * @param roots the configured identifiers the compose is rooted at
+     * @return the closure in merge order and its faults
+     * @throws IllegalArgumentException when a root names no available pack
+     */
+    public static Rooted composeRooted(List<PackUnderResolution> available, Collection<PackIdentifier> roots) {
         Objects.requireNonNull(available, "available");
         Objects.requireNonNull(roots, "roots");
         Map<String, PackUnderResolution> firstByPackId = new LinkedHashMap<>();
@@ -427,9 +447,10 @@ public final class PackCompositionResolver {
             rootPackIds.add(packId);
         }
         Set<String> closure = compositionClosure(rootPackIds, firstByPackId);
-        return resolve(available.stream()
+        Composition composition = compose(available.stream()
                 .filter(pack -> closure.contains(pack.descriptor().packId()))
                 .toList());
+        return new Rooted(composition.order(), composition.faults());
     }
 
     /**
@@ -469,7 +490,7 @@ public final class PackCompositionResolver {
     /**
      * One reference as the compose resolves it: the reference an artifact writes, and the pack that holds what it
      * names. The offering read builds these from the references of every pack's graphs and checks them with
-     * {@link #checkReferences} when the compose resolves; the artifact reads build them for one reference at a time.
+     * {@link #referenceFaults} when the compose resolves; the artifact reads build them for one reference at a time.
      * Both build them through {@link #resolveReference}, the one owner of which pack a reference means.
      *
      * @param reference the reference as the artifact writes it
@@ -496,7 +517,7 @@ public final class PackCompositionResolver {
      * pack does this reference mean" (FR-013, FR-014, FR-015). A qualified reference is held by the pack of that
      * name. A bare one is held by the referring pack when it holds the artifact, which shadows a same-named artifact
      * of another pack (FR-014), else by the first other pack of the compose that holds it. It judges nothing: whether
-     * the holder is a legal one is {@link #checkReferences}.
+     * the holder is a legal one is {@link #referenceFaults}.
      *
      * @param packs the resolved compose
      * @param referring the configured identity of the pack whose artifact writes the reference
@@ -528,7 +549,7 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * One reference with the pack that holds what it names ({@link #holderOf}), ready for {@link #checkReferences}.
+     * One reference with the pack that holds what it names ({@link #holderOf}), ready for {@link #referenceFaults}.
      *
      * @param packs the resolved compose
      * @param referring the configured identity of the pack whose artifact writes the reference
@@ -552,13 +573,13 @@ public final class PackCompositionResolver {
      * @param packs the resolved compose
      * @param referringPackId the {@code pack_id} of the pack whose artifacts write the references
      * @param references the references as the artifact read resolved them, in the artifact's order
-     * @throws Refusal with {@link Failure#REFERENCE_UNQUALIFIED} when a bare reference resolves only in another
-     *     pack, with {@link Failure#REFERENCE_PACK_MISSING} when a qualified reference names a pack outside the
-     *     referring pack's closure, or with {@link Failure#REFERENCE_ARTIFACT_MISSING} when it names a pack of the
-     *     closure that does not hold the artifact
+     * @return every fault, in the references' order (#556, FR-006): {@link Failure#REFERENCE_UNQUALIFIED} for a bare
+     *     reference that resolves only in another pack, {@link Failure#REFERENCE_PACK_MISSING} for a qualified
+     *     reference that names a pack outside the referring pack's closure, and {@link Failure#REFERENCE_ARTIFACT_MISSING}
+     *     for one that names a pack of the closure that does not hold the artifact; empty when every reference holds
      * @throws IllegalArgumentException when no pack of the compose has the referring {@code pack_id}
      */
-    public static void checkReferences(
+    public static List<Refusal> referenceFaults(
             List<PackUnderResolution> packs, String referringPackId, List<ResolvedReference> references) {
         Objects.requireNonNull(packs, "packs");
         Objects.requireNonNull(referringPackId, "referringPackId");
@@ -574,10 +595,12 @@ public final class PackCompositionResolver {
             throw new IllegalArgumentException("the referring pack " + referringPackId + " is no pack of the compose");
         }
         String referringLabel = label(referring);
+        List<Refusal> faults = new ArrayList<>();
         for (ResolvedReference resolved : references) {
             PackQualifiedReference reference = resolved.reference();
             if (reference.qualified()) {
-                checkQualifiedReference(reference, byName, closure, referring, referringLabel);
+                qualifiedReferenceFault(reference, byName, closure, referring, referringLabel)
+                        .ifPresent(faults::add);
             } else if (resolved.holdingPackId()
                     .filter(id -> !id.equals(referringPackId))
                     .isPresent()) {
@@ -585,29 +608,30 @@ public final class PackCompositionResolver {
                 PackUnderResolution holding = byId.get(holdingId);
                 List<RefusalPack> holder = holding == null ? List.of() : named(holding);
                 String holdingLabel = holding == null ? "pack `" + holdingId + "`" : label(holding);
-                throw new Refusal(
+                faults.add(new Refusal(
                         Failure.REFERENCE_UNQUALIFIED,
                         concat(named(referring), holder),
                         referringLabel + " writes the bare reference `" + reference + "`, which resolves only in "
-                                + holdingLabel + "; a cross-pack reference is written pack-qualified");
+                                + holdingLabel + "; a cross-pack reference is written pack-qualified"));
             }
         }
+        return List.copyOf(faults);
     }
 
     /**
-     * Refuses a substep delegation candidate a pack writes with another pack's name when that pack is of the compose and
-     * of the writer's {@code depends_on} closure and does not hold an artifact of the candidate's kind and id (FR-005).
-     * It runs before {@link #checkReferences}, so such a candidate is refused once, by its own code, and not again as the
+     * Every substep delegation candidate a pack writes with another pack's name when that pack is of the compose and of
+     * the writer's {@code depends_on} closure and does not hold an artifact of the candidate's kind and id (FR-005).
+     * It runs before {@link #referenceFaults}, so such a candidate is refused once, by its own code, and not again as the
      * reference of its {@code scope} edge. A candidate whose pack the compose does not hold, or holds outside the
      * closure, is left to the reference check of its edge ({@code pack_reference_pack_missing}).
      *
      * @param packs the resolved compose
      * @param referringPackId the {@code pack_id} of the pack whose mission types write the candidates
      * @param candidates the candidates, as {@link SubstepDelegationRule#qualifiedCandidates} lists them
-     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE}, naming both packs, with one violation
-     *     {@value SubstepDelegationRule#UNRESOLVED} at the mission type file
+     * @return one fault per such candidate, in order (#556, FR-006): {@link RefusalCode#PACK_UNREADABLE}, naming both
+     *     packs, with one violation {@value SubstepDelegationRule#UNRESOLVED} at the mission type file
      */
-    public static void refuseUnresolvedDelegations(
+    public static List<ClosureFault> unresolvedDelegations(
             List<PackUnderResolution> packs,
             String referringPackId,
             List<SubstepDelegationRule.QualifiedCandidate> candidates) {
@@ -615,8 +639,9 @@ public final class PackCompositionResolver {
         Objects.requireNonNull(referringPackId, "referringPackId");
         Objects.requireNonNull(candidates, "candidates");
         if (candidates.isEmpty()) {
-            return;
+            return List.of();
         }
+        List<ClosureFault> faults = new ArrayList<>();
         Map<String, PackUnderResolution> byId = indexById(packs);
         Map<String, PackUnderResolution> byName = new HashMap<>();
         packs.forEach(pack -> byName.putIfAbsent(pack.descriptor().name(), pack));
@@ -632,19 +657,26 @@ public final class PackCompositionResolver {
             }
             String reason = candidate.unresolved(label(target));
             List<RefusalPack> named = referring == null ? named(target) : named(referring, target);
-            throw CharterRefusal.withPacksAndViolations(
-                    RefusalCode.PACK_UNREADABLE,
-                    (referring == null ? "pack `" + referringPackId + "`" : label(referring)) + ": " + reason,
+            faults.add(new ClosureFault(
+                    ClosureFault.of(
+                                    RefusalCode.PACK_UNREADABLE,
+                                    (referring == null ? "pack `" + referringPackId + "`" : label(referring)) + ": "
+                                            + reason,
+                                    named)
+                            .reason(),
                     named,
-                    List.of(new RefusalViolation(candidate.file(), SubstepDelegationRule.UNRESOLVED, reason)));
+                    List.of(new RefusalViolation(candidate.file(), SubstepDelegationRule.UNRESOLVED, reason)),
+                    List.of()));
         }
+        return List.copyOf(faults);
     }
 
     /**
-     * Refuses a pack-qualified reference whose pack the compose does not hold, whose pack lies outside the referring
-     * pack's {@code depends_on} closure, or whose pack does not hold the graph-authored artifact, or the term, it names.
+     * The fault of a pack-qualified reference whose pack the compose does not hold, whose pack lies outside the
+     * referring pack's {@code depends_on} closure, or whose pack does not hold the graph-authored artifact, or the term,
+     * it names.
      */
-    private static void checkQualifiedReference(
+    private static Optional<Refusal> qualifiedReferenceFault(
             PackQualifiedReference reference,
             Map<String, PackUnderResolution> byName,
             Set<String> closure,
@@ -653,36 +685,37 @@ public final class PackCompositionResolver {
         String missing = reference.packName().orElseThrow();
         PackUnderResolution target = byName.get(missing);
         if (target == null) {
-            throw new Refusal(
+            return Optional.of(new Refusal(
                     Failure.REFERENCE_PACK_MISSING,
                     named(referring),
                     referringLabel + " writes the reference `" + reference + "`, but the compose holds no pack"
-                            + " named `" + missing + "`");
+                            + " named `" + missing + "`"));
         }
         if (!closure.contains(target.descriptor().packId())) {
-            throw new Refusal(
+            return Optional.of(new Refusal(
                     Failure.REFERENCE_PACK_MISSING,
                     named(referring, target),
                     referringLabel + " writes the reference `" + reference + "`, but " + label(target)
-                            + " is outside its depends_on closure");
+                            + " is outside its depends_on closure"));
         }
         Optional<Urn> urn = reference.asUrn();
         if (urn.isPresent()
                 && urn.get().kind().edgeTarget()
                 && (urn.get().kind().artifactKind().isPresent() || urn.get().kind() == NodeKind.TERM)
                 && !target.holds(urn.get().toString())) {
-            throw new Refusal(
+            return Optional.of(new Refusal(
                     Failure.REFERENCE_ARTIFACT_MISSING,
                     named(referring, target),
                     referringLabel + " writes the reference `" + reference + "`, but " + label(target)
-                            + " does not hold `" + urn.get() + "`");
+                            + " does not hold `" + urn.get() + "`"));
         }
+        return Optional.empty();
     }
 
     /**
      * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
      * reference may name (FR-015), and the packs that may hold the step a step enhancement names (C37,
-     * {@link EnhancementCompose#targetHeld}). It is not the {@linkplain #compositionClosure composition closure}, which
+     * {@link EnhancementCompose#targetFaults}). It is not the {@linkplain #compositionClosure composition closure}, which
      * also follows {@code parent_pack}.
      *
      * @param packId the descriptor {@code pack_id} of the pack the walk starts at
@@ -1062,7 +1095,7 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * Refuses a preset item or a policy lock that names an artifact of the closure only by case (the operator ruling of
+     * Every preset item or policy lock that names an artifact of the closure only by case (the operator ruling of
      * 2026-11-06): {@code directive_001} where the closure holds {@code DIRECTIVE_001}. Ids are matched exactly, so
      * such a mention would silently govern nothing, and a deny entry the author meant to be refused would pass. A
      * mention of an id no pack of the closure holds is no mistake this check can tell from a pack not yet configured:
@@ -1071,12 +1104,14 @@ public final class PackCompositionResolver {
      *
      * @param ordered the packs of one compose
      * @param mentionsOf the URNs, as written, that a pack's presets and policy file name
-     * @throws Refusal naming the mentioning pack first, then the pack that holds the id
+     * @return every such mention, in the packs' order, each naming the mentioning pack first, then the pack that holds
+     *     the id (#556, FR-006)
      */
-    public static void refuseCaseOnlyMatches(
+    public static List<Refusal> caseOnlyMatches(
             List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> mentionsOf) {
         Objects.requireNonNull(ordered, "ordered");
         Objects.requireNonNull(mentionsOf, "mentionsOf");
+        List<Refusal> faults = new ArrayList<>();
         Set<String> held = new HashSet<>();
         Map<String, PackUnderResolution> holderByFolded = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
@@ -1095,13 +1130,14 @@ public final class PackCompositionResolver {
                         .filter(urn -> urn.equalsIgnoreCase(mentioned))
                         .findFirst()
                         .orElse(mentioned);
-                throw new Refusal(
+                faults.add(new Refusal(
                         Failure.REFERENCE_ARTIFACT_MISSING,
                         named(pack, holder),
                         label(pack) + " names `" + mentioned + "`, but " + label(holder) + " holds `" + declared
-                                + "`: ids differ only by case and are matched exactly");
+                                + "`: ids differ only by case and are matched exactly"));
             }
         }
+        return List.copyOf(faults);
     }
 
     /** Whether one pack is on the other's {@code parent_pack} line. The walk visits each pack once, so a cycle ends it. */

@@ -45,9 +45,17 @@ class PackUninstallServiceTest {
                 rig.commits,
                 new WholePackStore(strategy),
                 new StagedPackViewFactory(rig.locations, strategy),
-                new ClosurePackDependents(
-                        new InboundReferences(rig.repository, rig.repository, rig.repository), rig.activationPort),
-                rig.impact);
+                removals(rig, strategy, rig.activationPort));
+    }
+
+    /** The impact check that judges a removal: its dependents over the inbound scan, then the closures left (#556). */
+    private static ClosureImpactCheck removals(
+            Rig rig, YamlSerializationStrategy strategy, ActivationImpact activations) {
+        return new ClosureImpactCheck(
+                new StagedPackViewFactory(rig.locations, strategy),
+                activations,
+                new OwnClosureWalk(),
+                new InboundReferences(rig.repository, rig.repository, rig.repository));
     }
 
     private static PackUninstallService.Outcome uninstall(Rig rig, String pack, String ifMatch, Mode mode) {
@@ -89,6 +97,38 @@ class PackUninstallServiceTest {
         assertThat(refusalOf(() -> uninstall(rig, "qa", "*", Mode.COMMIT)).code())
                 .as("a repeated removal finds nothing")
                 .isEqualTo(RefusalCode.PACK_NOT_FOUND);
+    }
+
+    @Test
+    void aRemovalJudgesInOneSessionTheImpactCheckSharesNoSecond(@TempDir Path host) {
+        // #556 (squad A3), #517 NFR-001: the uninstall and the impact check judge in the one session the uninstall
+        // opened, so each stored pack's descriptor is read once per delete.
+        Rig rig = new Rig(host);
+        PackRevision revision =
+                rig.register("qa", rig.stage(qa()), Preconditions.none()).revision();
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        java.util.concurrent.atomic.AtomicInteger sessions = new java.util.concurrent.atomic.AtomicInteger();
+        StagedPackViewFactory real = new StagedPackViewFactory(rig.locations, strategy);
+        StagedPackViews counted = () -> {
+            sessions.incrementAndGet();
+            return real.session();
+        };
+        PackUninstallService uninstalls = new PackUninstallService(
+                rig.writeStore,
+                rig.commits,
+                new WholePackStore(strategy),
+                counted,
+                new ClosureImpactCheck(
+                        counted,
+                        rig.activationPort,
+                        new OwnClosureWalk(),
+                        new InboundReferences(rig.repository, rig.repository, rig.repository)));
+
+        uninstalls.uninstall(new PackIdentifier("qa"), revision.token(), Mode.DRY_RUN, RevisionTrail.NONE);
+
+        assertThat(sessions)
+                .as("one session per delete, shared with the impact check")
+                .hasValue(1);
     }
 
     @Test
@@ -152,6 +192,47 @@ class PackUninstallServiceTest {
                 .as("the dry run answers the same refusal as a body")
                 .hasValueSatisfying(same -> {
                     assertThat(same.code()).isEqualTo(RefusalCode.PACK_HAS_DEPENDENTS);
+                    assertThat(same.violations()).isEqualTo(refused.violations());
+                });
+    }
+
+    @Test
+    void aRemovalNamesEveryFaultOfTheClosuresItLeavesAndRemovesNothing(@TempDir Path host) throws IOException {
+        // #556, US3: with no dependent, only an activation that lists no packs remains, and every such activation
+        // composes the same roots, so the removal leaves one closure (ADR-0081 D6); its every fault is named.
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa()), Preconditions.none());
+        rig.install(
+                "acme",
+                Packs.of(PackRegistrationServiceTest.ulid('Q'), "acme", "1.0.0", "org")
+                        .directive("A", "A")
+                        .directive("B", "B")
+                        .directive("C", "C")
+                        .directive("D", "D")
+                        .file(
+                                "relations.graph.yaml",
+                                ClosureImpactCheckTest.graph(
+                                        ClosureImpactCheckTest.edge("A", "enhances", "B"),
+                                        ClosureImpactCheckTest.edge("B", "enhances", "A"),
+                                        ClosureImpactCheckTest.edge("C", "enhances", "D"),
+                                        ClosureImpactCheckTest.edge("D", "enhances", "C"))));
+        rig.activations.add(Optional.empty());
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("qa"));
+
+        CharterRefusal refused = refusalOf(() -> uninstall(rig, "qa", "*", Mode.COMMIT));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ENHANCES_CYCLE);
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::code)
+                .containsExactly("enhances_cycle", "enhances_cycle");
+        assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
+        assertThat(rig.filesOf(rig.packs.resolve("qa"))).as("nothing changed").isEqualTo(before);
+
+        PackUninstallService.Outcome dryRun = uninstall(rig, "qa", "*", Mode.DRY_RUN);
+        assertThat(dryRun.refused())
+                .as("the dry run answers the same refusal as a body")
+                .hasValueSatisfying(same -> {
+                    assertThat(same.code()).isEqualTo(RefusalCode.ENHANCES_CYCLE);
                     assertThat(same.violations()).isEqualTo(refused.violations());
                 });
     }
@@ -296,9 +377,7 @@ class PackUninstallServiceTest {
                 rig.commits,
                 new WholePackStore(strategy),
                 new StagedPackViewFactory(rig.locations, strategy),
-                new ClosurePackDependents(
-                        new InboundReferences(rig.repository, rig.repository, rig.repository), unreadable),
-                rig.impact);
+                removals(rig, strategy, unreadable));
 
         IllegalStateException failed = catchThrowableOfType(
                 IllegalStateException.class,

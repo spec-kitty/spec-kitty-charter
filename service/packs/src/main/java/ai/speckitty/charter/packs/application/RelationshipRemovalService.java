@@ -9,11 +9,12 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,20 +41,20 @@ public final class RelationshipRemovalService {
 
     private final PackRepository packs;
     private final PackRemovalStore store;
-    private final WritePolicyGate gate;
-    private final RegistrationImpact impact;
+    private final MutabilityCheck gate;
+    private final ImpactCheck impact;
 
     /**
      * A service over its ports.
      *
      * @param packs loads the pack
      * @param store locks and swaps
-     * @param gate the mutability gate consulted before the edge goes
+     * @param gate the mutability check judged before the edge goes
      * @param impact the impact check
      */
     @Autowired
     public RelationshipRemovalService(
-            PackRepository packs, PackRemovalStore store, WritePolicyGate gate, RegistrationImpact impact) {
+            PackRepository packs, PackRemovalStore store, MutabilityCheck gate, ImpactCheck impact) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.store = Objects.requireNonNull(store, "store");
         this.gate = Objects.requireNonNull(gate, "gate");
@@ -172,16 +173,16 @@ public final class RelationshipRemovalService {
         }
         // The edge goes as a RELATIONSHIP write on its source, as a whole-pack replace that drops it is judged; a
         // tension is judged on each side (ADR-0045 decision 1).
-        named.forEach(edge -> {
-            gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.from());
-            if (edge.type() == RelationType.TENSION) {
-                gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.to());
-            }
-        });
+        PackRefusals.require(gate.judge(new MutabilityCheck.Live(
+                current,
+                named.stream()
+                        .flatMap(edge -> PackRegistrationService.writesOn(edge).stream())
+                        .toList())));
         List<Relationship> retained = registered.stream().filter(asked.negate()).toList();
         refuseUnlinkingAStep(pack, current.descriptor().name(), named, retained);
         refuseUnscopingACandidate(pack, current, named, retained);
-        impact.check(pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained));
+        PackRefusals.noticesOrRefuse(impact.judge(new ImpactCheck.Write(
+                pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained), Optional.empty())));
         PackRevision after = store.remove(pack, PackRemovalStore.Removal.ofRelationship(retained));
         trail.moved(before, after);
         return after;

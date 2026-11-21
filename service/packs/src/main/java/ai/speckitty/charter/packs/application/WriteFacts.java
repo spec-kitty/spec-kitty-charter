@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 /**
  * What the compose will read of a pack once one write is stored: the facts the stored pack gives, with the write laid
  * over them. The per-artifact writes and the two {@code DELETE}s hand the result to
- * {@link RegistrationImpact#check(ai.speckitty.charter.kernel.domain.PackIdentifier, java.util.function.UnaryOperator)}
+ * {@link ClosureImpactCheck#judge(ai.speckitty.charter.packs.domain.ImpactCheck.PackChange)} ({@code ImpactCheck.Write})
  * so that the closures the pack joins are judged as the pack will be, with no second read of the pack and no copy of a
  * compose rule (IC-15).
  *

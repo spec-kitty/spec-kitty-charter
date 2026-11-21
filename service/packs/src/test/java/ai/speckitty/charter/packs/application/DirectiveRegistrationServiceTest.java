@@ -13,9 +13,9 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +33,7 @@ class DirectiveRegistrationServiceTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private final FakeStore store = new FakeStore();
-    private final WritePolicyGate policy = new PermissiveWritePolicyGate();
+    private final MutabilityCheck policy = new PackMutabilityPolicy();
     private final DirectiveRegistrationService service = new DirectiveRegistrationService(store, store, policy);
 
     // ---- FR-007 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0064) ----------

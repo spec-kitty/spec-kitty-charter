@@ -6,7 +6,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
@@ -136,10 +136,10 @@ class PackRegistrationScaleTest {
         };
         DomainRepositoryService repository = new DomainRepositoryService(counting, strategy);
         ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations), rig.generation);
-        WritePolicyGate gate = new PackMutabilityPolicy(
+        MutabilityCheck gate = new PackMutabilityPolicy(
                 new OfferingReadService(repository, repository, repository, read), repository, repository, read);
-        RegistrationImpact impact =
-                new RegistrationImpact(new StagedPackViewFactory(counting, strategy), ActivationImpact.NONE);
+        ClosureImpactCheck impact =
+                new ClosureImpactCheck(new StagedPackViewFactory(counting, strategy), ActivationImpact.NONE);
         return new PackRegistrationService(
                 new FileSystemPackInspector(),
                 new WholePackStore(strategy),

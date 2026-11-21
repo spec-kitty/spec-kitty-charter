@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
+import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -168,7 +168,7 @@ class PresetRoundTripTest {
         new ToolguideRegistrationService(
                         service,
                         writeStore,
-                        new PermissiveWritePolicyGate(),
+                        new PackMutabilityPolicy(),
                         uri -> {
                             throw new AssertionError("no guide is fetched: the guide is sent as content");
                         },

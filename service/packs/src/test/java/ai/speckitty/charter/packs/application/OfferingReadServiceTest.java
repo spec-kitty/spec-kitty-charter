@@ -2,7 +2,9 @@ package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -12,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -23,6 +26,10 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +57,8 @@ class OfferingReadServiceTest {
     private final Map<String, List<String>> defined = new HashMap<>();
     private final Map<String, List<String>> written = new HashMap<>();
     private final Map<String, List<Relationship>> edges = new HashMap<>();
+    private final Map<String, List<Preset>> presets = new HashMap<>();
+    private final Map<String, List<SubstepDelegationRule.QualifiedCandidate>> delegations = new HashMap<>();
     private final Map<String, CharterRefusal> factsUnreadable = new HashMap<>();
     private final List<String> factsRead = new ArrayList<>();
 
@@ -192,6 +201,155 @@ class OfferingReadServiceTest {
         defined.put("alpha", List.of("procedure:release"));
         defined.remove("bravo");
         assertThat(service(packs).offering().value()).hasSize(2);
+    }
+
+    /**
+     * The reference phase answers every fault of its own in one refusal (#556, FR-006, D1): the first fault's code,
+     * one header violation per fault, and the packs of every fault; one fault alone is answered as before.
+     */
+    @Test
+    void everyReferenceFaultOfTheComposeIsInTheOneRefusal() {
+        List<ConfiguredPack> packs = List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
+        defined.put("bravo", List.of("procedure:release", "procedure:review"));
+        written.put("alpha", List.of("procedure:release", "procedure:review"));
+
+        CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED);
+        assertThat(refused.getMessage())
+                .contains("procedure:release")
+                .endsWith("(2 fault(s); every one is in violations)");
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::code, RefusalViolation::pointer)
+                .containsExactly(tuple("pack_reference_unqualified", ""), tuple("pack_reference_unqualified", ""));
+        assertThat(refused.violations().get(1).detail()).contains("procedure:review");
+
+        written.put("alpha", List.of("procedure:release"));
+        CharterRefusal alone = refusalOf(() -> service(packs).offering());
+        assertThat(alone.violations()).isEmpty();
+        assertThat(alone.getMessage()).doesNotContain("fault(s)");
+    }
+
+    /**
+     * Each later phase of the compose answers every fault of its own in one refusal too (#556, FR-006): the substep
+     * delegations, the step enhancement targets, the preset contests and the case-only matches. A revert of any phase
+     * to its first fault fails here.
+     */
+    @Nested
+    class EveryPhaseCollects {
+
+        private void assertTwoFaults(CharterRefusal refused, RefusalCode code, String... ownCodes) {
+            assertThat(refused.code()).isEqualTo(code);
+            assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
+            assertThat(refused.violations()).extracting(RefusalViolation::code).containsExactly(ownCodes);
+        }
+
+        @Test
+        void everyUnresolvedDelegationIsInTheOneRefusalEachWithItsOwnViolation() {
+            List<ConfiguredPack> packs = List.of(
+                    declared("base", PackLevel.ORG, named("base", "base", List.of())),
+                    declared(
+                            "top",
+                            PackLevel.ORG,
+                            named("top", "top", List.of(new PackDependency(FixtureUlids.of("base"), ">=1.0")))));
+            defined.put("base", List.of("tactic:other"));
+            delegations.put("top", List.of(candidate("s1", "base::tactic:tdd"), candidate("s2", "base::tactic:bdd")));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertTwoFaults(
+                    refused,
+                    RefusalCode.PACK_UNREADABLE,
+                    "pack_unreadable",
+                    SubstepDelegationRule.UNRESOLVED,
+                    "pack_unreadable",
+                    SubstepDelegationRule.UNRESOLVED);
+            assertThat(refused.violations().get(2).detail()).contains("base::tactic:bdd");
+        }
+
+        @Test
+        void everyStepEnhancementTargetFaultIsInTheOneRefusal() {
+            List<ConfiguredPack> packs = List.of(
+                    declared("base", PackLevel.ORG, named("base", "base", List.of())),
+                    declared("enhancer", PackLevel.ORG, withDependencies("enhancer", "base")));
+            defined.put("base", List.of("mission_type:software-dev", "action:software-dev/plan"));
+            defined.put("enhancer", List.of("step_enhancement:one", "step_enhancement:two"));
+            edges.put(
+                    "enhancer",
+                    List.of(
+                            enhancement("step_enhancement:one", "base::action:software-dev/nosuch"),
+                            enhancement("step_enhancement:two", "gone::action:software-dev/plan")));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertTwoFaults(
+                    refused,
+                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,
+                    "pack_reference_artifact_missing",
+                    "pack_reference_pack_missing");
+        }
+
+        @Test
+        void everyPresetContestIsInTheOneRefusal() {
+            List<ConfiguredPack> packs =
+                    List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
+            presets.put("alpha", List.of(preset("starter"), preset("strict")));
+            presets.put("bravo", List.of(preset("starter"), preset("strict")));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertTwoFaults(
+                    refused, RefusalCode.PACK_SIBLING_CONFLICT, "pack_sibling_conflict", "pack_sibling_conflict");
+        }
+
+        @Test
+        void everyCaseOnlyMentionIsInTheOneRefusal() {
+            List<ConfiguredPack> packs =
+                    List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
+            defined.put("alpha", List.of("directive:DIRECTIVE_001", "directive:DIRECTIVE_002"));
+            presets.put(
+                    "bravo",
+                    List.of(new Preset(
+                            "mine",
+                            "mentions by case",
+                            Map.of(
+                                    ArtifactKind.DIRECTIVE,
+                                    List.of(
+                                            new PresetItem("directive_001", false),
+                                            new PresetItem("directive_002", false))))));
+
+            CharterRefusal refused = refusalOf(() -> service(packs).offering());
+
+            assertTwoFaults(
+                    refused,
+                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,
+                    "pack_reference_artifact_missing",
+                    "pack_reference_artifact_missing");
+        }
+
+        private SubstepDelegationRule.QualifiedCandidate candidate(String substep, String reference) {
+            return new SubstepDelegationRule.QualifiedCandidate(
+                    "mission-types/rx.mission-type.yaml",
+                    "rx",
+                    "build",
+                    substep,
+                    PackQualifiedReference.parse(reference));
+        }
+
+        private Relationship enhancement(String from, String target) {
+            return Relationship.of(
+                    Urn.parse(from).orElseThrow(),
+                    Optional.empty(),
+                    PackQualifiedReference.parse(target).asUrn().orElseThrow(),
+                    PackQualifiedReference.parse(target).packName(),
+                    RelationType.ENHANCES,
+                    Optional.empty(),
+                    Optional.empty());
+        }
+
+        private Preset preset(String id) {
+            return new Preset(id, id + " preset", Map.of());
+        }
     }
 
     /**
@@ -599,13 +757,13 @@ class OfferingReadServiceTest {
             try {
                 List<PackUnderResolution> closure = PackCompositionResolver.resolve(all);
                 for (PackUnderResolution pack : closure) {
-                    PackCompositionResolver.checkReferences(
+                    PackCompositionResolver.refuseFirst(PackCompositionResolver.referenceFaults(
                             closure,
                             pack.descriptor().packId(),
                             written.getOrDefault(pack.configured().id().value(), List.of()).stream()
                                     .map(text -> PackCompositionResolver.resolveReference(
                                             closure, pack.configured().id(), PackQualifiedReference.parse(text)))
-                                    .toList());
+                                    .toList()));
                 }
             } catch (PackCompositionResolver.Refusal refusal) {
                 throw refusal.toCharterRefusal();
@@ -717,8 +875,12 @@ class OfferingReadServiceTest {
                     defined.getOrDefault(pack.value(), List.of()),
                     written.getOrDefault(pack.value(), List.of()),
                     MutabilityPolicySource.empty(),
+                    presets.getOrDefault(pack.value(), List.of()),
+                    edges.getOrDefault(pack.value(), List.of()),
+                    Map.of(),
+                    PromptFacts.NONE,
                     List.of(),
-                    edges.getOrDefault(pack.value(), List.of()));
+                    delegations.getOrDefault(pack.value(), List.of()));
         }
     }
 }

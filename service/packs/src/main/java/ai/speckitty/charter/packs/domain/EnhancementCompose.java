@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
@@ -34,7 +33,7 @@ import java.util.function.Function;
  *   <li><strong>The inherited lock</strong> (C22 and C25 as amended, OD-2 (A)): a step takes its mission type's
  *       mutability level, so an enhancement of {@code action:M/s} is refused when {@code mission_type:M} is
  *       {@link MutabilityLevel#LOCKED} along the closure, judged without the enhancing pack's own policy (B8, as the
- *       {@code overrides} rule and the write gate judge). {@link MutabilityLevel#EXTENDABLE} takes an enhancement.
+ *       {@code overrides} rule and the mutability check judge). {@link MutabilityLevel#EXTENDABLE} takes an enhancement.
  * </ul>
  *
  * <p>A step enhancement is the one shape rule E6 amends (OD-6): a {@code step_enhancement} written by its own pack (a
@@ -110,12 +109,12 @@ public final class EnhancementCompose {
         }
 
         /**
-         * The wire refusal a compose throws for it: the code, the detail and the packs named.
+         * The violation as a closure fault (#556): the code, the detail and the packs named.
          *
-         * @return the refusal
+         * @return the fault
          */
-        public CharterRefusal toCharterRefusal() {
-            return new CharterRefusal(code, detail, packs);
+        public ClosureFault toFault() {
+            return ClosureFault.of(code, detail, packs);
         }
     }
 
@@ -208,21 +207,21 @@ public final class EnhancementCompose {
     }
 
     /**
-     * C37 over one pack: the first of its step enhancements whose step the named pack of its {@code depends_on}
-     * closure does not hold.
+     * C37 over one pack: every one of its step enhancements whose step the named pack of its {@code depends_on}
+     * closure does not hold (#556, FR-006).
      *
      * @param closure the composed closure, every pack once
      * @param enhancing the pack whose edges are judged, a pack of {@code closure}
      * @param edges the typed edges {@code enhancing} writes, as written
-     * @return the first violation, in the order of the edges; empty when every step enhancement's step is held
+     * @return every violation, in the order of the edges; empty when every step enhancement's step is held
      */
-    public static Optional<TargetViolation> targetHeld(
+    public static List<TargetViolation> targetFaults(
             List<PackUnderResolution> closure, PackUnderResolution enhancing, Collection<Relationship> edges) {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(enhancing, "enhancing");
         List<StepEnhancement> enhancements = stepEnhancementsOf(edges);
         if (enhancements.isEmpty()) {
-            return Optional.empty();
+            return List.of();
         }
         Map<String, PackUnderResolution> byId = new HashMap<>();
         Map<String, PackUnderResolution> byName = new HashMap<>();
@@ -233,13 +232,11 @@ public final class EnhancementCompose {
         Set<String> dependsOn =
                 PackCompositionResolver.dependsOnClosure(enhancing.descriptor().packId(), byId);
         Map<String, Set<String>> heldBy = new HashMap<>();
+        List<TargetViolation> violations = new ArrayList<>();
         for (StepEnhancement enhancement : enhancements) {
-            Optional<TargetViolation> violation = judge(enhancement, enhancing, byName, dependsOn, heldBy);
-            if (violation.isPresent()) {
-                return violation;
-            }
+            judge(enhancement, enhancing, byName, dependsOn, heldBy).ifPresent(violations::add);
         }
-        return Optional.empty();
+        return List.copyOf(violations);
     }
 
     private static Optional<TargetViolation> judge(

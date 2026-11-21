@@ -19,9 +19,12 @@ import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
+import ai.speckitty.charter.packs.application.PackRefusals;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -33,8 +36,6 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -876,17 +877,17 @@ class DomainRepositoryServiceTest {
         DomainRepositoryService over = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         OfferingReadService offerings = new OfferingReadService(
                 over, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
-        WritePolicyGate gate = new PackMutabilityPolicy(
+        MutabilityCheck gate = new PackMutabilityPolicy(
                 offerings, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
         Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
 
         Pack target = over.load(new PackIdentifier("p"));
-        assertThatThrownBy(() -> gate.authorize(target, Operation.REGISTER, locked))
+        assertThatThrownBy(() -> authorize(gate, target, Operation.REGISTER, locked))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
                     assertThat(refused.getMessage()).contains(qId).contains("locked");
                 });
-        assertThatCode(() -> gate.authorize(target, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+        assertThatCode(() -> authorize(gate, target, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
                 .doesNotThrowAnyException();
 
         Files.delete(q.resolve("policy.yaml"));
@@ -894,7 +895,7 @@ class DomainRepositoryServiceTest {
             assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
             assertThat(refused.getMessage()).contains("q names mutability_policy policy.yaml, which is missing");
         });
-        assertThatThrownBy(() -> gate.authorize(over.load(new PackIdentifier("p")), Operation.REGISTER, locked))
+        assertThatThrownBy(() -> authorize(gate, over.load(new PackIdentifier("p")), Operation.REGISTER, locked))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
@@ -946,5 +947,10 @@ class DomainRepositoryServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /** One write judged as a pack write judges it, its refusal thrown (#556). */
+    private static void authorize(MutabilityCheck check, Pack pack, Operation operation, Urn target) {
+        PackRefusals.require(check.judge(MutabilityCheck.Live.of(pack, operation, target)));
     }
 }

@@ -10,7 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.application.RegistrationImpact;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.web.RefusalHandler;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -31,11 +31,11 @@ class PackRegistrationMapperNoticesTest {
     private final PackRegistrationMapper mapper =
             new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler());
 
-    private PackRegistration resultWith(RegistrationImpact.Notices notices) {
+    private PackRegistration resultWith(ImpactCheck.Notices notices) {
         return resultWith(notices, false);
     }
 
-    private PackRegistration resultWith(RegistrationImpact.Notices notices, boolean hasDocument) {
+    private PackRegistration resultWith(ImpactCheck.Notices notices, boolean hasDocument) {
         return mapper.result(
                 new RegistrationOutcome(
                         Outcome.CREATED,
@@ -64,7 +64,7 @@ class PackRegistrationMapperNoticesTest {
         events.start();
         logger.addAppender(events);
         try {
-            PackRegistration result = resultWith(new RegistrationImpact.Notices(
+            PackRegistration result = resultWith(new ImpactCheck.Notices(
                     List.of("directive:DIRECTIVE_001", "template:spec-template"),
                     List.of(),
                     List.of("template:other"),
@@ -87,9 +87,9 @@ class PackRegistrationMapperNoticesTest {
 
     @Test
     void theActivationsAffectedAreServedInTheOrderGivenAndTheListIsAlwaysThere() {
-        PackRegistration some = resultWith(
-                new RegistrationImpact.Notices(List.of(), List.of(), List.of(), List.of(), List.of("a-1", "a-3")));
-        PackRegistration none = resultWith(RegistrationImpact.Notices.NONE);
+        PackRegistration some =
+                resultWith(new ImpactCheck.Notices(List.of(), List.of(), List.of(), List.of(), List.of("a-1", "a-3")));
+        PackRegistration none = resultWith(ImpactCheck.Notices.NONE);
 
         assertThat(some.getNotices().getActivationsAffected()).containsExactly("a-1", "a-3");
         assertThat(none.getNotices().getActivationsAffected()).isNotNull().isEmpty();
@@ -102,8 +102,8 @@ class PackRegistrationMapperNoticesTest {
         events.start();
         logger.addAppender(events);
         try {
-            PackRegistration result = resultWith(new RegistrationImpact.Notices(
-                    List.of("directive:DIRECTIVE_001"), List.of(), List.of(), List.of()));
+            PackRegistration result = resultWith(
+                    new ImpactCheck.Notices(List.of("directive:DIRECTIVE_001"), List.of(), List.of(), List.of()));
 
             assertThat(result.getNotices().getFloorAdded()).hasSize(1);
             assertThat(events.list).isEmpty();
@@ -114,19 +114,18 @@ class PackRegistrationMapperNoticesTest {
 
     @Test
     void aResultLinksTheDocumentExactlyWhenThePackHoldsOne() {
-        assertThat(resultWith(RegistrationImpact.Notices.NONE, true).getLinks())
+        assertThat(resultWith(ImpactCheck.Notices.NONE, true).getLinks())
                 .containsKey("doc")
                 .extractingByKey("doc")
                 .extracting(link -> link.getHref())
                 .isEqualTo("/api/v1/packs/acme/doc");
-        assertThat(resultWith(RegistrationImpact.Notices.NONE, false).getLinks())
-                .doesNotContainKey("doc");
+        assertThat(resultWith(ImpactCheck.Notices.NONE, false).getLinks()).doesNotContainKey("doc");
     }
 
     @Test
     void aResultLinksThePresetListWhetherOrNotThePackHoldsADocument() {
         for (boolean hasDocument : new boolean[] {true, false}) {
-            assertThat(resultWith(RegistrationImpact.Notices.NONE, hasDocument).getLinks())
+            assertThat(resultWith(ImpactCheck.Notices.NONE, hasDocument).getLinks())
                     .extractingByKey("presets")
                     .extracting(link -> link.getHref())
                     .isEqualTo("/api/v1/packs/acme/presets");

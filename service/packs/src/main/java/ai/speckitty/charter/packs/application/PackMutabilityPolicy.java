@@ -6,7 +6,10 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
@@ -15,25 +18,26 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
- * The real ADR-0012 mutability write gate (FR-011, FR-022, FR-033): the {@code @Primary} {@link WritePolicyGate} that
- * supersedes the {@link PermissiveWritePolicyGate} default, so every registration service enforces the level through
- * the WP04 port without any service, controller or commit-store edit.
+ * The ADR-0012 mutability check (FR-011, FR-022, FR-033; #556 D5): the one {@link MutabilityCheck} the service wires,
+ * so every pack write enforces the level through the port. Its no-argument constructor is the check with no policy
+ * anywhere, which permits every write. Every write the levels refuse is one {@code governance_policy_violation} fault of the verdict, in the order the
+ * writes are given.
  *
  * <p>A write into pack P is judged at the highest level along P's composition closure without P (ADR-0063 decision 3,
  * rule C25): each pack of the closure contributes the policy its descriptor names, scoped to what it holds (below), and
@@ -49,7 +53,7 @@ import org.springframework.stereotype.Component;
  * unrelated pack that shares a closure, and an id no pack of its own closure holds is open for it.
  * {@link #scopedPolicies} is that rule, and {@link ClosureQueries} reads the closure's locks through it too.
  *
- * <p>Cost: the gate composes P's closure once per registration, in one verified read: {@link
+ * <p>Cost: the check composes P's closure once per request, for all its writes, in one verified read: {@link
  * OfferingReadService#composedWithFacts(java.util.Collection)} inside a {@link ConsistentRead}, and each member's
  * policy is the {@link ai.speckitty.charter.packs.domain.PackCompositionFacts#policy()} that compose read, so the
  * closure and its policies are one answer from one source, the source the closure snapshot reads too. A pack change
@@ -63,8 +67,7 @@ import org.springframework.stereotype.Component;
  * the pure {@code packs.domain} ring where the policy model resides; {@code HexagonalArchitectureTest} gates that split.
  */
 @Component
-@Primary
-public final class PackMutabilityPolicy implements WritePolicyGate {
+public final class PackMutabilityPolicy implements MutabilityCheck {
 
     /**
      * One pack of a closure: the identifier it is configured as, the {@code pack_id} its descriptor declares, the packs
@@ -136,7 +139,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     private final JudgingPolicies stagedJudgingPolicies;
 
     /**
-     * The gate Spring wires: the closure is the compose rooted at the pack being written, and each member's policy is
+     * The check Spring wires: the closure is the compose rooted at the pack being written, and each member's policy is
      * the one that compose read, all in one verified read.
      *
      * @param offerings the compose
@@ -154,7 +157,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /**
-     * A gate over a given closure and policy port: the seam a test uses to plant a dependency's lock. Production reads
+     * A check over a given closure and policy port: the seam a test uses to plant a dependency's lock. Production reads
      * no policy through the port; it stays for this seam, and {@code DomainRepositoryService} still implements it.
      *
      * @param policies the port that reads each member's policy
@@ -174,82 +177,72 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /**
-     * A gate that enforces the given levels as the packs every written pack builds on declare them, over every
+     * A check that enforces the given levels as the packs every written pack builds on declare them, over every
      * target: the seam a test uses to plant a level without a closure. Since a pack's own policy never binds it (B8),
      * the levels are those of the packs it builds on, not its own.
      *
-     * @param source the levels this gate enforces
+     * @param source the levels this check enforces
      */
     public PackMutabilityPolicy(MutabilityPolicySource source) {
         this(pack -> new Judging(Map.of(BUILT_ON, Objects.requireNonNull(source, "source")), Set.of()));
     }
 
-    /** A gate with no policy anywhere: every target is open, as before any pack shipped a policy file. */
+    /** A check with no policy anywhere: every target is open, as before any pack shipped a policy file. */
     public PackMutabilityPolicy() {
         this(MutabilityPolicySource.empty());
     }
 
     /**
-     * Authorizes a write, or refuses it when it exceeds the target's level along the pack's closure, the pack itself
-     * left out.
+     * Judges the writes of one request, over one read of the pack's closure: a stored pack's live closure, the pack
+     * itself left out (B8), or, for a whole-pack registration, the closure the staged pack's descriptor declares, read
+     * from the stored packs its {@code depends_on} and {@code parent_pack} name (ADR-0065 D5). The staged pack need not
+     * be stored.
      *
-     * @param pack the pack being mutated
-     * @param operation the write about to be performed
-     * @param target the artifact or relationship endpoint the write concerns
-     * @throws CharterRefusal {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409) when the target's level does not
-     *     permit the operation; {@code PACK_NOT_FOUND} when no pack is configured as the pack written;
+     * @param writes the writes
+     * @return one {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409) fault per write whose target's level does not
+     *     permit it, naming the pack that set the level, in the order given; passing when there is none
+     * @throws CharterRefusal {@code PACK_NOT_FOUND} when no pack is configured as the stored pack written;
      *     {@code PACK_UNREADABLE} or a composition refusal when the closure cannot be judged
      */
     @Override
-    public void authorize(Pack pack, Operation operation, Urn target) {
-        require(pack, judgingPolicies.of(pack), operation, target);
-    }
-
-    /**
-     * Authorizes the writes of a whole-pack registration over the closure the staged pack will have (ADR-0065 D5): the
-     * policies are those of the packs the staged pack builds on, its own left out as ever (B8), read from the stored
-     * packs its {@code depends_on} and {@code parent_pack} name. The staged pack need not be stored, and the closure
-     * that is read is the one its descriptor declares, not the one it had. The closure is read once for all the writes.
-     *
-     * @param staged the staged pack
-     * @param writes the diff of the registration
-     * @throws CharterRefusal {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409) for the first write whose target's
-     *     level does not permit it; {@code PACK_UNREADABLE} or a composition refusal when the closure cannot be judged
-     */
-    @Override
-    public void authorizeStaged(Pack staged, List<Write> writes) {
+    public ClosureVerdict judge(Writes writes) {
         Objects.requireNonNull(writes, "writes");
-        if (writes.isEmpty()) {
-            return;
+        if (writes.writes().isEmpty()) {
+            return ClosureVerdict.PASSING;
         }
-        Judging judging = stagedJudgingPolicies.of(staged);
-        for (Write write : writes) {
-            require(staged, judging, write.operation(), write.target());
+        Judging judging = switch (writes) {
+            case Live live -> judgingPolicies.of(live.pack());
+            case Staged staged -> stagedJudgingPolicies.of(staged.pack());
+        };
+        List<ClosureFault> faults = new ArrayList<>();
+        for (Write write : writes.writes()) {
+            refused(writes.pack(), judging, write.operation(), write.target()).ifPresent(faults::add);
         }
+        return new ClosureVerdict(faults);
     }
 
-    private static void require(Pack pack, Judging judging, Operation written, Urn target) {
+    private static Optional<ClosureFault> refused(Pack pack, Judging judging, Operation written, Urn target) {
         Map<PackUlid, MutabilityPolicySource> byPack = judging.policies();
         Operation operation =
                 written == Operation.REGISTER && judging.held().contains(target) ? Operation.REPLACE : written;
         PerPackPolicy.Level level = new PerPackPolicy(byPack).levelIn(List.copyOf(byPack.keySet()), target);
-        if (!level.level().permits(operation)) {
-            throw new CharterRefusal(
-                    RefusalCode.GOVERNANCE_POLICY_VIOLATION,
-                    "Operation " + operation + " on " + target + " is refused: pack "
-                            + level.setBy()
-                                    .map(PackUlid::value)
-                                    .orElse(pack.id().value()) + " of the composition of "
-                            + pack.id().value()
-                            + " declares it " + level.level().token()
-                            + ", which does not permit this write (ADR-0012, ADR-0063).");
+        if (level.level().permits(operation)) {
+            return Optional.empty();
         }
+        return Optional.of(ClosureFault.of(
+                RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                "Operation " + operation + " on " + target + " is refused: pack "
+                        + level.setBy().map(PackUlid::value).orElse(pack.id().value()) + " of the composition of "
+                        + pack.id().value()
+                        + " declares it " + level.level().token()
+                        + ", which does not permit this write (ADR-0012, ADR-0063).",
+                List.of()));
     }
 
     /**
      * Each closure pack's policy scoped to what the pack or a pack it builds on holds (A15, rule C22): the policy's
      * level for such an artifact, and {@link MutabilityLevel#OPEN} for every other target. The read side's locks and the
-     * write gate both read a closure's policies through it.
+     * mutability check both read a closure's policies through it.
      *
      * @param closure the closure's packs, in closure order
      * @param policyOf each pack's declared policy

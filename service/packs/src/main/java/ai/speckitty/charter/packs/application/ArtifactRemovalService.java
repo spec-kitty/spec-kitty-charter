@@ -9,14 +9,15 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,10 +40,10 @@ import org.springframework.stereotype.Service;
  *   <li>the pack, the kind and the artifact are there ({@code 404}, each its own code), then the {@code If-Match} is met
  *       ({@code 428}, {@code 412});
  *   <li>no other artifact or pack still refers to the artifact, judged against the tree after the removal
- *       ({@link InboundReferences}, {@code 409 artifact_referenced}); then the write gate allows a {@code REMOVE} of it
+ *       ({@link InboundReferences}, {@code 409 artifact_referenced}); then the mutability check allows a {@code REMOVE} of it
  *       ({@code 409 governance_policy_violation}); then no graph document the author wrote names it
  *       ({@code 409 registration_conflict}), since a {@code DELETE} never rewrites an author file;
- *   <li>every closure the pack joins still composes without it ({@link RegistrationImpact}, {@code 422}, strict: PR A does
+ *   <li>every closure the pack joins still composes without it ({@link ClosureImpactCheck}, {@code 422}, strict: PR A does
  *       not repair a closure that is already broken, decision DM-01M6TQ67C9ZTNGZB9CY28JS54F);
  *   <li>the pack is swapped whole, so a read sees the old pack or the new one.
  * </ol>
@@ -76,17 +77,17 @@ public final class ArtifactRemovalService {
 
     private final PackRepository packs;
     private final PackRemovalStore store;
-    private final WritePolicyGate gate;
+    private final MutabilityCheck gate;
     private final InboundReferences inbound;
     private final StagedPackViews views;
-    private final RegistrationImpact impact;
+    private final ImpactCheck impact;
 
     /**
      * A service over its ports.
      *
      * @param packs loads the pack
      * @param store locks and swaps
-     * @param gate the mutability gate
+     * @param gate the mutability check
      * @param inbound the inbound scan
      * @param views the stored packs, read through one session per removal
      * @param impact the impact check
@@ -95,10 +96,10 @@ public final class ArtifactRemovalService {
     public ArtifactRemovalService(
             PackRepository packs,
             PackRemovalStore store,
-            WritePolicyGate gate,
+            MutabilityCheck gate,
             InboundReferences inbound,
             StagedPackViews views,
-            RegistrationImpact impact) {
+            ImpactCheck impact) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.store = Objects.requireNonNull(store, "store");
         this.gate = Objects.requireNonNull(gate, "gate");
@@ -173,11 +174,14 @@ public final class ArtifactRemovalService {
         List<Relationship> gone = new ArrayList<>(outgoing);
         gone.addAll(dropped);
         requireNoReferrer(pack, artifact, removed, gone);
-        for (Urn each : removed) {
-            gate.authorize(current, WritePolicyGate.Operation.REMOVE, each);
-        }
+        PackRefusals.require(gate.judge(new MutabilityCheck.Live(
+                current,
+                removed.stream()
+                        .map(each -> new MutabilityCheck.Write(MutabilityCheck.Operation.REMOVE, each))
+                        .toList())));
         requireNotAuthored(authored, removed, packName);
-        impact.check(pack, facts -> without(facts, removed, gone));
+        PackRefusals.noticesOrRefuse(
+                impact.judge(new ImpactCheck.Write(pack, facts -> without(facts, removed, gone), Optional.empty())));
         // By identity, not equals: slot equality would also drop another edge of the same pair and class.
         Set<Relationship> leaving = Collections.newSetFromMap(new IdentityHashMap<>());
         leaving.addAll(outgoing);

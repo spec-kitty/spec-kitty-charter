@@ -14,11 +14,12 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
+import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -151,7 +152,7 @@ public final class PackRegistrationService {
             PackDescriptor descriptor,
             PackLevel level,
             PackRevision revision,
-            RegistrationImpact.Notices notices,
+            ImpactCheck.Notices notices,
             List<Diagnostic> diagnostics,
             boolean hasDocument,
             Optional<String> previousVersion,
@@ -188,9 +189,9 @@ public final class PackRegistrationService {
     private final WholePackWriteStore store;
     private final PackRevisions revisions;
     private final StagedPackViews views;
-    private final WritePolicyGate gate;
+    private final MutabilityCheck gate;
     private final InboundReferences inbound;
-    private final RegistrationImpact impact;
+    private final ClosureImpactCheck impact;
 
     /**
      * A service over its ports.
@@ -201,7 +202,7 @@ public final class PackRegistrationService {
      * @param revisions the revision of a stored pack
      * @param views the stored packs, read through one session per registration: each session lists the configured
      *     locations once, however many packs the identity checks look at
-     * @param gate the mutability gate
+     * @param gate the mutability check
      * @param inbound the inbound scan
      * @param impact the impact check of step 9
      */
@@ -212,9 +213,9 @@ public final class PackRegistrationService {
             WholePackWriteStore store,
             PackRevisions revisions,
             StagedPackViews views,
-            WritePolicyGate gate,
+            MutabilityCheck gate,
             InboundReferences inbound,
-            RegistrationImpact impact) {
+            ClosureImpactCheck impact) {
         this.reading = Objects.requireNonNull(reading, "reading");
         this.loader = Objects.requireNonNull(loader, "loader");
         this.store = Objects.requireNonNull(store, "store");
@@ -393,9 +394,11 @@ public final class PackRegistrationService {
         // writer, learns that from its precondition (412), not from the version the winner left (ADR-0081 D2).
         stored.ifPresent(replaced -> requireNewer(upload, replaced.descriptor().packVersion()));
         Before before = beforeOf(stored);
-        gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
+        PackRefusals.require(
+                gate.judge(new MutabilityCheck.Staged(upload.contents().pack(), writesOf(upload.contents(), before))));
         requireNoInboundReference(upload, stored, before, view);
-        RegistrationImpact.Notices notices = impact.check(replacementOf(upload, stored));
+        ImpactCheck.Notices notices =
+                PackRefusals.noticesOrRefuse(impact.judge(new ImpactCheck.Registration(replacementOf(upload, stored))));
         beforeCommit.run();
         if (upload.mode() == Mode.DRY_RUN) {
             return outcome(
@@ -572,13 +575,13 @@ public final class PackRegistrationService {
         return new PreconditionException(PreconditionException.Kind.STALE, detail);
     }
 
-    // ---- steps 7 and 8: the diff, the write gate and the inbound scan --------------------------------------------
+    // ---- steps 7 and 8: the diff, the mutability check and the inbound scan ----------------------------------------
 
     /**
      * What the stored pack held, to diff the upload against: the artifacts it defined, the digest of each, the edges it
      * wrote and the terms its glossary contexts held. A stored pack that cannot be read whole is diffed by what can
-     * still be read of it ({@link WholePackWriteStore.Loader#salvageStored}): the gate and the inbound scan never switch
-     * off for a pack that is unreadable, and a pack whose artifacts cannot be told at all is refused. Its terms cannot
+     * still be read of it ({@link WholePackWriteStore.Loader#salvageStored}): the mutability check and the inbound scan
+     * never switch off for a pack that is unreadable, and a pack whose artifacts cannot be told at all is refused. Its terms cannot
      * be told, so none are held: a term it drops is found with its context, when the upload drops the context.
      *
      * @param defined the artifacts held, as bare URNs
@@ -643,23 +646,23 @@ public final class PackRegistrationService {
     }
 
     /** The writes of the diff: what the upload adds, changes and removes, and each edge it adds or drops. */
-    private static List<WritePolicyGate.Write> writesOf(WholePackWriteStore.Contents upload, Before before) {
-        Set<WritePolicyGate.Write> writes = new LinkedHashSet<>();
+    private static List<MutabilityCheck.Write> writesOf(WholePackWriteStore.Contents upload, Before before) {
+        Set<MutabilityCheck.Write> writes = new LinkedHashSet<>();
         Set<String> now = heldBy(upload);
         for (String urn : now) {
             if (!before.defined().contains(urn)) {
-                write(writes, WritePolicyGate.Operation.REGISTER, urn);
+                write(writes, MutabilityCheck.Operation.REGISTER, urn);
             }
         }
         for (String urn : before.defined()) {
             if (!now.contains(urn)) {
-                write(writes, WritePolicyGate.Operation.REMOVE, urn);
+                write(writes, MutabilityCheck.Operation.REMOVE, urn);
             }
         }
         upload.digests().forEach((urn, digest) -> {
             if (before.defined().contains(urn.toString())
                     && !digest.equals(before.digests().get(urn))) {
-                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.REPLACE, urn));
+                writes.add(new MutabilityCheck.Write(MutabilityCheck.Operation.REPLACE, urn));
             }
         });
         edgeWrites(upload, before, writes);
@@ -671,14 +674,14 @@ public final class PackRegistrationService {
      * entry that cannot be typed is dropped unless the upload has the pair.
      */
     private static void edgeWrites(
-            WholePackWriteStore.Contents upload, Before before, Set<WritePolicyGate.Write> writes) {
+            WholePackWriteStore.Contents upload, Before before, Set<MutabilityCheck.Write> writes) {
         Map<String, Relationship> edges = edgesOf(upload);
         changedEdges(edges, before.edges()).forEach(edge -> writes.addAll(writesOn(edge)));
         Set<String> pairs = new TreeSet<>();
         edges.values().forEach(edge -> pairs.add(edge.fromReference() + "|" + edge.toReference()));
         before.loose().forEach((pair, source) -> {
             if (!pairs.contains(pair)) {
-                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, source));
+                writes.add(new MutabilityCheck.Write(MutabilityCheck.Operation.RELATIONSHIP, source));
             }
         });
     }
@@ -720,21 +723,21 @@ public final class PackRegistrationService {
     }
 
     /**
-     * What the gate judges for an added or dropped edge: its source, and for a tension its target too, since a tension
-     * names two rules and neither side is privileged (ADR-0045 decision 1).
+     * What the mutability check judges for an added or dropped edge: its source, and for a tension its target too,
+     * since a tension names two rules and neither side is privileged (ADR-0045 decision 1).
      *
      * @param edge the edge
      * @return the writes, the source first
      */
-    static List<WritePolicyGate.Write> writesOn(Relationship edge) {
-        WritePolicyGate.Write source = new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from());
+    static List<MutabilityCheck.Write> writesOn(Relationship edge) {
+        MutabilityCheck.Write source = new MutabilityCheck.Write(MutabilityCheck.Operation.RELATIONSHIP, edge.from());
         return edge.type() == RelationType.TENSION
-                ? List.of(source, new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.to()))
+                ? List.of(source, new MutabilityCheck.Write(MutabilityCheck.Operation.RELATIONSHIP, edge.to()))
                 : List.of(source);
     }
 
-    private static void write(Set<WritePolicyGate.Write> writes, WritePolicyGate.Operation operation, String urn) {
-        Urn.parse(urn).ifPresent(parsed -> writes.add(new WritePolicyGate.Write(operation, parsed)));
+    private static void write(Set<MutabilityCheck.Write> writes, MutabilityCheck.Operation operation, String urn) {
+        Urn.parse(urn).ifPresent(parsed -> writes.add(new MutabilityCheck.Write(operation, parsed)));
     }
 
     /** Before the compose: a removed artifact that another pack still refers to is a 409, not a composition 422. */
@@ -784,10 +787,10 @@ public final class PackRegistrationService {
     // ---- step 9: the impact check ---------------------------------------------------------------------------------
 
     /** The pack as it will be once stored: the upload's descriptor and facts, under the name the pack is stored by. */
-    private static RegistrationImpact.Replacement replacementOf(Upload upload, Optional<Stored> stored) {
+    private static ImpactCheck.Replacement replacementOf(Upload upload, Optional<Stored> stored) {
         ConfiguredPack configured = stored.map(Stored::configured)
                 .orElseGet(() -> new ConfiguredPack(new PackIdentifier(upload.packId()), upload.level()));
-        return new RegistrationImpact.Replacement(
+        return new ImpactCheck.Replacement(
                 configured,
                 upload.descriptor(),
                 upload.contents().facts(),
@@ -796,7 +799,7 @@ public final class PackRegistrationService {
 
     // ---- step 10: the commit -------------------------------------------------------------------------------------
 
-    private RegistrationOutcome commit(Upload upload, Optional<Stored> stored, RegistrationImpact.Notices notices) {
+    private RegistrationOutcome commit(Upload upload, Optional<Stored> stored, ImpactCheck.Notices notices) {
         PackRevision revision = stored.isPresent()
                 ? store.replaceWhole(stored.get().configured().id(), upload.staged())
                 : store.create(upload.packId(), upload.staged());
@@ -810,14 +813,14 @@ public final class PackRegistrationService {
     }
 
     private static RegistrationOutcome outcome(Outcome outcome, Upload upload, PackRevision revision) {
-        return outcome(outcome, upload, revision, RegistrationImpact.Notices.NONE, Optional.empty());
+        return outcome(outcome, upload, revision, ImpactCheck.Notices.NONE, Optional.empty());
     }
 
     private static RegistrationOutcome outcome(
             Outcome outcome,
             Upload upload,
             PackRevision revision,
-            RegistrationImpact.Notices notices,
+            ImpactCheck.Notices notices,
             Optional<String> previousVersion) {
         return new RegistrationOutcome(
                 outcome,

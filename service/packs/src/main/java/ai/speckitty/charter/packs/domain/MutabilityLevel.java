@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
+import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
 import java.util.Arrays;
 import java.util.Optional;
 

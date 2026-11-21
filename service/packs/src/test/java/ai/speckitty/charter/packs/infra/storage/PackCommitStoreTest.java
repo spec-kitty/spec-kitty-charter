@@ -13,10 +13,10 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
-import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.RelationshipDraft;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
@@ -398,7 +398,7 @@ class PackCommitStoreTest {
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
                 locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
         RelationshipRegistrationService registrations = new RelationshipRegistrationService(
-                service, writeStore, new PermissiveWritePolicyGate(), (source, target) -> {});
+                service, writeStore, new PackMutabilityPolicy(), (source, target) -> {});
         Relationship edge = Relationship.of(
                 new Urn(NodeKind.TACTIC, "alpha-tactic"), new Urn(NodeKind.DIRECTIVE, "other"), RelationType.SUGGESTS);
 
@@ -433,7 +433,7 @@ class PackCommitStoreTest {
         ToolguideRegistrationService registrations = new ToolguideRegistrationService(
                 new DomainRepositoryService(locations(packDir), strategy),
                 writeStore,
-                new PermissiveWritePolicyGate(),
+                new PackMutabilityPolicy(),
                 uri -> {
                     throw new AssertionError("no guide is fetched: the guide is sent as content");
                 },

@@ -48,7 +48,7 @@ public final class CompositeComponentResolver {
         /**
          * The pack of the compose that holds what a reference names, as an artifact writes it (FR-013, FR-014, FR-015,
          * FR-017), by the compose's one rule ({@link PackCompositionResolver#holderOf}) and judged by its one check
-         * ({@link PackCompositionResolver#checkReferences}). A qualified reference is held by the pack
+         * ({@link PackCompositionResolver#referenceFaults}). A qualified reference is held by the pack
          * it names; a name the compose does not hold is refused {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming
          * the missing pack, and never falls back to the referring pack. A bare one is held by the referring pack when
          * it holds the artifact, which shadows a same-named artifact of another pack (FR-014); when only another pack
@@ -109,10 +109,12 @@ public final class CompositeComponentResolver {
             List<PackCompositionResolver.PackUnderResolution> closure,
             String referringPackId,
             PackCompositionResolver.ResolvedReference resolved) {
-        try {
-            PackCompositionResolver.checkReferences(closure, referringPackId, List.of(resolved));
-        } catch (PackCompositionResolver.Refusal refusal) {
-            throw refusal.toCharterRefusal();
-        }
+        // One reference has at most one fault, so its refusal is that fault's own, byte for byte what
+        // PackRefusals.of answers for a single fault.
+        PackCompositionResolver.referenceFaults(closure, referringPackId, List.of(resolved)).stream()
+                .findFirst()
+                .ifPresent(refusal -> {
+                    throw refusal.toCharterRefusal();
+                });
     }
 }

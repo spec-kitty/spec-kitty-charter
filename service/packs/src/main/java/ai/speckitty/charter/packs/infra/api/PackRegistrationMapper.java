@@ -19,9 +19,9 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Registrati
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.PackUninstallService;
-import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.domain.Diagnostic;
+import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -186,7 +186,7 @@ final class PackRegistrationMapper {
                 Hypermedia.wire(own));
     }
 
-    private static PackRegistrationNotices notices(RegistrationImpact.Notices notices) {
+    private static PackRegistrationNotices notices(ImpactCheck.Notices notices) {
         return new PackRegistrationNotices()
                 .floorAdded(references(notices.floorAdded()))
                 .floorRemoved(references(notices.floorRemoved()))
