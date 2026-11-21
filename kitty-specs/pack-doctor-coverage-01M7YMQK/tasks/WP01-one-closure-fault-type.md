@@ -149,3 +149,26 @@ Then the full module test tasks once before handing over.
 - The order of findings decides the refusal code. A reviewer diffs every expected list in the tests: there must be
   none.
 - A reviewer checks that no second factory or legacy reader survives beside the new one.
+
+## Origin (operator ruling R-o, 2026-11-21)
+
+## Origin (operator ruling R-o, review cycle 1)
+
+Decision for ADR-0083 to cite. `Origin` on `Reason` is an opaque element identifier (ADR-0082 decision 4), never a copy
+of `Reason.rule`. Cycle 1 made it the check's name, which always equalled `rule`; review cycle 1 rejected that, and
+the operator ruled "element id" (R-o, 2026-11-21).
+
+- The kernel owns `Origin(String id)`: non-blank, never read by the kernel. `Origin.NONE` is the origin of a reason
+  about no element (a value object's invariant, a `Constraint`, a per-file finding, the round-trip rule, a placement
+  finding).
+- `packs.domain.PackOrigins` spells the identifier: a pack id (`acme`), or a pack id and a URN, pack-qualified as a
+  reference writes them (`acme::agent_profile:generic-agent`). `PackOrigins.firstOf(packs)` is the pack that broke the
+  rule first, or `NONE` when the fault names no pack.
+- `rule` stays the check's name: `closure`, or `closure.presets` for the preset phase. `ClosureFault` never derives it
+  from the origin.
+- Producers: fallback profile and role pin, the declaring pack and the profile's URN; profile enhancement, the enhancing
+  pack and its profile's URN; mutability, the written pack and the target URN; the substep delegation, the first named
+  pack and the reference's URN; a step-enhancement target, the enhancing pack and the enhancement's URN; dependents of
+  a removal, the removed pack; the `CLOSURE` phases, a role-pin conflict, the relation rules, the resolver's refusals
+  (`ResolverFaults`) and a lifted refusal, the first pack named.
+- Origin is not on the wire yet: no code, status, detail or order changes.
