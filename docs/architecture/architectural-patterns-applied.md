@@ -2,11 +2,12 @@
 title: Architectural patterns applied
 description: How the charter service applies hexagonal, onion and screaming architecture - the layout, the pattern role of each concern, and a walk through Pack, Tactic and its steps.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-21T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
   - adr/0006-onion-vertical-slices-archunit
+  - adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface
   - architecture/hexagonal-service
   - development/how-to-ddd
   - development/code-style-and-conventions
@@ -137,3 +138,253 @@ its slice (`APPLICATION_IS_EDGE`), ports in the domain and their
 implementations in storage, storage returning domain types, transport types confined to the
 inbound adapter, slices not crossing, and a pure validation library. Every rule has a known-bad
 control that proves it can fail. See [Code style and conventions](/development/code-style-and-conventions/).
+
+## Applied patterns: one graph walk, domain rules, one rationale
+
+[ADR-0082](/adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface/) decides the principle: the
+packs domain owns how any walk over packs and artifacts is done, there is one walking mechanism, rules run on the
+elements a predicate selects, every finding lands in one `Rationale`, a static factory hands out the rules, and ports
+only transform formats and talk to users. This section explains the patterns behind that decision and how they map
+onto the code.
+
+**What exists and what is proposed.** Each part below is marked. *Exists* means the type is in the code today.
+*Proposed* means it is part of the target design from the design squad of 2026-11-21. The proposed type design and the
+migration slices are **pending operator approval**; ADR-0082 does not decide them.
+
+### The problem, before and after
+
+Before: the walk down `depends_on` and `parent_pack` is written five times, four of them in `packs.application`.
+Walks over references, step links and relationships are written by hand in several more places. Cycle detection lives
+in application code. Results come back in several shapes beside `Rationale`. A new check means a new walk.
+
+After (proposed): one domain-owned walk. A caller picks a scope and asks the rule factory for rules. The walk visits
+each selected element once, runs the matching rules, and collects one `Rationale`. The edge maps that `Rationale`
+once, to an HTTP problem or to a CLI exit code.
+
+In this section, **the edge** means the ports and adapters layer, around the domain. It is not a graph edge: an edge
+of the graph is a relation between two packs or artifacts, such as `depends_on`.
+
+![Class diagram of the graph walk, the domain rules and the edge mappers](diagrams/graph-walk-classes.svg)
+
+### Visitor, and its modern form: a sealed type with a pattern switch
+
+**What it is.** A Visitor separates *walking* a structure from *doing something* at each element. The walker knows
+how to move from element to element. The visitor is called at each element and decides what to do there. You can add
+a new operation (a new visitor) without touching the walk.
+
+The classic form uses double dispatch: each element has an `accept(visitor)` method that calls back the right
+`visit` method. Java 25 offers a simpler form. A `sealed` interface lists every kind of element it permits. A
+`switch` over it with type patterns (`case PackNode p -> ...`) then handles each kind, and the compiler refuses a
+switch that forgets one. No `accept` methods are needed.
+
+**Why here.** Every pack check is "walk some part of the graph, and judge what you meet". The walk is the same each
+time; the judging differs. A Visitor lets one walk serve every check.
+
+**How it maps.**
+
+- *Exists:* `{@link ai.speckitty.charter.kernel.domain.GraphWalker}` is the visitor. It is called with
+  `onNode` and `onRelationship`, and answers a `{@link ai.speckitty.charter.kernel.domain.Descent}`: `CONTINUE`
+  (go deeper), `SKIP` (do not go below this element) or `STOP` (end the walk). The driver is
+  `{@link ai.speckitty.charter.packs.application.GraphWalk#walk}`, which lives in the application layer today, and the
+  choice of edges to follow is not owned by the domain.
+- *Proposed:* `PackGraph` in `packs.domain` becomes the one driver. The kernel keeps only the visitor contract
+  (`GraphWalker`, `Descent`); rules plug in as visitors and never drive. Its elements are a
+  `sealed interface PackGraphNode permits PackNode, ArtifactNode, EdgeNode`, and an `EdgeKind` enum names every edge
+  (`DEPENDS_ON`, `PARENT_PACK`, `OVERRIDES`, `ENHANCES`, `SPECIALIZES`, `REFERENCES`, `STEP_LINK`, `DELEGATES`). Rules
+  use a pattern switch over `PackGraphNode`; there is no double dispatch. `PackGraph` absorbs the duplicate walks,
+  the reverse index of `ClosureRoots`, the cycle and strongly-connected-group code, and keeps `EdgeIndex` as its index.
+
+Reference: Gamma, Helm, Johnson and Vlissides, *Design Patterns* (1994);
+[refactoring.guru: Visitor](https://refactoring.guru/design-patterns/visitor).
+
+### Specification, as a predicate
+
+**What it is.** A Specification is a small object that answers one yes-or-no question about a candidate: "is this
+element one I care about?". Specifications combine with `and`, `or` and `not`. In Java the plain form is
+`java.util.function.Predicate<T>`.
+
+**Why here.** A caller must narrow the walk without changing it: "only the packs of this active set", "only the
+artifacts this write touched". A predicate says that as data, so the walker stays the same.
+
+**How it maps.**
+
+- *Exists:* `{@link ai.speckitty.charter.kernel.validation.Constraint}` is a Specification that also explains its
+  verdict: a rule with a predicate, whose location and detail are functions of the subject.
+- *Proposed:* a **scope**, `record Scope(roots, Predicate<PackGraphNode> selection)`: the caller gives where the walk
+  starts and which elements it selects (an active set, or a determined selection). It is only a selection filter.
+  Which edge kinds are followed is not part of the scope: the domain rule or check decides it (the compose check
+  follows `DEPENDS_ON` and `PARENT_PACK`, for example). Each rule in a walk also carries a predicate; the rule runs
+  only on the elements its predicate selects.
+
+Reference: Evans and Fowler, [*Specifications*](https://martinfowler.com/apsupp/spec.pdf); Evans, *Domain-Driven
+Design* (2003), chapter 9.
+
+### Notification
+
+**What it is.** Instead of throwing on the first error, a check collects every problem it finds into one object, the
+notification, and hands it back. The caller then decides what to do with all of them.
+
+**Why here.** A pack author wants every violation in one answer, not one per attempt. The API, pack-check and the
+doctor need the same list, ranked by severity.
+
+**How it maps.**
+
+- *Exists:* `{@link ai.speckitty.charter.kernel.validation.Rationale}` is the notification. Each entry is a
+  `{@link ai.speckitty.charter.kernel.validation.Reason}` (rule, result, code, location, detail). Its weight comes from
+  `{@link ai.speckitty.charter.kernel.validation.ReasonCode#severity}`, a
+  `{@link ai.speckitty.charter.kernel.validation.Severity}`: `VIOLATION`, `WARNING` or `NOTICE`. Where it was found is a
+  `{@link ai.speckitty.charter.kernel.validation.Location}` (a file and a pointer into it).
+- *Proposed:* an `Origin` on each `Reason`: an opaque element identifier owned by the kernel. `packs.domain` fills
+  it from a pack id, or a pack id and a URN. The kernel never names a pack. A `ValidationWalker` appends to the
+  `Rationale` as it walks. No parallel result shape is kept beside it: `CompositionFault`,
+  `PackCompositionResolver.Refusal` and the string notices of `ImpactCheck` fold into it.
+
+Reference: Fowler, [*Replacing Throwing Exceptions with Notification in
+Validations*](https://martinfowler.com/articles/replaceThrowWithNotification.html).
+
+### Strategy (and Composite)
+
+**What it is.** A Strategy is an interchangeable piece of behavior behind one interface. The caller holds "a rule"
+and does not care which one. A Composite lets a group of strategies stand in for one.
+
+**Why here.** The walker must run any check without knowing what it checks. Each check is a strategy the walker is
+given.
+
+**How it maps.**
+
+- *Exists:* `{@link ai.speckitty.charter.kernel.validation.Rule}` is the strategy: `apply` returns a list of
+  `Reason`s, and `on`, `forEach` and `when` compose it. `{@link ai.speckitty.charter.kernel.validation.ModularRuleset}`
+  is a `Rule` that holds rules, so it is both strategy and composite. `Rule<T>` also carries `check` (which returns a `Rationale`) and
+  `guard` (which throws on a violation); `ModularRuleset` overrides `guard`.
+- *Proposed:* `Rule<T>` is the validator, and no `Validator<T>` is added beside it. `ValidationWalker<N>` is a
+  `GraphWalker` built from rules and predicates per node kind. It runs in phases behind a **phase gate**: once a
+  phase records a `VIOLATION`, later phases do not run, so a client sees the root cause instead of its knock-on
+  faults.
+
+Reference: [refactoring.guru: Strategy](https://refactoring.guru/design-patterns/strategy).
+
+### Static factory
+
+**What it is.** A class with public static methods that build and return ready-made objects, with names that say what
+you get (`closure()`, `activeSet(..)`). Callers never assemble the parts themselves.
+
+**Why here.** The API, pack-check and the doctor must use the *same* rules and scopes. One public factory in the
+domain is the single place they come from.
+
+**How it maps.** ADR-0082 decides that the domain exposes its walkers, and a public static rule factory built on
+generic functional interfaces such as `Predicate<T>`.
+
+- *Exists:* `{@link ai.speckitty.charter.packs.domain.rules.PackRulesets}` with `content()` and `closure()`;
+  `ModularRuleset.of` builds a ruleset.
+- *Proposed:* `PackRulesets` grows `relations()`, `ownClosure()`, `mutability(policies)` and `dependents()`, and the
+  scopes `activeSet(..)`, `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`.
+
+Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
+
+### Hexagonal ports and adapters
+
+**What it is.** The domain sits in the middle. Ports are the interfaces through which the outside reaches it or it
+reaches the outside. Adapters plug into the ports: a driving adapter (an HTTP controller, a CLI) calls in, a driven
+adapter (a file store) is called out to. The domain never names an adapter.
+
+**Why here.** ADR-0082 gives ports two jobs only: transform formats (storage to the canonical domain shape, a
+`Rationale` to a wire shape) and talk to users (the API, the CLIs, runners). No port judges a pack.
+
+**How it maps.**
+
+- *Exists:* the reading port `PackReading` and the storage reader `FileSystemPackInspector`; the driving adapters
+  `{@link ai.speckitty.charter.packs.infra.api.PackRegistrationController}` and
+  `{@link ai.speckitty.charter.packvalidation.PackCheck}`; the mappers
+  `{@link ai.speckitty.charter.packs.application.PackRefusals}` (to a
+  `{@link ai.speckitty.charter.kernel.domain.CharterRefusal}`) and
+  `{@link ai.speckitty.charter.packvalidation.PackVerdicts}` (to a report and an exit code).
+- *Proposed:* the judging ports of PR #618 (`ClosureWalk`, `ImpactCheck`, `MutabilityCheck`) are replaced.
+  `ClosureWalk` becomes a pure domain function. `MutabilityCheck` goes; the real port is
+  `MutabilityPolicyRepository` plus a closure reader. `ImpactCheck` becomes an application use case with no domain
+  port. `packs.application` keeps orchestration only: sessions, the before-and-after difference that yields notices,
+  and the activations gate.
+
+Reference: Cockburn, [*Hexagonal architecture*](https://alistair.cockburn.us/hexagonal-architecture/).
+
+### Each check as walker, scope and rules (proposed)
+
+| Check | Scope | Rules |
+|---|---|---|
+| Compose (`CLOSURE`) | the roots; the check follows `DEPENDS_ON` and `PARENT_PACK` | per pack: the descriptor checks; at the end: duplicates, names, ranges, sibling contests, cycles, presets |
+| Relations | the composed closure; the check follows `OVERRIDES`, `ENHANCES` and `SPECIALIZES` | per edge: self override, not permitted, a locked step enhanced, a stray step edge, the edge-index refusals; at the end: conflicts, one cycle fault per strongly connected group |
+| Own closure | a single-root closure; predicate: the declaring pack or its profiles | fallback profile, role pins, profile enhancements (moved to `packs.domain.rules`) |
+| Impact | `closuresHolding(written)` | per closure, in phase order: compose (gate), relations including the edge-index rules (gate), own closure; then the application's notices and `requireComposable` |
+| Mutability | `ancestorsOf(pack)`; predicate: the written artifacts | the policy level; one fault per refused write |
+| Removal dependents | the removed pack; the check follows reverse edges, plus `REFERENCES` into it | `pack_has_dependents`, judged first |
+| pack-check set check | a determined selection (the CLI's entries) | `CLOSURE` with presets |
+| Doctor (planned) | the active set | all of the above, collect-all, every severity |
+
+### A registration, step by step (proposed)
+
+![Sequence diagram of an API pack registration through one graph walk](diagrams/graph-walk-sequence.svg)
+
+The use case resolves the scope to pack ids first, asks `PackRulesets` for the rules and the scope, builds the
+`ValidationWalker`, and lets `PackGraph` walk in stable order. The phase gate stops later phases after a violation.
+A passing `Rationale` commits the pack; a failing one goes through `PackRefusals` to a problem with every violation.
+pack-check takes the same path and ends in `PackVerdicts` and an exit code.
+
+### The refusal mapping at the edge (unchanged)
+
+The answer a client reads does not change. The `Rationale` maps to the closure verdict (the payload view, from
+PR #618) and then through `PackRefusals#of` to a `CharterRefusal`. One fault answers exactly as before. The first
+fault decides the refusal code; every violation is listed. The "In the closure rooted at ..." prefix of a detail moves
+from the impact check into `PackRefusals`, so it is written in one place.
+
+### Pitfalls and guards
+
+- **The walker never learns a storage format.** No paths, YAML or storage records. A file location reaches a reason
+  only as a `Location`.
+- **A scope predicate is pure.** It reads values already loaded. Resolve the active set to ids *before* the walk;
+  never call a repository from a predicate.
+- **One traversal per phase.** A phase runs all its rules in one traversal, never one traversal per rule. A
+  violation in a phase skips the later phases. ADR-0075 decision 7 still holds: `CLOSURE`
+  needs every pack's descriptor, not the closure walk.
+- **Determinism.** The first fault decides the refusal code, so order matters. The ledger order is phase order
+  (compose, relations including the edge-index rules, own closure; then activations), then nodes by pack id in
+  code-point order and, within a pack, artifacts by URN, then edges in declared order.
+  Never order work by iterating a `HashMap` or `HashSet`. Phase gates keep today's cascade suppression: the specific
+  code wins.
+- **No god walker.** The walker owns the traversal order, the edge filter, cycle handling and `Descent`. Rules,
+  scopes, formatting and refusal mapping live outside it. If `walk` grows a parameter per caller, stop.
+- **No second refusal model.** `CharterRefusal` stays the edge's projection, mapped once in `PackRefusals` and
+  `PackVerdicts`. ADR-0075 already deleted parallel types once.
+- **Performance.** Build `PackGraph` once per session, index rules by node kind, append to the ledger, keep the phase
+  gates, and measure with `PackRegistrationScaleTest`, report-only
+  ([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)).
+
+### Vocabulary
+
+- **Severity**, not criticality: how much a `Reason` weighs (`VIOLATION`, `WARNING`, `NOTICE`). The glossary also
+  uses "severity" for anti-patterns (`smell`, `severe`, `breaking`); that is a different scale.
+- **Rationale**: the ledger of a check. **Reason**: one entry in it.
+- **Refusal**: the outcome at the edge, a `CharterRefusal`.
+- **Scope** (new): the selection filter a caller hands a walk: its roots and its selection predicate. It never
+  names edges; the domain decides which edges a check follows. An *active set* is one way to pick the roots; a
+  *closure* is what a walk from them reaches.
+- **The edge**: the ports and adapters layer. A **graph edge** is a relation between two nodes.
+- The code spells the artifact type `CharterArtifact`; the proposed node is `ArtifactNode`, to match.
+
+### Migration slices (proposed, pending operator approval)
+
+Smallest first. Each replaces outright, with no deprecation window (the charter's rule). Within one slice the old
+walk and the new path never coexist: each slice deletes what it replaces. Slices 3, 5 and 6 assume PR #618 has
+merged; otherwise they delete nothing and #618's ports are not built.
+
+1. **Ledger entry.** `Origin` on `Reason`; unify `CompositionFault` and `Refusal` into the closure fault (#614). No
+   behavior change. Fixtures, contract examples and round-trip checks assert `Origin`; no test excludes it.
+2. **`PackGraph` and `Scope` in the domain.** Move the composition closure, the `ClosureRoots` index, and the cycle
+   and strongly-connected-group code; delete the duplicate walks in `InboundReferences`, `PackMutabilityPolicy` and
+   `RemovalDependents`.
+3. **`ValidationWalker` and the factory.** `PackRulesets` becomes the factory; the own-closure rules move into
+   `packs.domain.rules`; delete `ClosureWalk` and `OwnClosureWalk`.
+4. **Relations as rules.** The relation refusals and the edge-index refusals become rules of the relations phase;
+   `EdgeIndex` stays as the graph's index.
+5. **Mutability.** Delete `MutabilityCheck`.
+6. **Impact.** The closure impact check becomes a walker orchestration; delete `ImpactCheck`; remove the fault's lift
+   from a `CharterRefusal`.
+7. **Callers.** `PackSetCheck` moves onto the factory; the doctor starts here.
