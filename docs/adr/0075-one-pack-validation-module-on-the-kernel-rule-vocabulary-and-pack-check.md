@@ -3,7 +3,7 @@ title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, pa
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
 updated: 2026-11-21T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478)
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -88,7 +88,9 @@ The other decisions follow the reversed direction. Each is confirmed, or changed
   - `packs.domain` declares `ClosureWalk`, `ImpactCheck` and `MutabilityCheck`, not `pack-validation`,
     which would be a cycle.
   - `packs.application` implements them over `GraphWalk`, `Reachability`, `RegistrationImpact`,
-    `FallbackProfileRule` and `PackMutabilityPolicy`.
+    `FallbackProfileRule` and `PackMutabilityPolicy` *(as built in slice 7: `ClosureImpactCheck`, the renamed
+    `RegistrationImpact`, `OwnClosureWalk` and `PackMutabilityPolicy`, with no `GraphWalk` or `Reachability`; see the
+    2026-11-20 amendment)*.
   - `pack-validation`'s rules call the ports, and `deployable` wires them. `pack-check` composes none
     of them.
 - **Decision 8 (the round trip).** Replaced on 2026-11-15; see the next amendment.
@@ -208,6 +210,51 @@ rules live.
 
   The note `docs/development/notes/pack-code-unification.md` records both, with AA2's deferred half (whether the
   aggregate holds a `Reason` in place of `PackElementViolation`), under the outcomes of WP05.
+
+### Amendment 2026-11-20 (operator, #556): slice 7, the closure checks behind ports, every fault collected
+
+Slice 7 ([#556](https://github.com/spec-kitty/spec-kitty-charter/issues/556)) put the closure checks behind decision
+6's ports and made each one collect every fault. The operator ruled D1 to D6 on 2026-11-19 (Mission
+`closure-checks-behind-ports-01M7TS43`, decision moments `01M7TS5S…` to `01M7TS64…`). This amendment governs decision 6
+where they differ.
+
+- **The three ports, their subjects and their consumers.** `packs.domain` declares them; `packs.application`
+  implements them; `deployable` wires them; the service is their only consumer. Each answers a `ClosureVerdict` (every
+  `ClosureFault`, in the order judged) and exposes a kernel `Rule` view that no edge composes yet: they are the seams
+  the service composes, not rules of the validation edge.
+  - `ClosureWalk` (`OwnClosureWalk`) judges one declaring pack's own closure (`OwnClosure`, over `ClosureFacts`):
+    the fallback profile (ADR-0068), the role pins, then the profile enhancements, each reporting every breach.
+  - `ImpactCheck` (`ClosureImpactCheck`, formerly `RegistrationImpact`) judges a `PackChange` (a registration, a
+    per-artifact write, a removal) over every closure the change joins: each closure's composition or relation faults,
+    then the walk of every single-root closure that passed. It absorbs #517's `PackDependents` (D3, ADR-0081):
+    a removal's dependents are one `pack_has_dependents` fault, judged first.
+  - `MutabilityCheck` (`PackMutabilityPolicy`) replaces `WritePolicyGate` outright (D5): the writes of one request,
+    judged together over one read of the closure, each refused write one `governance_policy_violation` fault. It runs
+    first, in the caller, and its `409` ends the write.
+- **One mapping at the closure edge.** `PackRefusals.of(ClosureVerdict)` joins the two mappers the 2026-11-16
+  amendment names (`PackRefusals`, `PackVerdicts`) as the closure checks' edge (D1). One fault answers exactly as
+  before. Several faults answer the first fault's code and status; the detail counts them; `violations` holds a header
+  per fault (its code and detail) and then that fault's own violations; `packs` is the union in first-seen order.
+- **"pack-validation's rules call the ports" is superseded.** The 2026-11-16 amendment left the validation edge with no
+  judging port, and `pack-check` composes none of the ports (S2), so its CLI and `PackRulesets.closure()` do not change
+  (#478).
+- **Flagged ambiguity (S1).** The 2026-11-16 amendment "replaces the 2026-11-13 amendment's ports". This slice reads that
+  as the `PackInspector` port and its `Scope` only, not decision 6's three ports, and builds the three. The operator
+  has not ruled the reading; if it is wrong, the ports are the part to revisit.
+- **What decision 6 listed and where it went.** The qualified references are judged by the compose that builds the
+  closure, which now collects every reference fault of a phase. No pack write is refused on the required floor (spec
+  A1): the floor is read only for the registration notices, and an activation's floor stays with the activations
+  slice (`artifact_required`). `GraphWalk` and `Reachability` are not needed: the relation rules and the cycles (one
+  fault per strongly connected group) are judged in `ImpactRelations`.
+- **Out of scope.** The activations gate (`requireComposable`, `prompt_slot_missing`) still answers its first fault
+  (squad R10): it is the activations slice's own refusal, and it runs last, only when no closure check failed.
+- **Parity (D6).** No parity test is added here. open-packs' `scripts/ci/charter_service_check.py` already checks
+  every `tests/fixtures/invalid/*/expected-code` against the pinned charter.
+- **Deferred.** `CompositionFault` (the CLI's) and `ClosureFault` stay two records now that #478 has landed; their
+  unification is [#614](https://github.com/spec-kitty/spec-kitty-charter/issues/614).
+- **Declared deviations.** `ClosureRoleFacts` and `ProfileEnhancers` stay as they are and `ClosureView` answers
+  `ClosureFacts` over them; the commit store's convenience constructors, and its Spring constructor's fallback, build a
+  default `ClosureImpactCheck`; `PackRegistrationService` names `ClosureImpactCheck` for its census (`committed()`).
 
 **A note on the title and the description.** They still say "one pack-validation module" that holds every pack check
 and that the service shares. After this amendment the checks live in the packs domain and the storage edge, and
@@ -385,7 +432,8 @@ decision; this note records what was built and the calls made on the way.
      - `ImpactCheck`, the closure difference of a write: overrides, conflicting relations, cycles;
      - `MutabilityCheck`.
    - `packs` implements them over `GraphWalk`, `Reachability`, `RegistrationImpact`, `FallbackProfileRule` and
-     `PackMutabilityPolicy`.
+     `PackMutabilityPolicy` *(as built: `ClosureImpactCheck`, `OwnClosureWalk` and `PackMutabilityPolicy`; see the
+     2026-11-20 amendment)*.
    - The service composes `PACK`, `CLOSURE` and these checks. The CLI composes `PACK` and `CLOSURE` only. Leaving the
      walk out means not composing it; no rule carries a flag for it.
    - The impact and fallback checks collect every fault instead of the first.
@@ -430,7 +478,7 @@ decision; this note records what was built and the calls made on the way.
 - **ADR-0036:** the round trip is main code, run by the gate, the drift test and `pack-check`; as amended on
   2026-11-15 (#555), the flow in `packs` and the verdict in `pack-validation`. Done in #555.
 - **ADR-0046:** the release carries `pack-check`. Done in #478 (ADR-0046's amendment of 2026-11-19).
-- **ADR-0068:** the fallback-profile rule runs behind `ClosureWalk`.
+- **ADR-0068:** the fallback-profile rule runs behind `ClosureWalk`. Done in #556.
 - **ADR-0070:** builds on the amendment of decision 4 in PR #548. open-packs gates on `pack-check` at its pin. Charter's `open-packs-drift.yml` is removed.
 
 ## Consequences

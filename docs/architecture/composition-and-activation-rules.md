@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-20T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -502,8 +502,9 @@ A2, A3. **Built (slice C).** *Pinned by:* `SlotComposeTest` (`aSlotTheBasePrompt
 `theTwinTheSameChangeWhereNoStoredActivationPutsTheEnhancementInForcePasses`, `theTwinAChangeWhoseOverrideDeclaresTheSlotPasses`,
 `anActivationWhoseClosureTheChangeDoesNotJoinIsNotJudged`, `aChangeToAClosureWithNoViewBeforeIsJudgedOnTheClosureItLeaves`,
 `theTwinARepairThatLeavesTheClosureComposingIsLetThrough`, `theNoticesNeverRefuseWhereTheGateDoes`),
-`RegistrationImpactTest` (`theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed`,
-`thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed`, `theTwinAGateThatFindsNothingLetsEveryPathThrough`),
+`ClosureImpactCheckTest` (`theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed`,
+`thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed`, `theTwinAGateThatFindsNothingLetsEveryPathThrough`,
+`theGateIsNotAskedWhenAClosureFailsAndTheClosuresRefusalStands`),
 `ActivationServiceTest` (`createRefusesADocumentThatDoesNotComposeAndStoresNothing`,
 `putRefusesADocumentThatDoesNotComposeAndLeavesTheStoredOne`, `aPerArtifactWriteRefusesADocumentThatDoesNotComposeBeforeItIsStored`,
 each with its twin), `RefusalHandlerTest` (the `422` of each operation) and `ReservedRefusalCodesTest`; the eight
@@ -582,8 +583,8 @@ one global compose.
   check of its target (C12), the mutability gate (C25), then this check, with C37, the inherited lock and C38.
 
 **Partly built (slice C)** for these additions; C21 and the floor stay as above. *Pinned by:* the tests named under
-C37, C38, C22 and C25, among them `RegistrationImpactTest.theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed`
-and `RegistrationImpactTest.thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed`.
+C37, C38, C22 and C25, among them `ClosureImpactCheckTest.theWholePackRegistrationAsksTheGateAndItsRefusalIsNotSwallowed`
+and `ClosureImpactCheckTest.thePerArtifactPathOfTheWritesAsksTheGateAndItsRefusalIsNotSwallowed`.
 
 **G9 Reference check.** For each artifact `u` a `DELETE` or replace removes from `p`, judged against the configured
 packs as the request would leave them (`P'`, with `p`'s new tree): `Inbound(p, u) = {(q, a) | q ∈ P', a held by q in
