@@ -58,7 +58,7 @@ never delete or skip it. Fixtures are fixed, never exempted (C-002).
 | T039 | `AntiPatternBinding`/`Dso`/`Yaml` appended last; canonical round trip; stem and placement; digest fixture | WP10 | |
 | T040 | Built-in `indirection-for-repetition.anti-pattern.yaml`; node kept; manifest stamped; facts re-recorded | WP10 | |
 | T041 | Registration and `validate` hold or refuse the file (missing severity, missing bad_example); scenario; `### Breaking` fragment; docs and glossary | WP10 | |
-| T042 | The other 17 example inline anti-patterns become files with nodes and `rejects` edges; inline blocks removed | WP10 | |
+| T042 | The other 17 example inline anti-patterns become files with nodes and `rejects` edges (inline-block removal moved to WP12 T047a) | WP10 | |
 | T043 | `GraphRules.ANTI_PATTERN_WITHOUT_FILE`: a file-less `anti_pattern` node is `drg_schema_error`, red first | WP11 | |
 | T044 | Tests that relied on a file-less node become canonical or refusal tests | WP11 | |
 | T045 | Registration and `validate` parity; cross-pack `rejects` and non-cascade pinned; `### Breaking` fragment | WP11 | |
@@ -102,7 +102,7 @@ T038 Domain entity, identifier and severity; `Pack` accessor; `ArtifactKind` fac
 T039 Storage binding, DSO and YAML form appended last; round trip; stem and placement; digest fixture (WP10)
 T040 Built-in anti-pattern file; node kept; manifest stamped; facts re-recorded (WP10)
 T041 Registration and `validate` parity, including the missing-severity and missing-bad_example refusals; scenario; `### Breaking` fragment; docs and glossary (WP10)
-T042 The other 17 example inline anti-patterns become files with nodes and `rejects` edges; inline blocks removed (WP10)
+T042 The other 17 example inline anti-patterns become files with nodes and `rejects` edges; the inline-block removal moved to WP12 T047a (WP10)
 
 Independent test: a planted `anti_patterns/x.anti-pattern.yaml` is `file_not_held` before and held after; one
 without `severity` or without `bad_example` is refused `artifact_schema_error` by registration and `pack-doctor

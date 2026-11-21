@@ -442,6 +442,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-21T22:20:54.996689Z",
+      "decision_id": "01M8035FAMHXG0A04SCBD7QTKD",
+      "final_answer": "REFERENCES",
+      "input_key": "full_check_name",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "REFERENCES",
+        "CLOSURE_WALK",
+        "FULL"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "What is validate --full's check value (PackSetVerdict.Check, stdout JSON and report checks list) called?",
+      "rationale": "Operator ruling R-u (2026-11-21): the --full check value is REFERENCES, naming what the phase checks; CLOSURE_WALK stays free for #636's own-closure walk.",
+      "resolved_at": "2026-11-21T22:20:57.693586Z",
+      "resolved_by": "operator",
+      "slot_key": "full-check-name",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",

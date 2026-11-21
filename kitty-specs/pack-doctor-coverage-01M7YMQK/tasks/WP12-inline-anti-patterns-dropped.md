@@ -140,6 +140,17 @@ key is refused as an unknown key, on every surface. With WP10 and WP11 this deli
   the file uses for a removed field, naming ADR-0052 d16 and the unknown-key refusal.
 - `./gradlew :contracts:check`.
 
+### T047a — The example packs drop their inline blocks (moved from WP10 T042)
+- Red first: add `ExamplePackCoverageTest`'s "no styleguide or procedure file of any example pack carries an
+  `anti_patterns` key" (saved from WP10 at `research/no-inline-test.java.txt`; red: five files carry one).
+- Remove the 18 inline entries from the five built-in owners (`styleguides/boring-code-review`, `aggregate-design-rules`,
+  `java-conventions`; `procedures/adversarial-squad-deployment`, `example-mapping-workshop`) in the same commit as T047's
+  schema drop, so `everySchemaPropertyHasAnExample` stays green (WP10's patch is at
+  `research/inline-removal.patch`; re-derive it if it no longer applies). The procedures are WP10's files and the styleguides sit
+  in WP03's glob: justified out-of-map edits, listed in the review notes.
+- Restamp `built-in/pack-manifest.yaml` with `ManifestStampHelper` (WP04) once lane-d is merged, else through
+  `ManifestMembership.stamp`, and re-record `facts/example-packs.json` only if it changes; explain each change.
+
 ### T048 — Domain, storage and API
 - Delete `AntiPatternEntry` and `StyleguideAntiPattern`. Remove `antiPatterns` from `Procedure` and `Styleguide`
   (fields, builder methods, invariants, equality), from `ProcedureDso`/`ProcedureYaml`/`ProcedureBinding` and
