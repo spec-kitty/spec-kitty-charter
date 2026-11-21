@@ -15,7 +15,7 @@ import java.util.function.UnaryOperator;
  * closure walk ({@link ClosureWalk}); for a removal, the packs and activations that still depend on the pack come
  * first. It collects every fault into one {@link ClosureVerdict}, and answers the floor and lock changes the write
  * makes from the same compose. A pack that cannot be read is no fault: its refusal propagates. The service composes it
- * for every write; the validation edge and {@code pack-check} compose none of it.
+ * for every write; the validation edge and {@code pack-doctor} compose none of it.
  */
 public interface ImpactCheck {
 

@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
@@ -403,8 +404,11 @@ class ArtifactRemovalServiceTest {
         rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
         MutabilityCheck refusingTheSkeleton = writes -> new ClosureVerdict(writes.writes().stream()
                 .filter(write -> write.target().toString().equals("template:documentation/spec-template.md"))
-                .map(write ->
-                        ClosureFault.of(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "the skeleton is locked", List.of()))
+                .map(write -> ClosureFault.of(
+                        PackOrigins.of(writes.pack().id(), write.target()),
+                        RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                        "the skeleton is locked",
+                        List.of()))
                 .toList());
         Removals removals = new Removals(rig, refusingTheSkeleton);
         Map<String, String> before = removals.filesOf("qa");
@@ -425,7 +429,10 @@ class ArtifactRemovalServiceTest {
         rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
         MutabilityCheck lockedAll = writes -> new ClosureVerdict(writes.writes().stream()
                 .map(write -> ClosureFault.of(
-                        RefusalCode.GOVERNANCE_POLICY_VIOLATION, write.target() + " is locked", List.of()))
+                        PackOrigins.of(writes.pack().id(), write.target()),
+                        RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                        write.target() + " is locked",
+                        List.of()))
                 .toList());
         Removals removals = new Removals(rig, lockedAll);
         Map<String, String> before = removals.filesOf("qa");
@@ -1150,7 +1157,11 @@ class ArtifactRemovalServiceTest {
         MutabilityCheck refusing = writes -> new ClosureVerdict(writes.writes().stream()
                 .map(write -> {
                     asked.add(write.operation() + " " + write.target());
-                    return ClosureFault.of(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor", List.of());
+                    return ClosureFault.of(
+                            PackOrigins.of(writes.pack().id(), write.target()),
+                            RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                            "locked by an ancestor",
+                            List.of());
                 })
                 .toList());
         Removals removals = new Removals(rig, refusing);
@@ -1217,7 +1228,11 @@ class ArtifactRemovalServiceTest {
         MutabilityCheck refusing = writes -> new ClosureVerdict(writes.writes().stream()
                 .map(write -> {
                     asked.add(write.operation() + " " + write.target());
-                    return ClosureFault.of(RefusalCode.GOVERNANCE_POLICY_VIOLATION, "locked by an ancestor", List.of());
+                    return ClosureFault.of(
+                            PackOrigins.of(writes.pack().id(), write.target()),
+                            RefusalCode.GOVERNANCE_POLICY_VIOLATION,
+                            "locked by an ancestor",
+                            List.of());
                 })
                 .toList());
         Removals removals = new Removals(rig, refusing);
