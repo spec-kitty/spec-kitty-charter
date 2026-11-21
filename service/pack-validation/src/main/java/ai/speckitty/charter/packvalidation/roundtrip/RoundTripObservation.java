@@ -109,7 +109,7 @@ public record RoundTripObservation(
         }
         if (source instanceof Reading.Yaml(Object s) && target instanceof Reading.Yaml(Object w)) {
             Optional<String> meaning = red(comparator.differences(kind, s, w));
-            return withStale(meaning, written.sourceStale(), written.writtenStale());
+            return withStale(meaning, written.writtenStale());
         }
         return red(comparator.compareMarkdown(source, target));
     }
@@ -128,16 +128,13 @@ public record RoundTripObservation(
     }
 
     /**
-     * #195: the manifest's stale derived fields, which the comparison skips (ADR-0042), join the red detail as
-     * {@code source stale: <fields>} or {@code written stale: <fields>}.
+     * #195: the written manifest's stale derived fields, which the comparison skips (ADR-0042), join the red detail as
+     * {@code written stale: <fields>}. A source-stale field is not the round trip's: the storage edge states it as
+     * {@code manifest_stale} (#630).
      */
-    private static Optional<String> withStale(
-            Optional<String> red, List<String> sourceStale, List<String> writtenStale) {
+    private static Optional<String> withStale(Optional<String> red, List<String> writtenStale) {
         List<String> parts = new ArrayList<>();
         red.ifPresent(parts::add);
-        if (!sourceStale.isEmpty()) {
-            parts.add("source stale: " + String.join(", ", sourceStale));
-        }
         if (!writtenStale.isEmpty()) {
             parts.add("written stale: " + String.join(", ", writtenStale));
         }

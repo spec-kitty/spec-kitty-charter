@@ -153,8 +153,9 @@ class RoundTripObservationTest {
                     .containsEntry("b.md", Optional.of("document: source read, written refused: line 2: no"));
         }
 
+        /** #630: only the written side's stale fields are the round trip's; the source side's are manifest_stale. */
         @Test
-        void theManifestsStaleFieldsJoinItsDetail() {
+        void theWrittenManifestsStaleFieldsJoinItsDetail() {
             Map<String, Object> manifest = Map.of("schema_version", 1);
             RoundTripObservation observation = RoundTripObservation.of(result(
                     Map.of("pack-manifest.yaml", "pack-manifest", "other.yaml", "pack-manifest"),
@@ -164,7 +165,6 @@ class RoundTripObservationTest {
                                     "pack-manifest.yaml",
                                     yaml(manifest),
                                     yaml(Map.of("schema_version", 2)),
-                                    List.of("a.content_hash"),
                                     List.of("b.content_hash", "c.content_hash")),
                             "other.yaml",
                             new FileOutcome.Written("other.yaml", yaml(manifest), yaml(manifest))),
@@ -173,8 +173,8 @@ class RoundTripObservationTest {
             assertThat(observation.observed())
                     .containsEntry(
                             "pack-manifest.yaml",
-                            Optional.of("schema_version: source 1, written 2 ; source stale: a.content_hash ; written"
-                                    + " stale: b.content_hash, c.content_hash"))
+                            Optional.of("schema_version: source 1, written 2 ; written stale: b.content_hash,"
+                                    + " c.content_hash"))
                     .containsEntry("other.yaml", Optional.empty());
         }
 

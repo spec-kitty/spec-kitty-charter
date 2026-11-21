@@ -26,6 +26,7 @@ import ai.speckitty.charter.packs.domain.PackVerdict;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.ManifestStamps;
 import ai.speckitty.charter.packvalidation.placement.Placement;
 import ai.speckitty.charter.packvalidation.placement.PlacementCodes;
 import java.io.IOException;
@@ -331,14 +332,16 @@ class PackCheckTest {
 
     @Test
     void aManifestThatLeavesOutAHeldFileIsAMembershipFaultAsTheRegistrationAnswersIt(@TempDir Path dir) {
-        List<Reason> findings = validateProject(
-                dir,
-                pack -> rewrite(
-                        pack.resolve(MANIFEST),
-                        text -> text.replaceFirst(
-                                "- kind: skill\\n  id: project-triage\\n  path: skills/project-triage.skill.yaml\\n"
-                                        + "  content_hash: [0-9a-f]+\\n",
-                                "")));
+        List<Reason> findings = validateProject(dir, pack -> {
+            rewrite(
+                    pack.resolve(MANIFEST),
+                    text -> text.replaceFirst(
+                            "- kind: skill\\n  id: project-triage\\n  path: skills/project-triage.skill.yaml\\n"
+                                    + "  content_hash: [0-9a-f]+\\n",
+                            ""));
+            // #630: the manifest_hash of the edited lists, so membership is the one cause.
+            ManifestStamps.rehash(pack);
+        });
 
         assertThat(findings)
                 .as("R2 row 29: validate mode gains manifest membership by construction")

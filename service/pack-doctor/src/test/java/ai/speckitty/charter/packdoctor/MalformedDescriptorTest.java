@@ -145,7 +145,10 @@ class MalformedDescriptorTest {
         List<String> codes = new ArrayList<>();
         problem.get("violations")
                 .forEach(violation -> codes.add(violation.get("code").asString()));
-        assertThat(codes).as("one cause, no round-trip red beside it").doesNotContain("round_trip_red");
+        assertThat(codes)
+                .as("one cause, no round-trip red beside it")
+                .contains(plant.code())
+                .doesNotContain("round_trip_red");
         assertThat(run.report().get("checks").toString()).doesNotContain("CLOSURE");
         List<String> closureSkips = new ArrayList<>();
         run.report().get("skipped").forEach(skip -> {
