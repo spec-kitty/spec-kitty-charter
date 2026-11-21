@@ -3,7 +3,7 @@ title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, pa
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
 updated: 2026-11-21T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556)
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -216,12 +216,14 @@ rules live.
 Slice 7 ([#556](https://github.com/spec-kitty/spec-kitty-charter/issues/556)) put the closure checks behind decision
 6's ports and made each one collect every fault. The operator ruled D1 to D6 on 2026-11-19 (Mission
 `closure-checks-behind-ports-01M7TS43`, decision moments `01M7TS5S…` to `01M7TS64…`). This amendment governs decision 6
-where they differ.
+where they differ. [ADR-0082](/adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface/)
+(2026-11-21) makes these three ports transitional: the rules do not live in judging ports, and the approved slices 3,
+5 and 6 replace `ClosureWalk`, `MutabilityCheck` and `ImpactCheck` outright.
 
 - **The three ports, their subjects and their consumers.** `packs.domain` declares them; `packs.application`
-  implements them; `deployable` wires them; the service is their only consumer. Each answers a `ClosureVerdict` (every
-  `ClosureFault`, in the order judged) and exposes a kernel `Rule` view that no edge composes yet: they are the seams
-  the service composes, not rules of the validation edge.
+  implements them as Spring components, found by the packs module's component scan; the service is their only consumer.
+  Each answers a `ClosureVerdict` (every `ClosureFault`, in the order judged): they are the seams the service composes,
+  not rules of the validation edge.
   - `ClosureWalk` (`OwnClosureWalk`) judges one declaring pack's own closure (`OwnClosure`, over `ClosureFacts`):
     the fallback profile (ADR-0068), the role pins, then the profile enhancements, each reporting every breach.
   - `ImpactCheck` (`ClosureImpactCheck`, formerly `RegistrationImpact`) judges a `PackChange` (a registration, a
@@ -238,9 +240,10 @@ where they differ.
 - **"pack-validation's rules call the ports" is superseded.** The 2026-11-16 amendment left the validation edge with no
   judging port, and `pack-check` composes none of the ports (S2), so its CLI and `PackRulesets.closure()` do not change
   (#478).
-- **Flagged ambiguity (S1).** The 2026-11-16 amendment "replaces the 2026-11-13 amendment's ports". This slice reads that
-  as the `PackInspector` port and its `Scope` only, not decision 6's three ports, and builds the three. The operator
-  has not ruled the reading; if it is wrong, the ports are the part to revisit.
+- **The reading of "replaces the ports", settled by ADR-0082.** The 2026-11-16 amendment "replaces the 2026-11-13
+  amendment's ports". This slice read that as the `PackInspector` port and its `Scope` only, and built decision 6's
+  three ports. ADR-0082 settles it against judging ports (its decision 7): the three ports stay only until slices 3, 5
+  and 6 replace them.
 - **What decision 6 listed and where it went.** The qualified references are judged by the compose that builds the
   closure, which now collects every reference fault of a phase. No pack write is refused on the required floor (spec
   A1): the floor is read only for the registration notices, and an activation's floor stays with the activations
@@ -254,7 +257,9 @@ where they differ.
   unification is [#614](https://github.com/spec-kitty/spec-kitty-charter/issues/614).
 - **Declared deviations.** `ClosureRoleFacts` and `ProfileEnhancers` stay as they are and `ClosureView` answers
   `ClosureFacts` over them; the commit store's convenience constructors, and its Spring constructor's fallback, build a
-  default `ClosureImpactCheck`; `PackRegistrationService` names `ClosureImpactCheck` for its census (`committed()`).
+  default `ClosureImpactCheck`, so `packs.infra.storage` constructs an application class; `PackRegistrationService`
+  names `ClosureImpactCheck` for its census (`committed()`), and `PackUninstallService` names it for the judge that
+  takes its delete's own session. Slice 6 (ADR-0082) removes all three.
 
 **A note on the title and the description.** They still say "one pack-validation module" that holds every pack check
 and that the service shares. After this amendment the checks live in the packs domain and the storage edge, and
