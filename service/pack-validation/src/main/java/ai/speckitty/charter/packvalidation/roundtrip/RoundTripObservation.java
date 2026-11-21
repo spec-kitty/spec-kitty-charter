@@ -17,9 +17,10 @@ import java.util.stream.Collectors;
 
 /**
  * What one round trip shows, file by file: every answered file compared with its source by meaning (ADR-0036), in its
- * content form, and every excluded file checked to be unwritten (#451). It reads no file; the flow read both sides.
+ * content form, and every file the census does not hold checked to be unwritten (#451, #631). It reads no file; the
+ * flow read both sides.
  *
- * @param observed for each answered or excluded file, empty when it is green, else the red detail, which starts with
+ * @param observed for each answered file and each file the census does not hold, empty when it is green, else the red detail, which starts with
  *     where the file first differs followed by {@code ": "} ({@code steps[2].title: …}, {@code refused: …})
  * @param information extra lines per file, such as a graph shard's duplicate edges, which do not count as a difference
  * @param unpaired the written files no source file paired with (ADR-0036: an extra file is a difference)
@@ -43,7 +44,7 @@ public record RoundTripObservation(
     }
 
     /**
-     * Compares every answered file of a round trip with its source, and checks every excluded file.
+     * Compares every answered file of a round trip with its source, and checks every file the census does not hold.
      *
      * @param result what the flow observed
      * @return the observation
@@ -66,16 +67,17 @@ public record RoundTripObservation(
                                 yield red(comparator, kind, written);
                             }
                         }));
-        // An excluded file is not compared, it is checked: the store must not have written it (#451).
-        result.census().forEach((path, kind) -> {
-            if (PackRoundTripResult.isExcluded(kind)) {
-                observed.put(
-                        path,
-                        result.written().contains(path)
-                                ? Optional.of("the store wrote the excluded file " + path)
-                                : Optional.empty());
-            }
-        });
+        // A file the census does not hold is not compared, it is checked: the store must not have written it (#451,
+        // #631).
+        for (String path : result.notHeld()) {
+            String what =
+                    PackRoundTripResult.isExcluded(result.census().getOrDefault(path, "")) ? "excluded" : "not-held";
+            observed.put(
+                    path,
+                    result.written().contains(path)
+                            ? Optional.of("the store wrote the " + what + " file " + path)
+                            : Optional.empty());
+        }
         SortedSet<String> unpaired = new TreeSet<>(result.written());
         unpaired.removeAll(paired);
         return new RoundTripObservation(observed, information, unpaired);

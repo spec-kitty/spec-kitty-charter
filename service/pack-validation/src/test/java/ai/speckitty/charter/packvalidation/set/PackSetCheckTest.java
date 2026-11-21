@@ -521,7 +521,7 @@ class PackSetCheckTest {
 
         /** A red run: an empty census, and a written file no source file pairs with. */
         private static final PackRoundTripResult RED = new PackRoundTripResult(
-                new TreeMap<>(), Set.of(), new TreeMap<>(), new TreeSet<>(Set.of("stray.yaml")));
+                new TreeMap<>(), new TreeSet<>(), Set.of(), new TreeMap<>(), new TreeSet<>(Set.of("stray.yaml")));
 
         @Test
         @DisplayName(

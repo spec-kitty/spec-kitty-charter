@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -46,13 +47,26 @@ final class WholePackGateRun {
             Set<String> paired,
             Function<String, ContentForm> formOf) {
         PackRoundTripResult result = PackRoundTrip.run(
-                roundTrip, new PackIdentifier(String.valueOf(pack.getFileName())), pack, written, census, formOf);
+                roundTrip,
+                new PackIdentifier(String.valueOf(pack.getFileName())),
+                pack,
+                written,
+                census,
+                notHeldOf(pack, census),
+                formOf);
         RoundTripObservation observation = RoundTripObservation.of(result);
         information.putAll(observation.information());
         result.written().stream()
                 .filter(file -> !observation.unpaired().contains(file))
                 .forEach(paired::add);
         return observation.observed();
+    }
+
+    /** The paths of {@code census} the pack's own census does not hold. */
+    private static Set<String> notHeldOf(Path pack, SortedMap<String, String> census) {
+        Set<String> notHeld = new TreeSet<>(WholePackCensus.notHeld(WholePackCensus.census(pack)));
+        notHeld.retainAll(census.keySet());
+        return notHeld;
     }
 
     /**

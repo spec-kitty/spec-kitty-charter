@@ -151,7 +151,8 @@ warning: <pack>: <code> <file>: <detail>
 ```
 
 For example, a file the charter does not model is `file_not_held`, a warning. Read them, but a CI gate on the exit code
-passes with them.
+passes with them. This holds with `--round-trip` too: the round trip leaves out a file the charter does not hold, such
+as a stray `notes.txt`, and never fails it.
 
 ## Links
 

@@ -100,7 +100,14 @@ public final class PackRoundTrip {
      */
     static PackRoundTripResult run(WholePackRoundTrip roundTrip, PackIdentifier packId, Path source, Path target) {
         TreeCensus census = WholePackCensus.census(source);
-        return run(roundTrip, packId, source, target, WholePackCensus.kinds(census), WholePackCensus.formsOf(census));
+        return run(
+                roundTrip,
+                packId,
+                source,
+                target,
+                WholePackCensus.kinds(census),
+                WholePackCensus.notHeld(census),
+                WholePackCensus.formsOf(census));
     }
 
     /**
@@ -113,6 +120,7 @@ public final class PackRoundTrip {
      * @param source the pack directory
      * @param target the directory to write to
      * @param census every source file's gate kind
+     * @param notHeld the census paths the census does not hold: the adapter is never handed them (#631)
      * @param formOf the content form of a source path
      * @return what the round trip observed
      */
@@ -122,8 +130,11 @@ public final class PackRoundTrip {
             Path source,
             Path target,
             SortedMap<String, String> census,
+            Set<String> notHeld,
             Function<String, ContentForm> formOf) {
-        Map<String, Outcome> outcomes = roundTrip.roundTrip(packId.value(), source, target, census);
+        SortedMap<String, String> held = new TreeMap<>(census);
+        held.keySet().removeAll(notHeld);
+        Map<String, Outcome> outcomes = roundTrip.roundTrip(packId.value(), source, target, held);
         SortedMap<String, FileOutcome> read = new TreeMap<>();
         outcomes.forEach((path, outcome) -> read.put(
                 path,
@@ -132,7 +143,8 @@ public final class PackRoundTrip {
                     case WholePackRoundTrip.Written w ->
                         written(formOf.apply(path), census.getOrDefault(path, ""), source, path, target, w, outcomes);
                 }));
-        return new PackRoundTripResult(census, roundTrip.modelledKinds(), read, writtenFiles(target));
+        return new PackRoundTripResult(
+                census, new TreeSet<>(notHeld), roundTrip.modelledKinds(), read, writtenFiles(target));
     }
 
     private static FileOutcome written(

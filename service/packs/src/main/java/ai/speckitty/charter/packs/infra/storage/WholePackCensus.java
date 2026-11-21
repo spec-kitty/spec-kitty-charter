@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 /**
@@ -22,7 +24,8 @@ import java.util.function.Function;
  * <p>A file that {@code contracts/packs/file-kinds.yaml} maps to a schema takes the schema's name ({@code directive},
  * {@code graph-shard}, {@code pack-descriptor}, {@code agent-profile}, …). Any other file takes
  * {@code other:<top-level directory>}, or {@code other:<file name>} at the pack root, so files without a schema are
- * grouped where they live ({@code other:missions}, {@code other:notes.txt}). A file the table excludes (an
+ * grouped where they live ({@code other:missions}, {@code other:notes.txt}); the census does not hold such a file, so
+ * the gate leaves it out and never fails it (operator ruling R34, #631). A file the table excludes (an
  * {@code exclusions} rule, or the {@code ignored} fallback for Markdown nothing models) takes
  * {@code excluded:<rule's glob>}: it is not pack content, so it is never {@code other:} and never red (#451).
  *
@@ -129,6 +132,18 @@ final class WholePackCensus {
         SortedMap<String, String> kinds = new TreeMap<>();
         census.entries().forEach(entry -> kinds.put(entry.path(), kindOf(entry)));
         return kinds;
+    }
+
+    /**
+     * The paths a census does not hold ({@link TreeCensus#notHeld}): what the round trip leaves out (#631).
+     *
+     * @param census the census
+     * @return the pack-relative paths, sorted
+     */
+    static SortedSet<String> notHeld(TreeCensus census) {
+        SortedSet<String> paths = new TreeSet<>();
+        census.notHeld().forEach(file -> paths.add(file.path()));
+        return paths;
     }
 
     /**

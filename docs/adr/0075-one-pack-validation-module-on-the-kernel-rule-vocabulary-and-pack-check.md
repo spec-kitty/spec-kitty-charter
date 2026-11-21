@@ -46,6 +46,13 @@ kind.
 rule is now enforced by `PackIdentifier`'s constructor, and the descriptor's `pack_id` has a type of its own; see the
 note under decision 2.
 
+**Status note 2026-11-21** ([#631](https://github.com/spec-kitty/spec-kitty-charter/issues/631), operator ruling
+R34): a stray or unmodelled file in a pack never fails; it stays a `file_not_held` warning in both `pack-check` modes.
+The round trip leaves out every file the census does not hold (`TreeCensus.notHeld`: an excluded file, a file no rule
+covers, a mapped file nothing names). `PackRoundTripResult` carries those paths. The adapter is never handed them, and
+the verdict checks only that the store did not write them. "#547 holds" below now reads "every file the census holds
+needs an outcome": a held file of a schema the round trip does not model still fails.
+
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
 ### Amendment 2026-11-13 (operator, #553): pack-validation reads the packs load; the packs domain stays
@@ -456,7 +463,8 @@ decision; this note records what was built and the calls made on the way.
    - The whole-pack round trip (ADR-0036) moves from the test source set into main code: the production flow into
      `packs` (`PackRoundTrip`), and the verdict over its result into `pack-validation` (`WholePackRoundTripRule`).
    - The drift test and the whole-pack gate call both.
-   - It fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)).
+   - It fails on a file kind it does not model ([#547](https://github.com/spec-kitty/spec-kitty-charter/issues/547)),
+     when the census holds the file *(see the status note of 2026-11-21, #631)*.
 9. **`pack-check` is its own module and jar** *(operator)*.
    - **What it is.** `service/pack-check` is a thin `main` over `pack-validation`, with no Spring and no CLI framework.
      It ships as `pack-check-<version>.jar`, with its checksum, on the same `service-v*` release as the service
