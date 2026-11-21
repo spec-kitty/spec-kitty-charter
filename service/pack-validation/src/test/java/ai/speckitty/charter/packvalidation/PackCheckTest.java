@@ -106,7 +106,7 @@ class PackCheckTest {
     private static Reason failing(ReasonCode code, String file, String pointer, String detail) {
         return new Reason(
                 code.value(),
-                new Origin(code.value()),
+                Origin.NONE,
                 Evaluation.FAIL,
                 code,
                 Location.in(file).at(pointer),

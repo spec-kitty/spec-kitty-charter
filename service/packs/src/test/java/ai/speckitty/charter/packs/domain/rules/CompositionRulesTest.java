@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -25,6 +26,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -183,12 +185,43 @@ class CompositionRulesTest {
         }
 
         @Test
+        @DisplayName("a fault is about the pack that broke the rule first, its rule still the check's name (R-o)")
+        void aFaultsOriginIsThePackThatBrokeTheRuleFirst() {
+            PackUnderResolution dependent =
+                    pack(ordered("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(ordered("GONE"), ">=1.0"));
+
+            ClosureFault fault = CompositionRules.faults(List.of(dependent)).getFirst();
+
+            assertThat(fault.packs().getFirst().packId()).isEqualTo(registeredIdOf(ordered("DEP")));
+            assertThat(fault.origin())
+                    .isEqualTo(new Origin(registeredIdOf(ordered("DEP")).value()));
+            assertThat(fault.reason().rule()).isEqualTo(CompositionRules.RULE);
+        }
+
+        @Test
+        @DisplayName("a preset contest is about the first pack it names, its rule the preset phase's name (R-o)")
+        void aPresetFaultsOriginIsTheFirstPackItNames() {
+            PackUnderResolution left = pack(ordered("LEFT"), "left", "1.0.0", PackLevel.ORG);
+            PackUnderResolution right = pack(ordered("RIGHT"), "right", "1.0.0", PackLevel.ORG);
+            Map<String, List<String>> presets =
+                    Map.of(ordered("LEFT"), List.of("team"), ordered("RIGHT"), List.of("team"));
+
+            ClosureFault fault = CompositionRules.presetFaults(List.of(left, right), holding(presets))
+                    .getFirst();
+
+            assertThat(fault.origin())
+                    .isEqualTo(new Origin(fault.packs().getFirst().packId().value()))
+                    .isNotEqualTo(Origin.NONE);
+            assertThat(fault.reason().rule()).isEqualTo(CompositionRules.PRESETS_RULE);
+        }
+
+        @Test
         @DisplayName("a fault keeps its code, packs and detail; its pack list is copied")
         void aFaultKeepsItsFields() {
             List<RefusalPack> packs = new ArrayList<>(
                     List.of(new RefusalPack(new PackUlid(ordered("A")), registeredIdOf(ordered("A")), "a")));
-            ClosureFault fault =
-                    ClosureFault.of(CompositionRules.ORIGIN, RefusalCode.PACK_DEPENDENCY_CYCLE, "why", packs);
+            ClosureFault fault = ClosureFault.of(
+                    PackOrigins.of(registeredIdOf(ordered("A"))), RefusalCode.PACK_DEPENDENCY_CYCLE, "why", packs);
             packs.clear();
 
             assertThat(fault.reason().code()).isEqualTo(CYCLE);
@@ -198,13 +231,17 @@ class CompositionRulesTest {
             assertThatThrownBy(() -> fault.packs()
                             .add(new RefusalPack(new PackUlid(ordered("B")), registeredIdOf(ordered("B")), "b")))
                     .isInstanceOf(UnsupportedOperationException.class);
-            assertThatThrownBy(() -> ClosureFault.of(CompositionRules.ORIGIN, null, "d", List.of()))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() ->
-                            ClosureFault.of(CompositionRules.ORIGIN, RefusalCode.PACK_DEPENDENCY_CYCLE, "d", null))
+            assertThatThrownBy(
+                            () -> ClosureFault.of(PackOrigins.of(registeredIdOf(ordered("A"))), null, "d", List.of()))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> ClosureFault.of(
-                            CompositionRules.ORIGIN, RefusalCode.PACK_DEPENDENCY_CYCLE, null, List.of()))
+                            PackOrigins.of(registeredIdOf(ordered("A"))), RefusalCode.PACK_DEPENDENCY_CYCLE, "d", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> ClosureFault.of(
+                            PackOrigins.of(registeredIdOf(ordered("A"))),
+                            RefusalCode.PACK_DEPENDENCY_CYCLE,
+                            null,
+                            List.of()))
                     .isInstanceOf(NullPointerException.class);
         }
     }

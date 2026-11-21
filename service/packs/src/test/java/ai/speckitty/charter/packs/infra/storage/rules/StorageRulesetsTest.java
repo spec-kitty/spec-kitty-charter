@@ -81,12 +81,7 @@ class StorageRulesetsTest {
 
     private static Reason fault(ReasonCode code, String file) {
         return new Reason(
-                code.value(),
-                new Origin(code.value()),
-                Evaluation.FAIL,
-                code,
-                Location.in(file),
-                file + ": " + code.value());
+                code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), file + ": " + code.value());
     }
 
     private static final ArtifactFacts A = new ArtifactFacts("tactics/a.tactic.yaml", "tactic", "same");
@@ -266,7 +261,7 @@ class StorageRulesetsTest {
             TreeCensus none = census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT);
             Reason stated = new Reason(
                     "pack_unreadable",
-                    new Origin("pack_unreadable"),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     StorageCodes.PACK_UNREADABLE,
                     Location.in("pack"),
@@ -436,7 +431,7 @@ class StorageRulesetsTest {
             Reason graphA = fault(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml");
             Reason graphA2 = new Reason(
                     PackCodes.DRG_SCHEMA_ERROR.value(),
-                    new Origin(PackCodes.DRG_SCHEMA_ERROR.value()),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     PackCodes.DRG_SCHEMA_ERROR,
                     Location.in("a.graph.yaml").at("/edges/0"),

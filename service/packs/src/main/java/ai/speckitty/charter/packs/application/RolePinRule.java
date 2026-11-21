@@ -2,10 +2,13 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RoleBearer;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureWalk;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.RolePins;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,13 +51,14 @@ final class RolePinRule {
                     .map(declaring -> "pack " + declaring.value() + " pins it to "
                             + closure.pinsOf(declaring).pinOf(role).orElseThrow())
                     .collect(Collectors.joining(", "));
+            List<RefusalPack> named = closure.named(conflict);
             breaches.add(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    PackOrigins.firstOf(named),
                     RefusalCode.ROLE_PIN_CONFLICT,
                     "the role " + role + " is pinned to different profiles: " + pins
                             + "; pins are tighten-only, so every pack of a closure that pins a role pins it to one"
                             + " profile",
-                    closure.named(conflict)));
+                    named));
         }
         return List.copyOf(breaches);
     }
@@ -62,10 +66,11 @@ final class RolePinRule {
     private static Optional<ClosureFault> judge(
             PackIdentifier pack, String role, String profileId, ClosureFacts closure, ClosureWalk.Profiles profiles) {
         String named = "the role pin " + role + ": " + profileId + " of pack " + pack.value();
+        Origin origin = FallbackProfileRule.profileOrigin(pack, profileId);
         Optional<RoleBearer> held = FallbackProfileRule.heldProfile(profileId, closure, profiles);
         if (held.isEmpty()) {
             return Optional.of(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    origin,
                     RefusalCode.ROLE_PIN_UNKNOWN,
                     named + " names no agent profile the pack or a pack it depends on holds",
                     List.of()));
@@ -73,7 +78,7 @@ final class RolePinRule {
         RoleBearer profile = held.get();
         if (!role.equals(profile.role()) && !profile.altRoles().contains(role)) {
             return Optional.of(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    origin,
                     RefusalCode.ROLE_PIN_NOT_FITTING,
                     named + " names a profile of role " + profile.role()
                             + (profile.altRoles().isEmpty() ? "" : " and alt-roles " + profile.altRoles())

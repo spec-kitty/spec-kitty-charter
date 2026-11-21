@@ -5,54 +5,67 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("Reason: one rule's outcome, with the check that produced it (#614)")
+@DisplayName("Reason: one rule's outcome, with the element it is about (#614)")
 class ReasonTest {
 
-    private static final Origin COMPOSE = new Origin("closure");
+    private static final String RULE = "closure.presets";
 
-    private static final Origin PRESETS = new Origin("closure.presets");
+    private static final Origin ACME = new Origin("acme");
+
+    private static final Origin BASE = new Origin("base");
 
     private static Reason failing(Origin origin) {
-        return new Reason(
-                origin.name(), origin, Evaluation.FAIL, ReasonCode.of("pack_sibling_conflict"), Location.NOWHERE, "d");
+        return new Reason(RULE, origin, Evaluation.FAIL, ReasonCode.of("pack_sibling_conflict"), Location.NOWHERE, "d");
     }
 
     @Test
     @DisplayName("a reason carries the origin it was given")
     void aReasonCarriesItsOrigin() {
-        Reason reason = failing(PRESETS);
+        Reason reason = failing(ACME);
 
-        assertThat(reason.origin()).isEqualTo(PRESETS);
-        assertThat(reason.origin().name()).isEqualTo("closure.presets");
+        assertThat(reason.origin()).isEqualTo(ACME);
+        assertThat(reason.origin().id()).isEqualTo("acme");
+        assertThat(reason.rule())
+                .as("the rule stays the check's name, apart from the element")
+                .isEqualTo(RULE);
     }
 
     @Test
     @DisplayName("two reasons alike in all but their origin are not equal")
     void equalityCoversTheOrigin() {
-        Reason compose = failing(COMPOSE);
-        Reason presets = new Reason(
-                compose.rule(), PRESETS, compose.result(), compose.code(), compose.location(), compose.detail());
+        Reason acme = failing(ACME);
+        Reason base = new Reason(acme.rule(), BASE, acme.result(), acme.code(), acme.location(), acme.detail());
 
-        assertThat(presets).isNotEqualTo(compose);
+        assertThat(base).isNotEqualTo(acme);
         // control: the same parts, the origin included, are equal
-        assertThat(failing(COMPOSE)).isEqualTo(compose).hasSameHashCodeAs(compose);
+        assertThat(failing(ACME)).isEqualTo(acme).hasSameHashCodeAs(acme);
     }
 
     @Test
     @DisplayName("a relocated reason keeps its origin")
     void aRelocatedReasonKeepsItsOrigin() {
-        assertThat(failing(PRESETS).at(Location.in("pack.yaml")).origin()).isEqualTo(PRESETS);
+        assertThat(failing(ACME).at(Location.in("pack.yaml")).origin()).isEqualTo(ACME);
     }
 
     @Test
-    @DisplayName("an invariant's reason comes from the invariant it states")
-    void anInvariantsOriginIsItsRule() {
+    @DisplayName("an invariant's reason is about no element: its origin is NONE, never its rule (R-o)")
+    void anInvariantsOriginIsNone() {
         assertThat(Reason.failed("an id is a slug", "`A b` is no slug").origin())
-                .isEqualTo(new Origin("an id is a slug"));
-        assertThat(Reason.passed("an id is a slug").origin()).isEqualTo(new Origin("an id is a slug"));
+                .isEqualTo(Origin.NONE);
+        assertThat(Reason.failed("an id is a slug").origin()).isEqualTo(Origin.NONE);
+        assertThat(Reason.passed("an id is a slug").origin()).isEqualTo(Origin.NONE);
+        assertThat(Reason.passed("an id is a slug").rule()).isEqualTo("an id is a slug");
+    }
+
+    @Test
+    @DisplayName("a constraint's reasons, held or breached, are about no element: their origin is NONE (R-o)")
+    void aConstraintsOriginIsNone() {
+        Constraint<String> slug = new Constraint<>("an id is a slug", text -> !text.contains(" "));
+
+        assertThat(slug.applyTo("ok").origin()).isEqualTo(Origin.NONE);
+        assertThat(slug.applyTo("not ok").origin()).isEqualTo(Origin.NONE);
+        assertThat(slug.applyTo("not ok").rule()).isEqualTo("an id is a slug");
     }
 
     @Test
@@ -61,14 +74,5 @@ class ReasonTest {
         assertThatThrownBy(() -> new Reason("r", null, Evaluation.FAIL, ReasonCode.INVARIANT, Location.NOWHERE, "d"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("origin");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"", " ", "\t"})
-    @DisplayName("an origin names its check: a blank name is refused")
-    void anOriginRefusesABlankName(String blank) {
-        assertThatThrownBy(() -> new Origin(blank))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("names the check");
     }
 }

@@ -624,21 +624,21 @@ class PackSetCheckTest {
                     .check(example(ExamplePacks.BUILT_IN).root());
             Reason warning = new Reason(
                     "test",
-                    new Origin("test"),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     new ReasonCode("file_not_held", Severity.WARNING),
                     Location.in("notes.md"),
                     "w");
             Reason violation = new Reason(
                     "test",
-                    new Origin("test"),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     new ReasonCode("pack_entry_linked", Severity.VIOLATION),
                     Location.in("tactics/linked.tactic.yaml"),
                     "linked");
             Reason unplaced = new Reason(
                     "test",
-                    new Origin("test"),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     new ReasonCode("pack_unreadable", Severity.VIOLATION),
                     Location.NOWHERE,
@@ -649,7 +649,7 @@ class PackSetCheckTest {
             Reason atTheViolation = red("tactics/linked.tactic.yaml");
             Reason ofTheRun = new Reason(
                     "round-trip",
-                    new Origin("round-trip"),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     WholePackRoundTripRule.RED,
                     Location.NOWHERE,
@@ -662,7 +662,7 @@ class PackSetCheckTest {
         private static Reason red(String file) {
             return new Reason(
                     "round-trip",
-                    new Origin("round-trip"),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     WholePackRoundTripRule.RED,
                     Location.in(file),

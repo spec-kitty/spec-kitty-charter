@@ -4,11 +4,11 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * The outcome of one {@link Rule} on one subject: which rule, which check produced it, whether it held, its code (and so
- * its {@link Severity}), where it points and what it says.
+ * The outcome of one {@link Rule} on one subject: which rule, which element it is about, whether it held, its code (and
+ * so its {@link Severity}), where it points and what it says.
  *
  * @param rule the rule's own description, the same for every subject
- * @param origin the check that produced the reason (#614); the rule's own name for a reason no named check gives
+ * @param origin the element the reason is about (#614, ADR-0082 decision 4); {@link Origin#NONE} for none
  * @param result whether the rule held
  * @param code the machine-readable code, which owns the severity
  * @param location where the reason points; {@link Location#NOWHERE} for a held reason or a value object
@@ -31,20 +31,15 @@ public record Reason(String rule, Origin origin, Evaluation result, ReasonCode c
     }
 
     /**
-     * A held invariant: the reason a {@link Constraints#of} constraint gives when its predicate holds. Its origin is the
-     * invariant.
+     * A held invariant: the reason a {@link Constraints#of} constraint gives when its predicate holds, about no element
+     * ({@link Origin#NONE}).
      *
      * @param description the invariant's description
      * @return the held reason
      */
     public static Reason passed(String description) {
         return new Reason(
-                description,
-                new Origin(description),
-                Evaluation.PASS,
-                ReasonCode.INVARIANT,
-                Location.NOWHERE,
-                description);
+                description, Origin.NONE, Evaluation.PASS, ReasonCode.INVARIANT, Location.NOWHERE, description);
     }
 
     /**
@@ -60,14 +55,15 @@ public record Reason(String rule, Origin origin, Evaluation result, ReasonCode c
 
     /**
      * A breached invariant that says something of this subject: what a value object throws in a
-     * {@link ConstraintBreachException} for a check no predicate expresses. Its origin is the invariant.
+     * {@link ConstraintBreachException} for a check no predicate expresses, about no element
+     * ({@link Origin#NONE}).
      *
      * @param rule the invariant, fixed text
      * @param detail what the breach says about this subject
      * @return the breached reason, a {@link Severity#VIOLATION}
      */
     public static Reason failed(String rule, String detail) {
-        return new Reason(rule, new Origin(rule), Evaluation.FAIL, ReasonCode.INVARIANT, Location.NOWHERE, detail);
+        return new Reason(rule, Origin.NONE, Evaluation.FAIL, ReasonCode.INVARIANT, Location.NOWHERE, detail);
     }
 
     /**
@@ -80,7 +76,7 @@ public record Reason(String rule, Origin origin, Evaluation result, ReasonCode c
     }
 
     /**
-     * This reason at another location, from the same check.
+     * This reason at another location, about the same element.
      *
      * @param where the new location
      * @return the relocated reason; this one is unchanged

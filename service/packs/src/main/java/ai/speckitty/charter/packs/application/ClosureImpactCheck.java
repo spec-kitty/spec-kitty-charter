@@ -205,8 +205,8 @@ public final class ClosureImpactCheck implements ImpactCheck {
         List<RemovalDependents.Dependent> found = finder.of(session.stored(), removed);
         if (!found.isEmpty()) {
             return new Impact(
-                    new ClosureVerdict(List.of(
-                            RemovalDependents.fault(removed.configured().id().value(), found))),
+                    new ClosureVerdict(
+                            List.of(RemovalDependents.fault(removed.configured().id(), found))),
                     Notices.NONE);
         }
         StagedPackViews.View after = session.without(removed.configured().id());

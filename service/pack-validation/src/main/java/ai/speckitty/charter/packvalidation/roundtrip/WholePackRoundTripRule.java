@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
  * drift test passes {@link WholePackExpectation#none()}, so every red is a problem. Either way every census file the
  * census holds needs an outcome: a held file of a kind the round trip does not model fails, naming its kind and path
  * (#547). A file the census does not hold (an excluded file, a file no rule covers) is left out, never red (#631).
+ *
+ * <p>A run judges a pack's files, which each reason's {@link Location} names, not an element it can name: its reasons
+ * are about {@link Origin#NONE}.
  */
 public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
 
@@ -33,9 +36,6 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
     public static final ReasonCode UNPAIRED = new ReasonCode("round_trip_written_unpaired", Severity.VIOLATION);
 
     private static final String RULE = "whole-pack round trip (ADR-0036)";
-
-    /** The check its reasons come from: the rule itself. */
-    private static final Origin ORIGIN = new Origin(RULE);
 
     private final WholePackExpectation expectation;
 
@@ -89,9 +89,9 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
             evaluation
                     .problems()
                     .forEach(problem -> reasons.add(
-                            new Reason(RULE, ORIGIN, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
+                            new Reason(RULE, Origin.NONE, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
             unpaired.forEach(file -> reasons.add(new Reason(
-                    RULE, ORIGIN, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
+                    RULE, Origin.NONE, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
             return List.copyOf(reasons);
         }
     }
@@ -141,7 +141,7 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
     public static Reason refused(String code, String detail) {
         return new Reason(
                 RULE,
-                ORIGIN,
+                Origin.NONE,
                 Evaluation.FAIL,
                 RED,
                 Location.NOWHERE,

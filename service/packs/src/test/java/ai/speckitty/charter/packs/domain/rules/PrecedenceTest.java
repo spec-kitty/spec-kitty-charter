@@ -46,7 +46,7 @@ class PrecedenceTest {
                     pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
             where = where.at(pointer.toString());
         }
-        return new Reason(code.value(), new Origin(code.value()), Evaluation.FAIL, code, where, "d");
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, where, "d");
     }
 
     private static SchemaViolation fallback(String file, String... pointer) {

@@ -22,8 +22,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class PackVerdictsTest {
 
     private static Reason at(ReasonCode code, String file) {
-        return new Reason(
-                code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(file), code.value());
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), code.value());
     }
 
     static List<ReasonCode> placementCodes() {

@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -536,19 +537,16 @@ final class ImpactRelations {
         return fault(code, detail, List.copyOf(involved));
     }
 
-    /** A fault naming packs of the closure, each as the refusal names a pack. */
+    /** A fault naming packs of the closure, each as the refusal names a pack, about the first it names. */
     static ClosureFault fault(RefusalCode code, String detail, List<PackUnderResolution> packs) {
-        return ClosureFault.of(
-                ClosureFault.ORIGIN,
-                code,
-                detail,
-                packs.stream()
-                        .distinct()
-                        .map(pack -> new RefusalPack(
-                                pack.descriptorId(),
-                                pack.configured().id(),
-                                pack.descriptor().name()))
-                        .toList());
+        List<RefusalPack> named = packs.stream()
+                .distinct()
+                .map(pack -> new RefusalPack(
+                        pack.descriptorId(),
+                        pack.configured().id(),
+                        pack.descriptor().name()))
+                .toList();
+        return ClosureFault.of(PackOrigins.firstOf(named), code, detail, named);
     }
 
     /** Whether an edge is a self-override: an {@code overrides} edge whose target resolves to its own source. */

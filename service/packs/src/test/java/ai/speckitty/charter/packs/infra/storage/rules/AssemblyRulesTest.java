@@ -30,7 +30,7 @@ class AssemblyRulesTest {
     }
 
     private static Reason stated(String file, ReasonCode code, String detail) {
-        return new Reason(code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(file), detail);
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), detail);
     }
 
     @Test

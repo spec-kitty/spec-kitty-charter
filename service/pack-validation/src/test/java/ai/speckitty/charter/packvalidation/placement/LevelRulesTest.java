@@ -25,7 +25,7 @@ class LevelRulesTest {
         assertThat(LevelRules.RULES.apply(Placements.of(ORG, NO_DESCRIPTOR, FRAGMENT)))
                 .containsExactly(new Reason(
                         "pack_level_missing",
-                        new Origin("pack_level_missing"),
+                        Origin.NONE,
                         Evaluation.FAIL,
                         PlacementCodes.PACK_LEVEL_MISSING,
                         Location.in("pack.yaml"),

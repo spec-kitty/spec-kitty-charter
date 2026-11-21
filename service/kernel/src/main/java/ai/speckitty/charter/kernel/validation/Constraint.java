@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * wired. Neither runs when the predicate holds: a held reason carries {@link Location#NOWHERE} and the description.
  * Without a location function a breach is at {@link Location#NOWHERE}, and without a detail function its detail is the
  * description. Both are left out, not defaulted to a shared function, so that equality stays that of the parts given.
- * Every reason it gives comes from the rule itself: its {@link Origin} is the description.
+ * A predicate judges a subject, not an element it can name: every reason it gives is about {@link Origin#NONE}.
  *
  * <p>Equality is that of a record: every part must be equal, and a predicate or function is compared by reference, so
  * two calls of a factory that builds a lambda, such as {@code IdentifierGrammar.slug(63)}, give unequal rules.
@@ -61,12 +61,11 @@ public record Constraint<T>(
      */
     public Reason applyTo(T subject) {
         if (predicate.test(subject)) {
-            return new Reason(
-                    description, new Origin(description), Evaluation.PASS, code, Location.NOWHERE, description);
+            return new Reason(description, Origin.NONE, Evaluation.PASS, code, Location.NOWHERE, description);
         }
         String said = detail == null ? description : detail.apply(subject);
         Location where = location == null ? Location.NOWHERE : location.apply(subject);
-        return new Reason(description, new Origin(description), Evaluation.FAIL, code, where, said);
+        return new Reason(description, Origin.NONE, Evaluation.FAIL, code, where, said);
     }
 
     @Override

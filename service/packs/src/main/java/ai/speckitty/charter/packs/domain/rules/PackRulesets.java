@@ -82,7 +82,7 @@ public final class PackRulesets {
     /**
      * The faults of {@link #closure(Function)}, with the packs each names (#478, A-M4): every fault of {@code CLOSURE},
      * then every preset contest, in the order the ruleset reports them: the one place the composition is defined. Each
-     * fault's origin is its phase ({@link CompositionRules#ORIGIN}, {@link CompositionRules#PRESETS_ORIGIN}). What
+     * fault's rule is its phase's ({@link CompositionRules#RULE}, {@link CompositionRules#PRESETS_RULE}). What
      * pack-check reports, so it and the ruleset cannot disagree.
      *
      * @param packs the packs with their descriptors

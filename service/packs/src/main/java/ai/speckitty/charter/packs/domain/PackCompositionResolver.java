@@ -657,14 +657,14 @@ public final class PackCompositionResolver {
             }
             String reason = candidate.unresolved(label(target));
             List<RefusalPack> named = referring == null ? named(target) : named(referring, target);
-            faults.add(new ClosureFault(
-                    ClosureFault.of(
-                                    ClosureFault.ORIGIN,
-                                    RefusalCode.PACK_UNREADABLE,
-                                    (referring == null ? "pack `" + referringPackId + "`" : label(referring)) + ": "
-                                            + reason,
-                                    named)
-                            .reason(),
+            faults.add(ClosureFault.of(
+                    candidate
+                            .reference()
+                            .asUrn()
+                            .map(urn -> PackOrigins.of(named.getFirst().packId(), urn))
+                            .orElseGet(() -> PackOrigins.firstOf(named)),
+                    RefusalCode.PACK_UNREADABLE,
+                    (referring == null ? "pack `" + referringPackId + "`" : label(referring)) + ": " + reason,
                     named,
                     List.of(new RefusalViolation(candidate.file(), SubstepDelegationRule.UNRESOLVED, reason)),
                     List.of()));

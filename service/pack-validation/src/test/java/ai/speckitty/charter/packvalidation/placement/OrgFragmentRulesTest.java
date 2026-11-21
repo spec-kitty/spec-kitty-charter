@@ -22,7 +22,7 @@ class OrgFragmentRulesTest {
 
     private static final Reason MISSING = new Reason(
             "org_fragment_missing",
-            new Origin("org_fragment_missing"),
+            Origin.NONE,
             Evaluation.FAIL,
             PlacementCodes.ORG_FRAGMENT_MISSING,
             Location.in("pack.yaml"),

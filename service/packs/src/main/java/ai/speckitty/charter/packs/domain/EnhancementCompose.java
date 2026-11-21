@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,12 +110,16 @@ public final class EnhancementCompose {
         }
 
         /**
-         * The violation as a closure fault (#556): the code, the detail and the packs named.
+         * The violation as a closure fault (#556): the code, the detail and the packs named, about the enhancement in
+         * the enhancing pack, the pack that broke the rule.
          *
          * @return the fault
          */
         public ClosureFault toFault() {
-            return ClosureFault.of(ClosureFault.ORIGIN, code, detail, packs);
+            Origin origin = packs.isEmpty()
+                    ? Origin.NONE
+                    : PackOrigins.of(packs.getFirst().packId(), enhancement);
+            return ClosureFault.of(origin, code, detail, packs);
         }
     }
 

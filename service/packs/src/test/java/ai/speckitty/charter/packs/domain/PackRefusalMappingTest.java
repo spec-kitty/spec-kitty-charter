@@ -29,7 +29,7 @@ class PackRefusalMappingTest {
     private static final ReasonCode NOT_HELD = new ReasonCode("file_not_held", Severity.WARNING);
 
     private static Reason failing(ReasonCode code, String file, String detail) {
-        return new Reason(code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(file), detail);
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), detail);
     }
 
     @Test

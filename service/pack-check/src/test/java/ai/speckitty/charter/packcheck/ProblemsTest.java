@@ -18,11 +18,11 @@ import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packcheck.Problems.Problem;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
@@ -64,7 +64,7 @@ class ProblemsTest {
         real = verdict.packs().getFirst();
     }
 
-    private static final Origin TEST = new Origin("test");
+    private static final Origin TEST = Origin.NONE;
 
     private static Reason violation(String code, String file, String detail) {
         return new Reason(
@@ -245,7 +245,7 @@ class ProblemsTest {
         RefusalPack project =
                 new RefusalPack(new PackUlid("01M74H0000000000000000PRJ1"), new PackIdentifier("project"), "project");
         ClosureFault fault = ClosureFault.of(
-                CompositionRules.ORIGIN,
+                PackOrigins.of(project.packId()),
                 PackCodes.refusalOf(PackCodes.CLOSURE.get(1)),
                 "project depends on a pack the set does not hold",
                 List.of(project));
@@ -267,7 +267,7 @@ class ProblemsTest {
         PackResult pack = with(
                 List.of(violation("duplicate_artifact_id", "a.yaml", "repeated")), real.facts(), List.of(), List.of());
         ClosureFault fault = ClosureFault.of(
-                CompositionRules.ORIGIN,
+                PackOrigins.of(new PackIdentifier("y")),
                 PackCodes.refusalOf(PackCodes.CLOSURE.getFirst()),
                 "a cycle",
                 List.of(new RefusalPack(new PackUlid("01M74H0000000000000000XYZ1"), new PackIdentifier("y"), "z")));

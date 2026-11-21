@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
@@ -11,6 +12,7 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -230,11 +232,11 @@ final class RemovalDependents {
      * once, in the order of the first dependent that names it, and its violations name every dependent; the answer lists
      * at most 100 of each and counts the rest in its detail, as every refusal's does.
      *
-     * @param packId the configured name of the pack the removal would remove
+     * @param pack the configured identifier of the pack the removal would remove; the fault is about it
      * @param dependents the dependents; not empty
      * @return the fault
      */
-    static ClosureFault fault(String packId, List<Dependent> dependents) {
+    static ClosureFault fault(PackIdentifier pack, List<Dependent> dependents) {
         if (dependents.isEmpty()) {
             throw new IllegalArgumentException("a refusal names at least one dependent");
         }
@@ -245,9 +247,9 @@ final class RemovalDependents {
                 .flatMap(dependent -> dependent.pack().stream())
                 .distinct()
                 .toList();
-        String detail =
-                "The pack " + packId + " has " + dependents.size() + " dependent(s); remove or change them first.";
+        String detail = "The pack " + pack.value() + " has " + dependents.size()
+                + " dependent(s); remove or change them first.";
         return ClosureFault.of(
-                ClosureFault.ORIGIN, RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations, List.of());
+                PackOrigins.of(pack), RefusalCode.PACK_HAS_DEPENDENTS, detail, packs, violations, List.of());
     }
 }

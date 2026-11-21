@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.MutabilityCheck;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
@@ -404,7 +405,7 @@ class ArtifactRemovalServiceTest {
         MutabilityCheck refusingTheSkeleton = writes -> new ClosureVerdict(writes.writes().stream()
                 .filter(write -> write.target().toString().equals("template:documentation/spec-template.md"))
                 .map(write -> ClosureFault.of(
-                        ClosureFault.ORIGIN,
+                        PackOrigins.of(writes.pack().id(), write.target()),
                         RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                         "the skeleton is locked",
                         List.of()))
@@ -428,7 +429,7 @@ class ArtifactRemovalServiceTest {
         rig.register("qa", rig.stage(qaWithDocumentation()), Preconditions.none());
         MutabilityCheck lockedAll = writes -> new ClosureVerdict(writes.writes().stream()
                 .map(write -> ClosureFault.of(
-                        ClosureFault.ORIGIN,
+                        PackOrigins.of(writes.pack().id(), write.target()),
                         RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                         write.target() + " is locked",
                         List.of()))
@@ -1157,7 +1158,7 @@ class ArtifactRemovalServiceTest {
                 .map(write -> {
                     asked.add(write.operation() + " " + write.target());
                     return ClosureFault.of(
-                            ClosureFault.ORIGIN,
+                            PackOrigins.of(writes.pack().id(), write.target()),
                             RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                             "locked by an ancestor",
                             List.of());
@@ -1228,7 +1229,7 @@ class ArtifactRemovalServiceTest {
                 .map(write -> {
                     asked.add(write.operation() + " " + write.target());
                     return ClosureFault.of(
-                            ClosureFault.ORIGIN,
+                            PackOrigins.of(writes.pack().id(), write.target()),
                             RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                             "locked by an ancestor",
                             List.of());

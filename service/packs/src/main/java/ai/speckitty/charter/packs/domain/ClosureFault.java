@@ -21,16 +21,19 @@ import java.util.Optional;
  * (#614: there is no other closure fault type), and the closure edge's mapper turns a list of them into the write's one
  * refusal.
  *
- * <p>A fault is built one way, {@link #of(Origin, RefusalCode, String, List)} (with its long form for the violations
- * and the requiring packs): the check that found it, as the reason's {@link Origin}, its code, its detail and its packs.
- * The reason's rule name is the origin's name, so the {@code CLOSURE} reasons keep their rule names
- * ({@code closure}, {@code closure.presets}).
+ * <p>A fault is built one way, {@link #of(Origin, RefusalCode, String, List)} (with its long forms for a phase's own rule
+ * name, and for the violations and the requiring packs): the element it is about, as the reason's {@link Origin}, its
+ * code, its detail and its packs. The origin is what the check knows (operator ruling R-o, ADR-0082 decision 4): the
+ * pack that broke the rule first ({@link PackOrigins#firstOf}), or that pack and the artifact's URN
+ * ({@link PackOrigins#of(ai.speckitty.charter.kernel.domain.PackIdentifier, ai.speckitty.charter.kernel.domain.Urn)}),
+ * or {@link Origin#NONE}. The reason's rule is the check's name, {@value #RULE} unless a phase names its own
+ * ({@code closure.presets}); it is never derived from the origin.
  *
  * <p>Its code is one of {@link PackCodes#closureChecks()}, so each token is built once ({@code PACK_CODES_HAVE_ONE_OWNER}).
  * A read failure is never a fault ({@link #isReadFailure}): {@link #lift} leaves it, and a refusal of another check, to
  * propagate, so a caller rethrows what does not lift.
  *
- * @param reason the failing reason: the check that found it, the code, unplaced, and the detail
+ * @param reason the failing reason: the check's name, the element it is about, the code, unplaced, and the detail
  * @param packs the packs the fault names, the one that broke the rule first
  * @param violations the fault's own violations, when its refusal carries some
  * @param requiredBy the packs whose floor requires what the fault is about, when its refusal names them
@@ -38,15 +41,11 @@ import java.util.Optional;
 public record ClosureFault(
         Reason reason, List<RefusalPack> packs, List<RefusalViolation> violations, List<RequiringPack> requiredBy) {
 
-    /** The rule name of a closure check that names no phase of its own. */
-    public static final String RULE = "closure";
-
     /**
-     * The origin of a closure check that names no phase of its own (the compose phases, the relation rules, the closure
-     * walk, the mutability policy, the dependents of a removal, and a lifted refusal): {@value #RULE}, the rule name its
-     * reasons carry.
+     * The rule name of a closure check that names no phase of its own: the compose phases, the relation rules, the
+     * closure walk, the mutability policy, the dependents of a removal, and a lifted refusal.
      */
-    public static final Origin ORIGIN = new Origin(RULE);
+    public static final String RULE = "closure";
 
     /**
      * Checks the fields and copies the lists.
@@ -69,22 +68,38 @@ public record ClosureFault(
     }
 
     /**
-     * A fault a check found, naming packs, with no violations of its own.
+     * A fault a check found, naming packs, with no violations of its own, under the rule {@value #RULE}.
      *
-     * @param origin the check that found it; its name is the rule name the reason carries
+     * @param origin the element the fault is about
      * @param code the refusal code, one of {@link PackCodes#closureChecks()}
      * @param detail what is wrong
      * @param packs the packs it names
      * @return the fault
      */
     public static ClosureFault of(Origin origin, RefusalCode code, String detail, List<RefusalPack> packs) {
-        return of(origin, code, detail, packs, List.of(), List.of());
+        return of(origin, RULE, code, detail, packs);
     }
 
     /**
-     * A fault a check found, with every part of a refusal.
+     * A fault a phase that names its own rule found ({@code closure.presets}), naming packs, with no violations of its
+     * own.
      *
-     * @param origin the check that found it; its name is the rule name the reason carries
+     * @param origin the element the fault is about
+     * @param rule the phase's rule name
+     * @param code the refusal code, one of {@link PackCodes#closureChecks()}
+     * @param detail what is wrong
+     * @param packs the packs it names
+     * @return the fault
+     */
+    public static ClosureFault of(
+            Origin origin, String rule, RefusalCode code, String detail, List<RefusalPack> packs) {
+        return new ClosureFault(reason(rule, origin, code, detail), packs, List.of(), List.of());
+    }
+
+    /**
+     * A fault a check found, with every part of a refusal, under the rule {@value #RULE}.
+     *
+     * @param origin the element the fault is about
      * @param code the refusal code, one of {@link PackCodes#closureChecks()}
      * @param detail what is wrong
      * @param packs the packs it names
@@ -99,11 +114,11 @@ public record ClosureFault(
             List<RefusalPack> packs,
             List<RefusalViolation> violations,
             List<RequiringPack> requiredBy) {
-        return new ClosureFault(reason(origin, code, detail), packs, violations, requiredBy);
+        return new ClosureFault(reason(RULE, origin, code, detail), packs, violations, requiredBy);
     }
 
     /**
-     * The same fault with another detail and other packs, its origin, code, violations and requiring packs kept: how a
+     * The same fault with another detail and other packs, its rule, origin, code, violations and requiring packs kept: how a
      * caller places a fault in the closure it was found in (#556, US1.3).
      *
      * @param detail the detail
@@ -111,12 +126,12 @@ public record ClosureFault(
      * @return the fault
      */
     public ClosureFault with(String detail, List<RefusalPack> named) {
-        return new ClosureFault(reason(origin(), code(), detail), named, violations, requiredBy);
+        return new ClosureFault(reason(reason.rule(), origin(), code(), detail), named, violations, requiredBy);
     }
 
     /**
      * A refusal a closure check raised, as a fault: its code, detail, packs, violations and the packs that require it,
-     * from {@link #ORIGIN}. A refusal that is no closure check's (a read failure, or a code of another check) is not a
+     * under the rule {@value #RULE}, about the first pack it names ({@link PackOrigins#firstOf}). A refusal that is no closure check's (a read failure, or a code of another check) is not a
      * fault.
      *
      * @param refused the refusal
@@ -128,7 +143,11 @@ public record ClosureFault(
             return Optional.empty();
         }
         return Optional.of(new ClosureFault(
-                reason(ORIGIN, refused.code(), String.valueOf(refused.getMessage())),
+                reason(
+                        RULE,
+                        PackOrigins.firstOf(refused.packs()),
+                        refused.code(),
+                        String.valueOf(refused.getMessage())),
                 refused.packs(),
                 refused.violations(),
                 refused.requiredBy()));
@@ -161,7 +180,7 @@ public record ClosureFault(
     }
 
     /**
-     * The check that found the fault.
+     * The element the fault is about.
      *
      * @return its reason's origin
      */
@@ -187,8 +206,7 @@ public record ClosureFault(
         return reason.detail();
     }
 
-    private static Reason reason(Origin origin, RefusalCode code, String detail) {
-        Objects.requireNonNull(origin, "origin");
-        return new Reason(origin.name(), origin, Evaluation.FAIL, PackCodes.closure(code), Location.NOWHERE, detail);
+    private static Reason reason(String rule, Origin origin, RefusalCode code, String detail) {
+        return new Reason(rule, origin, Evaluation.FAIL, PackCodes.closure(code), Location.NOWHERE, detail);
     }
 }

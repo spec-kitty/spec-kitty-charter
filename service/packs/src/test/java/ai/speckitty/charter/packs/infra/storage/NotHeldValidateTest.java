@@ -62,7 +62,7 @@ class NotHeldValidateTest {
         assertThat(bare.resolve(PACK_YAML)).as("the plant holds no descriptor").doesNotExist();
         Reason warning = new Reason(
                 StorageCodes.FILE_NOT_HELD.value(),
-                new Origin(StorageCodes.FILE_NOT_HELD.value()),
+                Origin.NONE,
                 Evaluation.FAIL,
                 StorageCodes.FILE_NOT_HELD,
                 Location.in(file),

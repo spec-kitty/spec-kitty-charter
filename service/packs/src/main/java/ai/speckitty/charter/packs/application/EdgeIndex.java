@@ -663,8 +663,7 @@ public final class EdgeIndex implements ComposeResolver {
         return PackCompositionResolver.referenceFaults(
                         closure, pack.descriptor().packId(), qualified)
                 .stream()
-                .map(refusal -> ClosureFault.of(
-                        ClosureFault.ORIGIN, refusal.failure().code(), refusal.detail(), refusal.packs()))
+                .map(ResolverFaults::of)
                 .toList();
     }
 

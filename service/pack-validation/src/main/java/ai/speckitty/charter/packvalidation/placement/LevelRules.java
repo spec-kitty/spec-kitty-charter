@@ -76,9 +76,11 @@ public final class LevelRules {
                 PACK_YAML + " of " + name + " declares no pack_level and none is configured");
     }
 
-    /** A placement finding: at {@code pack.yaml} as a whole, its rule named by its code's token. */
+    /**
+     * A placement finding: at {@code pack.yaml} as a whole, its rule named by its code's token, about no element
+     * ({@link Origin#NONE}).
+     */
     static Reason finding(ReasonCode code, String detail) {
-        return new Reason(
-                code.value(), new Origin(code.value()), Evaluation.FAIL, code, Location.in(PACK_YAML), detail);
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(PACK_YAML), detail);
     }
 }

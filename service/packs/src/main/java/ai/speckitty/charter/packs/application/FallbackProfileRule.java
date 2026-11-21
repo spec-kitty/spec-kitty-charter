@@ -3,12 +3,15 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureWalk;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +30,8 @@ final class FallbackProfileRule {
     /**
      * Judges one pack's declaration, every breach (#556, FR-005).
      *
-     * @param pack the declaring pack's name, for the detail
+     * @param pack the declaring pack's configured identifier: the detail names it, and each breach is about it and the
+     *     profile it names
      * @param profileId the profile-id the pack names
      * @param closure the declaring pack's own closure
      * @param profiles where the winning profile's entity is read
@@ -36,12 +40,13 @@ final class FallbackProfileRule {
      *     that order; empty when the declaration holds
      */
     static List<ClosureFault> check(
-            String pack, String profileId, ClosureFacts closure, ClosureWalk.Profiles profiles) {
-        String named = "the fallback_profile " + profileId + " of pack " + pack;
+            PackIdentifier pack, String profileId, ClosureFacts closure, ClosureWalk.Profiles profiles) {
+        String named = "the fallback_profile " + profileId + " of pack " + pack.value();
+        Origin origin = profileOrigin(pack, profileId);
         Optional<RoleBearer> held = heldProfile(profileId, closure, profiles);
         if (held.isEmpty()) {
             return List.of(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    origin,
                     RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                     named + " names no agent profile the pack or a pack it depends on holds",
                     List.of()));
@@ -50,14 +55,14 @@ final class FallbackProfileRule {
         List<ClosureFault> breaches = new ArrayList<>();
         if (!closure.isLocked(new Urn(NodeKind.of(ArtifactKind.AGENT_PROFILE), profileId))) {
             breaches.add(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    origin,
                     RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
                     named + " is not locked by any pack of its closure; a fallback profile is locked",
                     List.of()));
         }
         if (!RoleBearer.GENERIC.equals(profile.role()) || !profile.altRoles().isEmpty()) {
             breaches.add(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    origin,
                     RefusalCode.FALLBACK_PROFILE_NOT_ROLE_NEUTRAL,
                     named + " declares role " + profile.role()
                             + (profile.altRoles().isEmpty() ? "" : " and alt-roles " + profile.altRoles())
@@ -67,12 +72,26 @@ final class FallbackProfileRule {
         }
         if (profile.humanPerformed()) {
             breaches.add(ClosureFault.of(
-                    ClosureFault.ORIGIN,
+                    origin,
                     RefusalCode.FALLBACK_PROFILE_NOT_AGENT,
                     named + " is human-performed; a fallback profile is agent-performed",
                     List.of()));
         }
         return List.copyOf(breaches);
+    }
+
+    /**
+     * What a breach of a profile a pack names is about (R-o): the pack and the profile's URN, or the pack alone when the
+     * id it names is no URN id.
+     *
+     * @param pack the pack that names the profile
+     * @param profileId the profile's id, as the pack names it
+     * @return the origin
+     */
+    static Origin profileOrigin(PackIdentifier pack, String profileId) {
+        return profileId.isEmpty() || profileId.contains("::")
+                ? PackOrigins.of(pack)
+                : PackOrigins.of(pack, new Urn(NodeKind.of(ArtifactKind.AGENT_PROFILE), profileId));
     }
 
     /**

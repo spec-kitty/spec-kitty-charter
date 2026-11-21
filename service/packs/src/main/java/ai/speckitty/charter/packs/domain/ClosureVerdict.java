@@ -5,11 +5,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The verdict of the closure checks of a write (#556), as a view over their {@link Rationale} (#614, ADR-0082 decision
- * 4): every fault they found, in the order they judged them. The ledger is {@link #rationale()}, each fault's reason in
- * order; the faults hold only what a reason has no slot for, the packs, violations and requiring packs a refusal names.
- * Whether it passes is the rationale's answer. It holds no refusal mapping: the closure edge's mapper
- * ({@code PackRefusals.of}) turns a failing verdict into the write's one refusal.
+ * The verdict of the closure checks of a write (#556): the faults they found, in the order they judged them, with their
+ * {@link Rationale} derived (#614, ADR-0082 decision 4). It is a fault list, not a view over a rationale: it owns the
+ * faults, because a reason has no slot for the packs, violations and requiring packs a refusal names, and
+ * {@link #rationale()} projects each fault's reason, in order. Whether it passes is that projection's answer. Slice 7 of
+ * #636 removes this type once the ledger carries what the faults hold. It holds no refusal mapping: the closure edge's
+ * mapper ({@code PackRefusals.of}) turns a failing verdict into the write's one refusal.
  *
  * @param faults the faults, in the order they were found
  */
@@ -28,7 +29,7 @@ public record ClosureVerdict(List<ClosureFault> faults) {
     }
 
     /**
-     * The ledger of the closure checks: each fault's reason, in the order they were found.
+     * The rationale projected from the faults: each fault's reason, in the order they were found.
      *
      * @return the rationale
      */

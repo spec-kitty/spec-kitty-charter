@@ -12,7 +12,8 @@ import java.util.List;
  * How a pack fault is stated (#554, FR-001): a failing kernel {@link Reason} of its code, at its file and the place in
  * it as a JSON pointer (RFC 6901), with the detail its owner wrote. The description is the code's token. The content
  * rules, the graph binding and the one reader all state their faults through here, so a finding reads the same
- * whichever owner states it, and the pointer is encoded, and decoded, in one place.
+ * whichever owner states it, and the pointer is encoded, and decoded, in one place. A finding judges one pack's file,
+ * which its {@link Location} names; it is about no element the owner can name, so its origin is {@link Origin#NONE}.
  */
 public final class Findings {
 
@@ -35,7 +36,7 @@ public final class Findings {
                     pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
             where = where.at(pointer.toString());
         }
-        return new Reason(code.value(), new Origin(code.value()), Evaluation.FAIL, code, where, detail);
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, where, detail);
     }
 
     /**
