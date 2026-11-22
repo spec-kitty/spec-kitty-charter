@@ -30,7 +30,8 @@ import java.util.regex.Pattern;
  *
  * <p>Two PEP 440 refinements are not modelled: the set that excludes prereleases by default ({@code >=1.0} does not
  * admit {@code 2.0b1}), and the exclusive-comparison caveats of {@code <V} and {@code >V} about pre- and post-releases
- * of {@code V}. A pack version is a release, and an implicit rule would refuse a range its author wrote in good faith.
+ * of {@code V}. A pack version is usually a release, and an implicit rule would refuse a range its author wrote in good
+ * faith.
  * {@link #admits} and {@link #overlaps} share the one ordering, so they agree on every version.
  */
 public final class Pep440Range {
