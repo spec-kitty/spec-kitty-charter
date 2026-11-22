@@ -20,6 +20,7 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 [Descriptor schemas](/architecture/descriptor-schemas/).
 
 - [Agent profile](/architecture/pack-schemas/agent-profile/) — the identity, purpose and specialization of an agent role.
+- [Anti-pattern](/architecture/pack-schemas/anti-pattern/) — a practice guidance rejects, with its severity and a bad example.
 - [Asset manifest](/architecture/pack-schemas/asset/) — the sidecar manifest that describes one asset blob in a pack.
 - [Charter](/architecture/pack-schemas/charter/) — the structured shape of the git-tracked charter.yaml.
 - [Directive](/architecture/pack-schemas/directive/) — a constraint-oriented governance rule and its enforcement level.

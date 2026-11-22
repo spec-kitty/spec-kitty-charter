@@ -97,13 +97,12 @@ class ClosureQueriesTest {
                 List.of());
     }
 
-    private static PackCompositionFacts holding(
-            List<String> defined, MutabilityPolicySource policy, Preset... presets) {
-        return new PackCompositionFacts(List.of(), defined, List.of(), policy, List.of(presets));
+    private static PackCompositionFacts holding(List<String> held, MutabilityPolicySource policy, Preset... presets) {
+        return new PackCompositionFacts(List.of(), held, List.of(), List.of(), policy, List.of(presets));
     }
 
-    private static PackCompositionFacts holding(String... defined) {
-        return holding(List.of(defined), MutabilityPolicySource.empty());
+    private static PackCompositionFacts holding(String... held) {
+        return holding(List.of(held), MutabilityPolicySource.empty());
     }
 
     /** alpha depends on beta; gamma is unrelated. */
@@ -702,6 +701,7 @@ class ClosureQueriesTest {
                 new PackCompositionFacts(
                         List.of(),
                         List.of("directive:A1", "tactic:e"),
+                        List.of(),
                         List.of(),
                         MutabilityPolicySource.empty(),
                         List.of(),

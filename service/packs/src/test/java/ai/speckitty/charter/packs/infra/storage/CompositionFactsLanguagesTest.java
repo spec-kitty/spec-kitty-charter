@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * IC-07: the composition facts carry each held artifact's {@code applies_to_languages}, read in the same assembly as
- * {@code defined} and {@code edges}, so the effective reads filter by language from the verified read and never read a
+ * {@code held} and {@code edges}, so the effective reads filter by language from the verified read and never read a
  * pack again (NFR-007).
  */
 class CompositionFactsLanguagesTest {

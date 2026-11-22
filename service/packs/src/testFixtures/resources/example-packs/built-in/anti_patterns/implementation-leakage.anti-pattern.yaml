@@ -1,0 +1,7 @@
+schema_version: '1.0'
+id: implementation-leakage
+title: Implementation leakage
+description: |
+  Writing examples in terms of database fields, internal services, or UI widgets rather than observable business behavior.
+severity: smell
+bad_example: Given the orders row has status_code 3, when OrderService.confirm is called, then the Confirm button is greyed out.

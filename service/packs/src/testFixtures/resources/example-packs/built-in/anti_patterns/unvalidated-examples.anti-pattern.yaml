@@ -1,0 +1,7 @@
+schema_version: '1.0'
+id: unvalidated-examples
+title: Unvalidated examples
+description: |
+  Treating agent-generated examples as authoritative without stakeholder or source validation.
+severity: severe
+bad_example: Adopt the examples an agent generated as the specification, with no stakeholder or source checking them.

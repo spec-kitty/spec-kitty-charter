@@ -90,7 +90,13 @@ class ImpactRelationsTest {
         facts.put(
                 "acme",
                 new PackCompositionFacts(
-                        List.of(), held, List.of(), MutabilityPolicySource.empty(), List.of(), List.of(edges)));
+                        List.of(),
+                        held,
+                        List.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty(),
+                        List.of(),
+                        List.of(edges)));
         return ImpactRelations.check(new OfferingReadService.ComposedClosure(packs, facts));
     }
 

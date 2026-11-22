@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -79,7 +80,8 @@ class StorageRulesetsTest {
     }
 
     private static Reason fault(ReasonCode code, String file) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), file + ": " + code.value());
+        return new Reason(
+                code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), file + ": " + code.value());
     }
 
     private static final ArtifactFacts A = new ArtifactFacts("tactics/a.tactic.yaml", "tactic", "same");
@@ -259,6 +261,7 @@ class StorageRulesetsTest {
             TreeCensus none = census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT);
             Reason stated = new Reason(
                     "pack_unreadable",
+                    Origin.NONE,
                     Evaluation.FAIL,
                     StorageCodes.PACK_UNREADABLE,
                     Location.in("pack"),
@@ -428,6 +431,7 @@ class StorageRulesetsTest {
             Reason graphA = fault(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml");
             Reason graphA2 = new Reason(
                     PackCodes.DRG_SCHEMA_ERROR.value(),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     PackCodes.DRG_SCHEMA_ERROR,
                     Location.in("a.graph.yaml").at("/edges/0"),

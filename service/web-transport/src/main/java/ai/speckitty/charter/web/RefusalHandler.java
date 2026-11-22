@@ -406,7 +406,9 @@ public class RefusalHandler {
                 RefusalCode.ROLE_PIN_UNKNOWN,
                 RefusalCode.ROLE_PIN_NOT_FITTING,
                 RefusalCode.ROLE_PIN_CONFLICT,
-                RefusalCode.SPECIALIZATION_CYCLE);
+                RefusalCode.SPECIALIZATION_CYCLE,
+                RefusalCode.PRESET_ITEM_NOT_HELD,
+                RefusalCode.PRESET_ITEM_UNDECLARED);
 
         private static final Set<RefusalCode> CONFLICT_CODES = EnumSet.of(
                 RefusalCode.REGISTRATION_CONFLICT,

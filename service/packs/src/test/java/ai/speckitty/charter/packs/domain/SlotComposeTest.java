@@ -57,7 +57,8 @@ class SlotComposeTest {
                         held.pack().configured().id().value(),
                         new PackCompositionFacts(
                                 List.of(),
-                                held.pack().definedArtifacts(),
+                                held.pack().referableArtifacts(),
+                                List.of(),
                                 List.of(),
                                 MutabilityPolicySource.empty(),
                                 List.of(),

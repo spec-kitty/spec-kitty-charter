@@ -321,8 +321,8 @@ public final class ClosureQueries {
     private static void heldOf(
             List<PackUnderResolution> packs, Map<ArtifactKind, Set<String>> heldIds, Map<Urn, PackUlid> holderOf) {
         for (PackUnderResolution pack : packs) {
-            for (String defined : pack.definedArtifacts()) {
-                Urn.parse(defined).ifPresent(urn -> {
+            for (String referable : pack.referableArtifacts()) {
+                Urn.parse(referable).ifPresent(urn -> {
                     holderOf.putIfAbsent(urn, pack.descriptorId());
                     urn.kind()
                             .artifactKind()

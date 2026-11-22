@@ -114,8 +114,8 @@ class ModuleDependencyAllowlistEnforcementTest {
     @Test
     fun anExtraConfigurationNamedBeforeTheAllowlistIsEnforcedIsJudgedToo() {
         val repository = ProjectBuilder.builder().withProjectDir(root).withName("root").build()
-        val module = ProjectBuilder.builder().withParent(repository).withName("pack-check")
-            .withProjectDir(File(root, "pack-check")).build()
+        val module = ProjectBuilder.builder().withParent(repository).withName("pack-doctor")
+            .withProjectDir(File(root, "pack-doctor")).build()
         module.pluginManager.apply("java-library")
         ModuleDependencyAllowlist.judgeAlso(module, "jarClasspath")
         val jar = module.configurations.create("jarClasspath")
@@ -123,7 +123,7 @@ class ModuleDependencyAllowlistEnforcementTest {
         assertThat(ModuleDependencyAllowlist.isEnforcedOn(module)).isFalse()
         ModuleDependencyAllowlist(projects = emptySet(), modules = emptySet()).enforceOn(module)
         assertThatThrownBy { jar.resolve() }
-            .hasStackTraceContaining(":pack-check may not declare [files [spring.jar]] in jarClasspath (ADR-0075)")
+            .hasStackTraceContaining(":pack-doctor may not declare [files [spring.jar]] in jarClasspath (ADR-0075)")
     }
 
     @Test
