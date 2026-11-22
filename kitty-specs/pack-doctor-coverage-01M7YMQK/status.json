@@ -1,7 +1,7 @@
 {
-  "event_count": 99,
-  "last_event_id": "01M81ND17BJ84YT59HK2CMGC4T",
-  "materialized_at": "2026-11-22T12:58:51.499122+00:00",
+  "event_count": 100,
+  "last_event_id": "01M81NV54JYJGTXHMM7T666T4T",
+  "materialized_at": "2026-11-22T13:06:34.258465+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
@@ -14,8 +14,8 @@
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
-    "planned": 1
+    "in_review": 0,
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -266,16 +266,22 @@
       "agent": "claude",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M81ND17BJ84YT59HK2CMGC4T",
-      "last_transition_at": "2026-11-22T12:58:51.499122+00:00",
+      "lane": "planned",
+      "last_event_id": "01M81NV54JYJGTXHMM7T666T4T",
+      "last_transition_at": "2026-11-22T13:06:34.258465+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: ADR-0083, amendments, docs, changelog; gates green"
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP08-adr-and-docs/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP08-adr-and-docs/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "changes_requested"
+      },
       "role": "reviewer",
       "shell_pid": 32237,
       "shell_pid_created_at": "1795352326.23",
