@@ -308,6 +308,9 @@
       "last_event_id": "01M81Q6GMQ8WRV8WXP9XTV8RXB",
       "last_transition_at": "2026-11-22T13:30:15.063122+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Drafts a-f and closure evidence from the shipped jar (ece7b92f9 on target)"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 18588,
