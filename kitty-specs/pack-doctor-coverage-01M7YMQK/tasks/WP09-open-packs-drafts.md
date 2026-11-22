@@ -57,8 +57,31 @@ Write what the orchestrator files elsewhere, and what the PR body cites (C-006; 
 One draft per issue, each with a title, why, what changes, a "done when", and the `open-packs#TBD-<slug>`
 placeholder:
 
-- (a) `TBD-pack-doctor-repin`: CI and docs download `pack-check-<v>.jar` and call the flat CLI. Repin to
-  `pack-doctor-<v>.jar validate ...` at the next charter release.
+- (a) `TBD-pack-doctor-repin` (widened 2026-11-22, dispatcher relay; ruling R-w: no `service-v*` release until this
+  mission lands, so open-packs aligns once, against that release). The complete alignment specification, verified
+  read-only in open-packs, each item with its open-packs file:line and the exact new value:
+  - **Jar name and path**: `scripts/ci/charter_pack_check_jar.sh:35-36` downloads
+    `releases/download/<tag>/pack-check-<v>.jar` -> `pack-doctor-<v>.jar`; `:55-59` builds
+    `./gradlew :pack-check:packCheckJar` and globs `service/pack-check/build/pack-check/pack-check-*.jar` for a `main`
+    pin -> `:pack-doctor:packDoctorJar` and `service/pack-doctor/build/pack-doctor/pack-doctor-*.jar`.
+  - **Lock field**: `charter.lock.yaml` (`pack_check_sha256`, comments at 9/23/27, value at 34), `charter_pin.py`
+    (`write_lock` 171-188, `PACK_CHECK_JAR` 333) and the workflows' `charter_pack_check_sha256` input -> name the new
+    field (state that the name is open-packs' call, recommend `pack_doctor_sha256`) and every file that carries it.
+  - **CLI**: the command word comes first (`validate`, `remediate`); the old flat form exits 2 with the usage (no
+    alias). Flags: `--pack`, `--config-root`, `--round-trip`, `--full` (delegations, references, enhancement targets;
+    check value `REFERENCES`, R-s/R-u), `--report <file> --format yaml|xml` (R-i).
+  - **Exit codes and `--round-trip`**: copy the contract from the shipped `Arguments`/`PackDoctorMain` usage text and
+    tests (0 clean, 1 findings, 2 usage), and what `--round-trip` adds (one problem per cause; `manifest_stale` from
+    the gate, written-stale from the round trip; `EXCLUDED_WRITTEN` retired for `NOT_HELD_WRITTEN`).
+  - **Report keys**: the stdout problem JSON keys and the report file's top-level keys, from the shipped
+    `PackDoctorReport.yaml` schema (cross-reference (e)).
+  - **New refusals open-packs content may hit**: `manifest_stale` (c), `preset_item_not_held` /
+    `preset_item_undeclared` (b), the anti-pattern refusals (f).
+  - **open-packs #343 (charter:main-red)**: two invalid-fixture expectations already lag charter main (PR #626):
+    `case-variant-readme` now answers `case_variant`; `malformed-pack-version` now exits 1 with
+    `pack_version_invalid`. The alignment PR fixes them too.
+  - **Timing**: open-packs' nightly against charter `main` goes red when this mission merges, before any release;
+    say so, and that the alignment PR should land against the first release after this mission (R-w).
 - (b) `TBD-preset-item-refusals`: presets whose items the own closure lacks are now refused
   (`preset_item_not_held`, `preset_item_undeclared`). List the open-packs presets that break, if you can check them
   read-only (`/home/user/spec-kitty/spec-kitty-open-packs`).
