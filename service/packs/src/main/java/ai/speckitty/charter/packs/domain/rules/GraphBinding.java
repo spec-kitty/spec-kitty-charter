@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackContents.RawNode;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -254,15 +255,14 @@ public final class GraphBinding {
         // A tension joins two rules: an artifact and itself, or two versions of one artifact, qualified or not, are not
         // two rules (ADR-0045 decision 1). It is reported under its own code.
         if (relation == RelationType.TENSION && sourceUrn.get().equals(targetUrn.get())) {
-            return new SelfTension(origin + ": a tension cannot join '" + sourceUrn.get()
-                    + "' to itself or to a version" + " of itself");
+            return new SelfTension(origin + ": " + selfTension(sourceUrn.get()));
         }
         // Only a bare endpoint pair is a self-loop: a qualifier names another pack's artifact of the same id
         // (`a::directive:X -> directive:X` joins two artifacts), which is legal (ADR-0053 decision 7).
         if (sourceUrn.get().equals(targetUrn.get())
                 && source.get().packName().isEmpty()
                 && target.get().packName().isEmpty()) {
-            return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
+            return origin + ": " + selfLoop(sourceUrn.get());
         }
         for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
             if (!endpoint.kind().edgeTarget()) {
@@ -303,6 +303,40 @@ public final class GraphBinding {
         } catch (IllegalArgumentException malformed) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * The fault of an edge that joins an artifact to itself, as a registration states it (#617): the endpoints are read
+     * with the pack's name ({@link #joinsItself}), so an edge qualified with the pack's own name is the fault its bare
+     * form is. An endpoint that is no reference is judged where its document is read.
+     *
+     * @param packName the descriptor name of the pack that writes the edge
+     * @param file the edge's pack-relative graph document
+     * @param source the source as written
+     * @param target the target as written
+     * @param relation the relation as written
+     * @return the fault, when the edge joins an artifact to itself
+     */
+    public static Optional<PackElementViolation> selfJoin(
+            String packName, String file, String source, String target, String relation) {
+        Optional<PackQualifiedReference> from = reference(source);
+        Optional<PackQualifiedReference> to = reference(target);
+        if (from.isEmpty() || to.isEmpty() || !joinsItself(packName, from.get(), to.get())) {
+            return Optional.empty();
+        }
+        return from.get()
+                .asUrn()
+                .map(urn -> RelationType.TENSION.token().equals(relation)
+                        ? new PackElementViolation(file, PackCodes.TENSION_SELF, selfTension(urn))
+                        : new PackElementViolation(file, PackCodes.DRG_SCHEMA_ERROR, selfLoop(urn)));
+    }
+
+    private static String selfTension(Urn urn) {
+        return "a tension cannot join '" + urn + "' to itself or to a version of itself";
+    }
+
+    private static String selfLoop(Urn urn) {
+        return "a relationship cannot join '" + urn + "' to itself";
     }
 
     /**

@@ -149,7 +149,8 @@ final class CompositionFactsBuilder {
      */
     static PackCompositionFacts composeFacts(PackIdentifier pack, StoreRead read) {
         if (!read.graphFaults().isEmpty()) {
-            throw FilesystemPackStore.graphUnreadable(pack, read.graphFaults());
+            throw FilesystemPackStore.graphUnreadable(
+                    pack, read.assembly() instanceof Assembly.Assembled held ? factsFaults(held) : read.graphFaults());
         }
         return switch (read.assembly()) {
             case Assembly.Assembled held -> heldFacts(pack, held);
@@ -160,8 +161,8 @@ final class CompositionFactsBuilder {
 
     /**
      * The facts of a pack the load held, judged as the composing read judges a stored pack: the assembly's first fault
-     * ({@link #requireReadable}), then a named policy file that cannot be read ({@link #unreadablePolicy}), then a
-     * refusal of the builder (an edge that joins an artifact to itself).
+     * ({@link #requireReadable}), then a named policy file that cannot be read ({@link #unreadablePolicy}), then the
+     * edges that join an artifact to itself.
      *
      * @param pack the pack, as the refusals name it
      * @param held what the load held
@@ -174,10 +175,13 @@ final class CompositionFactsBuilder {
         if (named.isPresent() && held.policyText().isEmpty()) {
             throw unreadablePolicy(pack, named.get(), held.policyFault().orElse("is missing"));
         }
-        held.factsRefusal().ifPresent(refusal -> {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, refusal);
-        });
-        return held.facts().orElseThrow(() -> FilesystemPackStore.graphUnreadable(pack, held.graphFaults()));
+        return held.facts().orElseThrow(() -> FilesystemPackStore.graphUnreadable(pack, factsFaults(held)));
+    }
+
+    /** The graph faults that stop the composition facts: the documents not read, and the edges that join themselves. */
+    private static List<PackElementViolation> factsFaults(Assembly.Assembled held) {
+        return Stream.concat(held.graphFaults().stream(), held.selfJoins().stream())
+                .toList();
     }
 
     /**
@@ -185,17 +189,13 @@ final class CompositionFactsBuilder {
      * its graph documents and the policy its descriptor names, what the compose needs to know about it. See
      * {@link DomainRepositoryService#compositionFacts(PackIdentifier)} for each fact.
      *
-     * @param pack the pack, as the refusals name it
      * @param assembled the pack's aggregate, built by {@link PackAssembly} from {@code read}
      * @param read what the store read of the pack
      * @param graphs the pack's graph documents, the root shards by name then the fragment
      * @param policy the mutability policy the descriptor names, or the empty policy
      * @return the facts
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when a graph edge joins an artifact to itself through a
-     *     qualifier that names the pack itself
      */
     static PackCompositionFacts build(
-            PackIdentifier pack,
             Pack assembled,
             FilesystemPackStore.PackRead read,
             List<GraphDocument> graphs,
@@ -204,7 +204,7 @@ final class CompositionFactsBuilder {
         Set<String> references = new LinkedHashSet<>();
         Set<String> declared = new LinkedHashSet<>();
         for (GraphDocument document : graphs) {
-            edgeFacts(pack, assembled.descriptor().name(), document, changed, references);
+            edgeFacts(document, changed, references);
             declaredWithoutFile(document).forEach(declared::add);
         }
         Set<String> defined = new LinkedHashSet<>();
@@ -360,15 +360,13 @@ final class CompositionFactsBuilder {
 
     /**
      * What one graph document's edges tell the compose: the targets of its {@code overrides} relations into
-     * {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
+     * {@code changed}, both endpoints of every edge into {@code references}.
      */
-    private static void edgeFacts(
-            PackIdentifier pack, String packName, GraphDocument document, Set<String> changed, Set<String> references) {
+    private static void edgeFacts(GraphDocument document, Set<String> changed, Set<String> references) {
         for (GraphDocument.Edge edge : document.edges()) {
             if (refines(edge.relation())) {
                 changed.add(edge.target());
             }
-            refuseSelfLoop(pack, packName, document.file(), edge);
             references.add(edge.source());
             references.add(edge.target());
         }
@@ -413,24 +411,17 @@ final class CompositionFactsBuilder {
     }
 
     /**
-     * Refuses a pack whose graph edge joins an artifact to itself by a qualifier naming the pack itself, the case the
-     * schema and the bare check cannot see (see {@link GraphBinding#joinsItself}); an endpoint that is no reference is
-     * left to the reads that judge the document.
+     * The edges of the graph documents that join an artifact to itself, a qualifier naming the pack itself included, the
+     * case the schema and the bare check cannot see (see {@link GraphBinding#selfJoin}).
      */
-    private static void refuseSelfLoop(PackIdentifier pack, String packName, String file, GraphDocument.Edge edge) {
-        try {
-            if (GraphBinding.joinsItself(
-                    packName,
-                    PackQualifiedReference.parse(edge.source()),
-                    PackQualifiedReference.parse(edge.target()))) {
-                throw new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE,
-                        "the file " + file + " of " + pack.value() + " cannot be read: an edge joins '" + edge.source()
-                                + "' to itself");
-            }
-        } catch (IllegalArgumentException malformed) {
-            // Not a reference: the document is judged where it is read, not here.
-        }
+    static List<PackElementViolation> selfJoins(String packName, List<GraphDocument> documents) {
+        return documents.stream()
+                .flatMap(document -> document.edges().stream()
+                        .flatMap(
+                                edge -> GraphBinding.selfJoin(
+                                        packName, document.file(), edge.source(), edge.target(), edge.relation())
+                                        .stream()))
+                .toList();
     }
 
     /**

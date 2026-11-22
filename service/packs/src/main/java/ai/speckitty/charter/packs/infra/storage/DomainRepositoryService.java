@@ -19,7 +19,6 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
-import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -28,7 +27,6 @@ import ai.speckitty.charter.packs.domain.PackDocumentRepository;
 import ai.speckitty.charter.packs.domain.PackDocumentText;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
-import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -411,8 +409,7 @@ public final class DomainRepositoryService
      *
      * @param pack the pack
      * @return the edges
-     * @throws CharterRefusal {@code PACK_UNREADABLE} when a graph document cannot be read or an edge names an unknown
-     *     relation
+     * @throws CharterRefusal {@code PACK_UNREADABLE} when a graph document cannot be read
      */
     @Override
     public List<PackEdge> edges(PackIdentifier pack) {
@@ -427,14 +424,9 @@ public final class DomainRepositoryService
         List<PackEdge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
-                // The schema refuses an unknown relation at the read; one that reaches here is refused alike.
                 RelationType relation = RelationType.fromToken(edge.relation())
-                        .orElseThrow(() -> FilesystemPackStore.graphUnreadable(
-                                pack,
-                                List.of(new PackElementViolation(
-                                        document.file(),
-                                        PackCodes.DRG_SCHEMA_ERROR,
-                                        "unknown relation '" + edge.relation() + "'"))));
+                        .orElseThrow(() -> new IllegalStateException("the graph read refuses an unknown relation: "
+                                + pack.value() + "/" + document.file() + ": " + edge.relation()));
                 edges.add(new PackEdge(edge.source(), edge.target(), relation));
             }
         }

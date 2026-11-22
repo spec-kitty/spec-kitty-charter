@@ -9,8 +9,8 @@ description: >-
   or lock mismatch),
   when the configured packs cannot be served together, with the packs member naming the packs involved, the
   violating pack first; or one of four others: pack_unreadable, when a configured pack's directory is missing, it
-  has no readable pack.yaml, its graph documents cannot all be read (violations lists each
-  fault that makes one unreadable, #617), a preset item names an id outside the id grammar, or a file the fingerprint covers
+  has no readable pack.yaml, its graph documents cannot all be read or an edge of one joins an
+  artifact to itself (violations lists each such fault, #617), a preset item names an id outside the id grammar, or a file the fingerprint covers
   cannot be read or a directory cannot be listed; or the layer merge of the closure refuses: an override the
   mutability level of the overridden artifact forbids (C21), an overrides cycle, an answer that does not settle (an
   unstable answer), an overrides edge that ends at its own source (self_override), an enhancement of a step whose

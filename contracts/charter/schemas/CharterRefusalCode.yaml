@@ -100,11 +100,11 @@ description: >-
   422 at registration. A composing read answers 500 pack_unreadable naming the file for the three prompt codes
   (prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty); for graph documents that cannot be read (not
   UTF-8 or not YAML, a schema fault, an unknown relation, a body_path outside the pack, a pack qualifier that is no pack
-  id, or a file the service cannot open) the detail names the first such document by path and its reason, and violations
-  lists each fault that makes one unreadable, with the pointer, code and detail a registration gives it
-  (drg_schema_error for each; a file the service cannot open has the same code, though a registration gives no violation
-  at it) (#617). Any other fault of a graph document is not among those violations; a composing read refuses an edge
-  that joins an artifact to itself 500 pack_unreadable, with a detail naming the file and no violations. The declared status of such a code is kept and read as the status of the read that meets
+  id, or a file the service cannot open) and, on a composing read, for an edge that joins an artifact to itself, the detail names the first
+  such document by path and its reason, and violations lists each such fault, with the pointer, code and detail a
+  registration gives it (drg_schema_error, or tension_self for a tension whose two ends are the pack's own; a file the service cannot open has
+  drg_schema_error, though a registration gives no violation at it, the fault being the service's) (#617). Any other
+  fault of a graph document is not among those violations. The declared status of such a code is kept and read as the status of the read that meets
   the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
 
