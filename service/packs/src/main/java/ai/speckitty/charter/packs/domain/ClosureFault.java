@@ -97,6 +97,28 @@ public record ClosureFault(
     }
 
     /**
+     * A fault a phase that names its own rule found ({@code closure.preset-items}), naming packs, with violations of its
+     * own: the place in a pack's file the fault is at.
+     *
+     * @param origin the element the fault is about
+     * @param rule the phase's rule name
+     * @param code the refusal code, one of {@link PackCodes#closureChecks()}
+     * @param detail what is wrong
+     * @param packs the packs it names
+     * @param violations its own violations
+     * @return the fault
+     */
+    public static ClosureFault of(
+            Origin origin,
+            String rule,
+            RefusalCode code,
+            String detail,
+            List<RefusalPack> packs,
+            List<RefusalViolation> violations) {
+        return new ClosureFault(reason(rule, origin, code, detail), packs, violations, List.of());
+    }
+
+    /**
      * A fault a check found, with every part of a refusal, under the rule {@value #RULE}.
      *
      * @param origin the element the fault is about
