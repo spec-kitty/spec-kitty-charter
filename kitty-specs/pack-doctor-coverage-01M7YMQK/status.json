@@ -184,7 +184,7 @@
     },
     "WP10": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -196,7 +196,8 @@
       "notes": [
         "- 2026-11-21T23:26:25Z – claude – shell_pid=18831 – Blocked (partial T042): commit a80f3e4a7 delivers T037-T041 and the 18 anti-pattern files with nodes and rejects edges. Removing the inline anti_patterns blocks from the five built-in owners turns ExamplePackCoverageTest.everySchemaPropertyHasAnExample red (styleguide and procedure /anti_patterns/* have no example) while the schemas still declare the property (WP12). Passing it needs an exclusion (charter forbids) or WP12's schema drop first. Inline blocks kept; operator ruling needed: fold the removal into WP12 or reorder.",
         "T037-T042 done; T042's inline-block removal re-sliced to WP12 T047a (keeps everySchemaPropertyHasAnExample green without an exclusion). Commit a80f3e4a7. Gates: kernel 3118, packs 7197, pack-validation 471, wholePackRoundTrip 17, pack-doctor 263/15/4, contracts 314, deployable 2382",
-        "Ready for review (cycle 2): a80f3e4a7 (kind, 18 files with nodes and rejects edges; inline blocks stay, removal is WP12 T047a) + b3749ca91 (schema page docs/architecture/pack-schemas/anti-pattern.md linked from the hub; unknown-key case on validate and registration, red with the schema opened). Out-of-map edits: built-in/pack-manifest.yaml restamp (WP04's file; 18 constituents added, nothing else), PackSchemasTest 26->27, VocabularyEqualityTest (+anti-pattern), docs/architecture/pack-schemas/anti-pattern.md and pack-schemas/README.md. Gates green: packs 7197, pack-validation 472, wholePackRoundTrip 17, pack-doctor 263+15+4, contracts 314, deployable 2383, spotlessCheck; check_docs all ok, markdownlint 0, cspell 0, stage-docs-inputs 28/28."
+        "Ready for review (cycle 2): a80f3e4a7 (kind, 18 files with nodes and rejects edges; inline blocks stay, removal is WP12 T047a) + b3749ca91 (schema page docs/architecture/pack-schemas/anti-pattern.md linked from the hub; unknown-key case on validate and registration, red with the schema opened). Out-of-map edits: built-in/pack-manifest.yaml restamp (WP04's file; 18 constituents added, nothing else), PackSchemasTest 26->27, VocabularyEqualityTest (+anti-pattern), docs/architecture/pack-schemas/anti-pattern.md and pack-schemas/README.md. Gates green: packs 7197, pack-validation 472, wholePackRoundTrip 17, pack-doctor 263+15+4, contracts 314, deployable 2383, spotlessCheck; check_docs all ok, markdownlint 0, cspell 0, stage-docs-inputs 28/28.",
+        "Review passed (cycle 2): schema page added (stage script 28/28), unknown-key refusal on both surfaces, planning lines match T047a. Fresh: packs 7197, pack-validation 472, wholePackRoundTrip 17, pack-doctor 263/15/4, deployable 2383"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
