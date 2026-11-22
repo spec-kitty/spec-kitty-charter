@@ -40,6 +40,9 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
     id, is refused by the reads that judge it until it is registered again.
   - A consumer rewrites a pack name that is not a pack id. The spec-kitty-open-packs census at `3bedeef` found none:
     24 pack names and 607 qualified references, all pack ids.
+- `procedure.schema.json` and `styleguide.schema.json` drop `anti_patterns` and their `$defs` (`AntiPatternEntry`,
+  `AntiPattern`) (ADR-0052 decision 16; #154): an anti-pattern is its own file, named by a `rejects` edge. Both roots
+  stay closed, so a file that still carries the key is refused `artifact_schema_error`, unknown key `anti_patterns`.
 
 ### Added
 
