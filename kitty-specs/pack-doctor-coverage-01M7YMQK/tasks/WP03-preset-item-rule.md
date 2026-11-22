@@ -3,6 +3,7 @@ work_package_id: WP03
 title: 'The preset-item rule (#629, #632 item 1)'
 dependencies:
 - WP02
+- WP10
 requirement_refs:
 - FR-002
 - FR-003
@@ -70,7 +71,6 @@ owned_files:
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackRegistrationSteps.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/RequiredNotHeldCoverageTest.java
 - service/packs/src/testFixtures/resources/example-packs/built-in/presets/**
-- service/packs/src/testFixtures/resources/example-packs/built-in/anti_patterns/**
 - service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/**
 - service/packs/src/testFixtures/resources/example-packs/org-base/presets/**
 - service/packs/src/testFixtures/resources/example-packs/org-base/tactics/**
@@ -111,6 +111,8 @@ registration and write, **never on a composing read**.
   `parent_pack`, not dependents). Do not write a new traversal (NFR-003, ADR-0082).
 - `PackCompositionFacts.defined` mixes artifact files with graph-only nodes. `CompositionFactsBuilder` adds
   `anti_pattern` and `action` graph nodes into it (`CompositionFactsBuilder.java` around 212, 237 and 446-460).
+  After WP10 an `anti_pattern` can also be a file; `declaredWithoutFile`, its `withoutFile` set and its javadoc ("never
+  a file of its own") go with T011, since `declared` takes every graph node.
 - `PackCompositionResolver.caseOnlyMatches` (around line 1110) is the existing case-only check. Today it runs only in
   `OfferingReadService.judged` phase 6, over the composed closure.
 - `RequiredFloor` stays the read model (A10/C31 for reads). Do not change it to refuse.
@@ -119,7 +121,9 @@ registration and write, **never on a composing read**.
 
 ### T011 — `held` and `declared` replace `defined`
 - Red first: a `CompositionFactsBuilderTest` case where a pack holds `directive:X` as a file and only a graph node for
-  `anti_pattern:Y`. Assert `held` = {X}, and `declared` ⊇ {X, Y}.
+  `action:M/Y` (a mission type step). Assert `held` = {X}, and `declared` ⊇ {X, action:M/Y}. Do not use a graph-only
+  `anti_pattern` node: under ruling R-r it is refused once WP11 lands (plan D13); an anti-pattern case has its file
+  and is in both sets.
 - Replace `PackCompositionFacts.defined` outright with `held` (artifact files) and `declared` (every graph-node URN
   plus `held`). Move every reader of `defined` to the one it means: `PackRegistrationService`,
   `PackUninstallService`, `OfferingReadService`, `StepHolding`, `PackReadout`, `WriteFacts` and the tests. Read each
@@ -127,7 +131,8 @@ registration and write, **never on a composing read**.
 - `WriteFacts` (the write path's rebuild: `withArtifact`, `withoutArtifact`, `withRegisteredEdges`) maintains both
   fields, with a `WriteFactsTest` case per method.
 - The files outside this WP's ownership that only rename a field read are justified out-of-map edits; list them in the
-  review notes.
+  review notes. `src/test/resources/facts/example-packs.json` is WP10's: re-record it for `held`/`declared` as one of
+  them.
 
 ### T012 — New codes
 - `RefusalCode.PRESET_ITEM_NOT_HELD` and `PRESET_ITEM_UNDECLARED` (tokens `preset_item_not_held` and
@@ -173,10 +178,11 @@ registration and write, **never on a composing read**.
   the rule succeeds and reports `requiredNotHeld`.
 
 ### T015 — Example packs and positive controls
-- `built-in/presets/default.yaml` requires `anti_pattern:indirection-for-repetition`, which is only a graph node: add
-  the anti-pattern artifact file in the shape the file-kinds table defines. Check `contracts/packs` for the
-  `anti_pattern` file kind first. If the kind has no file form, report it and stop: the ruling needs a fixture that
-  can hold it.
+- `built-in/presets/default.yaml` requires `anti_pattern:indirection-for-repetition`. WP10 (rulings R-p and R-q,
+  plan D12) builds the `anti_pattern` file kind and adds
+  `built-in/anti_patterns/indirection-for-repetition.anti-pattern.yaml`, so the item is held by a file and its graph
+  node only declares it. Check that the file is there; if it is not, WP10 has not landed in this lane: stop and
+  report. The positive control below must find it held, not merely declared.
 - `org-base/presets/spdd.yaml` activates the tactics `reasons-canvas-fill` and `reasons-canvas-review`: add the two
   tactic files to org-base (gain, not drop, to keep the preset's intent).
 - A positive-control test asserts that every preset item of every example pack is held or declared within its own

@@ -75,8 +75,8 @@ exceptions:
     action: rename
     note: a comment naming the tool
   - path: "contracts/packs/conformance/classifier-cases.yaml"
-    action: do_not_change
-    note: names open-packs' own pack-check usage, history of that repository
+    action: manual_review
+    note: its pack-check mentions name open-packs' own usage and are not renamed; WP10 adds the anti-pattern classifier case (a behaviour change, not a rename)
   - path: "contracts/charter/changes/2026-11-20-pack-check-skipped-reasons.md"
     action: rename
     note: an unreleased change fragment is live, not released history
@@ -104,3 +104,6 @@ exceptions:
   - path: "scripts/release/**"
     action: rename
     note: service-release-assets.sh and rehearse-service-release.sh name the jar and its task (user_facing_strings, cli_commands)
+  - path: "contracts/charter/scenarios/**"
+    action: manual_review
+    note: behaviour scenarios change with the mission's rules (WP03 preset items, WP04 manifest_stale), not with the rename; reviewers check each scenario edit against the ruling it implements

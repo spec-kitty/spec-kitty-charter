@@ -1,5 +1,41 @@
 {
   "rows": {
+    "#52": {
+      "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Closure checker and YAML adapter follow-ups",
+      "verdict": "in-mission",
+      "wp": "WP09"
+    },
+    "#142": {
+      "evidence_ref": "Context only: parent epic of #154; ticked for #154 at landing",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Pack ecosystem epic (parent of #154)",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#154": {
+      "evidence_ref": "Closes #154 (ruling R-r, DM-01M801H54DXR0447M3F2ZQWFPZ): WP10 the closed anti-pattern.schema.json, files rule, store binding and the example packs' 18 anti-patterns as files with rejects edges (FR-013), with the missing-severity and missing-bad_example refusals (artifact_schema_error); WP11 the file-less node refusal (drg_schema_error, FR-014) and the pinned cross-pack depends_on and non-cascade; WP12 the procedure and styleguide schemas and the charter contract drop anti_patterns, refused as an unknown key (artifact_schema_error, FR-015)",
+      "fr": "FR-013",
+      "nfr": null,
+      "repo": null,
+      "sc": "SC-004",
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "The anti_pattern kind: its schema and refusals (ADR-0052)",
+      "verdict": "in-mission",
+      "wp": "WP12"
+    },
     "#158": {
       "evidence_ref": "Context only: kept in view; manifest_stale is its first step, the rest stays open",
       "fr": null,
@@ -24,18 +60,6 @@
       "verdict": "not-applicable",
       "wp": null
     },
-    "#52": {
-      "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
-      "fr": null,
-      "nfr": null,
-      "repo": null,
-      "sc": null,
-      "scope": null,
-      "source_file": "spec.md",
-      "title": "Closure checker and YAML adapter follow-ups",
-      "verdict": "in-mission",
-      "wp": "WP09"
-    },
     "#535": {
       "evidence_ref": "Recorded as not the charter's to judge in ADR-0083 (ruling R-g); closed not_planned",
       "fr": null,
@@ -49,14 +73,14 @@
       "wp": "WP08"
     },
     "#549": {
-      "evidence_ref": "<auto-classified: no action required>",
+      "evidence_ref": "Context only: parent epic of #614, #629, #630 and #632; ticked at landing",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<auto-classified: context_only>",
+      "title": "Parent epic",
       "verdict": "not-applicable",
       "wp": null
     },
@@ -97,8 +121,8 @@
       "wp": "WP04"
     },
     "#632": {
-      "evidence_ref": "WP03 item 1, WP07 item 2 (remediate), WP05 item 3 per the operator's ruling",
-      "fr": null,
+      "evidence_ref": "Refs #632 (ruling R-s, DM-01M801NHF0BFAX05EA3F19KHV7): item 1 WP03, item 2 WP07 (remediate), item 3 WP05 narrowed to delegations, references and enhancement targets; remaining: item 3's specializes_from cycle, relation, edge-index and own-closure-walk checks, for #636 slices 2-4 and 7",
+      "fr": "FR-006",
       "nfr": null,
       "repo": null,
       "sc": null,

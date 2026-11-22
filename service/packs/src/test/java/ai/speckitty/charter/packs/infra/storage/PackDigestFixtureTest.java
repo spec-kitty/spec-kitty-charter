@@ -45,6 +45,10 @@ import org.junit.jupiter.api.Test;
  * <p>Recaptures: the routing catalog kind bound (ADR-0080, #108, 2026-11-18). The fixture gained
  * {@code routing_catalogs/mu.routing-catalog.yaml}, digested after the step enhancement's files as the binding is
  * appended last; the others keep their order, and the fingerprint moved.
+ *
+ * <p>Recaptures: the anti-pattern kind bound (ADR-0052 decision 8, #154, 2026-11-21). The fixture gained
+ * {@code anti_patterns/nu.anti-pattern.yaml}, digested after the routing catalog's file as the binding is appended
+ * last; the others keep their order, and the fingerprint moved.
  */
 @DisplayName("A fixed pack keeps its fingerprint and its digested file order (NFR-001)")
 class PackDigestFixtureTest {
@@ -74,6 +78,7 @@ class PackDigestFixtureTest {
             "missions/m/enhancements/first-lambda.step-enhancement.yaml",
             "missions/m/enhancements/first-lambda.prompt-fragment.md",
             "routing_catalogs/mu.routing-catalog.yaml",
+            "anti_patterns/nu.anti-pattern.yaml",
             "tactic.graph.yaml",
             "assets/data.txt",
             "missions/m/templates/note-template.md",
@@ -83,7 +88,7 @@ class PackDigestFixtureTest {
             "pack-manifest.yaml",
             "policy.yaml");
 
-    private static final String FINGERPRINT = "sha256:ea6720efd13d3270d4b564a0b7de3a2a9cb360ce3a5ba1e9ec639aa43dcdc7ca";
+    private static final String FINGERPRINT = "sha256:7de521d31b9945bc9e21dd88770ef6f752ac8d2198422c5c9ac2826f1c06595a";
 
     @Test
     void theFixedPackKeepsItsDigestedFilesAndItsFingerprint() throws URISyntaxException {

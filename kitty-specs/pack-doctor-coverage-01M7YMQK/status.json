@@ -1,21 +1,21 @@
 {
-  "event_count": 36,
-  "last_event_id": "01M7ZM5ZKM3ECDVWMDTKMV0D4K",
-  "materialized_at": "2026-11-21T17:59:02.860617+00:00",
+  "event_count": 60,
+  "last_event_id": "01M808P2XQ84A9C2X5QW57F2MT",
+  "materialized_at": "2026-11-21T23:57:22.231299+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 2,
-    "blocked": 0,
+    "approved": 3,
+    "blocked": 1,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
-    "planned": 6
+    "in_progress": 0,
+    "in_review": 1,
+    "planned": 7
   },
   "work_packages": {
     "WP01": {
@@ -92,25 +92,60 @@
     "WP03": {
       "actor": "claude",
       "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M7ZM5ZKM3ECDVWMDTKMV0D4K",
-      "last_transition_at": "2026-11-21T17:59:02.860617+00:00",
+      "lane": "blocked",
+      "last_event_id": "01M7ZPWHV3NF4TDG389AHWXP8G",
+      "last_transition_at": "2026-11-21T18:46:19.747808+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-11-21T18:01:26Z – claude – shell_pid=9644 – Blocked (T015 stop condition): anti_pattern has no file form. contracts/packs/file-kinds.yaml has no *.anti-pattern.yaml files rule and no anti-pattern schema; ADR-0052 d8 rules the file shape but it is not built (kernel AntiPattern is GraphAuthored; CompositionFactsBuilder.declaredWithoutFile). built-in/presets/default.yaml requires anti_pattern:indirection-for-repetition (must_have), which R-l (must_have = held as a file) can never satisfy, so the rule would refuse built-in and turn the example packs and whole-pack gate red. Needs an operator ruling: (1) build the anti_pattern file kind first (ADR-0052 d8, own mission), (2) drop must_have on that item in the fixture (declared as a graph node, so accepted), or (3) amend R-l so a graph-authored kind is held when declared. No code changed.",
+        "Held by operator ruling R-p (DM-01M7ZPVTTGHYCSC2Y39BZV0FXT): build the anti_pattern file kind first; anti_pattern has no file form, so a must_have anti_pattern can never be held under R-l"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 9644,
       "shell_pid_created_at": "1795283933.75"
     },
     "WP04": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z39QJRMESWF96X3GE5TW67",
-      "last_transition_at": "2026-11-21T13:04:00.088284+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M803GN2X0VTX0P3PEHQ91TND",
+      "last_transition_at": "2026-11-21T22:27:01.341873+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: manifest_stale at the storage manifest gate (registration, validate/pack-doctor, round trip); round trip drops source-stale, keeps written-stale; scenarios rewritten; contract + Breaking fragment; built-in/org-base manifests restamped to path order via ManifestMembership.stamp. Restamp: CHARTER_RESTAMP_EXAMPLE_MANIFESTS=true ./gradlew :packs:test --tests '*ManifestStampHelper*' --rerun. #636 fold not done (not ruled).",
+        "Review passed: manifest_stale in the manifest gate after membership on every surface; round trip reports written-stale only; gates fresh: packs 7183, pack-validation 482, pack-doctor 286, deployable 2377 (feature 49 scenarios), wholePackRoundTrip 17/17. LOW: data-model.md:60 pointer form drift (WP08 fixes docs); TreeCensus.Manifest 4-arg overload used only by ABSENT and tests",
+        "Reopened by operator ruling R-t: fold #636's round-trip-codes slice",
+        "- 2026-11-21T22:12:22Z – claude – Cycle 2 (operator ruling R-t): Refs #636 (round-trip-codes slice). EXCLUDED_WRITTEN retired into NOT_HELD_WRITTEN (reason from NotHeldFile); STALE_BASELINE/STALE_KNOWN_FAILURE not-held wordings merged; commit 3a2c61081.",
+        "Cycle 2 (R-t, Refs #636 round-trip-codes slice): EXCLUDED_WRITTEN retired into NOT_HELD_WRITTEN with the census reason; STALE_* not-held wordings merged; change fragment 2026-11-21-round-trip-not-held-code.md. Commit 3a2c61081. Gates green: pack-validation:test 466, wholePackRoundTrip 17, pack-doctor test/surfaceTest/jarTest 267/4/15, contracts:test 314, deployable:test 2377, spotlessCheck. Cycle-1 work kept; T017-T021 re-verified.",
+        "Review passed (cycle 2, R-t fold): one NOT_HELD_WRITTEN code, merged stale wordings, no residue; Changed section defensible; fresh: pack-validation 466, wholePackRoundTrip 17, pack-doctor 267/4/15, deployable 2377. LOW (fold at consolidation): fragment 'every other stale entry' wording and the not-written detail change; notHeldBecause duplicates NotHeldFile's reason text"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP04-manifest-stale/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP04-manifest-stale/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 15572,
+      "shell_pid_created_at": "1795299199.35",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done"
+      }
     },
     "WP05": {
       "actor": "finalize-tasks",
@@ -146,6 +181,56 @@
       "lane": "planned",
       "last_event_id": "01M7Z3A05J2FNBDGPQ87GMZF4K",
       "last_transition_at": "2026-11-21T13:04:08.882683+00:00"
+    },
+    "WP10": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "in_review",
+      "last_event_id": "01M808P2XQ84A9C2X5QW57F2MT",
+      "last_transition_at": "2026-11-21T23:57:22.231299+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-11-21T23:26:25Z – claude – shell_pid=18831 – Blocked (partial T042): commit a80f3e4a7 delivers T037-T041 and the 18 anti-pattern files with nodes and rejects edges. Removing the inline anti_patterns blocks from the five built-in owners turns ExamplePackCoverageTest.everySchemaPropertyHasAnExample red (styleguide and procedure /anti_patterns/* have no example) while the schemas still declare the property (WP12). Passing it needs an exclusion (charter forbids) or WP12's schema drop first. Inline blocks kept; operator ruling needed: fold the removal into WP12 or reorder.",
+        "T037-T042 done; T042's inline-block removal re-sliced to WP12 T047a (keeps everySchemaPropertyHasAnExample green without an exclusion). Commit a80f3e4a7. Gates: kernel 3118, packs 7197, pack-validation 471, wholePackRoundTrip 17, pack-doctor 263/15/4, contracts 314, deployable 2382",
+        "Ready for review (cycle 2): a80f3e4a7 (kind, 18 files with nodes and rejects edges; inline blocks stay, removal is WP12 T047a) + b3749ca91 (schema page docs/architecture/pack-schemas/anti-pattern.md linked from the hub; unknown-key case on validate and registration, red with the schema opened). Out-of-map edits: built-in/pack-manifest.yaml restamp (WP04's file; 18 constituents added, nothing else), PackSchemasTest 26->27, VocabularyEqualityTest (+anti-pattern), docs/architecture/pack-schemas/anti-pattern.md and pack-schemas/README.md. Gates green: packs 7197, pack-validation 472, wholePackRoundTrip 17, pack-doctor 263+15+4, contracts 314, deployable 2383, spotlessCheck; check_docs all ok, markdownlint 0, cspell 0, stage-docs-inputs 28/28."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP10-anti-pattern-file-kind/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP10-anti-pattern-file-kind/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "changes_requested"
+      },
+      "role": "reviewer",
+      "shell_pid": 22530,
+      "shell_pid_created_at": "1795305437.45",
+      "subtasks": {
+        "T037": "done",
+        "T038": "done",
+        "T039": "done",
+        "T040": "done",
+        "T041": "done",
+        "T042": "done"
+      }
+    },
+    "WP11": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M802HGM09N2JG9BJKQTQ9KZK",
+      "last_transition_at": "2026-11-21T22:10:00.960975+00:00"
+    },
+    "WP12": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M802HK23ZM9FSYJDWKSDYDF0",
+      "last_transition_at": "2026-11-21T22:10:03.459215+00:00"
     }
   }
 }

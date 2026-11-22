@@ -102,6 +102,94 @@
       "parallel_group": 1
     },
     {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-21-manifest-stale.md",
+        "contracts/charter/scenarios/registration/whole-pack-registration.feature",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/RoundTripObservation.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackExpectation.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/roundtrip/RoundTripObservationTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackManifests.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackRoundTrip.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/ManifestRules.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageCodes.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageRulesets.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/TreeCensus.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ManifestStampHelper.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackFlowTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/rules/ManifestRulesTest.java",
+        "service/packs/src/testFixtures/resources/example-packs/*/pack-manifest.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-21-anti-pattern-file-kind.md",
+        "contracts/charter/scenarios/registration/anti-pattern-files.feature",
+        "contracts/packs/CHANGELOG.md",
+        "contracts/packs/README.md",
+        "contracts/packs/conformance/classifier-cases.yaml",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/anti-pattern.schema.json",
+        "docs/architecture/logical-model.md",
+        "docs/context/domain.md",
+        "docs/glossary/charter/README.md",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/antipattern/AntiPatternFileCheckTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPattern.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternSeverity.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Pack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/AntiPatternBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/AntiPatternDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/AntiPatternYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/AntiPatternTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/examples/ExamplePackCoverageTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/AntiPatternBindingTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/KindBindingsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDigestFixtureTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileKindTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetExactnessTest.java",
+        "service/packs/src/test/resources/digest-baseline/fixture/anti_patterns/**",
+        "service/packs/src/test/resources/facts/example-packs.json",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/anti_patterns/**",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/procedure.graph.yaml",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/procedures/adversarial-squad-deployment.procedure.yaml",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/procedures/example-mapping-workshop.procedure.yaml",
+        "service/packs/src/testFixtures/resources/example-packs/built-in/styleguide.graph.yaml",
+        "site/.contextive/definitions.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
       "lane_id": "lane-c",
       "wp_ids": [
         "WP03"
@@ -138,7 +226,6 @@
         "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PresetItemRulesTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/golden/CompositionGoldenTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompositionFactsBuilderTest.java",
-        "service/packs/src/testFixtures/resources/example-packs/built-in/anti_patterns/**",
         "service/packs/src/testFixtures/resources/example-packs/built-in/presets/**",
         "service/packs/src/testFixtures/resources/example-packs/built-in/styleguides/**",
         "service/packs/src/testFixtures/resources/example-packs/org-base/presets/**",
@@ -150,32 +237,25 @@
         "workspace"
       ],
       "depends_on_lanes": [
-        "lane-b"
+        "lane-b",
+        "lane-i"
       ],
-      "parallel_group": 2
+      "parallel_group": 3
     },
     {
-      "lane_id": "lane-d",
+      "lane_id": "lane-j",
       "wp_ids": [
-        "WP04"
+        "WP11"
       ],
       "write_scope": [
-        "contracts/charter/changes/2026-11-21-manifest-stale.md",
-        "contracts/charter/scenarios/registration/whole-pack-registration.feature",
-        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/RoundTripObservation.java",
-        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/roundtrip/WholePackExpectation.java",
-        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/roundtrip/RoundTripObservationTest.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackManifests.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackRoundTrip.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/ManifestRules.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageCodes.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/StorageRulesets.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/rules/TreeCensus.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ManifestStampHelper.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackFlowTest.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/rules/ManifestRulesTest.java",
-        "service/packs/src/testFixtures/resources/example-packs/*/pack-manifest.yaml"
+        "contracts/charter/changes/2026-11-21-anti-pattern-node-refusal.md",
+        "contracts/charter/scenarios/registration/anti-pattern-nodes.feature",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/RejectsIsNotCascadedTest.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/antipattern/AntiPatternNodeCheckTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/GraphRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/GraphRulesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompositionFactsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java"
       ],
       "predicted_surfaces": [
         "api",
@@ -183,9 +263,69 @@
         "workspace"
       ],
       "depends_on_lanes": [
-        "lane-b"
+        "lane-i"
       ],
-      "parallel_group": 2
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-k",
+      "wp_ids": [
+        "WP12"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-21-inline-anti-patterns-dropped.md",
+        "contracts/charter/examples/Artifact.procedure.yaml",
+        "contracts/charter/examples/Artifact.styleguide.yaml",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/scenarios/procedures.feature",
+        "contracts/charter/scenarios/registration/inline-anti-patterns.feature",
+        "contracts/charter/scenarios/styleguides.feature",
+        "contracts/charter/schemas/Procedure.yaml",
+        "contracts/charter/schemas/ProcedureAntiPattern.yaml",
+        "contracts/charter/schemas/Styleguide.yaml",
+        "contracts/charter/schemas/StyleguideAntiPattern.yaml",
+        "contracts/charter/schemas/StyleguideRegistration.yaml",
+        "contracts/packs/schemas/procedure.schema.json",
+        "contracts/packs/schemas/styleguide.schema.json",
+        "docs/architecture/descriptor-schemas.md",
+        "docs/architecture/descriptors.md",
+        "docs/guides/author-a-procedure.md",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/DoctrineWiringRoundTripTest.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/antipattern/InlineAntiPatternCheckTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideAntiPattern.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactDtos.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/StyleguideController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProcedureBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProcedureDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProcedureYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StyleguideBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StyleguideDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StyleguideYaml.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ProcedureEntityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/StyleguideEntityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RegistrationListsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/StyleguideControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineRepositoryContractTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineValidationParityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureSchemaTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureYamlTest.java",
+        "service/packs/src/test/resources/roundtrip-fixtures/procedure/**",
+        "service/packs/src/test/resources/schema-fixtures/procedure/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-i"
+      ],
+      "parallel_group": 3
     },
     {
       "lane_id": "lane-e",
@@ -202,13 +342,17 @@
         "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java"
       ],
       "predicted_surfaces": [
+        "api",
         "artifact-rendering",
+        "legacy-cleanup",
         "workspace"
       ],
       "depends_on_lanes": [
-        "lane-c"
+        "lane-c",
+        "lane-j",
+        "lane-k"
       ],
-      "parallel_group": 3
+      "parallel_group": 4
     },
     {
       "lane_id": "lane-f",
@@ -234,7 +378,7 @@
         "lane-c",
         "lane-d"
       ],
-      "parallel_group": 3
+      "parallel_group": 4
     },
     {
       "lane_id": "lane-g",
@@ -255,7 +399,7 @@
         "lane-d",
         "lane-f"
       ],
-      "parallel_group": 4
+      "parallel_group": 5
     },
     {
       "lane_id": "lane-h",
@@ -264,7 +408,9 @@
       ],
       "write_scope": [
         "docs/_meta/spelling-words.txt",
+        "docs/adr/0017-*.md",
         "docs/adr/0042-*.md",
+        "docs/adr/0052-*.md",
         "docs/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check.md",
         "docs/adr/0083-*.md",
         "docs/adr/README.md",
@@ -274,16 +420,20 @@
       ],
       "predicted_surfaces": [
         "api",
+        "artifact-rendering",
         "legacy-cleanup",
         "workspace"
       ],
       "depends_on_lanes": [
         "lane-c",
         "lane-d",
+        "lane-e",
         "lane-f",
-        "lane-g"
+        "lane-g",
+        "lane-j",
+        "lane-k"
       ],
-      "parallel_group": 5
+      "parallel_group": 6
     },
     {
       "lane_id": "lane-planning",
@@ -300,10 +450,10 @@
       "depends_on_lanes": [
         "lane-h"
       ],
-      "parallel_group": 6
+      "parallel_group": 7
     }
   ],
-  "computed_at": "2026-11-21T13:04:09.649868+00:00",
+  "computed_at": "2026-11-21T22:10:50.062500+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP09"

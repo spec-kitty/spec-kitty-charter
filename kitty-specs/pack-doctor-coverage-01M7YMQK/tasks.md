@@ -1,10 +1,14 @@
 # Tasks: pack-doctor coverage
 
 **Mission**: `pack-doctor-coverage-01M7YMQK` · **Planning base / merge target**: `feat/pack-doctor-coverage` (PR to
-`main`) · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md) (D1-D11)
+`main`) · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md) (D1-D14)
 
-Execution order (one PR, R-f): WP01 → WP02 → {WP03, WP04} → WP06 → WP07 → WP08 → WP09. WP05 is **held**: its scope
-waits on the operator (plan D5) and it starts only on the ruling.
+Execution order (one PR, R-f): WP01 → WP02 → {WP10 → {WP03, WP11, WP12}, WP04} → WP05 → WP06 → WP07 → WP08 → WP09.
+WP10 (the `anti_pattern` file kind and the example anti-patterns as files, rulings R-p, R-q and R-r, plan D12) comes
+before WP03, which needs the built-in anti-pattern held as a file, and before WP11 (the file-less node refusal, D13)
+and WP12 (the inline drop, D14), which need example packs already in the canonical shape. WP03 does not wait for WP11
+or WP12. WP05 is no longer held: ruling R-s narrows `--full` to delegations, references and enhancement targets
+(plan D5).
 
 Every behavior change is written red-first (NFR-001). No PIT (C-003). Rewrite a test that pins replaced behavior;
 never delete or skip it. Fixtures are fixed, never exempted (C-002).
@@ -34,9 +38,9 @@ never delete or skip it. Fixtures are fixed, never exempted (C-002).
 | T019 | Rewrite the tests pinning source-stale and `round_trip_red`; equality assertion | WP04 | |
 | T020 | `whole-pack-registration.feature:528-584` rewritten, with a control scenario | WP04 | |
 | T021 | Example manifests restamped through `ManifestMembership.stamp` | WP04 | |
-| T022 | (HELD) Collect-all forms: delegations, references, enhancement targets; first-fault callers use them | WP05 | |
-| T023 | (HELD) `validate --full` composes the phase per own closure in registration order | WP05 | |
-| T024 | (HELD) Parameterized parity table: registration vs `validate --full` (SC-001) | WP05 | |
+| T022 | One body per check: delegations, references, enhancement targets; first-fault callers read the collect-all forms | WP05 | |
+| T023 | `validate --full` runs the three checks per own closure in registration order; the check value; the timed CI step | WP05 | |
+| T024 | Parameterized parity table: registration vs `validate --full` (SC-001), with the deferred cycle row | WP05 | |
 | T025 | Report tree = stdout problem tree plus `tool`, `inputs`, `summary` | WP06 | |
 | T026 | YAML and XML serializers; dependency check recorded (D6) | WP06 | |
 | T027 | `--report`/`--format` options; the schema gains the new keys; contract test parses XML back | WP06 | |
@@ -49,6 +53,20 @@ never delete or skip it. Fixtures are fixed, never exempted (C-002).
 | T034 | Guides and changelog: `check-packs.md`, docs changelog entry | WP08 | |
 | T035 | open-packs#TBD issue drafts (repin, refusals, remediate, retire Python rules, report) | WP09 | |
 | T036 | Issue-closure evidence list for the PR body | WP09 | |
+| T037 | Packs contract: `anti-pattern.schema.json`, the `files` rule, a classifier case, CHANGELOG and README | WP10 | |
+| T038 | Domain `AntiPattern`, `AntiPatternIdentifier`, `AntiPatternSeverity`; `Pack` accessor; `ArtifactKind` fact | WP10 | |
+| T039 | `AntiPatternBinding`/`Dso`/`Yaml` appended last; canonical round trip; stem and placement; digest fixture | WP10 | |
+| T040 | Built-in `indirection-for-repetition.anti-pattern.yaml`; node kept; manifest stamped; facts re-recorded | WP10 | |
+| T041 | Registration and `validate` hold or refuse the file (missing severity, missing bad_example); scenario; `### Breaking` fragment; docs and glossary | WP10 | |
+| T042 | The other 17 example inline anti-patterns become files with nodes and `rejects` edges (inline-block removal moved to WP12 T047a) | WP10 | |
+| T043 | `GraphRules.ANTI_PATTERN_WITHOUT_FILE`: a file-less `anti_pattern` node is `drg_schema_error`, red first | WP11 | |
+| T044 | Tests that relied on a file-less node become canonical or refusal tests | WP11 | |
+| T045 | Registration and `validate` parity; cross-pack `rejects` and non-cascade pinned; `### Breaking` fragment | WP11 | |
+| T046 | The inline-block refusal red first on every surface (scenario, validate, request, schema fixture) | WP12 | |
+| T047 | `procedure.schema.json` and `styleguide.schema.json` drop `anti_patterns`; packs CHANGELOG | WP12 | [P] |
+| T048 | Domain, storage and API drop the field; tests and fixtures rewritten | WP12 | |
+| T049 | The charter contract drops `antiPatterns`; two schemas deleted; examples and scenarios; `### Breaking` fragment | WP12 | |
+| T050 | Live docs: descriptors, descriptor schemas, the procedure guide, the conformance register | WP12 | |
 
 ## Phase 1 — Foundation
 
@@ -76,10 +94,48 @@ T010 The contract schema renamed `PackDoctorReport`; live docs renamed; a change
 Independent test: the T006 scan is red before and green after; `verifyAll` and the release rehearsal pass. Risks:
 release workflow, asset script and rehearsal must change together.
 
+### WP10 — The `anti_pattern` file kind and the example anti-patterns as files (R-p, R-q, R-r; #154)
+Prompt: [tasks/WP10-anti-pattern-file-kind.md](tasks/WP10-anti-pattern-file-kind.md) · P1 · Depends on: WP02
+
+T037 Packs contract: schema, `files` rule, classifier case, CHANGELOG and README (WP10)
+T038 Domain entity, identifier and severity; `Pack` accessor; `ArtifactKind` fact (WP10)
+T039 Storage binding, DSO and YAML form appended last; round trip; stem and placement; digest fixture (WP10)
+T040 Built-in anti-pattern file; node kept; manifest stamped; facts re-recorded (WP10)
+T041 Registration and `validate` parity, including the missing-severity and missing-bad_example refusals; scenario; `### Breaking` fragment; docs and glossary (WP10)
+T042 The other 17 example inline anti-patterns become files with nodes and `rejects` edges; the inline-block removal moved to WP12 T047a (WP10)
+
+Independent test: a planted `anti_patterns/x.anti-pattern.yaml` is `file_not_held` before and held after; one
+without `severity` or without `bad_example` is refused `artifact_schema_error` by registration and `pack-doctor
+validate` alike; no example styleguide or procedure carries `anti_patterns`; the whole-pack gate stays green. Risks:
+the built-in manifest (WP04's) and three styleguides (WP03's glob) are justified out-of-map edits.
+
+### WP11 — A file-less `anti_pattern` node is refused (R-r; #154)
+Prompt: [tasks/WP11-anti-pattern-node-refusal.md](tasks/WP11-anti-pattern-node-refusal.md) · P1 · Depends on: WP10
+
+T043 The `GraphRules` rule, red first (WP11)
+T044 Tests that relied on a file-less node (WP11)
+T045 Every surface; cross-pack `rejects` and non-cascade pinned; fragment (WP11)
+
+Independent test: a planted file-less `anti_pattern` node is accepted before and refused `drg_schema_error` at
+`/nodes/<n>` after, by registration and `pack-doctor validate` alike; with its file it registers.
+
+### WP12 — The procedure and styleguide shapes drop `anti_patterns` (R-r; closes #154)
+Prompt: [tasks/WP12-inline-anti-patterns-dropped.md](tasks/WP12-inline-anti-patterns-dropped.md) · P1 · Depends on: WP10
+
+T046 The refusal, red first, on every surface (WP12)
+T047 The packs schemas (WP12)
+T048 Domain, storage and API (WP12)
+T049 The charter contract (WP12)
+T050 Live docs (WP12)
+
+Independent test: a planted `anti_patterns` block in a styleguide or procedure is accepted before and refused
+`artifact_schema_error` (unknown key) after, by registration and `pack-doctor validate` alike; the charter contract
+and the service carry no `antiPatterns`.
+
 ## Phase 2 — The rules
 
 ### WP03 — The preset-item rule (#629, #632 item 1)
-Prompt: [tasks/WP03-preset-item-rule.md](tasks/WP03-preset-item-rule.md) · P1 · Depends on: WP02
+Prompt: [tasks/WP03-preset-item-rule.md](tasks/WP03-preset-item-rule.md) · P1 · Depends on: WP02, WP10
 
 T011 `held`/`declared` replace `defined` (WP03)
 T012 New refusal codes (WP03)
@@ -103,13 +159,15 @@ T021 Example manifests restamped (WP04)
 Independent test: a stale hash gives exit 1 with exactly `["manifest_stale"]` with and without `--round-trip`; upload
 refused; the whole-pack gate green.
 
-### WP05 — `validate --full` (#632 item 3) — HELD
-Prompt: [tasks/WP05-validate-full.md](tasks/WP05-validate-full.md) · P2 · Depends on: WP03 · **Starts only on the
-operator's ruling (plan D5).**
+### WP05 — `validate --full`: delegations, references, enhancement targets (#632 item 3, ruling R-s)
+Prompt: [tasks/WP05-validate-full.md](tasks/WP05-validate-full.md) · P2 · Depends on: WP03, WP11, WP12
 
-T022 (HELD) Collect-all forms (WP05)
-T023 (HELD) `validate --full` (WP05)
-T024 (HELD) Parity table (WP05)
+T022 One body per check (WP05)
+T023 `validate --full` (WP05)
+T024 Parity table (WP05)
+
+Independent test: each planted delegation, reference and target fault gives the registration's code under `--full`
+and nothing without it; a `specializes_from` cycle is refused by registration and not yet reported by `--full`.
 
 ## Phase 3 — The CLI surfaces
 
@@ -131,7 +189,7 @@ T031 Remediation tests (WP07)
 ## Phase 4 — Records
 
 ### WP08 — ADR-0083, amendments and docs
-Prompt: [tasks/WP08-adr-and-docs.md](tasks/WP08-adr-and-docs.md) · P2 · Depends on: WP03, WP04, WP06, WP07
+Prompt: [tasks/WP08-adr-and-docs.md](tasks/WP08-adr-and-docs.md) · P2 · Depends on: WP03, WP04, WP05, WP06, WP07, WP11, WP12
 
 T032 ADR-0083 (WP08)
 T033 Amendments (WP08)
