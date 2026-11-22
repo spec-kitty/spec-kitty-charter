@@ -311,7 +311,11 @@
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 18588,
-      "shell_pid_created_at": "1795353479.33"
+      "shell_pid_created_at": "1795353479.33",
+      "subtasks": {
+        "T035": "done",
+        "T036": "done"
+      }
     },
     "WP10": {
       "actor": "claude",
