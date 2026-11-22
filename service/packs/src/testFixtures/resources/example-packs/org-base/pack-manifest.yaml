@@ -1,6 +1,6 @@
 # The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
 schema_version: '1.0'
-manifest_hash: e983ffeb227ad40e6e5bb3008912dbd2eaf2715ea98214f551228a2dc845d385
+manifest_hash: 3756b33734039a7c34066cefb29bf27f312c86b794f046535a15c188ba7bce3e
 constituents:
 - kind: agent_profile
   id: human-operator
@@ -66,6 +66,14 @@ constituents:
   id: reasons-canvas-writing
   path: styleguides/reasons-canvas-writing.styleguide.yaml
   content_hash: 5b1a9539562f6d64c615d7f7acb078087437e064333964885a6e76f8e31710a0
+- kind: tactic
+  id: reasons-canvas-fill
+  path: tactics/reasons-canvas-fill.tactic.yaml
+  content_hash: af964e76179c910c59535b9c97d48c9e3caa4881d0a531c1190ed213f8923406
+- kind: tactic
+  id: reasons-canvas-review
+  path: tactics/reasons-canvas-review.tactic.yaml
+  content_hash: 9619c4c061be970eba39e370732951f50dd8c919df49d8eef8edd82b9fbbebab
 presets:
 - id: model-routing
   path: presets/model-routing.yaml

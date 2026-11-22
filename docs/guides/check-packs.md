@@ -2,7 +2,7 @@
 title: Check packs
 description: "Download and verify the pack-doctor jar, check a set of packs on your machine with no service, read its report and exit codes, and know what only the service checks."
 doc_status: draft
-updated: 2026-11-21T00:00:00Z
+updated: 2026-11-22T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -122,7 +122,7 @@ Give its dependencies too, or use a config root that holds them.
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, `remediate` was asked for, which is not available yet, or `pack-doctor` has a defect (`pack-doctor: internal error:`). Nothing is on standard output; the cause is on standard error. |
+| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, the report file cannot be written, `remediate` was asked for, which is not available yet, or `pack-doctor` has a defect (`pack-doctor: internal error:`). Nothing is on standard output; the cause is on standard error. |
 
 What a pack holds is never a failure (`2`). A pack it cannot read, a malformed `pack.yaml` field (a `pack_version`
 that is not a version, a `depends_on` range or `requires_core` that is not a range, a `pack_level` the schema does not
@@ -134,6 +134,9 @@ know) or a file it refuses is a problem (`1`), at the file that holds it. An `in
 The report goes to standard output, as one JSON object. Its schema is the contract's `PackDoctorReport`
 (`contracts/charter/schemas/PackDoctorReport.yaml`):
 
+- **`tool`:** `pack-doctor` and its version.
+- **`inputs`:** what you gave, as you wrote it: the `config_root`, or the `packs` (each `--pack` value), and the
+  `options` that choose the checks (`round_trip`, and `full`).
 - **`checks`:** the checks that ran over the set, in order: `PACK` always, `CLOSURE` when every pack's composition
   could be read and its `pack.yaml` is well formed, and `ROUND_TRIP` with `--round-trip`.
 - **`packs`:** each pack checked, with its pack id as `name` (its `=<id>`, or its directory's name), its level and
@@ -150,6 +153,8 @@ The report goes to standard output, as one JSON object. Its schema is the contra
   [Compose packs](/guides/compose-packs/)) and names its packs. The round trip's faults are one more
   `validation_failed` problem per pack, with `round_trip_red` or `round_trip_written_unpaired` for each file. The list
   is empty when the set is valid.
+- **`summary`:** the counts: the `packs` checked, the `violations` the problems state (all of them, also those a
+  problem's list leaves out), the `warnings` and `notices`, and the `exit_code`.
 
 **Warnings** go to standard error, one line each, and never change the exit code:
 
@@ -160,6 +165,21 @@ warning: <pack>: <code> <file>: <detail>
 For example, a file the charter does not model is `file_not_held`, a warning. Read them, but a CI gate on the exit code
 passes with them. This holds with `--round-trip` too: the round trip leaves out a file the charter does not hold, such
 as a stray `notes.txt`, and never fails it.
+
+### The report file
+
+`--report <file>` writes the same report to a file too, for a CI system to keep or parse. It is YAML by default;
+`--format xml` makes it XML. Standard output and the exit code are the same with it as without.
+
+```bash
+java -jar pack-doctor-<version>.jar validate --config-root ./charter --report pack-doctor.yaml
+java -jar pack-doctor-<version>.jar validate --config-root ./charter --report pack-doctor.xml --format xml
+```
+
+The XML is the same tree in elements of its own, not JUnit's: an element per key, an element per list item named for
+the list (`problems/problem`, `packs/pack`), and a `type` attribute on a list, an integer or a boolean. The schema's
+description states the mapping. `--format` without `--report`, or a format other than `yaml` or `xml`, is a usage
+fault, and a report file that cannot be written exits `2` with nothing on standard output.
 
 ## Links
 

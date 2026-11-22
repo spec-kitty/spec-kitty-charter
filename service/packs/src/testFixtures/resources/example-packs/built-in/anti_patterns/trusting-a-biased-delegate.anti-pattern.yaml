@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: trusting-a-biased-delegate
+title: Trusting a biased delegate
+description: Accepting a delegate's prescription despite a known bias (e.g. a duct-tape-prone reducer) without a critical pass.
+severity: severe
+bad_example: Apply a duct-tape-prone reducer's prescription as it stands, with no critical pass.

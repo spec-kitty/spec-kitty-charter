@@ -121,7 +121,8 @@ class ClosureViewTest {
                                 .toList()));
         facts.put(
                 name,
-                new PackCompositionFacts(List.of(), held, List.of(), policy, List.of(), List.of(edges), Map.of()));
+                new PackCompositionFacts(
+                        List.of(), held, List.of(), List.of(), policy, List.of(), List.of(edges), Map.of()));
     }
 
     private void pack(String name, List<String> held, Relationship... edges) {
@@ -598,7 +599,8 @@ class ClosureViewTest {
                 name,
                 new PackCompositionFacts(
                         held.changed(),
-                        held.defined(),
+                        held.held(),
+                        held.declared(),
                         held.references(),
                         held.policy(),
                         held.presets(),

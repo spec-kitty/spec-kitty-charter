@@ -473,7 +473,7 @@ class PacksAvailabilityTest {
             facts.put(
                     name,
                     new PackCompositionFacts(
-                            List.of(), held, List.of(), policy, presets, Arrays.asList(edges), languages));
+                            List.of(), held, List.of(), List.of(), policy, presets, Arrays.asList(edges), languages));
             policies.put(new PackUlid(descriptorId(name)), policy);
             return this;
         }

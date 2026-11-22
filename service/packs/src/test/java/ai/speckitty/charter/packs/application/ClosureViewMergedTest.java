@@ -76,7 +76,8 @@ class ClosureViewMergedTest {
             Map<String, List<String>> languages,
             List<Relationship> edges,
             String... held) {
-        return new PackCompositionFacts(List.of(), List.of(held), List.of(), policy, List.of(), edges, languages);
+        return new PackCompositionFacts(
+                List.of(), List.of(held), List.of(), List.of(), policy, List.of(), edges, languages);
     }
 
     private static PackCompositionFacts holding(String... held) {

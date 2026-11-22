@@ -77,7 +77,7 @@ public record PackReadout(
          */
         public PackUnderResolution underResolution(ConfiguredPack configured) {
             return new PackUnderResolution(
-                    configured, descriptor, facts.changed(), facts.defined(), Set.copyOf(facts.terms()));
+                    configured, descriptor, facts.changed(), facts.referable(), Set.copyOf(facts.terms()));
         }
     }
 

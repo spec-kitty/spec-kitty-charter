@@ -1,0 +1,17 @@
+schema_version: "1.0"
+id: reasons-canvas-review
+name: Review Against the REASONS Canvas
+purpose: Judge an implementation against its approved REASONS canvas, so work outside the boundary is caught or recorded.
+steps:
+  - title: Compare the change with the Operations
+    description: Check that every change belongs to an operation of the canvas and that no operation is left undone.
+    examples:
+      - A file changed outside every work package's operation is a finding.
+  - title: Check the Norms and Safeguards
+    description: Confirm the change keeps every safeguard and follows the norms, naming each one a change breaks.
+    examples:
+      - "A safeguard 'no schema change' broken by a migration is a blocking finding."
+  - title: Require a recorded deviation
+    description: Accept work outside the canvas only when its "Deviations" subsection records it, as DIRECTIVE_038 allows.
+    examples:
+      - Ask for a Deviations entry rather than a rewrite of the approved sections.

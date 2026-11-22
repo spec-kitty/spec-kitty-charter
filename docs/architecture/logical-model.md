@@ -321,8 +321,11 @@ outright ([#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106)); 
   artifact kind has one, `anti-pattern`, `asset` and `template` included.
 - **In `CHARTER_KIND_TOKENS`**: the hand-written set of tokens the charter activation
   commands accept. It drops `template`, `asset` and `anti_pattern` and adds `mission-type`.
-  An anti-pattern is a re-kinded node inside another kind's graph fragment, never a
-  standalone file, so it is activatable but not hand-written.
+  In the service an anti-pattern is authored as its own file,
+  `anti_patterns/<id>.anti-pattern.yaml`
+  ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) decision 8, as
+  amended by ADR-0053 decision 30), and a graph node of it is the target of a `rejects` edge; it is
+  activatable, and core's hand-written set leaves it out.
 - `mission_type`: in core, `mission-type` is in `CHARTER_KIND_TOKENS` but is not an artifact
   kind; `from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and it routes to the
   mission-type path. The service makes it an artifact kind

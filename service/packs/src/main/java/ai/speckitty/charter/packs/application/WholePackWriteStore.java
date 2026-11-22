@@ -52,7 +52,7 @@ public interface WholePackWriteStore {
      * What can still be read of a stored pack that cannot be read whole: the artifacts it held, the digest of each one
      * that reads, and the edges of every graph document that parses.
      *
-     * @param defined the artifacts held, as bare URNs: those that read, and one per file that does not, by the id the
+     * @param held the artifacts its files hold, as bare URNs: those that read, and one per file that does not, by the id the
      *     file's path names
      * @param digests the digest of each artifact that reads
      * @param edges the typed edges that can be read, from every graph file read as plain YAML, and the derived relations
@@ -60,19 +60,18 @@ public interface WholePackWriteStore {
      * @param looseEdges the entries of those graph files that cannot be typed (an unknown relation, an endpoint that is
      *     no reference): each by {@code <source>|<target>} as written, with its source, which is all that is gated
      */
-    record Remains(
-            Set<String> defined, Map<Urn, String> digests, List<Relationship> edges, Map<String, Urn> looseEdges) {
+    record Remains(Set<String> held, Map<Urn, String> digests, List<Relationship> edges, Map<String, Urn> looseEdges) {
 
         /**
          * Copies the collections.
          *
-         * @param defined the artifacts held
+         * @param held the artifacts its files hold
          * @param digests the digest of each artifact that reads
          * @param edges the typed edges that can be read
          * @param looseEdges the entries that cannot be typed, by key, with their source
          */
         public Remains {
-            defined = Set.copyOf(defined);
+            held = Set.copyOf(held);
             digests = Map.copyOf(digests);
             edges = List.copyOf(edges);
             looseEdges = Map.copyOf(looseEdges);

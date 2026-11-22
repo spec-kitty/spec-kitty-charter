@@ -95,8 +95,11 @@ class MissionTypeStepsHeldTest {
     void aPackHoldsTheStepNodesItsGraphDocumentsDeclare(@TempDir Path host) throws IOException {
         PackCompositionFacts facts = over(packWithSteps(host)).compositionFacts(new PackIdentifier(PACK));
 
-        assertThat(facts.defined())
+        assertThat(facts.declared())
                 .contains("mission_type:software-dev", "action:software-dev/implement", "directive:SD");
+        assertThat(facts.held())
+                .contains("mission_type:software-dev", "directive:SD")
+                .doesNotContain("action:software-dev/implement");
     }
 
     @Test
@@ -106,7 +109,7 @@ class MissionTypeStepsHeldTest {
         PackIdentifier id = new PackIdentifier(PACK);
         PackCompositionFacts facts = service.compositionFacts(id);
         PackUnderResolution pack = new PackUnderResolution(
-                new ConfiguredPack(id, PackLevel.ORG), service.get(id), facts.changed(), facts.defined());
+                new ConfiguredPack(id, PackLevel.ORG), service.get(id), facts.changed(), facts.referable());
         EdgeIndex index = EdgeIndex.of(List.of(pack), Map.of(PACK, facts)).orRefuse();
 
         ReachResult result = Reachability.reach(

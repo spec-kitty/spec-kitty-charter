@@ -270,7 +270,7 @@ public final class EnhancementCompose {
                     writes + "pack `" + holder.descriptor().name() + "` is outside its depends_on closure"));
         }
         Set<String> held = heldBy.computeIfAbsent(
-                holder.descriptor().packId(), packId -> new HashSet<>(holder.definedArtifacts()));
+                holder.descriptor().packId(), packId -> new HashSet<>(holder.referableArtifacts()));
         if (!StepHolding.heldByPack(held, enhancement.target())) {
             return Optional.of(violation(
                     RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,

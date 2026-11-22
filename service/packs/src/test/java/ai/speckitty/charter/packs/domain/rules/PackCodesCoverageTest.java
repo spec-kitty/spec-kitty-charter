@@ -4,6 +4,7 @@ import static ai.speckitty.charter.packs.fixtures.FixtureUlids.ordered;
 import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -13,10 +14,14 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.TreeReads;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
@@ -37,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -489,8 +495,20 @@ class PackCodesCoverageTest {
 
     // ---- CLOSURE -----------------------------------------------------------------------------------------------
 
-    /** A set CLOSURE refuses with one code, and its twin that passes. */
-    record ClosureFixture(List<PackUnderResolution> failing, List<PackUnderResolution> passing) {}
+    /**
+     * A set CLOSURE refuses with one code, and its twin that passes, each with its packs' facts: the preset-item codes
+     * are judged on what the packs hold and declare; the other codes need no facts.
+     */
+    record ClosureFixture(
+            List<PackUnderResolution> failing,
+            List<PackUnderResolution> passing,
+            Function<PackUnderResolution, PackCompositionFacts> failingFacts,
+            Function<PackUnderResolution, PackCompositionFacts> passingFacts) {
+
+        ClosureFixture(List<PackUnderResolution> failing, List<PackUnderResolution> passing) {
+            this(failing, passing, pack -> PackCompositionFacts.NONE, pack -> PackCompositionFacts.NONE);
+        }
+    }
 
     private static final Map<ReasonCode, ClosureFixture> CLOSURE_FIXTURES = closureFixtures();
 
@@ -552,7 +570,35 @@ class PackCodesCoverageTest {
                         List.of(
                                 refining(ordered("LEFT"), "left", PackLevel.ORG),
                                 refining(ordered("RIGHT"), "right", PackLevel.PROJECT))));
+        PackUnderResolution presetting =
+                pack(ordered("PRESETS"), "presets", PackLevel.ORG, depends(ordered("BASE"), ">=1.0"));
+        Preset requiring =
+                new Preset("team", "The team.", Map.of(ArtifactKind.DIRECTIVE, List.of(new PresetItem("D", true))));
+        Preset activating = new Preset("team", "The team.", Map.of(ArtifactKind.TACTIC, List.of(PresetItem.of("t"))));
+        fixtures.put(
+                code(RefusalCode.PRESET_ITEM_NOT_HELD),
+                new ClosureFixture(
+                        List.of(presetting, base),
+                        List.of(presetting, base),
+                        facts(presetting, requiring, List.of(), List.of("directive:D")),
+                        facts(presetting, requiring, List.of("directive:D"), List.of())));
+        fixtures.put(
+                code(RefusalCode.PRESET_ITEM_UNDECLARED),
+                new ClosureFixture(
+                        List.of(presetting, base),
+                        List.of(presetting, base),
+                        facts(presetting, activating, List.of(), List.of()),
+                        facts(presetting, activating, List.of(), List.of("tactic:t"))));
         return fixtures;
+    }
+
+    /** The preset on {@code holder}, and what every other pack holds and declares. */
+    private static Function<PackUnderResolution, PackCompositionFacts> facts(
+            PackUnderResolution holder, Preset preset, List<String> held, List<String> declared) {
+        return pack -> pack.equals(holder)
+                ? new PackCompositionFacts(
+                        List.of(), List.of(), List.of(), List.of(), MutabilityPolicySource.empty(), List.of(preset))
+                : new PackCompositionFacts(List.of(), held, declared, List.of());
     }
 
     static Stream<ReasonCode> closureCodes() {
@@ -566,11 +612,11 @@ class PackCodesCoverageTest {
         ClosureFixture fixture = CLOSURE_FIXTURES.get(code);
         assertThat(fixture).as("no set of packs stands for %s", code).isNotNull();
 
-        assertThat(CompositionRules.closure().apply(fixture.failing()))
+        assertThat(PackRulesets.closure(fixture.failingFacts()).apply(fixture.failing()))
                 .extracting(Reason::code)
                 .as("the failing set of %s", code)
                 .contains(code);
-        assertThat(CompositionRules.closure().apply(fixture.passing()))
+        assertThat(PackRulesets.closure(fixture.passingFacts()).apply(fixture.passing()))
                 .extracting(Reason::code)
                 .as("the passing set of %s", code)
                 .doesNotContain(code);

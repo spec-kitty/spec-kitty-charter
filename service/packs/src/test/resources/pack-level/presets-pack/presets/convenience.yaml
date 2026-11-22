@@ -4,4 +4,4 @@ description: A convenience preset; it requires nothing.
 activated_tactics:
   - id: acceptance-test-first
 activated_mission_types:
-  - id: documentation
+  - id: software-dev

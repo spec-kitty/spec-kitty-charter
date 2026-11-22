@@ -2,6 +2,8 @@ package ai.speckitty.charter.packdoctor;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packdoctor.report.ReportFile;
+import ai.speckitty.charter.packdoctor.report.ReportFormat;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packvalidation.set.PackSetEntry;
 import java.io.IOException;
@@ -25,7 +27,9 @@ import java.util.stream.Collectors;
  * available yet ({@link Remediate}).
  *
  * <p>{@code validate} takes {@code --config-root <dir>}, or one or more {@code --pack <dir>[:<level>][=<id>]}, then
- * optionally {@code --round-trip}; {@code validate --help} asks for the usage too.
+ * optionally {@code --round-trip}, and {@code --report <file>} with an optional {@code --format yaml|xml} (FR-008 of
+ * mission pack-doctor-coverage-01M7YMQK, ruling R-i: YAML unless {@code --format} names XML); {@code validate --help}
+ * asks for the usage too.
  * A pack is configured under its {@code =<id>} when one is given, its registered id (#583, D2b; PR #608 MEDIUM-3,
  * operator ruling B), and otherwise under its directory's name, as every pack of a config root is.
  *
@@ -34,7 +38,9 @@ import java.util.stream.Collectors;
  * text after a {@code --pack} value's last {@code =} that is no pack id when the value names no directory, a
  * {@code --pack} value that could name two directories ({@code x:org} and {@code x}, or {@code x=id} and {@code x}, both
  * exist), two packs with one directory (by real path), one inside another or one id, and an entry of the config
- * root's {@code packs/} that is a link resolving to no directory (to nothing, or to a file). A value that starts with
+ * root's {@code packs/} that is a link resolving to no directory (to nothing, or to a file), {@code --report} or
+ * {@code --format} given twice, {@code --format} without {@code --report}, and a format that is neither {@code yaml} nor
+ * {@code xml}. Whether the report file can be written is learnt by writing it. A value that starts with
  * {@code --} is a missing value, unless it follows {@code --}, which ends the options. It judges the command line and
  * the directories it names, never a pack's content: that is {@code pack-validation}'s.
  */
@@ -43,6 +49,7 @@ final class Arguments {
     /** The usage, as {@code --help} prints it and a usage fault ends with. */
     static final String USAGE = """
             usage: pack-doctor validate (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip]
+                                        [--report <file> [--format yaml|xml]]
                    pack-doctor remediate
               validate                 check a set of packs and write the report to standard output
               remediate                not available yet
@@ -53,6 +60,9 @@ final class Arguments {
                                        under the pack id <id> when given, else under the directory's name;
                                        repeat it to check a set of packs together
               --round-trip             also round-trip every pack through the charter's model
+              --report <file>          also write the report to <file>, replacing it: the same report as on
+                                       standard output, in YAML unless --format says otherwise
+              --format yaml|xml        the report file's format, yaml by default; only with --report
               --help                   print this usage
               --                       end the options: each argument after it is a --pack value, for a
                                        directory whose name starts with -- (or write ./--dir)
@@ -62,6 +72,8 @@ final class Arguments {
     private static final String CONFIG_ROOT = "--config-root";
     private static final String PACK = "--pack";
     private static final String ROUND_TRIP = "--round-trip";
+    private static final String REPORT = "--report";
+    private static final String FORMAT = "--format";
     private static final String HELP = "--help";
     private static final String END_OF_OPTIONS = "--";
     private static final String VALIDATE = "validate";
@@ -78,15 +90,41 @@ final class Arguments {
      * @param packs the packs, in the order given, or in name order under a config root; no two with one directory or
      *     one id
      * @param roundTrip whether the round trip is asked for
+     * @param inputs the config root or the {@code --pack} values, as written, which the report names
+     * @param report where {@code --report} writes the report, and in which format; empty without {@code --report}
      */
-    record Parsed(List<PackSetEntry> packs, boolean roundTrip) implements Outcome {
+    record Parsed(List<PackSetEntry> packs, boolean roundTrip, Inputs inputs, Optional<ReportFile> report)
+            implements Outcome {
         /**
          * Checks the fields and copies the list.
          *
          * @param packs the packs
          * @param roundTrip whether to round-trip
+         * @param inputs what was given
+         * @param report the report file, if any
          */
         Parsed {
+            packs = List.copyOf(packs);
+            Objects.requireNonNull(inputs, "inputs");
+            Objects.requireNonNull(report, "report");
+        }
+    }
+
+    /**
+     * What a check was given, as written on the command line: the report's {@code inputs}.
+     *
+     * @param configRoot the {@code --config-root} value, when one was given
+     * @param packs the {@code --pack} values, in order; empty under a config root
+     */
+    record Inputs(Optional<String> configRoot, List<String> packs) {
+        /**
+         * Checks the fields and copies the list.
+         *
+         * @param configRoot the config root, if any
+         * @param packs the pack values
+         */
+        Inputs {
+            Objects.requireNonNull(configRoot, "configRoot");
             packs = List.copyOf(packs);
         }
     }
@@ -163,13 +201,15 @@ final class Arguments {
         private Optional<String> configRoot = Optional.empty();
         private final List<String> packs = new ArrayList<>();
         private boolean roundTrip;
+        private Optional<String> report = Optional.empty();
+        private Optional<String> format = Optional.empty();
 
         /** Takes one argument, and its value from {@code rest}; the fault it is, if any. */
         Optional<UsageFault> take(String arg, Iterator<String> rest) {
             switch (arg) {
                 case END_OF_OPTIONS -> rest.forEachRemaining(packs::add);
                 case ROUND_TRIP -> roundTrip = true;
-                case CONFIG_ROOT, PACK -> {
+                case CONFIG_ROOT, PACK, REPORT, FORMAT -> {
                     return value(arg, rest);
                 }
                 default -> {
@@ -189,6 +229,9 @@ final class Arguments {
                 packs.add(value);
                 return Optional.empty();
             }
+            if (REPORT.equals(option) || FORMAT.equals(option)) {
+                return reportValue(option, value);
+            }
             if (configRoot.isPresent()) {
                 return Optional.of(new UsageFault(CONFIG_ROOT + " is given twice"));
             }
@@ -196,23 +239,55 @@ final class Arguments {
             return Optional.empty();
         }
 
+        /** The value of {@code --report} or {@code --format}, each given once. */
+        private Optional<UsageFault> reportValue(String option, String value) {
+            boolean isReport = REPORT.equals(option);
+            if ((isReport ? report : format).isPresent()) {
+                return Optional.of(new UsageFault(option + " is given twice"));
+            }
+            if (isReport) {
+                report = Optional.of(value);
+            } else {
+                format = Optional.of(value);
+            }
+            return Optional.empty();
+        }
+
+        /** What the check was given, for the report. */
+        Inputs inputs() {
+            return new Inputs(configRoot, configRoot.isPresent() ? List.of() : packs);
+        }
+
+        /** The report file; checked by {@link #outcome} before any directory is. */
+        Optional<ReportFile> reportFile() {
+            return report.map(path -> new ReportFile(
+                    Path.of(path), format.flatMap(ReportFormat::fromToken).orElse(ReportFormat.YAML)));
+        }
+
         Outcome outcome() {
+            if (format.isPresent() && report.isEmpty()) {
+                return new UsageFault(FORMAT + " needs " + REPORT);
+            }
+            if (format.isPresent() && ReportFormat.fromToken(format.get()).isEmpty()) {
+                return new UsageFault("unknown format " + format.get() + " for " + FORMAT + "; the formats are "
+                        + ReportFormat.tokens());
+            }
             if (configRoot.isPresent() && !packs.isEmpty()) {
                 return new UsageFault("give " + CONFIG_ROOT + " or " + PACK + ", not both");
             }
             if (configRoot.isPresent()) {
-                return configured(configRoot.get(), roundTrip);
+                return configured(configRoot.get(), this);
             }
             if (packs.isEmpty()) {
                 return new UsageFault(
                         "nothing to check: give " + CONFIG_ROOT + " <dir> or " + PACK + " <dir>[:<level>][=<id>]");
             }
-            return given(packs, roundTrip);
+            return given(packs, this);
         }
     }
 
     /** The packs of a config root: every directory under its {@code packs/}, at its declared level. */
-    private static Outcome configured(String root, boolean roundTrip) {
+    private static Outcome configured(String root, Collected asked) {
         Path directory = Path.of(root);
         if (!Files.isDirectory(directory)) {
             return new UsageFault(CONFIG_ROOT + " " + root + " is not a directory");
@@ -234,11 +309,11 @@ final class Arguments {
             return new UsageFault(
                     "nothing to check: " + directory.resolve(ConfigRoot.PACKS) + " holds no pack directory");
         }
-        return distinct(roots, roundTrip);
+        return distinct(roots, asked);
     }
 
     /** The packs of repeated {@code --pack}, each at its level when one is given, under its id when one is given. */
-    private static Outcome given(List<String> values, boolean roundTrip) {
+    private static Outcome given(List<String> values, Collected asked) {
         List<PackRoot> roots = new ArrayList<>();
         for (String value : values) {
             Given given = packRoot(value);
@@ -247,7 +322,7 @@ final class Arguments {
             }
             roots.add(given.root().orElseThrow());
         }
-        return distinct(roots, roundTrip);
+        return distinct(roots, asked);
     }
 
     /**
@@ -413,7 +488,7 @@ final class Arguments {
      * The packs, refused when two share a directory (by real path), one lies inside another, or two share an id, given
      * or taken from the directory's name.
      */
-    private static Outcome distinct(List<PackRoot> roots, boolean roundTrip) {
+    private static Outcome distinct(List<PackRoot> roots, Collected asked) {
         Map<Path, String> byRealPath = new LinkedHashMap<>();
         Map<String, String> byName = new HashMap<>();
         List<PackSetEntry> entries = new ArrayList<>();
@@ -443,6 +518,6 @@ final class Arguments {
             }
             entries.add(new PackSetEntry(root));
         }
-        return new Parsed(entries, roundTrip);
+        return new Parsed(entries, asked.roundTrip, asked.inputs(), asked.reportFile());
     }
 }

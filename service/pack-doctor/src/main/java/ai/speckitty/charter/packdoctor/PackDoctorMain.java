@@ -7,6 +7,7 @@ import ai.speckitty.charter.packdoctor.Arguments.Parsed;
 import ai.speckitty.charter.packdoctor.Arguments.Remediate;
 import ai.speckitty.charter.packdoctor.Arguments.UsageFault;
 import ai.speckitty.charter.packdoctor.Problems.Problem;
+import ai.speckitty.charter.packdoctor.report.ReportFile;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -17,6 +18,7 @@ import ai.speckitty.charter.packvalidation.set.PackSetVerdict;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,8 +26,10 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The pack-doctor CLI (ADR-0075 decision 9, #478, FR-001, FR-006, T017): the composition root of the pack-set check,
@@ -41,6 +45,11 @@ import java.util.function.Function;
  * {@code 2} on a usage fault, a failure outside a pack read (the run directory, writing the report) or an internal
  * error ({@code pack-doctor: internal error: ...} and its stack trace on standard error), with nothing on standard
  * output. The report is built whole before it is written, so no partial report reaches standard output.
+ *
+ * <p>With {@code --report <file>} (FR-008 of mission pack-doctor-coverage-01M7YMQK), the same report is written to that
+ * file too, as YAML or XML, before anything reaches standard output: a file that cannot be written, or a report the
+ * format cannot carry, exits {@code 2} with nothing on standard output. Writing it never changes the exit code of a run,
+ * and standard output is the same with it as without.
  *
  * <p>Pack content never reaches the internal-error path (#624): every fault a pack holds, a malformed {@code pack.yaml}
  * field included, is a problem ({@code 1}), and {@code CLOSURE} judges only descriptors the read accepted. An internal
@@ -207,17 +216,26 @@ public final class PackDoctorMain {
         List<Problem> problems;
         List<String> warnings;
         String report;
+        Optional<String> file;
         try {
             PackSetVerdict verdict = verdict(parsed, temporary, composition);
             problems = Problems.of(verdict);
             warnings = ReportWriter.warnings(verdict);
-            report = ReportWriter.report(verdict, problems);
+            JsonNode tree = ReportWriter.tree(parsed, verdict, problems);
+            report = ReportWriter.json(tree);
+            file = parsed.report().map(target -> fileText(target, tree));
+        } catch (UnrepresentableReport failure) {
+            err.println("pack-doctor: " + failure.getMessage());
+            return FAILED;
         } catch (UncheckedIOException failure) {
             err.println("pack-doctor: " + failure.getMessage());
             return FAILED;
         } catch (RuntimeException failure) {
             err.println("pack-doctor: internal error: " + failure);
             failure.printStackTrace(err);
+            return FAILED;
+        }
+        if (file.isPresent() && !written(parsed.report().orElseThrow(), file.get(), err)) {
             return FAILED;
         }
         warnings.forEach(err::println);
@@ -227,6 +245,38 @@ public final class PackDoctorMain {
             return written;
         }
         return problems.isEmpty() ? VALID : PROBLEMS;
+    }
+
+    /** A report the file's format cannot carry: a usage-level failure, not an internal error. */
+    private static final class UnrepresentableReport extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        UnrepresentableReport(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /** The report file's text, built before anything is written. */
+    private static String fileText(ReportFile target, JsonNode tree) {
+        try {
+            return target.format().write(tree);
+        } catch (IllegalArgumentException unrepresentable) {
+            throw new UnrepresentableReport(
+                    "cannot write the report " + target.path() + " as "
+                            + target.format().name() + ": " + unrepresentable.getMessage(),
+                    unrepresentable);
+        }
+    }
+
+    /** Writes the report file, replacing any file there; false, said on {@code err}, when it cannot be written. */
+    private static boolean written(ReportFile target, String text, PrintStream err) {
+        try {
+            Files.writeString(target.path(), text, StandardCharsets.UTF_8);
+        } catch (IOException failure) {
+            err.println("pack-doctor: cannot write the report " + target.path() + ": " + failure);
+            return false;
+        }
+        return true;
     }
 
     /** The verdict of the set; with the round trip, its run directory is gone when this returns. */

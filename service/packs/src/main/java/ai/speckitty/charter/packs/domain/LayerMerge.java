@@ -283,8 +283,8 @@ public final class LayerMerge {
     private static Map<Urn, List<PackUnderResolution>> holdersByUrn(List<PackUnderResolution> closure) {
         Map<Urn, List<PackUnderResolution>> holders = new LinkedHashMap<>();
         for (PackUnderResolution pack : closure) {
-            for (String defined : pack.definedArtifacts()) {
-                Urn.parse(defined).ifPresent(urn -> {
+            for (String referable : pack.referableArtifacts()) {
+                Urn.parse(referable).ifPresent(urn -> {
                     List<PackUnderResolution> held = holders.computeIfAbsent(urn, ignored -> new ArrayList<>());
                     if (!held.contains(pack)) {
                         held.add(pack);
