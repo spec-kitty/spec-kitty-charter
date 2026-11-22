@@ -490,6 +490,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-22T07:30:23.657952Z",
+      "decision_id": "01M812KK99P3T1FQ7ZBXT4Z3T1",
+      "final_answer": "No release until this mission lands",
+      "input_key": "release_hold",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "No release until this mission lands",
+        "Release now"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Is a new service-v* release (rc.4) cut before this mission lands?",
+      "rationale": "Operator ruling R-w (2026-11-22), source: operator via dispatcher (verified in the charter triager's transcript), operator words: \"yes, no release yet, untill the charter validation module and cli are finalized, so open packs can allign properly.\" No service-v* release until WP01-WP09 land; open-packs aligns once against that release. WP09 draft (a) widened to the full alignment specification.",
+      "resolved_at": "2026-11-22T07:30:25.973499Z",
+      "resolved_by": "operator via dispatcher",
+      "slot_key": "release-hold",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
