@@ -116,13 +116,13 @@
     },
     {
       "criterion_id": "FR-012",
-      "description": "Verify FR-012 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "FR-012: ADR-0083 records rulings R-a to R-s (R-r all of #154; R-s narrowed --full); amends ADR-0075 decisions 6/7/9, ADR-0042's 2026-11-12 amendment, rules A10 and C31, and the patterns page's scope table; records #535 and #52 item 3 as not the charter's to judge.",
+      "proof_type": "review",
+      "evidence": "lane-h: docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md:34 (R-a to R-w), :221-267 rulings verbatim incl. R-r :249, R-s :250; amends list :50-62; decision 17 :209 (#535, #52 item 3); ADR-0075 :342 amendment of decisions 6,7,9; ADR-0042 amendment status line; composition-and-activation-rules.md :80-83, :422, :1502 (A10 superseded for writes, C31); architectural-patterns-applied.md :318 scope table",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:44:30.056452+00:00",
+      "notes": "ADR records R-a..R-w, a superset of the required R-a..R-s (R-t..R-w were ruled after the spec was written); the spec text is stale, not the ADR. Recommend updating FR-012's wording to R-a..R-w (no operator ruling needed). A10 is handled as superseded for writes within C31's amendment rather than as a separate rule row."
     }
   ],
   "negative_invariants": []
