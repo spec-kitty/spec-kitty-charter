@@ -98,9 +98,13 @@ description: >-
   pack-relative file and whose code is the code (drg_schema_error, one per fault of a graph document,
   prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty). So the problem that carries such a code is
   422 at registration. A composing read answers 500 pack_unreadable naming the file for the three prompt codes
-  (prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty); for a graph fault (drg_schema_error, or a
-  graph document that cannot be parsed) the detail names the first graph document and its reason, and violations lists
-  every fault of the pack's graph documents as a registration lists them, the same pointer, code and detail (#617). The declared status of such a code is kept and read as the status of the read that meets
+  (prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty); for graph documents that cannot be read (not
+  UTF-8 or not YAML, a schema fault, an unknown relation, a body_path outside the pack, a pack qualifier that is no pack
+  id, or a file the service cannot open) the detail names the first such document by path and its reason, and violations
+  lists each fault that makes one unreadable, with the pointer, code and detail a registration gives it
+  (drg_schema_error for each; a file the service cannot open has the same code, though a registration gives no violation
+  at it) (#617). Any other fault of a graph document is not among those violations; a composing read refuses an edge
+  that joins an artifact to itself 500 pack_unreadable, with a detail naming the file and no violations. The declared status of such a code is kept and read as the status of the read that meets
   the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
 
