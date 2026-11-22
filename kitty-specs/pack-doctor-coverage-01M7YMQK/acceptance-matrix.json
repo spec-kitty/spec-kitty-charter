@@ -96,13 +96,13 @@
     },
     {
       "criterion_id": "FR-010",
-      "description": "Verify FR-010 is satisfied",
+      "description": "FR-010: example packs, contract scenarios and the whole-pack gate carry the canonical shape, fixtures fixed not exempted; built-in gains its default preset's anti-pattern file; every other inline anti-pattern becomes a file with its rejects edge; org-base gains (or drops) its two spdd tactics; example manifests restamped.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: service/packs/src/testFixtures/resources/example-packs/built-in/anti_patterns/ (18 files incl. indirection-for-repetition); org-base/tactics/reasons-canvas-{fill,review}.tactic.yaml; ExamplePackCoverageTest.java:93,:117,:142,:160; wholePackRoundTrip 17/0 and packs 7266/0 in integration-gates.log; PresetItemRulesTest ExamplePacksControl 19/19 rerun",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:44:20.149997+00:00",
+      "notes": "Counted 18 anti-pattern files; org-base tactics present; coverage tests and whole-pack gate green (restamped manifests would fail manifest_stale otherwise)."
     },
     {
       "criterion_id": "FR-011",
