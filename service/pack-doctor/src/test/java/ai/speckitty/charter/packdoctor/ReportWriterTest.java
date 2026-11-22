@@ -152,6 +152,20 @@ class ReportWriterTest {
     }
 
     @Test
+    void fullIsAnOptionOfTheInputsTrueWithFullAndFalseWithout() {
+        PackSetVerdict verdict = new PackSetVerdict(
+                List.of(real), List.of(), List.of(Check.PACK, Check.CLOSURE, Check.REFERENCES), List.of());
+
+        ObjectNode full = tree(parsed("--pack", builtIn.toString(), "--full"), verdict);
+        ObjectNode plain = tree(parsed("--pack", builtIn.toString()), verdict);
+
+        assertThat(JSON.writeValueAsString(full.get("inputs").get("options")))
+                .isEqualTo("{\"full\":true,\"round_trip\":false}");
+        assertThat(JSON.writeValueAsString(plain.get("inputs").get("options")))
+                .isEqualTo("{\"full\":false,\"round_trip\":false}");
+    }
+
+    @Test
     void aValidSetExitsZeroWithNoViolationItsWarningsCounted() {
         PackSetVerdict verdict = new PackSetVerdict(List.of(real), List.of(), List.of(Check.PACK), List.of());
         long warnings = real.verdict().findings().stream()

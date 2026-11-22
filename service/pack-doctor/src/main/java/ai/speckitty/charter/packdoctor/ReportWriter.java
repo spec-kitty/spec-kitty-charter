@@ -60,8 +60,7 @@ final class ReportWriter {
             ArrayNode packs = inputs.putArray("packs");
             parsed.inputs().packs().forEach(packs::add);
         });
-        // --full (WP05, ruling R-u) is not an option of this command line yet: nothing asks for REFERENCES.
-        inputs.putObject("options").put("full", false).put("round_trip", parsed.roundTrip());
+        inputs.putObject("options").put("full", parsed.full()).put("round_trip", parsed.roundTrip());
         ArrayNode checks = report.putArray("checks");
         verdict.checks().forEach(check -> checks.add(check.name()));
         ArrayNode packs = report.putArray("packs");

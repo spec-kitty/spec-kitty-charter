@@ -217,7 +217,7 @@ class PackDoctorMainTest {
         ObjectNode expected = (ObjectNode) configured.report().deepCopy();
         ObjectNode inputs = JSON.createObjectNode();
         args.stream().filter(arg -> !"--pack".equals(arg)).forEach(inputs.putArray("packs")::add);
-        inputs.set("options", configured.report().get("inputs").get("options"));
+        inputs.putObject("options").put("full", false).put("round_trip", false);
         expected.set("inputs", inputs);
         assertThat(given.exit()).isZero();
         assertThat(JSON.writeValueAsString(given.report())).isEqualTo(JSON.writeValueAsString(expected));
