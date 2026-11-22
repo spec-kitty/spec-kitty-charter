@@ -277,11 +277,14 @@ class PackSetCheckTest {
             rewrite(
                     base.resolve("presets/spdd.yaml"),
                     text -> text.replace("  - id: issue-triage\n", "  - id: issue-triage-gone\n"));
+            // #630: the edited preset's hashes, so the planted item is the one cause.
+            ManifestStamps.stamp(base, ExamplePacks.ORG);
 
             PackSetVerdict verdict = CHECK.check(
                     List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, base, Optional.of(PackLevel.ORG))));
 
             assertThat(verdict.packs()).noneMatch(PackResult::failing);
+            assertThat(codes(verdict.faults())).isEqualTo(List.of(RefusalCode.PRESET_ITEM_NOT_HELD.token()));
             assertThat(verdict.faults()).singleElement().satisfies(fault -> {
                 assertThat(fault.code()).isEqualTo(RefusalCode.PRESET_ITEM_NOT_HELD);
                 assertThat(fault.reason().rule()).isEqualTo(PresetItemRules.RULE);
@@ -304,11 +307,14 @@ class PackSetCheckTest {
             rewrite(
                     base.resolve("presets/spdd.yaml"),
                     text -> text.replace("  - id: triage-status\n", "  - id: triage-status-gone\n"));
+            // #630: the edited preset's hashes, so the planted item is the one cause.
+            ManifestStamps.stamp(base, ExamplePacks.ORG);
 
             PackSetVerdict verdict = CHECK.check(
                     List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, base, Optional.of(PackLevel.ORG))));
 
-            assertThat(codes(verdict.faults())).containsExactly(RefusalCode.PRESET_ITEM_UNDECLARED.token());
+            assertThat(verdict.packs()).noneMatch(PackResult::failing);
+            assertThat(codes(verdict.faults())).isEqualTo(List.of(RefusalCode.PRESET_ITEM_UNDECLARED.token()));
             assertThat(verdict.faults().getFirst().violations())
                     .extracting(RefusalViolation::pointer)
                     .containsExactly("presets/spdd.yaml#/activated_skills/1");
