@@ -897,24 +897,23 @@ final class FilesystemPackStore {
      */
     private static List<PackElementViolation> graphViolationsOf(FileRead.Unreadable<GraphDocument> bad) {
         return Wording.unreadable("", bad).stream()
-                .map(finding -> new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding)))
+                .map(FilesystemPackStore::violationOf)
                 .toList();
     }
 
     /**
-     * The first edge endpoint written as a pack-qualified reference that does not parse, a pack name that is no pack id
-     * among them (#582), as one graph fault of the document: the schemas cannot cap the qualifier at the longest pack
-     * id, so the strict read refuses what the parser refuses, as the registration's staging does. The document is
-     * refused whole, as one that cannot be read is.
+     * The edges with an endpoint written as a pack-qualified reference that does not parse, a pack name that is no pack
+     * id among them (#582), each as one graph fault of the document, as a registration lists them (#617): the schemas
+     * cannot cap the qualifier at the longest pack id, so the strict read refuses what the parser refuses, as the
+     * registration's staging does. The document is refused whole, as one that cannot be read is.
      */
     private static List<PackElementViolation> malformedQualifiers(GraphDocument document) {
         return document.edges().stream()
-                .flatMap(edge -> Stream.of(edge.source(), edge.target()))
-                .filter(endpoint -> endpoint.contains("::"))
-                .flatMap(endpoint -> malformedQualifier(endpoint).stream())
-                .findFirst()
+                .flatMap(edge -> Stream.of(edge.source(), edge.target())
+                        .filter(endpoint -> endpoint.contains("::"))
+                        .flatMap(endpoint -> malformedQualifier(endpoint).stream())
+                        .limit(1))
                 .map(reason -> new PackElementViolation(document.file(), PackCodes.DRG_SCHEMA_ERROR, reason))
-                .stream()
                 .toList();
     }
 
@@ -1615,8 +1614,12 @@ final class FilesystemPackStore {
         }
         // No descriptor reaches here, so the pack's name never shows in a detail.
         return Wording.schemaFindings("", bad.violations()).stream()
-                .map(finding -> new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding)))
+                .map(FilesystemPackStore::violationOf)
                 .toList();
+    }
+
+    private static PackElementViolation violationOf(Reason finding) {
+        return new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding));
     }
 
     /** A finding's detail without the file it opens with, as a violation's reason: the file is the violation's own. */
