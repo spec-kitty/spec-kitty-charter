@@ -255,6 +255,9 @@
       "last_event_id": "01M80BQKGQAXQ0W9F3SSASX8WK",
       "last_transition_at": "2026-11-22T00:50:37.719873+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review (commit 09f931222). T046-T050 and T047a done, red first. Out-of-map edits: contracts/packs/CHANGELOG.md (WP10's, one Breaking line); built-in procedures adversarial-squad-deployment and example-mapping-workshop (WP10's) and styleguides boring-code-review, aggregate-design-rules, java-conventions (WP03's glob) lose their inline blocks; built-in/pack-manifest.yaml restamped (5 content_hash + manifest_hash); ExamplePackCoverageTest (new no-inline test); docs/conformance/divergences.yaml and divergence-register.md (WP02's, DIV-401); docs/architecture/pack-schemas/styleguide.md intro; docs/architecture/diagrams/class-diagram.puml/.svg (StyleguideAntiPattern removed, re-rendered with the pinned PlantUML 1.2026.6). refused-anti-pattern-name and refused-anti-pattern-description fixtures deleted and replaced by refused-inline-anti-patterns. procedures.feature:120 now asserts /procedure/antiPatterns is absent. contracts:check run with -PcontractBaseline=none (shallow clone)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 3369,
