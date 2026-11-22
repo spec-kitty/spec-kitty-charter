@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.7.0"
-  at: "2026-11-21T22:01:27Z"
-  content_hash: "sha256:a58d35059ddf"
+  at: "2026-11-22T08:05:19Z"
+  content_hash: "sha256:ae5e4dc9338d"
 ---
 
 # Charter
@@ -927,7 +927,7 @@ Retired (ADR-0077): "template" names only the template artifact kind. `template_
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless the distribution pack (the pack that depends on every contestant and that no pack of the contest's level depends on) settles it with an overrides edge naming a contesting member (ADR-0048 decision 9, ADR-0053 decision 5, #358); an edge naming a contestant from any other pack, or from two distribution packs, is refused. Across levels the same id is a legitimate layer override, not a conflict.
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless the contest's distribution pack (see Distribution pack) settles it with an overrides edge naming a contesting member (ADR-0048 decision 9, ADR-0053 decision 5, #358); an edge naming a contestant from any other pack, or from two distribution packs, is refused. Across levels the same id is a legitimate layer override, not a conflict.
 
 **Meta:**
 
