@@ -590,9 +590,9 @@ class DomainRepositoryServiceTest {
 
     /**
      * The held list answers for every kind a reference can name, so a kind outside the served five is not failed open.
-     * An anti_pattern is never a file: the pack holds it as a node of its graph document, so the qualified form
-     * {@code <pack>::anti_pattern:x} and the bare-form refusal both find it. A node of any other kind is no holding
-     * without its file.
+     * An anti_pattern is held by its file, {@code anti_patterns/<id>.anti-pattern.yaml}, and its graph node declares
+     * it (ADR-0052 decision 14), so the qualified form {@code <pack>::anti_pattern:x} and the bare-form refusal both
+     * find it. A node of any other kind is no holding without its file.
      */
     @Test
     void definedArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
@@ -614,6 +614,15 @@ class DomainRepositoryServiceTest {
                 steps:
                 - title: Ship
                   description: ship it
+                """);
+        Files.createDirectories(pack.resolve("anti_patterns"));
+        Files.writeString(pack.resolve("anti_patterns/big-ball-of-mud.anti-pattern.yaml"), """
+                schema_version: '1.0'
+                id: big-ball-of-mud
+                title: Big Ball of Mud
+                description: A system with no discernible structure.
+                severity: severe
+                bad_example: every module reaches into every other
                 """);
         Files.writeString(pack.resolve("anti_pattern.graph.yaml"), """
                 schema_version: '1.0'
