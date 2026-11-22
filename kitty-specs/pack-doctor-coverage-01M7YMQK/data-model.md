@@ -104,15 +104,16 @@ Invariants:
 
 The phase's faults are the existing codes, from the existing collect-all functions, in registration's phase order:
 
-1. delegations (`PackCompositionResolver.unresolvedDelegations`): `pack_unreadable` with the violation
-   `substep_delegation_unresolved` at the mission type file;
+1. delegations (`PackCompositionResolver.unresolvedDelegations`): `validation_failed` with the violation
+   `substep_delegation_unresolved` at the mission type file, as registration refuses it
+   (`ClosureFault.asRegistrationRefuses()`);
 2. references (`PackCompositionResolver.referenceFaults`): `pack_reference_unqualified`,
    `pack_reference_pack_missing`, `pack_reference_artifact_missing`;
 3. enhancement targets (`EnhancementCompose.targetFaults`): `pack_reference_pack_missing`,
    `pack_reference_artifact_missing`.
 
-Every fault is collected, and each pack is judged within its own closure. `PackSetVerdict.Check` gains one value for
-the phase, named per the operator's answer to analysis Q2 (recommended `REFERENCES`). The `specializes_from` cycle,
+Every fault of the first check that finds any is collected, and each pack is judged within its own closure.
+`PackSetVerdict.Check` gains one value for the phase, `REFERENCES` (ruling R-u). The `specializes_from` cycle,
 relations, edge-index and own-closure-walk checks are not part of it (#636 slices 2-4 and 7).
 
 ## pack-doctor report (`PackDoctorReport`: JSON on stdout, YAML or XML with `--report`)
@@ -137,7 +138,7 @@ tree, and is validated by parsing it back and checking it against the same schem
 For each pack, remediate reports one of:
 
 - `rewritten`: the manifest and the files written in canonical form;
-- `refused`: the storage verdict's violations, except the manifest gate and form findings, with nothing written;
+- `refused`: the storage verdict's violations, except the manifest gate's, with nothing written;
 - `unchanged`: already canonical.
 
 After writing, it validates again and reports the result.
