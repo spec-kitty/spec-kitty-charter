@@ -2,11 +2,13 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.ClosureImpactCheck;
@@ -68,6 +70,10 @@ class QualifierLoadTest {
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refusal.getMessage()).contains(SHARD).contains(PackIdentifier.GRAMMAR_DETAIL);
+                    assertThat(refusal.violations())
+                            .as("the edge read lists the violation a registration lists (#617)")
+                            .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                            .containsExactly(tuple(SHARD, "drg_schema_error"));
                 });
 
         Path held = PackFixtures.copyOf(DESCRIPTOR_ONLY, host.resolve("at"));
