@@ -177,6 +177,9 @@
       "last_event_id": "01M815SXPVMEJ9GQCZRSK02V9Q",
       "last_transition_at": "2026-11-22T08:26:16.667274+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: --full adds REFERENCES (delegations, references, enhancement targets per own closure, registration order; R-s, R-u). One body per check in packs.domain. SC-001 parity table (11 rows; cycle row documents #636 remainder; manifest_stale row awaits WP04, not in this lane). Timed --full CI step added. Default validate byte-identical to base jar. Out-of-map: ClosureFault, ClosureImpactCheck, ResolverFaults, PackSetCheck/Verdict, Arguments, PackDoctorMain, Problems, PackDoctorReport.yaml + fragment, service.yml, tests."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 30619,
