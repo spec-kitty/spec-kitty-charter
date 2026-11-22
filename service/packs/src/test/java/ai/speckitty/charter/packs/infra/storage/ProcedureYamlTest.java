@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,43 +57,8 @@ class ProcedureYamlTest {
                         "entry_condition",
                         "exit_condition",
                         "steps",
-                        "anti_patterns",
                         "notes",
                         "applies_to_languages");
-    }
-
-    @Test
-    @DisplayName(
-            "anti-pattern entries keep exactly their stated fields: title only, with content, one or both examples")
-    void antiPatternEntriesKeepTheirShape() throws IOException {
-        ProcedureDso dso = read(fixture("full"));
-        Procedure entity = ProcedureBinding.INSTANCE.toEntity(PACK, dso);
-
-        assertThat(dso.antiPatterns())
-                .containsExactly(
-                        new ProcedureDso.AntiPattern(
-                                "Bare avoid entry", Optional.empty(), Optional.empty(), Optional.empty()),
-                        new ProcedureDso.AntiPattern(
-                                "Landing unreviewed work",
-                                Optional.of("Work lands only after review."),
-                                Optional.empty(),
-                                Optional.empty()),
-                        new ProcedureDso.AntiPattern(
-                                "Force pushing", Optional.empty(), Optional.of("git push --force"), Optional.empty()),
-                        new ProcedureDso.AntiPattern(
-                                "Skipping the merge tool",
-                                Optional.of("Use the merge tool."),
-                                Optional.of("git merge --no-verify"),
-                                Optional.of("spec-kitty merge")));
-        assertThat(entity.antiPatterns()).hasSize(4);
-        assertThat(entries(written(dso), "anti_patterns"))
-                .extracting(Map::keySet)
-                .map(List::copyOf)
-                .containsExactly(
-                        List.of("title"),
-                        List.of("title", "content"),
-                        List.of("title", "bad_example"),
-                        List.of("title", "content", "bad_example", "good_example"));
     }
 
     @Test
@@ -118,7 +82,7 @@ class ProcedureYamlTest {
         String written = written(dso);
 
         assertThat(read(written)).isEqualTo(dso);
-        assertThat(map(Yaml.load(written))).doesNotContainKeys("anti_patterns", "notes", "applies_to_languages");
+        assertThat(map(Yaml.load(written))).doesNotContainKeys("notes", "applies_to_languages");
         assertThat(MeaningOfTexts.adr0036().compareTexts("procedure", source, written))
                 .isEmpty();
     }
@@ -178,7 +142,7 @@ class ProcedureYamlTest {
     @Test
     @DisplayName("a list entry that is not a mapping is a reader's error, thrown, never skipped (N6)")
     void aListEntryThatIsNoMappingIsThrownNotSkipped() {
-        for (String key : List.of("steps", "anti_patterns")) {
+        for (String key : List.of("steps")) {
             Map<String, Object> root = new java.util.LinkedHashMap<>(Map.of(
                     "schema_version", "1.0",
                     "id", "p",

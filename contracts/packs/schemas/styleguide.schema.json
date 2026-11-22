@@ -2,36 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/styleguide.schema.json",
   "$defs": {
-    "AntiPattern": {
-      "additionalProperties": false,
-      "description": "An anti-pattern example within a styleguide.",
-      "properties": {
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "description": {
-          "title": "Description",
-          "type": "string"
-        },
-        "bad_example": {
-          "title": "Bad Example",
-          "type": "string"
-        },
-        "good_example": {
-          "title": "Good Example",
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "description",
-        "bad_example",
-        "good_example"
-      ],
-      "title": "AntiPattern",
-      "type": "object"
-    },
     "Pattern": {
       "additionalProperties": false,
       "description": "A positive code-pattern example within a styleguide.",
@@ -119,7 +89,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "A style and convention guide for a specific scope.\n\nStyleguides define principles, anti-patterns, and quality tests\nfor consistent governance across a domain area.",
+  "description": "A style and convention guide for a specific scope.\n\nStyleguides define principles, patterns and quality tests\nfor consistent governance across a domain area; an anti-pattern is its own file, named by a rejects edge.",
   "properties": {
     "id": {
       "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
@@ -154,14 +124,6 @@
       },
       "minItems": 1,
       "title": "Patterns",
-      "type": "array"
-    },
-    "anti_patterns": {
-      "items": {
-        "$ref": "#/$defs/AntiPattern"
-      },
-      "minItems": 1,
-      "title": "Anti Patterns",
       "type": "array"
     },
     "tooling": {

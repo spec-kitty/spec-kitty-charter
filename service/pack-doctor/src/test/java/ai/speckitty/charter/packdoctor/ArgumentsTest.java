@@ -59,6 +59,24 @@ class ArgumentsTest {
         }
 
         @Test
+        void validateFullAsksForTheReferencesPhase() throws IOException {
+            Path a = pack("a");
+
+            Parsed full = parsed(Arguments.parse(new String[] {"validate", "--pack", a.toString(), "--full"}));
+            Parsed plain = parsed(Arguments.parse(new String[] {"validate", "--pack", a.toString()}));
+
+            assertThat(full.full()).isTrue();
+            assertThat(full.roundTrip()).isFalse();
+            assertThat(plain.full()).isFalse();
+            assertThat(parsed(Arguments.validate(new String[] {"--full", "--round-trip", "--pack", a.toString()})))
+                    .satisfies(both -> {
+                        assertThat(both.full()).isTrue();
+                        assertThat(both.roundTrip()).isTrue();
+                    });
+            assertThat(Arguments.USAGE).contains("[--full]").contains("--full ");
+        }
+
+        @Test
         void validateHelpAsksForTheUsage() {
             assertThat(Arguments.parse(new String[] {"validate", "--help"})).isInstanceOf(Help.class);
         }

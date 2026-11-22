@@ -16,7 +16,6 @@ import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Styleguide;
-import ai.speckitty.charter.packs.domain.StyleguideAntiPattern;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguidePattern;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -81,7 +80,6 @@ class DoctrineRepositoryContractTest {
                 .scope(StyleguideScope.TESTING)
                 .principle("be small", "be small, in one sentence.")
                 .pattern(new StyleguidePattern("P", "a pattern", Optional.of("bad"), Optional.empty()))
-                .antiPattern(new StyleguideAntiPattern("A", "an anti-pattern", "bad", "good"))
                 .qualityTest("does it read")
                 .appliesToLanguage("java")
                 .build();

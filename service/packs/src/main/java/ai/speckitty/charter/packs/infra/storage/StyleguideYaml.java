@@ -41,16 +41,6 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
                         optional(p, "good_example")));
             }
         }
-        List<StyleguideDso.AntiPattern> antiPatterns = new ArrayList<>();
-        for (Object entry : list(root, "anti_patterns")) {
-            if (entry instanceof Map<?, ?> a) {
-                antiPatterns.add(new StyleguideDso.AntiPattern(
-                        required(a, "name"),
-                        required(a, "description"),
-                        required(a, "bad_example"),
-                        required(a, "good_example")));
-            }
-        }
         Optional<Map<String, String>> tooling = Optional.empty();
         if (root.get("tooling") instanceof Map<?, ?> t) {
             Map<String, String> ordered = new LinkedHashMap<>();
@@ -67,7 +57,6 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
                 required(root, "scope"),
                 PrincipleYaml.read(root),
                 patterns,
-                antiPatterns,
                 tooling,
                 optional(root, "quality_test"),
                 lint,
@@ -90,23 +79,13 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
             YamlDumpEmitter.scalarInto(out, "good_example", pattern.goodExample());
             patterns.add(out);
         }
-        List<Map<String, Object>> antiPatterns = new ArrayList<>();
-        for (StyleguideDso.AntiPattern antiPattern : styleguide.antiPatterns()) {
-            Map<String, Object> out = YamlDumpEmitter.mapping();
-            out.put("name", antiPattern.name());
-            out.put("description", antiPattern.description());
-            out.put("bad_example", antiPattern.badExample());
-            out.put("good_example", antiPattern.goodExample());
-            antiPatterns.add(out);
-        }
         YamlDumpEmitter emitter = new YamlDumpEmitter()
                 .scalar("id", styleguide.id())
                 .scalar("schema_version", styleguide.schemaVersion())
                 .scalar("title", styleguide.title())
                 .scalar("scope", styleguide.scope())
                 .mappings(PrincipleYaml.KEY, PrincipleYaml.write(styleguide.principles()))
-                .mappings("patterns", patterns)
-                .mappings("anti_patterns", antiPatterns);
+                .mappings("patterns", patterns);
         styleguide.tooling().ifPresent(tooling -> emitter.present("tooling", new LinkedHashMap<>(tooling)));
         emitter.scalar("quality_test", styleguide.qualityTest());
         styleguide

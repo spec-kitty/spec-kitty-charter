@@ -6,10 +6,8 @@ import ai.speckitty.charter.api.model.Directive;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.Paradigm;
 import ai.speckitty.charter.api.model.Procedure;
-import ai.speckitty.charter.api.model.ProcedureAntiPattern;
 import ai.speckitty.charter.api.model.ProcedureStep;
 import ai.speckitty.charter.api.model.Styleguide;
-import ai.speckitty.charter.api.model.StyleguideAntiPattern;
 import ai.speckitty.charter.api.model.StyleguidePattern;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
 import ai.speckitty.charter.api.model.Tactic;
@@ -177,9 +175,6 @@ final class ArtifactDtos {
                 styleguide.patterns().stream()
                         .map(ArtifactDtos::styleguidePattern)
                         .toList(),
-                styleguide.antiPatterns().stream()
-                        .map(ArtifactDtos::styleguideAntiPattern)
-                        .toList(),
                 styleguideTooling(styleguide.tooling()),
                 styleguide.qualityTest().orElse(null),
                 styleguide
@@ -195,12 +190,6 @@ final class ArtifactDtos {
                 pattern.description(),
                 pattern.badExample().orElse(null),
                 pattern.goodExample().orElse(null));
-    }
-
-    private static StyleguideAntiPattern styleguideAntiPattern(
-            ai.speckitty.charter.packs.domain.StyleguideAntiPattern antiPattern) {
-        return new StyleguideAntiPattern(
-                antiPattern.name(), antiPattern.description(), antiPattern.badExample(), antiPattern.goodExample());
     }
 
     private static List<StyleguideToolEntry> styleguideTooling(Optional<Map<String, String>> tooling) {
@@ -255,7 +244,6 @@ final class ArtifactDtos {
                 procedure.entryCondition(),
                 procedure.exitCondition(),
                 procedure.steps().stream().map(ArtifactDtos::procedureStep).toList(),
-                procedure.antiPatterns().stream().map(ArtifactDtos::antiPattern).toList(),
                 procedure.notes().orElse(null),
                 procedure.appliesToLanguages());
     }
@@ -267,13 +255,5 @@ final class ArtifactDtos {
                 step.role().orElse(null),
                 step.onSuccess().orElse(null),
                 step.onFailure().orElse(null));
-    }
-
-    private static ProcedureAntiPattern antiPattern(ai.speckitty.charter.packs.domain.AntiPatternEntry entry) {
-        return new ProcedureAntiPattern(
-                entry.title(),
-                entry.content().orElse(null),
-                entry.badExample().orElse(null),
-                entry.goodExample().orElse(null));
     }
 }

@@ -17,12 +17,4 @@ patterns:
     good_example: |
       Optional<User> find(String id) { return Optional.ofNullable(users.get(id)); }
 
-anti_patterns:
-  - name: Swallowed Exception
-    description: "Catching an exception and doing nothing hides the failure from the caller."
-    bad_example: |
-      try { write(file); } catch (IOException e) { }
-    good_example: |
-      try { write(file); } catch (IOException e) { throw new UncheckedIOException(e); }
-
 quality_test: "Does every lookup that may find nothing say so in its return type, and is every opened resource closed on every path?"

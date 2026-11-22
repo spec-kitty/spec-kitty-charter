@@ -152,6 +152,24 @@ class ExamplePackCoverageTest {
         assertThat(severities).contains("smell", "severe", "breaking");
     }
 
+    /**
+     * WP12, T047a (ruling R-r, ADR-0052 decision 16, #154): no styleguide or procedure of an example pack carries an
+     * inline {@code anti_patterns} block; every anti-pattern is its own file, rejected by a {@code rejects} edge.
+     */
+    @Test
+    void noExampleStyleguideOrProcedureCarriesAnInlineAntiPattern() throws IOException {
+        Path packs = ExamplePacks.packsDirectory();
+        List<String> carriers = new ArrayList<>();
+        for (String file : ExampleCoverage.files(packs)) {
+            if ((file.endsWith(".styleguide.yaml") || file.endsWith(".procedure.yaml"))
+                    && Files.readAllLines(packs.resolve(file)).stream()
+                            .anyMatch(line -> line.startsWith("anti_patterns:"))) {
+                carriers.add(file);
+            }
+        }
+        assertThat(carriers).isEmpty();
+    }
+
     private static String antiPatternFile(String id) {
         return "anti_patterns/" + id + ".anti-pattern.yaml";
     }
