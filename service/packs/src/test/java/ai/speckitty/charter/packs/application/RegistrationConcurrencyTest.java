@@ -62,12 +62,13 @@ class RegistrationConcurrencyTest {
     private final AtomicInteger reads = new AtomicInteger();
     private final AtomicInteger staleAfterRetries = new AtomicInteger();
     private final AtomicInteger overlapped = new AtomicInteger();
+    private final AtomicInteger readersRunning = new AtomicInteger();
 
     @Test
     @Timeout(240)
     void everyReadSeesOneCompleteVersionWhileEightUploadsReplaceThePack(@TempDir Path host) throws Exception {
         Rig rig = new Rig(host);
-        rig.midSwap = () -> pause(1);
+        rig.midSwap = this::pauseUntilAReaderSawASwap;
         assertThat(rig.register(PACK, rig.stage(version(0, 0, "m-initial")), Preconditions.none())
                         .outcome())
                 .isEqualTo(Outcome.CREATED);
@@ -116,9 +117,17 @@ class RegistrationConcurrencyTest {
         }
         for (int reader = 0; reader < READERS; reader++) {
             tasks.add(() -> {
-                start.await(30, TimeUnit.SECONDS);
-                for (int i = 0; i < READS; i++) {
-                    readOnce(rig, read, run);
+                readersRunning.incrementAndGet();
+                try {
+                    start.await(30, TimeUnit.SECONDS);
+                    // Read on until a reader has seen a swap: the first upload may reach its swap after five quick
+                    // reads.
+                    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+                    for (int i = 0; i < READS || (overlapped.get() == 0 && System.nanoTime() < deadline); i++) {
+                        readOnce(rig, read, run);
+                    }
+                } finally {
+                    readersRunning.decrementAndGet();
                 }
                 return null;
             });
@@ -162,6 +171,17 @@ class RegistrationConcurrencyTest {
                 read.awaitWrites(Duration.ofMillis(250));
             }
         }
+    }
+
+    /** Holds a swap until a running reader has seen one (2 s at most), so that the overlap never rests on timing. */
+    private void pauseUntilAReaderSawASwap() {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        do {
+            pause(1);
+        } while (overlapped.get() == 0
+                && readersRunning.get() > 0
+                && !Thread.currentThread().isInterrupted()
+                && System.nanoTime() < deadline);
     }
 
     private static void pause(long millis) {
