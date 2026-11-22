@@ -120,8 +120,8 @@ example packs
     prose.
   - **Writes.** The post-write `stamp` stays.
   - **The round trip.** `PackRoundTrip`/`RoundTripObservation` drop the source-stale reason and keep written-stale
-    (A8). Folding #636's round-trip-codes slice (retiring `EXCLUDED_WRITTEN`, merging the `STALE_*` wordings) needs
-    the operator's yes, which the dispatcher is asking for.
+    (A8). #636's round-trip-codes slice (retiring `EXCLUDED_WRITTEN`, merging the `STALE_*` wordings) is folded
+    into WP04 (ruling R-t).
   - **Tests to rewrite, not delete.**
     - `WholePackFlowTest:127-166` and `RoundTripObservationTest:176`: the source-stale case moves to a `ManifestRules`
       test that asserts `manifest_stale` with its field pointer.
@@ -142,7 +142,8 @@ example packs
   - **Ruled (a).** `--full` adds only what existing domain functions give, with no new walk, each run per own closure,
     in registration's phase order:
     1. delegations: `PackCompositionResolver.unresolvedDelegations` (`PackCompositionResolver.java:634`), answering
-       `pack_unreadable` with the violation `substep_delegation_unresolved`;
+       `validation_failed` with the violation `substep_delegation_unresolved`, as registration refuses it
+       (`ClosureFault.asRegistrationRefuses()`; the composing read answers `pack_unreadable`);
     2. references: `PackCompositionResolver.referenceFaults` (`:582`), answering `pack_reference_unqualified`,
        `pack_reference_pack_missing` or `pack_reference_artifact_missing`;
     3. enhancement targets: `EnhancementCompose.targetFaults` (`EnhancementCompose.java:218`), answering
@@ -153,9 +154,10 @@ example packs
   - **Narrowed.** The spec's "full pass" is these three checks. The `specializes_from` cycle, relations, edge-index and
     own-closure-walk checks are recorded in ADR-0083 as landing in the factory with #636 slices 2-4 and 7. The PR writes
     `Refs #632` and names that remainder.
-  - **The check value.** `PackSetVerdict.Check` gains one value for the phase; its name is asked of the operator
-    (analysis Q2; recommended `REFERENCES`, since the phase is not the own-closure walk). WP05 uses the answer.
-  - **Not folded.** The #636 round-trip-codes slice (D4) is still unanswered and stays out of WP04.
+  - **The check value.** `PackSetVerdict.Check` gains one value for the phase: `REFERENCES` (ruling R-u,
+    DM-01M8035FAMHXG0A04SCBD7QTKD), since the phase is not the own-closure walk.
+  - **Folded after all.** The #636 round-trip-codes slice (D4) was ruled into WP04 by R-t
+    (DM-01M801QGCV2GW4DCF0KTRFBNHH), which governs over R-s's "not folded".
 - **D6 — The report (WP06; R-i, R-n; squad reducer 1, 2, 9).**
   - **One model.** The report file is the same tree as the stdout problem JSON (`PackDoctorReport`, today's
     `PackCheckReport` renamed). `Problems.Problem` is reused verbatim, with `tool`, `inputs` and `summary` added as

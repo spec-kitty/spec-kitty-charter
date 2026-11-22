@@ -96,9 +96,10 @@ registration keeps refusing it.
 2. **Given** a step enhancement whose target step does not exist, **When** `validate --full` runs, **Then** it
    reports the registration's `pack_reference_*` code.
 3. **Given** a substep delegation candidate that names a pack of the own closure that does not hold it, **When**
-   `validate --full` runs, **Then** it reports the registration's `pack_unreadable` with the violation
+   `validate --full` runs, **Then** it reports the registration's `validation_failed` with the violation
    `substep_delegation_unresolved` at the mission type file.
-4. **Given** a set with several such faults, **Then** every one is reported, not only the first.
+4. **Given** a set with several such faults, **Then** every fault of the first check that finds any is reported, not
+   only the first; a later check runs once the earlier ones pass, as a later phase of registration does.
 
 ### User Story 4 - The checker is pack-doctor, with a report file (Priority: P2)
 
@@ -123,13 +124,14 @@ release asset.
 
 A user runs `pack-doctor remediate <pack-dir>`. It derives and stamps `pack-manifest.yaml` the way every service
 write does, and rewrites each modelled file in the round trip's canonical form. A following `validate` then reports
-no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
+no `manifest_membership` and no `manifest_stale`. The round trip compares meaning, not form (ADR-0036), so the canonical
+form is shown by the bytes remediate writes, not by a finding.
 
 **Acceptance Scenarios**:
 
 1. **Given** a pack with a stale or incomplete manifest, **When** it is remediated, **Then** a following validation of
-   the pack (with `--round-trip`) is clean of manifest and form findings, and the pack's meaning is unchanged
-   (ADR-0036).
+   the pack (with `--round-trip`) is clean of manifest findings, each modelled file is in canonical form, and the pack's
+   meaning is unchanged (ADR-0036).
 2. **Given** a pack with a fault that remediate does not repair (a domain fault), **When** it is remediated, **Then**
    the command refuses with exit 1, names the fault, and writes nothing.
 3. **Given** a stray file the census does not hold, **Then** remediate leaves it untouched.
@@ -157,7 +159,8 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
   red, where the writer itself is wrong, still reports.
 - A `specializes_from` cycle is not judged by `--full` (R-s); registration still refuses it, and ADR-0083 records it
   as landing with #636.
-- `remediate` on a path that is not a pack directory exits 2, as an I/O or usage failure.
+- `remediate` on a path that is not a directory exits 2, as a usage failure. A directory with no `pack.yaml` is refused
+  (exit 1), as `validate` reports it.
 
 ## Requirements
 
