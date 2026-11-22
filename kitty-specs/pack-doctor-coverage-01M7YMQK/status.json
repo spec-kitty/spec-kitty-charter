@@ -231,6 +231,9 @@
       "last_event_id": "01M80BH0YSAGAB9NYZ5SA26BWE",
       "last_transition_at": "2026-11-22T00:47:02.105606+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: GraphRules.ANTI_PATTERN_WITHOUT_FILE (drg_schema_error at /nodes/<n>, after TENSION_CONSISTENCY); tests red first (GraphRulesTest 3 red; AntiPatternNodeCheckTest 2 red with the rule unwired; 2 scenario refusals red with the rule unwired; RejectsIsNotCascadedTest 2 red with REJECTS added to CASCADE_RELATIONS locally, reverted). Out-of-map edits: none. Cross-pack rejects pinned in the scenario with the org-pack compose steps (GET /offering), not PackSetCheck. Registration violations carry the document as pointer; pack-doctor carries /nodes/<n>. CompositionFactsTest/DomainRepositoryServiceTest made canonical (they were not red: compositionFacts runs no content rule). Gates green; MixedReadConcurrencyTest timed out once under load and passed on rerun."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 3369,
