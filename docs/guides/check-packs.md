@@ -1,6 +1,6 @@
 ---
 title: Check packs
-description: "Download and verify the pack-doctor jar, check a set of packs on your machine with no service, read its report and exit codes, and know what only the service checks."
+description: "Get the pack-doctor jar, check a set of packs with no service, repair a pack's manifest and form, read its report and exit codes, and know what only the service checks."
 doc_status: draft
 updated: 2026-11-22T00:00:00Z
 type: Guide
@@ -54,8 +54,10 @@ tag and the jar's SHA-256, as you pin any other tool.
 
 `pack-doctor` takes a command first:
 
-- **`validate`** checks a set of packs and writes the report. Everything below is about it.
-- **`remediate`** is not available yet: it exits `2` and says so.
+- **`validate`** checks a set of packs and writes the report. Everything below is about it, except
+  [Repair a pack](#repair-a-pack).
+- **`remediate`** repairs what can be repaired mechanically: a pack's manifest and the form of its files. See
+  [Repair a pack](#repair-a-pack).
 
 A command line with no command, such as the options alone, is a usage fault (`2`).
 
@@ -122,12 +124,38 @@ Give its dependencies too, or use a config root that holds them.
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, the report file cannot be written, `remediate` was asked for, which is not available yet, or `pack-doctor` has a defect (`pack-doctor: internal error:`). Nothing is on standard output; the cause is on standard error. |
+| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, the report file cannot be written, or `pack-doctor` has a defect (`pack-doctor: internal error:`). Nothing is on standard output; the cause is on standard error. |
 
 What a pack holds is never a failure (`2`). A pack it cannot read, a malformed `pack.yaml` field (a `pack_version`
 that is not a version, a `depends_on` range or `requires_core` that is not a range, a `pack_level` the schema does not
 know) or a file it refuses is a problem (`1`), at the file that holds it. An `internal error` is a defect of
 `pack-doctor` itself, whatever the packs hold; report it.
+
+## Repair a pack
+
+`remediate` takes one or more pack directories, each written as a `--pack` value is (`<dir>[:<level>][=<id>]`), and
+no option:
+
+```bash
+java -jar pack-doctor-<version>.jar remediate packs/built-in:built-in packs/org-base:org
+```
+
+For each pack, in the order given, it:
+
+1. refuses the pack when the pack has a fault it does not repair: any violation of the storage verdict except the
+   manifest's (`manifest_membership`, `manifest_stale`). It names the faults and writes nothing.
+2. rewrites each file the charter models in the round trip's canonical form. The meaning stays the same; comments,
+   quoting, key order and line folding may change.
+3. derives `pack-manifest.yaml` from the files and stamps its hashes, as every write of the service does. A pack with
+   no manifest gets one.
+
+Files the charter does not hold, such as your own notes, are left as they are. The pack is written in a copy beside
+it, which then takes its place, so a pack that fails midway is left as it was.
+
+It prints one line per pack, `<dir>: rewritten`, `<dir>: unchanged` or `<dir>: refused` followed by the faults, then
+checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no pack was
+refused and the check finds no problem, `1` when a pack was refused or the check finds a problem, and `2` on a usage
+fault or a failure. Give the packs a pack depends on too, as for `validate`.
 
 ## The report
 

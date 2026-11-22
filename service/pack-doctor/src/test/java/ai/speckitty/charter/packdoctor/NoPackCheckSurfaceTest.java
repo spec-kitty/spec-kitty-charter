@@ -27,7 +27,8 @@ import org.junit.jupiter.api.io.TempDir;
  * The checker is pack-doctor, outright and with no alias (FR-007, C-002, C-004; plan D2 and D11; occurrence map of
  * mission pack-doctor-coverage-01M7YMQK). No tracked file outside {@link #KEPT} names the old tool, its module, its
  * package or its classes, and the command line takes a command word: {@code validate} checks as the old tool did,
- * {@code remediate} is not available yet, and the old flat form, options with no command word, is a usage fault.
+ * {@code remediate} takes pack directories (FR-009, WP07), and the old flat form, options with no command word, is a
+ * usage fault.
  *
  * <p>The scan reads the tracked files ({@code git ls-files}) of the repository root the build hands over as
  * {@code charter.test.repo-root}; the build declares their candidate lines as an input, so a new mention reruns it. It
@@ -211,12 +212,14 @@ class NoPackCheckSurfaceTest {
         }
 
         @Test
-        void remediateIsNotAvailable() {
+        void remediateIsACommand() {
             Run run = run("remediate");
 
             assertThat(run.exit()).isEqualTo(2);
             assertThat(run.out()).isEmpty();
-            assertThat(run.err()).startsWith("pack-doctor: ").contains("not available");
+            assertThat(run.err())
+                    .startsWith("pack-doctor: nothing to remediate")
+                    .doesNotContain("not available");
         }
 
         @Test

@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 /**
  * The command line of pack-doctor (#478, FR-001, T014; FR-007 of mission pack-doctor-coverage-01M7YMQK): a command
  * word first, {@code validate} or {@code remediate}; {@code --help} alone asks for the usage. A command line with no
- * command word, the options alone, is a usage fault: the old flat form is no alias (C-002). {@code remediate} is not
- * available yet ({@link Remediate}).
+ * command word, the options alone, is a usage fault: the old flat form is no alias (C-002).
  *
  * <p>{@code validate} takes {@code --config-root <dir>}, or one or more {@code --pack <dir>[:<level>][=<id>]}, then
  * optionally {@code --round-trip}, and {@code --report <file>} with an optional {@code --format yaml|xml} (FR-008 of
@@ -50,9 +49,10 @@ final class Arguments {
     static final String USAGE = """
             usage: pack-doctor validate (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip]
                                         [--report <file> [--format yaml|xml]]
-                   pack-doctor remediate
+                   pack-doctor remediate <dir>[:<level>][=<id>] ...
               validate                 check a set of packs and write the report to standard output
-              remediate                not available yet
+              remediate                rewrite each pack in canonical form and restamp its manifest, print each
+                                       pack's outcome, then validate the set with --round-trip
               --config-root <dir>      check every pack under <dir>/packs/, each at the level its pack.yaml declares
                                        and under its directory's name
               --pack <dir>[:<level>][=<id>]
@@ -81,7 +81,7 @@ final class Arguments {
 
     private Arguments() {}
 
-    /** What a command line asks for: a check, the usage, the command that is not available yet, or nothing it can run. */
+    /** What a command line asks for: a check, the usage, a remediation, or nothing it can run. */
     sealed interface Outcome permits Parsed, Help, Remediate, UsageFault {}
 
     /**
@@ -132,8 +132,22 @@ final class Arguments {
     /** {@code --help}: print the usage, check nothing. */
     record Help() implements Outcome {}
 
-    /** {@code remediate}: not available yet, so it changes nothing and exits as a usage fault does. */
-    record Remediate() implements Outcome {}
+    /**
+     * {@code remediate} (FR-009 of mission pack-doctor-coverage-01M7YMQK, plan D7): the packs to remediate, each given
+     * as a {@code --pack} value is, and the check of the same set with the round trip that follows.
+     *
+     * @param validation the packs, as a {@code validate --round-trip} of them
+     */
+    record Remediate(Parsed validation) implements Outcome {
+        /**
+         * Checks the field.
+         *
+         * @param validation the check that follows
+         */
+        Remediate {
+            Objects.requireNonNull(validation, "validation");
+        }
+    }
 
     /**
      * A command line pack-doctor cannot run.
@@ -167,7 +181,7 @@ final class Arguments {
         String[] options = Arrays.copyOfRange(args, 1, args.length);
         return switch (args[0]) {
             case VALIDATE -> validate(options);
-            case REMEDIATE -> new Remediate();
+            case REMEDIATE -> remediate(options);
             default ->
                 args[0].startsWith("-")
                         ? new UsageFault("no command: give " + VALIDATE + " or " + REMEDIATE + " before the options")
@@ -194,6 +208,32 @@ final class Arguments {
             }
         }
         return collected.outcome();
+    }
+
+    /**
+     * Parses the arguments of {@code remediate}, the command word already taken: one or more pack directories, each read
+     * as a {@code --pack} value is, and no option.
+     *
+     * @param args the arguments after {@code remediate}
+     * @return the remediation, the usage, or the fault
+     */
+    static Outcome remediate(String[] args) {
+        if (args.length == 1 && HELP.equals(args[0])) {
+            return new Help();
+        }
+        if (args.length == 0) {
+            return new UsageFault("nothing to remediate: give one or more <dir>[:<level>][=<id>]");
+        }
+        Collected collected = new Collected();
+        for (String arg : args) {
+            if (arg.startsWith(END_OF_OPTIONS)) {
+                return new UsageFault("unknown option " + arg);
+            }
+            collected.packs.add(arg);
+        }
+        collected.roundTrip = true;
+        Outcome outcome = collected.outcome();
+        return outcome instanceof Parsed parsed ? new Remediate(parsed) : outcome;
     }
 
     /** What the options asked for so far. */
