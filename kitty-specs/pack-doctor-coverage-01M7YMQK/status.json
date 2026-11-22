@@ -1,7 +1,7 @@
 {
-  "event_count": 103,
-  "last_event_id": "01M81P5732FX3450HG6W4BEW4M",
-  "materialized_at": "2026-11-22T13:12:03.938433+00:00",
+  "event_count": 104,
+  "last_event_id": "01M81P5ZW0KEB68D2K3C7ZC2NB",
+  "materialized_at": "2026-11-22T13:12:29.312153+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -262,15 +262,15 @@
       }
     },
     "WP08": {
-      "actor": "user",
-      "agent": null,
-      "agent_profile": "architect-alphonso",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M81P5732FX3450HG6W4BEW4M",
-      "last_transition_at": "2026-11-22T13:12:03.938433+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M81P5ZW0KEB68D2K3C7ZC2NB",
+      "last_transition_at": "2026-11-22T13:12:29.312153+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: ADR-0083, amendments, docs, changelog; gates green",
@@ -285,9 +285,9 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 9508,
+      "shell_pid_created_at": "1795353143.34",
       "subtasks": {
         "T032": "done",
         "T033": "done",
