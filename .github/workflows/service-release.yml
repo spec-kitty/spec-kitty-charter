@@ -3,7 +3,7 @@ name: service-release
 # Publishes a service release (ADR-0046; issues #241, #71). Pushing a tag service-v<version> at a commit on main whose
 # gradle.properties `version` is <version> builds, checks and attaches the release's assets:
 #   spec-kitty-charter-service-<version>-{linux-x64,linux-arm64,macos-arm64}, -windows-x64.exe (GraalVM native
-#   executables), spec-kitty-charter-service-<version>.jar (the fallback, Java 25), pack-check-<version>.jar (the pack
+#   executables), spec-kitty-charter-service-<version>.jar (the fallback, Java 25), pack-doctor-<version>.jar (the pack
 #   checker of ADR-0075 decision 9, Java 25; ADR-0046 as amended 2026-11-19, #478), one <asset>.sha256 each and
 #   SHA256SUMS, with a build-provenance attestation of every asset: 13 files, 6 lines in SHA256SUMS.
 # Nothing is published unless:
@@ -11,7 +11,7 @@ name: service-release
 #   - the tagged commit is on main, and its build version is the tag's;
 #   - a final release's bundled contract is released (contract-charter-v<info.version> merged into the commit);
 #   - verifyAll, the jar and all four native executables built and passed their start-and-answer check, and the
-#     pack-check jar built and checked the example packs;
+#     pack-doctor jar built and checked the example packs;
 #   - the tag still names the built commit when publishing starts.
 # The gate is :checkServiceReleaseTag (ServiceReleaseGate in build-logic); the commit's place on main and the tag's
 # stability are checked here, where the remote is. Only the publish job can write, and it runs no build. A release is
@@ -116,7 +116,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   # The whole service build (verifyAll) and the jars: the service's jar, started and checked, is the `service-jar`
-  # artifact; the pack-check jar, run over the example packs, is the `pack-check-jar` artifact.
+  # artifact; the pack-doctor jar, run over the example packs, is the `pack-doctor-jar` artifact.
   jvm:
     needs: gate
     uses: ./.github/workflows/service.yml
@@ -153,11 +153,11 @@ jobs:
           name: service-jar
           path: build-outputs/service-jar
 
-      - name: Download the pack-check jar
+      - name: Download the pack-doctor jar
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: pack-check-jar
-          path: build-outputs/pack-check-jar
+          name: pack-doctor-jar
+          path: build-outputs/pack-doctor-jar
 
       - name: Assemble the release assets
         env:
@@ -241,9 +241,9 @@ jobs:
             echo "- The service: native executables for linux-x64, linux-arm64, macos-arm64 and windows-x64, not"
             echo "  code-signed. \`spec-kitty-charter-service-${VERSION}.jar\` is the service's fallback on any other host"
             echo "  with Java 25 (ADR-0046)."
-            echo "- \`pack-check-${VERSION}.jar\`: the pack checker, which checks a set of packs on your machine with no"
+            echo "- \`pack-doctor-${VERSION}.jar\`: the pack checker, which checks a set of packs on your machine with no"
             echo "  service (ADR-0075 decision 9). It is a jar only, with no native build: run it with Java 25,"
-            echo "  \`java -jar pack-check-${VERSION}.jar --help\`."
+            echo "  \`java -jar pack-doctor-${VERSION}.jar --help\`."
             echo
             echo "Check a download:"
             echo
@@ -251,7 +251,7 @@ jobs:
             echo "sha256sum --check --ignore-missing SHA256SUMS"
             echo "gh attestation verify <asset> --repo ${REPO} \\"
             echo "  --signer-workflow ${REPO}/.github/workflows/service-release.yml --source-ref refs/tags/${TAG}"
-            echo "gh attestation verify pack-check-${VERSION}.jar --repo ${REPO} \\"
+            echo "gh attestation verify pack-doctor-${VERSION}.jar --repo ${REPO} \\"
             echo "  --signer-workflow ${REPO}/.github/workflows/service-release.yml --source-ref refs/tags/${TAG}"
             echo '```'
           } > "$RUNNER_TEMP/notes.md"

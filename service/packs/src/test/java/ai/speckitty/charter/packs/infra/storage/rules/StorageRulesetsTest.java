@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -79,7 +80,8 @@ class StorageRulesetsTest {
     }
 
     private static Reason fault(ReasonCode code, String file) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), file + ": " + code.value());
+        return new Reason(
+                code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), file + ": " + code.value());
     }
 
     private static final ArtifactFacts A = new ArtifactFacts("tactics/a.tactic.yaml", "tactic", "same");
@@ -198,7 +200,7 @@ class StorageRulesetsTest {
         @DisplayName(
                 "membership compares the listed and the derived lists; no manifest, or none read, is no difference")
         void membershipComparesTheTwoLists() {
-            assertThat(StorageRulesets.manifestMembership(
+            assertThat(StorageRulesets.manifestGate(
                             read(contents(), census(List.of(), MISMATCHED, TreeCensus.ReservedShard.ABSENT))))
                     .extracting(Reason::code, Reason::location, Reason::detail)
                     .containsExactly(
@@ -209,7 +211,7 @@ class StorageRulesetsTest {
                     new TreeCensus.Manifest(true, true, Optional.of(LISTED), Optional.empty()),
                     new TreeCensus.Manifest(true, false, Optional.of(LISTED), Optional.of(HELD)),
                     new TreeCensus.Manifest(true, true, Optional.of(HELD), Optional.of(HELD)))) {
-                assertThat(StorageRulesets.manifestMembership(
+                assertThat(StorageRulesets.manifestGate(
                                 read(contents(), census(List.of(), none, TreeCensus.ReservedShard.ABSENT))))
                         .as("%s", none)
                         .isEmpty();
@@ -230,14 +232,14 @@ class StorageRulesetsTest {
                     List.of("tactic:a at tactics/a.tactic.yaml"),
                     List.of("p at presets/p.yaml", "r at presets/r.yaml"));
 
-            assertThat(ManifestRules.mismatch(twice, held))
+            assertThat(ManifestRules.mismatch(twice, held).reasons())
                     .containsExactly(
                             "lists constituent tactic:x at x, which the pack does not hold",
                             "lists preset q at presets/q.yaml, which the pack does not hold",
                             "lists constituent tactic:a at tactics/a.tactic.yaml twice",
                             "lists preset p at presets/p.yaml 3 times",
                             "leaves out preset r at presets/r.yaml, which the pack holds");
-            assertThat(ManifestRules.mismatch(held, held)).isEmpty();
+            assertThat(ManifestRules.mismatch(held, held).reasons()).isEmpty();
         }
     }
 
@@ -259,6 +261,7 @@ class StorageRulesetsTest {
             TreeCensus none = census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT);
             Reason stated = new Reason(
                     "pack_unreadable",
+                    Origin.NONE,
                     Evaluation.FAIL,
                     StorageCodes.PACK_UNREADABLE,
                     Location.in("pack"),
@@ -428,6 +431,7 @@ class StorageRulesetsTest {
             Reason graphA = fault(PackCodes.DRG_SCHEMA_ERROR, "a.graph.yaml");
             Reason graphA2 = new Reason(
                     PackCodes.DRG_SCHEMA_ERROR.value(),
+                    Origin.NONE,
                     Evaluation.FAIL,
                     PackCodes.DRG_SCHEMA_ERROR,
                     Location.in("a.graph.yaml").at("/edges/0"),

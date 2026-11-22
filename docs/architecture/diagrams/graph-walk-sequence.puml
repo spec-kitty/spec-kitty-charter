@@ -56,7 +56,7 @@ Client -> API : GET /pack-registrations/{id}
 API --> Client : PackRegistrationStatus: succeeded, or refused\nwith the problem (code, every violation)
 
 note over Client, Refusals
-  pack-check takes the same path: PackCheck asks PackRulesets for the rules and a determined selection,
+  pack-doctor takes the same path: PackCheck asks PackRulesets for the rules and a determined selection,
   walks with the same ValidationWalker, and PackVerdicts maps the Rationale to the report and the exit code.
 end note
 @enduml
