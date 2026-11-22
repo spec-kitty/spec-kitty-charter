@@ -642,7 +642,7 @@ class ClosureViewSessionStepRefsTest {
             facts.put(
                     name,
                     new PackCompositionFacts(
-                            List.of(), held, List.of(), policy, List.of(), Arrays.asList(edges), languages));
+                            List.of(), held, List.of(), List.of(), policy, List.of(), Arrays.asList(edges), languages));
             policies.put(new PackUlid(id), policy);
             return this;
         }

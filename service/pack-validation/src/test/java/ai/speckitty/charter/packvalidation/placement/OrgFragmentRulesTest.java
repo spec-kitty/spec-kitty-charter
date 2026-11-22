@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ class OrgFragmentRulesTest {
 
     private static final Reason MISSING = new Reason(
             "org_fragment_missing",
+            Origin.NONE,
             Evaluation.FAIL,
             PlacementCodes.ORG_FRAGMENT_MISSING,
             Location.in("pack.yaml"),

@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -103,7 +104,13 @@ class PackCheckTest {
     }
 
     private static Reason failing(ReasonCode code, String file, String pointer, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file).at(pointer), detail);
+        return new Reason(
+                code.value(),
+                Origin.NONE,
+                Evaluation.FAIL,
+                code,
+                Location.in(file).at(pointer),
+                detail);
     }
 
     @Test
@@ -258,7 +265,7 @@ class PackCheckTest {
 
     /**
      * Validate mode over the project example pack in a directory named {@code name}, read under a root of that name, as
-     * pack-check's directory-name default builds it.
+     * pack-doctor's directory-name default builds it.
      */
     private static List<Reason> violationsNamed(Path dir, String name) throws IOException {
         Path pack = projectCopiedTo(dir, name);

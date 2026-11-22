@@ -168,7 +168,7 @@ public final class PackUninstallService {
             Optional<PackDescriptor> descriptor,
             PackIdentifier name) {
         return PackRefusals.noticesOrRefuse(
-                impact.judge(session, new ImpactCheck.Removal(configured, descriptor, heldBy(name))));
+                impact.judge(session, new ImpactCheck.Removal(configured, descriptor, referableBy(name))));
     }
 
     /**
@@ -206,18 +206,18 @@ public final class PackUninstallService {
      * Every artifact and term the pack holds, as URNs: what another pack's artifact may refer to. A pack that cannot be
      * loaded whole is read for what can still be read of it, as a replace reads it.
      */
-    private Set<Urn> heldBy(PackIdentifier name) {
+    private Set<Urn> referableBy(PackIdentifier name) {
         Path directory = packs.liveDirectory(name);
         Set<Urn> held = new LinkedHashSet<>();
         try {
             WholePackWriteStore.Contents contents = loader.loadStored(name, directory);
             PackCompositionFacts facts = contents.facts();
-            facts.defined().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
+            facts.referable().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
             facts.terms().forEach(term -> Urn.parse(term).ifPresent(held::add));
             held.addAll(contents.digests().keySet());
         } catch (CharterRefusal unreadable) {
             WholePackWriteStore.Remains remains = loader.salvageStored(name, directory);
-            remains.defined().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
+            remains.held().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
             held.addAll(remains.digests().keySet());
         }
         return Set.copyOf(held);

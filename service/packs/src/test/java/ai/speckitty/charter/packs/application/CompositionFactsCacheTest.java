@@ -60,7 +60,7 @@ class CompositionFactsCacheTest {
     }
 
     private static PackCompositionFacts factsOf(String text) {
-        return new PackCompositionFacts(List.of(), List.of("directive:" + text), List.of());
+        return new PackCompositionFacts(List.of(), List.of("directive:" + text), List.of(), List.of());
     }
 
     private CompositionFactsCache cache(int capacity) {
@@ -291,6 +291,7 @@ class CompositionFactsCacheTest {
                 List.of(),
                 List.of("mission_type:software-dev"),
                 List.of(),
+                List.of(),
                 MutabilityPolicySource.empty(),
                 List.of(),
                 List.of(),
@@ -398,13 +399,13 @@ class CompositionFactsCacheTest {
             } catch (IOException failure) {
                 throw new UncheckedIOException(failure);
             }
-            return new PackCompositionFacts(List.of(), List.copyOf(seen), List.of());
+            return new PackCompositionFacts(List.of(), List.copyOf(seen), List.of(), List.of());
         };
         cache.facts(ALPHA, readFiles);
 
         Files.move(before, pack.resolve("B.directive.yaml"));
 
-        assertThat(cache.facts(ALPHA, readFiles).defined())
+        assertThat(cache.facts(ALPHA, readFiles).held())
                 .as("the same bytes under another path are another pack: no write bracketed it, so the key must see it")
                 .containsExactly("directive:B.directive.yaml");
         assertThat(loads).hasValue(2);

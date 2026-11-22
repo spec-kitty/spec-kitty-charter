@@ -24,7 +24,7 @@ import java.util.Optional;
  * composition and, when those pass, the manifest gate. So validate mode finds every fault a registration finds, in the
  * same code and words, and more: placement (the configured level and the org fragment) is this edge's own extension,
  * and is checked after the gate, so it never gates it. It names the packs domain and the kernel only (C-003): a
- * composition root supplies the reading, the tests now and pack-check's main later (#478). A {@link PackRoot} with no
+ * composition root supplies the reading, the tests now and pack-doctor's main later (#478). A {@link PackRoot} with no
  * configured level judges a bare path, as core's {@code validate_pack(path)} does.
  *
  * <p>The pack is assembled under one registered id (#583, D2b): the id its caller names, or, when the caller names none,

@@ -578,20 +578,22 @@ public final class PackRegistrationService {
     // ---- steps 7 and 8: the diff, the mutability check and the inbound scan ----------------------------------------
 
     /**
-     * What the stored pack held, to diff the upload against: the artifacts it defined, the digest of each, the edges it
+     * What the stored pack held, to diff the upload against: what a reference could name in it, the digest of each, the edges it
      * wrote and the terms its glossary contexts held. A stored pack that cannot be read whole is diffed by what can
      * still be read of it ({@link WholePackWriteStore.Loader#salvageStored}): the mutability check and the inbound scan
      * never switch off for a pack that is unreadable, and a pack whose artifacts cannot be told at all is refused. Its terms cannot
      * be told, so none are held: a term it drops is found with its context, when the upload drops the context.
      *
-     * @param defined the artifacts held, as bare URNs
+     * @param referable what a reference can name in it, as bare URNs
+     *     ({@link ai.speckitty.charter.packs.domain.PackCompositionFacts#referable}); for a salvaged pack, the artifacts
+     *     its files hold
      * @param digests the digest of each file-backed artifact
      * @param edges the typed edges written, by their key
      * @param loose the stored graph entries that cannot be typed, by their pair
      * @param terms the terms held, as bare URNs
      */
     private record Before(
-            Set<String> defined,
+            Set<String> referable,
             Map<Urn, String> digests,
             Map<String, Relationship> edges,
             Map<String, Urn> loose,
@@ -601,7 +603,7 @@ public final class PackRegistrationService {
 
         static Before of(WholePackWriteStore.Contents contents) {
             return new Before(
-                    heldBy(contents),
+                    referableBy(contents),
                     contents.digests(),
                     edgesOf(contents),
                     Map.of(),
@@ -610,7 +612,7 @@ public final class PackRegistrationService {
 
         static Before of(WholePackWriteStore.Remains remains) {
             return new Before(
-                    remains.defined(), remains.digests(), keyed(remains.edges()), remains.looseEdges(), Set.of());
+                    remains.held(), remains.digests(), keyed(remains.edges()), remains.looseEdges(), Set.of());
         }
     }
 
@@ -635,10 +637,10 @@ public final class PackRegistrationService {
                 edge.toReference().toString());
     }
 
-    private static Set<String> heldBy(WholePackWriteStore.Contents contents) {
-        Set<String> held = new TreeSet<>(contents.facts().defined());
-        contents.digests().keySet().forEach(urn -> held.add(urn.toString()));
-        return held;
+    private static Set<String> referableBy(WholePackWriteStore.Contents contents) {
+        Set<String> referable = new TreeSet<>(contents.facts().referable());
+        contents.digests().keySet().forEach(urn -> referable.add(urn.toString()));
+        return referable;
     }
 
     private static Map<String, Relationship> edgesOf(WholePackWriteStore.Contents contents) {
@@ -648,19 +650,19 @@ public final class PackRegistrationService {
     /** The writes of the diff: what the upload adds, changes and removes, and each edge it adds or drops. */
     private static List<MutabilityCheck.Write> writesOf(WholePackWriteStore.Contents upload, Before before) {
         Set<MutabilityCheck.Write> writes = new LinkedHashSet<>();
-        Set<String> now = heldBy(upload);
+        Set<String> now = referableBy(upload);
         for (String urn : now) {
-            if (!before.defined().contains(urn)) {
+            if (!before.referable().contains(urn)) {
                 write(writes, MutabilityCheck.Operation.REGISTER, urn);
             }
         }
-        for (String urn : before.defined()) {
+        for (String urn : before.referable()) {
             if (!now.contains(urn)) {
                 write(writes, MutabilityCheck.Operation.REMOVE, urn);
             }
         }
         upload.digests().forEach((urn, digest) -> {
-            if (before.defined().contains(urn.toString())
+            if (before.referable().contains(urn.toString())
                     && !digest.equals(before.digests().get(urn))) {
                 writes.add(new MutabilityCheck.Write(MutabilityCheck.Operation.REPLACE, urn));
             }
@@ -746,9 +748,9 @@ public final class PackRegistrationService {
         if (stored.isEmpty()) {
             return;
         }
-        Set<String> now = heldBy(upload.contents());
+        Set<String> now = referableBy(upload.contents());
         Set<Urn> removed = new LinkedHashSet<>();
-        before.defined().stream()
+        before.referable().stream()
                 .filter(urn -> !now.contains(urn))
                 .forEach(urn -> Urn.parse(urn).ifPresent(removed::add));
         // A term the upload drops from a context it keeps: a context it drops takes its terms with it already.
