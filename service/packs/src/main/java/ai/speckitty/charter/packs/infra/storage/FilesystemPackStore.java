@@ -1622,10 +1622,18 @@ final class FilesystemPackStore {
         return new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding));
     }
 
-    /** A finding's detail without the file it opens with, as a violation's reason: the file is the violation's own. */
+    /**
+     * A finding's detail without the file it opens with, as a violation's reason: the file is the violation's own. A
+     * reason that names the file again keeps the prefix, since {@link PackCodes#detail} would not give it back.
+     */
     private static String reasonOf(Reason finding) {
-        String prefix = finding.location().file() + ": ";
-        return finding.detail().startsWith(prefix) ? finding.detail().substring(prefix.length()) : finding.detail();
+        String file = finding.location().file();
+        String prefix = file + ": ";
+        if (!finding.detail().startsWith(prefix)) {
+            return finding.detail();
+        }
+        String reason = finding.detail().substring(prefix.length());
+        return PackCodes.detail(file, reason).equals(finding.detail()) ? reason : finding.detail();
     }
 
     /** The refusal of a pack whose {@code pack.yaml} is missing or is no readable descriptor, in validate mode's words. */

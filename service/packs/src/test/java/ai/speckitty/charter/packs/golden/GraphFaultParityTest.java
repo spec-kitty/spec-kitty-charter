@@ -28,8 +28,8 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * The composing read and a registration list the same violations for a pack whose graph documents cannot be read
  * (#617): pointer, code and detail, in registration's order. The golden subjects plant one broken document each, with
- * a schema fault; this pack breaks three documents, one that is not YAML and one with several malformed qualifiers, and
- * puts them where the read order and registration's path order differ (a root shard is read before the fragment;
+ * a schema fault; this pack breaks six documents, one that is not YAML, one with several malformed qualifiers and two
+ * with an edge that joins an artifact to itself (bare, and through the pack's own name) and one whose reason names its own file, and puts them where the read order and registration's path order differ (a root shard is read before the fragment;
  * {@code drg/} sorts first).
  */
 @DisplayName("a composing read lists a registration's violations for unreadable graph documents (#617)")
@@ -38,9 +38,9 @@ class GraphFaultParityTest {
     private static final String PACK = ExamplePacks.BUILT_IN;
 
     @Test
-    @DisplayName(
-            "a shard that is not YAML, a shard with malformed qualifiers and a fragment with an unknown relation: the same"
-                    + " violations, in path order")
+    @DisplayName("a shard that is not YAML, a shard with malformed qualifiers, two that join an artifact"
+            + " to itself, one whose fault names its own file and a fragment with an unknown relation: the same"
+            + " violations, in path order")
     void brokenDocumentsAreListedAsARegistrationListsThem(@TempDir Path host) throws IOException {
         Path composed = broken(Files.createDirectories(host.resolve("compose")));
         Path registered = broken(Files.createDirectories(host.resolve("register")));
@@ -68,7 +68,10 @@ class GraphFaultParityTest {
                 .extracting(RefusalViolation::pointer)
                 .containsExactly(
                         "drg/fragment.yaml",
+                        "zz-bare-self.graph.yaml",
                         "zz-broken.graph.yaml",
+                        "zz-named.graph.yaml",
+                        "zz-own-self.graph.yaml",
                         "zz-qualifiers.graph.yaml",
                         "zz-qualifiers.graph.yaml");
         assertThat(compose.violations()).isEqualTo(atGraphs);
@@ -101,6 +104,28 @@ class GraphFaultParityTest {
                 - {source: '%1$s::directive:A', target: '%1$s::directive:B', relation: requires}
                 - {source: 'directive:A', target: '%1$sq::directive:B', relation: requires}
                 """.formatted(over), StandardCharsets.UTF_8);
+        Files.writeString(pack.resolve("zz-named.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: 'directive:A', target: 'directive:B', relation: zz-named.graph.yaml}
+                """, StandardCharsets.UTF_8);
+        String self = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: '%1$s', target: '%1$s', relation: requires}
+                """;
+        Files.writeString(
+                pack.resolve("zz-bare-self.graph.yaml"),
+                self.formatted("tactic:acceptance-test-first"),
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                pack.resolve("zz-own-self.graph.yaml"),
+                self.formatted(PACK + "::tactic:tdd-red-green-refactor"),
+                StandardCharsets.UTF_8);
         Files.createDirectories(pack.resolve("drg"));
         Files.writeString(pack.resolve("drg/fragment.yaml"), """
                 nodes: []

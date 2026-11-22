@@ -185,7 +185,8 @@ public record PackContents(
          * @param policyText the named policy file's text, when it is valid
          * @param policyFault why the named policy file cannot be read, when it cannot
          * @param facts the composition facts, when every graph document was read and they could be built
-         * @param factsRefusal why the composition facts could not be built, when they could not
+         * @param selfJoins the edges of the graph documents that join an artifact to itself: while there are any, the
+         *     composition facts are not built
          * @param references what the reference closure judges of the read (#355): the candidates the load meets before
          *     it leaves any out, from the same read the aggregate is built from
          */
@@ -204,7 +205,7 @@ public record PackContents(
                 Optional<String> policyText,
                 Optional<String> policyFault,
                 Optional<PackCompositionFacts> facts,
-                Optional<String> factsRefusal,
+                List<PackElementViolation> selfJoins,
                 ReferenceFacts references)
                 implements Assembly {
             /**
@@ -224,7 +225,7 @@ public record PackContents(
              * @param policyText the policy text
              * @param policyFault the policy fault
              * @param facts the composition facts
-             * @param factsRefusal why the facts could not be built
+             * @param selfJoins the edges that join an artifact to itself
              * @param references what the reference closure judges
              */
             public Assembled {
@@ -244,7 +245,7 @@ public record PackContents(
                 Objects.requireNonNull(policyText, "policyText");
                 Objects.requireNonNull(policyFault, "policyFault");
                 Objects.requireNonNull(facts, "facts");
-                Objects.requireNonNull(factsRefusal, "factsRefusal");
+                selfJoins = List.copyOf(selfJoins);
                 Objects.requireNonNull(references, "references");
             }
         }

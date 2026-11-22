@@ -280,8 +280,8 @@ byte-equal.
     each of them in the same words (`FileSystemPackInspector.misplacedPresetEntries` for the last), so
     `AssemblyRules.sameFault` removes the duplicate; probes over eight manifest and policy fixtures showed no
     difference.
-  - *Uncovered.* `StoreRead.of`'s aggregate breach and `CompositionFactsBuilder.heldFacts`' missing facts are
-    fail-safes no read reaches (row 26); `WholePackCensus.contentFormOf` is exercised only by `:pack-validation`'s
+  - *Uncovered.* `StoreRead.of`'s aggregate breach is a fail-safe no read reaches (row 26), and so were
+    `CompositionFactsBuilder.heldFacts`' missing facts until #617, whose self-joining edges reach them; `WholePackCensus.contentFormOf` is exercised only by `:pack-validation`'s
     round trip (`RoundTripControls`), outside `:packs`' PIT scope.
   - #556's code (the reference checks of the closure walk) was not touched.
 - **The carried items.** WP04's companion cases (a Markdown refusal is one `companion` fault at the companion; a
@@ -392,7 +392,8 @@ answers from, unchanged (S7). The compose read runs `StoreRead` only, with no S4
   (`artifact_schema_error`, row 17), a guard reference that does not close, at the lifecycle that names it, and a
   template a mission type names and the pack lacks, in the reader's words (`names templates/x.md (named by the type):
   missing`, row 18), and an edge that joins an artifact to itself through the pack's own name (`unreadable` at `pack`,
-  as the registration answered it; `GraphBinding` judges the bare self-loop only). Validate mode gains each of them.
+  as the registration answered it, and since #617 `drg_schema_error` at its graph document, as its bare form is;
+  `GraphBinding` judges the bare self-loop only). Validate mode gains each of them.
 - **Cascades the store half does not reach (review cycle 2; corrected in WP13).** The store half stops a mission type
   at the first fault it meets, so a second fault of the same type is met by neither half. A named output template the
   pack lacks refuses the type at the store's read, before its entity is built, so an artifact key standing twice in it

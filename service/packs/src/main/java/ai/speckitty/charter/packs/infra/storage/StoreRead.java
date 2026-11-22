@@ -187,8 +187,15 @@ record StoreRead(
         } catch (ConstraintBreachException breach) {
             return breached(graphs.violations(), String.valueOf(breach.getMessage()));
         }
-        List<String> factsRefusal = new ArrayList<>();
-        Optional<PackCompositionFacts> facts = facts(id, pack, read, graphs, policy, factsRefusal);
+        List<PackElementViolation> selfJoins =
+                CompositionFactsBuilder.selfJoins(pack.descriptor().name(), graphs.documents());
+        Optional<PackCompositionFacts> facts = graphs.violations().isEmpty() && selfJoins.isEmpty()
+                ? Optional.of(CompositionFactsBuilder.build(
+                        pack,
+                        read,
+                        graphs.documents(),
+                        policy.map(PolicyYaml.Named::source).orElse(MutabilityPolicySource.empty())))
+                : Optional.empty();
         Assembly.Assembled assembled = new Assembly.Assembled(
                 id,
                 pack.descriptor(),
@@ -204,7 +211,7 @@ record StoreRead(
                 policy.map(PolicyYaml.Named::text),
                 policyFault.stream().findFirst(),
                 facts,
-                factsRefusal.stream().findFirst(),
+                selfJoins,
                 references.stream().findFirst().orElse(ReferenceFacts.NONE));
         return new StoreRead(assembled, new PackLayout(places), graphs.documents(), manifest, graphs.violations());
     }
@@ -290,33 +297,6 @@ record StoreRead(
             // placed at pack.yaml with no second read of the file (#554, WP04 review MINOR-4).
             refusal.add(refused(refused.code(), String.valueOf(refused.getMessage()), true, graphs.violations()));
             return null;
-        }
-    }
-
-    /**
-     * The composition facts of the assembled pack, when every graph document was read; a refusal of the builder (an edge
-     * that joins an artifact to itself) goes to {@code refusal}.
-     */
-    private static Optional<PackCompositionFacts> facts(
-            PackIdentifier id,
-            Pack pack,
-            FilesystemPackStore.PackRead read,
-            FilesystemPackStore.GraphRead graphs,
-            Optional<PolicyYaml.Named> policy,
-            List<String> refusal) {
-        if (!graphs.violations().isEmpty()) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(CompositionFactsBuilder.build(
-                    id,
-                    pack,
-                    read,
-                    graphs.documents(),
-                    policy.map(PolicyYaml.Named::source).orElse(MutabilityPolicySource.empty())));
-        } catch (CharterRefusal refused) {
-            refusal.add(String.valueOf(refused.getMessage()));
-            return Optional.empty();
         }
     }
 

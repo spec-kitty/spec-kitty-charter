@@ -147,7 +147,7 @@ class OneReadTest {
                 .build();
         long before = FilesystemPackStore.reads();
 
-        CompositionFactsBuilder.build(key, assembled, read, graphs.documents(), MutabilityPolicySource.empty());
+        CompositionFactsBuilder.build(assembled, read, graphs.documents(), MutabilityPolicySource.empty());
 
         assertThat(FilesystemPackStore.reads() - before).isZero();
     }

@@ -116,10 +116,9 @@ public final class AssemblyRules {
      * row 19, as validate mode places it); a prompt fragment's stays at the step enhancement that names it, as the
      * contract places it, and the verdict then states nothing else at the fragment ({@link #unreadFragments}).
      *
-     * <p>An edge that joins an artifact to itself through the pack's own name stops the store's composition facts, which
-     * the read does not see: it is stated at {@value #PACK} as {@link StorageCodes#UNREADABLE}, as the registration
-     * answered it, and only when nothing else is stated, since the facts are built only for a pack the store reads
-     * whole (WP12 review MINOR-4).
+     * <p>An edge that joins an artifact to itself stops the store's composition facts. The read states its bare form, and
+     * a tension's; the one written through the pack's own name, which the read does not see, is stated here at its graph
+     * document, as the bare form is (#617).
      *
      * @param read the one read
      * @param stated the violations the read faults and the registration's composition already state
@@ -141,8 +140,10 @@ public final class AssemblyRules {
                                 : fault(violation.kind(), violation.file(), violation.reason()));
             }
         }
-        if (stated.isEmpty() && out.isEmpty()) {
-            held.factsRefusal().ifPresent(refusal -> out.add(fault(StorageCodes.UNREADABLE, PACK, refusal)));
+        for (PackElementViolation selfJoin : held.selfJoins()) {
+            if (stated.stream().noneMatch(reason -> sameFault(selfJoin, reason))) {
+                out.add(fault(selfJoin.kind(), selfJoin.file(), selfJoin.reason()));
+            }
         }
         return out;
     }

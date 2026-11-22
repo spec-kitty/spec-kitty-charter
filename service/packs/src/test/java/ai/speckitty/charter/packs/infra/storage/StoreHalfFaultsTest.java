@@ -184,7 +184,8 @@ class StoreHalfFaultsTest {
     }
 
     @Test
-    @DisplayName("an edge that joins an artifact to itself through the pack's own name is unreadable at pack")
+    @DisplayName(
+            "an edge that joins an artifact to itself through the pack's own name is stated at its document, as its bare form is (#617)")
     void aQualifiedSelfLoopIsStated(@TempDir Path host) throws IOException {
         Path pack = builtIn(host);
         write(pack, "self.graph.yaml", """
@@ -204,10 +205,9 @@ class StoreHalfFaultsTest {
                         reason -> reason.location().file(),
                         Reason::detail)
                 .containsExactly(tuple(
-                        "unreadable",
-                        "pack",
-                        "the file self.graph.yaml of built-in cannot be read: an edge joins"
-                                + " 'built-in::tactic:acceptance-test-first' to itself"));
+                        "drg_schema_error",
+                        "self.graph.yaml",
+                        "a relationship cannot join 'tactic:acceptance-test-first' to itself"));
     }
 
     @Test
