@@ -199,7 +199,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -209,7 +209,8 @@
       "last_transition_at": "2026-11-22T08:52:27.479449+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: one report tree (stdout JSON gains tool/inputs/summary; existing keys byte-identical), --report YAML (SnakeYAML Engine, no new lib) / XML (JDK, own mapping + tested reader), PackDoctorReport the only schema (REFERENCES admitted), contract test asserts the three trees equal. Gates green: pack-doctor 360+4+15, contracts 314, deployable 2400. Note: stdout gains keys per the task file, which conflicts with the 'stdout byte-identical' instruction; see report."
+        "Ready for review: one report tree (stdout JSON gains tool/inputs/summary; existing keys byte-identical), --report YAML (SnakeYAML Engine, no new lib) / XML (JDK, own mapping + tested reader), PackDoctorReport the only schema (REFERENCES admitted), contract test asserts the three trees equal. Gates green: pack-doctor 360+4+15, contracts 314, deployable 2400. Note: stdout gains keys per the task file, which conflicts with the 'stdout byte-identical' instruction; see report.",
+        "Review passed: one report tree (stdout gains tool/inputs/summary, existing keys byte-identical; --report adds nothing to stdout), closed schema, XML own mapping with safe exact-inverse parser, no new deps. Fresh: pack-doctor 360/15, contracts 314, deployable 2400, docs ok. Integration: ReportWriter.java:768 full from parsed.full() + test; Arguments/schema merge per forecast. LOWs folded"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
