@@ -239,6 +239,9 @@
       "last_event_id": "01M81BZWBW6HZEH4PQAG1TH97H",
       "last_transition_at": "2026-11-22T10:14:23.356884+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: PackRemediation facade (packs.infra.storage) with staged copy and two-rename swap; StorageRulesets.verdictWithoutTheManifestGate is the one precondition; pack-doctor remediate <dir>[:<level>][=<id>]... prints rewritten/unchanged/refused, then validate --round-trip over the set (exit 0/1/2); HexagonalArchitectureTest names the remediation as the main's third adapter and walks it framework-free. Gates green except PackSetCheckTest Closure 'a must_have no pack of the own closure holds', which fails identically on the lane base 148805047 (WP03 test edits spdd.yaml, WP04 manifest_stale flags it) - not WP07."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 22717,
