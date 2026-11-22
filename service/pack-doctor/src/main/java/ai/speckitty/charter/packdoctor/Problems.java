@@ -63,6 +63,9 @@ final class Problems {
 
     private Problems() {}
 
+    /** One problem before it is rendered: the refusal, with all its violations, and its instance, if any. */
+    private record Refused(CharterRefusal refusal, Optional<String> instance) {}
+
     /**
      * One problem, as the contract's {@code Problem} schema holds it.
      *
@@ -112,14 +115,33 @@ final class Problems {
      * @throws IllegalStateException for a code the status table does not hold
      */
     static List<Problem> of(PackSetVerdict verdict) {
-        List<Problem> problems = new ArrayList<>();
+        return refusals(verdict).stream().map(Problems::ofCharterRefusal).toList();
+    }
+
+    /**
+     * How many violations the problems of a verdict state, the report's {@code summary.violations} (FR-008): each
+     * problem counts its violations, those its detail says are not listed included, or one when it lists none. Zero
+     * exactly when {@link #of} is empty.
+     *
+     * @param verdict the pack-set verdict
+     * @return the count
+     */
+    static int violations(PackSetVerdict verdict) {
+        return refusals(verdict).stream()
+                .mapToInt(refused -> Math.max(1, refused.refusal().violations().size()))
+                .sum();
+    }
+
+    /** The refusals of a verdict, in the data model's order, before they are rendered. */
+    private static List<Refused> refusals(PackSetVerdict verdict) {
+        List<Refused> refusals = new ArrayList<>();
         for (PackResult pack : verdict.packs()) {
-            problems.addAll(ofPack(pack));
+            refusals.addAll(ofPack(pack));
         }
         for (ClosureFault fault : verdict.faults()) {
-            problems.add(ofFault(fault));
+            refusals.add(ofFault(fault));
         }
-        return List.copyOf(problems);
+        return refusals;
     }
 
     /**
@@ -127,9 +149,9 @@ final class Problems {
      * {@code pack-validation} leaves unreported (D3, {@link PackResult#unreportedRefusal}, never beside a violation),
      * then its round trip's violations.
      */
-    private static List<Problem> ofPack(PackResult pack) {
+    private static List<Refused> ofPack(PackResult pack) {
         String instance = instanceOf(pack.entry().root().locator());
-        List<Problem> problems = new ArrayList<>();
+        List<Refused> problems = new ArrayList<>();
         Rationale found = new Rationale(Stream.concat(pack.verdict().findings().stream(), pack.setCheck().stream())
                 .toList());
         violationsOf(found, instance).ifPresent(problems::add);
@@ -146,12 +168,12 @@ final class Problems {
      * ({@link #roundTripDetail}), and the violations are the registration's mapping
      * ({@link PackRefusalMapping#violations}), so each reads in the one wording.
      */
-    private static Optional<Problem> roundTripOf(Rationale reasons, String instance) {
+    private static Optional<Refused> roundTripOf(Rationale reasons, String instance) {
         List<RefusalViolation> violations = PackRefusalMapping.violations(reasons);
         if (violations.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(ofCharterRefusal(
+        return Optional.of(new Refused(
                 CharterRefusal.withViolations(RefusalCode.VALIDATION_FAILED, roundTripDetail(violations), violations),
                 Optional.of(instance)));
     }
@@ -182,35 +204,36 @@ final class Problems {
     }
 
     /** The {@code validation_failed} problem of a pack's violations, in the registration's words; empty for none. */
-    private static Optional<Problem> violationsOf(Rationale reasons, String instance) {
+    private static Optional<Refused> violationsOf(Rationale reasons, String instance) {
         if (reasons.violations().isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(ofCharterRefusal(PackRefusalMapping.of(reasons), Optional.of(instance)));
+        return Optional.of(new Refused(PackRefusalMapping.of(reasons), Optional.of(instance)));
     }
 
     /** The problem of a pack whose composition facts cannot be read and whose verdict reports no violation. */
-    private static Problem ofRefusal(PackReadout.Unreadable refusal, String instance) {
-        return ofCharterRefusal(new CharterRefusal(refusal.code(), refusal.detail()), Optional.of(instance));
+    private static Refused ofRefusal(PackReadout.Unreadable refusal, String instance) {
+        return new Refused(new CharterRefusal(refusal.code(), refusal.detail()), Optional.of(instance));
     }
 
     /**
      * A composition fault's problem: its code, its detail, the packs it names and its own violations (a preset item's
      * place in its preset file), as the registration refuses the fault alone.
      */
-    private static Problem ofFault(ClosureFault fault) {
-        return ofCharterRefusal(
+    private static Refused ofFault(ClosureFault fault) {
+        return new Refused(
                 CharterRefusal.of(fault.code(), fault.detail(), fault.packs(), fault.violations(), fault.requiredBy()),
                 Optional.empty());
     }
 
     /** A refusal rendered as the registration renders it. */
-    private static Problem ofCharterRefusal(CharterRefusal refusal, Optional<String> instance) {
+    private static Problem ofCharterRefusal(Refused refused) {
+        CharterRefusal refusal = refused.refusal();
         return new Problem(
                 title(refusal.code()),
                 statusOf(refusal.code()),
                 refusal.getMessage() + leftOut(refusal.violations().size()),
-                instance,
+                refused.instance(),
                 refusal.code().token(),
                 refusal.violations().stream().limit(MAX_VIOLATIONS).toList(),
                 refusal.packs().stream().limit(MAX_PACKS).toList());

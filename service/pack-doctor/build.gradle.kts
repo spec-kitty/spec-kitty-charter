@@ -4,7 +4,7 @@
 // into pack-validation's pack-set check, so it names :packs too. The jar that ships on the service-v* release, its
 // licences and its jar test come from the build-logic convention charter.pack-doctor-jar (#478, WP06), not from here.
 //
-// It may depend on pack-validation, :packs and a JSON writer only, pinned below. HexagonalArchitectureTest's
+// It may depend on pack-validation, :packs, a JSON writer and a YAML emitter only, pinned below. HexagonalArchitectureTest's
 // PACK_VALIDATION_IS_FRAMEWORK_FREE pins the classes it uses: no Spring, HTTP, commit store or lock, and only
 // PackDoctorMain may name the two adapters.
 plugins {
@@ -21,6 +21,10 @@ ModuleDependencyAllowlist(
     modules = setOf(
         // The JSON writer of the report.
         "tools.jackson.core:jackson-databind",
+        // The YAML writer of --report (FR-008 of mission pack-doctor-coverage-01M7YMQK, plan D6/D9): the engine :packs
+        // and :pack-validation already bring, so the jar holds no new library and no new verification metadata. The XML
+        // writer is the JDK's.
+        "org.snakeyaml:snakeyaml-engine",
     ),
 ).enforceOn(project)
 
@@ -30,6 +34,8 @@ dependencies {
     implementation(project(":packs"))
     // Its version comes from the BOM pack-validation exports, as :packs' does.
     implementation(catalog.lib("jackson-databind"))
+    // The --report YAML writer: the version :packs resolves (the catalog's), already in the jar and its licences.
+    implementation(catalog.lib("snakeyaml-engine"))
 
     // The charter-owned example packs (ADR-0070) and the planted packs the CLI's tests run over.
     testImplementation(testFixtures(project(":packs")))
@@ -46,6 +52,16 @@ mutationFloors {
     }
 }
 
+// The report's tool.version (FR-008, plan D6): the build's version, as a resource of the main classes, so a run outside
+// the jar (the tests, deployable's contract test) names it as the jar does.
+val versionResourceDirectory = layout.buildDirectory.dir("generated/pack-doctor-version")
+val packDoctorVersion = tasks.register<WriteProperties>("packDoctorVersion") {
+    description = "Writes the version pack-doctor's report names as its tool.version (FR-008)."
+    destinationFile = versionResourceDirectory.map { it.file("ai/speckitty/charter/packdoctor/pack-doctor.properties") }
+    property("version", project.version.toString())
+}
+sourceSets.main { resources.srcDir(files(versionResourceDirectory).builtBy(packDoctorVersion)) }
+
 // The link plants skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes, makes
 // them fail there instead (#286), as in :packs and :pack-validation.
 val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
@@ -53,6 +69,8 @@ val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false"
 tasks.test {
     inputs.property("requireSymlinks", requireSymlinks)
     systemProperty("charter.requireSymlinks", requireSymlinks.get())
+    // ReportWriterTest checks the report's tool.version against the build's, not against the resource it reads.
+    systemProperty("charter.pack-doctor.version", project.version.toString())
     // PlantedParityTest reads the two golden files of its neighbours by path (NFR-003), so a changed golden file reruns
     // it rather than leaving a stale pass in the build cache (WP06 review).
     inputs.file(layout.projectDirectory.file("../packs/src/test/resources/golden/surfaces.json"))

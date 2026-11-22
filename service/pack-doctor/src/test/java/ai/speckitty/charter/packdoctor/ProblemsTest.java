@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -359,5 +360,68 @@ class ProblemsTest {
         assertThat(instance.getScheme()).isEqualTo("file");
         assertThat(instance.isAbsolute()).isTrue();
         assertThat(Path.of(instance)).isEqualTo(colon);
+    }
+
+    /** The report's {@code summary.violations} (FR-008, T025): what the problems state, all of it. */
+    @Nested
+    class TheViolationCount {
+
+        @Test
+        void aValidSetStatesNone() {
+            assertThat(Problems.violations(verdict(List.of(real), List.of()))).isZero();
+        }
+
+        @Test
+        void aWarningIsNoViolation() {
+            Reason warning = new Reason(
+                    "test",
+                    TEST,
+                    Evaluation.FAIL,
+                    new ReasonCode("file_not_held", Severity.WARNING),
+                    Location.in("notes.md"),
+                    "no schema models it");
+
+            assertThat(Problems.violations(
+                            verdict(List.of(with(List.of(warning), real.facts(), List.of(), List.of())), List.of())))
+                    .isZero();
+        }
+
+        @Test
+        void eachProblemCountsItsViolationsOrOneWhenItListsNone() {
+            PackResult pack = with(
+                    List.of(
+                            violation("duplicate_artifact_id", "a.yaml", "repeated"),
+                            violation("drg_schema_error", "drg/fragment.yaml", "not a mapping")),
+                    real.facts(),
+                    List.of(WholePackRoundTripRule.refused("pack_unreadable", "pack.yaml cannot be read")),
+                    List.of());
+            ClosureFault fault = ClosureFault.of(
+                    PackOrigins.of(new PackIdentifier("y")),
+                    PackCodes.refusalOf(PackCodes.CLOSURE.getFirst()),
+                    "a cycle",
+                    List.of(new RefusalPack(new PackUlid("01M74H0000000000000000XYZ1"), new PackIdentifier("y"), "z")));
+
+            PackSetVerdict verdict = verdict(List.of(pack), List.of(fault));
+
+            assertThat(Problems.of(verdict)).hasSize(3);
+            assertThat(Problems.violations(verdict)).isEqualTo(2 + 1 + 1);
+        }
+
+        @Test
+        void anUnreadablePacksRefusalCountsOne() {
+            PackResult pack = with(
+                    List.of(),
+                    new PackReadout.Unreadable(RefusalCode.PACK_UNREADABLE, "a graph cannot be read"),
+                    List.of(),
+                    List.of());
+
+            assertThat(Problems.violations(verdict(List.of(pack), List.of()))).isEqualTo(1);
+        }
+
+        @Test
+        void theViolationsLeftOutOfTheListAreCounted() {
+            assertThat(Problems.violations(verdict(List.of(withViolations(101)), List.of())))
+                    .isEqualTo(101);
+        }
     }
 }
