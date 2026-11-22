@@ -263,7 +263,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 2,
@@ -275,7 +275,8 @@
       "notes": [
         "Ready for review: ADR-0083, amendments, docs, changelog; gates green",
         "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3",
-        "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)"
+        "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)",
+        "Changes requested: R-w quote drops service-v*"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -286,12 +287,12 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 9508,
-      "shell_pid_created_at": "1795353143.34",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T032": "done",
-        "T033": "done",
-        "T034": "done"
+        "T032": "planned",
+        "T033": "planned",
+        "T034": "planned"
       }
     },
     "WP09": {
