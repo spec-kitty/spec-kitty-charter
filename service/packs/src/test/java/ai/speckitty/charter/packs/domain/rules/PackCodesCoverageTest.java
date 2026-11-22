@@ -241,6 +241,17 @@ class PackCodesCoverageTest {
                                                             + " skills/project-triage.skill.yaml\\n  content_hash: [0-9a-f]+\\n",
                                                     ""),
                                     StandardCharsets.UTF_8);
+                        }),
+                new Written(
+                        "manifest_stale (#630)",
+                        StorageCodes.MANIFEST_STALE,
+                        Optional.of(ExamplePacks.PROJECT),
+                        pack -> {
+                            Path skill = pack.resolve("skills/project-triage.skill.yaml");
+                            Files.writeString(
+                                    skill,
+                                    Files.readString(skill, StandardCharsets.UTF_8) + "# edited\n",
+                                    StandardCharsets.UTF_8);
                         }));
     }
 
