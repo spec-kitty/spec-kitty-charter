@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * A step enhancement composes through its kind binding alone (A8): the URN is in {@code defined}, so a same-id copy at a
+ * A step enhancement composes through its kind binding alone (A8): the URN is in {@code held}, so a same-id copy at a
  * higher level replaces the lower one by layer override, a sibling contest is refused until a descriptor
  * {@code overrides} entry settles it, and only the winning copy's fragments are served (A11). The control for the
  * source fingerprint (NFR-001) lives here too: a pack with one enhancement does not digest as the pack without it.
@@ -143,7 +143,7 @@ class StepEnhancementCompositionTest {
                     new ConfiguredPack(key, location.level()),
                     service.load(key).descriptor(),
                     held.changed(),
-                    held.defined()));
+                    held.referable()));
             facts.put(location.name(), held);
         }
         return LayerMerge.merge(PackCompositionResolver.resolve(packs), facts, new PerPackPolicy(Map.of()));
@@ -170,10 +170,10 @@ class StepEnhancementCompositionTest {
 
         PackCompositionFacts facts = service(List.of(base, enhancer)).compositionFacts(new PackIdentifier("enhancer"));
 
-        assertThat(facts.defined()).contains(URN);
+        assertThat(facts.held()).contains(URN);
         assertThat(service(List.of(base, enhancer))
                         .compositionFacts(new PackIdentifier("base"))
-                        .defined())
+                        .held())
                 .as("the control: the base does not define the enhancement")
                 .doesNotContain(URN);
         assertThat(compose(List.of(base, enhancer)).winnerOf(urn()))

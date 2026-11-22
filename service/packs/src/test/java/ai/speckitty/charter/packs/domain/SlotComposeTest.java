@@ -59,6 +59,7 @@ class SlotComposeTest {
                                 List.of(),
                                 held.pack().definedArtifacts(),
                                 List.of(),
+                                List.of(),
                                 MutabilityPolicySource.empty(),
                                 List.of(),
                                 held.edges(),

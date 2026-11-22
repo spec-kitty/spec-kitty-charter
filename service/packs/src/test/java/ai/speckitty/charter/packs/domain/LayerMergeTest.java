@@ -122,6 +122,7 @@ class LayerMergeTest {
                                 List.of(),
                                 pack.definedArtifacts(),
                                 List.of(),
+                                List.of(),
                                 MutabilityPolicySource.empty(),
                                 presets.getOrDefault(name, List.of()),
                                 List.of(),

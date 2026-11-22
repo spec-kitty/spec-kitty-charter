@@ -44,7 +44,7 @@ class OneReadTest {
                 .isOne();
         assertThat(StoreRead.runs() - runs).as("one run of the store half").isOne();
         assertThat(FilesystemPackStore.reads() - before).isOne();
-        assertThat(contents.facts().defined()).isNotEmpty();
+        assertThat(contents.facts().held()).isNotEmpty();
     }
 
     @Test
@@ -100,7 +100,7 @@ class OneReadTest {
         assertThat(StoreRead.runs() - runs)
                 .as("the composing read runs the one reader's StoreRead half (operator decision 2026-11-17)")
                 .isOne();
-        assertThat(facts.defined()).isNotEmpty();
+        assertThat(facts.held()).isNotEmpty();
     }
 
     @Test

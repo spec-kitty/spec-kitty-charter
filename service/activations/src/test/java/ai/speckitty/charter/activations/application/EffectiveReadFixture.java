@@ -262,7 +262,7 @@ final class EffectiveReadFixture {
             }
         }
         return new PackCompositionFacts(
-                changed, defined, List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
+                changed, defined, List.of(), List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
     }
 
     private static Relationship edge(String from, RelationType type, String to) {

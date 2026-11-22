@@ -80,7 +80,7 @@ class CompositionFactsTest {
     }
 
     @Test
-    void theNodesAGraphDeclaresForAKindWithNoFileAreDefined(@TempDir Path host) throws IOException {
+    void theNodesAGraphDeclaresAreDeclaredAndNeverHeld(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         write(pack, "nodes.graph.yaml", """
                 schema_version: '1.0'
@@ -98,10 +98,17 @@ class CompositionFactsTest {
                 edges: []
                 """);
 
-        assertThat(factsOf(pack).defined())
+        assertThat(factsOf(pack).declared())
                 .contains("anti_pattern:copy-paste", "action:software-dev/plan", "anti_pattern:shotgun-surgery")
-                .as("a kind with files of its own is defined by its file, not by a node")
-                .doesNotContain("tactic:declared-only", "tactic:fragment-only");
+                .contains("tactic:declared-only", "tactic:fragment-only");
+        assertThat(factsOf(pack).held())
+                .as("a node is held by no file")
+                .doesNotContain(
+                        "anti_pattern:copy-paste",
+                        "action:software-dev/plan",
+                        "anti_pattern:shotgun-surgery",
+                        "tactic:declared-only",
+                        "tactic:fragment-only");
     }
 
     @Test

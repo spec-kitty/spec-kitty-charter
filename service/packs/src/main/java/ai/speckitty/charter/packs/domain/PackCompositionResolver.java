@@ -63,7 +63,8 @@ public final class PackCompositionResolver {
      * @param descriptor what its {@code pack.yaml} states
      * @param changedArtifacts the artifacts its graph documents say it changes (an {@code overrides} relation on the
      *     artifact; an {@code enhances} relation is additive and changes nothing, A14); empty when they name none
-     * @param definedArtifacts the artifacts the pack itself holds, as bare URNs; empty when it holds none
+     * @param definedArtifacts what a reference can name in the pack ({@link PackCompositionFacts#referable()}: its
+     *     artifact files and the mission type steps its graph documents declare), as bare URNs; empty when none
      * @param heldTerms the terms the pack's glossary contexts hold, as bare URNs ({@code term:<context-id>/<term-id>});
      *     empty when it holds none
      */

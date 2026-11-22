@@ -125,7 +125,13 @@ class ForeignArtifactReadTest {
         facts.put(
                 name,
                 new PackCompositionFacts(
-                        List.of(), held, List.of(), MutabilityPolicySource.empty(), List.of(), List.of(edges)));
+                        List.of(),
+                        held,
+                        List.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty(),
+                        List.of(),
+                        List.of(edges)));
         Pack.Builder pack = Pack.builder().id(new PackIdentifier(name)).descriptor(descriptor);
         profiles.forEach(id -> pack.artifact(profile(name, id)));
         directives.forEach(id -> pack.artifact(directive(name, id)));

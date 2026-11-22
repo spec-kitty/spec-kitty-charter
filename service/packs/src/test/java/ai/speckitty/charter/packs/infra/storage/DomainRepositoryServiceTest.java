@@ -590,9 +590,8 @@ class DomainRepositoryServiceTest {
 
     /**
      * The held list answers for every kind a reference can name, so a kind outside the served five is not failed open.
-     * An anti_pattern is never a file: the pack holds it as a node of its graph document, so the qualified form
-     * {@code <pack>::anti_pattern:x} and the bare-form refusal both find it. A node of any other kind is no holding
-     * without its file.
+     * A graph node is declared, and no holding without its file: an anti_pattern too is held only by its anti-pattern
+     * file (ruling R-l), so a node alone is declared, never held, and a reference cannot name it.
      */
     @Test
     void definedArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
@@ -624,10 +623,14 @@ class DomainRepositoryServiceTest {
                 edges: []
                 """);
 
-        assertThat(overOne("pack-descriptor-only", pack)
-                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))
-                        .defined())
-                .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
+        PackCompositionFacts facts =
+                overOne("pack-descriptor-only", pack).compositionFacts(new PackIdentifier("pack-descriptor-only"));
+
+        assertThat(facts.held()).containsExactlyInAnyOrder("directive:D1", "procedure:release");
+        assertThat(facts.declared())
+                .containsExactlyInAnyOrder(
+                        "directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud", "directive:GHOST");
+        assertThat(facts.referable()).containsExactlyInAnyOrder("directive:D1", "procedure:release");
     }
 
     // ---- the typed edges -----------------------------------------------------------------------------

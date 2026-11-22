@@ -212,12 +212,12 @@ public final class PackUninstallService {
         try {
             WholePackWriteStore.Contents contents = loader.loadStored(name, directory);
             PackCompositionFacts facts = contents.facts();
-            facts.defined().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
+            facts.referable().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
             facts.terms().forEach(term -> Urn.parse(term).ifPresent(held::add));
             held.addAll(contents.digests().keySet());
         } catch (CharterRefusal unreadable) {
             WholePackWriteStore.Remains remains = loader.salvageStored(name, directory);
-            remains.defined().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
+            remains.held().forEach(urn -> Urn.parse(urn).ifPresent(held::add));
             held.addAll(remains.digests().keySet());
         }
         return Set.copyOf(held);

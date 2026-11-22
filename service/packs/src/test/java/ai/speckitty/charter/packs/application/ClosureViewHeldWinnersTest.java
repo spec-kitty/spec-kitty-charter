@@ -59,7 +59,8 @@ class ClosureViewHeldWinnersTest {
     }
 
     private static PackCompositionFacts holding(MutabilityPolicySource policy, String... held) {
-        return new PackCompositionFacts(List.of(), List.of(held), List.of(), policy, List.of(), List.of(), Map.of());
+        return new PackCompositionFacts(
+                List.of(), List.of(held), List.of(), List.of(), policy, List.of(), List.of(), Map.of());
     }
 
     private static PackCompositionFacts holding(String... held) {

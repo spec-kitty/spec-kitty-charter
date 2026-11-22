@@ -18,7 +18,7 @@ import java.util.TreeSet;
  * <ul>
  *   <li><strong>per pack</strong>: P defines {@code mission_type:M} and declares {@code action:M/s}. The merged reads
  *       take it from the lists of defined artifacts the closure carries. It is meant to serve the compose too, which
- *       holds the same lists in {@link PackCompositionFacts#defined()}: the step-enhancements mission is to call
+ *       holds the same lists in {@link PackCompositionFacts#referable()}: the step-enhancements mission is to call
  *       {@link #heldByPack} from there, and nothing in main calls it directly yet;
  *   <li><strong>on the closure</strong>: the closure holds the step when some closure pack holds it per pack, so a
  *       layer override of a held step is the winning version of a held step. A winning {@code mission_type:M} keeps

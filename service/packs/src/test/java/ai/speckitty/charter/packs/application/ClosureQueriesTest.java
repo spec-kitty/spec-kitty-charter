@@ -99,7 +99,7 @@ class ClosureQueriesTest {
 
     private static PackCompositionFacts holding(
             List<String> defined, MutabilityPolicySource policy, Preset... presets) {
-        return new PackCompositionFacts(List.of(), defined, List.of(), policy, List.of(presets));
+        return new PackCompositionFacts(List.of(), defined, List.of(), List.of(), policy, List.of(presets));
     }
 
     private static PackCompositionFacts holding(String... defined) {
@@ -702,6 +702,7 @@ class ClosureQueriesTest {
                 new PackCompositionFacts(
                         List.of(),
                         List.of("directive:A1", "tactic:e"),
+                        List.of(),
                         List.of(),
                         MutabilityPolicySource.empty(),
                         List.of(),

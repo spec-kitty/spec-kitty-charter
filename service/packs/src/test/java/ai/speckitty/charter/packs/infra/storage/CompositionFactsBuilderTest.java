@@ -8,7 +8,9 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,7 +60,7 @@ class CompositionFactsBuilderTest {
         assertThat(read.descriptor().packId())
                 .isEqualTo(recorded.required("packId").asString());
         assertThat(read.changedArtifacts()).isEqualTo(strings(recorded.required("changed")));
-        assertThat(read.definedArtifacts()).isEqualTo(strings(recorded.required("defined")));
+        assertThat(read.definedArtifacts()).isEqualTo(strings(recorded.required("referable")));
         assertThat(read.heldTerms()).isEqualTo(Set.copyOf(strings(recorded.required("heldTerms"))));
     }
 
@@ -92,6 +94,40 @@ class CompositionFactsBuilderTest {
                 .doesNotContainAnyElementsOf(builtIn.definedArtifacts());
         assertThat(org.definedArtifacts()).contains("routing_catalog:default", "routing_catalog:cost-led");
         assertThat(builtIn.definedArtifacts()).contains("routing_catalog:default");
+    }
+
+    @Test
+    @DisplayName(
+            "held is the artifact files and declared every graph node too: a directive file is in both, a mission type"
+                    + " step only a graph node names is declared and never held, an anti-pattern file is in both")
+    void heldIsTheFilesAndDeclaredTheGraphNodesToo(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
+        StoreRead read = StoreRead.of(
+                pack.toAbsolutePath().normalize(),
+                new PackIdentifier(ExamplePacks.BUILT_IN),
+                PackFileSet.walk(pack.toAbsolutePath().normalize(), ExamplePacks.BUILT_IN),
+                STRATEGY,
+                KindBindings.all(),
+                Companions.Rules.bundled());
+
+        PackCompositionFacts facts =
+                ((PackReadout.Built) CompositionFactsBuilder.readoutFacts(ExamplePacks.BUILT_IN, read)).facts();
+
+        assertThat(facts.held())
+                .contains("directive:DIRECTIVE_001", "anti_pattern:indirection-for-repetition")
+                .doesNotContain("action:software-dev/implement");
+        assertThat(facts.declared())
+                .contains(
+                        "directive:DIRECTIVE_001",
+                        "action:software-dev/implement",
+                        "anti_pattern:indirection-for-repetition")
+                .containsAll(facts.held());
+        assertThat(facts.referable())
+                .as("what a reference can name: the files, and the steps the graphs declare")
+                .contains(
+                        "directive:DIRECTIVE_001",
+                        "action:software-dev/implement",
+                        "anti_pattern:indirection-for-repetition");
     }
 
     @Test

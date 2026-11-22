@@ -492,7 +492,7 @@ class OfferingReadServiceTest {
                     .extracting(pack -> pack.configured().id().value())
                     .containsExactly("beta", "alpha");
             assertThat(composed.facts()).containsOnlyKeys("alpha", "beta");
-            assertThat(composed.facts().get("beta").defined()).containsExactly("directive:B1");
+            assertThat(composed.facts().get("beta").held()).containsExactly("directive:B1");
             assertThat(factsRead).as("each closure pack once").containsExactlyInAnyOrder("alpha", "beta");
             assertThat(OfferingReadService.entriesOf(composed.packs()))
                     .extracting(entry -> entry.id().value())
@@ -873,6 +873,7 @@ class OfferingReadServiceTest {
             return new PackCompositionFacts(
                     List.of(),
                     defined.getOrDefault(pack.value(), List.of()),
+                    List.of(),
                     written.getOrDefault(pack.value(), List.of()),
                     MutabilityPolicySource.empty(),
                     presets.getOrDefault(pack.value(), List.of()),

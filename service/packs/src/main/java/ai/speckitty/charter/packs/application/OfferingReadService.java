@@ -547,7 +547,7 @@ public final class OfferingReadService {
                 PackCompositionFacts held = factsOf.apply(pack.id());
                 facts.put(pack.id().value(), held);
                 members.add(new PackUnderResolution(
-                        pack, member.get(), held.changed(), held.defined(), Set.copyOf(held.terms())));
+                        pack, member.get(), held.changed(), held.referable(), Set.copyOf(held.terms())));
             }
         }
         return members;
