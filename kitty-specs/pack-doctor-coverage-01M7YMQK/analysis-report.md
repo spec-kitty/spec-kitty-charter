@@ -4,6 +4,37 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-doctor-coverage-01M7YMQK
 mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
+generated_at: '2026-11-22T13:07:02.976514+00:00'
+analyzer_agent: claude
+input_artifacts:
+  spec.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/spec.md
+    sha256: d83d22bbc50cae1d47bd8c2c3ccda2829342948822afcf4d4b00a5c3bda19069
+  plan.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/plan.md
+    sha256: 5c42bd358cdd8a68a8d337646a25bb2c059f565cc41797b098ef61ed1938aec5
+  tasks.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks.md
+    sha256: 211c721cec51cea4e8991999e97ef538e2311b9ff586df8aa1c0db747d3ea085
+  charter:
+    path: .kittify/charter/charter.yaml
+    sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
+verdict: unknown
+issue_counts:
+  medium:
+  high:
+  info:
+  critical:
+  low:
+findings: []
+---
+
+---
+schema_version: 1
+artifact_type: spec-kitty.analysis-report
+command: /spec-kitty.analyze
+mission_slug: pack-doctor-coverage-01M7YMQK
+mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
 generated_at: '2026-11-21T23:42:00.861696+00:00'
 analyzer_agent: claude
 input_artifacts:
@@ -212,3 +243,19 @@ None open. Q2 was answered by ruling R-u (DM-01M8035FAMHXG0A04SCBD7QTKD): the `-
 - U1/U2/U3: lanes merge in dependency order (a → b → i → {j, k} → c, d → e → f → g → h); reviewers check out-of-map
   edits.
 - The PR body: `Closes #614 #629 #630 #154`, `Refs #632` naming item 3's remainder, ticks #549 and #142.
+
+## Re-analysis 2026-11-22 (after WP08's planning edits, 515dbce2d)
+
+The edits align spec, plan and data model with shipped, approved behaviour and recorded rulings; no requirement is
+added or dropped.
+
+- D5 / US3.3: the delegation fault is `validation_failed [substep_delegation_unresolved]`, as registration refuses it
+  (the composing read keeps `pack_unreadable`). Matches WP05 code.
+- US3.4: every fault of the first check that finds any is reported, a later check running once earlier ones pass.
+  Matches WP05 code and R-s ("registration's phase order"). A narrowing of the earlier wording, disclosed.
+- D4 / D5: the round-trip-codes fold (R-t) and the `REFERENCES` value (R-u) are stated as ruled.
+- US5: "form finding" wording replaced (ADR-0036: meaning, not form); remediate edge case: a directory without
+  `pack.yaml` exits 1, as `validate` reports it.
+- occurrence_map.yaml: WP08's doc paths classified.
+
+Verdict: ready. Critical issues: 0. No operator question open.
