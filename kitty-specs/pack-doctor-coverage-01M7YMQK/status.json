@@ -276,7 +276,8 @@
         "Ready for review: ADR-0083, amendments, docs, changelog; gates green",
         "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3",
         "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)",
-        "Changes requested: R-w quote drops service-v*"
+        "Changes requested: R-w quote drops service-v*",
+        "Cycle 3: R-w quoted as written"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
