@@ -3,10 +3,12 @@ package ai.speckitty.charter.packs.application;
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.refusal;
 import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest.refusalOf;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
@@ -828,6 +830,51 @@ class ClosureImpactCheckTest {
 
         assertThat(same.notices()).isEqualTo(ImpactCheck.Notices.NONE);
         assertThat(renamed.notices()).isEqualTo(ImpactCheck.Notices.NONE);
+    }
+
+    // ---- the preset items (#629, #632 item 1; WP03 T014) ---------------------------------------------------------
+
+    @Test
+    void aMustHaveTheOwnClosureDoesNotHoldIsRefusedAtTheItemAndTheHeldControlRegisters(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs unheld = Packs.of(ACME_ID, "acme", "1.0.0", "org").file("presets/starter.yaml", REQUIRE_X);
+
+        CharterRefusal refused = refusal(() -> rig.register("acme", rig.stage(unheld), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PRESET_ITEM_NOT_HELD);
+        assertThat(refused.getMessage())
+                .isEqualTo("the preset `starter` of pack `acme` requires directive:X_ONE (must_have), but no pack of"
+                        + " its own closure (`acme`) holds it as an artifact file");
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("presets/starter.yaml#/activated_directives/0", "preset_item_not_held"));
+        assertThat(rig.packs.resolve("acme")).as("nothing was created").doesNotExist();
+        assertThat(rig.register("acme", rig.stage(noticing("1.0.0", false, true)), Preconditions.none())
+                        .outcome())
+                .as("the control: the same preset once the pack holds X_ONE")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aMustHaveHeldByADependencyIsHeldAndTheDependentRegisters(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(floorBase()), Preconditions.none());
+        Packs top = Packs.of(DERIVED_ID, "top", "1.0.0", "project", DEPENDS_ON_BASE)
+                .file("presets/team.yaml", governing("X_ONE").replace("id: governing", "id: team"));
+
+        assertThat(rig.register("top", rig.stage(top), Preconditions.none()).outcome())
+                .as("base, on top's depends_on, holds X_ONE as a file")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void anItemNoClosurePackDeclaresIsRefusedUndeclared(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs undeclared = Packs.of(ACME_ID, "acme", "1.0.0", "org")
+                .file("presets/starter.yaml", REQUIRE_X.replace("    must_have: true\n", ""));
+
+        assertThat(refusalOf(() -> rig.register("acme", rig.stage(undeclared), Preconditions.none())))
+                .isEqualTo(RefusalCode.PRESET_ITEM_UNDECLARED);
     }
 
     private static final String GOVERNING_X = governing("X_ONE");

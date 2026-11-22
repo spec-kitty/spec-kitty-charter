@@ -18,8 +18,13 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.infra.storage.TreeReads;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,7 +34,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The preset-item rule (#629, #632 item 1; rulings R-a, R-k, R-l, R-m; plan D3): a preset item that the declaring pack's
@@ -255,6 +264,151 @@ class PresetItemRulesTest {
                 "org", facts(List.of(), List.of(), List.of(preset("team", ArtifactKind.DIRECTIVE, required("DIR-1")))));
 
         assertThat(judge(ORG)).isEmpty();
+    }
+
+    /**
+     * The positive controls (T015): every preset item of every example pack is held or declared as it must be within
+     * its own closure, and a planted variant of each example preset, in the test and never in the example packs,
+     * answers the exact code.
+     */
+    @Nested
+    @DisplayName("over the example packs")
+    class ExamplePacksControl {
+
+        private static final Map<String, PackReadout.Built> READ = readExamples();
+
+        private static Map<String, PackReadout.Built> readExamples() {
+            Map<String, PackReadout.Built> read = new LinkedHashMap<>();
+            for (String name : ExamplePacks.names()) {
+                PackRoot root = new PackRoot(
+                        name,
+                        Optional.of(ExamplePacks.level(name)),
+                        ExamplePacks.pack(name).toString());
+                read.put(name, (PackReadout.Built)
+                        TreeReads.withReadout(root).readout().facts());
+            }
+            return read;
+        }
+
+        private static List<PackUnderResolution> set() {
+            return READ.entrySet().stream()
+                    .map(entry -> entry.getValue()
+                            .underResolution(new ConfiguredPack(
+                                    new PackIdentifier(entry.getKey()), ExamplePacks.level(entry.getKey()))))
+                    .toList();
+        }
+
+        private static List<ClosureFault> judgeWith(String pack, Preset planted) {
+            return PresetItemRules.phase(under -> {
+                        PackCompositionFacts facts =
+                                READ.get(under.configured().id().value()).facts();
+                        return under.configured().id().value().equals(pack) ? withPreset(facts, planted) : facts;
+                    })
+                    .apply(set());
+        }
+
+        private static PackCompositionFacts withPreset(PackCompositionFacts facts, Preset planted) {
+            List<Preset> presets = new ArrayList<>(facts.presets().stream()
+                    .filter(preset -> !preset.id().equals(planted.id()))
+                    .toList());
+            presets.add(planted);
+            return new PackCompositionFacts(
+                    facts.changed(),
+                    facts.held(),
+                    facts.declared(),
+                    facts.references(),
+                    facts.policy(),
+                    presets,
+                    facts.edges(),
+                    facts.languages(),
+                    facts.prompts(),
+                    facts.terms(),
+                    facts.delegations());
+        }
+
+        private static Preset planting(Preset preset, ArtifactKind kind, PresetItem item) {
+            Map<ArtifactKind, List<PresetItem>> items = new LinkedHashMap<>(preset.artifacts());
+            List<PresetItem> list = new ArrayList<>(items.getOrDefault(kind, List.of()));
+            list.add(item);
+            items.put(kind, list);
+            return new Preset(preset.id(), preset.description(), items);
+        }
+
+        static List<Arguments> examplePresets() {
+            List<Arguments> presets = new ArrayList<>();
+            READ.forEach((pack, built) ->
+                    built.facts().presets().forEach(preset -> presets.add(Arguments.of(pack, preset.id()))));
+            return presets;
+        }
+
+        private static Preset presetOf(String pack, String id) {
+            return READ.get(pack).facts().presets().stream()
+                    .filter(preset -> preset.id().equals(id))
+                    .findFirst()
+                    .orElseThrow();
+        }
+
+        @Test
+        @DisplayName("every preset item of every example pack is held or declared within its own closure")
+        void everyExamplePresetItemIsInItsOwnClosure() {
+            long items = READ.values().stream()
+                    .flatMap(built -> built.facts().presets().stream())
+                    .mapToLong(preset -> preset.artifacts().values().stream()
+                            .mapToLong(List::size)
+                            .sum())
+                    .sum();
+
+            assertThat(examplePresets()).as("the control is not vacuous").hasSizeGreaterThanOrEqualTo(6);
+            assertThat(items).isPositive();
+            assertThat(PresetItemRules.phase(under ->
+                                    READ.get(under.configured().id().value()).facts())
+                            .apply(set()))
+                    .isEmpty();
+        }
+
+        @ParameterizedTest(name = "{0} {1}")
+        @MethodSource("examplePresets")
+        @DisplayName("planted: a must_have nobody holds answers preset_item_not_held at its item")
+        void aPlantedUnheldMustHaveIsNotHeld(String pack, String presetId) {
+            Preset preset = presetOf(pack, presetId);
+            int index = preset.artifacts()
+                    .getOrDefault(ArtifactKind.DIRECTIVE, List.of())
+                    .size();
+
+            assertThat(judgeWith(pack, planting(preset, ArtifactKind.DIRECTIVE, required("PLANTED_UNHELD"))))
+                    .singleElement()
+                    .satisfies(fault -> {
+                        assertThat(fault.code()).isEqualTo(RefusalCode.PRESET_ITEM_NOT_HELD);
+                        assertThat(fault.origin()).isEqualTo(new Origin(pack + "::directive:PLANTED_UNHELD"));
+                        assertThat(fault.violations().getFirst().pointer())
+                                .isEqualTo("presets/" + presetId + ".yaml#/activated_directives/" + index);
+                    });
+        }
+
+        @ParameterizedTest(name = "{0} {1}")
+        @MethodSource("examplePresets")
+        @DisplayName("planted: an item nobody declares answers preset_item_undeclared")
+        void aPlantedUndeclaredItemIsUndeclared(String pack, String presetId) {
+            assertThat(judgeWith(
+                            pack,
+                            planting(presetOf(pack, presetId), ArtifactKind.PARADIGM, PresetItem.of("planted-ghost"))))
+                    .extracting(ClosureFault::code)
+                    .containsExactly(RefusalCode.PRESET_ITEM_UNDECLARED);
+        }
+
+        @ParameterizedTest(name = "{0} {1}")
+        @MethodSource("examplePresets")
+        @DisplayName("planted: built-in's tactic acceptance-test-first named by case only keeps the case-only code")
+        void aPlantedCaseOnlyItemKeepsItsCode(String pack, String presetId) {
+            assertThat(judgeWith(
+                            pack,
+                            planting(
+                                    presetOf(pack, presetId),
+                                    ArtifactKind.TACTIC,
+                                    PresetItem.of("ACCEPTANCE-TEST-FIRST"))))
+                    .extracting(ClosureFault::code)
+                    .containsExactly(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+        }
     }
 
     private static PresetItem required(String id) {

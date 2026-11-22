@@ -482,6 +482,31 @@ class OfferingReadServiceTest {
         }
 
         @Test
+        void aComposingReadNeverRunsThePresetItemRule() {
+            // A stored pack whose preset requires what its closure does not hold, and activates what it does not
+            // declare: registration refuses it (#629, #632 item 1), a composing read composes it (A10, C31).
+            presets.put(
+                    "alpha",
+                    List.of(new Preset(
+                            "team",
+                            "The team.",
+                            Map.of(
+                                    ArtifactKind.DIRECTIVE,
+                                    List.of(new PresetItem("NOT_HELD", true)),
+                                    ArtifactKind.TACTIC,
+                                    List.of(PresetItem.of("undeclared"))))));
+
+            OfferingReadService.Judged judged = service(alphaBetaGamma()).judged(roots("alpha"));
+
+            assertThat(judged.faults()).isEmpty();
+            assertThat(judged.closure()).isPresent();
+            assertThat(service(alphaBetaGamma())
+                            .composedWithFacts(roots("alpha"))
+                            .packs())
+                    .hasSize(2);
+        }
+
+        @Test
         void theComposeWithFactsReturnsTheFactsItReadOncePerClosurePack() {
             defined.put("beta", List.of("directive:B1"));
 

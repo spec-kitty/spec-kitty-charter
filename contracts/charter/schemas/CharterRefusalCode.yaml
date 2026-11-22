@@ -5,8 +5,8 @@ description: >-
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
   kind_not_found, activation_not_found, artifact_not_found, preset_not_found,
-  skeleton_not_found, pack_document_not_found and task_type_not_found are 404; validation_failed and
-  activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required,
+  skeleton_not_found, pack_document_not_found and task_type_not_found are 404; validation_failed,
+  activation_invalid, preset_item_not_held and preset_item_undeclared are 422; registration_conflict, governance_policy_violation, artifact_required,
   artifact_locked, mission_type_not_in_force, routing_catalog_not_in_force and routing_catalog_conflict are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
   code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
@@ -328,6 +328,8 @@ enum:
   - routing_catalog_conflict
   - task_type_not_found
   - pack_has_dependents
+  - preset_item_not_held
+  - preset_item_undeclared
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -1124,6 +1126,27 @@ x-refusal:
       the detail counting the rest), with the code depends_on, parent_pack, activation or artifact_reference. Raised by
       deletePack alone, after its 412 and a 500 pack_unreadable of a pack that cannot be judged, and before the strict
       compose
+  preset_item_not_held:
+    status: 422
+    retryable: false
+    raised: true
+    description: >-
+      a preset's must_have item that no pack of the declaring pack's own closure (the pack, its depends_on and its
+      parent_pack, never a dependent) holds as an artifact file (issue #629; rulings R-a, R-k, R-l, R-m); one per item,
+      with one violation whose pointer is presets/<id>.yaml#/activated_<kinds>/<index> and whose code is the code, the
+      detail naming the preset, the item <kind>:<id>, that it is must_have, and the own closure's packs in order. An item
+      that names an artifact of the closure only by case is pack_reference_artifact_missing instead. Raised by
+      getPackRegistration (in the problem of a refused registration) and by every write judged over the closures its
+      pack joins, after the compose and the closure walk; a composing read never raises it and reports the item as
+      requiredNotHeld
+  preset_item_undeclared:
+    status: 422
+    retryable: false
+    raised: true
+    description: >-
+      a preset item that no pack of the declaring pack's own closure declares as its kind, by a graph node or an
+      artifact file (issue #632 item 1; rulings R-a, R-k, R-l, R-m); an item of another kind never declares it. Raised,
+      placed and worded as preset_item_not_held, which a must_have item that is not held answers instead
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode
