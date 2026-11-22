@@ -6,13 +6,13 @@
 # <in-dir> holds the downloaded artifacts, one directory each (actions/download-artifact without merge-multiple):
 #   native-linux-x64/spec-kitty-charter-service       native-linux-arm64/spec-kitty-charter-service
 #   native-macos-arm64/spec-kitty-charter-service     native-windows-x64/spec-kitty-charter-service.exe
-#   service-jar/deployable-<version>.jar              pack-check-jar/pack-check-<version>.jar
+#   service-jar/deployable-<version>.jar              pack-doctor-jar/pack-doctor-<version>.jar
 # <out-dir> receives exactly the ADR's asset set (as amended 2026-11-19, #478), nothing else, 13 files:
 #   spec-kitty-charter-service-<version>-{linux-x64,linux-arm64,macos-arm64}, -windows-x64.exe, and -<version>.jar;
-#   pack-check-<version>.jar, the pack checker (ADR-0075 decision 9; Java 25);
+#   pack-doctor-<version>.jar, the pack checker (ADR-0075 decision 9; Java 25);
 #   one <asset>.sha256 per asset; SHA256SUMS over the six assets (not the .sha256 files), in sha256sum format with
 #   bare names, sorted with LC_ALL=C, the file core's service pin reads. Core's pin maps the names it knows and ignores
-#   the rest, so the pack-check line does not disturb it.
+#   the rest, so the pack-doctor line does not disturb it.
 # A missing input, an extra output, or a checksum that does not verify fails the run and leaves the cause on stderr.
 set -euo pipefail
 
@@ -44,7 +44,7 @@ take "$in/native-linux-arm64/$prefix" "$prefix-$version-linux-arm64"
 take "$in/native-macos-arm64/$prefix" "$prefix-$version-macos-arm64"
 take "$in/native-windows-x64/$prefix.exe" "$prefix-$version-windows-x64.exe"
 take "$in/service-jar/deployable-$version.jar" "$prefix-$version.jar"
-take "$in/pack-check-jar/pack-check-$version.jar" "pack-check-$version.jar"
+take "$in/pack-doctor-jar/pack-doctor-$version.jar" "pack-doctor-$version.jar"
 # The executables keep their mode across the artifact round trip only on some runners; a download sets it again.
 chmod 0755 "$out/$prefix-$version-linux-x64" "$out/$prefix-$version-linux-arm64" "$out/$prefix-$version-macos-arm64"
 
@@ -66,8 +66,8 @@ expected="$(
     echo "$prefix-$version-windows-x64.exe.sha256"
     echo "$prefix-$version.jar"
     echo "$prefix-$version.jar.sha256"
-    echo "pack-check-$version.jar"
-    echo "pack-check-$version.jar.sha256"
+    echo "pack-doctor-$version.jar"
+    echo "pack-doctor-$version.jar.sha256"
     echo SHA256SUMS
   } | LC_ALL=C sort
 )"

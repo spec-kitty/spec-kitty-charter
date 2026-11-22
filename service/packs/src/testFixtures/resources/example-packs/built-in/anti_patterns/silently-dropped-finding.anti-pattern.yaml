@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: silently-dropped-finding
+title: Silently dropped finding
+description: Recording a finding without a disposition under the findings-disposition contract — every finding must be accepted, changed, or deferred with a rationale, never dropped.
+severity: breaking
+bad_example: 'Record a delegate''s finding and leave it with no disposition: neither accepted, changed nor deferred with a rationale.'

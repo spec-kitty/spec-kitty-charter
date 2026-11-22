@@ -1,12 +1,15 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.MergedClosure;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,11 +62,24 @@ final class ProfileEnhancementRule {
                                     enhancers.add(new ProfileEnhancementGateway.Enhancing(profile, winner.packId()))));
             judge.firstDrop(base.get(), enhancers)
                     .ifPresent(dropped -> breaches.add(ClosureFault.of(
+                            enhancing(dropped.pack(), enhanced.getValue()),
                             RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
                             dropped.detail(),
                             closure.named(List.of(dropped.pack())))));
         }
         return List.copyOf(breaches);
+    }
+
+    /**
+     * What a drop is about (R-o): the profile of the enhancing pack that breaks the merge, the pack that broke the rule;
+     * the pack alone when none of the enhancers is that pack's.
+     */
+    private static Origin enhancing(PackIdentifier pack, List<MergedClosure.Winner> enhancers) {
+        return enhancers.stream()
+                .filter(enhancer -> enhancer.packId().equals(pack))
+                .findFirst()
+                .map(enhancer -> PackOrigins.of(pack, enhancer.urn()))
+                .orElseGet(() -> PackOrigins.of(pack));
     }
 
     private static Optional<CharterArtifact> profileOf(

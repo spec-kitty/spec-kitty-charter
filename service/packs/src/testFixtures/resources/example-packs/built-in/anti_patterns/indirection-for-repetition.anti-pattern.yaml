@@ -1,0 +1,12 @@
+schema_version: '1.0'
+id: indirection-for-repetition
+title: Indirection to remove a few repeated lines
+description: |
+  Adding a helper or wrapper solely to remove a few repeated lines rather than to preserve a single source of truth for business meaning.
+severity: smell
+bad_example: |
+  def _plus_one(x):
+      return x + 1
+  # introduced to avoid "duplicating" a one-line expression used once
+good_example: |
+  # inline the one-line expression at its single call site instead
