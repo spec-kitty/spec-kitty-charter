@@ -222,7 +222,7 @@
     },
     "WP11": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -232,7 +232,8 @@
       "last_transition_at": "2026-11-22T01:06:53.074228+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: GraphRules.ANTI_PATTERN_WITHOUT_FILE (drg_schema_error at /nodes/<n>, after TENSION_CONSISTENCY); tests red first (GraphRulesTest 3 red; AntiPatternNodeCheckTest 2 red with the rule unwired; 2 scenario refusals red with the rule unwired; RejectsIsNotCascadedTest 2 red with REJECTS added to CASCADE_RELATIONS locally, reverted). Out-of-map edits: none. Cross-pack rejects pinned in the scenario with the org-pack compose steps (GET /offering), not PackSetCheck. Registration violations carry the document as pointer; pack-doctor carries /nodes/<n>. CompositionFactsTest/DomainRepositoryServiceTest made canonical (they were not red: compositionFacts runs no content rule). Gates green; MixedReadConcurrencyTest timed out once under load and passed on rerun."
+        "Ready for review: GraphRules.ANTI_PATTERN_WITHOUT_FILE (drg_schema_error at /nodes/<n>, after TENSION_CONSISTENCY); tests red first (GraphRulesTest 3 red; AntiPatternNodeCheckTest 2 red with the rule unwired; 2 scenario refusals red with the rule unwired; RejectsIsNotCascadedTest 2 red with REJECTS added to CASCADE_RELATIONS locally, reverted). Out-of-map edits: none. Cross-pack rejects pinned in the scenario with the org-pack compose steps (GET /offering), not PackSetCheck. Registration violations carry the document as pointer; pack-doctor carries /nodes/<n>. CompositionFactsTest/DomainRepositoryServiceTest made canonical (they were not red: compositionFacts runs no content rule). Gates green; MixedReadConcurrencyTest timed out once under load and passed on rerun.",
+        "Review passed: one GraphRules rule, drg_schema_error at /nodes/<n>, no new walk; cross-pack rejects and non-cascade pinned. Fresh: packs 7202, pack-validation 492, pack-doctor 282, activations 1102, deployable 2388. MEDIUM coordination: WP03's CompositionFactsTest/DomainRepositoryServiceTest held() assertions must move the anti-pattern ids to held on merge (D13). LOWs folded"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
