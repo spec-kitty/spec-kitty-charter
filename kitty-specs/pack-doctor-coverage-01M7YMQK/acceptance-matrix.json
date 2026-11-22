@@ -16,13 +16,13 @@
     },
     {
       "criterion_id": "FR-002",
-      "description": "Verify FR-002 is satisfied",
+      "description": "FR-002: one domain rule judges every preset item against the declaring pack's own closure; an unheld must_have answers preset_item_not_held, an item no closure pack declares as its kind answers preset_item_undeclared; exactly one fault per item, the case-only answer winning when it applies.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: packs/src/main/.../domain/rules/PresetItemRules.java:59 (RULE closure.preset-items), itemFault :152-197; PresetItemRulesTest (11+19 green, rerun 2026-11-22T13:42Z): anUnheldMustHaveIsNotHeld :86, heldOnlyByADependentIsNotHeld :110, heldByTheParentIsAccepted :125, declaredOnlyMustHaveIsNotHeld :151, anUndeclaredItemIsUndeclared :162, anotherKindNeverSatisfiesTheEntry :181; contracts/charter/scenarios/registration/preset-items.feature:38,:63",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:43:39.149511+00:00",
+      "notes": "Read PresetItemRules: own closure via PackCompositionResolver.compositionClosure (no new walk); per item, caseOnlyMatches first, else not_held for must_have not in held(), else undeclared; returns Optional (one fault). Targeted tests rerun green."
     },
     {
       "criterion_id": "FR-003",
