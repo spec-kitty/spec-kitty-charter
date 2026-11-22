@@ -56,13 +56,13 @@
     },
     {
       "criterion_id": "FR-006",
-      "description": "Verify FR-006 is satisfied",
+      "description": "FR-006: validate --full adds one domain phase (R-s): unresolvedDelegations, referenceFaults, EnhancementCompose.targetFaults, in registration's phase order, per pack within its own closure, collect-all, no new walk, registration's codes; specializes_from cycle, relation, edge-index and own-closure-walk checks out, recorded by ADR-0083 for #636.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: pack-validation/src/main/.../set/ClosureWalkPhase.java:51-55 (delegationFaultsOf, referenceFaultsOf, EnhancementCompose.targetFaultsOf, registration order), :67-88 per own closure via composeRooted, collect-all per check, asRegistrationRefuses; PackSetVerdict.Check.REFERENCES :56; ClosureWalkPhaseTest 8/8 green rerun 2026-11-22T13:42Z; FullPassParityTest.java:572 14/14; ADR-0083 decision 9",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:43:58.330982+00:00",
+      "notes": "Read ClosureWalkPhase; existing domain functions only; first failing check's faults all kept, as registration phases do. Out-of-phase checks recorded in ADR-0083 decision 9."
     },
     {
       "criterion_id": "FR-007",
