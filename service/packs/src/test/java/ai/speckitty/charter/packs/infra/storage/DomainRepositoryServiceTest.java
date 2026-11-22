@@ -590,8 +590,9 @@ class DomainRepositoryServiceTest {
 
     /**
      * The held list answers for every kind a reference can name, so a kind outside the served five is not failed open.
-     * A graph node is declared, and no holding without its file: an anti_pattern too is held only by its anti-pattern
-     * file (ruling R-l), so a node alone is declared, never held, and a reference cannot name it.
+     * An anti_pattern is held by its file, {@code anti_patterns/<id>.anti-pattern.yaml}, and its graph node declares
+     * it (ADR-0052 decision 14), so the qualified form {@code <pack>::anti_pattern:x} and the bare-form refusal both
+     * find it. A node of any other kind is no holding without its file: it is declared, never held.
      */
     @Test
     void definedArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
@@ -614,6 +615,15 @@ class DomainRepositoryServiceTest {
                 - title: Ship
                   description: ship it
                 """);
+        Files.createDirectories(pack.resolve("anti_patterns"));
+        Files.writeString(pack.resolve("anti_patterns/big-ball-of-mud.anti-pattern.yaml"), """
+                schema_version: '1.0'
+                id: big-ball-of-mud
+                title: Big Ball of Mud
+                description: A system with no discernible structure.
+                severity: severe
+                bad_example: every module reaches into every other
+                """);
         Files.writeString(pack.resolve("anti_pattern.graph.yaml"), """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -626,11 +636,13 @@ class DomainRepositoryServiceTest {
         PackCompositionFacts facts =
                 overOne("pack-descriptor-only", pack).compositionFacts(new PackIdentifier("pack-descriptor-only"));
 
-        assertThat(facts.held()).containsExactlyInAnyOrder("directive:D1", "procedure:release");
+        assertThat(facts.held())
+                .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
         assertThat(facts.declared())
                 .containsExactlyInAnyOrder(
                         "directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud", "directive:GHOST");
-        assertThat(facts.referable()).containsExactlyInAnyOrder("directive:D1", "procedure:release");
+        assertThat(facts.referable())
+                .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
     }
 
     // ---- the typed edges -----------------------------------------------------------------------------
