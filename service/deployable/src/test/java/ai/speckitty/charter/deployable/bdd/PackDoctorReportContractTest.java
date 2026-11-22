@@ -602,12 +602,18 @@ class PackDoctorReportContractTest {
         /**
          * The codes pack-doctor can emit, enumerated from their sources: {@code validation_failed} (a pack's violations
          * and its round trip), the refusals the composition facts' builder raises, and every {@code CLOSURE} failure of
-         * the resolver, the preset phase's sibling conflict among them. A new {@code CLOSURE} failure joins this set
-         * by itself.
+         * the resolver, the preset phase's sibling conflict among them, and the preset-item rule's codes: its two own
+         * and the case-only {@code pack_reference_artifact_missing} (#629, #632 item 1). A new {@code CLOSURE} failure
+         * joins this set by itself.
          */
         private static Set<RefusalCode> emitted() {
             Set<RefusalCode> codes = EnumSet.of(
-                    RefusalCode.VALIDATION_FAILED, RefusalCode.PACK_UNREADABLE, RefusalCode.REGISTRATION_CONFLICT);
+                    RefusalCode.VALIDATION_FAILED,
+                    RefusalCode.PACK_UNREADABLE,
+                    RefusalCode.REGISTRATION_CONFLICT,
+                    RefusalCode.PRESET_ITEM_NOT_HELD,
+                    RefusalCode.PRESET_ITEM_UNDECLARED,
+                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
             for (Failure failure : Failure.values()) {
                 if (isClosure(failure)) {
                     codes.add(failure.code());
