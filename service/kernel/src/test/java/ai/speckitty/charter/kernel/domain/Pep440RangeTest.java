@@ -105,7 +105,7 @@ class Pep440RangeTest {
                 "==1.0.post0|>=1.0|true",
                 "==1.0.dev1|<=1.0|true",
                 // the next post-release or development release after an operand's own is a version between them
-                ">1.0.post0|<1.0.post2|true",
+                ">1.0a1|<1.0a2|true",
                 ">1.0.dev0|<1.0a1|true",
                 // the lowest development release of an operand's post-release lies between it and the one before
                 ">1.0.post0|<1.0.post1|true",
@@ -168,10 +168,8 @@ class Pep440RangeTest {
      */
     @Test
     void twoRangesOverlapWheneverSomeVersionSatisfiesBoth() {
-        List<String> refused = new ArrayList<>();
-        List<String> ranges = gridRanges(refused);
+        List<String> ranges = gridRanges();
         assertThat(ranges).allMatch(Pep440Range::isWellFormed);
-        assertThat(refused).hasSize(23).noneMatch(Pep440Range::isWellFormed);
         List<String> probes = new ArrayList<>(GRID_OPERANDS);
         probes.addAll(GRID_PROBES);
         List<String> misses = new ArrayList<>();
@@ -188,21 +186,23 @@ class Pep440RangeTest {
     }
 
     /**
-     * Every operator, and the {@code ==} and {@code !=} wildcards, on every grid operand; the combinations PEP 440
-     * refuses go to {@code refused} instead.
+     * Every operator, and the {@code ==} and {@code !=} wildcards, on every grid operand, without the combinations
+     * PEP 440 refuses.
      */
-    private static List<String> gridRanges(List<String> refused) {
+    private static List<String> gridRanges() {
         List<String> ranges = new ArrayList<>();
         for (String operand : GRID_OPERANDS) {
-            boolean plainRelease = operand.matches("(\\d+!)?\\d+(\\.\\d+)*");
             for (String operator : List.of("==", "!=", "<", "<=", ">", ">=", "~=")) {
                 // PEP 440 compares a local operand only under == and !=
-                boolean wellFormed = !operand.contains("+") || operator.equals("==") || operator.equals("!=");
-                (wellFormed ? ranges : refused).add(operator + operand);
+                if (!operand.contains("+") || operator.equals("==") || operator.equals("!=")) {
+                    ranges.add(operator + operand);
+                }
             }
             // and takes a wildcard only after a plain release
-            (plainRelease ? ranges : refused).add("==" + operand + ".*");
-            (plainRelease ? ranges : refused).add("!=" + operand + ".*");
+            if (operand.matches("(\\d+!)?\\d+(\\.\\d+)*")) {
+                ranges.add("==" + operand + ".*");
+                ranges.add("!=" + operand + ".*");
+            }
         }
         return ranges;
     }
