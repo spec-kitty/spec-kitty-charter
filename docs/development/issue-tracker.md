@@ -1,9 +1,9 @@
 ---
 okf_version: "0.2"
 title: Keep the issue tracker small
-description: When a Mission, an Op or a review squad files an issue, when it folds or drops a finding instead, how a closeout closes what it delivered, and where pack and core work is tracked.
+description: When a Mission, an Op or a review squad files an issue, when it folds a finding instead, how a closeout closes what it delivered, and where pack and core work is tracked.
 doc_status: draft
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-22T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -22,13 +22,14 @@ delivered, 14 overtaken by later decisions, 20 that were core work, and 64 filed
 closeouts, landings and squad deferrals. Issues were opened at 45 to 55 a week and closed at 18 to
 45, and only a triage week closed more than it opened.
 
-## Rule 1: fold or drop a squad minor; do not file it
+## Rule 1: fold a squad minor; do not file it
 
-A review squad's finding below MEDIUM is not filed as an issue. Do one of these instead:
+A review squad's finding below MEDIUM, a nit included, is not filed as an issue. Address it when we can: deferred nits
+and minors tend to cause big problems later on (operator, 2026-11-22).
 
-- **Fold** it into the pull request under review, when it is in that pull request's scope.
-- **Record** it in the pull request body, under "Not done", with one line of reason.
-- **Drop** it, when it is cosmetic.
+- **Fold** it into the pull request under review before it merges, also when the finding predates the change.
+- **Record** it in the pull request body, under "Not done", only when it cannot be folded: folding would make the
+  behavior wrong, needs an operator decision, or would collide with other work in progress. Give that reason.
 
 File a separate issue only when the finding is a correctness, data or security risk, or when the
 operator asks for it. Such an issue carries the `follow-up` label (Rule 3).
