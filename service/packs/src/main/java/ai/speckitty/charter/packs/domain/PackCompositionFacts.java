@@ -6,9 +6,11 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * What the compose needs to know about one pack, read from one assembly of it: the artifacts its graph documents say it
@@ -18,7 +20,11 @@ import java.util.Objects;
  *
  * @param changed the distinct targets of its {@code overrides} relations, in first-seen order (an {@code enhances}
  *     relation changes nothing, A14)
- * @param defined the artifacts it holds, as bare URNs ({@code <kind>:<id>}), in a stable order
+ * @param held the artifacts it holds as artifact files, as bare URNs ({@code <kind>:<id>}), in a stable order: what a
+ *     preset's {@code must_have} item needs a pack of the declaring pack's own closure to hold (ruling R-l)
+ * @param declared every URN its graph documents declare as a node, plus {@code held}, in a stable order: what a preset
+ *     item needs a pack of the own closure to declare as its kind, and what a reference can name in the pack (a
+ *     mission type step {@code action:<M>/<step>} is a graph node of its type's file, declared and never held)
  * @param references the references it writes, as written (bare or pack-qualified), in first-seen order
  * @param policy the mutability policy its descriptor names (ADR-0063); {@link MutabilityPolicySource#empty()} when it
  *     names none
@@ -35,13 +41,14 @@ import java.util.Objects;
  *     same read (research R9); {@link PromptFacts#NONE} when it holds neither
  * @param terms the terms its glossary contexts hold, as bare URNs ({@code term:<context-id>/<term-id>}), from the same
  *     assembly, in authored order. A term is an item of its context, never an artifact, so it is not among
- *     {@code defined} (ADR-0049 decision 3); empty when the pack holds no glossary context
+ *     {@code held} or {@code declared} (ADR-0049 decision 3); empty when the pack holds no glossary context
  * @param delegations the substep delegation candidates its mission types write with another pack's name, which the
  *     compose resolves in the closure (FR-005, {@link SubstepDelegationRule#qualifiedCandidates}); empty when none is
  */
 public record PackCompositionFacts(
         List<String> changed,
-        List<String> defined,
+        List<String> held,
+        List<String> declared,
         List<String> references,
         MutabilityPolicySource policy,
         List<Preset> presets,
@@ -52,13 +59,15 @@ public record PackCompositionFacts(
         List<SubstepDelegationRule.QualifiedCandidate> delegations) {
 
     /** A pack that changes, holds and writes nothing, declares no policy and holds no preset, prompt or enhancement. */
-    public static final PackCompositionFacts NONE = new PackCompositionFacts(List.of(), List.of(), List.of());
+    public static final PackCompositionFacts NONE =
+            new PackCompositionFacts(List.of(), List.of(), List.of(), List.of());
 
     /**
      * Checks the fields and copies the lists.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
@@ -70,7 +79,8 @@ public record PackCompositionFacts(
      */
     public PackCompositionFacts {
         Objects.requireNonNull(changed, "changed");
-        Objects.requireNonNull(defined, "defined");
+        Objects.requireNonNull(held, "held");
+        Objects.requireNonNull(declared, "declared");
         Objects.requireNonNull(references, "references");
         Objects.requireNonNull(policy, "policy");
         Objects.requireNonNull(presets, "presets");
@@ -81,12 +91,15 @@ public record PackCompositionFacts(
         Objects.requireNonNull(delegations, "delegations");
         changed = List.copyOf(changed);
         delegations = List.copyOf(delegations);
-        defined = List.copyOf(defined);
+        held = List.copyOf(held);
+        Set<String> declaredOrHeld = new LinkedHashSet<>(declared);
+        declaredOrHeld.addAll(held);
+        declared = List.copyOf(declaredOrHeld);
         references = List.copyOf(references);
         presets = List.copyOf(presets);
         edges = List.copyOf(edges);
         Map<String, List<String>> copy = new LinkedHashMap<>();
-        languages.forEach((urn, declared) -> copy.put(urn, List.copyOf(declared)));
+        languages.forEach((urn, applies) -> copy.put(urn, List.copyOf(applies)));
         languages = Collections.unmodifiableMap(copy);
         terms = List.copyOf(terms);
     }
@@ -95,7 +108,8 @@ public record PackCompositionFacts(
      * The facts of a pack that holds no glossary context.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
@@ -105,21 +119,23 @@ public record PackCompositionFacts(
      */
     public PackCompositionFacts(
             List<String> changed,
-            List<String> defined,
+            List<String> held,
+            List<String> declared,
             List<String> references,
             MutabilityPolicySource policy,
             List<Preset> presets,
             List<Relationship> edges,
             Map<String, List<String>> languages,
             PromptFacts prompts) {
-        this(changed, defined, references, policy, presets, edges, languages, prompts, List.of(), List.of());
+        this(changed, held, declared, references, policy, presets, edges, languages, prompts, List.of(), List.of());
     }
 
     /**
      * The facts of a pack whose mission types delegate to no candidate of another pack.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
@@ -130,7 +146,8 @@ public record PackCompositionFacts(
      */
     public PackCompositionFacts(
             List<String> changed,
-            List<String> defined,
+            List<String> held,
+            List<String> declared,
             List<String> references,
             MutabilityPolicySource policy,
             List<Preset> presets,
@@ -138,14 +155,15 @@ public record PackCompositionFacts(
             Map<String, List<String>> languages,
             PromptFacts prompts,
             List<String> terms) {
-        this(changed, defined, references, policy, presets, edges, languages, prompts, terms, List.of());
+        this(changed, held, declared, references, policy, presets, edges, languages, prompts, terms, List.of());
     }
 
     /**
      * The facts of a pack that holds no step prompt and no step enhancement.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
@@ -154,20 +172,22 @@ public record PackCompositionFacts(
      */
     public PackCompositionFacts(
             List<String> changed,
-            List<String> defined,
+            List<String> held,
+            List<String> declared,
             List<String> references,
             MutabilityPolicySource policy,
             List<Preset> presets,
             List<Relationship> edges,
             Map<String, List<String>> languages) {
-        this(changed, defined, references, policy, presets, edges, languages, PromptFacts.NONE);
+        this(changed, held, declared, references, policy, presets, edges, languages, PromptFacts.NONE);
     }
 
     /**
      * The facts of a pack whose artifacts declare no language.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
@@ -175,85 +195,117 @@ public record PackCompositionFacts(
      */
     public PackCompositionFacts(
             List<String> changed,
-            List<String> defined,
+            List<String> held,
+            List<String> declared,
             List<String> references,
             MutabilityPolicySource policy,
             List<Preset> presets,
             List<Relationship> edges) {
-        this(changed, defined, references, policy, presets, edges, Map.of());
+        this(changed, held, declared, references, policy, presets, edges, Map.of());
     }
 
     /**
      * The facts of a pack that writes no typed edge.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
      */
     public PackCompositionFacts(
             List<String> changed,
-            List<String> defined,
+            List<String> held,
+            List<String> declared,
             List<String> references,
             MutabilityPolicySource policy,
             List<Preset> presets) {
-        this(changed, defined, references, policy, presets, List.of());
+        this(changed, held, declared, references, policy, presets, List.of());
     }
 
     /**
      * The facts of a pack that holds no preset.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      * @param policy the mutability policy it declares
      */
     public PackCompositionFacts(
-            List<String> changed, List<String> defined, List<String> references, MutabilityPolicySource policy) {
-        this(changed, defined, references, policy, List.of());
+            List<String> changed,
+            List<String> held,
+            List<String> declared,
+            List<String> references,
+            MutabilityPolicySource policy) {
+        this(changed, held, declared, references, policy, List.of());
     }
 
     /**
      * The facts of a pack that declares no mutability policy and holds no preset.
      *
      * @param changed the artifacts it changes
-     * @param defined the artifacts it holds
+     * @param held the artifacts it holds as artifact files
+     * @param declared the graph-node URNs it declares, {@code held} added to them
      * @param references the references it writes
      */
-    public PackCompositionFacts(List<String> changed, List<String> defined, List<String> references) {
-        this(changed, defined, references, MutabilityPolicySource.empty());
+    public PackCompositionFacts(
+            List<String> changed, List<String> held, List<String> declared, List<String> references) {
+        this(changed, held, declared, references, MutabilityPolicySource.empty());
     }
 
     /**
-     * Whether the pack holds what a bare URN names: the one answer the compose and the inbound scan share. A term
-     * ({@code term:<context-id>/<term-id>}) is an item of its glossary context, not an artifact (ADR-0049 decision 3),
-     * so the pack holds it when it holds the context and the context holds the term.
+     * What a reference can name in the pack, as bare URNs (operator ruling R-v): every artifact file it holds
+     * ({@code held}), then every step ({@code action:<M>/<step>}) of a mission type it holds that its graph documents
+     * declare, a step being a value of its type's file and never a file of its own (A7 Q1). A node of any other kind is no holding without its file (ruling R-l: an
+     * {@code anti_pattern} too is held only by its file), so a reference to it does not resolve. It is derived from
+     * {@code held} and {@code declared}, and is what the compose reads of the pack
+     * ({@link PackCompositionResolver.PackUnderResolution#referableArtifacts}).
+     *
+     * @return the URNs, {@code held} first, in a stable order
+     */
+    public List<String> referable() {
+        Set<String> referable = new LinkedHashSet<>(held);
+        declared.stream()
+                .filter(urn -> Urn.parse(urn)
+                        .filter(parsed -> parsed.kind() == NodeKind.ACTION)
+                        .flatMap(StepHolding::missionTypeOf)
+                        .filter(type -> held.contains(type.toString()))
+                        .isPresent())
+                .forEach(referable::add);
+        return List.copyOf(referable);
+    }
+
+    /**
+     * Whether the pack holds what a bare URN names: the one answer the compose and the inbound scan share, over
+     * {@link #referable()}. A term ({@code term:<context-id>/<term-id>}) is an item of its glossary context, not an
+     * artifact (ADR-0049 decision 3), so the pack holds it when it holds the context and the context holds the term.
      *
      * @param urn the bare URN
-     * @return {@code true} when {@code defined}, or for a term {@code terms} and its held context, name it
+     * @return {@code true} when {@link #referable()}, or for a term {@code terms} and its held context, name it
      */
     public boolean holds(Urn urn) {
-        return holds(defined, terms, urn);
+        return holds(referable(), terms, urn);
     }
 
     /**
-     * The rule of {@link #holds(Urn)} over a pack's held artifacts and terms, for a reader that holds the two lists
-     * apart from the facts ({@link PackCompositionResolver.PackUnderResolution#holds}).
+     * The rule of {@link #holds(Urn)} over what a reference can name in a pack and its terms, for a reader that holds
+     * the two lists apart from the facts ({@link PackCompositionResolver.PackUnderResolution#holds}).
      *
-     * @param defined the artifacts the pack holds, as bare URN texts
+     * @param referable what a reference can name in the pack ({@link #referable()}), as bare URN texts
      * @param terms the terms its glossary contexts hold, as bare URN texts
      * @param urn the bare URN
      * @return {@code true} when the pack holds it
      */
-    public static boolean holds(Collection<String> defined, Collection<String> terms, Urn urn) {
+    public static boolean holds(Collection<String> referable, Collection<String> terms, Urn urn) {
         Objects.requireNonNull(urn, "urn");
         if (urn.kind() == NodeKind.TERM) {
             return terms.contains(urn.toString())
                     && GlossaryTerm.contextOf(urn)
-                            .filter(context -> defined.contains(context.toString()))
+                            .filter(context -> referable.contains(context.toString()))
                             .isPresent();
         }
-        return defined.contains(urn.toString());
+        return referable.contains(urn.toString());
     }
 }

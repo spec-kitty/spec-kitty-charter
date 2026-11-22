@@ -1,0 +1,7 @@
+schema_version: '1.0'
+id: example-theater
+title: Example theater
+description: |
+  Producing many examples that are never used for acceptance or review, turning the workshop into documentation overhead instead of a delivery aid.
+severity: smell
+bad_example: Produce many workshop examples that no acceptance check or review ever reads.

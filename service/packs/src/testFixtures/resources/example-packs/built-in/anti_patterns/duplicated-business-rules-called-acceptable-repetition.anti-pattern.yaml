@@ -1,0 +1,10 @@
+schema_version: '1.0'
+id: duplicated-business-rules-called-acceptable-repetition
+title: Duplicated business rules called acceptable repetition
+description: |
+  Duplicating business rules, state rules, or fragile constants across modules and calling it acceptable repetition instead of consolidating the single source of truth.
+severity: severe
+bad_example: |
+  # tax_rate repeated as a literal constant in three separate modules
+good_example: |
+  # tax_rate sourced from one shared constant, imported by all callers

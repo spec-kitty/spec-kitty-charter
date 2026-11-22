@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: reasons-canvas-fill
+name: Fill the REASONS Canvas
+purpose: Capture a mission's intent in the REASONS canvas before implementation, so the work has an approved boundary.
+steps:
+  - title: Draft the Requirements and Entities
+    description: State what the change must achieve and the domain entities it touches, linking the spec instead of restating it.
+    examples:
+      - Link the spec's functional requirements and name the aggregates they change.
+  - title: Record the Approach, Structure and Operations
+    description: Describe the chosen approach, the structure it lands in, and the operations each work package performs.
+    examples:
+      - One line per work package naming the operation and the files it owns.
+  - title: Set the Norms and Safeguards
+    description: Write the norms the change should follow and the safeguards it must not break, as should and must.
+    examples:
+      - "Must: no public endpoint changes its status codes."
+  - title: Get the canvas approved
+    description: Have the canvas approved before implementation starts; it is the boundary DIRECTIVE_038 holds the work to.
+    examples:
+      - Record the approver and the date at the top of reasons-canvas.md.

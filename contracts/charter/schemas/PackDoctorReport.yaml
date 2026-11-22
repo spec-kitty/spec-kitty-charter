@@ -1,0 +1,197 @@
+title: PackDoctorReport
+description: >-
+  What pack-doctor validate reports (ADR-0075 decision 9; FR-008 of mission pack-doctor-coverage-01M7YMQK): the tool
+  and the inputs of the run, the checks that ran over the set of packs, the packs it checked, any check it skipped and
+  why, the problems, each a Problem with the code and the shape the registration answers for the same fault (the round
+  trip, which the registration does not run, words its own lead sentence), and a summary. No operation serves it
+  (ADR-0075 decision 9). An empty problems list is a valid set, and pack-doctor then exits 0; otherwise 1.
+
+  It is one tree, serialized three ways: as JSON on standard output, always; and with --report <file>, as YAML (the
+  default, --format yaml) or XML (--format xml) in that file. This schema is the only normative one for all three.
+
+  The XML is a mechanical mapping of the same tree, its own shape, not JUnit's or xUnit's: the root element is
+  pack-doctor-report, in no namespace. An object is an element with one child element per key, named after the key, in
+  the tree's order. An array is an element with type="array" and one child element per item, named after the singular
+  of the array's key (checks/check, packs/pack, problems/problem, violations/violation, skipped/skip). A string is an
+  element whose text is the string; an integer is an element with type="integer", a boolean one with type="boolean",
+  whose text is the value; an object with no key is an element with type="object". No other attribute is written, and
+  no value is written as an attribute. A carriage return is written as &#13;. Parsed back by that rule, the XML gives
+  the same tree, which validates against this schema.
+type: object
+additionalProperties: false
+required:
+  - tool
+  - inputs
+  - checks
+  - packs
+  - problems
+  - summary
+properties:
+  tool:
+    type: object
+    additionalProperties: false
+    required: [name, version]
+    description: The tool that wrote the report.
+    properties:
+      name:
+        type: string
+        const: pack-doctor
+        description: The tool's name, always pack-doctor.
+      version:
+        type: string
+        minLength: 1
+        description: The tool's version, the service's version it is built with (pack-doctor-<version>.jar).
+    x-derived:
+      rule: The tool's name, and the version of the build that made it.
+      inputs:
+        - the build
+  inputs:
+    type: object
+    additionalProperties: false
+    required: [options]
+    description: >-
+      What the run was given: the config root, or the --pack values, each as written on the command line, and the
+      options that choose the checks.
+    oneOf:
+      - required: [config_root]
+      - required: [packs]
+    properties:
+      config_root:
+        type: string
+        minLength: 1
+        description: The --config-root directory as written on the command line; only when one was given.
+      packs:
+        type: array
+        minItems: 1
+        description: The --pack values as written on the command line, in order; only when no config root was given.
+        items:
+          type: string
+          minLength: 1
+      options:
+        type: object
+        additionalProperties: false
+        required: [full, round_trip]
+        description: The options that choose the checks.
+        properties:
+          full:
+            type: boolean
+            description: Whether --full asked for the REFERENCES check.
+          round_trip:
+            type: boolean
+            description: Whether --round-trip asked for the ROUND_TRIP check.
+    x-derived:
+      rule: The command line, as written.
+      inputs:
+        - the command line
+  checks:
+    type: array
+    minItems: 1
+    maxItems: 4
+    description: The checks that ran over the whole set, in this order; PACK always runs.
+    items:
+      type: string
+      enum: [PACK, CLOSURE, REFERENCES, ROUND_TRIP]
+    x-derived:
+      rule: PACK; CLOSURE when every pack's composition facts could be read; REFERENCES with --full; ROUND_TRIP with
+        --round-trip.
+      inputs:
+        - the command line
+        - the packs checked
+  packs:
+    type: array
+    minItems: 1
+    description: Every pack checked, in the order given, or in name order under a config root.
+    items:
+      type: object
+      additionalProperties: false
+      required: [name, path]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: The pack's directory name.
+        level:
+          $ref: PackLevel.yaml
+        path:
+          type: string
+          minLength: 1
+          description: The pack's directory as given on the command line.
+    x-derived:
+      rule: The packs of --pack or of the config root's packs directory, each at its configured or declared level.
+      inputs:
+        - the command line
+  skipped:
+    type: array
+    description: >-
+      Only when a check did not run although asked; today only CLOSURE, when a pack has no composition facts (it
+      cannot be read, or its pack.yaml is malformed) or no level.
+    items:
+      type: object
+      additionalProperties: false
+      required: [check, reason]
+      properties:
+        check:
+          type: string
+          enum: [CLOSURE]
+        reason:
+          type: string
+          minLength: 1
+    x-derived:
+      rule: The packs whose composition facts could not be read, a malformed pack.yaml among them, or whose level is unknown.
+      inputs:
+        - the packs checked
+  problems:
+    type: array
+    description: >-
+      Per pack, in order: one validation_failed problem when the pack has a violation; otherwise, when its facts
+      could not be read, one problem with the refusal's code (e.g. pack_unreadable); then one validation_failed
+      problem for its round-trip reasons. The registration runs no round trip, so that problem has no registration
+      counterpart: its detail reads "The pack does not round-trip through the charter's model: N fault(s), the first
+      at <file>.", and its violations (round_trip_red, round_trip_written_unpaired) are worded as the registration
+      words a violation. The other problems are what the registration answers for the same fault. Each of a pack's
+      problems has as its instance the absolute file URI of the pack's directory (file:///work/packs/org-base/), so
+      two packs' problems are told apart. Then one problem per composition fault, with its code and packs and no
+      instance. A pack never gets two problems for one cause. Empty when the set is valid.
+    items:
+      $ref: ../../_shared/schemas/Problem.yaml
+    x-derived:
+      rule: The verdicts of PACK, ROUND_TRIP and CLOSURE, as the registration words each fault; the round trip's lead
+        sentence is its own.
+      inputs:
+        - the packs checked
+  summary:
+    type: object
+    additionalProperties: false
+    required: [packs, violations, warnings, notices, exit_code]
+    description: The counts of the run, which match its packs and problems.
+    properties:
+      packs:
+        type: integer
+        minimum: 1
+        description: How many packs were checked, the length of packs.
+      violations:
+        type: integer
+        minimum: 0
+        description: >-
+          How many violations the problems state: each problem counts its violations, those its detail says are not
+          listed included, or one when it lists none. Zero exactly when problems is empty.
+      warnings:
+        type: integer
+        minimum: 0
+        description: >-
+          How many warnings the packs' checks found (file_not_held, for one), each one line on standard error and
+          never a problem.
+      notices:
+        type: integer
+        minimum: 0
+        description: How many notices the packs' checks found; information only, never a problem.
+      exit_code:
+        type: integer
+        minimum: 0
+        maximum: 1
+        description: The exit code of the run, 0 when problems is empty, else 1.
+    x-derived:
+      rule: Counted from the packs checked, the problems and the findings of each pack's checks.
+      inputs:
+        - the packs checked
+        - the problems

@@ -201,7 +201,8 @@ Feature: Directives are read and registered functionally
     IC-15, operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW: a per-artifact write is judged over the closures its pack
     joins as the pack will be after it. The preset names directive guard, so holding GUARD would leave an id matched
     only by case, which the compose refuses. The write is refused with the compose's code, nothing is stored and the
-    offering still composes; an id the preset does not name is written.
+    offering still composes; an id the preset does not name is written. A graph node declares guard, as a preset item
+    needs (#632 item 1), so the write of another id passes.
     Given the org pack "qa" with the file "presets/team.yaml":
       """
       schema_version: '1.0'
@@ -209,6 +210,16 @@ Feature: Directives are read and registered functionally
       description: A preset of the team
       activated_directives:
         - id: guard
+      """
+    And the org pack "qa" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: directive:guard
+        kind: directive
+        label: Guard
+      edges: []
       """
     When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """

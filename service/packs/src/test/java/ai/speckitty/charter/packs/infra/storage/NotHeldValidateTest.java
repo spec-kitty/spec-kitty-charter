@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -61,6 +62,7 @@ class NotHeldValidateTest {
         assertThat(bare.resolve(PACK_YAML)).as("the plant holds no descriptor").doesNotExist();
         Reason warning = new Reason(
                 StorageCodes.FILE_NOT_HELD.value(),
+                Origin.NONE,
                 Evaluation.FAIL,
                 StorageCodes.FILE_NOT_HELD,
                 Location.in(file),

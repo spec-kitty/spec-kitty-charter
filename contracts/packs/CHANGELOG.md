@@ -41,6 +41,15 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
   - A consumer rewrites a pack name that is not a pack id. The spec-kitty-open-packs census at `3bedeef` found none:
     24 pack names and 607 qualified references, all pack ids.
 
+### Added
+
+- The anti-pattern file (ADR-0052 decision 8, as amended by ADR-0053 decision 30; #154):
+  `schemas/anti-pattern.schema.json`, closed, with `schema_version`, `id` (the file stem), `title`, `description`,
+  `severity` (`smell`, `severe` or `breaking`, no default) and `bad_example` required and `good_example` optional, and
+  the `files` rule `**/*.anti-pattern.yaml` that maps `anti_patterns/<id>.anti-pattern.yaml` to it, with its classifier
+  case. No list of kinds changes: `anti_pattern` was already a node, artifact and fragment kind. A file such a rule
+  maps was `unmodelled` (warned `file_not_held`) before, and is now judged.
+
 ### Changed
 
 - The README and the comments of `file-kinds.yaml` and `conformance/classifier-cases.yaml` say that a root case

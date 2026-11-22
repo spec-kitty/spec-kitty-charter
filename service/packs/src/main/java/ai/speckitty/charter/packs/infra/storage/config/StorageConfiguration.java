@@ -60,7 +60,7 @@ public class StorageConfiguration {
 
     /**
      * The edge concretization of the pack persistence ports, registered here rather than by a stereotype, so the class
-     * stays free of Spring: the production round trip builds it too, and pack-check runs that without Spring (#478).
+     * stays free of Spring: the production round trip builds it too, and pack-doctor runs that without Spring (#478).
      *
      * @param locations the configured pack locations
      * @param strategy the serialization format

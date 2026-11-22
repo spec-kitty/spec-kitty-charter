@@ -32,23 +32,29 @@ public final class WriteFacts {
     private WriteFacts() {}
 
     /**
-     * The facts with an artifact held: a write of an artifact the pack holds already changes none of them. The prompt
-     * facts are kept: no per-artifact write writes a mission type's step prompts or a step enhancement's entries.
+     * The facts with an artifact held: the artifact file is held and so declared, and the graph-only nodes the pack
+     * declares stay. A write of an artifact the pack holds already changes none of them. The prompt facts are kept: no
+     * per-artifact write writes a mission type's step prompts or a step enhancement's entries.
      *
      * @param facts the facts of the stored pack
      * @param artifact the artifact the write adds or replaces
      * @return the facts after the write
      */
     public static PackCompositionFacts withArtifact(PackCompositionFacts facts, Urn artifact) {
-        String held = artifact.toString();
-        if (facts.defined().contains(held)) {
+        String file = artifact.toString();
+        if (facts.held().contains(file)) {
             return facts;
         }
-        List<String> defined = new ArrayList<>(facts.defined());
-        defined.add(held);
+        List<String> held = new ArrayList<>(facts.held());
+        held.add(file);
+        List<String> declared = new ArrayList<>(facts.declared());
+        if (!declared.contains(file)) {
+            declared.add(file);
+        }
         return new PackCompositionFacts(
                 facts.changed(),
-                defined,
+                held,
+                declared,
                 facts.references(),
                 facts.policy(),
                 facts.presets(),
@@ -81,7 +87,7 @@ public final class WriteFacts {
     }
 
     /**
-     * The facts without an artifact: it is no longer held, the registered edges that start at it are gone, and so are
+     * The facts without an artifact: it is no longer held or declared, the registered edges that start at it are gone, and so are
      * the preset items that name it. A glossary context takes its terms with it. A mission type takes its steps' prompts with it and a step enhancement its fills
      * ({@link ai.speckitty.charter.packs.domain.PromptFacts#without}).
      *
@@ -93,12 +99,13 @@ public final class WriteFacts {
     public static PackCompositionFacts withoutArtifact(
             PackCompositionFacts facts, Urn artifact, List<Relationship> outgoing) {
         PackCompositionFacts edgeless = withEdges(facts, outgoing, List.of());
-        List<String> defined = edgeless.defined().stream()
-                .filter(held -> !held.equals(artifact.toString()))
-                .toList();
+        String file = artifact.toString();
         return new PackCompositionFacts(
                 edgeless.changed(),
-                defined,
+                edgeless.held().stream().filter(held -> !held.equals(file)).toList(),
+                edgeless.declared().stream()
+                        .filter(declared -> !declared.equals(file))
+                        .toList(),
                 edgeless.references(),
                 edgeless.policy(),
                 edgeless.presets().stream()
@@ -170,7 +177,8 @@ public final class WriteFacts {
         List<Relationship> remaining = List.copyOf(edges.values());
         return new PackCompositionFacts(
                 changedAfter(facts.changed(), dropped, added, remaining),
-                facts.defined(),
+                facts.held(),
+                facts.declared(),
                 referencesAfter(facts.references(), dropped, added, remaining),
                 facts.policy(),
                 facts.presets(),

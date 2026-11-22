@@ -60,7 +60,9 @@ class ImpactRelationsEnhancementTest {
                         .toList());
         packs.add(new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier(name), PackLevel.ORG), descriptor, List.of(), held));
-        facts.put(name, new PackCompositionFacts(List.of(), held, List.of(), policy, List.of(), List.of(edges)));
+        facts.put(
+                name,
+                new PackCompositionFacts(List.of(), held, List.of(), List.of(), policy, List.of(), List.of(edges)));
     }
 
     private static Relationship enhances(String from, String to) {

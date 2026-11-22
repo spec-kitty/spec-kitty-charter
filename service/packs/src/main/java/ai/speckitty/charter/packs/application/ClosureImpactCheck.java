@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -24,8 +25,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -205,8 +208,8 @@ public final class ClosureImpactCheck implements ImpactCheck {
         List<RemovalDependents.Dependent> found = finder.of(session.stored(), removed);
         if (!found.isEmpty()) {
             return new Impact(
-                    new ClosureVerdict(List.of(
-                            RemovalDependents.fault(removed.configured().id().value(), found))),
+                    new ClosureVerdict(
+                            List.of(RemovalDependents.fault(removed.configured().id(), found))),
                     Notices.NONE);
         }
         StagedPackViews.View after = session.without(removed.configured().id());
@@ -239,14 +242,20 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 ClosureRoots.of(staged, replacement.descriptor().packId(), rootSets(activations.activationRoots()));
         Judged judged = judgeClosures(session.stored(), staged, found, Optional::of);
         if (!judged.faults().halted()) {
-            walkFaults(found, replacement, judged.changes(), staged, session, judged.faults());
+            walkFaults(found, replacement, judged, staged, session);
         }
         return concluded(found, judged, namingActivations);
     }
 
-    /** What judging the closures of a change found: the closures' changes, the force diff and every fault. */
+    /**
+     * What judging the closures of a change found: the closures' changes, the force diff, every fault, and each closure
+     * that passed as it composed, with its packs' facts.
+     */
     private record Judged(
-            Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes, ForceDiff diff, Faults faults) {}
+            Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes,
+            ForceDiff diff,
+            Faults faults,
+            Map<ClosureRoots.Roots, OfferingReadService.ComposedClosure> composed) {}
 
     /**
      * Judges each closure the change joins, in order, against the stored state it changes. A closure is judged under
@@ -264,13 +273,16 @@ public final class ClosureImpactCheck implements ImpactCheck {
         stored.catalog().configured().forEach(pack -> configuredBefore.add(pack.id()));
         ForceDiff diff = new ForceDiff();
         Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
+        Map<ClosureRoots.Roots, OfferingReadService.ComposedClosure> composed = new LinkedHashMap<>();
         Faults faults = new Faults();
         for (ClosureRoots.Roots roots : found.closures()) {
             Optional<ClosureRoots.Roots> judgedRoots = judgedAs.apply(roots);
             if (judgedRoots.isEmpty()) {
                 continue;
             }
-            Optional<ClosureView> now = judge(judgedRoots.get(), afterViews, after, faults);
+            // Keyed by the roots the closure was found under, as its change is, whatever roots it is judged under.
+            Optional<ClosureView> now =
+                    judge(judgedRoots.get(), afterViews, after, faults, closure -> composed.put(roots, closure));
             if (faults.halted()) {
                 break;
             }
@@ -281,7 +293,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
             diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now.get()));
             changes.put(roots, new ActivationImpact.ClosureChange(was, now.get()));
         }
-        return new Judged(changes, diff, faults);
+        return new Judged(changes, diff, faults, composed);
     }
 
     /** The answer once the closures are judged: the faults, or else the activations' gate and the notices. */
@@ -365,7 +377,10 @@ public final class ClosureImpactCheck implements ImpactCheck {
             OfferingReadService.ComposedClosure composed = composing.offering().composedWithFacts(List.of(pack.id()));
             List<ClosureFault> faults = relationFaults(composed).stream()
                     .map(broken -> ClosureFault.of(
-                            broken.code(), broken.detail() + " (packs " + packsOf(broken) + ")", broken.packs()))
+                            broken.origin(),
+                            broken.code(),
+                            broken.detail() + " (packs " + packsOf(broken) + ")",
+                            broken.packs()))
                     .toList();
             if (faults.isEmpty()) {
                 ClosureWalk.Profiles profiles =
@@ -432,16 +447,18 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * builds on it, whose declared fallback or pinned profile may be held in the written pack and so be removed,
      * unlocked, given a role or a performer by this write, and whose closure may gain a differing pin or an enhancement
      * that drops part of the profile it enhances (rulings D5, D7). Each is judged over its own closure, the fallback
-     * first, then the pins, then the enhancements ({@link ClosureWalk}), every breach (#556, FR-005). A closure that did
-     * not compose or broke a relation has no view, and is not walked.
+     * first, then the pins, then the enhancements ({@link ClosureWalk}), every breach (#556, FR-005), and then the items
+     * of its presets ({@link #presetItemFaults}, #629, #632 item 1). A closure that did not compose or broke a relation
+     * has no view, and is not walked.
      */
     private void walkFaults(
             ClosureRoots.Found found,
             Replacement replacement,
-            Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> judged,
+            Judged closures,
             StagedPackViews.View staged,
-            StagedPackViews.Session session,
-            Faults faults) {
+            StagedPackViews.Session session) {
+        Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> judged = closures.changes();
+        Faults faults = closures.faults();
         PackIdentifier written = replacement.configured().id();
         ClosureWalk.Profiles profiles =
                 (holder, id) -> holder.equals(written) && replacement.pack().isPresent()
@@ -470,7 +487,35 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 return;
             }
             breaches.forEach(breach -> faults.add(withinClosure(roots, breach, staged)));
+            // A preset-item fault carries its violation, so it answers alone as the rule raised it, and is named in
+            // its closure only beside other faults, as place() does for a compose fault with violations.
+            presetItemFaults(declaring, closures.composed().get(roots))
+                    .forEach(fault -> faults.add(
+                            fault,
+                            alone -> alone.with(
+                                    "In the closure rooted at " + roots.label() + ": " + alone.detail(),
+                                    withRoots(alone.packs(), roots, staged))));
         }
+    }
+
+    /**
+     * The preset-item faults of the declaring pack of a single-root closure (#629, #632 item 1): the phase pack-doctor
+     * runs ({@link PackRulesets#presetItemFaults}), over the closure as it composed with its packs' facts, kept to the
+     * declaring pack's own presets, so a pack the closure reaches is judged in its own closure, once. Each fault keeps
+     * its violation at the item.
+     */
+    private static List<ClosureFault> presetItemFaults(
+            PackIdentifier declaring, OfferingReadService.@Nullable ComposedClosure composed) {
+        if (composed == null) {
+            return List.of();
+        }
+        return PackRulesets.presetItemFaults(
+                        composed.packs(),
+                        pack -> Objects.requireNonNull(
+                                composed.facts().get(pack.configured().id().value()), "composed with its facts"))
+                .stream()
+                .filter(fault -> fault.packs().getFirst().packId().equals(declaring))
+                .toList();
     }
 
     /** The store that loads the aggregates; a session that has none cannot judge a fallback, which is a defect, not a refusal. */
@@ -504,7 +549,11 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * @return the closure's view, which carries its floor and locks; empty when it has a fault
      */
     private static Optional<ClosureView> judge(
-            ClosureRoots.Roots roots, Views views, StagedPackViews.View staged, Faults faults) {
+            ClosureRoots.Roots roots,
+            Views views,
+            StagedPackViews.View staged,
+            Faults faults,
+            Consumer<OfferingReadService.ComposedClosure> passed) {
         OfferingReadService.Judged judged;
         try {
             judged = views.offering().judged(roots.ids());
@@ -528,7 +577,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
             return Optional.empty();
         }
         try {
-            return Optional.of(views.queries().snapshot(Optional.of(roots.ids())));
+            Optional<ClosureView> view = Optional.of(views.queries().snapshot(Optional.of(roots.ids())));
+            passed.accept(composed);
+            return view;
         } catch (CharterRefusal refused) {
             settle(roots, refused, staged, faults);
             return Optional.empty();
@@ -577,7 +628,12 @@ public final class ClosureImpactCheck implements ImpactCheck {
         String detail = "In the closure rooted at " + roots.label() + ": " + fault.detail();
         if (fault.isUnresolvedDelegation()) {
             faults.add(ClosureFault.of(
-                    RefusalCode.VALIDATION_FAILED, detail, fault.packs(), fault.violations(), fault.requiredBy()));
+                    fault.origin(),
+                    RefusalCode.VALIDATION_FAILED,
+                    detail,
+                    fault.packs(),
+                    fault.violations(),
+                    fault.requiredBy()));
         } else if (!fault.violations().isEmpty() || !fault.requiredBy().isEmpty()) {
             faults.add(fault, alone -> alone.with(detail, withRoots(alone.packs(), roots, staged)));
         } else {
@@ -633,6 +689,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
     private static ClosureFault withinClosure(
             ClosureRoots.Roots roots, ClosureFault broken, StagedPackViews.View staged) {
         return ClosureFault.of(
+                broken.origin(),
                 broken.code(),
                 "In the closure rooted at " + roots.label() + ": " + broken.detail(),
                 withRoots(broken.packs(), roots, staged));

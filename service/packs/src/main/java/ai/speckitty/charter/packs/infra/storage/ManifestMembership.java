@@ -76,7 +76,7 @@ final class ManifestMembership {
      * @return the reasons; empty when the lists hold the same entries
      */
     static List<String> mismatch(PackManifestDso listed, PackManifestDso derived) {
-        return ManifestRules.mismatch(entries(listed), entries(derived));
+        return ManifestRules.mismatch(entries(listed), entries(derived)).reasons();
     }
 
     /**
@@ -100,7 +100,15 @@ final class ManifestMembership {
         return manifest.presets().stream().map(p -> p.id() + " at " + p.path()).toList();
     }
 
-    private static Optional<byte[]> bytesAt(Path directory, String path) {
+    /**
+     * The bytes of a pack-relative path inside the directory, read without following a link: what the stamp hashes and
+     * what the reader verifies an incoming manifest against (#630).
+     *
+     * @param directory the pack's directory
+     * @param path the pack-relative path a manifest lists
+     * @return the bytes; empty when the path leaves the pack, is a link, or holds no regular file
+     */
+    static Optional<byte[]> bytesAt(Path directory, String path) {
         if (Companions.inPack(directory, path) instanceof Companions.Inside at
                 && PackFileSet.unlinkedFile(directory, at.packRelative())) {
             return FilesystemPackStore.readBytes(at.file());

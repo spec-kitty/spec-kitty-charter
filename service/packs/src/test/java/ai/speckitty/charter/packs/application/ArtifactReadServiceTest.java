@@ -1248,6 +1248,7 @@ class ArtifactReadServiceTest {
                     contents(pack).artifacts().stream()
                             .map(artifact -> artifact.urn().toString())
                             .toList(),
+                    List.of(),
                     List.of());
         }
 

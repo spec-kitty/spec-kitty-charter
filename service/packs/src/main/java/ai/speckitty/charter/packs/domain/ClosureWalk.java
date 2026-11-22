@@ -11,7 +11,7 @@ import java.util.Optional;
  * write is in place: its ADR-0068 fallback profile, its role pins, then the profile enhancements in force, each reporting
  * every breach. The qualified references it also lists are judged by the compose that builds the closure (FR-006), and
  * no pack write is refused on the required floor (spec A1). The service composes it through the impact check; the
- * validation edge and {@code pack-check} compose none of it.
+ * validation edge and {@code pack-doctor} compose none of it.
  */
 @FunctionalInterface
 public interface ClosureWalk {

@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
@@ -45,7 +46,7 @@ class PrecedenceTest {
                     pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
             where = where.at(pointer.toString());
         }
-        return new Reason(code.value(), Evaluation.FAIL, code, where, "d");
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, where, "d");
     }
 
     private static SchemaViolation fallback(String file, String... pointer) {
