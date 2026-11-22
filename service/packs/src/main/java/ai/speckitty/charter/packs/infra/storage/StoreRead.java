@@ -124,7 +124,7 @@ record StoreRead(
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
         if (!PackIdentifier.isPackId(name)) {
-            return refused(List.of(), RefusalCode.PACK_UNREADABLE, packIdInvalid(name), false, List.of());
+            return refused(RefusalCode.PACK_UNREADABLE, packIdInvalid(name), false, List.of());
         }
         return read(directory, new PackIdentifier(name), walk, strategy, bindings, companionRules);
     }
@@ -256,11 +256,7 @@ record StoreRead(
         Path parent = packDir.getParent();
         if (parent == null || packDir.getFileName() == null) {
             refusal.add(refused(
-                    List.of(),
-                    RefusalCode.PACK_UNREADABLE,
-                    "a pack directory needs a parent directory",
-                    false,
-                    List.of()));
+                    RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory", false, List.of()));
             return null;
         }
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
@@ -284,7 +280,7 @@ record StoreRead(
         try {
             graphs = store.readGraphs(key);
         } catch (CharterRefusal refused) {
-            refusal.add(refused(List.of(), refused.code(), String.valueOf(refused.getMessage()), false, List.of()));
+            refusal.add(refused(refused.code(), String.valueOf(refused.getMessage()), false, List.of()));
             return null;
         }
         try {
@@ -292,8 +288,7 @@ record StoreRead(
         } catch (CharterRefusal refused) {
             // The graph read found the directory, so the rest of the read refuses only the descriptor: its fault is
             // placed at pack.yaml with no second read of the file (#554, WP04 review MINOR-4).
-            refusal.add(refused(
-                    List.of(), refused.code(), String.valueOf(refused.getMessage()), true, graphs.violations()));
+            refusal.add(refused(refused.code(), String.valueOf(refused.getMessage()), true, graphs.violations()));
             return null;
         }
     }
@@ -344,17 +339,13 @@ record StoreRead(
     }
 
     private static StoreRead refused(
-            List<PackElementViolation> graphFaults,
-            RefusalCode code,
-            String message,
-            boolean atDescriptor,
-            List<PackElementViolation> unreadGraphs) {
+            RefusalCode code, String message, boolean atDescriptor, List<PackElementViolation> graphFaults) {
         return new StoreRead(
-                new Assembly.Refused(graphFaults, code, message, atDescriptor),
+                new Assembly.Refused(List.of(), code, message, atDescriptor),
                 new PackLayout(Map.of()),
                 List.of(),
                 Optional.empty(),
-                unreadGraphs);
+                graphFaults);
     }
 
     /** Row 32: the fault of the policy file the descriptor names, among the trailing ones, is the store's alone. */

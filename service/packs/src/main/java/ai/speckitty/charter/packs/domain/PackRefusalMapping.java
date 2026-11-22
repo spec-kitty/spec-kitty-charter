@@ -14,8 +14,8 @@ import java.util.List;
  * that fails ({@link #of}), the diagnostics of one that passes ({@link #diagnostics}), and the refusal of a pack whose
  * graph documents cannot be read ({@link #graphUnreadable}, #617). Registration ({@code PackRefusals}), pack-check and
  * the reads that refuse an unreadable graph document all call it, so a pack the service would refuse is refused in the
- * same words wherever it is checked. It keeps the order it is given, which is registration's, and names no storage code: it reads
- * the verdict's failures only.
+ * same words wherever it is checked. It keeps the order it is given, which is registration's, and names no storage
+ * code: it reads the verdict's failures only.
  */
 public final class PackRefusalMapping {
 

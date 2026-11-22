@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -385,7 +386,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /**
      * The strict load's refusal of a pack whose graph documents the assembly could not read: {@code DRG_SCHEMA_ERROR},
-     * naming the first ({@code <pack_id>/<file>: <reason>}), from the assembly's own graph faults.
+     * naming the first by path ({@code <pack_id>/<file>: <reason>}), as the composing read does. It reads the assembly's
+     * own graph faults, not {@link StoreRead#graphFaults}, so that a refused descriptor is refused first.
      */
     private static void requireReadableGraphs(String id, StoreRead read) {
         List<PackElementViolation> faults = switch (read.assembly()) {
@@ -393,7 +395,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             case Assembly.Refused refused -> refused.graphFaults();
             case Assembly.None none -> List.of();
         };
-        faults.stream().findFirst().ifPresent(first -> {
+        faults.stream().min(Comparator.comparing(PackElementViolation::file)).ifPresent(first -> {
             throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, id + "/" + first.file() + ": " + first.reason());
         });
     }
