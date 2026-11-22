@@ -274,7 +274,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: ADR-0083, amendments, docs, changelog; gates green",
-        "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3"
+        "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3",
+        "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
