@@ -230,7 +230,7 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -241,7 +241,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: PackRemediation facade (packs.infra.storage) with staged copy and two-rename swap; StorageRulesets.verdictWithoutTheManifestGate is the one precondition; pack-doctor remediate <dir>[:<level>][=<id>]... prints rewritten/unchanged/refused, then validate --round-trip over the set (exit 0/1/2); HexagonalArchitectureTest names the remediation as the main's third adapter and walks it framework-free. Gates green except PackSetCheckTest Closure 'a must_have no pack of the own closure holds', which fails identically on the lane base 148805047 (WP03 test edits spdd.yaml, WP04 manifest_stale flags it) - not WP07.",
-        "- 2026-11-22T10:36:23Z – claude – shell_pid=22717 – Fixed the WP03 x WP04 integration red in PackSetCheckTest$Closure (commit 2f0b19450, out-of-map): anUnheldMustHaveIsNotHeld and anUndeclaredItemIsUndeclared edit org-base presets/spdd.yaml; each now restamps with ManifestStamps.stamp after planting, asserts no pack fails, and asserts its one closure code by equality (preset_item_not_held / preset_item_undeclared). A probe over packs and pack-validation found no other unrestamped plant: every other manifest-gate hit is a test that plants the manifest fault on purpose. Fresh runs: :pack-validation:test 478 tests 0 failures (1 skipped), :packs:test 7268 tests 0 failures (7 skipped)."
+        "- 2026-11-22T10:36:23Z – claude – shell_pid=22717 – Fixed the WP03 x WP04 integration red in PackSetCheckTest$Closure (commit 2f0b19450, out-of-map): anUnheldMustHaveIsNotHeld and anUndeclaredItemIsUndeclared edit org-base presets/spdd.yaml; each now restamps with ManifestStamps.stamp after planting, asserts no pack fails, and asserts its one closure code by equality (preset_item_not_held / preset_item_undeclared). A probe over packs and pack-validation found no other unrestamped plant: every other manifest-gate hit is a test that plants the manifest fault on purpose. Fresh runs: :pack-validation:test 478 tests 0 failures (1 skipped), :packs:test 7268 tests 0 failures (7 skipped).",
+        "Review passed: remediate via PackRemediation facade (round-trip canonical bytes to source paths, stamp last), staged swap leaves nothing behind, precondition = verdict without the manifest gate; integration fix 2f0b19450 strengthens two CLOSURE tests. Fresh: packs 7268, pack-validation 478, wholePackRoundTrip 17, pack-doctor 371/15/4, contracts 314, deployable 2400, docs ok. LOWs to WP08/cleanup"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
