@@ -113,8 +113,9 @@ public final class Pep440Range {
      *
      * <p>The answer is read from the boundaries the two sets name. Every set partitions the versions at its operands,
      * so a version at each operand and one just past it (the release padded with a deeper segment, the next
-     * prerelease, post-release or development number, and the next value of the last release segment, which is the
-     * first version past a {@code .*} wildcard or a {@code ~=} range), the lowest version of each release and of each
+     * prerelease, the lowest development release of the next post-release, the next development number, and the next
+     * value of the last release segment, which is the first version past a {@code .*} wildcard or a {@code ~=} range),
+     * the lowest version of each release and of each
      * epoch cover every region either set can tell apart; the sets overlap when one of those candidates satisfies both
      * under {@link #admits}'s ordering. An {@code ===} clause names the one text it admits, so that text is the only
      * candidate when a set holds one.
@@ -236,9 +237,9 @@ public final class Pep440Range {
 
     /**
      * Adds to {@code texts} the versions around one operand that an overlap is decided on: the operand itself (and
-     * with its local label), and its nearest neighbours in each segment. An operand with a post segment also gets the
-     * lowest development release of that post-release ({@code 1.0.post1.dev0}), which sits above every earlier
-     * post-release, so {@code >1.0.post0,<1.0.post1} finds it (#386). The epoch floor ({@code E!0.dev0}, the lowest
+     * with its local label), and its nearest neighbours in each segment. Its next post-release is
+     * tried at that post-release's lowest development release ({@code 1.0.post1.dev0} after {@code 1.0.post0}): the
+     * immediate successor of an operand with no development segment (#386). The epoch floor ({@code E!0.dev0}, the lowest
      * version of the operand's epoch) is added too, and for a {@code ~=} operand the bump of its parent release (the
      * first version past the prefix the operator implies).
      */
@@ -264,10 +265,7 @@ public final class Pep440Range {
                 release,
                 operand.pre(),
                 Optional.of(operand.post().map(post -> post.add(BigInteger.ONE)).orElse(BigInteger.ZERO)),
-                Optional.empty()));
-        operand.post()
-                .ifPresent(post -> texts.add(canonical(
-                        operand.epoch(), release, operand.pre(), Optional.of(post), Optional.of(BigInteger.ZERO))));
+                Optional.of(BigInteger.ZERO)));
         operand.dev()
                 .ifPresent(dev -> texts.add(canonical(
                         operand.epoch(),
