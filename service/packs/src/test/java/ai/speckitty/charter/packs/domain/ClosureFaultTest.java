@@ -126,6 +126,27 @@ class ClosureFaultTest {
     }
 
     @Test
+    @DisplayName(
+            "as registration refuses it: the delegation's pack_unreadable is validation_failed, another fault itself")
+    void asRegistrationRefusesItTheDelegationIsTheAuthorsFault() {
+        RefusalViolation own = new RefusalViolation("mission-types/a.yaml", "substep_delegation_unresolved", "why");
+        ClosureFault delegation = ClosureFault.of(
+                ACME_ORIGIN, RefusalCode.PACK_UNREADABLE, "pack acme: why", List.of(ACME), List.of(own), List.of());
+        ClosureFault reference =
+                ClosureFault.of(ACME_ORIGIN, RefusalCode.PACK_REFERENCE_PACK_MISSING, "gone", List.of(ACME));
+
+        ClosureFault refused = delegation.asRegistrationRefuses();
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.detail()).isEqualTo("pack acme: why");
+        assertThat(refused.packs()).containsExactly(ACME);
+        assertThat(refused.violations()).containsExactly(own);
+        assertThat(refused.origin()).isEqualTo(ACME_ORIGIN);
+        assertThat(refused.reason().rule()).isEqualTo(delegation.reason().rule());
+        assertThat(reference.asRegistrationRefuses()).isSameAs(reference);
+    }
+
+    @Test
     @DisplayName("a refusal of another check never lifts")
     void aRefusalOfAnotherCheckNeverLifts() {
         assertThat(ClosureFault.lift(new CharterRefusal(RefusalCode.PROMPT_SLOT_MISSING, "slot")))

@@ -276,6 +276,17 @@ public final class PackCompositionResolver {
         }
 
         /**
+         * The fault this refusal is in a closure: the failure's code, the detail and the packs it names, about the first
+         * pack it names (R-o). The one factory of a resolver refusal's fault, which the offering's compose phases, the
+         * edge index and {@link #referenceFaultsOf} read (#614).
+         *
+         * @return the fault
+         */
+        public ClosureFault toFault() {
+            return ClosureFault.of(PackOrigins.firstOf(packs), failure.code(), detail(), packs);
+        }
+
+        /**
          * What the caller needs to read; never null.
          *
          * @return the detail
@@ -617,6 +628,53 @@ public final class PackCompositionResolver {
             }
         }
         return List.copyOf(faults);
+    }
+
+    /**
+     * One pack's references within a closure, every fault kept (#632 item 3, ruling R-s): each reference its facts list
+     * as written, resolved in the closure ({@link #resolveReference}) and checked by {@link #referenceFaults}, each fault
+     * as {@link Refusal#toFault()} gives it. It is the one body of the reference check: the offering's phase runs it for
+     * every member of the composed closure, and pack-doctor's {@code --full} for each pack over its own closure.
+     *
+     * @param closure the closure the pack is judged in, the pack among it
+     * @param pack the pack whose references are judged
+     * @param facts the pack's composition facts
+     * @return every fault, in the references' order; empty when every reference holds
+     * @throws IllegalArgumentException when the pack is not of the closure
+     */
+    public static List<ClosureFault> referenceFaultsOf(
+            List<PackUnderResolution> closure, PackUnderResolution pack, PackCompositionFacts facts) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(facts, "facts");
+        return referenceFaults(
+                        closure,
+                        pack.descriptor().packId(),
+                        facts.references().stream()
+                                .map(written -> resolveReference(
+                                        closure, pack.configured().id(), PackQualifiedReference.parse(written)))
+                                .toList())
+                .stream()
+                .map(Refusal::toFault)
+                .toList();
+    }
+
+    /**
+     * One pack's substep delegation faults within a closure, every fault kept (#632 item 3, ruling R-s): the candidates
+     * its facts list, judged by {@link #unresolvedDelegations}. It is the one body of the delegation check: the
+     * offering's phase runs it for every member of the composed closure, and pack-doctor's {@code --full} for each pack
+     * over its own closure.
+     *
+     * @param closure the closure the pack is judged in, the pack among it
+     * @param pack the pack whose candidates are judged
+     * @param facts the pack's composition facts
+     * @return every fault, in the candidates' order; empty when every candidate resolves
+     */
+    public static List<ClosureFault> delegationFaultsOf(
+            List<PackUnderResolution> closure, PackUnderResolution pack, PackCompositionFacts facts) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(facts, "facts");
+        return unresolvedDelegations(closure, pack.descriptor().packId(), facts.delegations());
     }
 
     /**

@@ -627,13 +627,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
             ClosureRoots.Roots roots, ClosureFault fault, StagedPackViews.View staged, Faults faults) {
         String detail = "In the closure rooted at " + roots.label() + ": " + fault.detail();
         if (fault.isUnresolvedDelegation()) {
-            faults.add(ClosureFault.of(
-                    fault.origin(),
-                    RefusalCode.VALIDATION_FAILED,
-                    detail,
-                    fault.packs(),
-                    fault.violations(),
-                    fault.requiredBy()));
+            faults.add(fault.asRegistrationRefuses().with(detail, fault.packs()));
         } else if (!fault.violations().isEmpty() || !fault.requiredBy().isEmpty()) {
             faults.add(fault, alone -> alone.with(detail, withRoots(alone.packs(), roots, staged)));
         } else {
