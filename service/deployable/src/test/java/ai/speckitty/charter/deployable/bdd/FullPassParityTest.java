@@ -307,6 +307,17 @@ class FullPassParityTest {
                     false,
                     "preset_item_undeclared",
                     List.of("preset_item_undeclared"),
+                    true),
+            // The existing case-only answer stands for a preset item, with no violation of its own (US1 scenario 3).
+            new Row(
+                    "a preset item that names a held artifact only by case",
+                    acme(preset("""
+                                activated_directives:
+                                  - id: a
+                                """)),
+                    false,
+                    "pack_reference_artifact_missing",
+                    List.of(),
                     true)
         };
     }
