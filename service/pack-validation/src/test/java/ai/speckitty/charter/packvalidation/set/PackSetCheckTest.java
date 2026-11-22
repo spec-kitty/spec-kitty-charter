@@ -888,6 +888,153 @@ class PackSetCheckTest {
     }
 
     @Nested
+    @DisplayName("REFERENCES with --full (#632 item 3, ruling R-s)")
+    class References {
+
+        private static final String BETA_ID = "01M4P01D5TWB5FKZGNNQG3943S";
+
+        /** An org pack's fragment, which validate mode asks of every org pack (R16). */
+        private static final String FRAGMENT = "nodes: []\nedges: []\n";
+
+        /** beta, holding directive:SHARE, and alpha, which depends on beta and relates its MINE to {@code target}. */
+        private static List<PackSetEntry> alphaAndBeta(Path dir, String target) {
+            Path beta = dir.resolve("beta");
+            Path alpha = dir.resolve("alpha");
+            write(beta.resolve("pack.yaml"), """
+                    pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                    pack_version: 1.0.0
+                    parent_pack: null
+                    name: beta-pack
+                    pack_level: org
+                    """);
+            write(beta.resolve("directives/SHARE.directive.yaml"), directive("SHARE"));
+            write(beta.resolve("drg/fragment.yaml"), FRAGMENT);
+            write(alpha.resolve("pack.yaml"), """
+                    pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+                    pack_version: 1.0.0
+                    parent_pack: null
+                    name: alpha-pack
+                    pack_level: org
+                    depends_on:
+                    - pack_id: %s
+                      range: '>=1.0'
+                    """.formatted(BETA_ID));
+            write(alpha.resolve("directives/MINE.directive.yaml"), directive("MINE"));
+            write(alpha.resolve("drg/fragment.yaml"), FRAGMENT);
+            write(alpha.resolve("relations.graph.yaml"), """
+                    schema_version: '1.0'
+                    generated_at: STATIC
+                    nodes: []
+                    edges:
+                    - {source: 'directive:MINE', target: '%s', relation: requires}
+                    """.formatted(target));
+            return List.of(at("beta", beta, Optional.empty()), at("alpha", alpha, Optional.empty()));
+        }
+
+        private static String directive(String id) {
+            return """
+                    schema_version: '1.0'
+                    id: %s
+                    title: %s
+                    intent: %s
+                    enforcement: required
+                    """.formatted(id, id, id);
+        }
+
+        private static void write(Path file, String text) {
+            try {
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, text, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Test
+        @DisplayName("charter's example packs: PACK, CLOSURE, then REFERENCES, and no fault")
+        void theExamplePacksPassReferences() {
+            PackSetVerdict verdict =
+                    CHECK.checkFull(examples(ExamplePacks.names().toArray(String[]::new)));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.faults()).isEmpty();
+            assertThat(verdict.skipped()).isEmpty();
+            assertThat(verdict.failing()).isFalse();
+        }
+
+        @Test
+        @DisplayName(
+                "a reference to an artifact the named pack does not hold: pack_reference_artifact_missing, as registration")
+        void aMissingReferencedArtifactIsFound(@TempDir Path dir) {
+            PackSetVerdict verdict = CHECK.checkFull(alphaAndBeta(dir, "beta-pack::directive:NOPE"));
+
+            assertThat(verdict.packs()).noneMatch(PackResult::failing);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.faults()).singleElement().satisfies(fault -> {
+                assertThat(fault.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                assertThat(fault.packs()).extracting(RefusalPack::name).containsExactly("alpha-pack", "beta-pack");
+                assertThat(fault.detail()).contains("beta-pack::directive:NOPE");
+            });
+            assertThat(verdict.failing()).isTrue();
+        }
+
+        @Test
+        @DisplayName("without --full, the default check is PACK and CLOSURE: the same set has no fault")
+        void theDefaultCheckRunsNoReferences(@TempDir Path dir) {
+            PackSetVerdict verdict = CHECK.check(alphaAndBeta(dir, "beta-pack::directive:NOPE"));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE);
+            assertThat(verdict.faults()).isEmpty();
+            assertThat(verdict.failing()).isFalse();
+        }
+
+        @Test
+        @DisplayName("a CLOSURE fault: REFERENCES does not run, since it reads the closure CLOSURE settles")
+        void aClosureFaultStopsReferences(@TempDir Path dir) {
+            PackSetEntry alpha = alphaAndBeta(dir, "beta-pack::directive:NOPE").get(1);
+
+            PackSetVerdict verdict = CHECK.checkFull(List.of(alpha));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE);
+            assertThat(codes(verdict.faults())).containsExactly(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token());
+            assertThat(verdict.skipped()).isEmpty();
+            assertThat(verdict.failing()).isTrue();
+        }
+
+        @Test
+        @DisplayName("a skipped CLOSURE skips REFERENCES too, naming the same packs")
+        void aSkippedClosureSkipsReferences(@TempDir Path dir) {
+            Path bare = PlantedPacks.copyOf("control-no-pack-level-on-a-bare-path", dir);
+
+            PackSetVerdict verdict =
+                    CHECK.checkFull(List.of(example(ExamplePacks.BUILT_IN), at("qa", bare, Optional.empty())));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK);
+            assertThat(verdict.skipped())
+                    .extracting(PackSetVerdict.Skip::check)
+                    .containsExactly(Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.skipped().get(1).packs())
+                    .isEqualTo(verdict.skipped().getFirst().packs());
+            assertThat(verdict.skipped().get(1).reason()).startsWith("REFERENCES needs the composition facts");
+        }
+
+        @Test
+        @DisplayName("with the round trip: PACK, CLOSURE, REFERENCES, then ROUND_TRIP")
+        void withTheRoundTripReferencesComesBeforeIt() {
+            List<String> asked = new ArrayList<>();
+            RoundTripping recorded = root -> {
+                asked.add(root.name());
+                return RoundTrip.RED;
+            };
+
+            PackSetVerdict verdict = CHECK.checkFullWithRoundTrip(examples(ExamplePacks.BUILT_IN), recorded);
+
+            assertThat(asked).containsExactly(ExamplePacks.BUILT_IN);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.ROUND_TRIP);
+        }
+    }
+
+    @Nested
     @DisplayName("the set")
     class TheSet {
 

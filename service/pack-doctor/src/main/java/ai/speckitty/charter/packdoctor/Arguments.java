@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * available yet ({@link Remediate}).
  *
  * <p>{@code validate} takes {@code --config-root <dir>}, or one or more {@code --pack <dir>[:<level>][=<id>]}, then
- * optionally {@code --round-trip}; {@code validate --help} asks for the usage too.
+ * optionally {@code --round-trip} and {@code --full}; {@code validate --help} asks for the usage too.
  * A pack is configured under its {@code =<id>} when one is given, its registered id (#583, D2b; PR #608 MEDIUM-3,
  * operator ruling B), and otherwise under its directory's name, as every pack of a config root is.
  *
@@ -42,7 +42,7 @@ final class Arguments {
 
     /** The usage, as {@code --help} prints it and a usage fault ends with. */
     static final String USAGE = """
-            usage: pack-doctor validate (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip]
+            usage: pack-doctor validate (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip] [--full]
                    pack-doctor remediate
               validate                 check a set of packs and write the report to standard output
               remediate                not available yet
@@ -53,6 +53,8 @@ final class Arguments {
                                        under the pack id <id> when given, else under the directory's name;
                                        repeat it to check a set of packs together
               --round-trip             also round-trip every pack through the charter's model
+              --full                   also check, per pack within its own closure, its substep delegations, its
+                                       references and its step enhancements' targets, as registration does
               --help                   print this usage
               --                       end the options: each argument after it is a --pack value, for a
                                        directory whose name starts with -- (or write ./--dir)
@@ -62,6 +64,7 @@ final class Arguments {
     private static final String CONFIG_ROOT = "--config-root";
     private static final String PACK = "--pack";
     private static final String ROUND_TRIP = "--round-trip";
+    private static final String FULL = "--full";
     private static final String HELP = "--help";
     private static final String END_OF_OPTIONS = "--";
     private static final String VALIDATE = "validate";
@@ -78,16 +81,28 @@ final class Arguments {
      * @param packs the packs, in the order given, or in name order under a config root; no two with one directory or
      *     one id
      * @param roundTrip whether the round trip is asked for
+     * @param full whether {@code REFERENCES} is asked for ({@code --full}; #632 item 3)
      */
-    record Parsed(List<PackSetEntry> packs, boolean roundTrip) implements Outcome {
+    record Parsed(List<PackSetEntry> packs, boolean roundTrip, boolean full) implements Outcome {
         /**
          * Checks the fields and copies the list.
          *
          * @param packs the packs
          * @param roundTrip whether to round-trip
+         * @param full whether to run {@code REFERENCES}
          */
         Parsed {
             packs = List.copyOf(packs);
+        }
+
+        /**
+         * A check without {@code --full}.
+         *
+         * @param packs the packs
+         * @param roundTrip whether to round-trip
+         */
+        Parsed(List<PackSetEntry> packs, boolean roundTrip) {
+            this(packs, roundTrip, false);
         }
     }
 
@@ -163,12 +178,14 @@ final class Arguments {
         private Optional<String> configRoot = Optional.empty();
         private final List<String> packs = new ArrayList<>();
         private boolean roundTrip;
+        private boolean full;
 
         /** Takes one argument, and its value from {@code rest}; the fault it is, if any. */
         Optional<UsageFault> take(String arg, Iterator<String> rest) {
             switch (arg) {
                 case END_OF_OPTIONS -> rest.forEachRemaining(packs::add);
                 case ROUND_TRIP -> roundTrip = true;
+                case FULL -> full = true;
                 case CONFIG_ROOT, PACK -> {
                     return value(arg, rest);
                 }
@@ -197,6 +214,13 @@ final class Arguments {
         }
 
         Outcome outcome() {
+            Outcome outcome = packsOutcome();
+            return full && outcome instanceof Parsed parsed
+                    ? new Parsed(parsed.packs(), parsed.roundTrip(), true)
+                    : outcome;
+        }
+
+        private Outcome packsOutcome() {
             if (configRoot.isPresent() && !packs.isEmpty()) {
                 return new UsageFault("give " + CONFIG_ROOT + " or " + PACK + ", not both");
             }

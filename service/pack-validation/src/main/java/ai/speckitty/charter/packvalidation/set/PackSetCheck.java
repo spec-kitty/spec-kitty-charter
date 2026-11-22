@@ -43,6 +43,10 @@ import java.util.stream.Collectors;
  *       faults of {@code PackRulesets.closure(factsOf)}: the contests, then the preset items), on those facts. A pack's dependencies must be in the set.
  *       It runs only when every pack's facts are {@link PackReadout.Built} and every pack has a level; otherwise it is
  *       skipped and the verdict names the packs that stopped it (D3).
+ *   <li>With {@code --full}, {@code REFERENCES} ({@link ClosureWalkPhase}; #632 item 3, ruling R-s): per pack, over its
+ *       own closure, the delegation, reference and enhancement target checks in registration's phase order. It runs
+ *       only when {@code CLOSURE} ran and found no fault, since it reads the closure {@code CLOSURE} settles; when
+ *       {@code CLOSURE} is skipped, it is skipped too, naming the same packs.
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
  *       validate mode found: the two are independent checks, but a round-trip reason at a file where validate mode
@@ -56,7 +60,8 @@ import java.util.stream.Collectors;
  * pack with one {@code pack_id_invalid} violation, its facts are {@link PackReadout.Unreadable}, and so {@code CLOSURE}
  * is skipped and names it (D3).
  *
- * <p>No rule is defined here: {@code CLOSURE} has one derivation, in {@link PackRulesets}.
+ * <p>No rule is defined here: {@code CLOSURE} has one derivation, in {@link PackRulesets}, and each check of
+ * {@code REFERENCES} is the packs domain's one body of it.
  */
 public final class PackSetCheck {
 
@@ -81,7 +86,18 @@ public final class PackSetCheck {
      * @throws IllegalArgumentException when the set is empty or two entries share a name
      */
     public PackSetVerdict check(List<PackSetEntry> entries) {
-        return run(entries, Optional.empty());
+        return run(entries, Optional.empty(), false);
+    }
+
+    /**
+     * Checks a set of packs: {@code PACK}, {@code CLOSURE} and {@code REFERENCES} ({@code --full}).
+     *
+     * @param entries the packs, in the order the results are reported; no two with one name
+     * @return the verdict
+     * @throws IllegalArgumentException when the set is empty or two entries share a name
+     */
+    public PackSetVerdict checkFull(List<PackSetEntry> entries) {
+        return run(entries, Optional.empty(), true);
     }
 
     /**
@@ -95,10 +111,24 @@ public final class PackSetCheck {
      *     propagates it
      */
     public PackSetVerdict checkWithRoundTrip(List<PackSetEntry> entries, RoundTripping roundTripping) {
-        return run(entries, Optional.of(Objects.requireNonNull(roundTripping, "roundTripping")));
+        return run(entries, Optional.of(Objects.requireNonNull(roundTripping, "roundTripping")), false);
     }
 
-    private PackSetVerdict run(List<PackSetEntry> entries, Optional<RoundTripping> roundTripping) {
+    /**
+     * Checks a set of packs: {@code PACK}, {@code CLOSURE}, {@code REFERENCES} ({@code --full}) and {@code ROUND_TRIP}.
+     *
+     * @param entries the packs, in the order the results are reported; no two with one name
+     * @param roundTripping the production round trip, which the composition root supplies
+     * @return the verdict
+     * @throws IllegalArgumentException when the set is empty or two entries share a name
+     * @throws java.io.UncheckedIOException when the round trip fails outside a pack read, as {@link RoundTripping}
+     *     propagates it
+     */
+    public PackSetVerdict checkFullWithRoundTrip(List<PackSetEntry> entries, RoundTripping roundTripping) {
+        return run(entries, Optional.of(Objects.requireNonNull(roundTripping, "roundTripping")), true);
+    }
+
+    private PackSetVerdict run(List<PackSetEntry> entries, Optional<RoundTripping> roundTripping, boolean full) {
         refuseEmptyOrRepeated(entries);
         List<PackResult> results = new ArrayList<>();
         for (PackSetEntry entry : entries) {
@@ -117,14 +147,22 @@ public final class PackSetCheck {
                     levelMissing(entry, checked.readout().facts(), level)));
         }
         List<Check> checks = new ArrayList<>(List.of(Check.PACK));
-        List<ClosureFault> faults = List.of();
+        List<ClosureFault> faults = new ArrayList<>();
         List<Skip> skipped = new ArrayList<>();
         List<Unjudged> unjudged = unjudged(results);
         if (unjudged.isEmpty()) {
-            faults = closure(results);
+            Composed composed = composed(results);
+            faults.addAll(PackRulesets.closureFaults(composed.set(), composed::factsOf));
             checks.add(Check.CLOSURE);
+            if (full && faults.isEmpty()) {
+                faults.addAll(ClosureWalkPhase.faults(composed.set(), composed::factsOf));
+                checks.add(Check.REFERENCES);
+            }
         } else {
             skipped.add(new Skip(Check.CLOSURE, unjudged));
+            if (full) {
+                skipped.add(new Skip(Check.REFERENCES, unjudged));
+            }
         }
         if (roundTripping.isPresent()) {
             checks.add(Check.ROUND_TRIP);
@@ -232,8 +270,19 @@ public final class PackSetCheck {
         return unjudged;
     }
 
-    /** {@code CLOSURE} with its preset phase (contests, then preset items) over packs that all have built facts and a level. */
-    private static List<ClosureFault> closure(List<PackResult> results) {
+    /** The set as the composition rules take it: each pack under resolution, and its composition facts. */
+    private record Composed(List<PackUnderResolution> set, Map<String, PackCompositionFacts> facts) {
+
+        PackCompositionFacts factsOf(PackUnderResolution pack) {
+            return facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE);
+        }
+    }
+
+    /**
+     * The set {@code CLOSURE} with its preset phase (contests, then preset items) and {@code REFERENCES} judge: packs
+     * that all have built facts and a level.
+     */
+    private static Composed composed(List<PackResult> results) {
         List<PackUnderResolution> set = new ArrayList<>();
         Map<String, PackCompositionFacts> facts = new HashMap<>();
         for (PackResult result : results) {
@@ -243,8 +292,7 @@ public final class PackSetCheck {
             set.add(built.underResolution(configured));
             facts.put(configured.id().value(), built.facts());
         }
-        return PackRulesets.closureFaults(
-                set, pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE));
+        return new Composed(List.copyOf(set), Map.copyOf(facts));
     }
 
     /**
