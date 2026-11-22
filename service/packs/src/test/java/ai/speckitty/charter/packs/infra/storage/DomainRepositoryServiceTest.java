@@ -595,7 +595,7 @@ class DomainRepositoryServiceTest {
      * find it. A node of any other kind is no holding without its file: it is declared, never held.
      */
     @Test
-    void definedArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
+    void referableArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
         Files.writeString(pack.resolve("D1.directive.yaml"), """
                 id: D1

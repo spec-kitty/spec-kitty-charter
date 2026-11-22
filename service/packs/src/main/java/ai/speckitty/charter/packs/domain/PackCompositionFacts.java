@@ -256,12 +256,12 @@ public record PackCompositionFacts(
     }
 
     /**
-     * What a reference can name in the pack, as bare URNs: every artifact file it holds ({@code held}), then every
-     * mission type step ({@code action:<M>/<step>}) its graph documents declare, a step being a value of its type's file
-     * and never a file of its own (A7 Q1). A node of any other kind is no holding without its file (ruling R-l: an
+     * What a reference can name in the pack, as bare URNs (operator ruling R-v): every artifact file it holds
+     * ({@code held}), then every step ({@code action:<M>/<step>}) of a mission type it holds that its graph documents
+     * declare, a step being a value of its type's file and never a file of its own (A7 Q1). A node of any other kind is no holding without its file (ruling R-l: an
      * {@code anti_pattern} too is held only by its file), so a reference to it does not resolve. It is derived from
      * {@code held} and {@code declared}, and is what the compose reads of the pack
-     * ({@link PackCompositionResolver.PackUnderResolution#definedArtifacts}).
+     * ({@link PackCompositionResolver.PackUnderResolution#referableArtifacts}).
      *
      * @return the URNs, {@code held} first, in a stable order
      */
@@ -270,6 +270,8 @@ public record PackCompositionFacts(
         declared.stream()
                 .filter(urn -> Urn.parse(urn)
                         .filter(parsed -> parsed.kind() == NodeKind.ACTION)
+                        .flatMap(StepHolding::missionTypeOf)
+                        .filter(type -> held.contains(type.toString()))
                         .isPresent())
                 .forEach(referable::add);
         return List.copyOf(referable);

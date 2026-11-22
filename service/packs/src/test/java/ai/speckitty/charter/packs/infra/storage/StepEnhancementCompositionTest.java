@@ -162,7 +162,7 @@ class StepEnhancementCompositionTest {
     }
 
     @Test
-    @DisplayName("the URN is in defined through the binding alone, with no edit to the composition")
+    @DisplayName("the URN is in held through the binding alone, with no edit to the composition")
     void theUrnJoinsDefined() throws IOException {
         PackLocation base = base();
         PackLocation enhancer =

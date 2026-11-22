@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
@@ -280,7 +280,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
             if (judgedRoots.isEmpty()) {
                 continue;
             }
-            Optional<ClosureView> now = judge(judgedRoots.get(), afterViews, after, faults, composed::put);
+            // Keyed by the roots the closure was found under, as its change is, whatever roots it is judged under.
+            Optional<ClosureView> now =
+                    judge(judgedRoots.get(), afterViews, after, faults, closure -> composed.put(roots, closure));
             if (faults.halted()) {
                 break;
             }
@@ -551,7 +553,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
             Views views,
             StagedPackViews.View staged,
             Faults faults,
-            BiConsumer<ClosureRoots.Roots, OfferingReadService.ComposedClosure> passed) {
+            Consumer<OfferingReadService.ComposedClosure> passed) {
         OfferingReadService.Judged judged;
         try {
             judged = views.offering().judged(roots.ids());
@@ -576,7 +578,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
         }
         try {
             Optional<ClosureView> view = Optional.of(views.queries().snapshot(Optional.of(roots.ids())));
-            passed.accept(roots, composed);
+            passed.accept(composed);
             return view;
         } catch (CharterRefusal refused) {
             settle(roots, refused, staged, faults);

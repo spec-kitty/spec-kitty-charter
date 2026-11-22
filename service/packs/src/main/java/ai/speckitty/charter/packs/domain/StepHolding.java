@@ -17,7 +17,7 @@ import java.util.TreeSet;
  *
  * <ul>
  *   <li><strong>per pack</strong>: P defines {@code mission_type:M} and declares {@code action:M/s}. The merged reads
- *       take it from the lists of defined artifacts the closure carries. It is meant to serve the compose too, which
+ *       take it from the lists of referable artifacts the closure carries. It is meant to serve the compose too, which
  *       holds the same lists in {@link PackCompositionFacts#referable()}: the step-enhancements mission is to call
  *       {@link #heldByPack} from there, and nothing in main calls it directly yet;
  *   <li><strong>on the closure</strong>: the closure holds the step when some closure pack holds it per pack, so a
@@ -57,43 +57,43 @@ public final class StepHolding {
     /**
      * Whether one pack holds a step: it defines the step's mission type and declares the step.
      *
-     * @param definedArtifacts the artifacts the pack defines, as bare URN text ({@code <kind>:<id>})
+     * @param referableArtifacts what a reference can name in the pack ({@link PackCompositionFacts#referable()}), as bare URN text ({@code <kind>:<id>})
      * @param step the step, {@code action:M/s}
      * @return {@code true} when the pack defines {@code mission_type:M} and declares {@code action:M/s}
      */
-    public static boolean heldByPack(Collection<String> definedArtifacts, Urn step) {
-        Objects.requireNonNull(definedArtifacts, "definedArtifacts");
+    public static boolean heldByPack(Collection<String> referableArtifacts, Urn step) {
+        Objects.requireNonNull(referableArtifacts, "referableArtifacts");
         return missionTypeOf(step)
-                .filter(missionType ->
-                        definedArtifacts.contains(missionType.toString()) && definedArtifacts.contains(step.toString()))
+                .filter(missionType -> referableArtifacts.contains(missionType.toString())
+                        && referableArtifacts.contains(step.toString()))
                 .isPresent();
     }
 
     /**
      * Whether the closure holds a step: some closure pack holds it per pack.
      *
-     * @param packs the artifacts each closure pack defines, as bare URN text
+     * @param packs what a reference can name in each closure pack, as bare URN text
      * @param step the step
      * @return {@code true} when some pack holds it
      */
     public static boolean heldByClosure(Collection<? extends Collection<String>> packs, Urn step) {
         Objects.requireNonNull(packs, "packs");
-        return packs.stream().anyMatch(defined -> heldByPack(defined, step));
+        return packs.stream().anyMatch(referable -> heldByPack(referable, step));
     }
 
     /**
      * The steps one pack holds.
      *
-     * @param definedArtifacts the artifacts the pack defines, as bare URN text
+     * @param referableArtifacts what a reference can name in the pack ({@link PackCompositionFacts#referable()}), as bare URN text
      * @return its held steps, in URN order
      */
-    public static Set<Urn> stepsHeldByPack(Collection<String> definedArtifacts) {
-        Objects.requireNonNull(definedArtifacts, "definedArtifacts");
+    public static Set<Urn> stepsHeldByPack(Collection<String> referableArtifacts) {
+        Objects.requireNonNull(referableArtifacts, "referableArtifacts");
         Set<Urn> steps = new TreeSet<>();
-        Set<String> defined = new HashSet<>(definedArtifacts);
-        defined.stream()
+        Set<String> referable = new HashSet<>(referableArtifacts);
+        referable.stream()
                 .flatMap(text -> Urn.parse(text).stream())
-                .filter(urn -> heldByPack(defined, urn))
+                .filter(urn -> heldByPack(referable, urn))
                 .forEach(steps::add);
         return steps;
     }
@@ -101,13 +101,13 @@ public final class StepHolding {
     /**
      * The steps the closure holds.
      *
-     * @param packs the artifacts each closure pack defines, as bare URN text
+     * @param packs what a reference can name in each closure pack, as bare URN text
      * @return the steps some pack holds, each once, in URN order
      */
     public static Set<Urn> stepsHeldByClosure(Collection<? extends Collection<String>> packs) {
         Objects.requireNonNull(packs, "packs");
         Set<Urn> steps = new TreeSet<>();
-        packs.forEach(defined -> steps.addAll(stepsHeldByPack(defined)));
+        packs.forEach(referable -> steps.addAll(stepsHeldByPack(referable)));
         return steps;
     }
 

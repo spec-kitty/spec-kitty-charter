@@ -60,7 +60,7 @@ class CompositionFactsBuilderTest {
         assertThat(read.descriptor().packId())
                 .isEqualTo(recorded.required("packId").asString());
         assertThat(read.changedArtifacts()).isEqualTo(strings(recorded.required("changed")));
-        assertThat(read.definedArtifacts()).isEqualTo(strings(recorded.required("referable")));
+        assertThat(read.referableArtifacts()).isEqualTo(strings(recorded.required("referable")));
         assertThat(read.heldTerms()).isEqualTo(Set.copyOf(strings(recorded.required("heldTerms"))));
     }
 
@@ -84,16 +84,16 @@ class CompositionFactsBuilderTest {
         PackUnderResolution builtIn = underResolution(ExamplePacks.BUILT_IN, host);
         PackUnderResolution org = underResolution(ExamplePacks.ORG, host);
 
-        assertThat(builtIn.definedArtifacts()).contains("mission_type:software-dev");
+        assertThat(builtIn.referableArtifacts()).contains("mission_type:software-dev");
         assertThat(builtIn.descriptor().packId()).isEqualTo("01ARWG13C000000000000000FG");
         assertThat(org.descriptor().packId()).isEqualTo("01M6Y9ACNAAD96XPNQS0XWP2FF");
         // Org-base holds nothing built-in holds but the routing catalog it overrides by the same id (ADR-0080, R7).
-        assertThat(org.definedArtifacts())
+        assertThat(org.referableArtifacts())
                 .isNotEmpty()
                 .filteredOn(urn -> !urn.equals("routing_catalog:default"))
-                .doesNotContainAnyElementsOf(builtIn.definedArtifacts());
-        assertThat(org.definedArtifacts()).contains("routing_catalog:default", "routing_catalog:cost-led");
-        assertThat(builtIn.definedArtifacts()).contains("routing_catalog:default");
+                .doesNotContainAnyElementsOf(builtIn.referableArtifacts());
+        assertThat(org.referableArtifacts()).contains("routing_catalog:default", "routing_catalog:cost-led");
+        assertThat(builtIn.referableArtifacts()).contains("routing_catalog:default");
     }
 
     @Test

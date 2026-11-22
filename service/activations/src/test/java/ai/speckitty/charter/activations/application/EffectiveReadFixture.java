@@ -220,14 +220,15 @@ final class EffectiveReadFixture {
 
     /** The facts of a pack: two hundred directives, and in the first a chain of overrides, each hiding the next. */
     private static PackCompositionFacts factsOf(int pack, boolean withTensions) {
-        List<String> defined = new ArrayList<>(IntStream.range(0, ARTIFACTS_PER_PACK)
+        List<String> held = new ArrayList<>(IntStream.range(0, ARTIFACTS_PER_PACK)
                 .mapToObj(artifact -> "directive:" + id(pack, artifact))
                 .toList());
+        List<String> declared = new ArrayList<>();
         List<Relationship> edges = new ArrayList<>();
         List<String> changed = new ArrayList<>();
         List<Preset> presets = new ArrayList<>();
         if (pack == 0) {
-            defined.addAll(List.of("directive:R", "directive:G"));
+            held.addAll(List.of("directive:R", "directive:G"));
             presets.add(new Preset(
                     "governing", "R is required.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("R")))));
             PackQualifiedReference head = PackQualifiedReference.parse("directive:" + id(0, 0));
@@ -254,7 +255,8 @@ final class EffectiveReadFixture {
                 changed.add(to.asUrn().orElseThrow().toString());
             }
             if (withTensions) {
-                defined.addAll(List.of("mission_type:mt", "action:mt/s"));
+                held.add("mission_type:mt");
+                declared.add("action:mt/s");
                 edges.add(edge("mission_type:mt", RelationType.REQUIRES, "action:mt/s"));
                 edges.add(edge("directive:" + TENSION_A, RelationType.TENSION, "directive:" + TENSION_B));
                 edges.add(edge("directive:" + RECONCILER, RelationType.RECONCILES_TENSION, "directive:" + TENSION_A));
@@ -262,7 +264,7 @@ final class EffectiveReadFixture {
             }
         }
         return new PackCompositionFacts(
-                changed, defined, List.of(), List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
+                changed, held, declared, List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
     }
 
     private static Relationship edge(String from, RelationType type, String to) {

@@ -1145,7 +1145,7 @@ class CompositionRulesTest {
         }
 
         @Test
-        @DisplayName("every contest is reported, the changed artifacts before the defined ones")
+        @DisplayName("every contest is reported, the changed artifacts before the held ones")
         void everyContestIsReported() {
             PackUnderResolution left = new PackUnderResolution(
                     configured(ordered("LEFT"), PackLevel.ORG),

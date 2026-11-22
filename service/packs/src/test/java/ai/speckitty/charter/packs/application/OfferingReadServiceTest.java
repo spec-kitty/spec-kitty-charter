@@ -54,7 +54,8 @@ class OfferingReadServiceTest {
 
     private final Map<String, Optional<PackDescriptor>> descriptors = new HashMap<>();
     private final Map<String, CharterRefusal> unreadable = new HashMap<>();
-    private final Map<String, List<String>> defined = new HashMap<>();
+    private final Map<String, List<String>> holding = new HashMap<>();
+    private final Map<String, List<String>> declaredNodes = new HashMap<>();
     private final Map<String, List<String>> written = new HashMap<>();
     private final Map<String, List<Relationship>> edges = new HashMap<>();
     private final Map<String, List<Preset>> presets = new HashMap<>();
@@ -190,7 +191,7 @@ class OfferingReadServiceTest {
     @Test
     void aBareReferenceToAKindOutsideTheServedFiveIsRefusedWhenOnlyAnotherPackHoldsIt() {
         List<ConfiguredPack> packs = List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
-        defined.put("bravo", List.of("procedure:release"));
+        holding.put("bravo", List.of("procedure:release"));
         written.put("alpha", List.of("procedure:release"));
 
         assertThatThrownBy(() -> service(packs).offering()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
@@ -198,8 +199,8 @@ class OfferingReadServiceTest {
             assertThat(refused.getMessage()).contains("procedure:release").contains("bravo");
         });
 
-        defined.put("alpha", List.of("procedure:release"));
-        defined.remove("bravo");
+        holding.put("alpha", List.of("procedure:release"));
+        holding.remove("bravo");
         assertThat(service(packs).offering().value()).hasSize(2);
     }
 
@@ -210,7 +211,7 @@ class OfferingReadServiceTest {
     @Test
     void everyReferenceFaultOfTheComposeIsInTheOneRefusal() {
         List<ConfiguredPack> packs = List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
-        defined.put("bravo", List.of("procedure:release", "procedure:review"));
+        holding.put("bravo", List.of("procedure:release", "procedure:review"));
         written.put("alpha", List.of("procedure:release", "procedure:review"));
 
         CharterRefusal refused = refusalOf(() -> service(packs).offering());
@@ -252,7 +253,7 @@ class OfferingReadServiceTest {
                             "top",
                             PackLevel.ORG,
                             named("top", "top", List.of(new PackDependency(FixtureUlids.of("base"), ">=1.0")))));
-            defined.put("base", List.of("tactic:other"));
+            holding.put("base", List.of("tactic:other"));
             delegations.put("top", List.of(candidate("s1", "base::tactic:tdd"), candidate("s2", "base::tactic:bdd")));
 
             CharterRefusal refused = refusalOf(() -> service(packs).offering());
@@ -272,8 +273,9 @@ class OfferingReadServiceTest {
             List<ConfiguredPack> packs = List.of(
                     declared("base", PackLevel.ORG, named("base", "base", List.of())),
                     declared("enhancer", PackLevel.ORG, withDependencies("enhancer", "base")));
-            defined.put("base", List.of("mission_type:software-dev", "action:software-dev/plan"));
-            defined.put("enhancer", List.of("step_enhancement:one", "step_enhancement:two"));
+            holding.put("base", List.of("mission_type:software-dev"));
+            declaredNodes.put("base", List.of("action:software-dev/plan"));
+            holding.put("enhancer", List.of("step_enhancement:one", "step_enhancement:two"));
             edges.put(
                     "enhancer",
                     List.of(
@@ -306,7 +308,7 @@ class OfferingReadServiceTest {
         void everyCaseOnlyMentionIsInTheOneRefusal() {
             List<ConfiguredPack> packs =
                     List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
-            defined.put("alpha", List.of("directive:DIRECTIVE_001", "directive:DIRECTIVE_002"));
+            holding.put("alpha", List.of("directive:DIRECTIVE_001", "directive:DIRECTIVE_002"));
             presets.put(
                     "bravo",
                     List.of(new Preset(
@@ -484,7 +486,8 @@ class OfferingReadServiceTest {
         @Test
         void aComposingReadNeverRunsThePresetItemRule() {
             // A stored pack whose preset requires what its closure does not hold, and activates what it does not
-            // declare: registration refuses it (#629, #632 item 1), a composing read composes it (A10, C31).
+            // declare: registration refuses it (#629, #632 item 1), a composing read composes it and reports the
+            // must_have as requiredNotHeld (A10, C31).
             presets.put(
                     "alpha",
                     List.of(new Preset(
@@ -504,11 +507,19 @@ class OfferingReadServiceTest {
                             .composedWithFacts(roots("alpha"))
                             .packs())
                     .hasSize(2);
+            List<ConfiguredPack> packs = alphaBetaGamma();
+            ConsistentRead read = new ConsistentRead(() -> D1);
+            assertThat(new ClosureQueries(service(packs, read), () -> packs, read)
+                            .snapshot(Optional.of(roots("alpha")))
+                            .floor()
+                            .unheld())
+                    .as("the read reports the must_have its closure does not hold (A10, C31)")
+                    .containsOnlyKeys(Urn.parse("directive:NOT_HELD").orElseThrow());
         }
 
         @Test
         void theComposeWithFactsReturnsTheFactsItReadOncePerClosurePack() {
-            defined.put("beta", List.of("directive:B1"));
+            holding.put("beta", List.of("directive:B1"));
 
             OfferingReadService.ComposedClosure composed =
                     service(alphaBetaGamma()).composedWithFacts(roots("alpha"));
@@ -536,8 +547,9 @@ class OfferingReadServiceTest {
     class StepEnhancementTarget {
 
         private List<ConfiguredPack> enhancing(String target) {
-            defined.put("base", List.of("mission_type:software-dev", "action:software-dev/plan"));
-            defined.put("enhancer", List.of("step_enhancement:spdd-plan"));
+            holding.put("base", List.of("mission_type:software-dev"));
+            declaredNodes.put("base", List.of("action:software-dev/plan"));
+            holding.put("enhancer", List.of("step_enhancement:spdd-plan"));
             written.put("enhancer", List.of("step_enhancement:spdd-plan", target));
             edges.put(
                     "enhancer",
@@ -587,8 +599,8 @@ class OfferingReadServiceTest {
     class DistributionPackSettles {
 
         private List<ConfiguredPack> siblingsAnd(ConfiguredPack... more) {
-            defined.put("left", List.of("directive:DIRECTIVE_009"));
-            defined.put("right", List.of("directive:DIRECTIVE_009"));
+            holding.put("left", List.of("directive:DIRECTIVE_009"));
+            holding.put("right", List.of("directive:DIRECTIVE_009"));
             List<ConfiguredPack> packs =
                     new ArrayList<>(List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG)));
             packs.addAll(List.of(more));
@@ -640,8 +652,8 @@ class OfferingReadServiceTest {
 
         @Test
         void aContestantsEdgeDoesNotSettleItsOwnContest() {
-            defined.put("left", List.of("directive:DIRECTIVE_009"));
-            defined.put("right", List.of("directive:DIRECTIVE_009"));
+            holding.put("left", List.of("directive:DIRECTIVE_009"));
+            holding.put("right", List.of("directive:DIRECTIVE_009"));
             List<ConfiguredPack> packs = List.of(
                     declared("left", PackLevel.ORG, settling("left", "left")), configured("right", PackLevel.ORG));
 
@@ -689,8 +701,8 @@ class OfferingReadServiceTest {
                             PackLevel.ORG,
                             DistributionPackSettles.distribution("distribution", "right", "left", "right")),
                     declared("top", PackLevel.PROJECT, withDependencies("top", "left")));
-            defined.put("left", List.of("directive:DIRECTIVE_009"));
-            defined.put("right", List.of("directive:DIRECTIVE_009"));
+            holding.put("left", List.of("directive:DIRECTIVE_009"));
+            holding.put("right", List.of("directive:DIRECTIVE_009"));
 
             OfferingReadService service = service(packs);
 
@@ -753,14 +765,14 @@ class OfferingReadServiceTest {
         }
 
         private List<ConfiguredPack> contest() {
-            defined.put("left", List.of("directive:DIRECTIVE_009"));
-            defined.put("right", List.of("directive:DIRECTIVE_009"));
+            holding.put("left", List.of("directive:DIRECTIVE_009"));
+            holding.put("right", List.of("directive:DIRECTIVE_009"));
             return List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG));
         }
 
         /** The base pack defines one artifact, and the reader writes one reference. */
         private List<ConfiguredPack> referring(String held, String reference, List<String> readerDependsOn) {
-            defined.put("base", List.of(held));
+            holding.put("base", List.of(held));
             written.put("reader", List.of(reference));
             return List.of(
                     declared("base", PackLevel.ORG, named("base", "base", List.of())),
@@ -777,7 +789,7 @@ class OfferingReadServiceTest {
                             pack,
                             descriptors.get(pack.id().value()).orElseThrow(),
                             List.of(),
-                            defined.getOrDefault(pack.id().value(), List.of())))
+                            holding.getOrDefault(pack.id().value(), List.of())))
                     .toList();
             try {
                 List<PackUnderResolution> closure = PackCompositionResolver.resolve(all);
@@ -885,7 +897,7 @@ class OfferingReadServiceTest {
         }
     }
 
-    /** The defined and written artifacts and the typed edges by pack id; no pack refines any. */
+    /** The held, declared and written artifacts and the typed edges by pack id; no pack refines any. */
     private final class InMemoryRefinements implements PackArtifactRepository {
 
         @Override
@@ -897,8 +909,8 @@ class OfferingReadServiceTest {
             }
             return new PackCompositionFacts(
                     List.of(),
-                    defined.getOrDefault(pack.value(), List.of()),
-                    List.of(),
+                    holding.getOrDefault(pack.value(), List.of()),
+                    declaredNodes.getOrDefault(pack.value(), List.of()),
                     written.getOrDefault(pack.value(), List.of()),
                     MutabilityPolicySource.empty(),
                     presets.getOrDefault(pack.value(), List.of()),

@@ -867,6 +867,52 @@ class ClosureImpactCheckTest {
                 .isEqualTo(Outcome.CREATED);
     }
 
+    private static final String MID_ID = PackRegistrationServiceTest.ulid('V');
+
+    /**
+     * A write to a pack the declaring pack builds on is judged for the declaring pack's preset (FR-003, R-a: every
+     * write), modelled on {@code FallbackProfileImpactTest}'s write to the pack holding the fallback. Dropping X_ONE from
+     * base itself is the inbound-reference check's 409 (the preset item refers to it), so the write takes base out of
+     * top's own closure instead: mid stops depending on base, and top's must_have X_ONE is held by no pack of it.
+     */
+    @Test
+    void aWriteToAPackTheDeclaringPackBuildsOnIsJudgedForTheDeclaringPacksPreset(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(floorBase()), Preconditions.none());
+        String dependsOnMid = "depends_on:\n  - pack_id: " + MID_ID + "\n    range: '>=1.0'\n";
+        rig.register("mid", rig.stage(Packs.of(MID_ID, "mid", "1.0.0", "org", DEPENDS_ON_BASE)), Preconditions.none());
+        rig.register(
+                "top",
+                rig.stage(Packs.of(DERIVED_ID, "top", "1.0.0", "project", dependsOnMid)
+                        .file("presets/team.yaml", governing("X_ONE").replace("id: governing", "id: team"))),
+                Preconditions.none());
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("mid"));
+
+        CharterRefusal refused = refusal(
+                () -> rig.register("mid", rig.stage(Packs.of(MID_ID, "mid", "2.0.0", "org")), Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("mid declares no preset; top, which builds on it, does")
+                .isEqualTo(RefusalCode.PRESET_ITEM_NOT_HELD);
+        assertThat(refused.getMessage())
+                .isEqualTo("the preset `team` of pack `top` requires directive:X_ONE (must_have), but no pack of its"
+                        + " own closure (`top`, `mid`) holds it as an artifact file");
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("presets/team.yaml#/activated_directives/0", "preset_item_not_held"));
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).startsWith("top");
+        assertThat(rig.filesOf(rig.packs.resolve("mid")))
+                .as("nothing was stored")
+                .isEqualTo(before);
+        assertThat(rig.register(
+                                "mid",
+                                rig.stage(Packs.of(MID_ID, "mid", "2.0.0", "org", DEPENDS_ON_BASE)),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: the same write keeping base in top's closure")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
     @Test
     void anItemNoClosurePackDeclaresIsRefusedUndeclared(@TempDir Path host) {
         Rig rig = new Rig(host);

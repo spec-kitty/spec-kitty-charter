@@ -66,7 +66,7 @@ class ReadoutFactsTest {
                     .isEqualTo(recorded.required("packId").asString());
             assertThat(built.facts().changed()).isEqualTo(expected.changedArtifacts());
             assertThat(built.facts().changed()).isEqualTo(strings(recorded.required("changed")));
-            assertThat(built.facts().referable()).isEqualTo(expected.definedArtifacts());
+            assertThat(built.facts().referable()).isEqualTo(expected.referableArtifacts());
             assertThat(built.facts().held()).isEqualTo(strings(recorded.required("held")));
             assertThat(built.facts().declared()).isEqualTo(strings(recorded.required("declared")));
             assertThat(built.facts().referable()).isEqualTo(strings(recorded.required("referable")));

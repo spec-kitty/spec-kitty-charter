@@ -120,7 +120,7 @@ class LayerMergeTest {
                         name,
                         new PackCompositionFacts(
                                 List.of(),
-                                pack.definedArtifacts(),
+                                pack.referableArtifacts(),
                                 List.of(),
                                 List.of(),
                                 MutabilityPolicySource.empty(),

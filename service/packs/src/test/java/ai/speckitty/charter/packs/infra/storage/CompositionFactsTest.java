@@ -21,8 +21,8 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * What the composing read tells the compose about a pack's graph (#554, WP05's {@code CompositionFactsBuilder}, as
  * {@code DomainRepositoryService#compositionFacts} answers it): a step link the pack makes to its own mission type's
- * step is no reference to resolve (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN), an anti-pattern is defined by its
- * file and an action by its node (ADR-0052 decision 14), and the typed edges keep the graph documents' first, the registered shard's
+ * step is no reference to resolve (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN), an anti-pattern is held by its
+ * file and an action declared by its node (ADR-0052 decision 14), and the typed edges keep the graph documents' first, the registered shard's
  * last.
  */
 class CompositionFactsTest {
