@@ -98,8 +98,7 @@ class PackRefusalMappingTest {
                         new RefusalViolation(
                                 "drg/fragment.yaml",
                                 "drg_schema_error",
-                                "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"))
-                .isEqualTo(PackRefusalMapping.violations(faults));
+                                "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"));
     }
 
     @Test

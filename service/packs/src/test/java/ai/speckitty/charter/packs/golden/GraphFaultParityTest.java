@@ -79,6 +79,13 @@ class GraphFaultParityTest {
         assertThat(compose.getMessage())
                 .isEqualTo("a graph document of " + PACK + " cannot be read: " + PACK + "/drg/fragment.yaml: "
                         + "unknown relation 'in_tension_with'");
+
+        CharterRefusal strict = catchThrowableOfType(
+                CharterRefusal.class, () -> new WholePackStore(new YamlSerializationStrategy()).load(composed));
+        assertThat(strict.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
+        assertThat(strict.getMessage())
+                .as("the strict load names the first by path too")
+                .endsWith("/drg/fragment.yaml: unknown relation 'in_tension_with'");
     }
 
     private static Path broken(Path host) throws IOException {

@@ -2104,7 +2104,7 @@ class FileSystemPackInspectorTest {
                     .isFalse();
             assertThat(refused.graphFaults()).containsExactly(graphFault);
         });
-        assertThat(read.graphFaults()).isNotEmpty();
+        assertThat(read.graphFaults()).containsExactly(graphFault);
         assertThat(read.graphs()).isEmpty();
     }
 }
