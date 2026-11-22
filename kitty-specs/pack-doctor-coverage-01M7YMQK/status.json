@@ -263,7 +263,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 2,
@@ -277,7 +277,8 @@
         "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3",
         "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)",
         "Changes requested: R-w quote drops service-v*",
-        "Cycle 3: R-w quoted as written"
+        "Cycle 3: R-w quoted as written",
+        "Review passed: cycle 3, R-w quoted whole; docs checks green"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
