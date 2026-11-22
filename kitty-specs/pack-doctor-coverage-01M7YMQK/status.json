@@ -201,6 +201,9 @@
       "last_event_id": "01M81676KK81ANNDHZ2Q8T2SGQ",
       "last_transition_at": "2026-11-22T08:33:31.763148+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: one report tree (stdout JSON gains tool/inputs/summary; existing keys byte-identical), --report YAML (SnakeYAML Engine, no new lib) / XML (JDK, own mapping + tested reader), PackDoctorReport the only schema (REFERENCES admitted), contract test asserts the three trees equal. Gates green: pack-doctor 360+4+15, contracts 314, deployable 2400. Note: stdout gains keys per the task file, which conflicts with the 'stdout byte-identical' instruction; see report."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2632,
