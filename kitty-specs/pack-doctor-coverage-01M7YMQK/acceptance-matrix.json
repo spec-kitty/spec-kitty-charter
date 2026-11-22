@@ -86,13 +86,13 @@
     },
     {
       "criterion_id": "FR-009",
-      "description": "Verify FR-009 is satisfied",
+      "description": "FR-009: remediate <pack-dir>... writes each pack's manifest through the service's derivation and stamp and rewrites modelled files in canonical form via a public storage-edge entry point; judges nothing new; refuses, writing nothing, when the pack has a fault it does not repair.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: packs/src/main/.../infra/storage/PackRemediation.java:124-150 (refuses on StorageRulesets.verdictWithoutTheManifestGate violations; staged copy + swap); pack-doctor/src/test/.../RemediateTest.java:139,:165,:183 (refused, named, tree hash unchanged),:209,:218",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:44:15.040790+00:00",
+      "notes": "Read PackRemediation and RemediateTest; refusal leaves the tree byte-identical. Note: the precondition is the per-pack storage verdict, so a cross-pack closure fault is not a remediate refusal (validate reports it after)."
     },
     {
       "criterion_id": "FR-010",
