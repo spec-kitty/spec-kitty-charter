@@ -28,10 +28,9 @@ graph document (spec-kitty-open-packs' foundation pack with `in_tension_with`) a
   a graph document of foundation cannot be read: foundation/directive.graph.yaml: unknown relation 'in_tension_with'
   ```
 
-- **The problem lists `violations`**, one per fault of the pack's graph documents: the pack-relative document as the
-  `pointer`, the `code` (for example `drg_schema_error`) and the `detail`, exactly as a registration of the pack lists
-  them, in its order. Tests pin that the two agree over every planted pack and over two broken documents.
-- **One way to build it.** The edge read, the composing read and a removal refuse through the domain's one mapping of a
-  `Rationale` to a refusal (`PackRefusalMapping`,
-  [ADR-0082](/adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface/)); no fixed sentence is left.
+- **The problem lists `violations`**, one per fault that makes a graph document unreadable: the pack-relative document
+  as the `pointer`, the `code` (`drg_schema_error`) and the `detail`, exactly as a registration of the pack lists them,
+  in its order. The pointer names the document, not the edge, as a registration's does. Other faults of a graph
+  document are not listed: register the pack to see every fault.
+- **One way to build it.** The edge read, the composing read and a removal refuse through `PackRefusalMapping`.
 - **Unchanged:** the code `pack_unreadable` and the status `500` of the composing reads.
