@@ -26,13 +26,13 @@
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "FR-003: the preset-item rule runs in default validation (CLOSURE's preset phase) and on every registration and write through the same domain factory, never on a composing read, where requiredNotHeld keeps reporting.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: PackRulesets.java:97-123 (closureFaults -> presetItemFaults); pack-validation set/PackSetCheck.java:155 (CLOSURE); packs application/ClosureImpactCheck.java:492,:505-517 (registration/write, PackRulesets.presetItemFaults); OfferingReadService.judged :404-463 has no preset-item phase; deployable bdd/FullPassParityTest.java:572 (14/14 in integration gates), RequiredNotHeldCoverageTest.java:24",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:43:43.795692+00:00",
+      "notes": "Traced both callers to PackRulesets.presetItemFaults; composing read (OfferingReadService) does not call it. Note: registration's phase-6 case-only check also covers policy-lock URNs (OfferingReadService.mentionsOf :467-475); pack-doctor CLOSURE covers case-only only for preset items. FR-003 scopes FR-002 (preset items) only, so not required here; reported as an out-of-scope parity gap."
     },
     {
       "criterion_id": "FR-004",
