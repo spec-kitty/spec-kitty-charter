@@ -276,6 +276,7 @@ class PackRemediationTest {
                             .isEmpty();
                 case TEXT, BYTES ->
                     assertThat(Files.readAllBytes(written)).as(path).isEqualTo(Files.readAllBytes(source));
+                default -> throw new AssertionError("no meaning comparison for the form of " + path);
             }
         }
     }
