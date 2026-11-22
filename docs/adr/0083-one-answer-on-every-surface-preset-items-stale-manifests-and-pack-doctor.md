@@ -224,7 +224,8 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
 <!-- cspell:ignore untill allign -->
 
 Each is the Decision Moment's final answer as the operator gave it, with the rationale's own words where the final
-answer is an option's label.
+answer is an option's label. A rationale is quoted whole, except its lead-in ("Operator ruling R-x (date)", and the
+source and operator words where the table gives them), which is dropped.
 
 | Ruling | Decision Moment | Verbatim | What it decides |
 |---|---|---|---|
@@ -247,10 +248,10 @@ answer is an option's label.
 | R-q | `01M7ZQGHVNQXAQ0S3DMTK7EZCB` | "New WP in this mission"; rationale: "a new WP builds the anti_pattern file kind (schema, file-kinds rule, storage binding, kernel facts, contract, the built-in fixture file) before WP03; WP03 then runs as planned and #629/#632 still close in this PR." | Decision 12; widened by R-r |
 | R-r | `01M801H54DXR0447M3F2ZQWFPZ` | "All of #154 now"; rationale: "this PR delivers all of #154: the anti_pattern file kind, the graph-only anti_pattern node refusal, and dropping the inline anti_patterns entries from the procedure and styleguide schemas (Breaking packs-contract change). open-packs styleguides/procedures with inline entries are refused until curated (draft open-packs#TBD). The PR closes #154." | Decisions 12 to 14 |
 | R-s | `01M801NHF0BFAX05EA3F19KHV7` | "(a) delegations, references, enhancement targets now; the rest with #636"; rationale, operator words "1. as recommended": "validate --full = delegations + references + enhancement targets only, each an existing domain function run per own closure in registration's phase order, no new walk; registration/offering use the same collect-all forms. The spec narrows 'full pass' to these; ADR-0083 records specializes_from cycle, relations, edge-index and own-closure-walk checks as landing in the factory with #636 slices 2-4/7; the PR writes Refs #632 naming what is left. WP05 unblocked. The #636 round-trip-codes fold into WP04 stays unanswered: not folded." | Decisions 8 and 9; its last sentence is overruled by R-t |
-| R-t | `01M801QGCV2GW4DCF0KTRFBNHH` | "Yes, fold into WP04"; rationale, operator words "2. as recommended": "Fold #636's round-trip-codes slice into WP04 so WholePackExpectation changes once: retire EXCLUDED_WRITTEN beside NOT_HELD_WRITTEN (~506) and merge the STALE_* wordings (~241/246/251)." | Decision 16 |
+| R-t | `01M801QGCV2GW4DCF0KTRFBNHH` | "Yes, fold into WP04"; rationale, operator words "2. as recommended": "Fold #636's round-trip-codes slice into WP04 so WholePackExpectation changes once: retire EXCLUDED_WRITTEN beside NOT_HELD_WRITTEN (~506) and merge the STALE_* wordings (~241/246/251). It changes an existing code: contract changelog fragment and PR body note it; red-first tests; WP04 gets a fresh review cycle. PR writes Refs #636 for the slice." | Decision 16 |
 | R-u | `01M8035FAMHXG0A04SCBD7QTKD` | "REFERENCES"; rationale: "the --full check value is REFERENCES, naming what the phase checks; CLOSURE_WALK stays free for #636's own-closure walk." | Decision 8 |
-| R-v | `01M80YAS1QJABJ74REAXWNNZF9` | "Derived referable()"; rationale: "references resolve against a derived referable() view = held files plus held mission types' step (action:) nodes; no stored third field." | Decision 2 |
-| R-w | `01M812KK99P3T1FQ7ZBXT4Z3T1` | "No release until this mission lands"; rationale, operator words: "yes, no release yet, untill the charter validation module and cli are finalized, so open packs can allign properly." | Decision 19 |
+| R-v | `01M80YAS1QJABJ74REAXWNNZF9` | "Derived referable()"; rationale: "references resolve against a derived referable() view = held files plus held mission types' step (action:) nodes; no stored third field. Rename the retired-word carriers (PackUnderResolution.definedArtifacts, PackRegistrationService Before.held/heldBy, DomainRepositoryServiceTest.definedArtifactsNameEveryKindThePackHolds) to referable. A file-less node (directive:GHOST) does not resolve." | Decision 2 |
+| R-w | `01M812KK99P3T1FQ7ZBXT4Z3T1` | "No release until this mission lands"; operator words: "yes, no release yet, untill the charter validation module and cli are finalized, so open packs can allign properly."; rationale: "No release until WP01-WP09 land; open-packs aligns once against that release. WP09 draft (a) widened to the full alignment specification." | Decision 19 |
 
 Two further Decision Moments confirm without a letter: the intent and the alignment squad over ADR-0082
 (`01M7Z1A6RXQB141EKZHB3BD2AH`) and the order of the work packages (`01M7Z2EXFG0K83SMFBVBGFEGBC`).
@@ -259,6 +260,8 @@ Two further Decision Moments confirm without a letter: the intent and the alignm
 
 - R-q governs over R-p's "#629 does not close in this PR": #629 closes.
 - R-r governs over R-q's scope, the file kind alone: all of #154 lands, and the operator declined "File kind only".
+- R-s governs over R-q's "#629/#632 still close in this PR" for #632: the PR writes `Refs #632`, and #632 is
+  referenced, not closed (decision 9).
 - R-s governs over R-d and R-h: `--full` is the three checks of decision 8, and the `specializes_from` cycle is not
   among them yet.
 - R-t governs over R-s's last sentence: the round-trip-codes slice of #636 is folded (decision 16).

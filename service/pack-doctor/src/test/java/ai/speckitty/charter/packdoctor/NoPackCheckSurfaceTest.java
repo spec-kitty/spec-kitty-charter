@@ -95,7 +95,7 @@ class NoPackCheckSurfaceTest {
                     "an ADR body keeps its historical wording (C-004)"),
             new Kept(
                     "docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md",
-                    "the record of the rename quotes the operator's rulings verbatim, which name the old tool"),
+                    "the record of the rename: it quotes the rulings and names the tool it renames (C-004)"),
             new Kept(
                     "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/NoPackCheckSurfaceTest.java",
                     "this test names what it forbids"));

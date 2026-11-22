@@ -35,12 +35,15 @@ It is one file, `pack-doctor-<version>.jar`, and it needs **Java 25**. It has no
 
 ## Download and verify
 
-The jar is an asset of every service release, `service-v<version>`, from `service-v0.1.0-rc.3` on
-([ADR-0046](/adr/0046-service-release-line-and-native-packaging/), amendment of 2026-11-19). Download it with
-`SHA256SUMS` into an empty directory, then check its digest and its build provenance:
+The jar is an asset of every service release, `service-v<version>`, from the first one that carries pack-doctor on
+([ADR-0046](/adr/0046-service-release-line-and-native-packaging/), amendment of 2026-11-19). No release is cut before
+the work that brings pack-doctor lands
+([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/), ruling R-w), so
+take the tag of that release or a later one. Download the jar with `SHA256SUMS` into an empty directory, then check
+its digest and its build provenance:
 
 ```bash
-tag=service-v0.1.0-rc.3
+tag=service-v<version>   # a release that carries pack-doctor
 version="${tag#service-v}"
 gh release download "$tag" --repo spec-kitty/spec-kitty-charter \
   --pattern "pack-doctor-$version.jar" --pattern SHA256SUMS
@@ -78,13 +81,13 @@ to run the reference checks as well; see [Check what registration checks](#check
 
 ```bash
 # A config root: packs/built-in, packs/org-base and packs/project under ./governance
-java -jar pack-doctor-0.1.0-rc.3.jar validate --config-root governance --round-trip
+java -jar pack-doctor-<version>.jar validate --config-root governance --round-trip
 
 # The same, with the reference checks, as an open-packs CI gate runs it
-java -jar pack-doctor-0.1.0-rc.3.jar validate --config-root governance --round-trip --full
+java -jar pack-doctor-<version>.jar validate --config-root governance --round-trip --full
 
 # The same packs, given one by one with their levels
-java -jar pack-doctor-0.1.0-rc.3.jar validate \
+java -jar pack-doctor-<version>.jar validate \
   --pack governance/packs/built-in:built-in \
   --pack governance/packs/org-base:org \
   --pack governance/packs/project:project \
@@ -101,7 +104,7 @@ then read, composed and round-tripped under that id, the report and its problems
 directory's name plays no part:
 
 ```bash
-java -jar pack-doctor-0.1.0-rc.3.jar validate --pack build/staging:org=org-base --pack vendor/built-in
+java -jar pack-doctor-<version>.jar validate --pack build/staging:org=org-base --pack vendor/built-in
 ```
 
 How a `--pack` value is read:
