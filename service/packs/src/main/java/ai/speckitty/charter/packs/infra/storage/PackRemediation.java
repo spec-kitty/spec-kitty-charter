@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFileAttributeView;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -207,12 +206,13 @@ public final class PackRemediation {
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) throws IOException {
-                Path to = target.resolve(source.relativize(dir).toString());
-                Files.createDirectory(to);
-                PosixFileAttributeView view = Files.getFileAttributeView(dir, PosixFileAttributeView.class);
-                if (view != null) {
-                    Files.setPosixFilePermissions(to, view.readAttributes().permissions());
-                }
+                // The directory entry with its attributes, its mode included, so the swapped pack keeps the pack's
+                // own; no POSIX mode is built here (OwnerOnly owns that, #510).
+                Files.copy(
+                        dir,
+                        target.resolve(source.relativize(dir).toString()),
+                        StandardCopyOption.COPY_ATTRIBUTES,
+                        LinkOption.NOFOLLOW_LINKS);
                 return FileVisitResult.CONTINUE;
             }
 
