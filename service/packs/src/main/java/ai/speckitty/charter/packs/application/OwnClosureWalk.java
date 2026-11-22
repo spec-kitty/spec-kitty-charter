@@ -26,8 +26,8 @@ public final class OwnClosureWalk implements ClosureWalk {
         List<ClosureFault> breaches = new ArrayList<>();
         closure.descriptor()
                 .fallbackProfile()
-                .ifPresent(named -> breaches.addAll(FallbackProfileRule.check(
-                        closure.declaring().value(), named, closure.closure(), closure.profiles())));
+                .ifPresent(named -> breaches.addAll(
+                        FallbackProfileRule.check(closure.declaring(), named, closure.closure(), closure.profiles())));
         breaches.addAll(RolePinRule.check(closure.declaring(), closure.closure(), closure.profiles()));
         breaches.addAll(ProfileEnhancementRule.check(closure.closure(), closure.profiles(), closure.merge()));
         return new ClosureVerdict(breaches);

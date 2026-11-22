@@ -36,14 +36,14 @@ class ReachableContractFilesTest {
 
     /**
      * The definition files no operation serves by design, each exempt from the walk by name. Today one: the
-     * {@code PackCheckReport} schema, the standard output of the pack-check CLI (ADR-0075 decision 9, #478, ruling D2),
+     * {@code PackDoctorReport} schema, the standard output of the pack-doctor CLI (ADR-0075 decision 9, #478, ruling D2),
      * which no operation serves; its contract test validates the CLI's real output against it
-     * ({@code PackCheckReportContractTest} in {@code deployable}). Bundling it under {@code components.schemas} would
+     * ({@code PackDoctorReportContractTest} in {@code deployable}). Bundling it under {@code components.schemas} would
      * generate a DTO and put it under the breaking-change check as if it were served. Each entry must exist and stay
      * unreached ({@link #eachStandaloneFileExistsAndNoOperationReachesIt}), so the list can neither rot nor hide a
      * served file.
      */
-    static final Set<String> STANDALONE = Set.of("schemas/PackCheckReport.yaml");
+    static final Set<String> STANDALONE = Set.of("schemas/PackDoctorReport.yaml");
 
     @Test
     void everyDefinitionFileOfTheCharterContractIsReachedFromItsEntry() {

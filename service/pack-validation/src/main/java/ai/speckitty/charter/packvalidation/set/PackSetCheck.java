@@ -6,13 +6,13 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.Preset;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import ai.speckitty.charter.packvalidation.placement.LevelRules;
@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The pack-set check (#478, FR-002 to FR-004, FR-007, T011): what pack-check runs over a set of packs.
+ * The pack-set check (#478, FR-002 to FR-004, FR-007, T011): what pack-doctor runs over a set of packs.
  *
  * <ol>
  *   <li>Per pack, validate mode ({@link PackCheck#check}): one read, whose readout also carries the pack's composition
@@ -117,7 +117,7 @@ public final class PackSetCheck {
                     levelMissing(entry, checked.readout().facts(), level)));
         }
         List<Check> checks = new ArrayList<>(List.of(Check.PACK));
-        List<CompositionFault> faults = List.of();
+        List<ClosureFault> faults = List.of();
         List<Skip> skipped = new ArrayList<>();
         List<Unjudged> unjudged = unjudged(results);
         if (unjudged.isEmpty()) {
@@ -233,7 +233,7 @@ public final class PackSetCheck {
     }
 
     /** {@code CLOSURE} with its preset phase over packs that all have built facts and a level. */
-    private static List<CompositionFault> closure(List<PackResult> results) {
+    private static List<ClosureFault> closure(List<PackResult> results) {
         List<PackUnderResolution> set = new ArrayList<>();
         Map<String, List<String>> presetIds = new HashMap<>();
         for (PackResult result : results) {

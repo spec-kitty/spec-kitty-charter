@@ -413,7 +413,7 @@ public final class OfferingReadService {
             // only when the earlier ones pass, since it reads what they settled (#556, FR-006).
             PackCompositionResolver.Rooted rooted = PackCompositionResolver.composeRooted(members, roots);
             List<ClosureFault> phase1 =
-                    rooted.faults().stream().map(ClosureFault::of).toList();
+                    rooted.faults().stream().map(ResolverFaults::of).toList();
             if (!phase1.isEmpty()) {
                 return Judged.refused(phase1);
             }
@@ -443,7 +443,7 @@ public final class OfferingReadService {
                                             .map(Preset::id)
                                             .toList())
                     .stream()
-                    .map(ClosureFault::of)
+                    .map(ResolverFaults::of)
                     .toList();
             if (!phase5.isEmpty()) {
                 return Judged.refused(phase5);
@@ -453,7 +453,7 @@ public final class OfferingReadService {
                             pack -> mentionsOf(Objects.requireNonNull(
                                     facts.get(pack.configured().id().value()), "read above")))
                     .stream()
-                    .map(ClosureFault::of)
+                    .map(ResolverFaults::of)
                     .toList();
             if (!phase6.isEmpty()) {
                 return Judged.refused(phase6);
@@ -609,7 +609,7 @@ public final class OfferingReadService {
                                             composed, pack.configured().id(), PackQualifiedReference.parse(written)))
                                     .toList())
                     .stream()
-                    .map(ClosureFault::of)
+                    .map(ResolverFaults::of)
                     .forEach(faults::add);
         }
         return faults;

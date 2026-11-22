@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: model-tier-mismatch
+title: Model-tier mismatch
+description: Top-tier model on mechanical or tracker delegates, or a weak tier on the hardest adversarial lens.
+severity: smell
+bad_example: Run the tracker delegate on the top-tier model and the hardest adversarial lens on the weakest tier.

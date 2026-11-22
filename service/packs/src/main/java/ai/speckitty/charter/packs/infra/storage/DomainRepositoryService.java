@@ -66,7 +66,7 @@ import java.util.function.Function;
  * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
  * {@link MutabilityPolicyRepository}, {@link PackCompanionFiles} and {@link PackDocumentRepository} over the filesystem.
  * It is a plain class, framework-free: {@code StorageConfiguration} registers it as the one bean realizing the pack
- * ports, and the production round trip ({@link PackRoundTrip}) builds it directly, so pack-check, which runs the round
+ * ports, and the production round trip ({@link PackRoundTrip}) builds it directly, so pack-doctor, which runs the round
  * trip without Spring, reaches no Spring type through it (ADR-0075 as amended 2026-11-13, #478). The ports in the
  * domain stay plain interfaces, and a database-backed sibling would be registered in its place.
  *
