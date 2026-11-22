@@ -47,7 +47,7 @@ properties:
       On a 422 activation_invalid, one entry per refused part of the request body; on the 422 validation_failed of a
       registration, one entry per fault of the pack; on the 422 validation_failed of a per-file write or removal whose pack
       would not revalidate, one entry per fault the write would add, at its file; on a 500 pack_unreadable of a pack whose
-      graph documents cannot be read, one entry per fault of those documents, as a registration of the pack lists them;
+      graph documents cannot be read, one entry per fault that makes one of them unreadable, as a registration of the pack lists it;
       on a 409 artifact_referenced, one per referring artifact, so a
       client need not parse detail (ADR-0020 D10). At most 100 are listed: when more parts are refused, the first 100 are, and detail ends with the
       count of those left out.
