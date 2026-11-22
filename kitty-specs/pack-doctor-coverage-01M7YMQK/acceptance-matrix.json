@@ -106,13 +106,13 @@
     },
     {
       "criterion_id": "FR-011",
-      "description": "Verify FR-011 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "FR-011: contract gains preset_item_not_held, preset_item_undeclared and manifest_stale with statuses; report schemas added; registration scenarios that pinned old behavior rewritten; each with a change fragment (### Breaking where a valid input is now refused).",
+      "proof_type": "review",
+      "evidence": "lane-h: contracts/charter/schemas/CharterRefusalCode.yaml:331-332, :1131-1151 (preset_item_not_held, preset_item_undeclared, 422), :431 (manifest_stale under validation_failed); contracts/charter/schemas/PackDoctorReport.yaml; contracts/charter/changes/2026-11-21-{preset-item-refusals,manifest-stale,pack-doctor-report,pack-doctor,anti-pattern-*,inline-anti-patterns-dropped,round-trip-not-held-code}.md, 2026-11-22-pack-doctor-validate-full.md; scenarios preset-items.feature, whole-pack-registration.feature:565; contracts tests 314/0",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:44:24.733611+00:00",
+      "notes": "Codes and fragments present; ### Breaking present in preset-item-refusals and manifest-stale fragments (the newly refused inputs)."
     },
     {
       "criterion_id": "FR-012",
