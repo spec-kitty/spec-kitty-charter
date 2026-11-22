@@ -43,6 +43,8 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
 - `procedure.schema.json` and `styleguide.schema.json` drop `anti_patterns` and their `$defs` (`AntiPatternEntry`,
   `AntiPattern`) (ADR-0052 decision 16; #154): an anti-pattern is its own file, named by a `rejects` edge. Both roots
   stay closed, so a file that still carries the key is refused `artifact_schema_error`, unknown key `anti_patterns`.
+  spec-kitty-open-packs' 60 styleguide and procedure files with inline blocks are refused at its repin until they are
+  curated into anti-pattern files (ADR-0052 decision 15).
 
 ### Added
 

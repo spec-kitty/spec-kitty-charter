@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-20T00:00:00Z
+updated: 2026-11-22T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -23,6 +23,7 @@ related:
   - adr/0059-switch-gate-cascade-edges-and-activation-rulings
   - adr/0061-one-replica-per-deployment
   - adr/0063-pack-mutability-policy-file
+  - adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor
   - conformance/divergence-register
 audience:
   - profile: charter-service-contributor
@@ -76,6 +77,11 @@ read and carries a **⚠ Unclear** note. The prose pages remain the design: [Log
 > tie cites the ruling that settles it or the refusal that stops it. Where a tie is broken by a rule no ruling
 > covers, the page says so and names the issue that tracks it (the smallest-URN tie of `satisfiedBy` and
 > `overriddenBy`, E5 and E9, is #439).
+> **Rulings of 2026-11-21.** The operator's rulings R-a and R-k to R-m of mission `pack-doctor-coverage-01M7YMQK`
+> ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)) are folded into
+> C31 and G9 as dated amendments: a write is refused when a preset item fails its own-closure rule, and the reads keep
+> the floor as A10 left it.
+>
 > *Note 2026-11-12:* #439 is ruled (option (b)): `satisfiedBy` and `overriddenBy` name every overrider in force, by level
 > then URN, so no tie is left (E9).
 
@@ -405,6 +411,19 @@ preset schemas cannot name a step (`action:`), so `Req₀(C) ⊆ Kₐ` and `requ
 (`aRequiredStepThatIsNotInForceIsDroppedAndARequiredArtifactIsKept`,
 `thePolicyAndPresetSchemasCannotNameAStepSoTheFloorHoldsNone`). The within-level rule, that a replacing copy wins and a
 replaced copy requires nothing, is operator decision `01M6ZCXAJ9MTTF9XJSR89F3NYG`; the union across levels is A1.
+*Amended 2026-11-21 (rulings R-a, R-k, R-l, R-m; [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)
+decisions 1 to 4; #629, #632 item 1):* the floor is still restricted to held ids on the reads, and `requiredNotHeld`
+still reports `Unheld(C)`, but a write is refused when a preset item fails the own-closure rule. For each pack `p` a
+write judges, with its own closure `Own(p)` (`p` and what it reaches over `depends_on` and `parent_pack`, never a
+dependent), each item `u` of each preset of `p` is judged once: an item that names an artifact of `Own(p)` only by
+letter case keeps the case-only answer `pack_reference_artifact_missing`; else a `must_have` item that no pack of
+`Own(p)` holds as an artifact file answers `preset_item_not_held`; else an item that no pack of `Own(p)` declares as
+its kind, by a graph node or a file, answers `preset_item_undeclared`. Each is `422`, with one violation at
+`presets/<id>.yaml#/activated_<kinds>/<index>`. A10's half for the writes (an unheld `must_have` is dropped and
+reported) and the 2026-11-06 ruling that an undeclared preset id is accepted at registration are superseded for
+writes; a composing read never runs the rule. **Built** (`PresetItemRules`, run from `PackRulesets` by
+`ClosureImpactCheck` and by pack-doctor's `CLOSURE`; pinned by `PresetItemRulesTest`, `FullPassParityTest` and the
+registration scenarios). A test-only store seed keeps the read path reachable for a stored pack that breaks the rule.
 
 **C32 Floor at write.** `Fl(C) = Req(C) ∪ Lk(C)`.
 The writes treat a locked artifact as required too.
@@ -596,6 +615,10 @@ same request removes refers to nothing, so two artifacts that reference each oth
 *Source:* operator ruling of 2026-11-06; decisions `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`, `DM-01M6R2WSARGC382BHX89GZB64E`,
 `DM-01M6R2WVRKB4JGZM40D6QF60BQ`; research R6; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`; B3, decision
 `DM-01M6RA9MQ6YAP048KD43DNFS4F`. **Built (PR A)** (`InboundReferences`).
+*Note 2026-11-21 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):*
+A10's half here is unchanged: another pack's preset item naming `u` is still an inbound reference, and the `DELETE`
+is `409 artifact_referenced`. The own-closure preset-item rule of C31 judges what a write leaves; it does not replace
+this check.
 
 **G10 Artifact `DELETE`.** `holds(p, u)` else `404`; then G9, then C25/C26 (`locked` is `409
 governance_policy_violation`); then remove `u`'s file and companions, every edge whose source is `u`, its graph node,
@@ -1476,7 +1499,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C28 Override cycle | spec FR-016; A2 | Built (registration PR A, read PR B) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
-| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10; D16; `01M6ZCXAJ9` | Built (PR B) for the reads, the writes' floor refusal and the registration notices (the A1 union); held-only built (PR A0); activatable kinds only built (PR C, D16); `/offering` keeps the winning copies |
+| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10; D16; `01M6ZCXAJ9`; R-a, R-k to R-m (ADR-0083) | Built (PR B) for the reads, the writes' floor refusal and the registration notices (the A1 union); held-only built (PR A0); activatable kinds only built (PR C, D16); `/offering` keeps the winning copies; the writes' preset-item refusal built (2026-11-21, `PresetItemRules`) |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built |
 | C34 Same-level preset conflict | operator 2026-11-06; `presetContests` | Built |

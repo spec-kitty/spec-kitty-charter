@@ -60,7 +60,7 @@ class NoPackCheckSurfaceTest {
         }
     }
 
-    /** The one allowlist: history (C-004) and the docs another work package renames. Each entry says why. */
+    /** The one allowlist: history (C-004), each ADR by its own path. Each entry says why. */
     static final List<Kept> KEPT = List.of(
             new Kept("kitty-specs/", "mission records are history (C-004)"),
             new Kept("kitty-ops/", "Op records are history (C-004)"),
@@ -75,11 +75,27 @@ class NoPackCheckSurfaceTest {
                     "contracts/packs/conformance/classifier-cases.yaml",
                     "names spec-kitty-open-packs' own pack-check usage, that repository's history"),
             new Kept(
-                    "docs/adr/",
-                    "ADR bodies keep their historical wording; WP08 amends ADR-0075 decision 9 and records the rename"),
+                    "docs/adr/0006-onion-vertical-slices-archunit.md",
+                    "an ADR body keeps its historical wording (C-004)"),
             new Kept(
-                    "docs/architecture/architectural-patterns-applied.md",
-                    "WP08 (T033) renames its scope rows and then removes this entry"),
+                    "docs/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam.md",
+                    "an ADR body keeps its historical wording (C-004)"),
+            new Kept(
+                    "docs/adr/0046-service-release-line-and-native-packaging.md",
+                    "an ADR body keeps its historical wording (C-004); ADR-0083 records the asset's rename"),
+            new Kept("docs/adr/0062-nightly-mutation-floor.md", "an ADR body keeps its historical wording (C-004)"),
+            new Kept(
+                    "docs/adr/0070-charter-tests-own-example-packs-not-open-packs-content.md",
+                    "an ADR body keeps its historical wording (C-004)"),
+            new Kept(
+                    "docs/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check.md",
+                    "an ADR body keeps its historical wording (C-004); its 2026-11-22 amendment names pack-doctor"),
+            new Kept(
+                    "docs/adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface.md",
+                    "an ADR body keeps its historical wording (C-004)"),
+            new Kept(
+                    "docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md",
+                    "the record of the rename quotes the operator's rulings verbatim, which name the old tool"),
             new Kept(
                     "service/pack-doctor/src/test/java/ai/speckitty/charter/packdoctor/NoPackCheckSurfaceTest.java",
                     "this test names what it forbids"));
