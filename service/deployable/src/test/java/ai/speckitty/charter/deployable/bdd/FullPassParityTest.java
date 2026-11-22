@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Mode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.packs.infra.storage.ManifestStamps;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -74,6 +75,8 @@ class FullPassParityTest {
     private static final String BETA_ID = "01M4P01D5TWB5FKZGNNQG3943S";
 
     private static final String FRAGMENT = "nodes: []\nedges: []\n";
+
+    private static final String MANIFEST = "pack-manifest.yaml";
 
     private static Path configRoot = Path.of("");
 
@@ -260,6 +263,10 @@ class FullPassParityTest {
                         "a missing target step",
                         stepEnhancementOf("beta::action:software-dev/nosuch"),
                         "pack_reference_artifact_missing"),
+                closure(
+                        "an enhancement target whose pack is missing",
+                        stepEnhancementOf("gamma::action:software-dev/plan"),
+                        "pack_reference_pack_missing"),
                 new Row(
                         "an unresolved substep delegation",
                         alpha(delegationTo("tdd")),
@@ -291,6 +298,8 @@ class FullPassParityTest {
                         "preset_item_undeclared",
                         List.of("preset_item_undeclared"),
                         true),
+                // The manifest gate (WP04): a constituent edited after its content_hash was stamped.
+                refusedAtTheFile("a stale manifest content_hash", staleManifest(), "manifest_stale"),
                 // The anti-pattern refusals (WP10 to WP12), validate mode's at the file.
                 refusedAtTheFile(
                         "an anti-pattern file missing severity",
@@ -342,6 +351,22 @@ class FullPassParityTest {
                         "specialization_cycle",
                         List.of(),
                         false));
+    }
+
+    /**
+     * acme with a manifest stamped from its files, then its directive A edited, so A's {@code content_hash} is stale.
+     */
+    private static Map<String, String> staleManifest() {
+        Map<String, String> files = acme(Map.of());
+        try {
+            Path stamped = plant(Files.createTempDirectory("charter-full-pass-parity-manifest"), files);
+            ManifestStamps.stamp(stamped, "acme");
+            files.put(MANIFEST, Files.readString(stamped.resolve(MANIFEST), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        files.put("directives/A.directive.yaml", directive("A") + "# edited\n");
+        return files;
     }
 
     private static Map<String, String> stepEnhancementOf(String target) {
