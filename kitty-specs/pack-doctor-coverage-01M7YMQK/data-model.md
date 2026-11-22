@@ -19,6 +19,10 @@ The own closure is the declaring pack plus everything it reaches over `depends_o
 (`PackCompositionResolver.compositionClosure` rooted at the pack). Held items are the closure packs' artifact files
 (`PackCompositionFacts.held`), so an `anti_pattern` is held only by its anti-pattern file. Declared items are every
 graph-node URN plus the held items (`PackCompositionFacts.declared`). These two fields replace `defined` outright.
+References (the compose, the case-only check, the registration and uninstall diffs) resolve against the derived view
+`PackCompositionFacts.referable()`: the held files plus the step (`action:`) nodes of the mission types the pack holds,
+since a step is a value of its type's file. It is derived, never stored, so a file-less graph node (a bare
+`directive:` node) is declared but neither held nor referable (ruling R-v, DM-01M80YAS1QJABJ74REAXWNNZF9).
 
 ## Anti-pattern file (pack content, `anti_patterns/<id>.anti-pattern.yaml`; plan D12, FR-013; ruling R-r)
 
