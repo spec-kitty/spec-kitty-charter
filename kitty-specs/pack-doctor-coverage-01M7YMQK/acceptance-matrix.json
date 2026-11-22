@@ -76,13 +76,13 @@
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
+      "description": "FR-008: validate --report <file> [--format yaml|xml] writes one report model in either format, YAML default; each format checked against a schema in contracts/.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: contracts/charter/schemas/PackDoctorReport.yaml; pack-doctor/src/main/.../report/{YamlReport,XmlReport,ReportFile}.java; deployable bdd/PackDoctorReportContractTest.java:409 (YAML and XML parsed back, same tree, validated against PackDoctorReport); ReportFileTest :99; ADR-0083 decision 10",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:44:09.749931+00:00",
+      "notes": "One normative JSON schema in contracts/; both formats parsed back and validated against it (ADR-0083 d10: no hand-kept XSD). Meets 'each format is checked against a schema'."
     },
     {
       "criterion_id": "FR-009",
