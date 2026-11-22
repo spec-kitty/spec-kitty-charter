@@ -36,13 +36,13 @@
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "FR-004: a stale content_hash (constituent or preset) or manifest_hash answers manifest_stale at pack-manifest.yaml naming the field, judged in the storage manifest gate beside manifest_membership, so validation and whole-pack registration refuse it; files membership already names are skipped.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "lane-h: packs/src/main/.../infra/storage/rules/ManifestRules.java:89-109, StorageCodes.java:83 MANIFEST_STALE; ManifestRulesTest (11 green, rerun 2026-11-22T13:42Z): aStaleConstituentHashIsOneManifestStale :87, aPathMembershipNamesGetsNoManifestStale :121, aStaleManifestHashIsOneManifestStale :253; whole-pack-registration.feature:565,:595",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-22T13:43:48.528738+00:00",
+      "notes": "Verified rule location in manifest gate, tests for constituent and manifest hash and the membership skip; registration scenario present."
     },
     {
       "criterion_id": "FR-005",
