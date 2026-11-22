@@ -21,11 +21,6 @@ value:
         role: implementer
         onSuccess: null
         onFailure: null
-    antiPatterns:
-      - title: Fixing before reproducing
-        content: A fix without a failing test proves nothing.
-        badExample: null
-        goodExample: null
     notes: Keep the test.
     appliesToLanguages:
       - java

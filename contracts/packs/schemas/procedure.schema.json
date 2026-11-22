@@ -2,34 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/procedure.schema.json",
   "$defs": {
-    "AntiPatternEntry": {
-      "additionalProperties": false,
-      "description": "Something to avoid when following the procedure; a value of its procedure, with no identity.",
-      "properties": {
-        "title": {
-          "minLength": 1,
-          "title": "Title",
-          "type": "string"
-        },
-        "content": {
-          "title": "Content",
-          "type": "string"
-        },
-        "bad_example": {
-          "title": "Bad Example",
-          "type": "string"
-        },
-        "good_example": {
-          "title": "Good Example",
-          "type": "string"
-        }
-      },
-      "required": [
-        "title"
-      ],
-      "title": "AntiPatternEntry",
-      "type": "object"
-    },
     "ProcedureStep": {
       "additionalProperties": false,
       "description": "A single step within a procedure. A step names the role that acts (ADR-0032), never an agent profile.",
@@ -106,14 +78,6 @@
       },
       "minItems": 1,
       "title": "Steps",
-      "type": "array"
-    },
-    "anti_patterns": {
-      "items": {
-        "$ref": "#/$defs/AntiPatternEntry"
-      },
-      "minItems": 1,
-      "title": "Anti Patterns",
       "type": "array"
     },
     "notes": {

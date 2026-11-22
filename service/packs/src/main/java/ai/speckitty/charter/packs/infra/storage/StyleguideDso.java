@@ -19,7 +19,6 @@ import java.util.Optional;
  * @param scope the {@code scope} token, as plain text
  * @param principles the {@code principles}, named (ADR-0067), in authored order
  * @param patterns the {@code patterns}, in authored order
- * @param antiPatterns the {@code anti_patterns}, in authored order
  * @param tooling the {@code tooling} map, when stated
  * @param qualityTest the {@code quality_test}, when stated
  * @param structuralLintConfig the {@code structural_lint_config} tree, when stated
@@ -32,7 +31,6 @@ record StyleguideDso(
         String scope,
         List<PrincipleDso> principles,
         List<Pattern> patterns,
-        List<AntiPattern> antiPatterns,
         Optional<Map<String, String>> tooling,
         Optional<String> qualityTest,
         Optional<ConfigValue> structuralLintConfig,
@@ -48,7 +46,6 @@ record StyleguideDso(
         Objects.requireNonNull(structuralLintConfig, "structuralLintConfig");
         principles = List.copyOf(principles);
         patterns = List.copyOf(patterns);
-        antiPatterns = List.copyOf(antiPatterns);
         tooling = tooling.map(map -> Collections.unmodifiableMap(new LinkedHashMap<>(map)));
         appliesToLanguages = List.copyOf(appliesToLanguages);
     }
@@ -64,24 +61,6 @@ record StyleguideDso(
     record Pattern(String name, String description, Optional<String> badExample, Optional<String> goodExample) {
         /** Checks that the fields are present. */
         Pattern {
-            Objects.requireNonNull(name, "name");
-            Objects.requireNonNull(description, "description");
-            Objects.requireNonNull(badExample, "badExample");
-            Objects.requireNonNull(goodExample, "goodExample");
-        }
-    }
-
-    /**
-     * An anti-pattern; all four parts are required.
-     *
-     * @param name the name
-     * @param description the description
-     * @param badExample the {@code bad_example}
-     * @param goodExample the {@code good_example}
-     */
-    record AntiPattern(String name, String description, String badExample, String goodExample) {
-        /** Checks that every field is present. */
-        AntiPattern {
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(description, "description");
             Objects.requireNonNull(badExample, "badExample");

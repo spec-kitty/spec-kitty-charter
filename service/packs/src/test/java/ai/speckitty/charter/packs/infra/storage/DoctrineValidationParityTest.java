@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.Styleguide;
-import ai.speckitty.charter.packs.domain.StyleguideAntiPattern;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguidePattern;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
@@ -59,11 +58,7 @@ class DoctrineValidationParityTest {
     }
 
     private static Styleguide styleguide(
-            String schema,
-            String title,
-            List<String> principleNames,
-            Optional<List<StyleguidePattern>> patterns,
-            Optional<List<StyleguideAntiPattern>> antiPatterns) {
+            String schema, String title, List<String> principleNames, Optional<List<StyleguidePattern>> patterns) {
         Styleguide.Builder builder = Styleguide.builder()
                 .id(new StyleguideIdentifier("parity-style"))
                 .packId(PACK)
@@ -72,7 +67,6 @@ class DoctrineValidationParityTest {
                 .scope(StyleguideScope.CODE);
         principleNames.forEach(name -> builder.principle(name, name + "."));
         patterns.ifPresent(builder::patterns);
-        antiPatterns.ifPresent(builder::antiPatterns);
         return builder.build();
     }
 
@@ -88,7 +82,6 @@ class DoctrineValidationParityTest {
 
     private static final StyleguidePattern PATTERN =
             new StyleguidePattern("P", "a pattern", Optional.empty(), Optional.empty());
-    private static final StyleguideAntiPattern ANTI = new StyleguideAntiPattern("A", "an anti-pattern", "bad", "good");
 
     /** A rejected build, the same build with the one value repaired, and the rule the rejection must name. */
     private record Case(String name, Supplier<Object> breach, Supplier<Object> control, String rule) {
@@ -135,33 +128,27 @@ class DoctrineValidationParityTest {
 
     private static Stream<Arguments> styleguideCases() {
         return Stream.of(
-                // styleguide: schema_version, title, principles cardinality, patterns / anti_patterns non-empty when
-                // present
+                // styleguide: schema_version, title, principles cardinality, patterns non-empty when present
                 row(
                         "styleguide: schema version other than 1.0",
-                        () -> styleguide("0.9", "T", List.of("p"), Optional.empty(), Optional.empty()),
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.empty()),
+                        () -> styleguide("0.9", "T", List.of("p"), Optional.empty()),
+                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty()),
                         "A styleguide needs a schema version of 1.0."),
                 row(
                         "styleguide: blank title",
-                        () -> styleguide("1.0", "", List.of("p"), Optional.empty(), Optional.empty()),
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.empty()),
+                        () -> styleguide("1.0", "", List.of("p"), Optional.empty()),
+                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty()),
                         "A styleguide needs a title that is not blank."),
                 row(
                         "styleguide: no principle",
-                        () -> styleguide("1.0", "T", List.of(), Optional.empty(), Optional.empty()),
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.empty()),
+                        () -> styleguide("1.0", "T", List.of(), Optional.empty()),
+                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty()),
                         "A styleguide needs at least one principle."),
                 row(
                         "styleguide: present but empty patterns",
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.of(List.of()), Optional.empty()),
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.of(List.of(PATTERN)), Optional.empty()),
-                        "A styleguide's patterns, when present, must not be empty."),
-                row(
-                        "styleguide: present but empty anti-patterns",
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.of(List.of())),
-                        () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.of(List.of(ANTI))),
-                        "A styleguide's anti-patterns, when present, must not be empty."));
+                        () -> styleguide("1.0", "T", List.of("p"), Optional.of(List.of())),
+                        () -> styleguide("1.0", "T", List.of("p"), Optional.of(List.of(PATTERN))),
+                        "A styleguide's patterns, when present, must not be empty."));
     }
 
     private static Stream<Arguments> paradigmCases() {
@@ -254,7 +241,7 @@ class DoctrineValidationParityTest {
     void aStyleguideScopeOutsideTheEnumIsNotLoadable(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-a", host);
         DomainRepositoryService service = serviceOver(pack);
-        Styleguide styleguide = styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.empty());
+        Styleguide styleguide = styleguide("1.0", "T", List.of("p"), Optional.empty());
         service.save(styleguide);
 
         assertThat(service.load(PACK, styleguide.id())).isPresent();

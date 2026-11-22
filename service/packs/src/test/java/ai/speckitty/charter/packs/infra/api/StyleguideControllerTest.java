@@ -111,10 +111,31 @@ class StyleguideControllerTest {
                 .andExpect(jsonPath("$.code").value("validation_failed"));
     }
 
+    /** ADR-0052 decision 16 (#154): a styleguide carries no anti-pattern; the closed registration refuses the member. */
+    @Test
+    void aBodyWithAntiPatternsIsRefusedByTheClosedRegistration() throws Exception {
+        String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
+                + "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],"
+                + "\"antiPatterns\":[{\"name\":\"A\",\"description\":\"d\",\"badExample\":\"b\",\"goodExample\":\"g\"}]}";
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value("A styleguide registration has no member antiPatterns."));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/styleguide/docs-style")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.detail").value("A styleguide registration has no member antiPatterns."));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
     // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages"})
+    @ValueSource(strings = {"principles", "patterns", "tooling", "appliesToLanguages"})
     void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
                 + "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],\"" + list
@@ -141,7 +162,7 @@ class StyleguideControllerTest {
     // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages"})
+    @ValueSource(strings = {"principles", "patterns", "tooling", "appliesToLanguages"})
     void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
         String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
                 + "\"principles\":[{\"name\":\"Prefer clarity\",\"description\":\"Prefer clarity.\"}],\"" + list

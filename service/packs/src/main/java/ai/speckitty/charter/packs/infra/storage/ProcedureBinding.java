@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.packs.domain.AntiPatternEntry;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureIdentifier;
 import ai.speckitty.charter.packs.domain.ProcedureStep;
@@ -54,9 +53,6 @@ enum ProcedureBinding implements KindBinding<ProcedureDso, Procedure> {
         dso.steps()
                 .forEach(step -> builder.step(new ProcedureStep(
                         step.title(), step.description(), step.role(), step.onSuccess(), step.onFailure())));
-        dso.antiPatterns()
-                .forEach(entry -> builder.antiPattern(
-                        new AntiPatternEntry(entry.title(), entry.content(), entry.badExample(), entry.goodExample())));
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
         return builder.build();
     }
@@ -73,10 +69,6 @@ enum ProcedureBinding implements KindBinding<ProcedureDso, Procedure> {
                 procedure.steps().stream()
                         .map(step -> new ProcedureDso.Step(
                                 step.title(), step.description(), step.role(), step.onSuccess(), step.onFailure()))
-                        .toList(),
-                procedure.antiPatterns().stream()
-                        .map(entry -> new ProcedureDso.AntiPattern(
-                                entry.title(), entry.content(), entry.badExample(), entry.goodExample()))
                         .toList(),
                 procedure.notes(),
                 procedure.appliesToLanguages());
