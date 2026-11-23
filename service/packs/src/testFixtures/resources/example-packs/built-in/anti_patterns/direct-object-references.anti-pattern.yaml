@@ -1,0 +1,11 @@
+schema_version: '1.0'
+id: direct-object-references
+title: Direct Object References
+description: Holding in-memory references to other aggregates, creating hidden transactional coupling that violates aggregate independence.
+severity: severe
+bad_example: |
+  class Order:
+      customer: Customer  # loads and locks Customer aggregate
+good_example: |
+  class Order:
+      customer_id: UUID  # independent loading

@@ -2,3 +2,6 @@ pack_id: 01M60H1APRESETSPACK0000000
 pack_version: 0.1.0
 name: presets-pack
 pack_level: project
+depends_on:
+  - pack_id: 01ARWG13C000000000000000FG
+    range: ">=1.0,<2"

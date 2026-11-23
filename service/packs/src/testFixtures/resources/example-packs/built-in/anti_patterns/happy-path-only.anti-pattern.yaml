@@ -1,0 +1,7 @@
+schema_version: '1.0'
+id: happy-path-only
+title: Happy-path only
+description: |
+  Capturing only success stories and missing the boundaries, exceptions, and rejection cases that actually define the contract.
+severity: severe
+bad_example: Map only "a valid order is accepted", with no example of a rejected, boundary or exceptional order.

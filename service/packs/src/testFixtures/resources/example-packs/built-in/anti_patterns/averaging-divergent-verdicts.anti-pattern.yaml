@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: averaging-divergent-verdicts
+title: Averaging divergent verdicts
+description: Averaging conflicting verdicts instead of adjudicating from the source or taking a focused second opinion.
+severity: severe
+bad_example: One delegate approves and another rejects; record the average of the two verdicts instead of adjudicating from the source.
