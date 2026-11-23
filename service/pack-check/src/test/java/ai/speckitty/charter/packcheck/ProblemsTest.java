@@ -10,17 +10,19 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packcheck.Problems.Problem;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packvalidation.roundtrip.WholePackRoundTripRule;
@@ -62,15 +64,18 @@ class ProblemsTest {
         real = verdict.packs().getFirst();
     }
 
+    private static final Origin TEST = Origin.NONE;
+
     private static Reason violation(String code, String file, String detail) {
-        return new Reason("test", Evaluation.FAIL, new ReasonCode(code, Severity.VIOLATION), Location.in(file), detail);
+        return new Reason(
+                "test", TEST, Evaluation.FAIL, new ReasonCode(code, Severity.VIOLATION), Location.in(file), detail);
     }
 
     private PackResult with(List<Reason> findings, PackReadout.Facts facts, List<Reason> roundTrip, List<Reason> set) {
         return new PackResult(real.entry(), new PackVerdict(List.of(), findings), real.level(), facts, roundTrip, set);
     }
 
-    private static PackSetVerdict verdict(List<PackResult> packs, List<CompositionFault> faults) {
+    private static PackSetVerdict verdict(List<PackResult> packs, List<ClosureFault> faults) {
         return new PackSetVerdict(packs, faults, List.of(Check.PACK), List.of());
     }
 
@@ -117,6 +122,7 @@ class ProblemsTest {
     void aWarningIsNoProblem() {
         Reason warning = new Reason(
                 "test",
+                TEST,
                 Evaluation.FAIL,
                 new ReasonCode("file_not_held", Severity.WARNING),
                 Location.in("notes.md"),
@@ -217,7 +223,12 @@ class ProblemsTest {
     void aRoundTripOfAHundredAndOneFaultsListsTheFirstHundredAndCountsTheRest() {
         List<Reason> reds = IntStream.range(0, 101)
                 .mapToObj(n -> new Reason(
-                        "test", Evaluation.FAIL, WholePackRoundTripRule.RED, Location.in("f" + n + ".yaml"), "red"))
+                        "test",
+                        TEST,
+                        Evaluation.FAIL,
+                        WholePackRoundTripRule.RED,
+                        Location.in("f" + n + ".yaml"),
+                        "red"))
                 .toList();
         PackResult pack = with(List.of(), real.facts(), reds, List.of());
 
@@ -233,8 +244,11 @@ class ProblemsTest {
     void aCompositionFaultIsItsCodeWithItsPacksAndNoInstance() {
         RefusalPack project =
                 new RefusalPack(new PackUlid("01M74H0000000000000000PRJ1"), new PackIdentifier("project"), "project");
-        CompositionFault fault = new CompositionFault(
-                PackCodes.CLOSURE.get(1), List.of(project), "project depends on a pack the set does not hold");
+        ClosureFault fault = ClosureFault.of(
+                PackOrigins.of(project.packId()),
+                PackCodes.refusalOf(PackCodes.CLOSURE.get(1)),
+                "project depends on a pack the set does not hold",
+                List.of(project));
 
         assertThat(Problems.of(verdict(List.of(real), List.of(fault))))
                 .singleElement()
@@ -252,10 +266,11 @@ class ProblemsTest {
     void thePacksProblemsComeBeforeTheCompositionProblems() {
         PackResult pack = with(
                 List.of(violation("duplicate_artifact_id", "a.yaml", "repeated")), real.facts(), List.of(), List.of());
-        CompositionFault fault = new CompositionFault(
-                PackCodes.CLOSURE.getFirst(),
-                List.of(new RefusalPack(new PackUlid("01M74H0000000000000000XYZ1"), new PackIdentifier("y"), "z")),
-                "a cycle");
+        ClosureFault fault = ClosureFault.of(
+                PackOrigins.of(new PackIdentifier("y")),
+                PackCodes.refusalOf(PackCodes.CLOSURE.getFirst()),
+                "a cycle",
+                List.of(new RefusalPack(new PackUlid("01M74H0000000000000000XYZ1"), new PackIdentifier("y"), "z")));
 
         assertThat(Problems.of(verdict(List.of(pack), List.of(fault))))
                 .extracting(Problem::code)

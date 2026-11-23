@@ -8,10 +8,10 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackReadout;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -91,18 +91,18 @@ class PackRulesetsClosureTest {
         PackUnderResolution orphan = pack(ORPHAN_ID, "orphan", Optional.of(NONE_ID));
         List<PackUnderResolution> set = List.of(LEFT, RIGHT, orphan);
 
-        List<CompositionFault> faults = PackRulesets.closureFaults(set, EACH_HOLDS_TEAM);
+        List<ClosureFault> faults = PackRulesets.closureFaults(set, EACH_HOLDS_TEAM);
         List<Reason> reasons = PackRulesets.closure(EACH_HOLDS_TEAM).apply(set);
 
         assertThat(faults)
-                .extracting(fault -> fault.code().value())
+                .extracting(fault -> fault.reason().code().value())
                 .containsExactly(RefusalCode.PACK_PARENT_UNRESOLVED.token(), RefusalCode.PACK_SIBLING_CONFLICT.token());
         assertThat(faults).allSatisfy(fault -> assertThat(fault.packs()).isNotEmpty());
         assertThat(reasons)
                 .extracting(Reason::code, Reason::detail, Reason::rule)
                 .containsExactly(
-                        tuple(faults.get(0).code(), faults.get(0).detail(), CompositionRules.RULE),
-                        tuple(faults.get(1).code(), faults.get(1).detail(), CompositionRules.PRESETS_RULE));
+                        tuple(faults.get(0).reason().code(), faults.get(0).detail(), CompositionRules.RULE),
+                        tuple(faults.get(1).reason().code(), faults.get(1).detail(), CompositionRules.PRESETS_RULE));
     }
 
     @Test

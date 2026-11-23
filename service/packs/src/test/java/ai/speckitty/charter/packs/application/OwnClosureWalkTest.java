@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RolePins;
@@ -144,6 +145,25 @@ class OwnClosureWalkTest {
     }
 
     @Test
+    @DisplayName("a fallback or pin breach is about the declaring pack and the profile it names (R-o)")
+    void aFallbackOrPinBreachIsAboutTheDeclaringPackAndTheProfile() {
+        List<ClosureFault> faults = new OwnClosureWalk()
+                .walk(own(Optional.of("generic-agent"), pinningTwoUnknown()))
+                .faults();
+
+        assertThat(faults)
+                .extracting(fault -> fault.origin().id())
+                .containsExactly(
+                        "acme::agent_profile:generic-agent",
+                        "acme::agent_profile:nobody",
+                        "acme::agent_profile:nobody-either");
+        assertThat(faults)
+                .extracting(fault -> fault.reason().rule())
+                .as("the rule stays the check's name")
+                .containsOnly(ClosureFault.RULE);
+    }
+
+    @Test
     @DisplayName("no fallback declared: only the pins are judged")
     void noFallbackDeclaredJudgesOnlyThePins() {
         assertThat(new OwnClosureWalk()
@@ -177,6 +197,10 @@ class OwnClosureWalkTest {
         assertThat(conflicts.get(1).packs())
                 .extracting(pack -> pack.packId().value())
                 .containsExactly("base", "acme");
+        assertThat(conflicts)
+                .as("a conflict is about the first pack that pins the role (R-o)")
+                .extracting(ClosureFault::origin)
+                .containsExactly(PackOrigins.of(ACME), PackOrigins.of(BASE));
     }
 
     @Test
@@ -225,6 +249,10 @@ class OwnClosureWalkTest {
                 .allSatisfy(fault -> assertThat(fault.packs())
                         .extracting(pack -> pack.packId().value())
                         .containsExactly("acme"));
+        assertThat(faults)
+                .as("each drop is about the enhancing pack's profile that breaks the merge (R-o)")
+                .extracting(ClosureFault::origin)
+                .containsExactly(PackOrigins.of(ACME, enhancer), PackOrigins.of(ACME, enhancer));
     }
 
     @Test

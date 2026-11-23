@@ -2,6 +2,7 @@ package ai.speckitty.charter.packvalidation.roundtrip;
 
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
@@ -22,6 +23,9 @@ import java.util.stream.Collectors;
  * drift test passes {@link WholePackExpectation#none()}, so every red is a problem. Either way every census file the
  * census holds needs an outcome: a held file of a kind the round trip does not model fails, naming its kind and path
  * (#547). A file the census does not hold (an excluded file, a file no rule covers) is left out, never red (#631).
+ *
+ * <p>A run judges a pack's files, which each reason's {@link Location} names, not an element it can name: its reasons
+ * are about {@link Origin#NONE}.
  */
 public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
 
@@ -84,10 +88,10 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
             List<Reason> reasons = new ArrayList<>();
             evaluation
                     .problems()
-                    .forEach(problem ->
-                            reasons.add(new Reason(RULE, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
-            unpaired.forEach(file -> reasons.add(
-                    new Reason(RULE, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
+                    .forEach(problem -> reasons.add(
+                            new Reason(RULE, Origin.NONE, Evaluation.FAIL, RED, locationOf(problem, census), problem)));
+            unpaired.forEach(file -> reasons.add(new Reason(
+                    RULE, Origin.NONE, Evaluation.FAIL, UNPAIRED, Location.in(file), "written but unpaired " + file)));
             return List.copyOf(reasons);
         }
     }
@@ -137,6 +141,7 @@ public final class WholePackRoundTripRule implements Rule<PackRoundTripResult> {
     public static Reason refused(String code, String detail) {
         return new Reason(
                 RULE,
+                Origin.NONE,
                 Evaluation.FAIL,
                 RED,
                 Location.NOWHERE,
