@@ -24,6 +24,26 @@ References (the compose, the case-only check, the registration and uninstall dif
 since a step is a value of its type's file. It is derived, never stored, so a file-less graph node (a bare
 `directive:` node) is declared but neither held nor referable (ruling R-v, DM-01M80YAS1QJABJ74REAXWNNZF9).
 
+## Case-only policy lock (domain, `ClosureFault`; plan D15, FR-016; ruling R-y)
+
+A `CLOSURE` phase of the domain factory (`PolicyLockRules`, rule `closure.policy-locks`), after the preset items.
+
+| Field | Value |
+|---|---|
+| reason.code | `pack_reference_artifact_missing` (the existing case-only answer, `PackCompositionResolver.caseOnlyMatches`) |
+| reason.detail | the resolver's case-only detail: the mentioning pack names `<lock URN>`, but the holder holds `<held URN>`; ids differ only by case and are matched exactly |
+| packs | the mentioning pack first, then the holder |
+| violations | none: registration's phase 6 answer carries no violation of its own |
+| origin | the pack and the lock's URN, as written |
+
+Invariants:
+
+- A lock is a URN key of the pack's mutability policy file (`MutabilityPolicySource.urnEntries`), judged against the
+  pack's own closure (as a preset item is); a lock no pack of the own closure holds, in any letter case, is no fault.
+- One fault per such lock, in pack-id order, then the policy's entry order, after every preset-item fault.
+- Registration answers the same code, packs and detail (its phase 6, the closure named in front); a composing read is
+  unchanged.
+
 ## Anti-pattern file (pack content, `anti_patterns/<id>.anti-pattern.yaml`; plan D12, FR-013; ruling R-r)
 
 The file form of the existing `anti_pattern` kind (ADR-0052 decision 8, as amended by ADR-0053 decision 30). Schema
