@@ -217,8 +217,11 @@ description: >-
   holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
   answer 422 there, because the request is what is wrong, and are refused before any file is written. On
   putPackRelationship a preset or lock mismatch also answers 422 until the pack is fixed; the detail names the pack.
-  A preset item or policy lock naming a held artifact only by case is pack_reference_artifact_missing, and a preset
-  item whose id is outside the id grammar is pack_unreadable.
+  A preset item or policy lock naming a held artifact only by case is pack_reference_artifact_missing, judged over the
+  composed closure of each root, and a preset item whose id is outside the id grammar is pack_unreadable. A preset
+  item that the declaring pack's own closure does not hold or declare answers preset_item_not_held or
+  preset_item_undeclared (422) on getPackRegistration and on every write judged over the closures its pack joins
+  alike.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
   pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing and
@@ -1140,11 +1143,12 @@ x-refusal:
     retryable: false
     raised: true
     description: >-
-      a preset's must_have item that no pack of the declaring pack's own closure (the pack, its depends_on and its
-      parent_pack, never a dependent) holds as an artifact file (issue #629; rulings R-a, R-k, R-l, R-m); one per item,
-      with one violation whose pointer is presets/<id>.yaml#/activated_<kinds>/<index> and whose code is the code, the
+      a preset's must_have item that no pack of the declaring pack's own closure (the pack and every pack it reaches over
+      depends_on and parent_pack, never a dependent) holds as an artifact file (issue #629; rulings R-a, R-k, R-l,
+      R-m); one per item, with one violation whose pointer is presets/<id>.yaml#/activated_<kinds>/<index> and whose code is the code, the
       detail naming the preset, the item <kind>:<id>, that it is must_have, and the own closure's packs in order. An item
-      that names an artifact of the closure only by case is pack_reference_artifact_missing instead. Raised by
+      that names a held artifact only by case is pack_reference_artifact_missing instead, judged over the composed
+      closure of each root as registration's phase 6 judges it (rulings R-y, R-z). Raised by
       getPackRegistration (in the problem of a refused registration) and by every write judged over the closures its
       pack joins, after the compose and the closure walk; a composing read never raises it and reports the item as
       requiredNotHeld
@@ -1154,8 +1158,8 @@ x-refusal:
     raised: true
     description: >-
       a preset item that no pack of the declaring pack's own closure declares as its kind, by a graph node or an
-      artifact file (issue #632 item 1; rulings R-a, R-k, R-l, R-m); an item of another kind never declares it. Raised,
-      placed and worded as preset_item_not_held, which a must_have item that is not held answers instead
+      artifact file (issue #632 item 1; rulings R-a, R-k, R-l, R-m); an item of another kind never declares it. Raised
+      and placed as preset_item_not_held, which a must_have item that is not held answers instead
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

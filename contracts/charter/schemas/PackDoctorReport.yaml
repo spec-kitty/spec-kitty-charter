@@ -97,9 +97,11 @@ properties:
       enum: [PACK, CLOSURE, REFERENCES, ROUND_TRIP]
     x-derived:
       rule: >-
-        PACK; CLOSURE when every pack's composition facts could be read; REFERENCES with --full when CLOSURE ran and
-        found no fault (per pack, within its own closure, the substep delegations, the references and the step
-        enhancements' targets, in the registration's order); ROUND_TRIP with --round-trip.
+        PACK; CLOSURE when every pack's composition facts could be read (the composition faults, the preset contests,
+        the preset items, then the case-only answer); REFERENCES with --full when CLOSURE ran and found no composition
+        fault, an own closure that does not compose (ruling R-aa): per pack, within its own closure, the substep
+        delegations, the references and the step enhancements' targets, in the registration's order; ROUND_TRIP with
+        --round-trip.
       inputs:
         - the command line
         - the packs checked
@@ -115,7 +117,9 @@ properties:
         name:
           type: string
           minLength: 1
-          description: The pack's directory name.
+          description: >-
+            The pack's id, the name it is checked and registered under: the =<id> of its --pack value when given, else
+            its directory's name. Every problem and skipped reason names the pack by it.
         level:
           $ref: PackLevel.yaml
         path:
@@ -156,9 +160,9 @@ properties:
       at <file>.", and its violations (round_trip_red, round_trip_written_unpaired) are worded as the registration
       words a violation. The other problems are what the registration answers for the same fault. Each of a pack's
       problems has as its instance the absolute file URI of the pack's directory (file:///work/packs/org-base/), so
-      two packs' problems are told apart. Then one problem per composition fault, with its code and packs and no
-      instance: CLOSURE's, or, with --full and when CLOSURE found none, REFERENCES'. A pack never gets two problems for
-      one cause. Empty when the set is valid.
+      two packs' problems are told apart. Then one problem per closure fault, with its code and packs (each pack named
+      once) and no instance: CLOSURE's, then, with --full and when CLOSURE found no composition fault, REFERENCES'. A
+      pack never gets two problems for one cause. Empty when the set is valid.
     items:
       $ref: ../../_shared/schemas/Problem.yaml
     x-derived:

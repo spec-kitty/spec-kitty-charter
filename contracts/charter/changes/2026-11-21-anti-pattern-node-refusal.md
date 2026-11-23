@@ -5,7 +5,7 @@
   ADR-0053 decision 31; #154; mission pack-doctor-coverage-01M7YMQK, FR-014). Such a pack registered before. The
   refusal is `validation_failed` with one violation `drg_schema_error` per such node, at its document, with the detail
   `<document>: anti_pattern:<id> is declared with no file; an anti-pattern is held by anti_patterns/<id>.anti-pattern.yaml in the same pack`;
-  `pack-doctor validate` answers the same code and detail at `/nodes/<n>` of the document. A `rejects` edge to another
+  `pack-doctor validate` answers the same code and detail at the document, as registration does. A `rejects` edge to another
   pack's anti-pattern (`<pack>::anti_pattern:<id>`) is no node of the rejecting pack and is judged as before: the
   target's pack must be in the rejecting pack's `depends_on` closure (`pack_reference_pack_missing`). No code is added
   and no schema of this contract changes, so core regenerates nothing (scenarios:
