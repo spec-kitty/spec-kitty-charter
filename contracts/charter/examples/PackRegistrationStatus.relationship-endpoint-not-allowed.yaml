@@ -9,9 +9,9 @@ value:
     title: Validation failed
     status: 422
     code: validation_failed
-    detail: 'The pack cannot be registered: 1 fault(s), the first at procedure.graph.yaml.'
+    detail: 'The pack cannot be registered: 1 fault(s), the first at procedure.graph.yaml#/edges/0.'
     violations:
-    - pointer: procedure.graph.yaml
+    - pointer: procedure.graph.yaml#/edges/0
       code: relationship_endpoint_not_allowed
       detail: 'procedure.graph.yaml: a requires edge may not connect procedure to action'
   _links:

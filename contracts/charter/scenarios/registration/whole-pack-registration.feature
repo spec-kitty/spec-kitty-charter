@@ -680,7 +680,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "<code>"
-    And the field at "/problem/violations/0/pointer" is "pack.yaml"
+    And the field at "/problem/violations/0/pointer" is "pack.yaml#<place>"
     And the field at "/problem/violations/0/detail" is "pack.yaml of acme: <detail>"
     When I GET "/packs/acme"
     Then the response status is 404
@@ -689,10 +689,10 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field at "/state" is "succeeded"
 
     Examples:
-      | field         | code                     | version | extra                                                                  | detail                                                          |
-      | requires_core | requires_core_invalid    | 1.0.0   | requires_core: banana                                                  | requires_core 'banana' is not a PEP 440 version specifier       |
-      | pack_version  | pack_version_invalid     | banana  | # no other field                                                       | pack_version 'banana' is not a PEP 440 version                  |
-      | depends_on    | dependency_range_invalid | 1.0.0   | depends_on: [{pack_id: 01M4P01D5TWB5FKZGNNQG3943S, range: banana}]     | depends_on[0] range 'banana' is not a PEP 440 version specifier |
+      | field         | code                     | version | extra                                                                  | detail                                                          | place               |
+      | requires_core | requires_core_invalid    | 1.0.0   | requires_core: banana                                                  | requires_core 'banana' is not a PEP 440 version specifier       | /requires_core      |
+      | pack_version  | pack_version_invalid     | banana  | # no other field                                                       | pack_version 'banana' is not a PEP 440 version                  | /pack_version       |
+      | depends_on    | dependency_range_invalid | 1.0.0   | depends_on: [{pack_id: 01M4P01D5TWB5FKZGNNQG3943S, range: banana}]     | depends_on[0] range 'banana' is not a PEP 440 version specifier | /depends_on/0/range |
 
   # #554 (operator ruling S2; R2 row 15): a repeated asset id is a consistency rule of the pack, so a registration
   # refuses the second sidecar that declares it, as validate mode does, beside the pack whose ids differ.

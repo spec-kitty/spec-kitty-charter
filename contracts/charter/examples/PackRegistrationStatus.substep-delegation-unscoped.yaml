@@ -10,9 +10,9 @@ value:
     title: Validation failed
     status: 422
     code: validation_failed
-    detail: 'The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.'
+    detail: 'The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0.'
     violations:
-    - pointer: missions/rx/rx.mission-type.yaml
+    - pointer: missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0
       code: substep_delegation_unscoped
       detail: >-
         the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds

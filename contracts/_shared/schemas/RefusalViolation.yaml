@@ -13,21 +13,26 @@ properties:
       An RFC 6901 JSON Pointer into the request body, for example /deactivated/tactic/0; empty for the whole body. On a
       violation of a registration, and on a per-file write or removal refused because the pack it would leave does not
       revalidate, and on a pack_unreadable refusal of a pack whose graph documents cannot be read or hold an edge that
-      joins an artifact to itself (#617), it is the pack-relative path of the file at fault, for example
-      missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml, or pack when the fault is the pack's as a
-      whole. A refusal of the closure checks that names several faults (#556) holds, for each fault, a header violation
+      joins an artifact to itself (#617), it is a URI reference to the place at fault: the pack-relative path of the
+      file, then # and an RFC 6901 JSON Pointer into the file when the place inside it is known, for example
+      drg/directive.graph.yaml#/edges/3 for an edge or tactics/a.tactic.yaml#/id for a field; the bare path when it is
+      not, for example missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml; or pack when the fault is the
+      pack's as a whole. A refusal of the closure checks that names several faults (#556) holds, for each fault, a header violation
       whose pointer is empty and whose code and detail are the fault's, followed by that fault's own violations.
     x-derived:
       rule: >-
         The JSON Pointer of the refused part of the request body; on a registration, or a per-file write whose pack would
-        not revalidate, a file path of the pack or pack; on a pack_unreadable refusal, the path of the graph document
-        that cannot be read or holds an edge that joins an artifact to itself; empty on the header violation of each fault of a closure-check
-        refusal that names several.
+        not revalidate, a file path of the pack, followed by # and the JSON Pointer of the place inside the file when the
+        fault names one (the edge's /edges/<index> in its document's edges list, or the field a schema refuses), or
+        pack; on a pack_unreadable refusal, the path of the graph document that cannot be read or holds an edge that
+        joins an artifact to itself, followed by # and the edge's or field's JSON Pointer when the fault names one; empty
+        on the header violation of each fault of a closure-check refusal that names several.
       inputs:
         - the request body and the packs the activation names
         - the staged pack of a registration
         - the pack a per-file write or removal would leave
         - the graph documents of a stored pack a read refuses as pack_unreadable
+        - the place inside the file at fault, when the fault names one
   code:
     type: string
     pattern: '^[a-z][a-z0-9_]*$'

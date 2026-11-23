@@ -375,7 +375,7 @@ Feature: The offering lists the configured packs in force
     And the problem code is "pack_unreadable"
     And the field "detail" of the response body is "a graph document of foundation cannot be read: foundation/directive.graph.yaml: unknown relation 'in_tension_with'"
     And the field at "/violations" holds exactly 1 item
-    And the field at "/violations/0/pointer" is "directive.graph.yaml"
+    And the field at "/violations/0/pointer" is "directive.graph.yaml#/edges/0/relation"
     And the field at "/violations/0/code" is "drg_schema_error"
     And the field at "/violations/0/detail" is "directive.graph.yaml: unknown relation 'in_tension_with'"
     And the response has no "Charter-Source-Fingerprint" header

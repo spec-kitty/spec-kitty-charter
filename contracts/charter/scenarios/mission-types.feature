@@ -1131,7 +1131,7 @@ Feature: A pack's mission types are read with their steps and skeletons
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "<code>"
-    And the field at "/problem/violations/0/pointer" is "missions/rx/rx.mission-type.yaml"
+    And the field at "/problem/violations/0/pointer" is "missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0"
     And the field at "/problem/violations/0/detail" contains "the substep run of the step a of mission_type:rx delegates to tactic tdd"
     Given the archive "fixed" is a copy of the archive "sdp"
     And the archive "fixed" holds the file "tactics/tdd.tactic.yaml":

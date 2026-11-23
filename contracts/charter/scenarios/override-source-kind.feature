@@ -97,7 +97,7 @@ Feature: An overrides edge comes from an activatable artifact
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "overrides_source_not_activatable"
-    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml"
+    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml#/edges/0"
     And the field at "/problem/violations/0/detail" contains "template:t.md"
     When I PUT "/packs/ovr" with the archive "ovr"
     And I poll the registration until it ends
@@ -126,9 +126,9 @@ Feature: An overrides edge comes from an activatable artifact
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 2 item(s)
     And the field at "/problem/violations/0/code" is "overrides_source_not_activatable"
-    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml"
+    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml#/edges/0"
     And the field at "/problem/violations/1/code" is "overrides_source_not_activatable"
-    And the field at "/problem/violations/1/pointer" is "overrides.graph.yaml"
+    And the field at "/problem/violations/1/pointer" is "overrides.graph.yaml#/edges/1"
 
   # C27: this rule judges the overrides relation only; a requires edge from the template is the endpoint table's
   # fault (ADR-0064 decision 13), beside the same edge from the directive, which is registered.
@@ -151,7 +151,7 @@ Feature: An overrides edge comes from an activatable artifact
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "relationship_endpoint_not_allowed"
-    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml"
+    And the field at "/problem/violations/0/pointer" is "overrides.graph.yaml#/edges/0"
     And the field at "/problem/violations/0/detail" contains "a requires edge may not connect template to directive"
     Given the archive "requires-twin" is a copy of the archive "ovr"
     And the archive "requires-twin" holds the file "overrides.graph.yaml":
