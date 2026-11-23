@@ -2,17 +2,19 @@
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "fail",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
-      "description": "FR-001 (#614, #636 slice 1): Origin on Reason; one ClosureFault.of(...) factory; CompositionFault deleted from CompositionRules, PackRulesets and the checker's problem mapping; ClosureVerdict becomes a view over Rationale or is deleted; wire codes and finding order unchanged.",
+      "description": "FR-001 (#614, #636 slice 1): Origin on Reason; one ClosureFault.of(...) factory; CompositionFault deleted from CompositionRules, PackRulesets and the checker's problem mapping; ClosureVerdict becomes a view over Rationale or is deleted (this clause deferred to #636 slice 7 by R-x); wire codes and finding order unchanged.",
       "proof_type": "review",
-      "evidence": "lane-h 744df9b61: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureVerdict.java:17 (record ClosureVerdict(List<ClosureFault> faults), rationale() derived); OneClosureFaultTypeTest (2/2 green, rerun 2026-11-22T13:42Z); kernel/validation/Reason.java:17 (Origin); ClosureFault.java:79-132; docs/adr/0083 decision 15",
-      "pass_fail": "fail",
+      "evidence": "lane-l@33de257ea: kernel/validation/Reason.java:17 (Origin); packs/domain/ClosureFault.java:79-132 (one of(...) factory); no CompositionFault type in service main sources; OneClosureFaultTypeTest 2/2 (noCompositionFaultRemains :35, everyFactoryTakesTheOrigin :47); packs/domain/ClosureVerdict.java:17 (fault list, derived Rationale); docs/adr/0083 decision 15 and R-x row :263",
+      "pass_fail": "deferred",
       "verified_by": "claude::reviewer-renata",
-      "verified_at": "2026-11-22T13:42:59.320541+00:00",
-      "notes": "Met: Origin on Reason (Reason.java:17), ClosureFault.of factories (ClosureFault.java:79/94/111/132), no CompositionFault type in any service/*/src/main (only test method names), OneClosureFaultTypeTest green, goldens unchanged. NOT met: ClosureVerdict is neither a view over Rationale nor deleted; it owns List<ClosureFault> and derives a Rationale (its own Javadoc says 'not a view'). The carve-out traces to WP01 review cycle 1 (agent reviewer, Issue 3) and is recorded only in ADR-0083 decision 15, which cites R-o; R-o (WP01 task file) rules only on Origin ('element id'). No Decision Moment in decisions/ (R-a..R-w) authorises keeping ClosureVerdict to #636 slice 7. Fix: an operator ruling deferring the ClosureVerdict clause to #636 slice 7 (then re-record deferred), or amend FR-001 wording with that ruling; not a code fix in this mission."
+      "verified_at": "2026-11-23T08:35:35.430203+00:00",
+      "notes": "Met: Origin, the single ClosureFault factory, CompositionFault deletion (guard test green), unchanged goldens. Not met in this mission: ClosureVerdict still owns List<ClosureFault>; deferred by operator ruling R-x, recorded in ADR-0083 decision 15 and the spec's FR-001.",
+      "deferral_reason": "Operator ruling R-x (DM-01M83MFVJZX16G6NBM4YPB9XYG, 2026-11-23): the ClosureVerdict clause of FR-001 is deferred to #636 slice 7, which removes the type. All other FR-001 clauses are met and verified.",
+      "deferral_follow_up": "636"
     },
     {
       "criterion_id": "FR-002",
@@ -116,13 +118,53 @@
     },
     {
       "criterion_id": "FR-012",
-      "description": "FR-012: ADR-0083 records rulings R-a to R-s (R-r all of #154; R-s narrowed --full); amends ADR-0075 decisions 6/7/9, ADR-0042's 2026-11-12 amendment, rules A10 and C31, and the patterns page's scope table; records #535 and #52 item 3 as not the charter's to judge.",
+      "description": "FR-012: ADR-0083 records rulings R-a to R-w (R-r all of #154; R-s narrowed --full), and WP13 adds R-x (FR-001 ClosureVerdict clause deferred to #636 slice 7) and R-y (FR-016); it amends ADR-0075 decisions 6/7/9, ADR-0042's 2026-11-12 amendment, rules A10 and C31, and the patterns page's scope table; records #535 and #52 item 3 as not the charter's to judge.",
       "proof_type": "review",
-      "evidence": "lane-h: docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md:34 (R-a to R-w), :221-267 rulings verbatim incl. R-r :249, R-s :250; amends list :50-62; decision 17 :209 (#535, #52 item 3); ADR-0075 :342 amendment of decisions 6,7,9; ADR-0042 amendment status line; composition-and-activation-rules.md :80-83, :422, :1502 (A10 superseded for writes, C31); architectural-patterns-applied.md :318 scope table",
+      "evidence": "lane-l@33de257ea: docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md:34 (R-a to R-y), rulings table incl. R-r, R-s, R-x :263, R-y :264, decision 15 (R-x), decision 20 :220 (R-y); amends list :50-62; decision 17 (#535, #52 item 3); ADR-0075 :342 amendment of decisions 6/7/9; ADR-0042 status line amendment; composition-and-activation-rules.md :80-83, :422, :1502 (A10 superseded for writes, C31); architectural-patterns-applied.md :318 scope table",
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
-      "verified_at": "2026-11-22T13:44:30.056452+00:00",
-      "notes": "ADR records R-a..R-w, a superset of the required R-a..R-s (R-t..R-w were ruled after the spec was written); the spec text is stale, not the ADR. Recommend updating FR-012's wording to R-a..R-w (no operator ruling needed). A10 is handled as superseded for writes within C31's amendment rather than as a separate rule row."
+      "verified_at": "2026-11-23T08:35:40.287432+00:00",
+      "notes": "Re-checked on lane-l: status line says R-a to R-y; verbatim rows for R-x and R-y with their DM ids; decisions 15 and 20 cite them. Amendments and #535/#52 item 3 unchanged from lane-h check. A10 is handled as superseded for writes within the C31 amendment."
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "FR-013: the anti_pattern kind gets a file form anti_patterns/<id>.anti-pattern.yaml, closed (schema_version, id=stem, title, description, severity smell|severe|breaking, bad_example required; good_example optional; no default severity); the packs contract gains its schema, files rule and classifier case; the store binds/reads/writes it in one canonical form; registration and validate hold a valid file and refuse invalid or misplaced ones with existing answers; 18 inline entries become built-in files with node and rejects edge, incl. indirection-for-repetition.",
+      "proof_type": "automated_test",
+      "evidence": "lane-l@33de257ea: contracts/packs/schemas/anti-pattern.schema.json (additionalProperties false; required schema_version,id,title,description,severity,bad_example :54-61; severity enum, no default); contracts/packs/file-kinds.yaml:134,:228-229; contracts/packs/conformance/classifier-cases.yaml:68; packs infra/storage/AntiPatternBinding.java, AntiPatternDso.java, AntiPatternYaml.java; AntiPatternBindingTest :86,:105,:159,:205; pack-validation antipattern/AntiPatternFileCheckTest :57,:65,:76; contracts/charter/scenarios/registration/anti-pattern-files.feature:57,:90; example-packs/built-in/anti_patterns (18 files)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:04.777119+00:00",
+      "notes": "Verified schema, files rule, classifier case, binding and its tests, the missing-severity and missing-bad_example refusals, and 18 fixture files. packs and pack-validation suites green on the lane-l gates."
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "FR-014: a pack whose graph document declares an anti_pattern node it does not hold as an anti-pattern file is refused: one drg_schema_error per node naming the node and the missing file; the finding is at /nodes/<n> of its document, and a registration violation's pointer is the document; one GraphRules content rule in PackRulesets.content(), so registration, every write and pack-doctor validate refuse alike; walks nothing.",
+      "proof_type": "automated_test",
+      "evidence": "lane-l@33de257ea: packs/domain/rules/GraphRules.java:74,:81 (ANTI_PATTERN_WITHOUT_FILE in RULES), :185-207 (Findings.at(DRG_SCHEMA_ERROR, document, [nodes, i], detail naming URN and file)); PackRulesets.java:27 (GraphRules.RULES in content()); pack-validation antipattern/AntiPatternNodeCheckTest :84 (shard), :95 (fragment): document + /nodes/0 + detail, 3/3; contracts/charter/scenarios/registration/anti-pattern-nodes.feature:71,:90 (registration violation pointer = document, :81, :107); FilesystemPackStore.java:1596",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:09.020082+00:00",
+      "notes": "Re-checked against the amended wording: the finding is located at the document and /nodes/<n> (pack-doctor reports both); registration's violation pointer is the document, as the scenarios pin; code and detail match on both surfaces; the rule reads only the one read's nodes and files. Minor: anti-pattern-nodes.feature header line 5 still says pack-doctor gives the same pointer (wording only)."
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "FR-015: procedure and styleguide shapes drop anti_patterns outright (schemas and $defs, domain types, DSOs, YAML forms, bindings, the charter contract's Styleguide/StyleguideRegistration/Procedure; StyleguideAntiPattern.yaml and ProcedureAntiPattern.yaml deleted); a pack file still carrying the key is refused artifact_schema_error (unknown key) on every surface; examples, scenarios and fixtures carry only the new shape.",
+      "proof_type": "automated_test",
+      "evidence": "lane-l@33de257ea: contracts/packs/schemas/procedure.schema.json and styleguide.schema.json (no anti_patterns; additionalProperties false); contracts/charter/schemas/Styleguide.yaml, StyleguideRegistration.yaml, Procedure.yaml (no antiPatterns); StyleguideAntiPattern.yaml and ProcedureAntiPattern.yaml absent; no AntiPatternEntry or StyleguideAntiPattern in service main sources; pack-validation antipattern/InlineAntiPatternCheckTest :98 (styleguide), :115 (procedure); inline-anti-patterns.feature:58,:91; ExamplePackCoverageTest :160",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:13.455416+00:00",
+      "notes": "Greps confirm the key, the $defs and the types are gone; refusal tests for validate and registration scenarios present; fixtures carry no inline block (coverage test)."
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "FR-016: a policy lock that names an artifact of the declaring pack's own closure only by letter case is refused by pack-doctor validate as registration refuses it (R-y): pack_reference_artifact_missing naming the mentioning pack then the holder, existing case-only detail, no violation of its own; one CLOSURE phase from PackRulesets.closureFaults after the preset items, using caseOnlyMatches over each own closure, no new walk; registration and the composing read unchanged.",
+      "proof_type": "automated_test",
+      "evidence": "lane-l@33de257ea: packs/domain/rules/PolicyLockRules.java (RULE closure.policy-locks; own closure via PresetItemRules.ownClosure -> compositionClosure; PackCompositionResolver.caseOnlyMatches; ClosureFault with the resolver's code, detail and packs, no violation); PackRulesets.java:97-112 (closureFaults: ... presetItemFaults, then PolicyLockRules.phase); only main caller pack-validation set/PackSetCheck.java:156; OfferingReadService unchanged vs 744df9b61; PolicyLockRulesTest 7/7 and FullPassParityTest 15/15 (row 'a policy lock that names a held artifact only by case'), rerun --rerun 2026-11-23T08:32-08:35Z exit 0; ADR-0083 decision 20; contracts/charter/changes/2026-11-23-pack-doctor-policy-lock-case-only.md",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:17.996943+00:00",
+      "notes": "Read the rule and its wiring; diff 744df9b61..lane-l touches no registration or read path. Tests cover own-artifact and dependency matches, exact hold, no holder, dependent-only holder, no policy, and order after the preset item. Known LOW from the WP13 review: when two closure packs hold different case forms of one id, the holder named in packs/detail can differ from registration's (closure order vs composed order); code and the mentioning pack match. Judged met: FR-016 requires the code, the mentioning-pack-then-holder shape and the existing detail form, which hold; the holder choice in that ambiguous case is not specified."
     }
   ],
   "negative_invariants": []
