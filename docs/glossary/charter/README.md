@@ -67,7 +67,7 @@ What a project has chosen from the charter offering: its plate, as against the b
 
 ## Anti-pattern
 
-A practice to avoid, authored as its own file with a severity of `smell` (worth a remark), `severe` (should block review) or `breaking` (must block), and referenced from guidance through `rejects`. Decided in ADR-0052; until it is built an anti-pattern is only a graph node or an inline entry.
+A practice to avoid, authored as its own file, `anti_patterns/<id>.anti-pattern.yaml`, with a severity of `smell` (worth a remark), `severe` (should block review) or `breaking` (must block) and a bad example, and rejected by guidance through a `rejects` edge to its graph node. Decided in ADR-0052 and ADR-0053; the file is the only form, so a graph node without its file and an inline entry are refused.
 
 **Meta:**
 

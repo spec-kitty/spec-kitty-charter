@@ -50,27 +50,4 @@ patterns:
           db.commit()
           # Inventory reacts to OrderPlaced event in its own transaction
 
-anti_patterns:
-  - name: Direct Object References
-    description: "Holding in-memory references to other aggregates, creating hidden transactional coupling that violates aggregate independence."
-    bad_example: |
-      class Order:
-          customer: Customer  # loads and locks Customer aggregate
-    good_example: |
-      class Order:
-          customer_id: UUID  # independent loading
-
-  - name: Transaction Spanning
-    description: "Using database transactions across multiple aggregates instead of domain events. Creates contention and couples aggregate lifecycles."
-    bad_example: |
-      with db.transaction():
-          order.confirm()
-          billing.create_invoice(order)
-          shipping.schedule(order)
-    good_example: |
-      with db.transaction():
-          order.confirm()
-          order.publish(OrderConfirmed(...))
-      # Billing and Shipping react via event handlers
-
 quality_test: "Can each aggregate be loaded, modified, and persisted in a single transaction without touching any other aggregate's state?"

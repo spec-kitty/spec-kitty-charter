@@ -274,6 +274,7 @@ class ActivationImpactAdapterTest {
                         List.of(),
                         urns,
                         List.of(),
+                        List.of(),
                         MutabilityPolicySource.empty(),
                         List.of(),
                         edges,

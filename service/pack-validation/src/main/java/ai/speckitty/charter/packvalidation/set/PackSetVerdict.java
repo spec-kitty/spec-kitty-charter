@@ -3,9 +3,9 @@ package ai.speckitty.charter.packvalidation.set;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
+import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackVerdict;
-import ai.speckitty.charter.packs.domain.rules.CompositionRules.CompositionFault;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -17,14 +17,15 @@ import java.util.stream.Collectors;
  * order the set was given, the composition faults of {@code CLOSURE}, the checks that ran and the checks skipped.
  *
  * @param packs each pack's result, in the order the set was given
- * @param faults the composition faults of {@code CLOSURE} and its preset phase, in the order the ruleset reports them;
- *     empty when {@code CLOSURE} passed or did not run
+ * @param faults the closure faults of {@code CLOSURE} and its preset phase, in the order the ruleset reports them, or,
+ *     when {@code CLOSURE} passed and {@code --full} asked for it, those of {@code REFERENCES}; empty when the checks
+ *     that ran passed or none ran
  * @param checks the checks that ran over the whole set: {@link Check#PACK}, then {@link Check#CLOSURE} when it ran, then
- *     {@link Check#ROUND_TRIP} when it was asked for
+ *     {@link Check#REFERENCES} when it was asked for and ran, then {@link Check#ROUND_TRIP} when it was asked for
  * @param skipped the checks skipped, with why; empty when every check asked for ran
  */
 public record PackSetVerdict(
-        List<PackResult> packs, List<CompositionFault> faults, List<Check> checks, List<Skip> skipped) {
+        List<PackResult> packs, List<ClosureFault> faults, List<Check> checks, List<Skip> skipped) {
 
     /**
      * Copies the lists.
@@ -47,6 +48,12 @@ public record PackSetVerdict(
         PACK,
         /** The pack set's composition rules, with their preset phase. */
         CLOSURE,
+        /**
+         * {@code --full}: per pack, over its own closure, the delegation, reference and enhancement target checks, in
+         * registration's phase order (#632 item 3, ruling R-s; named by ruling R-u). It runs when {@code CLOSURE} ran
+         * and found no fault.
+         */
+        REFERENCES,
         /** The production round trip, per pack, judged with no expected-red baseline. */
         ROUND_TRIP
     }
@@ -136,7 +143,8 @@ public record PackSetVerdict(
 
     /**
      * A check that did not run, and the packs that stopped it: {@code CLOSURE}, skipped for the whole set when a pack
-     * has no facts or no level (D3). It is the only check a set skips.
+     * has no facts or no level (D3), and with it {@code REFERENCES} when {@code --full} asked for it. No other check is
+     * skipped.
      *
      * @param check the check skipped
      * @param packs each pack that stopped it, in the order the set was given, never empty

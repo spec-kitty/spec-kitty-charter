@@ -356,7 +356,9 @@ class ReservedRefusalCodesTest {
                 RefusalCode.ROUTING_CATALOG_NOT_IN_FORCE,
                 RefusalCode.ROUTING_CATALOG_CONFLICT,
                 RefusalCode.TASK_TYPE_NOT_FOUND,
-                RefusalCode.PACK_HAS_DEPENDENTS
+                RefusalCode.PACK_HAS_DEPENDENTS,
+                RefusalCode.PRESET_ITEM_NOT_HELD,
+                RefusalCode.PRESET_ITEM_UNDECLARED
             };
         }
     }

@@ -31,26 +31,6 @@ steps:
 - title: Record and disposition every finding, then proceed regardless
   description: |
     Capture the confirmed findings and disposition each one per the findings disposition contract (see notes). The squad's value is convergent evidence that survived independent scrutiny, not a single opinion; the squad is advisory, so work proceeds once every finding is recorded and dispositioned.
-anti_patterns:
-- title: Persona without profile
-  content: Naming a persona without loading its agent profile — a persona label is not a lens.
-  bad_example: Deploy "a security expert" with no profile loaded.
-  good_example: Load the security reviewer profile, then deploy it as the security lens.
-- title: Unbounded squad
-  content: Dozens of delegates for a question that a small, distinct set of lenses would answer; more delegates is not better.
-- title: Casting by habit
-  content: Reusing the same cast regardless of the point-cut's question instead of choosing profiles whose declared focus actually answers it.
-- title: Averaging divergent verdicts
-  content: Averaging conflicting verdicts instead of adjudicating from the source or taking a focused second opinion.
-- title: Trusting a biased delegate
-  content: Accepting a delegate's prescription despite a known bias (e.g. a duct-tape-prone reducer) without a critical pass.
-- title: Model-tier mismatch
-  content: Top-tier model on mechanical or tracker delegates, or a weak tier on the hardest adversarial lens.
-- title: Hard-wiring the squad as a gate
-  content: |
-    Turning the squad into a required mission gate instead of optional, charter- or memory-activated enrichment. Bad: a status transition blocked until squad evidence is present, e.g. raising a StatusGateError before a work package can be claimed. Good: the squad runs at the point-cut as guidance and the work proceeds independently of the squad's outcome — the squad enriches, it never blocks.
-- title: Silently dropped finding
-  content: Recording a finding without a disposition under the findings-disposition contract — every finding must be accepted, changed, or deferred with a rationale, never dropped.
 notes: |
   This procedure is the single owner of the squad playbook; the `adversarial-squad`
   skill is a harness alias that points here for the when, who, and how.

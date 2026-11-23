@@ -9,24 +9,23 @@ activated_tactics:
   - id: acceptance-test-first
     must_have: true
 activated_styleguides:
-  - id: python-style
+  - id: java-conventions
 activated_toolguides:
-  - id: ripgrep
+  - id: efficient-local-tooling
 activated_paradigms:
-  - id: domain-driven-design
+  - id: atomic-design
 activated_procedures:
-  - id: release-checklist
+  - id: git-flow
 activated_agent_profiles:
-  - id: implementer
+  - id: implementer-ivan
     must_have: true
 activated_anti_patterns:
-  - id: big-ball-of-mud
+  - id: casting-by-habit
 activated_glossaries:
-  - id: core-terms
+  - id: spec-kitty-core
 activated_skills:
-  - id: pr-review
+  - id: review-checklist
     must_have: true
 activated_mission_types:
   - id: software-dev
     must_have: true
-  - id: research

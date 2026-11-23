@@ -5,7 +5,6 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -413,7 +412,7 @@ public final class OfferingReadService {
             // only when the earlier ones pass, since it reads what they settled (#556, FR-006).
             PackCompositionResolver.Rooted rooted = PackCompositionResolver.composeRooted(members, roots);
             List<ClosureFault> phase1 =
-                    rooted.faults().stream().map(ClosureFault::of).toList();
+                    rooted.faults().stream().map(ResolverFaults::of).toList();
             if (!phase1.isEmpty()) {
                 return Judged.refused(phase1);
             }
@@ -443,7 +442,7 @@ public final class OfferingReadService {
                                             .map(Preset::id)
                                             .toList())
                     .stream()
-                    .map(ClosureFault::of)
+                    .map(ResolverFaults::of)
                     .toList();
             if (!phase5.isEmpty()) {
                 return Judged.refused(phase5);
@@ -453,7 +452,7 @@ public final class OfferingReadService {
                             pack -> mentionsOf(Objects.requireNonNull(
                                     facts.get(pack.configured().id().value()), "read above")))
                     .stream()
-                    .map(ClosureFault::of)
+                    .map(ResolverFaults::of)
                     .toList();
             if (!phase6.isEmpty()) {
                 return Judged.refused(phase6);
@@ -547,7 +546,7 @@ public final class OfferingReadService {
                 PackCompositionFacts held = factsOf.apply(pack.id());
                 facts.put(pack.id().value(), held);
                 members.add(new PackUnderResolution(
-                        pack, member.get(), held.changed(), held.defined(), Set.copyOf(held.terms())));
+                        pack, member.get(), held.changed(), held.referable(), Set.copyOf(held.terms())));
             }
         }
         return members;
@@ -578,62 +577,51 @@ public final class OfferingReadService {
 
     /**
      * FR-005: every substep delegation candidate a member writes with another pack's name resolves in its closure,
-     * judged before the references so that such a candidate is refused once, by its own code.
+     * judged before the references so that such a candidate is refused once, by its own code. Each member's faults are
+     * {@link PackCompositionResolver#delegationFaultsOf}, the one body pack-doctor's {@code --full} reads too.
      */
     private static List<ClosureFault> delegationFaults(
             List<PackUnderResolution> composed, Map<String, PackCompositionFacts> facts) {
-        List<ClosureFault> faults = new ArrayList<>();
-        for (PackUnderResolution pack : composed) {
-            faults.addAll(PackCompositionResolver.unresolvedDelegations(
-                    composed,
-                    pack.descriptor().packId(),
-                    Objects.requireNonNull(facts.get(pack.configured().id().value()), "read above")
-                            .delegations()));
-        }
-        return faults;
+        return everyMember(composed, facts, PackCompositionResolver::delegationFaultsOf);
     }
 
-    /** Every member's references against the compose, as the offering always has judged them, every fault kept. */
+    /**
+     * Every member's references against the compose, as the offering always has judged them, every fault kept: each
+     * member's are {@link PackCompositionResolver#referenceFaultsOf}, the one body pack-doctor's {@code --full} reads too.
+     */
     private static List<ClosureFault> referenceFaults(
             List<PackUnderResolution> composed, Map<String, PackCompositionFacts> facts) {
-        List<ClosureFault> faults = new ArrayList<>();
-        for (PackUnderResolution pack : composed) {
-            PackCompositionResolver.referenceFaults(
-                            composed,
-                            pack.descriptor().packId(),
-                            Objects.requireNonNull(
-                                            facts.get(pack.configured().id().value()), "read above")
-                                    .references()
-                                    .stream()
-                                    .map(written -> PackCompositionResolver.resolveReference(
-                                            composed, pack.configured().id(), PackQualifiedReference.parse(written)))
-                                    .toList())
-                    .stream()
-                    .map(ClosureFault::of)
-                    .forEach(faults::add);
-        }
-        return faults;
+        return everyMember(composed, facts, PackCompositionResolver::referenceFaultsOf);
     }
 
     /**
      * C37 (ADR-0066 decision 8, FR-002): the step each member's step enhancements name is held by a pack of the
      * member's {@code depends_on} closure, judged after the references so a reference refusal keeps its precedence. A
      * registration and an impact-checked write compose through here over the staged packs, so they refuse with the same
-     * code, answered {@code 422} there.
+     * code, answered {@code 422} there. Each member's faults are {@link EnhancementCompose#targetFaultsOf}, the one body
+     * pack-doctor's {@code --full} reads too.
      */
     private static List<ClosureFault> stepEnhancementTargetFaults(
             List<PackUnderResolution> composed, Map<String, PackCompositionFacts> facts) {
+        return everyMember(composed, facts, EnhancementCompose::targetFaultsOf);
+    }
+
+    /** One pack's check within the composed closure. */
+    @FunctionalInterface
+    private interface MemberCheck {
+        List<ClosureFault> faults(
+                List<PackUnderResolution> closure, PackUnderResolution pack, PackCompositionFacts facts);
+    }
+
+    /** A check's faults for every member of the composed closure, in merge order, every fault kept. */
+    private static List<ClosureFault> everyMember(
+            List<PackUnderResolution> composed, Map<String, PackCompositionFacts> facts, MemberCheck check) {
         List<ClosureFault> faults = new ArrayList<>();
         for (PackUnderResolution pack : composed) {
-            EnhancementCompose.targetFaults(
-                            composed,
-                            pack,
-                            Objects.requireNonNull(
-                                            facts.get(pack.configured().id().value()), "read above")
-                                    .edges())
-                    .stream()
-                    .map(EnhancementCompose.TargetViolation::toFault)
-                    .forEach(faults::add);
+            faults.addAll(check.faults(
+                    composed,
+                    pack,
+                    Objects.requireNonNull(facts.get(pack.configured().id().value()), "read above")));
         }
         return faults;
     }

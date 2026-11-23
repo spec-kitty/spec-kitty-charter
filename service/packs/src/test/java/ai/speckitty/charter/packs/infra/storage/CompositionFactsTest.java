@@ -21,8 +21,8 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * What the composing read tells the compose about a pack's graph (#554, WP05's {@code CompositionFactsBuilder}, as
  * {@code DomainRepositoryService#compositionFacts} answers it): a step link the pack makes to its own mission type's
- * step is no reference to resolve (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN), the nodes a graph declares for a
- * kind with no file of its own are defined, and the typed edges keep the graph documents' first, the registered shard's
+ * step is no reference to resolve (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN), an anti-pattern is held by its
+ * file and an action declared by its node (ADR-0052 decision 14), and the typed edges keep the graph documents' first, the registered shard's
  * last.
  */
 class CompositionFactsTest {
@@ -54,6 +54,17 @@ class CompositionFactsTest {
         Files.writeString(file, text, StandardCharsets.UTF_8);
     }
 
+    private static String antiPattern(String id) {
+        return """
+                schema_version: '1.0'
+                id: %s
+                title: %s
+                description: The anti-pattern the graph node declares.
+                severity: smell
+                bad_example: the bad example
+                """.formatted(id, id);
+    }
+
     @Test
     void aStepLinkToTheTypesOwnStepIsNoReferenceAndAnyOtherLinkIs(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
@@ -80,8 +91,10 @@ class CompositionFactsTest {
     }
 
     @Test
-    void theNodesAGraphDeclaresForAKindWithNoFileAreDefined(@TempDir Path host) throws IOException {
+    void anAntiPatternIsHeldByItsFileAndAnActionOrATacticNodeIsDeclaredOnly(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
+        write(pack, "anti_patterns/copy-paste.anti-pattern.yaml", antiPattern("copy-paste"));
+        write(pack, "anti_patterns/shotgun-surgery.anti-pattern.yaml", antiPattern("shotgun-surgery"));
         write(pack, "nodes.graph.yaml", """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -98,10 +111,13 @@ class CompositionFactsTest {
                 edges: []
                 """);
 
-        assertThat(factsOf(pack).defined())
+        assertThat(factsOf(pack).declared())
                 .contains("anti_pattern:copy-paste", "action:software-dev/plan", "anti_pattern:shotgun-surgery")
-                .as("a kind with files of its own is defined by its file, not by a node")
-                .doesNotContain("tactic:declared-only", "tactic:fragment-only");
+                .contains("tactic:declared-only", "tactic:fragment-only");
+        assertThat(factsOf(pack).held())
+                .as("an anti-pattern is held by its file; a node alone is held by no file")
+                .contains("anti_pattern:copy-paste", "anti_pattern:shotgun-surgery")
+                .doesNotContain("action:software-dev/plan", "tactic:declared-only", "tactic:fragment-only");
     }
 
     @Test

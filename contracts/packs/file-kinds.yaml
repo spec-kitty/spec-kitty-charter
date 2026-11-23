@@ -225,6 +225,11 @@ files:
   # Lifecycles (ADR-0050 decision 17): one file per lifecycle, lifecycles/<id>.lifecycle.yaml, placed as a guard is.
   - match: "**/*.lifecycle.yaml"
     schema: lifecycle
+  # Anti-patterns (ADR-0052 decision 8, as amended by ADR-0053 decision 30): one file per anti-pattern,
+  # anti_patterns/<id>.anti-pattern.yaml; a file anywhere else is refused by placement, not skipped, so the rule matches
+  # the token anywhere, as for guards. The kind token stays anti_pattern; the file and schema token is anti-pattern.
+  - match: "**/*.anti-pattern.yaml"
+    schema: anti-pattern
 
 exclusions:
   - match: "built-in.source.yaml"

@@ -102,6 +102,7 @@ class PacksProfileSourceTest {
                         Stream.concat(profiles.stream().map(id -> "agent_profile:" + id), held.stream())
                                 .toList(),
                         List.of(),
+                        List.of(),
                         MutabilityPolicySource.empty(),
                         List.of(),
                         List.of(edges)));

@@ -95,7 +95,10 @@ public final class PackCodes {
     public static final ReasonCode PROMPT_SLOT_NOT_EMPTY_WARNING =
             new ReasonCode(RefusalCode.PROMPT_SLOT_NOT_EMPTY.token(), Severity.WARNING);
 
-    /** The codes of the {@code CLOSURE} composition: the resolver's cycle, dependency, parent, level and conflict kinds. */
+    /**
+     * The codes of the {@code CLOSURE} composition: the resolver's cycle, dependency, parent, level and conflict kinds,
+     * and the preset-item rule's two ({@code PresetItemRules}, #629, #632 item 1).
+     */
     public static final List<ReasonCode> CLOSURE = List.of(
             violation(RefusalCode.PACK_DEPENDENCY_CYCLE.token()),
             violation(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token()),
@@ -104,7 +107,9 @@ public final class PackCodes {
             violation(RefusalCode.PACK_LEVEL_VIOLATION.token()),
             violation(RefusalCode.PACK_NAME_CONFLICT.token()),
             violation(RefusalCode.PACK_DUPLICATE_ID.token()),
-            violation(RefusalCode.PACK_SIBLING_CONFLICT.token()));
+            violation(RefusalCode.PACK_SIBLING_CONFLICT.token()),
+            violation(RefusalCode.PRESET_ITEM_NOT_HELD.token()),
+            violation(RefusalCode.PRESET_ITEM_UNDECLARED.token()));
 
     /**
      * A pack that cannot be read, or, with violations of its own, a substep delegation the closure does not hold: built

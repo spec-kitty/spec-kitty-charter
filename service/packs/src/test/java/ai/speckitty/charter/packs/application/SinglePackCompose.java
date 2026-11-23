@@ -51,6 +51,7 @@ public final class SinglePackCompose {
                         .map(CharterArtifact::urn)
                         .map(Object::toString)
                         .toList(),
+                List.of(),
                 List.of());
         return new ComposedRelationshipTargetCheck(new OfferingReadService(
                 () -> List.of(new ConfiguredPack(id, PackLevel.ORG)),

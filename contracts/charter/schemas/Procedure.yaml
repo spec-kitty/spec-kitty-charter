@@ -5,7 +5,7 @@ description: >-
   is authored in the pack's graph documents and read through the references read (ADR-0064).
 type: object
 additionalProperties: false
-required: [id, schemaVersion, title, description, entryCondition, exitCondition, steps, antiPatterns, notes, appliesToLanguages]
+required: [id, schemaVersion, title, description, entryCondition, exitCondition, steps, notes, appliesToLanguages]
 properties:
   id:
     type: string
@@ -58,14 +58,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
       symbol: Procedure.steps
-  antiPatterns:
-    type: array
-    description: What to avoid when following the procedure; empty when none are declared.
-    items:
-      $ref: ProcedureAntiPattern.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java
-      symbol: Procedure.antiPatterns
   notes:
     type: ['string', 'null']
     minLength: 1

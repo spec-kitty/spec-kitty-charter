@@ -4,24 +4,26 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * The outcome of one {@link Rule} on one subject: which rule, whether it held, its code (and so its {@link Severity}),
- * where it points and what it says.
+ * The outcome of one {@link Rule} on one subject: which rule, which element it is about, whether it held, its code (and
+ * so its {@link Severity}), where it points and what it says.
  *
  * @param rule the rule's own description, the same for every subject
+ * @param origin the element the reason is about (#614, ADR-0082 decision 4); {@link Origin#NONE} for none
  * @param result whether the rule held
  * @param code the machine-readable code, which owns the severity
  * @param location where the reason points; {@link Location#NOWHERE} for a held reason or a value object
  * @param detail what the reason says about this subject; the rule's description for a held reason
  */
-public record Reason(String rule, Evaluation result, ReasonCode code, Location location, String detail)
+public record Reason(String rule, Origin origin, Evaluation result, ReasonCode code, Location location, String detail)
         implements Serializable {
 
     /** Serialization version. */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     /** Rejects a null part. */
     public Reason {
         Objects.requireNonNull(rule, "rule");
+        Objects.requireNonNull(origin, "origin");
         Objects.requireNonNull(result, "result");
         Objects.requireNonNull(code, "code");
         Objects.requireNonNull(location, "location");
@@ -29,13 +31,15 @@ public record Reason(String rule, Evaluation result, ReasonCode code, Location l
     }
 
     /**
-     * A held invariant: the reason a {@link Constraints#of} constraint gives when its predicate holds.
+     * A held invariant: the reason a {@link Constraints#of} constraint gives when its predicate holds, about no element
+     * ({@link Origin#NONE}).
      *
      * @param description the invariant's description
      * @return the held reason
      */
     public static Reason passed(String description) {
-        return new Reason(description, Evaluation.PASS, ReasonCode.INVARIANT, Location.NOWHERE, description);
+        return new Reason(
+                description, Origin.NONE, Evaluation.PASS, ReasonCode.INVARIANT, Location.NOWHERE, description);
     }
 
     /**
@@ -51,14 +55,15 @@ public record Reason(String rule, Evaluation result, ReasonCode code, Location l
 
     /**
      * A breached invariant that says something of this subject: what a value object throws in a
-     * {@link ConstraintBreachException} for a check no predicate expresses.
+     * {@link ConstraintBreachException} for a check no predicate expresses, about no element
+     * ({@link Origin#NONE}).
      *
      * @param rule the invariant, fixed text
      * @param detail what the breach says about this subject
      * @return the breached reason, a {@link Severity#VIOLATION}
      */
     public static Reason failed(String rule, String detail) {
-        return new Reason(rule, Evaluation.FAIL, ReasonCode.INVARIANT, Location.NOWHERE, detail);
+        return new Reason(rule, Origin.NONE, Evaluation.FAIL, ReasonCode.INVARIANT, Location.NOWHERE, detail);
     }
 
     /**
@@ -71,13 +76,13 @@ public record Reason(String rule, Evaluation result, ReasonCode code, Location l
     }
 
     /**
-     * This reason at another location.
+     * This reason at another location, about the same element.
      *
      * @param where the new location
      * @return the relocated reason; this one is unchanged
      */
     public Reason at(Location where) {
-        return new Reason(rule, result, code, where, detail);
+        return new Reason(rule, origin, result, code, where, detail);
     }
 
     /**

@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * The one mapping of a pack's verdict to what its caller answers (#478, S3; #554, FR-008, S6): the refusal of a verdict
  * that fails ({@link #of}), the diagnostics of one that passes ({@link #diagnostics}), and the refusal of a pack whose
- * graph documents cannot be read ({@link #graphUnreadable}, #617). Registration ({@code PackRefusals}), pack-check and
+ * graph documents cannot be read ({@link #graphUnreadable}, #617). Registration ({@code PackRefusals}), pack-doctor and
  * the reads that refuse an unreadable graph document all call it, so a pack the service would refuse is refused in the
  * same words wherever it is checked. It keeps the order it is given, which is registration's, and names no storage
  * code: it reads the verdict's failures only.
@@ -69,7 +69,7 @@ public final class PackRefusalMapping {
     /**
      * The violations of a verdict, one per violation in its order, each at its file in the one wording
      * ({@link PackCodes#detail}): the violations {@link #of} refuses with. A surface that words its own problem around
-     * them (pack-check's round trip, #478) maps them here, so a violation reads the same wherever it is reported.
+     * them (pack-doctor's round trip, #478) maps them here, so a violation reads the same wherever it is reported.
      *
      * @param verdict a verdict
      * @return its violations; empty when it has none

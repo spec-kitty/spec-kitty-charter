@@ -48,6 +48,10 @@ class GraphRulesTest {
                 FRAGMENT, new RawGraph(FRAGMENT, RawGraph.Shape.FRAGMENT, List.of(), List.of(edges)));
     }
 
+    private static FileRead<RawGraph> fragment(List<RawNode> nodes, RawEdge... edges) {
+        return new FileRead.Read<>(FRAGMENT, new RawGraph(FRAGMENT, RawGraph.Shape.FRAGMENT, nodes, List.of(edges)));
+    }
+
     private static FileRead<RawGraph> unreadable(String file) {
         return new FileRead.Unreadable<>(file, new ParseFailure(file, "not YAML"), List.of());
     }
@@ -318,5 +322,95 @@ class GraphRulesTest {
 
         assertThat(GraphRules.TENSION_CONSISTENCY.apply(contents)).isEmpty();
         assertThat(GraphRules.UNBOUND.apply(contents)).extracting(Reason::code).containsExactly(PackCodes.TENSION_SELF);
+    }
+
+    // ---- a file-less anti_pattern node (ADR-0052 decision 14, ADR-0053 decision 31; FR-014) -----------------------
+
+    private static String withoutFile(String file, String id) {
+        return file + ": anti_pattern:" + id + " is declared with no file; an anti-pattern is held by anti_patterns/"
+                + id + ".anti-pattern.yaml in the same pack";
+    }
+
+    @Test
+    @DisplayName(
+            "a shard anti_pattern node with no file is one drg_schema_error at /nodes/<n>, naming the file it lacks")
+    void aShardAntiPatternNodeWithNoFileIsRefused() {
+        PackContents contents = graphs(
+                List.of(shard(List.of(
+                        new RawNode("tactic:t", "tactic", Optional.empty()),
+                        new RawNode("anti_pattern:x", "anti_pattern", Optional.empty())))),
+                new FileRead.Absent<>(FRAGMENT));
+
+        assertThat(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(contents))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
+                    assertThat(finding.severity()).isEqualTo(Severity.VIOLATION);
+                    assertThat(finding.location()).isEqualTo(Location.in(SHARD).at("/nodes/1"));
+                    assertThat(finding.detail()).isEqualTo(withoutFile(SHARD, "x"));
+                });
+    }
+
+    @Test
+    @DisplayName("a fragment anti_patterns node with no file is the same finding, at the fragment")
+    void aFragmentAntiPatternNodeWithNoFileIsRefused() {
+        PackContents contents =
+                graphs(List.of(), fragment(List.of(new RawNode("x", "anti_patterns", Optional.empty()))));
+
+        assertThat(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(contents))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
+                    assertThat(finding.location())
+                            .isEqualTo(Location.in(FRAGMENT).at("/nodes/0"));
+                    assertThat(finding.detail()).isEqualTo(withoutFile(FRAGMENT, "x"));
+                });
+    }
+
+    @Test
+    @DisplayName("an anti_pattern node beside its file, an action node and a file-less tactic node give nothing")
+    void aNodeWithItsFileAndTheOtherKindsGiveNothing() {
+        PackContents contents = holding(
+                List.of("anti_pattern:x"),
+                List.of(shard(List.of(
+                        new RawNode("anti_pattern:x", "anti_pattern", Optional.empty()),
+                        new RawNode("action:software-dev/implement", "action", Optional.empty()),
+                        new RawNode("tactic:declared-only", "tactic", Optional.empty())))),
+                fragment(List.of(
+                        new RawNode("x", "anti_patterns", Optional.empty()),
+                        new RawNode("declared-only", "tactics", Optional.empty()))));
+
+        assertThat(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(contents)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a rejects edge to another pack's anti-pattern is no node of this pack, so this rule says nothing")
+    void aQualifiedRejectsTargetIsNoNode() {
+        PackContents contents = graphs(
+                List.of(shard(List.of(), edge("styleguide:s", "other::anti_pattern:x", "rejects"))),
+                fragment(edge("styleguide:s", "anti_pattern:y", "rejects")));
+
+        assertThat(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(contents)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("two file-less nodes in two documents are two findings, the shard's first, after the tension findings")
+    void twoFileLessNodesAreTwoFindingsInMergeOrder() {
+        PackContents contents = holding(
+                List.of("directive:A", "directive:B"),
+                List.of(shard(
+                        List.of(new RawNode("anti_pattern:x", "anti_pattern", Optional.empty())),
+                        edge("directive:B", "directive:A", "tension"))),
+                fragment(List.of(new RawNode("y", "anti_patterns", Optional.empty()))));
+
+        assertThat(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(contents))
+                .extracting(Reason::location, Reason::detail)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(Location.in(SHARD).at("/nodes/0"), withoutFile(SHARD, "x")),
+                        org.assertj.core.groups.Tuple.tuple(
+                                Location.in(FRAGMENT).at("/nodes/0"), withoutFile(FRAGMENT, "y")));
+        assertThat(GraphRules.RULES.apply(contents))
+                .extracting(Reason::code)
+                .containsExactly(PackCodes.TENSION_ORIENTATION, PackCodes.DRG_SCHEMA_ERROR, PackCodes.DRG_SCHEMA_ERROR);
     }
 }

@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The one mapping of a pack's verdict (#478, S3): the refusal of a failing verdict and the diagnostics of a passing one,
- * in the domain, so registration and pack-check answer a pack in the same words.
+ * in the domain, so registration and pack-doctor answer a pack in the same words.
  */
 @DisplayName("PackRefusalMapping: a pack's verdict as its refusal or its diagnostics (#478, S3)")
 class PackRefusalMappingTest {
@@ -29,7 +30,7 @@ class PackRefusalMappingTest {
     private static final ReasonCode NOT_HELD = new ReasonCode("file_not_held", Severity.WARNING);
 
     private static Reason failing(ReasonCode code, String file, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file), detail);
+        return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), detail);
     }
 
     @Test

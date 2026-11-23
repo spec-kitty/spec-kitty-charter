@@ -23,7 +23,8 @@ final class YamlFormats {
             GuardYaml.INSTANCE,
             LifecycleYaml.INSTANCE,
             StepEnhancementYaml.INSTANCE,
-            RoutingCatalogYaml.INSTANCE);
+            RoutingCatalogYaml.INSTANCE,
+            AntiPatternYaml.INSTANCE);
 
     private YamlFormats() {}
 

@@ -34,10 +34,7 @@ public final class Styleguide implements CharterArtifact {
             .must(Constraints.of(Principles.UNIQUE, sg -> Principles.uniqueNames(sg.principles)))
             .must(Constraints.of(
                     "A styleguide's patterns, when present, must not be empty.",
-                    sg -> sg.patterns.map(list -> !list.isEmpty()).orElse(true)))
-            .must(Constraints.of(
-                    "A styleguide's anti-patterns, when present, must not be empty.",
-                    sg -> sg.antiPatterns.map(list -> !list.isEmpty()).orElse(true)));
+                    sg -> sg.patterns.map(list -> !list.isEmpty()).orElse(true)));
 
     private final StyleguideIdentifier id;
     private final PackIdentifier packId;
@@ -46,7 +43,6 @@ public final class Styleguide implements CharterArtifact {
     private final StyleguideScope scope;
     private final List<Principle> principles;
     private final Optional<List<StyleguidePattern>> patterns;
-    private final Optional<List<StyleguideAntiPattern>> antiPatterns;
     private final Optional<Map<String, String>> tooling;
     private final Optional<String> qualityTest;
     private final Optional<ConfigValue> structuralLintConfig;
@@ -62,7 +58,6 @@ public final class Styleguide implements CharterArtifact {
      * @param scope the scope category
      * @param principles the principles, in authored order; never empty
      * @param patterns the patterns when the field is present; never an empty list
-     * @param antiPatterns the anti-patterns when the field is present; never an empty list
      * @param tooling the tooling map, when stated
      * @param qualityTest the quality test, when stated
      * @param structuralLintConfig the structural lint config tree, when stated
@@ -77,7 +72,6 @@ public final class Styleguide implements CharterArtifact {
             StyleguideScope scope,
             List<Principle> principles,
             Optional<List<StyleguidePattern>> patterns,
-            Optional<List<StyleguideAntiPattern>> antiPatterns,
             Optional<Map<String, String>> tooling,
             Optional<String> qualityTest,
             Optional<ConfigValue> structuralLintConfig,
@@ -89,7 +83,6 @@ public final class Styleguide implements CharterArtifact {
         this.scope = Objects.requireNonNull(scope, "scope");
         this.principles = List.copyOf(principles);
         this.patterns = patterns.map(List::copyOf);
-        this.antiPatterns = antiPatterns.map(List::copyOf);
         this.tooling = tooling.map(map -> Collections.unmodifiableMap(new LinkedHashMap<>(map)));
         this.qualityTest = Objects.requireNonNull(qualityTest, "qualityTest");
         this.structuralLintConfig = Objects.requireNonNull(structuralLintConfig, "structuralLintConfig");
@@ -183,15 +176,6 @@ public final class Styleguide implements CharterArtifact {
     }
 
     /**
-     * The anti-patterns.
-     *
-     * @return an immutable list; empty when the field is absent
-     */
-    public List<StyleguideAntiPattern> antiPatterns() {
-        return antiPatterns.orElse(List.of());
-    }
-
-    /**
      * The tooling map.
      *
      * @return the map, empty when absent
@@ -252,7 +236,6 @@ public final class Styleguide implements CharterArtifact {
         private @Nullable StyleguideScope scope;
         private final List<Principle> principles = new ArrayList<>();
         private @Nullable List<StyleguidePattern> patterns;
-        private @Nullable List<StyleguideAntiPattern> antiPatterns;
         private Optional<Map<String, String>> tooling = Optional.empty();
         private Optional<String> qualityTest = Optional.empty();
         private Optional<ConfigValue> structuralLintConfig = Optional.empty();
@@ -363,31 +346,6 @@ public final class Styleguide implements CharterArtifact {
         }
 
         /**
-         * Marks the anti-patterns field present with exactly these anti-patterns.
-         *
-         * @param value the anti-patterns; an empty list is a breach at build
-         * @return this builder
-         */
-        public Builder antiPatterns(List<StyleguideAntiPattern> value) {
-            this.antiPatterns = new ArrayList<>(value);
-            return this;
-        }
-
-        /**
-         * Appends an anti-pattern, marking the anti-patterns field present.
-         *
-         * @param value the anti-pattern
-         * @return this builder
-         */
-        public Builder antiPattern(StyleguideAntiPattern value) {
-            if (this.antiPatterns == null) {
-                this.antiPatterns = new ArrayList<>();
-            }
-            this.antiPatterns.add(value);
-            return this;
-        }
-
-        /**
          * Sets the tooling map.
          *
          * @param value the map, or null for none
@@ -447,7 +405,6 @@ public final class Styleguide implements CharterArtifact {
                     Objects.requireNonNull(scope, "scope"),
                     principles,
                     Optional.ofNullable(patterns),
-                    Optional.ofNullable(antiPatterns),
                     tooling,
                     qualityTest,
                     structuralLintConfig,

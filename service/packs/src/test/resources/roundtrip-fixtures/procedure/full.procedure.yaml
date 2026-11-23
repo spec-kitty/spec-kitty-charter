@@ -11,16 +11,6 @@ steps:
     on_success: Continue.
     on_failure: Stop.
   - title: Land the change
-anti_patterns:
-  - title: Bare avoid entry
-  - title: Landing unreviewed work
-    content: Work lands only after review.
-  - title: Force pushing
-    bad_example: git push --force
-  - title: Skipping the merge tool
-    content: Use the merge tool.
-    bad_example: git merge --no-verify
-    good_example: spec-kitty merge
 notes: A note.
 applies_to_languages:
   - java

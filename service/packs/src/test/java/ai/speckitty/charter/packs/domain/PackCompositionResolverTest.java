@@ -476,7 +476,7 @@ class PackCompositionResolverTest {
 
     @Test
     void aQualifiedReferenceToAnArtifactThePackHoldsIsAcceptedWhateverItsKind() {
-        // an anti_pattern is held only as a graph node, and the qualified form must stand like a directive's
+        // an anti_pattern is held by its file, and the qualified form must stand like a directive's
         PackUnderResolution writing = defining(
                 "01WRHZ00000000000000000000",
                 "writing",
@@ -633,7 +633,7 @@ class PackCompositionResolverTest {
 
     @Test
     void aBareReferenceThatResolvesOnlyInAnotherPackIsRefusedNamingTheHoldingPack() {
-        // the anti_pattern kind is held only as a graph node: the bare form still finds its holder
+        // an anti_pattern is held by its file, as any artifact is: the bare form still finds its holder
         PackUnderResolution writing =
                 defining("01WRHZ00000000000000000000", "writing", PackLevel.BUILT_IN, "anti_pattern:big-ball-of-mud");
         PackUnderResolution reader = pack("01REA000000000000000000000", "reader", "1.0.0", PackLevel.PROJECT);
@@ -901,6 +901,88 @@ class PackCompositionResolverTest {
             }
             throw new AssertionError("the compose was expected to refuse");
         }
+    }
+
+    // ---- one pack's checks within a closure: the one body registration and pack-doctor --full read (#632, R-s) ----
+
+    /** A pack's facts that write only these references and these substep delegation candidates. */
+    private static PackCompositionFacts writing(
+            List<String> references, List<SubstepDelegationRule.QualifiedCandidate> delegations) {
+        return new PackCompositionFacts(
+                List.of(),
+                List.of(),
+                List.of(),
+                references,
+                MutabilityPolicySource.empty(),
+                List.of(),
+                List.of(),
+                Map.of(),
+                PromptFacts.NONE,
+                List.of(),
+                delegations);
+    }
+
+    private static SubstepDelegationRule.QualifiedCandidate delegating(String reference) {
+        return new SubstepDelegationRule.QualifiedCandidate(
+                "missions/rx/mission.yaml", "rx", "implement", "delegate", PackQualifiedReference.parse(reference));
+    }
+
+    @Test
+    void onePacksDelegationFaultsWithinAClosureAreEveryFaultOfTheCollectAllForm() {
+        PackUnderResolution writing = pack("01WRHZ00000000000000000000", "writing", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution reader = pack(
+                "01REA000000000000000000000",
+                "reader",
+                "1.0.0",
+                PackLevel.PROJECT,
+                List.of(new PackDependency("01WRHZ00000000000000000000", ">=1.0")));
+        List<PackUnderResolution> closure = List.of(writing, reader);
+        List<SubstepDelegationRule.QualifiedCandidate> candidates =
+                List.of(delegating("writing::tactic:first"), delegating("writing::tactic:second"));
+
+        List<ClosureFault> faults =
+                PackCompositionResolver.delegationFaultsOf(closure, reader, writing(List.of(), candidates));
+
+        assertThat(faults).hasSize(2).allSatisfy(fault -> {
+            assertThat(fault.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(fault.violations())
+                    .singleElement()
+                    .satisfies(violation -> assertThat(violation.code()).isEqualTo(SubstepDelegationRule.UNRESOLVED));
+        });
+        assertThat(faults.getFirst().detail()).contains("tactic:first");
+        assertThat(faults.get(1).detail()).contains("tactic:second");
+        assertThat(faults)
+                .isEqualTo(PackCompositionResolver.unresolvedDelegations(
+                        closure, "01REA000000000000000000000", candidates));
+    }
+
+    @Test
+    void onePacksReferenceFaultsWithinAClosureAreEveryFaultAndTheFirstIsWhatAOneRefusalCallerAnswers() {
+        PackUnderResolution writing =
+                defining("01WRHZ00000000000000000000", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
+        PackUnderResolution reader = pack(
+                "01REA000000000000000000000",
+                "reader",
+                "1.0.0",
+                PackLevel.PROJECT,
+                List.of(new PackDependency("01WRHZ00000000000000000000", ">=1.0")));
+        List<PackUnderResolution> closure = List.of(writing, reader);
+        String[] written = {"writing::directive:DIRECTIVE_001", "writing::directive:DIRECTIVE_009", "gone::directive:X"
+        };
+
+        List<ClosureFault> faults =
+                PackCompositionResolver.referenceFaultsOf(closure, reader, writing(List.of(written), List.of()));
+
+        assertThat(faults)
+                .extracting(ClosureFault::code)
+                .containsExactly(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, RefusalCode.PACK_REFERENCE_PACK_MISSING);
+        assertThatThrownBy(() -> check(closure, "01REA000000000000000000000", written))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, first -> {
+                    assertThat(first.failure().code())
+                            .isEqualTo(faults.getFirst().code());
+                    assertThat(first.detail()).isEqualTo(faults.getFirst().detail());
+                    assertThat(first.packs()).isEqualTo(faults.getFirst().packs());
+                });
     }
 
     /** The references one pack writes, each with the pack the compose says holds it, checked as the offering checks. */

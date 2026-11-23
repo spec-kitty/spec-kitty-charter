@@ -114,6 +114,7 @@ class EffectivePromptQueryTest {
                             List.of(),
                             List.of(),
                             List.of(),
+                            List.of(),
                             MutabilityPolicySource.empty(),
                             List.of(),
                             edges.getOrDefault(pack, List.of()),

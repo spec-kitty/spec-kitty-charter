@@ -100,7 +100,9 @@ class PackCodesTest {
                         RefusalCode.PACK_LEVEL_VIOLATION.token(),
                         RefusalCode.PACK_NAME_CONFLICT.token(),
                         RefusalCode.PACK_DUPLICATE_ID.token(),
-                        RefusalCode.PACK_SIBLING_CONFLICT.token());
+                        RefusalCode.PACK_SIBLING_CONFLICT.token(),
+                        RefusalCode.PRESET_ITEM_NOT_HELD.token(),
+                        RefusalCode.PRESET_ITEM_UNDECLARED.token());
         assertThat(PackCodes.CLOSURE)
                 .allSatisfy(code -> assertThat(code.severity()).isEqualTo(Severity.VIOLATION));
     }
