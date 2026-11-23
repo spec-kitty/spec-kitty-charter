@@ -133,12 +133,7 @@ public final class XmlReport {
                 }
                 xml.append("  ".repeat(depth)).append("</").append(name).append(">\n");
             }
-            case STRING -> {
-                String value = node.asString();
-                xml.append(needsEscape(value) ? " type=\"escaped\">" : ">");
-                text(xml, needsEscape(value) ? escaped(value) : value);
-                xml.append("</").append(name).append(">\n");
-            }
+            case STRING -> string(xml, name, node.asString());
             case NUMBER -> {
                 if (!node.isInt() && !node.isLong()) {
                     throw new IllegalArgumentException(
@@ -160,6 +155,14 @@ public final class XmlReport {
                 throw new IllegalArgumentException(
                         pointer + " holds a " + node.getNodeType() + ", which the report never holds");
         }
+    }
+
+    /** A string's element: its text, or its escaped text with {@code type="escaped"} when XML 1.0 cannot carry it. */
+    private static void string(StringBuilder xml, String name, String value) {
+        boolean escape = needsEscape(value);
+        xml.append(escape ? " type=\"escaped\">" : ">");
+        text(xml, escape ? escaped(value) : value);
+        xml.append("</").append(name).append(">\n");
     }
 
     /** The text of a string, its markup characters escaped; every character in it is one XML 1.0 carries. */

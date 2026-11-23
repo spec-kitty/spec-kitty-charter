@@ -362,8 +362,7 @@ public final class PackRemediation {
 
     /**
      * The staged tree written at {@code target} beside the pack, each directory and file with the pack's own mode where
-     * the pack has it, and a file whose bytes are the pack's with its modification time too; no POSIX mode is built
-     * here (OwnerOnly owns that, #510). A directory's mode is set after its contents are written, so a read-only one
+     * the pack has it, and a file whose bytes are the pack's with its modification time too. A directory's mode is set after its contents are written, so a read-only one
      * still takes them.
      */
     private static void materialize(Path staged, Path live, Path target) throws IOException {
@@ -401,15 +400,21 @@ public final class PackRemediation {
         });
     }
 
-    /** The pack's POSIX mode on the copy where the file system has one, and its modification time when asked. */
+    /**
+     * The pack's own POSIX mode carried to the copy, as a copy with its attributes carries it, where both have a POSIX
+     * view, and its modification time when asked. No mode is built here (OwnerOnly owns that, #510): on a file system
+     * with no POSIX view nothing is carried, and the copy keeps the mode it was made with.
+     */
     private static void keepAttributes(Path original, Path copy, boolean time) throws IOException {
-        PosixFileAttributeView posix =
-                Files.getFileAttributeView(original, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
         if (time) {
             Files.setLastModifiedTime(copy, Files.getLastModifiedTime(original, LinkOption.NOFOLLOW_LINKS));
         }
-        if (posix != null) {
-            Files.setPosixFilePermissions(copy, posix.readAttributes().permissions());
+        PosixFileAttributeView from =
+                Files.getFileAttributeView(original, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        PosixFileAttributeView to =
+                Files.getFileAttributeView(copy, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        if (from != null && to != null) {
+            to.setPermissions(from.readAttributes().permissions());
         }
     }
 
