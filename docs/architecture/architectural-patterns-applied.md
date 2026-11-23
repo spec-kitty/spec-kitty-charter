@@ -300,7 +300,7 @@ adapter (a file store) is called out to. The domain never names an adapter.
   `{@link ai.speckitty.charter.packvalidation.PackCheck}`; the mappers
   `{@link ai.speckitty.charter.packs.application.PackRefusals}` (to a
   `{@link ai.speckitty.charter.kernel.domain.CharterRefusal}`) and
-  `{@link ai.speckitty.charter.packvalidation.PackVerdicts}` (to a report and an exit code). `PackRefusals`, pack-check
+  `{@link ai.speckitty.charter.packvalidation.PackVerdicts}` (to a report and an exit code). `PackRefusals`, pack-doctor
   and the stored reads share the wording in `{@link ai.speckitty.charter.packs.domain.PackRefusalMapping}`; slice 7
   settles where it lives.
 - *Proposed:* the judging ports of PR #618 (`ClosureWalk`, `ImpactCheck`, `MutabilityCheck`) are replaced.
