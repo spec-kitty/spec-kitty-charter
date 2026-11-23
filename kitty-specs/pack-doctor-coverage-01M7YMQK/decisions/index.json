@@ -652,6 +652,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-23T20:53:23.453616Z",
+      "decision_id": "01M852YMVX6134N2SAT259FG5Z",
+      "final_answer": "Refuse it as a pack fault (Recommended)",
+      "input_key": "special_file_in_pack",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "Refuse it as a pack fault (Recommended)",
+        "Keep exit 2 and document"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How is a special file (FIFO, socket, device) inside a pack answered?",
+      "rationale": "Operator ruling R-ad (2026-11-23), source: operator (AskUserQuestion in this session), answer: \"Refuse it as a pack fault (Recommended)\". A pack entry that is neither a regular file nor a directory is refused by a storage rule, as pack_entry_linked refuses a link, on validate, remediate and registration alike; exit 1 with the file named. Rule, tests and a change fragment.",
+      "resolved_at": "2026-11-23T20:53:26.398199Z",
+      "resolved_by": "claude",
+      "slot_key": "special_file_in_pack",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
