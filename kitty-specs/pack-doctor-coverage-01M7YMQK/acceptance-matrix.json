@@ -148,13 +148,13 @@
     },
     {
       "criterion_id": "FR-015",
-      "description": "Verify FR-015 is satisfied",
+      "description": "FR-015: procedure and styleguide shapes drop anti_patterns outright (schemas and $defs, domain types, DSOs, YAML forms, bindings, the charter contract's Styleguide/StyleguideRegistration/Procedure; StyleguideAntiPattern.yaml and ProcedureAntiPattern.yaml deleted); a pack file still carrying the key is refused artifact_schema_error (unknown key) on every surface; examples, scenarios and fixtures carry only the new shape.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Added after the spec gained FR-013 to FR-016 (rulings R-p..R-r, R-y); finalize only creates a matrix when none exists"
+      "evidence": "lane-l@33de257ea: contracts/packs/schemas/procedure.schema.json and styleguide.schema.json (no anti_patterns; additionalProperties false); contracts/charter/schemas/Styleguide.yaml, StyleguideRegistration.yaml, Procedure.yaml (no antiPatterns); StyleguideAntiPattern.yaml and ProcedureAntiPattern.yaml absent; no AntiPatternEntry or StyleguideAntiPattern in service main sources; pack-validation antipattern/InlineAntiPatternCheckTest :98 (styleguide), :115 (procedure); inline-anti-patterns.feature:58,:91; ExamplePackCoverageTest :160",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:13.455416+00:00",
+      "notes": "Greps confirm the key, the $defs and the types are gone; refusal tests for validate and registration scenarios present; fixtures carry no inline block (coverage test)."
     },
     {
       "criterion_id": "FR-016",
