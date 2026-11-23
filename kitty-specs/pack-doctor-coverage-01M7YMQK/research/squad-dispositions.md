@@ -64,3 +64,56 @@ findings dispositioned below; the plan is revised accordingly.
 | PV8 | remediate test design | accepted | plan D7 |
 | PV9 | red-first for the rename | accepted | plan D11 |
 | PV10 | SC-001 parity table | accepted | plan D11 |
+
+## Pre-merge squad (2026-11-23): agents A, B and C, then reviewer-renata's fold review
+
+The pre-merge squad's ledger, folded on `landing/squad-fold-a`, `-b` and `-c` before the merge (AGENTS.md: every
+finding is folded, LOWs and nits included, unless a concrete reason is recorded). Rulings R-z to R-ad are
+ADR-0083's.
+
+| # | Finding | Disposition | Commit, ruling or reason |
+|---|---|---|---|
+| A1 | case-only scope: registration's composed closure, one body | folded | R-z; `04b50016b` (`CaseOnlyRules`) |
+| A2 | `REFERENCES` gated on composition faults only | folded | R-aa; `086c19c55` |
+| A3 | one `PackRulesets` entry owns `REFERENCES`' order and stop | folded | R-ab; `b96dcd49f` (`ReferencesPhase`) |
+| A4 | the case-only holder in registration's merge order | folded | `04b50016b` |
+| A5 | parity rows for the cross-pack shapes, packs and detail compared; `@TempDir` | folded | `2839a54fe`, `9484c7786`; packs comparison tightened by R1-L2 |
+| A6 | policy locks in sorted URN order | folded | `04b50016b` |
+| A7 | `PackRulesets` Javadoc; no-arg `closure()` dropped | folded | `04b50016b` |
+| A8 | `ResolverFaults` inlined and deleted | folded | `b96dcd49f` |
+| A9 | an anti-pattern file refused for its own fault is one fault | folded | `e081c0386` |
+| B1 | every round-trip load through `ParsedYaml`'s guards | folded | `f5e925b79`, `7de782daa` |
+| B2 | XML report: reversible escape | folded | R-ac; `4ca7da573`, `c9683265f` |
+| B3 | remediate follows a linked root | folded | `777727b20` |
+| B4 | a canonical pack needs no write access | folded | `777727b20` |
+| B5 | a failure names the aside copy; recovery documented | folded | `777727b20`; ADR-0083 d11 in `59764055d` |
+| B6 | a pack holding the working directory is a usage fault | folded | `777727b20` |
+| B7 | `--report` inside a checked pack refused; atomic write | folded | `97aaa8adc`; dangling link by R1-L4 |
+| B8 | the report file written only after standard output took it | folded | `97aaa8adc` |
+| B9 | remediate's usage faults name `remediate`; `value()` Javadoc | folded | `777727b20` |
+| B10 | a YAML document past 1 Mi code points is too large | folded | `f5e925b79`; ADR-0083 d22 |
+| B11 | a FIFO inside a pack | folded as a refusal | R-ad; `b2fc37767` |
+| B12 | a pack named by its id when its `pack.yaml` is refused | folded | `643786b8f` |
+| C1 | `/nodes/<n>` claims: the violation is at the document | folded | `ae7717755`, `59764055d`, `7c2fdd521`; feature header by R1-L5 |
+| C2 | `PackDoctorReport` `packs[].name` is the pack id | folded | `ae7717755` |
+| C3 | `--full` references resolve in the `depends_on` closure; Own closure glossary entry | folded | `d7c06eb64`, `ae7717755`, `59764055d` |
+| C4 | glossary Procedure and Rejects as built | folded | `59764055d` |
+| C5 | ADR-0075 and ADR-0083 record R-z to R-ad | folded | `59764055d` |
+| C6 | C35 names `caseOnlyMatches`, dated amendment | folded | `59764055d` |
+| C7 | build header and hexagonal-service name three adapters | folded | `d7c06eb64`, `59764055d` |
+| C8 | the guide's points | folded | `59764055d` |
+| C9 | `CharterRefusalCode` and `RefusalCode` wording | folded | `d7c06eb64`, `ae7717755` |
+| C10 | DIV-404, the styleguide's anti-patterns | folded | `59764055d` |
+| C11 | changelog: every accepted write restamps | folded | `59764055d` |
+| C12 | the report fragment is Breaking; wrapping | folded | `ae7717755` |
+| C13 | spec, data model, plan and the WP09 drafts' LOWs | folded | `7c2fdd521` |
+| C14 | fragments for the fold's changes | folded | `ae7717755`; R-ab changes no observable behavior, so no fragment |
+| R-ad | a special file in a pack is refused | folded | `b2fc37767`, `7216b21e1` |
+| R1-M1 | remediate leaves a read-only old copy silently | folded | `978996ef6` (`OwnerOnly.ownerWritable`, the warning), `ff8a62a6a` |
+| R1-M2 | the #510 rule sidestepped by `PosixFileAttributeView.setPermissions` | folded | `978996ef6` (rule widened, fixture, `OwnerOnly.carryMode`) |
+| R1-L1 | the case-only scope does not state the activation boundary | folded | `ff8a62a6a` |
+| R1-L2 | `isTheFault` accepts a problem that names no pack | folded | `978996ef6` |
+| R1-L3 | an unchecked move failure bypasses the wording and the suppressed put-back | folded | `978996ef6` |
+| R1-L4 | a dangling `--report` link into a pack | folded | `978996ef6` |
+| R1-L5 | `anti-pattern-nodes.feature:4` still says "at the node" | folded | `ff8a62a6a` |
+| R1-L6 | no record of the pre-merge squad's dispositions | folded | this table |
