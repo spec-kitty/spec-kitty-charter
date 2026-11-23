@@ -8,11 +8,11 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
-import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import ai.speckitty.charter.packvalidation.placement.LevelRules;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  *   <li>Per pack, validate mode ({@link PackCheck#check}): one read, whose readout also carries the pack's composition
  *       facts (S1), so no pack is read twice.
  *   <li>Over the set as given (D5), {@code CLOSURE} with its preset phase ({@link PackRulesets#closureFaults}, the
- *       faults of {@code PackRulesets.closure(presetIdsOf)}), on those facts. A pack's dependencies must be in the set.
+ *       faults of {@code PackRulesets.closure(factsOf)}: the contests, then the preset items), on those facts. A pack's dependencies must be in the set.
  *       It runs only when every pack's facts are {@link PackReadout.Built} and every pack has a level; otherwise it is
  *       skipped and the verdict names the packs that stopped it (D3).
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
@@ -232,21 +232,19 @@ public final class PackSetCheck {
         return unjudged;
     }
 
-    /** {@code CLOSURE} with its preset phase over packs that all have built facts and a level. */
+    /** {@code CLOSURE} with its preset phase (contests, then preset items) over packs that all have built facts and a level. */
     private static List<ClosureFault> closure(List<PackResult> results) {
         List<PackUnderResolution> set = new ArrayList<>();
-        Map<String, List<String>> presetIds = new HashMap<>();
+        Map<String, PackCompositionFacts> facts = new HashMap<>();
         for (PackResult result : results) {
             PackReadout.Built built = (PackReadout.Built) result.facts();
             ConfiguredPack configured =
                     configured(result.entry(), result.level().orElseThrow());
             set.add(built.underResolution(configured));
-            presetIds.put(
-                    configured.id().value(),
-                    built.facts().presets().stream().map(Preset::id).toList());
+            facts.put(configured.id().value(), built.facts());
         }
         return PackRulesets.closureFaults(
-                set, pack -> presetIds.getOrDefault(pack.configured().id().value(), List.of()));
+                set, pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE));
     }
 
     /**

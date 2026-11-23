@@ -72,11 +72,10 @@ public record RoundTripObservation(
         // #631).
         for (NotHeldFile file : result.notHeld().values()) {
             String path = file.path();
-            String what = file.kind() == NotHeldFile.Kind.EXCLUDED ? "excluded" : "not-held";
             observed.put(
                     path,
                     result.written().contains(path)
-                            ? Optional.of("the store wrote the " + what + " file " + path)
+                            ? Optional.of("the store wrote the not-held file " + path)
                             : Optional.empty());
         }
         SortedSet<String> unpaired = new TreeSet<>(result.written());
@@ -109,7 +108,7 @@ public record RoundTripObservation(
         }
         if (source instanceof Reading.Yaml(Object s) && target instanceof Reading.Yaml(Object w)) {
             Optional<String> meaning = red(comparator.differences(kind, s, w));
-            return withStale(meaning, written.sourceStale(), written.writtenStale());
+            return withStale(meaning, written.writtenStale());
         }
         return red(comparator.compareMarkdown(source, target));
     }
@@ -128,16 +127,13 @@ public record RoundTripObservation(
     }
 
     /**
-     * #195: the manifest's stale derived fields, which the comparison skips (ADR-0042), join the red detail as
-     * {@code source stale: <fields>} or {@code written stale: <fields>}.
+     * #195: the written manifest's stale derived fields, which the comparison skips (ADR-0042), join the red detail as
+     * {@code written stale: <fields>}. A source-stale field is not the round trip's: the storage edge states it as
+     * {@code manifest_stale} (#630).
      */
-    private static Optional<String> withStale(
-            Optional<String> red, List<String> sourceStale, List<String> writtenStale) {
+    private static Optional<String> withStale(Optional<String> red, List<String> writtenStale) {
         List<String> parts = new ArrayList<>();
         red.ifPresent(parts::add);
-        if (!sourceStale.isEmpty()) {
-            parts.add("source stale: " + String.join(", ", sourceStale));
-        }
         if (!writtenStale.isEmpty()) {
             parts.add("written stale: " + String.join(", ", writtenStale));
         }

@@ -200,7 +200,7 @@ class StorageRulesetsTest {
         @DisplayName(
                 "membership compares the listed and the derived lists; no manifest, or none read, is no difference")
         void membershipComparesTheTwoLists() {
-            assertThat(StorageRulesets.manifestMembership(
+            assertThat(StorageRulesets.manifestGate(
                             read(contents(), census(List.of(), MISMATCHED, TreeCensus.ReservedShard.ABSENT))))
                     .extracting(Reason::code, Reason::location, Reason::detail)
                     .containsExactly(
@@ -211,7 +211,7 @@ class StorageRulesetsTest {
                     new TreeCensus.Manifest(true, true, Optional.of(LISTED), Optional.empty()),
                     new TreeCensus.Manifest(true, false, Optional.of(LISTED), Optional.of(HELD)),
                     new TreeCensus.Manifest(true, true, Optional.of(HELD), Optional.of(HELD)))) {
-                assertThat(StorageRulesets.manifestMembership(
+                assertThat(StorageRulesets.manifestGate(
                                 read(contents(), census(List.of(), none, TreeCensus.ReservedShard.ABSENT))))
                         .as("%s", none)
                         .isEmpty();
@@ -232,14 +232,14 @@ class StorageRulesetsTest {
                     List.of("tactic:a at tactics/a.tactic.yaml"),
                     List.of("p at presets/p.yaml", "r at presets/r.yaml"));
 
-            assertThat(ManifestRules.mismatch(twice, held))
+            assertThat(ManifestRules.mismatch(twice, held).reasons())
                     .containsExactly(
                             "lists constituent tactic:x at x, which the pack does not hold",
                             "lists preset q at presets/q.yaml, which the pack does not hold",
                             "lists constituent tactic:a at tactics/a.tactic.yaml twice",
                             "lists preset p at presets/p.yaml 3 times",
                             "leaves out preset r at presets/r.yaml, which the pack holds");
-            assertThat(ManifestRules.mismatch(held, held)).isEmpty();
+            assertThat(ManifestRules.mismatch(held, held).reasons()).isEmpty();
         }
     }
 

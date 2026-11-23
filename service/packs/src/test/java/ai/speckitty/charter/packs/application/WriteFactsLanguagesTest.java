@@ -19,6 +19,7 @@ class WriteFactsLanguagesTest {
                 List.of(),
                 List.of("tactic:jvm", "tactic:other"),
                 List.of(),
+                List.of(),
                 MutabilityPolicySource.empty(),
                 List.of(),
                 List.of(),

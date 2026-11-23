@@ -36,7 +36,6 @@ import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -209,9 +208,9 @@ final class CompositionFactsBuilder {
         Set<String> declared = new LinkedHashSet<>();
         for (GraphDocument document : graphs) {
             edgeFacts(pack, assembled.descriptor().name(), document, changed, references);
-            declaredWithoutFile(document).forEach(declared::add);
+            declaredNodes(document).forEach(declared::add);
         }
-        Set<String> defined = new LinkedHashSet<>();
+        Set<String> held = new LinkedHashSet<>();
         Map<String, List<String>> languages = new LinkedHashMap<>();
         Map<Urn, List<String>> steps = new LinkedHashMap<>();
         List<String> terms = new ArrayList<>();
@@ -221,7 +220,7 @@ final class CompositionFactsBuilder {
             // Held: a kind a graph declares, or an activatable artifact no graph declares (the routing catalog,
             // ADR-0080), which layers, takes the policy and comes into force as any activatable kind does.
             if (artifact.urn().kind().declarableInGraphs() || artifact.kind().activatable()) {
-                defined.add(artifact.urn().toString());
+                held.add(artifact.urn().toString());
                 List<String> declaredLanguages = languagesOf(artifact);
                 if (!declaredLanguages.isEmpty()) {
                     languages.put(artifact.urn().toString(), declaredLanguages);
@@ -234,7 +233,6 @@ final class CompositionFactsBuilder {
                 }
             }
         }
-        defined.addAll(declared);
         List<MissionTypeFacts> types = new ArrayList<>();
         for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
             types.add(PackAssembly.missionTypeFacts(stored.file(), stored.dso()));
@@ -244,7 +242,8 @@ final class CompositionFactsBuilder {
         references.removeAll(ownStepLinkTargets(graphs, assembled.descriptor().name(), steps));
         return new PackCompositionFacts(
                 List.copyOf(changed),
-                List.copyOf(defined),
+                List.copyOf(held),
+                List.copyOf(declared),
                 List.copyOf(references),
                 policy,
                 assembled.presets(),
@@ -438,23 +437,24 @@ final class CompositionFactsBuilder {
     }
 
     /**
-     * The nodes a graph document declares for a kind that is never a file of its own: an {@code anti_pattern} lives
-     * only as a node of a graph document, and so does a mission type's step {@code action:<M>/<step>}, a value of its
-     * mission type's file that a graph names as a node (A7 Q1, rule W20's {@code steps(M)}).
+     * Every node a graph document declares, as a bare URN, in document order: the pack's {@code declared} facts (plan
+     * D3), with its held files added by the facts. A node may stand for a file the pack holds, or for none: a mission
+     * type's step {@code action:<M>/<step>} is a value of its mission type's file that a graph names as a node (A7 Q1,
+     * rule W20's {@code steps(M)}). A node that does not bind is the graph rules' fault, and is not declared here.
      */
-    private static List<String> declaredWithoutFile(GraphDocument document) {
-        Set<NodeKind> withoutFile = EnumSet.of(NodeKind.ANTI_PATTERN, NodeKind.ACTION);
+    private static List<String> declaredNodes(GraphDocument document) {
         return switch (document) {
             case GraphDocument.Shard shard ->
                 shard.nodes().stream()
-                        .filter(node -> withoutFile.stream()
-                                .anyMatch(kind -> kind.token().equals(node.kind())))
-                        .map(GraphDocument.ShardNode::urn)
+                        .flatMap(node ->
+                                Urn.parse(node.urn()).filter(urn -> urn.kind().declarableInGraphs()).stream())
+                        .map(Urn::toString)
                         .toList();
             case GraphDocument.Fragment fragment ->
                 fragment.nodes().stream()
+                        .filter(node -> !node.id().isEmpty())
                         .flatMap(node -> NodeKind.fromPlural(node.kind())
-                                .filter(withoutFile::contains)
+                                .filter(NodeKind::declarableInGraphs)
                                 .map(kind -> kind.token() + ":" + node.id())
                                 .stream())
                         .toList();

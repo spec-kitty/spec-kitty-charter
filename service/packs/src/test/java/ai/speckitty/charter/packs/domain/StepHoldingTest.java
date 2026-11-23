@@ -22,10 +22,10 @@ class StepHoldingTest {
 
     @Test
     void aPackHoldsAStepWhenItDefinesTheMissionTypeAndDeclaresTheAction() {
-        List<String> defined = List.of("mission_type:M", "action:M/one", "tactic:T");
+        List<String> referable = List.of("mission_type:M", "action:M/one", "tactic:T");
 
-        assertThat(StepHolding.heldByPack(defined, u("action:M/one"))).isTrue();
-        assertThat(StepHolding.heldByPack(defined, u("action:M/two")))
+        assertThat(StepHolding.heldByPack(referable, u("action:M/one"))).isTrue();
+        assertThat(StepHolding.heldByPack(referable, u("action:M/two")))
                 .as("a step the pack does not declare")
                 .isFalse();
     }
@@ -50,10 +50,10 @@ class StepHoldingTest {
 
     @Test
     void onlyAnActionOfTheFormMissionTypeSlashStepIsAStep() {
-        List<String> defined = List.of("mission_type:M", "action:M", "tactic:M/one");
+        List<String> referable = List.of("mission_type:M", "action:M", "tactic:M/one");
 
-        assertThat(StepHolding.heldByPack(defined, u("tactic:M/one"))).isFalse();
-        assertThat(StepHolding.heldByPack(defined, u("action:M"))).isFalse();
+        assertThat(StepHolding.heldByPack(referable, u("tactic:M/one"))).isFalse();
+        assertThat(StepHolding.heldByPack(referable, u("action:M"))).isFalse();
         assertThat(StepHolding.missionTypeOf(u("action:M/one"))).contains(u("mission_type:M"));
         assertThat(StepHolding.missionTypeOf(u("action:M"))).isEmpty();
         assertThat(StepHolding.missionTypeOf(u("tactic:M/one"))).isEmpty();

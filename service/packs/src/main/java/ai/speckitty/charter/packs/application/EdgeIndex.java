@@ -420,8 +420,8 @@ public final class EdgeIndex implements ComposeResolver {
     List<Place> stepsOf(Urn missionType) {
         Set<Urn> held = heldSteps();
         return closure.stream()
-                .flatMap(pack -> pack.definedArtifacts().stream()
-                        .flatMap(defined -> Urn.parse(defined).stream())
+                .flatMap(pack -> pack.referableArtifacts().stream()
+                        .flatMap(referable -> Urn.parse(referable).stream())
                         .filter(urn -> StepHolding.missionTypeOf(urn)
                                 .filter(missionType::equals)
                                 .isPresent())
@@ -435,8 +435,9 @@ public final class EdgeIndex implements ComposeResolver {
     Set<Urn> heldSteps() {
         Set<Urn> steps = heldSteps;
         if (steps == null) {
-            steps = Collections.unmodifiableSet(StepHolding.stepsHeldByClosure(
-                    closure.stream().map(PackUnderResolution::definedArtifacts).toList()));
+            steps = Collections.unmodifiableSet(StepHolding.stepsHeldByClosure(closure.stream()
+                    .map(PackUnderResolution::referableArtifacts)
+                    .toList()));
             heldSteps = steps;
         }
         return steps;
@@ -505,9 +506,9 @@ public final class EdgeIndex implements ComposeResolver {
         List<Urn> urns = heldUrns;
         if (urns == null) {
             Set<Urn> held = new TreeSet<>();
-            closure.forEach(pack -> pack.definedArtifacts().stream()
+            closure.forEach(pack -> pack.referableArtifacts().stream()
                     .map(this::visited)
-                    .flatMap(defined -> Urn.parse(defined).stream())
+                    .flatMap(referable -> Urn.parse(referable).stream())
                     .filter(urn -> wins(new Place(idOf(pack), urn)))
                     .forEach(held::add));
             urns = List.copyOf(held);

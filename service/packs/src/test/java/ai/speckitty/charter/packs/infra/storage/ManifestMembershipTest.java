@@ -158,6 +158,8 @@ class ManifestMembershipTest {
                                                 + "0".repeat(64) + "\n" + DIRECTIVE_ENTRY
                                                 + "  content_hash: " + "0".repeat(64) + "\npresets:\n")
                         + "- id: ghost\n  path: presets/ghost.yaml\n  content_hash: " + "0".repeat(64) + "\n");
+        // #630: the manifest_hash of the edited lists, so membership is the one cause.
+        ManifestStamps.rehash(pack);
 
         assertThatThrownBy(() -> StagedReads.contents(store, pack))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -238,13 +240,15 @@ class ManifestMembershipTest {
         Path generated = ExamplePacks.copyOf(PROJECT, host.resolve("generated"));
         deleteManifest(generated);
         Path restamped = ExamplePacks.copyOf(PROJECT, host.resolve("restamped"));
+        var restampedRead = StagedReads.read(store, restamped).read();
+        // #630: an upload with a stale hash is refused at its read, so the file changes after the read: the stamp
+        // hashes the staged bytes, never the hashes the manifest carried.
         Files.writeString(
                 restamped.resolve(STYLEGUIDE), Files.readString(restamped.resolve(STYLEGUIDE)) + "# edited\n");
 
         store.stampManifest(
                 new StagedPack(generated), StagedReads.read(store, generated).read());
-        store.stampManifest(
-                new StagedPack(restamped), StagedReads.read(store, restamped).read());
+        store.stampManifest(new StagedPack(restamped), restampedRead);
 
         assertFreshAndDerived(generated);
         assertFreshAndDerived(restamped);
@@ -411,14 +415,14 @@ class ManifestMembershipTest {
                 List.of("tactic:a at a.tactic.yaml", "tactic:b at b.tactic.yaml"),
                 List.of("p at presets/p.yaml", "q at presets/q.yaml"));
 
-        assertThat(ManifestRules.mismatch(listed, derived))
+        assertThat(ManifestRules.mismatch(listed, derived).reasons())
                 .containsExactly(
                         "lists constituent tactic:x at x.tactic.yaml, which the pack does not hold",
                         "lists constituent tactic:a at a.tactic.yaml twice",
                         "lists preset p at presets/p.yaml twice",
                         "leaves out constituent tactic:b at b.tactic.yaml, which the pack holds",
                         "leaves out preset q at presets/q.yaml, which the pack holds");
-        assertThat(ManifestRules.mismatch(derived, derived)).isEmpty();
+        assertThat(ManifestRules.mismatch(derived, derived).reasons()).isEmpty();
     }
 
     @Test

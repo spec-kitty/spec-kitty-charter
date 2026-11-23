@@ -119,7 +119,13 @@ class ClosureViewGovernanceTest {
         facts.put(
                 name,
                 new PackCompositionFacts(
-                        List.of(), held, List.of(), MutabilityPolicySource.empty(), List.of(), List.of(edges)));
+                        List.of(),
+                        held,
+                        List.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty(),
+                        List.of(),
+                        List.of(edges)));
         Pack.Builder pack = Pack.builder().id(new PackIdentifier(name)).descriptor(descriptor);
         profiles.forEach(id -> pack.artifact(profile(name, id, "Copy of " + id + " in " + name)));
         stored.put(name, pack.build());
@@ -140,7 +146,8 @@ class ClosureViewGovernanceTest {
                 name,
                 new PackCompositionFacts(
                         plain.changed(),
-                        plain.defined(),
+                        plain.held(),
+                        plain.declared(),
                         plain.references(),
                         plain.policy(),
                         plain.presets(),
@@ -396,7 +403,8 @@ class ClosureViewGovernanceTest {
                 "builtin",
                 new PackCompositionFacts(
                         held.changed(),
-                        held.defined(),
+                        held.held(),
+                        held.declared(),
                         held.references(),
                         held.policy(),
                         held.presets(),

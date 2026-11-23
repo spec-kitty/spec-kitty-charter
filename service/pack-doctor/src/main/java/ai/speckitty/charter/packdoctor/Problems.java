@@ -42,7 +42,8 @@ final class Problems {
      * operation's own where it declares one. The codes: {@code validation_failed} (a pack's violations and its round
      * trip), the refusals the composition facts' builder raises ({@code pack_unreadable}, {@code validation_failed},
      * {@code registration_conflict}), and every {@code CLOSURE} code ({@code PackCodes.CLOSURE}, its preset phase
-     * included), which the registration answers as 422 in place of their own 500.
+     * included, with the preset-item rule's case-only {@code pack_reference_artifact_missing}), which the registration
+     * answers as 422 in place of their own 500; the two preset-item codes are 422 everywhere.
      */
     static final Map<RefusalCode, Integer> STATUS = Map.ofEntries(
             Map.entry(RefusalCode.VALIDATION_FAILED, 422),
@@ -55,7 +56,10 @@ final class Problems {
             Map.entry(RefusalCode.PACK_LEVEL_VIOLATION, 422),
             Map.entry(RefusalCode.PACK_NAME_CONFLICT, 422),
             Map.entry(RefusalCode.PACK_DUPLICATE_ID, 422),
-            Map.entry(RefusalCode.PACK_SIBLING_CONFLICT, 422));
+            Map.entry(RefusalCode.PACK_SIBLING_CONFLICT, 422),
+            Map.entry(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, 422),
+            Map.entry(RefusalCode.PRESET_ITEM_NOT_HELD, 422),
+            Map.entry(RefusalCode.PRESET_ITEM_UNDECLARED, 422));
 
     private Problems() {}
 
@@ -190,9 +194,14 @@ final class Problems {
         return ofCharterRefusal(new CharterRefusal(refusal.code(), refusal.detail()), Optional.of(instance));
     }
 
-    /** A composition fault's problem: its code, its detail and the packs it names. */
+    /**
+     * A composition fault's problem: its code, its detail, the packs it names and its own violations (a preset item's
+     * place in its preset file), as the registration refuses the fault alone.
+     */
     private static Problem ofFault(ClosureFault fault) {
-        return ofCharterRefusal(new CharterRefusal(fault.code(), fault.detail(), fault.packs()), Optional.empty());
+        return ofCharterRefusal(
+                CharterRefusal.of(fault.code(), fault.detail(), fault.packs(), fault.violations(), fault.requiredBy()),
+                Optional.empty());
     }
 
     /** A refusal rendered as the registration renders it. */

@@ -1,6 +1,6 @@
 # The org-base pack's generated manifest (ADR-0042, #110): its constituents and presets, each with its content hash.
 schema_version: '1.0'
-manifest_hash: 07b8b1d71309071720f1326aab9f1aa3a9cbf2539a102a6346f6584feda04561
+manifest_hash: 3756b33734039a7c34066cefb29bf27f312c86b794f046535a15c188ba7bce3e
 constituents:
 - kind: agent_profile
   id: human-operator
@@ -46,6 +46,14 @@ constituents:
   id: structured-prompt-driven-development
   path: paradigms/structured-prompt-driven-development.paradigm.yaml
   content_hash: 1579ec687ba95901710b248fa9c2680cd7d777f6d4a646b36935d05c7e10227a
+- kind: routing_catalog
+  id: cost-led
+  path: routing_catalogs/cost-led.routing-catalog.yaml
+  content_hash: 0b43e0735b47bdd62a45c259a4060fc021f4e1aa3f03d309459a826b30ac7f1a
+- kind: routing_catalog
+  id: default
+  path: routing_catalogs/default.routing-catalog.yaml
+  content_hash: dc80cdb76b7feb64b8aed500d85cd5aef9f3a37ccd623bb5721fbda2fae89bdd
 - kind: skill
   id: issue-triage
   path: skills/issue-triage.skill.yaml
@@ -58,18 +66,18 @@ constituents:
   id: reasons-canvas-writing
   path: styleguides/reasons-canvas-writing.styleguide.yaml
   content_hash: 5b1a9539562f6d64c615d7f7acb078087437e064333964885a6e76f8e31710a0
-- kind: routing_catalog
-  id: cost-led
-  path: routing_catalogs/cost-led.routing-catalog.yaml
-  content_hash: 0b43e0735b47bdd62a45c259a4060fc021f4e1aa3f03d309459a826b30ac7f1a
-- kind: routing_catalog
-  id: default
-  path: routing_catalogs/default.routing-catalog.yaml
-  content_hash: dc80cdb76b7feb64b8aed500d85cd5aef9f3a37ccd623bb5721fbda2fae89bdd
+- kind: tactic
+  id: reasons-canvas-fill
+  path: tactics/reasons-canvas-fill.tactic.yaml
+  content_hash: af964e76179c910c59535b9c97d48c9e3caa4881d0a531c1190ed213f8923406
+- kind: tactic
+  id: reasons-canvas-review
+  path: tactics/reasons-canvas-review.tactic.yaml
+  content_hash: 9619c4c061be970eba39e370732951f50dd8c919df49d8eef8edd82b9fbbebab
 presets:
-- id: spdd
-  path: presets/spdd.yaml
-  content_hash: 33de626cc7f4690f1481b199f41370de12c655a74fa6cac0a79bf9b0bb54e524
 - id: model-routing
   path: presets/model-routing.yaml
   content_hash: fcf1ad0b61f7e18fc544ba3c3920982dc3d4794098c11863fba2c20893bce4c8
+- id: spdd
+  path: presets/spdd.yaml
+  content_hash: 33de626cc7f4690f1481b199f41370de12c655a74fa6cac0a79bf9b0bb54e524

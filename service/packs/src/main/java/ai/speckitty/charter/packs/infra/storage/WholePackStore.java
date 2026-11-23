@@ -388,7 +388,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /** What a salvage has read so far. */
     private static final class Salvage {
-        final Set<String> defined = new TreeSet<>();
+        final Set<String> held = new TreeSet<>();
         final Map<Urn, String> digests = new HashMap<>();
         final List<Relationship> edges = new ArrayList<>();
         final Map<String, Urn> loose = new HashMap<>();
@@ -429,7 +429,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         }
         graphs.forEach(graph -> salvageGraph(graph, salvage));
         salvage.unreadable.forEach(id -> Urn.parse(id).ifPresent(urn -> salvage.digests.put(urn, UNREADABLE_DIGEST)));
-        return new WholePackWriteStore.Remains(salvage.defined, salvage.digests, salvage.edges, salvage.loose);
+        return new WholePackWriteStore.Remains(salvage.held, salvage.digests, salvage.edges, salvage.loose);
     }
 
     private <D, E extends CharterArtifact> void salvageFile(
@@ -443,8 +443,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         Optional<String> declared = plainText(packDir.resolve(file)).flatMap(text -> declaredId(text, binding.idKey()));
         Optional<String> byDeclared = urnOf(binding, declared.orElse(stem));
         Optional<String> byName = urnOf(binding, stem);
-        byDeclared.ifPresent(out.defined::add);
-        byName.ifPresent(out.defined::add);
+        byDeclared.ifPresent(out.held::add);
+        byName.ifPresent(out.held::add);
         if (!readEntity(store, pack, packDir, binding, file, out)) {
             // One copy of the id cannot be read: the readable twin, if any, is no proof that the id is unchanged.
             byDeclared.ifPresent(out.unreadable::add);
@@ -511,7 +511,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     private static void salvageTemplate(Path packDir, String file, Salvage out) {
         Urn urn = new Urn(NodeKind.TEMPLATE, PackFileSet.templateId(file));
-        out.defined.add(urn.toString());
+        out.held.add(urn.toString());
         FilesystemPackStore.readBytes(packDir.resolve(file))
                 .ifPresent(bytes -> out.digests.put(
                         urn, PackRevision.computeOverBytes(List.of(bytes)).token()));

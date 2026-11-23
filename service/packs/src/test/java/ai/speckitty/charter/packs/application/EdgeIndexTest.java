@@ -107,6 +107,7 @@ class EdgeIndexTest {
                             List.of(),
                             held,
                             List.of(),
+                            List.of(),
                             MutabilityPolicySource.empty(),
                             List.of(),
                             Arrays.asList(edges)));

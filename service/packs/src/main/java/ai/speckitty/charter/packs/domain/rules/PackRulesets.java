@@ -2,9 +2,10 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
-import java.util.Collection;
+import ai.speckitty.charter.packs.domain.Preset;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -61,41 +62,63 @@ public final class PackRulesets {
     }
 
     /**
-     * {@code CLOSURE} with its preset phase ({@link CompositionRules#presetFaults}): the set check pack-doctor runs (#478), so
-     * pack-doctor names one composition and defines no rule of its own. The preset phase judges the packs in merge order,
-     * so the answer does not depend on the order the packs are given in. Its reasons are {@link #closureFaults}', in
-     * that order, each from its phase's origin and so with its phase's rule name: there is one derivation, and the
-     * closure walk's checks (#556) extend it in {@link #closureFaults}. The service paths that judge presets elsewhere keep {@link #closure()}.
+     * {@code CLOSURE} with its preset phase: the set check pack-doctor runs (#478), so pack-doctor names one composition
+     * and defines no rule of its own. The preset phase is the preset contests ({@link CompositionRules#presetFaults}),
+     * judged in merge order so the answer does not depend on the order the packs are given in, then the preset items
+     * ({@link PresetItemRules}, #629, #632 item 1), judged over each pack's own closure. Its reasons are
+     * {@link #closureFaults}', in that order, each from its phase's origin and so with its phase's rule name: there is
+     * one derivation, and the closure walk's checks (#556) extend it in {@link #closureFaults}. The service paths that
+     * judge presets elsewhere keep {@link #closure()}; registration and every write run {@link #presetItemFaults}.
      *
-     * @param presetIdsOf the ids of the presets a pack holds
+     * @param factsOf each pack's composition facts: the presets it holds, and what it holds and declares
      * @return the composition
      */
     public static ModularRuleset<List<PackUnderResolution>> closure(
-            Function<PackUnderResolution, Collection<String>> presetIdsOf) {
-        Objects.requireNonNull(presetIdsOf, "presetIdsOf");
+            Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(factsOf, "factsOf");
         return ModularRuleset.<List<PackUnderResolution>>emptyRules()
-                .must(packs -> closureFaults(packs, presetIdsOf).stream()
+                .must(packs -> closureFaults(packs, factsOf).stream()
                         .map(ClosureFault::reason)
                         .toList());
     }
 
     /**
      * The faults of {@link #closure(Function)}, with the packs each names (#478, A-M4): every fault of {@code CLOSURE},
-     * then every preset contest, in the order the ruleset reports them: the one place the composition is defined. Each
-     * fault's rule is its phase's ({@link CompositionRules#RULE}, {@link CompositionRules#PRESETS_RULE}). What
-     * pack-doctor reports, so it and the ruleset cannot disagree.
+     * then every preset contest, then every preset-item fault, in the order the ruleset reports them: the one place the
+     * composition is defined. Each fault's rule is its phase's ({@link CompositionRules#RULE},
+     * {@link CompositionRules#PRESETS_RULE}, {@link PresetItemRules#RULE}). What pack-doctor reports, so it and the
+     * ruleset cannot disagree.
      *
      * @param packs the packs with their descriptors
-     * @param presetIdsOf the ids of the presets a pack holds
-     * @return the faults; empty when the set resolves and no preset is contested
+     * @param factsOf each pack's composition facts
+     * @return the faults; empty when the set resolves, no preset is contested and every preset item is in its closure
      * @throws IllegalStateException when a descriptor is not well formed, as {@link CompositionRules#faults} refuses it
      */
     public static List<ClosureFault> closureFaults(
-            List<PackUnderResolution> packs, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
-        Objects.requireNonNull(presetIdsOf, "presetIdsOf");
-        return Stream.concat(
-                        CompositionRules.faults(packs).stream(),
-                        CompositionRules.presetFaults(packs, presetIdsOf).stream())
+            List<PackUnderResolution> packs, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(factsOf, "factsOf");
+        return Stream.of(
+                        CompositionRules.faults(packs),
+                        CompositionRules.presetFaults(
+                                packs,
+                                pack -> factsOf.apply(pack).presets().stream()
+                                        .map(Preset::id)
+                                        .toList()),
+                        presetItemFaults(packs, factsOf))
+                .flatMap(List::stream)
                 .toList();
+    }
+
+    /**
+     * The preset-item phase alone ({@link PresetItemRules}): what registration and every write run over a composed
+     * closure, beside the closure walk, so they refuse what pack-doctor's {@link #closureFaults} reports.
+     *
+     * @param packs the packs with their descriptors
+     * @param factsOf each pack's composition facts
+     * @return the faults, in pack-id, preset path and item order; empty when every item is in its own closure
+     */
+    public static List<ClosureFault> presetItemFaults(
+            List<PackUnderResolution> packs, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        return PresetItemRules.phase(factsOf).apply(packs);
     }
 }

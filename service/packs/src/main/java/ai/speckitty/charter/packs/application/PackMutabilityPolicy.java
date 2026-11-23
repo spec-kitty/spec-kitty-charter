@@ -396,7 +396,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
     /** The artifacts a pack holds, as URNs. */
     private static Set<Urn> held(PackUnderResolution member) {
         Set<Urn> held = new HashSet<>();
-        member.definedArtifacts().forEach(defined -> Urn.parse(defined).ifPresent(held::add));
+        member.referableArtifacts().forEach(referable -> Urn.parse(referable).ifPresent(held::add));
         return held;
     }
 

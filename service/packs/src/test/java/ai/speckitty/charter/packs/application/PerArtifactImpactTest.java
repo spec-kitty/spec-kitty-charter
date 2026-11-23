@@ -183,11 +183,22 @@ class PerArtifactImpactTest {
               - id: guard
             """;
 
+    /** A graph node that declares {@code directive:guard}, so the preset item is declared (#632 item 1). */
+    private static final String DECLARES_GUARD = """
+            schema_version: '1.0'
+            generated_at: STATIC
+            nodes:
+            - urn: directive:guard
+              kind: directive
+              label: Guard
+            edges: []
+            """;
+
     /**
      * #412: a write that makes the pack's own closure stop composing is refused before the commit. With a preset that
      * names {@code guard}, a {@code PUT} of {@code GUARD} would leave the preset naming an id the pack holds only in
      * another case, which the compose refuses; before the impact check the write was stored and the next read of the
-     * offering failed.
+     * offering failed. A graph node declares {@code guard}, as the preset item needs (#632 item 1).
      */
     @Test
     void aPutThatLeavesAPresetNamingTheIdOnlyInAnotherCaseIsRefusedAndAnotherIdIsNot(@TempDir Path host) {
@@ -196,6 +207,7 @@ class PerArtifactImpactTest {
                 "alpha",
                 rig.stage(Packs.of(ALPHA_ID, "alpha", "1.0.0", "org")
                         .directive("ALPHA_ONE", "Own")
+                        .file("directive.graph.yaml", DECLARES_GUARD)
                         .file("presets/team.yaml", NAMES_GUARD)),
                 Preconditions.none());
         Writes writes = new Writes(rig);

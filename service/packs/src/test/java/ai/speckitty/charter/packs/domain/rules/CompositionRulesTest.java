@@ -22,11 +22,14 @@ import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCodes;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackOrigins;
+import ai.speckitty.charter.packs.domain.Preset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -141,7 +144,7 @@ class CompositionRulesTest {
             Map<String, List<String>> presets =
                     Map.of(ordered("LEFT"), List.of("team"), ordered("RIGHT"), List.of("team"));
 
-            List<Reason> reasons = PackRulesets.closure(holding(presets)).apply(List.of(left, right));
+            List<Reason> reasons = PackRulesets.closure(presetsHeld(presets)).apply(List.of(left, right));
 
             assertThat(reasons).singleElement().satisfies(reason -> {
                 assertThat(reason.rule()).isEqualTo(CompositionRules.PRESETS_RULE);
@@ -151,7 +154,7 @@ class CompositionRulesTest {
                                 "packs `left` (01KZEFT0000000000000000000) and `right` (01RHZGHT000000000000000000) at org both hold the preset `team`,"
                                         + " and neither extends the other by parent_pack");
             });
-            assertThat(PackRulesets.closure(holding(Map.of())).apply(List.of(left, right)))
+            assertThat(PackRulesets.closure(presetsHeld(Map.of())).apply(List.of(left, right)))
                     .isEmpty();
         }
 
@@ -174,12 +177,14 @@ class CompositionRulesTest {
         }
 
         @Test
-        @DisplayName("every CLOSURE code is the code of one closure failure")
+        @DisplayName("every CLOSURE code is the code of one closure failure, or one of the preset-item rule's two")
         void everyClosureCodeIsTheCodeOfOneFailure() {
-            List<ReasonCode> answered = Arrays.stream(Failure.values())
+            List<ReasonCode> answered = new java.util.ArrayList<>(Arrays.stream(Failure.values())
                     .filter(failure -> !failure.name().startsWith("REFERENCE_"))
                     .map(CompositionRules::codeOf)
-                    .toList();
+                    .toList());
+            answered.add(PackCodes.closure(RefusalCode.PRESET_ITEM_NOT_HELD));
+            answered.add(PackCodes.closure(RefusalCode.PRESET_ITEM_UNDECLARED));
 
             assertThat(answered).containsExactlyInAnyOrderElementsOf(PackCodes.CLOSURE);
         }
@@ -1140,7 +1145,7 @@ class CompositionRulesTest {
         }
 
         @Test
-        @DisplayName("every contest is reported, the changed artifacts before the defined ones")
+        @DisplayName("every contest is reported, the changed artifacts before the held ones")
         void everyContestIsReported() {
             PackUnderResolution left = new PackUnderResolution(
                     configured(ordered("LEFT"), PackLevel.ORG),
@@ -1245,7 +1250,7 @@ class CompositionRulesTest {
                                     "packs `z` (01ZZZ000000000000000000000) and `a` (01AAA000000000000000000000) at org");
                 });
                 assertThat(check(last, first)).isEqualTo(given);
-                assertThat(PackRulesets.closure(holding(presetIds)).apply(List.of(first, last)))
+                assertThat(PackRulesets.closure(presetsHeld(presetIds)).apply(List.of(first, last)))
                         .extracting(Reason::detail)
                         .containsExactly(given.getFirst().detail());
             }
@@ -1495,5 +1500,18 @@ class CompositionRulesTest {
                 configured(configuredId, PackLevel.ORG),
                 new PackDescriptor(
                         packId, "1.0.0", Optional.empty(), name, Optional.of(PackLevel.ORG), Optional.empty()));
+    }
+
+    /** Each pack's facts with the presets of the given ids, by the pack's descriptor id; no item, so no item fault. */
+    private static Function<PackUnderResolution, PackCompositionFacts> presetsHeld(Map<String, List<String>> presets) {
+        return pack -> new PackCompositionFacts(
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                MutabilityPolicySource.empty(),
+                presets.getOrDefault(pack.descriptor().packId(), List.of()).stream()
+                        .map(id -> new Preset(id, "The " + id + " preset.", Map.of()))
+                        .toList());
     }
 }

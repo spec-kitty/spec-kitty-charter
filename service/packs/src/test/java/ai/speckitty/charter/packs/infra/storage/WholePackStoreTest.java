@@ -385,6 +385,8 @@ class WholePackStoreTest {
                                 "presets:\n",
                                 "- kind: tactic\n  id: ghost\n  path: tactics/ghost.tactic.yaml\n  content_hash: "
                                         + "0".repeat(64) + "\npresets:\n"));
+        // #630: the manifest_hash of the edited lists, so membership is the one cause.
+        ManifestStamps.rehash(pack);
         write(pack, "notes.txt", "stray");
 
         assertThatThrownBy(() -> StagedReads.contents(store, pack))
@@ -936,8 +938,7 @@ class WholePackStoreTest {
 
         WholePackWriteStore.Remains remains = store.salvageStored(STORED, pack);
 
-        assertThat(remains.defined())
-                .contains("tactic:alpha-tactic", "tactic:broken-tactic", "directive:DIRECTIVE_043");
+        assertThat(remains.held()).contains("tactic:alpha-tactic", "tactic:broken-tactic", "directive:DIRECTIVE_043");
         assertThat(remains.digests()).containsKey(new Urn(NodeKind.TACTIC, "alpha-tactic"));
         assertThat(remains.edges()).extracting(edge -> edge.from().toString()).contains("tactic:alpha-tactic");
         assertThatThrownBy(() -> store.salvageStored(STORED, host.resolve("nowhere")))
@@ -980,7 +981,7 @@ class WholePackStoreTest {
         long lookupsBefore = FilesystemPackStore.lookupParses();
         WholePackWriteStore.Remains remains =
                 new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(STORED, pack);
-        assertThat(remains.defined()).hasSize(files);
+        assertThat(remains.held()).hasSize(files);
         return reads.get() + (int) (FilesystemPackStore.lookupParses() - lookupsBefore);
     }
 

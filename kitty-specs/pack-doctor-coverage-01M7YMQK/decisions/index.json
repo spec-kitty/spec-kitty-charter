@@ -466,6 +466,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-22T06:15:40.343634Z",
+      "decision_id": "01M80YAS1QJABJ74REAXWNNZF9",
+      "final_answer": "Derived referable()",
+      "input_key": "reference_resolution_set",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "Derived referable()",
+        "Steps go into held",
+        "Compose reads declared"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "With defined split into held and declared, what does a reference (compose, case-only, registration/uninstall diffs) resolve against?",
+      "rationale": "Operator ruling R-v (2026-11-22): references resolve against a derived referable() view = held files plus held mission types' step (action:) nodes; no stored third field. Rename the retired-word carriers (PackUnderResolution.definedArtifacts, PackRegistrationService Before.held/heldBy, DomainRepositoryServiceTest.definedArtifactsNameEveryKindThePackHolds) to referable. A file-less node (directive:GHOST) does not resolve.",
+      "resolved_at": "2026-11-22T06:15:42.962712Z",
+      "resolved_by": "operator",
+      "slot_key": "reference-resolution-set",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",

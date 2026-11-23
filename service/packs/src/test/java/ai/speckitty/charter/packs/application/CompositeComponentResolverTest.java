@@ -122,7 +122,8 @@ class CompositeComponentResolverTest {
                                 new PackArtifactRepository() {
                                     @Override
                                     public PackCompositionFacts compositionFacts(PackIdentifier pack) {
-                                        return new PackCompositionFacts(List.of(), held.get(pack), List.of());
+                                        return new PackCompositionFacts(
+                                                List.of(), held.get(pack), List.of(), List.of());
                                     }
                                 },
                                 fixedDigest())
