@@ -341,7 +341,8 @@ class FullPassParityTest {
     }
 
     static Stream<Row> rows() {
-        return Stream.of(referenceRows(), closureRows(), crossPackRows(), fileRows(), remainderRows())
+        return Stream.of(
+                        referenceRows(), closureRows(), crossPackRows(), fileRows(), antiPatternRows(), remainderRows())
                 .flatMap(Stream::of);
     }
 
@@ -553,7 +554,12 @@ class FullPassParityTest {
                                 - source: directive:A
                                   target: anti_pattern:x
                                   relation: rejects
-                                """), "drg_schema_error"),
+                                """), "drg_schema_error")
+        };
+    }
+
+    private static Row[] antiPatternRows() {
+        return new Row[] {
             // A9: the node's file is there, refused for its own fault, so that fault is the one cause.
             refusedAtTheFile(
                     "an anti-pattern file whose id is not its stem, beside its node",
