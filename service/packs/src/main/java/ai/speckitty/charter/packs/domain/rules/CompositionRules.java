@@ -24,9 +24,9 @@ import java.util.function.Function;
  * {@link ai.speckitty.charter.kernel.domain.RefusalCode} tokens.
  *
  * <p>The input is the {@link PackUnderResolution} of each pack, built once by the storage edge's composition-facts
- * builder from the one read (P7); nothing here reads a pack. The reference checks and the case-only matches are the
- * closure walk's (#556), and the delegation and step-enhancement checks stay in the offering's sequence: none of them
- * is {@code CLOSURE}.
+ * builder from the one read (P7); nothing here reads a pack. The delegation, reference and step-enhancement checks are
+ * {@code REFERENCES} ({@code PackRulesets.references}), and the case-only answer is {@code CaseOnlyRules}': none of
+ * them is a composition fault.
  *
  * <p>A {@link Reason} has no slot for the packs a fault names, so {@link #faults} and {@link #presetFaults} answer
  * {@link ClosureFault}s, the one fault type of the closure checks (#614), for the callers that need the list (A-M4). A

@@ -111,16 +111,19 @@ class CompositionRulesTest {
         }
 
         @Test
-        @DisplayName("the core exposes CLOSURE beside content(): PackRulesets.closure() is this ruleset")
+        @DisplayName(
+                "the core exposes CLOSURE beside content(): over packs with no facts, PackRulesets.closure(factsOf)"
+                        + " is this ruleset")
         void thePackRulesetsExposeClosure() {
             PackUnderResolution dependent =
                     pack(ordered("DEP"), "dependent", "1.0.0", PackLevel.ORG, depends(ordered("GONE"), ">=1.0"));
             PackUnderResolution base = pack(ordered("BASE"), "base", "1.0.0", PackLevel.BUILT_IN);
 
-            assertThat(PackRulesets.closure().apply(List.of(dependent)))
+            assertThat(PackRulesets.closure(pack -> PackCompositionFacts.NONE).apply(List.of(dependent)))
                     .isEqualTo(CompositionRules.closure().apply(List.of(dependent)))
                     .isNotEmpty();
-            assertThat(PackRulesets.closure().apply(List.of(base))).isEmpty();
+            assertThat(PackRulesets.closure(pack -> PackCompositionFacts.NONE).apply(List.of(base)))
+                    .isEmpty();
         }
 
         @Test

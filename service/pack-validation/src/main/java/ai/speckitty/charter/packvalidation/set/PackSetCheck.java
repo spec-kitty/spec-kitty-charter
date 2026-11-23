@@ -41,7 +41,8 @@ import java.util.stream.Collectors;
  *   <li>Per pack, validate mode ({@link PackCheck#check}): one read, whose readout also carries the pack's composition
  *       facts (S1), so no pack is read twice.
  *   <li>Over the set as given (D5), {@code CLOSURE} with its preset phase ({@link PackRulesets#closureFaults}, the
- *       faults of {@code PackRulesets.closure(factsOf)}: the contests, then the preset items, then the policy locks), on
+ *       faults of {@code PackRulesets.closure(factsOf)}: the composition faults, the contests, the preset items, then the
+ *       case-only answer over the closure each pack roots, ruling R-z), on
  *       those facts. A pack's dependencies must be in the set.
  *       It runs only when every pack's facts are {@link PackReadout.Built} and every pack has a level; otherwise it is
  *       skipped and the verdict names the packs that stopped it (D3).
@@ -292,7 +293,7 @@ public final class PackSetCheck {
     }
 
     /**
-     * The set {@code CLOSURE} with its preset phase (contests, then preset items) and {@code REFERENCES} judge: packs
+     * The set {@code CLOSURE} with its phases (contests, preset items, case-only answer) and {@code REFERENCES} judge: packs
      * that all have built facts and a level.
      */
     private static Composed composed(List<PackResult> results) {

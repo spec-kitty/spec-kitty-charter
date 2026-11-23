@@ -44,7 +44,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * The preset-item rule (#629, #632 item 1; rulings R-a, R-k, R-l, R-m; plan D3): a preset item that the declaring pack's
  * own closure ({@code depends_on} and {@code parent_pack}, never a dependent) lacks is refused. A {@code must_have} item
  * no closure pack holds as a file answers {@code preset_item_not_held}; any item no closure pack declares as its kind
- * answers {@code preset_item_undeclared}. One fault per item, and the case-only answer comes first.
+ * answers {@code preset_item_undeclared}. One fault per item. An item that names an artifact of the own closure only by
+ * case gets no fault here: its answer is the case-only one, which {@code CLOSURE}'s case-only phase gives
+ * ({@link CaseOnlyRules}, ruling R-z).
  */
 @DisplayName("PresetItemRules: a preset item the declaring pack's own closure lacks is refused (#629, #632.1)")
 class PresetItemRulesTest {
@@ -62,19 +64,24 @@ class PresetItemRulesTest {
 
     private final Map<String, PackCompositionFacts> facts = new HashMap<>();
 
-    private List<ClosureFault> judge(PackUnderResolution... packs) {
-        Function<PackUnderResolution, PackCompositionFacts> factsOf =
-                pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE);
-        // As the readout builds a pack under resolution: what a reference can name is the facts' referable list.
-        List<PackUnderResolution> read = Arrays.stream(packs)
+    private PackCompositionFacts factsOf(PackUnderResolution pack) {
+        return facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE);
+    }
+
+    /** As the readout builds a pack under resolution: what a reference can name is the facts' referable list. */
+    private List<PackUnderResolution> read(PackUnderResolution... packs) {
+        return Arrays.stream(packs)
                 .map(pack -> new PackUnderResolution(
                         pack.configured(),
                         pack.descriptor(),
                         List.of(),
-                        factsOf.apply(pack).referable(),
+                        factsOf(pack).referable(),
                         Set.of()))
                 .toList();
-        return PresetItemRules.phase(factsOf).apply(read);
+    }
+
+    private List<ClosureFault> judge(PackUnderResolution... packs) {
+        return PresetItemRules.phase(this::factsOf).apply(read(packs));
     }
 
     private void base() {
@@ -204,21 +211,26 @@ class PresetItemRulesTest {
     }
 
     @Test
-    @DisplayName("a case-only mismatch gets the case-only fault, pack_reference_artifact_missing, and no item fault")
+    @DisplayName("a case-only mismatch gets no item fault: CLOSURE answers the case-only fault,"
+            + " pack_reference_artifact_missing, alone")
     void aCaseOnlyMismatchGetsTheCaseOnlyFaultOnly() {
         base();
         facts.put(
                 "org", facts(List.of(), List.of(), List.of(preset("team", ArtifactKind.DIRECTIVE, required("dir-1")))));
 
-        assertThat(judge(BASE, ORG)).singleElement().satisfies(fault -> {
-            assertThat(fault.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
-            assertThat(fault.reason().rule()).isEqualTo(PresetItemRules.RULE);
-            assertThat(fault.origin()).isEqualTo(new Origin("org::directive:dir-1"));
-            assertThat(fault.packs()).extracting(RefusalPack::name).containsExactly("org", "base");
-            assertThat(fault.detail()).contains("`directive:dir-1`", "`directive:DIR-1`", "differ only by case");
-            // The existing case-only answer stands: registration's, which carries no violation of its own.
-            assertThat(fault.violations()).isEmpty();
-        });
+        assertThat(judge(BASE, ORG)).isEmpty();
+        assertThat(PackRulesets.closureFaults(read(BASE, ORG), this::factsOf))
+                .singleElement()
+                .satisfies(fault -> {
+                    assertThat(fault.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                    assertThat(fault.reason().rule()).isEqualTo(CaseOnlyRules.RULE);
+                    assertThat(fault.origin()).isEqualTo(new Origin("org"));
+                    assertThat(fault.packs()).extracting(RefusalPack::name).containsExactly("org", "base");
+                    assertThat(fault.detail())
+                            .contains("`directive:dir-1`", "`directive:DIR-1`", "differ only by case");
+                    // The existing case-only answer stands: registration's, which carries no violation of its own.
+                    assertThat(fault.violations()).isEmpty();
+                });
     }
 
     @Test
@@ -296,13 +308,16 @@ class PresetItemRulesTest {
                     .toList();
         }
 
+        private static Function<PackUnderResolution, PackCompositionFacts> plantedIn(String pack, Preset planted) {
+            return under -> {
+                PackCompositionFacts facts =
+                        READ.get(under.configured().id().value()).facts();
+                return under.configured().id().value().equals(pack) ? withPreset(facts, planted) : facts;
+            };
+        }
+
         private static List<ClosureFault> judgeWith(String pack, Preset planted) {
-            return PresetItemRules.phase(under -> {
-                        PackCompositionFacts facts =
-                                READ.get(under.configured().id().value()).facts();
-                        return under.configured().id().value().equals(pack) ? withPreset(facts, planted) : facts;
-                    })
-                    .apply(set());
+            return PresetItemRules.phase(plantedIn(pack, planted)).apply(set());
         }
 
         private static PackCompositionFacts withPreset(PackCompositionFacts facts, Preset planted) {
@@ -398,12 +413,11 @@ class PresetItemRulesTest {
         @MethodSource("examplePresets")
         @DisplayName("planted: built-in's tactic acceptance-test-first named by case only keeps the case-only code")
         void aPlantedCaseOnlyItemKeepsItsCode(String pack, String presetId) {
-            assertThat(judgeWith(
-                            pack,
-                            planting(
-                                    presetOf(pack, presetId),
-                                    ArtifactKind.TACTIC,
-                                    PresetItem.of("ACCEPTANCE-TEST-FIRST"))))
+            Preset planted =
+                    planting(presetOf(pack, presetId), ArtifactKind.TACTIC, PresetItem.of("ACCEPTANCE-TEST-FIRST"));
+
+            assertThat(judgeWith(pack, planted)).as("no item fault of its own").isEmpty();
+            assertThat(PackRulesets.closureFaults(set(), plantedIn(pack, planted)))
                     .extracting(ClosureFault::code)
                     .containsExactly(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
         }

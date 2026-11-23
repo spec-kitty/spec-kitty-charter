@@ -1,13 +1,11 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -20,6 +18,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.Refusal;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import ai.speckitty.charter.packs.domain.rules.CaseOnlyRules;
 import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import java.util.ArrayList;
@@ -447,11 +446,9 @@ public final class OfferingReadService {
             if (!phase5.isEmpty()) {
                 return Judged.refused(phase5);
             }
-            List<ClosureFault> phase6 = PackCompositionResolver.caseOnlyMatches(
-                            composed,
-                            pack -> mentionsOf(Objects.requireNonNull(
-                                    facts.get(pack.configured().id().value()), "read above")))
-                    .stream()
+            // Phase 6, the case-only answer (rulings R-y, R-z): every member's preset items and policy locks against
+            // every member's holdings, the one body pack-doctor's CLOSURE runs per root.
+            List<ClosureFault> phase6 = CaseOnlyRules.matches(composed, factsOfMember).stream()
                     .map(Refusal::toFault)
                     .toList();
             if (!phase6.isEmpty()) {
@@ -461,18 +458,6 @@ public final class OfferingReadService {
         } catch (PackCompositionResolver.Refusal refusal) {
             throw refusal.toCharterRefusal();
         }
-    }
-
-    /** The URNs a pack's presets and policy file name, as written: what must match a held id exactly. */
-    private static List<String> mentionsOf(PackCompositionFacts facts) {
-        List<String> mentions = new ArrayList<>();
-        for (Preset preset : facts.presets()) {
-            preset.artifacts()
-                    .forEach((kind, items) ->
-                            items.forEach(item -> mentions.add(new Urn(NodeKind.of(kind), item.id()).toString())));
-        }
-        facts.policy().urnEntries().keySet().forEach(urn -> mentions.add(urn.toString()));
-        return mentions;
     }
 
     /**
