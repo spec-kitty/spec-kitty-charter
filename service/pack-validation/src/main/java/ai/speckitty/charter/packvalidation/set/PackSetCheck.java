@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackReading;
 import ai.speckitty.charter.packs.domain.PackReadout;
+import ai.speckitty.charter.packs.domain.rules.CompositionRules;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packvalidation.PackCheck;
 import ai.speckitty.charter.packvalidation.placement.LevelRules;
@@ -46,9 +47,10 @@ import java.util.stream.Collectors;
  *       skipped and the verdict names the packs that stopped it (D3).
  *   <li>With {@code --full}, {@code REFERENCES} ({@link ReferencesPhase}; #632 item 3, rulings R-s, R-ab): per pack,
  *       over its own closure, the delegation, reference and enhancement target checks in registration's phase order
- *       ({@code PackRulesets.references}, the one body registration runs). It runs
- *       only when {@code CLOSURE} ran and found no fault, since it reads the closure {@code CLOSURE} settles; when
- *       {@code CLOSURE} is skipped, it is skipped too, naming the same packs.
+ *       ({@code PackRulesets.references}, the one body registration runs). It runs when {@code CLOSURE} ran and found
+ *       no composition fault (ruling R-aa): an own closure that fails to compose has no order to judge, while a preset
+ *       contest, a preset item or a case-only mention leaves every own closure composed, so its faults stand beside
+ *       {@code REFERENCES}'. When {@code CLOSURE} is skipped, {@code REFERENCES} is skipped too, naming the same packs.
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
  *       validate mode found: the two are independent checks, but a round-trip reason at a file where validate mode
@@ -156,7 +158,7 @@ public final class PackSetCheck {
             Composed composed = composed(results);
             faults.addAll(PackRulesets.closureFaults(composed.set(), composed::factsOf));
             checks.add(Check.CLOSURE);
-            if (full && faults.isEmpty()) {
+            if (full && faults.stream().noneMatch(PackSetCheck::isCompositionFault)) {
                 faults.addAll(ReferencesPhase.faults(composed.set(), composed::factsOf));
                 checks.add(Check.REFERENCES);
             }
@@ -170,6 +172,15 @@ public final class PackSetCheck {
             checks.add(Check.ROUND_TRIP);
         }
         return new PackSetVerdict(results, faults, checks, skipped);
+    }
+
+    /**
+     * Whether a fault of {@code CLOSURE} is a composition fault ({@link CompositionRules#faults}): an own closure that
+     * fails to compose, the one fault that gates {@code REFERENCES} (ruling R-aa). A preset contest, a preset item or a
+     * case-only mention does not.
+     */
+    private static boolean isCompositionFault(ClosureFault fault) {
+        return CompositionRules.RULE.equals(fault.reason().rule());
     }
 
     private static void refuseEmptyOrRepeated(List<PackSetEntry> entries) {

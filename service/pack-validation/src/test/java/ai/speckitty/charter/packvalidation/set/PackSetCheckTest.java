@@ -46,6 +46,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -1000,8 +1001,9 @@ class PackSetCheckTest {
         }
 
         @Test
-        @DisplayName("a CLOSURE fault: REFERENCES does not run, since it reads the closure CLOSURE settles")
-        void aClosureFaultStopsReferences(@TempDir Path dir) {
+        @DisplayName("a composition fault: REFERENCES does not run, since an own closure that does not compose has no"
+                + " order to judge (R-aa)")
+        void aCompositionFaultStopsReferences(@TempDir Path dir) {
             PackSetEntry alpha = alphaAndBeta(dir, "beta-pack::directive:NOPE").get(1);
 
             PackSetVerdict verdict = CHECK.checkFull(List.of(alpha));
@@ -1010,6 +1012,81 @@ class PackSetCheckTest {
             assertThat(codes(verdict.faults())).containsExactly(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token());
             assertThat(verdict.skipped()).isEmpty();
             assertThat(verdict.failing()).isTrue();
+        }
+
+        /** The preset {@code team} of a pack, activating the items given. */
+        private static void preset(Path pack, String items) {
+            write(pack.resolve("presets/team.yaml"), """
+                    schema_version: '1.0'
+                    id: team
+                    description: The team's preset.
+                    """ + items);
+        }
+
+        @Test
+        @DisplayName("a preset-item fault does not stop REFERENCES: both are reported, CLOSURE's first (R-aa)")
+        void aPresetItemFaultLeavesReferencesRunning(@TempDir Path dir) {
+            List<PackSetEntry> set = alphaAndBeta(dir, "beta-pack::directive:NOPE");
+            preset(dir.resolve("alpha"), """
+                    activated_directives:
+                      - id: NOPE
+                        must_have: true
+                    """);
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(codes(verdict.faults()))
+                    .containsExactly(
+                            RefusalCode.PRESET_ITEM_NOT_HELD.token(),
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING.token());
+        }
+
+        @Test
+        @DisplayName("a preset contest does not stop REFERENCES (R-aa)")
+        void aPresetContestLeavesReferencesRunning(@TempDir Path dir) {
+            List<PackSetEntry> set = alphaAndBeta(dir, "beta-pack::directive:NOPE");
+            preset(dir.resolve("alpha"), "");
+            preset(dir.resolve("beta"), "");
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(codes(verdict.faults()))
+                    .containsExactly(
+                            RefusalCode.PACK_SIBLING_CONFLICT.token(),
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING.token());
+        }
+
+        @Test
+        @DisplayName("a case-only policy lock does not stop REFERENCES (R-aa)")
+        void aCaseOnlyLockLeavesReferencesRunning(@TempDir Path dir) {
+            List<PackSetEntry> set = alphaAndBeta(dir, "beta-pack::directive:NOPE");
+            Path alpha = dir.resolve("alpha");
+            write(alpha.resolve("policy.yaml"), "schema_version: 1\nartifacts:\n  directive:mine: locked\n");
+            try {
+                Files.writeString(
+                        alpha.resolve("pack.yaml"),
+                        "mutability_policy: policy.yaml\n",
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.faults())
+                    .satisfiesExactly(
+                            caseOnly -> {
+                                assertThat(caseOnly.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                                assertThat(caseOnly.detail()).contains("names `directive:mine`");
+                            },
+                            reference -> {
+                                assertThat(reference.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                                assertThat(reference.detail()).contains("beta-pack::directive:NOPE");
+                            });
         }
 
         @Test
