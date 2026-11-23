@@ -197,8 +197,12 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     - **Staging.** The work is done in a copy under the JVM's temporary directory. A copy equal to the pack, byte for
       byte, is `unchanged`, and nothing is written in or beside the pack, so a canonical pack needs no write access.
       Otherwise the copy is written to a hidden sibling, `.<pack>.remediate-<uuid>`, with the pack's file modes; the pack
-      is moved aside to `.<pack>.aside-<uuid>`, the sibling is moved in, and the aside copy is deleted. Rewriting needs
-      write access to the parent of the pack's real directory.
+      is moved aside to `.<pack>.aside-<uuid>`, the sibling is moved in, and the aside copy is deleted, each of its
+      directories made writable by its owner first, since it carries the pack's own modes (a read-only directory
+      included). If it still cannot be deleted, the swap stands: the pack is `rewritten`, the exit code is unchanged,
+      and a warning on standard error names the copy to delete. Rewriting needs write access to the parent of the
+      pack's real directory. A mode is carried and made writable only through `OwnerOnly` (`carryMode`,
+      `ownerWritable`), each a no-op without a POSIX view (#510).
     - **A link root.** A pack root that is a symbolic link is remediated in the directory it resolves to, which is
       swapped; the link is kept.
     - **The working directory.** A pack that is, or holds, the working directory is a usage fault (`2`): a swap would
@@ -266,7 +270,9 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     case-only answer takes this scope: `preset_item_not_held` and `preset_item_undeclared` keep the own closure of
     decision 1. A mention no pack of the closure holds, in any case, is no fault. Each pack of a closure fault is named
     once, as registration names it. Registration's own behavior is unchanged, but for the order of several case-only
-    locks of one pack, now URN order.
+    locks of one pack, now URN order. Registration also composes the root set of every stored activation, so it refuses
+    a case-only mention between sibling packs that only an activation lists together; pack-doctor, offline and blind to
+    activations, passes that shape, which only registration judges.
 
 ### The storage edge
 

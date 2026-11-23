@@ -234,7 +234,9 @@ How it writes:
   equals byte for byte is `unchanged`, and nothing is written in or beside it, so a canonical pack needs no write
   access. A pack it rewrites is written to a hidden sibling, `.<pack>.remediate-<uuid>`, keeping the files' modes,
   which then takes the pack's place: the pack is moved aside to `.<pack>.aside-<uuid>` and deleted once the sibling is
-  in. So rewriting needs write access to the directory that holds the pack.
+  in, its read-only directories made writable first. So rewriting needs write access to the directory that holds the
+  pack. If the old copy still cannot be deleted, the pack is rewritten all the same and the exit code is unchanged:
+  a `pack-doctor: warning:` line on standard error names the copy, `.<pack>.aside-<uuid>`; delete it.
 - **A pack root that is a link** is followed: the directory it resolves to is rewritten and swapped, and the link is
   kept.
 - **Not from inside the pack.** A pack that is, or holds, the working directory is a usage fault (`2`): run
@@ -310,7 +312,8 @@ The file must lie outside every pack the run checks, by its real path, links fol
 a usage fault (`2`), so the report never becomes part of a pack. It is first written to a hidden file beside it,
 `.<name>.<uuid>.tmp`, before anything reaches standard output, and renamed into place once standard output took the
 report, so a reader never sees half a report. If standard output cannot be written, the file is left as it was. A
-`--report` that is a link is followed, and the file it names is replaced.
+`--report` that is a link is followed, and the file it names is replaced; a link to a file not written yet is judged
+where it leads.
 
 ```bash
 java -jar pack-doctor-<version>.jar validate --config-root ./charter --report pack-doctor.yaml
@@ -349,7 +352,9 @@ the service (ADR-0075, decision 6; ADR-0083), so a pack that passes here can sti
 - a `specializes_from` cycle, and the relations between artifacts (overrides, enhancements, the graph's edge rules);
 - the closure walk of a pack's own profiles: the fallback profile it declares
   ([ADR-0068](/adr/0068-a-pack-declares-its-fallback-profile/)), its role pins and its profile enhancements;
-- the impact of a registration on the packs already registered;
+- the impact of a registration on the packs already registered, and the closures stored activations compose: a
+  case-only mention between two packs that only an activation lists together is refused at registration and passes
+  here;
 - whether a pack may be changed (its mutability).
 
 The first two move into the checks `pack-doctor validate --full` shares with registration when epic

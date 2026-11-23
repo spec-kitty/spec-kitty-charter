@@ -1,7 +1,7 @@
 ### Changed
 
 - `pack-doctor validate --report <file>` refuses a report file inside a pack it checks, by real path with links
-  followed, as a usage fault (exit 2), so the report never becomes part of a pack. The file is written to a hidden
+  followed, a link whose file does not exist yet judged where it leads, as a usage fault (exit 2), so the report never becomes part of a pack. The file is written to a hidden
   sibling before anything reaches standard output and renamed into place once standard output took the report: when
   standard output cannot be written, the file is left as it was, where it held a report whose `exit_code` the run did
   not exit with. A report

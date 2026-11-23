@@ -1,8 +1,8 @@
 # The anti-pattern node at registration (ADR-0052 decisions 11 and 14, ADR-0053 decision 31; #154; mission
 # pack-doctor-coverage-01M7YMQK, WP11, FR-014). An anti-pattern is held by its file,
 # anti_patterns/<id>.anti-pattern.yaml; an anti_pattern node in a graph document of the same pack only declares it. A
-# pack whose shard or fragment declares an anti_pattern node with no file is refused drg_schema_error at the node, as a
-# node of any kind a pack may not declare is. pack-doctor validate answers the same code, pointer and detail for the
+# pack whose shard or fragment declares an anti_pattern node with no file is refused drg_schema_error at the document,
+# as a node of any kind a pack may not declare is. pack-doctor validate answers the same code, pointer and detail for the
 # same planted node (AntiPatternNodeCheckTest, ADR-0075 decision 9): the violation is at the document, as registration
 # does, and its detail names the node.
 #

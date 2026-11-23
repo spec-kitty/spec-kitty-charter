@@ -6,5 +6,8 @@
   where the run failed with exit 2. A pack that is, or holds, the working directory is a usage fault (exit 2), naming
   `remediate`, as are its other usage faults. A failure says `it is unchanged` only when the pack was put back;
   otherwise standard error names the hidden `.<pack>.aside-<uuid>` directory that holds the pack as it was, then each
-  suppressed failure. On `SIGINT` or `SIGTERM` it deletes its work and waits for a swap under way. Core's seam: none;
+  suppressed failure, a failed move that is not an I/O failure worded alike. The old copy moved aside is deleted with
+  its read-only directories made writable first; if it still cannot be, the pack stays rewritten, the exit code is
+  unchanged, and a `pack-doctor: warning:` line names the copy to delete. On `SIGINT` or `SIGTERM` it deletes its work
+  and waits for a swap under way. Core's seam: none;
   the CLI is not part of the API core calls, and core regenerates nothing.
