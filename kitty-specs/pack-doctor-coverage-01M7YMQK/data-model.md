@@ -24,6 +24,26 @@ References (the compose, the case-only check, the registration and uninstall dif
 since a step is a value of its type's file. It is derived, never stored, so a file-less graph node (a bare
 `directive:` node) is declared but neither held nor referable (ruling R-v, DM-01M80YAS1QJABJ74REAXWNNZF9).
 
+## Case-only policy lock (domain, `ClosureFault`; plan D15, FR-016; ruling R-y)
+
+A `CLOSURE` phase of the domain factory (`PolicyLockRules`, rule `closure.policy-locks`), after the preset items.
+
+| Field | Value |
+|---|---|
+| reason.code | `pack_reference_artifact_missing` (the existing case-only answer, `PackCompositionResolver.caseOnlyMatches`) |
+| reason.detail | the resolver's case-only detail: the mentioning pack names `<lock URN>`, but the holder holds `<held URN>`; ids differ only by case and are matched exactly |
+| packs | the mentioning pack first, then the holder |
+| violations | none: registration's phase 6 answer carries no violation of its own |
+| origin | the pack and the lock's URN, as written |
+
+Invariants:
+
+- A lock is a URN key of the pack's mutability policy file (`MutabilityPolicySource.urnEntries`), judged against the
+  pack's own closure (as a preset item is); a lock no pack of the own closure holds, in any letter case, is no fault.
+- One fault per such lock, in pack-id order, then the policy's entry order, after every preset-item fault.
+- Registration answers the same code, packs and detail (its phase 6, the closure named in front); a composing read is
+  unchanged.
+
 ## Anti-pattern file (pack content, `anti_patterns/<id>.anti-pattern.yaml`; plan D12, FR-013; ruling R-r)
 
 The file form of the existing `anti_pattern` kind (ADR-0052 decision 8, as amended by ADR-0053 decision 30). Schema
@@ -104,15 +124,16 @@ Invariants:
 
 The phase's faults are the existing codes, from the existing collect-all functions, in registration's phase order:
 
-1. delegations (`PackCompositionResolver.unresolvedDelegations`): `pack_unreadable` with the violation
-   `substep_delegation_unresolved` at the mission type file;
+1. delegations (`PackCompositionResolver.unresolvedDelegations`): `validation_failed` with the violation
+   `substep_delegation_unresolved` at the mission type file, as registration refuses it
+   (`ClosureFault.asRegistrationRefuses()`);
 2. references (`PackCompositionResolver.referenceFaults`): `pack_reference_unqualified`,
    `pack_reference_pack_missing`, `pack_reference_artifact_missing`;
 3. enhancement targets (`EnhancementCompose.targetFaults`): `pack_reference_pack_missing`,
    `pack_reference_artifact_missing`.
 
-Every fault is collected, and each pack is judged within its own closure. `PackSetVerdict.Check` gains one value for
-the phase, named per the operator's answer to analysis Q2 (recommended `REFERENCES`). The `specializes_from` cycle,
+Every fault of the first check that finds any is collected, and each pack is judged within its own closure.
+`PackSetVerdict.Check` gains one value for the phase, `REFERENCES` (ruling R-u). The `specializes_from` cycle,
 relations, edge-index and own-closure-walk checks are not part of it (#636 slices 2-4 and 7).
 
 ## pack-doctor report (`PackDoctorReport`: JSON on stdout, YAML or XML with `--report`)
@@ -137,7 +158,7 @@ tree, and is validated by parsing it back and checking it against the same schem
 For each pack, remediate reports one of:
 
 - `rewritten`: the manifest and the files written in canonical form;
-- `refused`: the storage verdict's violations, except the manifest gate and form findings, with nothing written;
+- `refused`: the storage verdict's violations, except the manifest gate's, with nothing written;
 - `unchanged`: already canonical.
 
 After writing, it validates again and reports the result.
