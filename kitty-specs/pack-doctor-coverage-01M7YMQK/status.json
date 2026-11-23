@@ -439,6 +439,9 @@
       "last_event_id": "01M83Q9TWNTHEVR1TQ7XXBZ2FT",
       "last_transition_at": "2026-11-23T08:10:32.725936+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "R-y: PolicyLockRules as CLOSURE's fourth phase; gates green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 3815,
