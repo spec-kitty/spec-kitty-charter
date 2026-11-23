@@ -13,4 +13,4 @@ audience:
 
 # Pack schema: Styleguide
 
-This page describes the conventions, anti-patterns and quality tests of one scope. Read it when you capture conventions for a scope; the diagram, the property list and the link to the schema file are generated from the schema itself.
+This page describes the conventions and quality tests of one scope. Read it when you capture conventions for a scope; the diagram, the property list and the link to the schema file are generated from the schema itself.

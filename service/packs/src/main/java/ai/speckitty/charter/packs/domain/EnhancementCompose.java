@@ -244,6 +244,25 @@ public final class EnhancementCompose {
         return List.copyOf(violations);
     }
 
+    /**
+     * C37 over one pack within a closure, every fault kept (#632 item 3, ruling R-s): {@link #targetFaults} over the
+     * edges its facts list, each violation as its fault ({@link TargetViolation#toFault()}). It is the one body of the
+     * enhancement target check: the offering's phase runs it for every member of the composed closure, and
+     * pack-doctor's {@code --full} for each pack over its own closure.
+     *
+     * @param closure the closure the pack is judged in, every pack once, the pack among it
+     * @param enhancing the pack whose edges are judged
+     * @param facts the pack's composition facts
+     * @return every fault, in the order of the edges; empty when every step enhancement's step is held
+     */
+    public static List<ClosureFault> targetFaultsOf(
+            List<PackUnderResolution> closure, PackUnderResolution enhancing, PackCompositionFacts facts) {
+        Objects.requireNonNull(facts, "facts");
+        return targetFaults(closure, enhancing, facts.edges()).stream()
+                .map(TargetViolation::toFault)
+                .toList();
+    }
+
     private static Optional<TargetViolation> judge(
             StepEnhancement enhancement,
             PackUnderResolution enhancing,

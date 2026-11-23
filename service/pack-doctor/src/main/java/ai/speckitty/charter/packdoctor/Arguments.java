@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
  * available yet ({@link Remediate}).
  *
  * <p>{@code validate} takes {@code --config-root <dir>}, or one or more {@code --pack <dir>[:<level>][=<id>]}, then
- * optionally {@code --round-trip}, and {@code --report <file>} with an optional {@code --format yaml|xml} (FR-008 of
- * mission pack-doctor-coverage-01M7YMQK, ruling R-i: YAML unless {@code --format} names XML); {@code validate --help}
- * asks for the usage too.
+ * optionally {@code --round-trip}, {@code --full}, and {@code --report <file>} with an optional
+ * {@code --format yaml|xml} (FR-008 of mission pack-doctor-coverage-01M7YMQK, ruling R-i: YAML unless {@code --format}
+ * names XML); {@code validate --help} asks for the usage too.
  * A pack is configured under its {@code =<id>} when one is given, its registered id (#583, D2b; PR #608 MEDIUM-3,
  * operator ruling B), and otherwise under its directory's name, as every pack of a config root is.
  *
@@ -48,7 +48,7 @@ final class Arguments {
 
     /** The usage, as {@code --help} prints it and a usage fault ends with. */
     static final String USAGE = """
-            usage: pack-doctor validate (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip]
+            usage: pack-doctor validate (--config-root <dir> | --pack <dir>[:<level>][=<id>] ...) [--round-trip] [--full]
                                         [--report <file> [--format yaml|xml]]
                    pack-doctor remediate
               validate                 check a set of packs and write the report to standard output
@@ -60,6 +60,8 @@ final class Arguments {
                                        under the pack id <id> when given, else under the directory's name;
                                        repeat it to check a set of packs together
               --round-trip             also round-trip every pack through the charter's model
+              --full                   also check, per pack within its own closure, its substep delegations, its
+                                       references and its step enhancements' targets, as registration does
               --report <file>          also write the report to <file>, replacing it: the same report as on
                                        standard output, in YAML unless --format says otherwise
               --format yaml|xml        the report file's format, yaml by default; only with --report
@@ -72,6 +74,7 @@ final class Arguments {
     private static final String CONFIG_ROOT = "--config-root";
     private static final String PACK = "--pack";
     private static final String ROUND_TRIP = "--round-trip";
+    private static final String FULL = "--full";
     private static final String REPORT = "--report";
     private static final String FORMAT = "--format";
     private static final String HELP = "--help";
@@ -90,16 +93,18 @@ final class Arguments {
      * @param packs the packs, in the order given, or in name order under a config root; no two with one directory or
      *     one id
      * @param roundTrip whether the round trip is asked for
+     * @param full whether {@code REFERENCES} is asked for ({@code --full}; #632 item 3)
      * @param inputs the config root or the {@code --pack} values, as written, which the report names
      * @param report where {@code --report} writes the report, and in which format; empty without {@code --report}
      */
-    record Parsed(List<PackSetEntry> packs, boolean roundTrip, Inputs inputs, Optional<ReportFile> report)
+    record Parsed(List<PackSetEntry> packs, boolean roundTrip, boolean full, Inputs inputs, Optional<ReportFile> report)
             implements Outcome {
         /**
          * Checks the fields and copies the list.
          *
          * @param packs the packs
          * @param roundTrip whether to round-trip
+         * @param full whether to run {@code REFERENCES}
          * @param inputs what was given
          * @param report the report file, if any
          */
@@ -201,6 +206,7 @@ final class Arguments {
         private Optional<String> configRoot = Optional.empty();
         private final List<String> packs = new ArrayList<>();
         private boolean roundTrip;
+        private boolean full;
         private Optional<String> report = Optional.empty();
         private Optional<String> format = Optional.empty();
 
@@ -209,6 +215,7 @@ final class Arguments {
             switch (arg) {
                 case END_OF_OPTIONS -> rest.forEachRemaining(packs::add);
                 case ROUND_TRIP -> roundTrip = true;
+                case FULL -> full = true;
                 case CONFIG_ROOT, PACK, REPORT, FORMAT -> {
                     return value(arg, rest);
                 }
@@ -272,6 +279,11 @@ final class Arguments {
                 return new UsageFault("unknown format " + format.get() + " for " + FORMAT + "; the formats are "
                         + ReportFormat.tokens());
             }
+            return packsOutcome();
+        }
+
+        /** The packs the check is over, from the config root or the {@code --pack} values. */
+        private Outcome packsOutcome() {
             if (configRoot.isPresent() && !packs.isEmpty()) {
                 return new UsageFault("give " + CONFIG_ROOT + " or " + PACK + ", not both");
             }
@@ -518,6 +530,6 @@ final class Arguments {
             }
             entries.add(new PackSetEntry(root));
         }
-        return new Parsed(entries, asked.roundTrip, asked.inputs(), asked.reportFile());
+        return new Parsed(entries, asked.roundTrip, asked.full, asked.inputs(), asked.reportFile());
     }
 }

@@ -57,20 +57,16 @@ class StyleguideEntityTest {
     }
 
     @Test
-    @DisplayName("patterns and anti-patterns must be non-empty when present, and may be absent")
+    @DisplayName("patterns must be non-empty when present, and may be absent")
     void cardinalityWhenPresent() {
         Styleguide absent = valid().build();
         assertThat(absent.patterns()).isEmpty();
-        assertThat(absent.antiPatterns()).isEmpty();
 
         var pattern = new StyleguidePattern("p", "d", Optional.empty(), Optional.of("good"));
-        var anti = new StyleguideAntiPattern("a", "d", "bad", "good");
-        Styleguide full = valid().pattern(pattern).antiPattern(anti).build();
+        Styleguide full = valid().pattern(pattern).build();
         assertThat(full.patterns()).containsExactly(pattern);
-        assertThat(full.antiPatterns()).containsExactly(anti);
 
         assertThatThrownBy(() -> valid().patterns(List.of()).build()).isInstanceOf(ConstraintBreachException.class);
-        assertThatThrownBy(() -> valid().antiPatterns(List.of()).build()).isInstanceOf(ConstraintBreachException.class);
     }
 
     @Test

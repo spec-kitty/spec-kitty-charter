@@ -11,11 +11,6 @@ steps:
   on_success: Continue.
   on_failure: Stop.
 - title: Land the change
-anti_patterns:
-- title: Landing unreviewed work
-  content: Work lands only after review.
-  bad_example: git push --force
-  good_example: spec-kitty merge
 remarks: A note.
 applies_to_languages:
 - java
