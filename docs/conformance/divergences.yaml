@@ -1956,6 +1956,27 @@
     - "charter: contracts/packs/schemas/toolguide-guide.schema.json; GuideMarkdown; FileSystemPackInspectorTest; ToolguideGuideTest"
     - "corpus case: the 24 pinned guides at openPacksRef 5df92a5d"
 
+- id: DIV-404
+  surface: The styleguide's anti-patterns
+  core: >-
+    A styleguide carries an inline anti_patterns list, each entry {name, description, bad_example,
+    good_example} (offering/schemas/styleguide.schema.yaml; the merged shape ADR-0043 kept).
+  service: >-
+    A styleguide carries no anti-pattern (an anti-pattern is its own file, anti_patterns/<id>.anti-pattern.yaml,
+    named by a rejects edge, ADR-0052 decision 16), and an anti_patterns key is refused as unknown:
+    artifact_schema_error in validate mode and at registration. The charter contract's Styleguide and
+    StyleguideRegistration carry no antiPatterns.
+  rationale: >-
+    An anti-pattern has one home, its file, with a severity (ADR-0052 decisions 8 and 16, ADR-0083 decision 12), as
+    for a procedure (DIV-401).
+  ruling: operator ruling R-r (2026-11-21, all of #154); #186 "as if core does not exist"
+  status: open
+  since: 2026-11-21
+  evidence:
+    - "core: offering/schemas/styleguide.schema.yaml (anti_patterns)"
+    - "charter: contracts/packs/schemas/styleguide.schema.json (closed, no anti_patterns); InlineAntiPatternCheckTest"
+    - "charter: contracts/charter/scenarios/registration/inline-anti-patterns.feature"
+
 # Mission types (DIV-501..599), mission mission-type-consolidation-01M65MCK (#194, ADR-0044).
 # Core paths at spec-kitty c678037c.
 - id: DIV-501

@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-22T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -448,8 +448,14 @@ Two unrelated packs of one level cannot hold one preset id; a child's copy takes
 `∃u ∈ H(C). fold(u) = fold(u')` is refused `pack_reference_artifact_missing`, naming `p` and the holder.
 A mention that differs from a held id only by case would govern nothing, so it is refused; a mention of an id no pack
 holds is left alone.
-*Source:* operator ruling of 2026-11-06; `PackCompositionResolver.refuseCaseOnlyMatches`, called from
-`OfferingReadService`. **Built.**
+*Source:* operator ruling of 2026-11-06; `PackCompositionResolver.caseOnlyMatches`, called through
+`CaseOnlyRules.matches` from `OfferingReadService` (phase 6). **Built.**
+*Amended 2026-11-23 (rulings R-y, R-z; [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)
+decision 20):* pack-doctor's `CLOSURE` judges C35 too, with registration's body and scope: `CaseOnlyRules` runs
+`caseOnlyMatches` over the composed closure rooted at each pack of the set, every member's mentions (its preset items,
+then its policy locks in URN order) against every member's holdings, the holder the first in merge order. The same
+code, packs and detail as registration's phase 6. A preset item's other faults (`preset_item_not_held`,
+`preset_item_undeclared`) keep the declaring pack's own closure (C31).
 
 **C36 Edge shape.** Refused `422` at registration (G8):
 `enhances⁺(E, E)` (an `enhances` cycle, `enhances(E, E)` included);
@@ -1503,7 +1509,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built |
 | C34 Same-level preset conflict | operator 2026-11-06; `presetContests` | Built |
-| C35 Case-only mention | operator 2026-11-06; `refuseCaseOnlyMatches` | Built |
+| C35 Case-only mention | operator 2026-11-06; `caseOnlyMatches`; R-y, R-z (ADR-0083) | Built; pack-doctor's `CLOSURE` judges it with registration's body and scope (2026-11-23, `CaseOnlyRules`) |
 | C36 Edge shape | A8, A11, A12 | Built (registration PR A; the merge-time refusal PR B) |
 | C37 Step enhancement target held | ADR-0066 d7, d8; OD-9; slice C FR-002; squad A5 | Built (slice C) |
 | C38 Slot declared, in force only | ADR-0066 d2, d7, d8; OD-1 (B), OD-4 (i); slice C FR-001, FR-006; R7 | Built (slice C) |

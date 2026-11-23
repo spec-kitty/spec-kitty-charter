@@ -135,7 +135,17 @@ A resolution context (`charter.scope::CharterScope`) that maps a filesystem path
 
 ## Closure
 
-The set of packs reachable from one pack through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (ADR-0048, ADR-0053 decision 7).
+The set of packs reachable from one pack through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (ADR-0048, ADR-0053 decision 7). It does not follow `parent_pack`; the own closure (see Own closure), against which a preset item is judged, does.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#own-closure}
+
+## Own closure
+
+The packs a pack's preset items are judged against: the pack and every pack it reaches over `depends_on` and `parent_pack`, never a pack that depends on it (ADR-0083 decision 1, ruling R-k), the composition closure rooted at the pack. It is wider than the closure, which follows `depends_on` only and in which a qualified reference resolves, and narrower than the compose a registration of a pack judges, over which the case-only answer is judged (ADR-0083 decision 20).
 
 **Meta:**
 
@@ -513,7 +523,7 @@ Whether something is a paradigm: a school of practice with a worldview that brin
 
 ## Procedure
 
-A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action. Decided, not built yet: ADR-0052 tightens this definition and moves its inline anti-patterns to authored anti-pattern files.
+A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action. It carries no anti-pattern: it rejects one through a `rejects` edge to the anti-pattern's own file and node, and an inline `anti_patterns` key is refused (ADR-0052 decision 16, built by ADR-0083).
 
 **Meta:**
 
@@ -709,7 +719,7 @@ A directional Three-layer CRG relation: an artifact narrows or sharpens the appl
 
 ## Rejection — `rejects` (CRG Relation)
 
-A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary"). Decided, not built yet: ADR-0052 adds a `rejects` list on guidance whose targets are authored anti-patterns.
+A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary"). Built (ADR-0052, ADR-0064 decision 12, ADR-0083): guidance rejects an anti-pattern by a `rejects` edge in its pack's graph documents to the anti-pattern's node, which its file, `anti_patterns/<id>.anti-pattern.yaml`, holds; across packs the target is pack-qualified and its pack is in the rejecting pack's `depends_on` closure.
 
 {#removal}
 

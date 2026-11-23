@@ -2,7 +2,7 @@
 title: "ADR-0083: One answer on every surface: preset items, stale manifests and the pack-doctor CLI"
 description: "Registration and pack-doctor refuse an unheld or undeclared preset item and a stale manifest hash alike; pack-check becomes pack-doctor; #154 lands whole."
 doc_status: active
-updated: 2026-11-22T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-22'
 type: ADR
@@ -31,7 +31,7 @@ audience:
 
 ## Status
 
-**Accepted**, 2026-11-22. Decider: Stijn Dejongh (operator). It records the operator's rulings R-a to R-y of mission
+**Accepted**, 2026-11-22. Decider: Stijn Dejongh (operator). It records the operator's rulings R-a to R-ad of mission
 `pack-doctor-coverage-01M7YMQK` (2026-11-21 to 2026-11-23), held as Decision Moments under that mission's
 `decisions/`, except R-o, which the operator gave in review and the mission's WP01 task file records. Each ruling is
 quoted below, verbatim. The mission delivers issues
@@ -58,8 +58,8 @@ stays:
 - [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), a status note (which decisions
   are now applied);
 - [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/), R14 (superseded in part for `anti_pattern`);
-- rules C31 and G9 of [Composition and activation rules](/architecture/composition-and-activation-rules/), and the
-  scope table of [Architectural patterns applied](/architecture/architectural-patterns-applied/).
+- rules C31, C35 and G9 of [Composition and activation rules](/architecture/composition-and-activation-rules/), and
+  the scope table of [Architectural patterns applied](/architecture/architectural-patterns-applied/).
 
 The release asset of [ADR-0046](/adr/0046-service-release-line-and-native-packaging/)'s amendment of 2026-11-19 is
 renamed by decision 6; that record's text is history and is not edited.
@@ -100,9 +100,9 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    mission types the pack holds. It is never stored, so a file-less graph node is declared but neither held nor
    referable.
 3. **The codes** (R-m). One rule, `PresetItemRules`, judges each item once, in this order:
-   - an item that names an artifact of the closure only by letter case gets the existing case-only answer,
-     `pack_reference_artifact_missing`, naming the packs, with no violation of its own, and nothing else (spec US1
-     scenario 3);
+   - an item that names an artifact of the closure only by letter case gets no preset-item fault: the case-only answer
+     (decision 20), `pack_reference_artifact_missing`, naming the packs, with no violation of its own, is its one
+     answer (spec US1 scenario 3);
    - else a `must_have` item that is not held answers `preset_item_not_held`;
    - else an item that is not declared answers `preset_item_undeclared`.
 
@@ -110,14 +110,16 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    `presets/<id>.yaml#/activated_<kinds>/<index>`. An item of another kind never satisfies the entry.
 4. **Where it runs** (R-a). `PackRulesets` exposes it, and every surface that judges a write takes it from there:
    - pack-doctor, in `CLOSURE`'s preset phase, after the compose and the preset contests, and before the case-only
-     policy locks (decision 20);
+     answer (decision 20);
    - registration and every per-artifact write, in `ClosureImpactCheck`, over each single-root closure the write joins,
      after the own-closure walk;
    - never a composing read. A stored pack whose preset now breaks the rule still composes, and `requiredNotHeld` still
      reports the unheld item. The floor of a read stays restricted to held items (C31).
 
    It supersedes A10 and C31 for writes, and the operator's 2026-11-06 ruling that a preset id no pack declares is
-   accepted at registration.
+   accepted at registration. Each closure rule this record adds has one body in the factory, which registration and
+   pack-doctor both call: `PresetItemRules` here, `CaseOnlyRules` (decision 20) and `PackRulesets.references`
+   (decision 8, ruling R-ab).
 
 ### The stale manifest (#630)
 
@@ -138,8 +140,9 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    remain (C-002). History keeps the old name (C-004): mission and Op records, released changelog entries and ADR bodies.
    pack-validation's `PackCheck`, validate mode over one pack, is a domain term and keeps its name.
 7. **Two commands** (R-e). `pack-doctor validate` takes `--config-root <dir>` or repeated `--pack <dir>[:<level>][=<id>]`,
-   and `--round-trip`, `--full`, `--report <file>` and `--format yaml|xml`. `pack-doctor remediate <dir>...` takes pack
-   directories and no option. A command line with no command word is a usage fault: the old flat form is no alias.
+   and `--round-trip`, `--full`, `--report <file>` and `--format yaml|xml`. `pack-doctor remediate
+   <dir>[:<level>][=<id>]...` takes pack directories, each written as a `--pack` value is, and no option. A command
+   line with no command word is a usage fault: the old flat form is no alias.
 8. **`--full` is the `REFERENCES` check** (R-h, narrowed by R-s; named by R-u). Per pack of the set, within its own
    closure, it runs three existing domain functions in registration's phase order:
    1. the substep delegations (`PackCompositionResolver.delegationFaultsOf`), answering `validation_failed` with the
@@ -151,9 +154,16 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
       `pack_reference_artifact_missing`.
 
    Each check collects every fault. A later check runs only when the earlier ones pass, as a later phase of registration
-   does, since it would answer the same cause again. `REFERENCES` runs only when `CLOSURE` ran and found no fault; when
-   `CLOSURE` is skipped, `REFERENCES` is skipped too, naming the same packs. Registration and the composing read take the
-   first fault of the same collect-all functions, so each check has one body.
+   does, since it would answer the same cause again. That order and that stop have one body,
+   `PackRulesets.references(closure, members, factsOf)` (ruling R-ab): registration's composing judge
+   (`OfferingReadService.judged`, phases 2 to 4) calls it with every member of the closure it composes, and
+   pack-validation's `ReferencesPhase` calls it per pack of the set, over the pack's own closure. Registration and the
+   composing read take the first fault it answers.
+
+   `REFERENCES` runs when `CLOSURE` ran and found no composition fault (ruling R-aa): an own closure that does not
+   compose (`CompositionRules`) has no order to judge, so it gates `REFERENCES`. A preset contest, a preset-item fault or
+   a case-only answer does not: it is reported beside `REFERENCES`' own faults. When `CLOSURE` is skipped, `REFERENCES`
+   is skipped too, naming the same packs.
 9. **What `--full` does not judge yet** (R-s). The `specializes_from` cycle check (it needs the set's composed closure,
    since siblings are not in each other's own closure, and `ImpactRelations.cyclesIn` moved into `PackGraph`), the
    relation checks (`ImpactRelations`), the edge-index refusals (`EdgeIndex`) and the own-closure walk
@@ -168,14 +178,38 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     or as XML with `--format xml`. The XML is our own element-per-key mapping, stated in the schema's description, not
     JUnit's. The JSON Schema is the only normative schema: the contract test parses the XML back into the tree and
     validates it against that schema, so no XSD is kept by hand. An xUnit-compatible form is a later option (R-n).
+    A string holding a character XML 1.0 cannot carry (a control character other than tab, line feed and carriage
+    return, `U+FFFE`, `U+FFFF`, or a surrogate that is not half of a pair) is written as an element with
+    `type="escaped"` (ruling R-ac): each such character is `\uXXXX`, the upper-case hex of its UTF-16 code unit, and
+    each backslash is `\\`. `XmlReport.read` undoes it and refuses a malformed escape. A string with no such character is
+    never escaped, so pack content, a file name with `U+0001` included, never makes the report fail (`2`). The report
+    file must lie outside every pack the run checks, by real path, links followed (a usage fault, `2`, otherwise). It is
+    written to a hidden sibling before anything reaches standard output, and renamed into place once standard output
+    took the report; a report file that cannot be written exits `2` with nothing on standard output, and when standard
+    output cannot be written the file is left as it was.
 11. **`remediate`** (R-j). For each pack, in the order given, `remediate` refuses a pack that holds a fault it does not
     repair: any violation of the storage verdict except the manifest gate's (`manifest_membership`, `manifest_stale`).
     Then it rewrites each modelled file in the round trip's canonical form (ADR-0036: the meaning stays, the bytes may
-    change) and derives and stamps `pack-manifest.yaml` as every service write does. It writes a staged copy and swaps
-    it in, so a refused or failing pack is left as it was. A file the census does not hold is left untouched. Each pack's
-    outcome is `rewritten`, `unchanged` or `refused`; then `remediate` runs `validate --round-trip` over the same set. It
-    is `PackRemediation`, a facade at the storage edge (`packs.infra.storage`) that composes the existing writer and
-    stamp, judges nothing new, and takes no lock.
+    change) and derives and stamps `pack-manifest.yaml` as every service write does. A file the census does not hold is
+    left untouched. Each pack's outcome is `rewritten`, `unchanged` or `refused`; then `remediate` runs
+    `validate --round-trip` over the same set. It is `PackRemediation`, a facade at the storage edge
+    (`packs.infra.storage`) that composes the existing writer and stamp, judges nothing new, and takes no lock.
+    - **Staging.** The work is done in a copy under the JVM's temporary directory. A copy equal to the pack, byte for
+      byte, is `unchanged`, and nothing is written in or beside the pack, so a canonical pack needs no write access.
+      Otherwise the copy is written to a hidden sibling, `.<pack>.remediate-<uuid>`, with the pack's file modes; the pack
+      is moved aside to `.<pack>.aside-<uuid>`, the sibling is moved in, and the aside copy is deleted. Rewriting needs
+      write access to the parent of the pack's real directory.
+    - **A link root.** A pack root that is a symbolic link is remediated in the directory it resolves to, which is
+      swapped; the link is kept.
+    - **The working directory.** A pack that is, or holds, the working directory is a usage fault (`2`): a swap would
+      move the directory the process stands in.
+    - **A failure.** A failure after the precondition passed leaves the pack as it was when the process survives the
+      failure, and standard error says so (`it is unchanged`). When the pack was moved aside and could not be put back,
+      it says where the pack as it was is (`.<pack>.aside-<uuid>`) and prints each suppressed failure. A shutdown hook
+      deletes the copy and the sibling on `SIGINT` or `SIGTERM`, and waits for a swap under way. A process killed
+      outright can leave a hidden sibling: `.<pack>.remediate-<uuid>` is a copy and can be deleted, and
+      `.<pack>.aside-<uuid>` holds the pack as it was; a `pack-remediation-*` directory can be left in the temporary
+      directory.
 
 ### #154 delivered whole
 
@@ -184,14 +218,16 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     `schema_version`, `id` (the file stem), `title`, `description`, `severity` (`smell`, `severe` or `breaking`, no
     default) and `bad_example` required and `good_example` optional (WP10). A graph node of the same URN in the same
     pack declares the anti-pattern and is a `rejects` edge's endpoint; the file holds it. A graph node with no file in
-    its pack is refused `drg_schema_error` at `/nodes/<n>` of its document (ADR-0052 decision 14; WP11). The procedure
+    its pack is refused `drg_schema_error` at its document, as registration places it, the detail naming the node, on
+    every surface (ADR-0052 decision 14; WP11). An anti-pattern file that is there but refused for a fault of its own
+    is that one fault: its node gets no second one. The procedure
     and styleguide shapes drop `anti_patterns` outright, so a file that still carries the key is refused
     `artifact_schema_error`, unknown key (ADR-0052 decision 16; WP12). The example packs carry no inline anti-pattern and
     no file-less node: their 18 inline entries are files of `built-in`, each with a node and a `rejects` edge.
 13. **No code is minted for #154.** Each refusal is an existing answer: a schema breach is the closed schema's
     `artifact_schema_error` at the file and the breaching pointer; a misplaced file or a stem mismatch is the existing
-    stem and placement rule; a graph node a pack may not declare is already `drg_schema_error` at `/nodes/<n>`, as for a
-    guard, lifecycle or routing-catalog node.
+    stem and placement rule; a graph node a pack may not declare is already `drg_schema_error` at its document, as for
+    a guard, lifecycle or routing-catalog node.
 14. **What stays for spec-kitty-open-packs.** The curation of its inline entries and its file-less nodes (ADR-0052
     decision 15) is open-packs' work. Until it is done, its styleguides and procedures with inline entries, and its
     graph documents with file-less nodes, are refused at its repin.
@@ -217,19 +253,47 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     spec-kitty-open-packs house rules.
 19. **No release before this lands** (R-w). No `service-v*` release is cut until this mission lands, so
     spec-kitty-open-packs aligns once, against the release that carries pack-doctor.
-20. **The case-only policy lock** (R-y). pack-doctor's `CLOSURE` answers a policy lock (a URN key of the pack's
-    mutability policy file) that names an artifact of the pack's own closure only by letter case as registration's
-    phase 6 does: `pack_reference_artifact_missing`, naming the declaring pack then the holder, with the resolver's
-    case-only detail and no violation of its own. One rule, `PolicyLockRules` (`closure.policy-locks`), runs the
-    existing `caseOnlyMatches` over the own closure of decision 1, after the preset items; a lock no pack of that
-    closure holds in any case changes no write and is no fault. Registration, every write and the composing read are
-    unchanged; the read's `mentionsOf` moves into the factory with #636 slice 7.
+20. **The case-only answer, in registration's scope** (R-y, R-z). pack-doctor's `CLOSURE` answers a mention that names
+    an artifact only by letter case as registration's phase 6 does: `pack_reference_artifact_missing`, naming the
+    mentioning pack then the holder, with the resolver's case-only detail and no violation of its own. A mention is a
+    preset item or a policy lock (a URN key of the pack's mutability policy file). One body, `CaseOnlyRules`
+    (`closure.case-only`), holds it: `mentionsOf` lists each pack's preset items, then its locks in URN order, and
+    `matches` runs `caseOnlyMatches` over one composed closure, every member's mentions against every member's
+    holdings, the holder the first in merge order. Registration's phase 6 calls `matches` over the closure it composes.
+    pack-doctor calls it over the closure rooted at each pack of the set, in pack-id order, after the preset items; a
+    fault two roots find is reported once, and a root whose closure reaches a pack outside the set is not judged. So a
+    dependency's lock or preset item that a dependent holds only by case is refused by both surfaces. Only the
+    case-only answer takes this scope: `preset_item_not_held` and `preset_item_undeclared` keep the own closure of
+    decision 1. A mention no pack of the closure holds, in any case, is no fault. Each pack of a closure fault is named
+    once, as registration names it. Registration's own behavior is unchanged, but for the order of several case-only
+    locks of one pack, now URN order.
+
+### The storage edge
+
+21. **A special file is refused** (R-ad). A pack holds only regular files and directories. An entry that is neither,
+    and is not a link (a FIFO, a socket, a device), is never opened: the walk lists it apart, and a storage rule,
+    `SpecialFileRules`, refuses each one as `pack_entry_linked` refuses a link (D1, D6 of mission
+    `pack-check-cli-01M7SASC`), with the violation `unreadable` at its path and the detail `<file>: is not a regular
+    file or a directory; a pack holds only regular files and directories`. No code is added: `unreadable` already
+    answers something at the manifest's path that is not a regular file. At its path only that refusal is stated. So
+    registration, `pack-doctor validate` and `remediate`'s precondition refuse it alike (exit `1`), the store half
+    records it so the composing read of a configured pack refuses the pack (`pack_unreadable`, naming the file), and a
+    `pack.yaml` that is a special file is refused naming it. The copies of `remediate` and of a registration's commit
+    still refuse such an entry, as a second line of defense.
+22. **A YAML document has a size bound.** A pack's YAML file, or a Markdown file's front matter, of more than
+    1 048 576 code points (`Yaml.MAX_CODE_POINTS`) is refused before it is parsed, with the detail `the document is too
+    large`, as a document past the parser's alias or nesting budget is refused (`ParsedYaml`): `unreadable` at an
+    artifact file, `pack_unreadable` at `pack.yaml`. It holds at registration and in `pack-doctor` alike.
+23. **The round trip reads through the same guards.** Every load the whole-pack round trip makes, of the source and of
+    what it wrote, goes through `ParsedYaml`'s guarded parse (aliases, nesting, size). A side the guard refuses is
+    answered as a refusal of that file (`the source file does not parse: ...`, `read-back: ...`), never an internal
+    error or a crash, so `validate --round-trip` and `remediate` answer such a file as a problem (`1`).
 <!-- markdownlint-enable MD029 -->
 
 ## The rulings, verbatim
 
 <!-- The operator's words are quoted as written, spelling included (R-w). -->
-<!-- cspell:ignore untill allign -->
+<!-- cspell:ignore untill allign behaviour -->
 
 Each is the Decision Moment's final answer as the operator gave it, with the rationale's own words where the final
 answer is an option's label. A rationale is quoted whole, except its lead-in ("Operator ruling R-x (date)", and the
@@ -261,7 +325,12 @@ source and operator words where the table gives them), which is dropped.
 | R-v | `01M80YAS1QJABJ74REAXWNNZF9` | "Derived referable()"; rationale: "references resolve against a derived referable() view = held files plus held mission types' step (action:) nodes; no stored third field. Rename the retired-word carriers (PackUnderResolution.definedArtifacts, PackRegistrationService Before.held/heldBy, DomainRepositoryServiceTest.definedArtifactsNameEveryKindThePackHolds) to referable. A file-less node (directive:GHOST) does not resolve." | Decision 2 |
 | R-w | `01M812KK99P3T1FQ7ZBXT4Z3T1` | "No release until this mission lands"; operator words: "yes, no release yet, untill the charter validation module and cli are finalized, so open packs can allign properly."; rationale: "No service-v\* release until WP01-WP09 land; open-packs aligns once against that release. WP09 draft (a) widened to the full alignment specification." | Decision 19 |
 | R-x | `01M83MFVJZX16G6NBM4YPB9XYG` | "Defer to #636 slice 7 (Recommended)"; rationale: "The ClosureVerdict clause of FR-001 (becomes a view over a Rationale) is deferred to #636 slice 7, which removes the type once the ledger carries what faults hold. FR-001's wording is aligned; its acceptance verdict is recorded deferred with follow-up #636; the PR writes Refs #636 for it. No code change." | Decision 15 |
-| R-y | `01M83MFXWH2NZQ8CJWFW1JTPY6` | "Fold into this PR"; rationale: "pack-doctor's CLOSURE gains the case-only check for policy-lock URNs through the domain factory, so validate answers a case-only policy lock as registration's phase 6 does (pack_reference_artifact_missing, no violation of its own), with a FullPassParityTest row. Added as WP13." | Decision 20 |
+| R-y | `01M83MFXWH2NZQ8CJWFW1JTPY6` | "Fold into this PR"; rationale: "pack-doctor's CLOSURE gains the case-only check for policy-lock URNs through the domain factory, so validate answers a case-only policy lock as registration's phase 6 does (pack_reference_artifact_missing, no violation of its own), with a FullPassParityTest row. Added as WP13." | Decision 20; its scope widened by R-z |
+| R-z | `01M84SG9JY2B1VX25M9CG9ZDKV` | "Registration's composed scope (Recommended)"; rationale: "pack-doctor's CLOSURE judges the case-only answer as registration's phase 6 does: per root, over the rooted composed closure, every member's mentions (preset items and policy locks) against every member's holdings. Preset-item and lock faults keep R-k's own closure; only the case-only answer widens. Registration is unchanged. Parity rows for cross-pack shapes." | Decision 20 |
+| R-aa | `01M84SGF4G2KHDJYK0209M3TMQ` | "Only composition faults (Recommended)"; rationale: "REFERENCES runs whenever no own closure fails to compose (no CompositionRules fault); preset-item, contest and case-only faults no longer hide reference faults. ADR-0083 decision 8 and the guide are updated." | Decision 8 |
+| R-ab | `01M84SGMXPNKF4Y8H2TJF1YJE8` | "Fix now (Recommended)"; rationale: "One PackRulesets entry owns the ordered list (delegations, references, enhancement targets) and the stop-at-first rule; registration's composing judge and pack-validation both call it; ClosureWalkPhase is renamed or removed (R-u reserved the walk name for #636). Registration's behaviour is unchanged." | Decisions 4 and 8 |
+| R-ac | `01M84SGTK9J0BMS9GW5QNGMTA8` | "Reversible escape (Recommended)"; rationale: "The XML mapping escapes characters XML 1.0 cannot hold in a defined, reversible way, stated in PackDoctorReport.yaml's mapping and inverted by XmlReport.read, so pack content never makes the exit 2. Contract test with a control character." | Decision 10 |
+| R-ad | `01M852YMVX6134N2SAT259FG5Z` | "Refuse it as a pack fault (Recommended)"; rationale: "A pack entry that is neither a regular file nor a directory is refused by a storage rule, as pack_entry_linked refuses a link, on validate, remediate and registration alike; exit 1 with the file named. Rule, tests and a change fragment." | Decision 21 |
 
 Two further Decision Moments confirm without a letter: the intent and the alignment squad over ADR-0082
 (`01M7Z1A6RXQB141EKZHB3BD2AH`) and the order of the work packages (`01M7Z2EXFG0K83SMFBVBGFEGBC`).
@@ -275,6 +344,10 @@ Two further Decision Moments confirm without a letter: the intent and the alignm
 - R-s governs over R-d and R-h: `--full` is the three checks of decision 8, and the `specializes_from` cycle is not
   among them yet.
 - R-t governs over R-s's last sentence: the round-trip-codes slice of #636 is folded (decision 16).
+- R-z governs over R-y's scope, the own closure: the case-only answer is judged over each root's composed closure, and
+  R-y's `PolicyLockRules` is not kept (decision 20).
+- R-aa governs over R-h's and R-s's gate as decision 8 first read it ("only when `CLOSURE` ran and found no fault"):
+  only a composition fault gates `REFERENCES`.
 
 ## Consequences
 
@@ -305,10 +378,17 @@ Two further Decision Moments confirm without a letter: the intent and the alignm
 - **Order of findings.** The preset-item phase runs after the compose in pack-doctor and after the own-closure walk in
   registration. A pack with both kinds of fault can lead with a different first code on each surface. Mitigation: the
   parity table (`FullPassParityTest`) pins each planted fault's code on both surfaces.
-- **A case-only policy-lock URN.** Registration's case-only check (`OfferingReadService.judged`, phase 6) covers the
-  URNs of a pack's presets and of its policy file, and pack-doctor judges the same mentions in two phases, the preset
-  items and the policy locks (decision 20), so the mentions have two bodies until #636 slice 7 moves the read's into
-  the factory. Mitigation: the parity table pins a case-only lock's code on both surfaces.
+- **Two scopes for one preset item.** A preset item's own faults are judged over the declaring pack's own closure
+  (decision 1), its case-only answer over each root's composed closure (decision 20, R-z). A dependency's item that a
+  dependent holds only by case is refused when the set holds the dependent, and passes when the dependency is checked
+  alone. Mitigation: the parity table (`FullPassParityTest`) pins the cross-pack shapes on both surfaces, packs and
+  detail included, and the guide states both scopes.
+- **A `REFERENCES` fault beside a closure fault.** Since R-aa, a contest, a preset-item or a case-only fault no longer
+  hides a reference fault, so `validate --full` can report more problems at once than registration, which stops at its
+  first failing phase. The codes of each fault are registration's.
+- **A special file at a racing path.** The walk lists a special file and the storage rules refuse it; a regular file
+  swapped for a FIFO between the walk and a read can still block that read. The copies of `remediate` and of a commit
+  refuse a special file, so neither stores one.
 
 ## Alternatives considered
 
@@ -344,6 +424,17 @@ The Decision Moments of R-a to R-m record no options, so only the alternatives t
 
 - **FR-001's `ClosureVerdict` clause** (R-x): "Do it in this mission" was declined.
 - **The case-only policy lock** (R-y): "Follow-up via #636 (Recommended)" was declined.
+
+### Batch 6 (2026-11-23, the pre-merge squad)
+
+- **The case-only scope** (R-z): "Own closure everywhere" and "Accept and document" were declined.
+- **The `REFERENCES` gate** (R-aa): "Keep the broad gate" was declined.
+- **The one `REFERENCES` body** (R-ab): "Defer to #636" was declined.
+- **A character XML 1.0 cannot carry** (R-ac): "Document exit 2" was declined.
+- **A special file in a pack** (R-ad): "Keep exit 2 and document" was declined.
+- **A new code for a special file** (R-ad, not ruled): a sibling of `pack_entry_linked` was not minted, since
+  `unreadable` already answers a manifest that is not a regular file, and git cannot carry a special file into a
+  planted fixture that would pin a code of its own.
 
 ## References
 

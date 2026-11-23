@@ -2,7 +2,7 @@
 title: Check packs
 description: "Get the pack-doctor jar, check a set of packs with no service, repair a pack's manifest and form, read its report and exit codes, and know what only the service checks."
 doc_status: draft
-updated: 2026-11-22T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -65,7 +65,8 @@ tag and the jar's SHA-256, as you pin any other tool.
 - **`remediate`** repairs what can be repaired mechanically: a pack's manifest and the form of its files. See
   [Repair a pack](#repair-a-pack).
 
-A command line with no command, such as the options alone, is a usage fault (`2`).
+A command line with no command, such as the options alone, is a usage fault (`2`), except `--help`, which prints the
+usage and exits `0`.
 
 Give `validate` the packs in one of two forms:
 
@@ -128,22 +129,30 @@ directory whose name starts with `--` goes after `--`, which ends the options.
 whose `depends_on` names a pack that is not in the set gets `pack_dependency_unknown`, even when the pack is fine.
 Give its dependencies too, or use a config root that holds them.
 
+`CLOSURE` runs, in order: the composition of the set (`pack_dependency_unknown`, `pack_duplicate_id` and the others
+of [Compose packs](/guides/compose-packs/)), the preset contests, the preset items, then the case-only answer.
+
 **A preset item is judged against its pack's own closure:** the pack, and every pack it reaches over `depends_on` and
 `parent_pack`, never a pack that depends on it. `CLOSURE` judges each item of each preset once, as a registration does:
 
 | The item | The problem |
 | --- | --- |
-| names an artifact of the closure, but only in other letter case | `pack_reference_artifact_missing`, naming the packs |
 | is `must_have`, and no pack of the closure holds it as a file | `preset_item_not_held` |
 | no pack of the closure declares it as its kind, by a file or a graph node | `preset_item_undeclared` |
 
 A preset item problem has one violation, at `presets/<id>.yaml#/activated_<kinds>/<index>`. An anti-pattern is held
-only by its file, `anti_patterns/<id>.anti-pattern.yaml`.
+only by its file, `anti_patterns/<id>.anti-pattern.yaml`. An item that names a held artifact only in other letter case
+gets neither: it gets the case-only answer below.
 
-**A policy lock is judged against the same closure.** A lock in the pack's policy file (the file `mutability_policy`
-names) that names an artifact of its own closure only in other letter case is `pack_reference_artifact_missing`,
-naming the packs, after the preset items, as a registration answers it. A lock on an id that no pack of the closure
-holds is not a problem.
+**The case-only answer is judged as a registration judges it.** A preset item, or a lock in the pack's policy file (the
+file `mutability_policy` names), that names an artifact only in other letter case, `directive:directive_001` where a
+pack holds `directive:DIRECTIVE_001`, is `pack_reference_artifact_missing`, naming the mentioning pack then the pack
+that holds the artifact, with no violation of its own. Its scope is wider than a preset item's: for each pack of the
+set, `CLOSURE` takes the closure that pack roots, as a registration of that pack composes it, and judges every
+member's items and locks against every member's artifacts. So a dependency's item or lock that only a pack depending
+on it holds in other case is a problem when you check the two together, and is not when you check the dependency
+alone. A problem two packs' closures find is reported once. A pack's items come before its locks, and its locks are in
+URN order. An item or a lock naming an id that no pack of the closure holds, in any case, is not a problem.
 
 **A manifest's hashes are checked.** A `content_hash` or `manifest_hash` of `pack-manifest.yaml` that does not match the
 pack's bytes is `manifest_stale`, one violation per field, naming it. `remediate` restamps it; see
@@ -152,20 +161,25 @@ pack's bytes is `manifest_stale`, one violation per field, naming it. `remediate
 ## Check what registration checks
 
 `--full` adds the check `REFERENCES`. For each pack, within its own closure, it runs three checks a registration runs, in
-the registration's order and with its codes:
+the registration's order and with its codes. A pack named in a reference, a delegation candidate or an enhancement
+target must be in the pack's `depends_on` closure: the pack and every pack it reaches over `depends_on`. Its
+`parent_pack` does not count, as at registration.
 
 1. **The substep delegations.** A candidate of a substep's `delegates_to` that names a pack of the closure that does not
    hold it is `validation_failed`, with the violation `substep_delegation_unresolved` at the mission type file.
 2. **The references.** A reference a pack writes, in an artifact such as an agent profile or as a graph edge's
    endpoint, is `pack_reference_unqualified` when it is bare and only another pack of the closure holds it,
-   `pack_reference_pack_missing` when it names a pack outside the closure, and `pack_reference_artifact_missing` when it
-   names a pack of the closure that does not hold it.
+   `pack_reference_pack_missing` when it names a pack outside the `depends_on` closure, and
+   `pack_reference_artifact_missing` when it names a pack of that closure that does not hold it.
 3. **The step enhancements' targets.** A step enhancement whose target step does not exist is
    `pack_reference_pack_missing` or `pack_reference_artifact_missing`.
 
 Each check reports every fault it finds, not only the first. A later check runs only when the earlier ones find
-nothing, since it would report the same cause again. `REFERENCES` runs only when `CLOSURE` found no problem: fix those
-first. When `CLOSURE` is skipped, `REFERENCES` is skipped too.
+nothing, since it would report the same cause again. `REFERENCES` runs when `CLOSURE` found no composition problem: a
+pack whose closure does not compose (an unknown dependency, a cycle, a duplicate id and the others of
+[Compose packs](/guides/compose-packs/)) has no closure to check, so fix those first. A preset contest, a preset item
+or a case-only problem does not stop it: those are reported beside `REFERENCES`' own. When `CLOSURE` is skipped,
+`REFERENCES` is skipped too.
 
 `--full` does not yet judge everything a registration does. A pack it passes can still be refused when you register it
 for a `specializes_from` cycle, a relation between artifacts, or the closure walk of its own profiles; see
@@ -177,12 +191,20 @@ for a `specializes_from` cycle, a relation between artifacts, or the closure wal
 | --- | --- |
 | `0` | Every pack is valid. Warnings are allowed; they are on standard error. |
 | `1` | At least one problem. The report on standard output lists them. |
-| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id), a directory given on the command line cannot be listed, the output cannot be written, the report file cannot be written, a pack cannot be rewritten by `remediate`, or `pack-doctor` has a defect (`pack-doctor: internal error:`). The cause is on standard error. Nothing is on standard output, except that `remediate` keeps the outcome lines it printed for the packs before the failure. |
+| `2` | The command line is wrong (no command, an unknown option, a missing directory, an `=<id>` that is not a pack id, two packs in one directory or under one id, a `--report` file inside a pack it checks, a pack to `remediate` that is or holds the working directory), a directory given on the command line cannot be listed, the output cannot be written, the report file cannot be written, a pack cannot be rewritten by `remediate`, or `pack-doctor` has a defect (`pack-doctor: internal error:`). The cause is on standard error. Nothing is on standard output, except that `remediate` keeps the outcome lines it printed for the packs before the failure, and that a report file whose last rename fails leaves the report on standard output. |
 
 What a pack holds is never a failure (`2`). A pack it cannot read, a malformed `pack.yaml` field (a `pack_version`
 that is not a version, a `depends_on` range or `requires_core` that is not a range, a `pack_level` the schema does not
-know) or a file it refuses is a problem (`1`), at the file that holds it. An `internal error` is a defect of
-`pack-doctor` itself, whatever the packs hold; report it.
+know) or a file it refuses is a problem (`1`), at the file that holds it. So are:
+
+- a YAML file, or a Markdown file's front matter, of more than 1 048 576 code points, or past the parser's alias or
+  nesting budget: `unreadable` at the file (`pack_unreadable` at `pack.yaml`), with the detail `the document is too
+  large`, or the parser's reason. The round trip reads every file through the same guards;
+- a special file (see [Links and special files](#links-and-special-files));
+- a file name or a value holding a character XML cannot carry: the XML report file escapes it (see
+  [The report file](#the-report-file)).
+
+An `internal error` is a defect of `pack-doctor` itself, whatever the packs hold; report it.
 
 ## Repair a pack
 
@@ -203,9 +225,27 @@ For each pack, in the order given, it:
 3. derives `pack-manifest.yaml` from the files and stamps its hashes, as every write of the service does. A pack with
    no manifest gets one.
 
-Files the charter does not hold, such as your own notes, are left as they are. The pack is written in a copy beside
-it, which then takes its place, so a pack that fails midway is left as it was. `remediate` takes no lock: do not run it
-on a directory a running service reads packs from.
+Files the charter does not hold, such as your own notes, are left as they are. `remediate` takes no lock: do not run
+it on a directory a running service reads packs from.
+
+How it writes:
+
+- **In a copy.** It does its work in a copy under the Java temporary directory (`java.io.tmpdir`). A pack the copy
+  equals byte for byte is `unchanged`, and nothing is written in or beside it, so a canonical pack needs no write
+  access. A pack it rewrites is written to a hidden sibling, `.<pack>.remediate-<uuid>`, keeping the files' modes,
+  which then takes the pack's place: the pack is moved aside to `.<pack>.aside-<uuid>` and deleted once the sibling is
+  in. So rewriting needs write access to the directory that holds the pack.
+- **A pack root that is a link** is followed: the directory it resolves to is rewritten and swapped, and the link is
+  kept.
+- **Not from inside the pack.** A pack that is, or holds, the working directory is a usage fault (`2`): run
+  `remediate` from outside it.
+- **When it fails.** A pack that fails midway is left as it was, when the process lives through the failure, and
+  standard error says `it is unchanged`. If the pack was moved aside and could not be put back, standard error says
+  where the pack as it was is, `.<pack>.aside-<uuid>` beside it, and prints each further failure on a
+  `pack-doctor:   and:` line; move that directory back by hand. Stopped with `Ctrl-C` or `SIGTERM`, it deletes its copy
+  and its sibling, and waits for a swap under way. Killed outright (`SIGKILL`, a power loss), it can leave a hidden
+  sibling: delete `.<pack>.remediate-<uuid>`, a copy; `.<pack>.aside-<uuid>` holds the pack as it was, to move back
+  when the pack itself is gone. A `pack-remediation-*` directory can be left in the temporary directory; delete it.
 
 Run it, then `validate`, to clear the problems it repairs:
 
@@ -218,7 +258,8 @@ java -jar pack-doctor-<version>.jar remediate packs/built-in:built-in packs/org-
 It prints one line per pack, `<dir>: rewritten`, `<dir>: unchanged` or `<dir>: refused` followed by the faults, then
 checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no pack was
 refused and the check finds no problem, `1` when a pack was refused or the check finds a problem, and `2` on a usage
-fault or a failure. Give the packs a pack depends on too, as for `validate`.
+fault or a failure. Give the packs a pack depends on too, as for `validate`. A usage fault names `remediate`, as in
+`remediate . holds the working directory`.
 
 ## The report
 
@@ -232,10 +273,10 @@ The report goes to standard output, as one JSON object. Its schema is the contra
   could be read and its `pack.yaml` is well formed, `REFERENCES` with `--full` when `CLOSURE` found no problem, and
   `ROUND_TRIP` with `--round-trip`.
 - **`packs`:** each pack checked, with its pack id as `name` (its `=<id>`, or its directory's name), its level and
-  its path as you gave it.
+  its path as you gave it. Every problem, warning and `skipped` reason names a pack by that id.
 - **`skipped`:** present only when a check was asked for and could not run. That is `CLOSURE`, and with `--full`
   `REFERENCES`, when a pack could not be read, its `pack.yaml` is malformed, or its level is unknown; its `reason`
-  names the pack. `REFERENCES` left out because `CLOSURE` found a problem is not listed here. The pack's own
+  names the pack. `REFERENCES` left out because `CLOSURE` found a composition problem is not listed here. The pack's own
   fault is its one problem, under `PACK`. One such pack skips `CLOSURE` for the whole set, on purpose: judging the
   others without it would report false `pack_dependency_unknown` faults for the packs that depend on it. A closure
   fault among the other packs shows once that pack is fixed; the exit is `1` either way.
@@ -243,8 +284,9 @@ The report goes to standard output, as one JSON object. Its schema is the contra
   fault. A pack's violations are one `validation_failed` problem, with each violation's code, file and detail. Its
   `instance` is the `file:` URI of the pack's directory, so you can tell the packs apart. A composition fault has its
   own code (`pack_dependency_unknown`, `pack_duplicate_id` and the others of
-  [Compose packs](/guides/compose-packs/), and `preset_item_not_held` and `preset_item_undeclared`) and names its
-  packs; so does a `REFERENCES` fault. The round trip's faults are one more `validation_failed` problem per pack, with
+  [Compose packs](/guides/compose-packs/), `preset_item_not_held`, `preset_item_undeclared`, and
+  `pack_reference_artifact_missing` for a case-only answer) and names each of its packs once; so does a `REFERENCES`
+  fault. The round trip's faults are one more `validation_failed` problem per pack, with
   `round_trip_red` or `round_trip_written_unpaired` for each file. The list is empty when the set is valid.
 - **`summary`:** the counts: the `packs` checked, the `violations` the problems state (all of them, also those a
   problem's list leaves out), the `warnings` and `notices`, and the `exit_code`.
@@ -264,21 +306,35 @@ as a stray `notes.txt`, and never fails it.
 `--report <file>` writes the same report to a file too, for a CI system to keep or parse. It is YAML by default;
 `--format xml` makes it XML. Standard output and the exit code are the same with it as without.
 
+The file must lie outside every pack the run checks, by its real path, links followed: a report file inside a pack is
+a usage fault (`2`), so the report never becomes part of a pack. It is first written to a hidden file beside it,
+`.<name>.<uuid>.tmp`, before anything reaches standard output, and renamed into place once standard output took the
+report, so a reader never sees half a report. If standard output cannot be written, the file is left as it was. A
+`--report` that is a link is followed, and the file it names is replaced.
+
 ```bash
 java -jar pack-doctor-<version>.jar validate --config-root ./charter --report pack-doctor.yaml
 java -jar pack-doctor-<version>.jar validate --config-root ./charter --report pack-doctor.xml --format xml
 ```
 
 The XML is the same tree in elements of its own, not JUnit's: an element per key, an element per list item named for
-the list (`problems/problem`, `packs/pack`), and a `type` attribute on a list, an integer, a boolean or an empty object. The schema's
+the list (`problems/problem`, `packs/pack`), and a `type` attribute on a list, an integer, a boolean or an empty
+object. A string holding a character XML 1.0 cannot carry, such as `U+0001` in a file name, is an element with
+`type="escaped"`: each such character is written `\uXXXX`, the upper-case hex of its UTF-16 code unit, and each
+backslash `\\`. Undo that, and you have the string; a string with no such character is never escaped. The schema's
 description states the mapping. `--format` without `--report`, or a format other than `yaml` or `xml`, is a usage
 fault, and a report file that cannot be written exits `2` with nothing on standard output.
 
-## Links
+## Links and special files
 
 A symbolic link inside a pack is refused with `pack_entry_linked`, one violation per link, and nothing is read through
 it: a link to a file, to a directory or to nothing. A registration and the service's load of a configured pack refuse
 it the same way. Replace the link with the file it points to.
+
+A special file inside a pack, an entry that is neither a regular file nor a directory nor a link (a named pipe made by
+`mkfifo`, a socket, a device), is refused with `unreadable` at its path, `<file>: is not a regular file or a directory;
+a pack holds only regular files and directories`, one violation per file, and is never opened. `validate`,
+`remediate` and a registration refuse it alike, and so does the service's load of a configured pack. Remove it.
 
 - **The pack root itself may be a link.** `--pack ~/packs/current` works when `current` links to the pack's directory,
   and so does a link in a config root's `packs/` that resolves to a directory.
@@ -296,5 +352,5 @@ the service (ADR-0075, decision 6; ADR-0083), so a pack that passes here can sti
 - the impact of a registration on the packs already registered;
 - whether a pack may be changed (its mutability).
 
-The first two move into the checks `pack-doctor --full` shares with registration when epic
+The first two move into the checks `pack-doctor validate --full` shares with registration when epic
 [#636](https://github.com/spec-kitty/spec-kitty-charter/issues/636) lands them.

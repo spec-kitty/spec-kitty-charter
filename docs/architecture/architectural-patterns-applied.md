@@ -2,7 +2,7 @@
 title: Architectural patterns applied
 description: How the charter service applies hexagonal, onion and screaming architecture - the layout, the pattern role of each concern, and a walk through Pack, Tactic and its steps.
 doc_status: active
-updated: 2026-11-22T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -317,11 +317,12 @@ Reference: Cockburn, [*Hexagonal architecture*](https://alistair.cockburn.us/hex
 |---|---|---|
 | Compose (`CLOSURE`) | the roots; the check follows `DEPENDS_ON` and `PARENT_PACK` | per pack: the descriptor checks; at the end: duplicates, names, ranges, sibling contests, cycles, presets |
 | Relations | the composed closure; the check follows `OVERRIDES`, `ENHANCES` and `SPECIALIZES` | per edge: self override, not permitted, a locked step enhanced, a stray step edge, the edge-index refusals; at the end: conflicts, one cycle fault per strongly connected group |
-| Own closure | a single-root closure; predicate: the declaring pack or its profiles | fallback profile, role pins, profile enhancements (moved to `packs.domain.rules`); then the preset-item phase, built (`PresetItemRules`: case-only, `preset_item_not_held`, `preset_item_undeclared`; ADR-0083) |
+| Own closure | a single-root closure; predicate: the declaring pack or its profiles | fallback profile, role pins, profile enhancements (moved to `packs.domain.rules`); then the preset-item phase, built (`PresetItemRules`: `preset_item_not_held`, `preset_item_undeclared`; ADR-0083) |
+| Case-only answer | the composed closure of each root; every member's mentions against every member's holdings | a preset item or a policy lock that names a held artifact only by letter case, built (`CaseOnlyRules`, one body: registration's phase 6 and pack-doctor's `CLOSURE`; R-y, R-z, ADR-0083 decision 20) |
 | Impact | `closuresHolding(written)` | per closure, in phase order: compose (gate), relations including the edge-index rules (gate), own closure; then the application's notices and `requireComposable` |
 | Mutability | `ancestorsOf(pack)`; predicate: the written artifacts | the policy level; one fault per refused write |
 | Removal dependents | the removed pack; the check follows reverse edges, plus `REFERENCES` into it | `pack_has_dependents`, judged first |
-| pack-doctor `validate` | a determined selection (the CLI's entries) | default: `CLOSURE` with the preset contests and the preset items; `--full` adds `REFERENCES`, per own closure: the substep delegations, the references and the step enhancements' targets (built, ADR-0083) |
+| pack-doctor `validate` | a determined selection (the CLI's entries) | default: `CLOSURE`, in order the composition faults, the preset contests, the preset items and the case-only answer; `--full` adds `REFERENCES` when no own closure fails to compose (R-aa), per own closure: the substep delegations, the references and the step enhancements' targets, one body with registration's (`PackRulesets.references`, R-ab; built, ADR-0083) |
 | Active-set doctor (planned) | the active set | all of the above, collect-all, every severity |
 
 ### A registration, step by step (proposed)

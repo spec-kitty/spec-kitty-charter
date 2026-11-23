@@ -2,7 +2,7 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-22T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full)
 decision_date: '2026-11-13'
 type: ADR
@@ -57,7 +57,7 @@ needs an outcome": a held file of a schema the round trip does not model still f
 
 **Amendment 2026-11-22** ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):
 the CLI is renamed pack-doctor, with `validate` and `remediate`; decision 6 gains what `validate --full` composes;
-decision 7's `CLOSURE` gains the preset items; see the amendment below the landing note.
+decision 7's `CLOSURE` gains the preset items and the case-only answer; see the amendment below the landing note.
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
@@ -342,7 +342,7 @@ decision; this note records what was built and the calls made on the way.
 ### Amendment 2026-11-22 (operator, ADR-0083): pack-doctor, the preset items and `--full`
 
 Mission `pack-doctor-coverage-01M7YMQK` (#629, #630, #632, #614) changed decisions 6, 7 and 9 on the operator's rulings
-R-a to R-w, which [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)
+R-a to R-ad, which [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)
 records verbatim. This amendment governs those decisions, and the landing note above, where they differ. Each changed
 decision carries a note where it stands.
 
@@ -353,17 +353,23 @@ decision carries a note where it stands.
   (`PackCompositionResolver.delegationFaultsOf` and `referenceFaultsOf`, `EnhancementCompose.targetFaultsOf`), collects
   every fault, and answers the code registration answers: an unresolved delegation is `validation_failed` with the
   violation `substep_delegation_unresolved`, the others `pack_reference_unqualified`, `pack_reference_pack_missing`
-  or `pack_reference_artifact_missing`. A later check runs only when the earlier ones pass, and `REFERENCES` runs only
-  when `CLOSURE` ran and found no fault. No walk is written for it (ADR-0082). The `specializes_from` cycle, the
+  or `pack_reference_artifact_missing`. A later check runs only when the earlier ones pass: that order and that stop
+  are one body, `PackRulesets.references`, which registration's composing judge calls too (R-ab). `REFERENCES` runs
+  when `CLOSURE` ran and found no composition fault, an own closure that does not compose (R-aa); a contest, a
+  preset-item fault or a case-only answer is reported beside it. No walk is written for it (ADR-0082). The `specializes_from` cycle, the
   relation checks, the edge-index refusals and the own-closure walk stay with the service until #636 slices 2 to 4 and
   7 land them in the domain factory.
-- **Decision 7: `CLOSURE`'s preset phase.** After the preset contests, the phase judges each preset item of each pack
-  against the pack's own closure (`PresetItemRules`, rulings R-a and R-k to R-m), once per item: an item that names a
-  held artifact only by letter case keeps the existing case-only answer (`pack_reference_artifact_missing`, with no
-  violation of its own); a `must_have` item no closure pack holds as a file is `preset_item_not_held`; an item no
-  closure pack declares as its kind is `preset_item_undeclared`. `PackRulesets.closure(...)` and `closureFaults(...)`
-  take each pack's presets, which replace `presetIdsOf` outright. Registration and every write run the same rule from
-  the factory, so `CLOSURE` still needs only every pack's contents, never the closure walk.
+- **Decision 7: `CLOSURE`'s steps.** `CLOSURE` runs, in order: the composition faults, the preset contests, the preset
+  items, then the case-only answer. The preset-item step judges each preset item of each pack against the pack's own
+  closure (`PresetItemRules`, rulings R-a and R-k to R-m), once per item: a `must_have` item no closure pack holds as a
+  file is `preset_item_not_held`; an item no closure pack declares as its kind is `preset_item_undeclared`; an item that
+  names a held artifact only by letter case gets no fault here. The case-only step (`CaseOnlyRules`, rulings R-y and
+  R-z) judges every preset item and every policy lock (a URN key of the pack's mutability policy file) as
+  registration's phase 6 does, over the composed closure rooted at each pack of the set: a mention that names a held
+  artifact only by letter case is `pack_reference_artifact_missing`, naming the mentioning pack then the holder, with
+  no violation of its own. `PackRulesets.closure(...)` and `closureFaults(...)` take each pack's presets, which replace
+  `presetIdsOf` outright. Registration and every write run the same rules from the factory, so `CLOSURE` still needs
+  only every pack's contents, never the closure walk.
 - **Decision 9: pack-doctor.** `service/pack-check` is renamed `service/pack-doctor` outright, with no alias (R-c,
   R-f): the jar `pack-doctor-<version>.jar` and its checksum, the main class `PackDoctorMain`, the package
   `ai.speckitty.charter.packdoctor` and the report schema `PackDoctorReport`. It takes a command word (R-e):
@@ -372,9 +378,9 @@ decision carries a note where it stands.
     contract's problem JSON as before, with the keys `tool`, `inputs` and `summary` added; `--report` writes the same
     tree to a file, as YAML or as XML in our own element-per-key shape (R-n). The JSON Schema is the only normative
     schema of all three.
-  - `pack-doctor remediate <dir>...` (R-j): it refuses a pack with a fault it does not repair, writing nothing; it
-    rewrites each modelled file in the round trip's canonical form and derives and stamps the manifest, through the
-    storage edge's `PackRemediation`; then it validates the set with `--round-trip`.
+  - `pack-doctor remediate <dir>[:<level>][=<id>]...` (R-j): it refuses a pack with a fault it does not repair,
+    writing nothing; it rewrites each modelled file in the round trip's canonical form and derives and stamps the
+    manifest, through the storage edge's `PackRemediation`; then it validates the set with `--round-trip`.
   - A command line with no command word is a usage fault. The exit codes are unchanged.
 - **The manifest gate** (ruling R-b) now refuses a stale hash with `manifest_stale` in validate mode as in
   registration, and `--round-trip` no longer reports the same cause as `round_trip_red`
@@ -517,7 +523,8 @@ has not ruled a new title, so both stand as history; this amendment names the to
 
    *Amended 2026-11-22 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):
    the preset phase also judges each preset item against its pack's own closure (`preset_item_not_held`,
-   `preset_item_undeclared`), after the case-only check. See the amendment under Status.*
+   `preset_item_undeclared`), and then the case-only answer over each root's composed closure, as registration's
+   phase 6 does (R-y, R-z). See the amendment under Status.*
 8. **The round trip moves into main code** *(amended 2026-11-15, operator ruling 2: the flow in `packs`, the verdict in
    `pack-validation`; see the amendment above)*.
    - The whole-pack round trip (ADR-0036) moves from the test source set into main code: the production flow into
