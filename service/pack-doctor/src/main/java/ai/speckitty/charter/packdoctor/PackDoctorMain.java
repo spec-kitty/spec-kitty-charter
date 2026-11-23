@@ -20,14 +20,18 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -50,9 +54,14 @@ import tools.jackson.databind.JsonNode;
  * output. The report is built whole before it is written, so no partial report reaches standard output.
  *
  * <p>With {@code --report <file>} (FR-008 of mission pack-doctor-coverage-01M7YMQK), the same report is written to that
- * file too, as YAML or XML, before anything reaches standard output: a file that cannot be written, or a report the
- * format cannot carry, exits {@code 2} with nothing on standard output. Writing it never changes the exit code of a run,
- * and standard output is the same with it as without.
+ * file too, as YAML or XML (a string XML 1.0 cannot carry escaped, ruling R-ac). It is written in a hidden file beside
+ * the file ({@code .<name>.<uuid>.tmp}) before anything reaches standard output, so a file that cannot be written
+ * exits {@code 2} with nothing on standard output; once standard output has taken the report, it replaces the file in
+ * one rename, so a reader never sees half a report. When standard output cannot be written, the run exits {@code 2}
+ * and the file is left as it was, so it never names an exit code the run did not exit with; only a rename that fails
+ * after standard output took the report exits {@code 2} with the report on standard output. A {@code --report} that is
+ * a link is followed and the file it names replaced. Writing it never changes the exit code of a run, and standard
+ * output is the same with it as without.
  *
  * <p>{@code remediate} plugs the storage edge's {@link PackRemediation} into {@link Remediate}, which prints each pack's
  * outcome on standard output ({@code rewritten}, {@code unchanged}, or {@code refused} and its faults), then runs the
@@ -303,14 +312,23 @@ public final class PackDoctorMain {
             failure.printStackTrace(err);
             return FAILED;
         }
-        if (file.isPresent() && !written(parsed.report().orElseThrow(), file.get(), err)) {
-            return FAILED;
+        Optional<StagedReport> staged = Optional.empty();
+        if (file.isPresent()) {
+            staged = staged(parsed.report().orElseThrow(), file.get(), err);
+            if (staged.isEmpty()) {
+                return FAILED;
+            }
         }
         warnings.forEach(err::println);
         out.print(report);
         int written = written(out, err);
         if (written != VALID) {
+            // The file would name an exit code this run does not exit with: it is left as it was (squad B8).
+            staged.ifPresent(PackDoctorMain::discard);
             return written;
+        }
+        if (staged.isPresent() && !committed(staged.get(), err)) {
+            return FAILED;
         }
         return problems.isEmpty() ? VALID : PROBLEMS;
     }
@@ -336,15 +354,64 @@ public final class PackDoctorMain {
         }
     }
 
-    /** Writes the report file, replacing any file there; false, said on {@code err}, when it cannot be written. */
-    private static boolean written(ReportFile target, String text, PrintStream err) {
+    /**
+     * The report file written in full beside the file it replaces, not yet in its place.
+     *
+     * @param given the {@code --report} path, as the user gave it
+     * @param staged the hidden file that holds the report
+     * @param destination the file it replaces: the given path, or the file a link there names
+     */
+    private record StagedReport(Path given, Path staged, Path destination) {}
+
+    /** The report's text in a hidden file beside its destination; empty, said on {@code err}, when it cannot be. */
+    private static Optional<StagedReport> staged(ReportFile target, String text, PrintStream err) {
+        Path given = target.path();
+        Path staged = null;
         try {
-            Files.writeString(target.path(), text, StandardCharsets.UTF_8);
+            Path destination = Files.isSymbolicLink(given) ? given.toRealPath() : given;
+            Path name = destination.getFileName();
+            if (name == null || Files.isDirectory(destination)) {
+                throw new IOException(destination + " is a directory, not a file");
+            }
+            staged = destination.resolveSibling("." + name + "." + UUID.randomUUID() + ".tmp");
+            Files.writeString(staged, text, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
+            return Optional.of(new StagedReport(given, staged, destination));
         } catch (IOException failure) {
-            err.println("pack-doctor: cannot write the report " + target.path() + ": " + failure);
+            err.println("pack-doctor: cannot write the report " + given + ": " + failure);
+            if (staged != null) {
+                discard(new StagedReport(given, staged, staged));
+            }
+            return Optional.empty();
+        }
+    }
+
+    /** The staged report moved into its place in one rename; false, said on {@code err}, when it cannot be. */
+    private static boolean committed(StagedReport report, PrintStream err) {
+        try {
+            try {
+                Files.move(
+                        report.staged(),
+                        report.destination(),
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException notAtomic) {
+                Files.move(report.staged(), report.destination(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            return true;
+        } catch (IOException failure) {
+            err.println("pack-doctor: cannot write the report " + report.given() + ": " + failure);
+            discard(report);
             return false;
         }
-        return true;
+    }
+
+    /** Deletes a staged report; one that cannot be deleted is a hidden file the next run does not read. */
+    private static void discard(StagedReport report) {
+        try {
+            Files.deleteIfExists(report.staged());
+        } catch (IOException ignored) {
+            // Left beside the report, hidden; it never changes what the run answered.
+        }
     }
 
     /** The verdict of the set; with the round trip, its run directory is gone when this returns. */

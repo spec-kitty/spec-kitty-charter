@@ -39,10 +39,11 @@ import java.util.stream.Collectors;
  * exist), two packs with one directory (by real path), one inside another or one id, and an entry of the config
  * root's {@code packs/} that is a link resolving to no directory (to nothing, or to a file), {@code --report} or
  * {@code --format} given twice, {@code --format} without {@code --report}, a format that is neither {@code yaml} nor
- * {@code xml}, and a {@code remediate} pack that is or holds the working directory. A fault of a {@code remediate}
- * value names {@code remediate}, which takes its values bare, where a {@code validate} one names {@code --pack}. Whether the report file can be written is learnt by writing it. A value that starts with
- * {@code --} is a missing value, unless it follows {@code --}, which ends the options. It judges the command line and
- * the directories it names, never a pack's content: that is {@code pack-validation}'s.
+ * {@code xml}, a {@code --report} file inside a pack the run checks (by real path), and a {@code remediate} pack that is
+ * or holds the working directory. A fault of a {@code remediate} value names {@code remediate}, which takes its values
+ * bare, where a {@code validate} one names {@code --pack}. Whether the report file can be written is learnt by writing
+ * it. A value that starts with {@code --} is a missing value, unless it follows {@code --}, which ends the options. It
+ * judges the command line and the directories it names, never a pack's content: that is {@code pack-validation}'s.
  */
 final class Arguments {
 
@@ -610,6 +611,41 @@ final class Arguments {
             }
             entries.add(new PackSetEntry(root));
         }
-        return new Parsed(entries, asked.roundTrip, asked.full, asked.inputs(), asked.reportFile());
+        Optional<ReportFile> report = asked.reportFile();
+        if (report.isPresent()) {
+            Optional<UsageFault> inside = reportInsideAPack(report.get().path(), byRealPath);
+            if (inside.isPresent()) {
+                return inside.get();
+            }
+        }
+        return new Parsed(entries, asked.roundTrip, asked.full, asked.inputs(), report);
+    }
+
+    /**
+     * The report file refused when it lies inside a pack the run checks, by real path (squad B7): writing it would change
+     * the pack. A path whose directory does not exist is left for the write to refuse.
+     */
+    private static Optional<UsageFault> reportInsideAPack(Path report, Map<Path, String> packsByRealPath) {
+        Path real;
+        try {
+            Path parent = report.toAbsolutePath().getParent();
+            Path name = report.getFileName();
+            if (Files.exists(report)) {
+                real = report.toRealPath();
+            } else if (parent != null && name != null && Files.isDirectory(parent)) {
+                real = parent.toRealPath().resolve(name);
+            } else {
+                return Optional.empty();
+            }
+        } catch (IOException failure) {
+            return Optional.empty(); // the write says why the file cannot be written
+        }
+        for (Map.Entry<Path, String> pack : packsByRealPath.entrySet()) {
+            if (real.startsWith(pack.getKey())) {
+                return Optional.of(new UsageFault(REPORT + " " + report + " lies inside the pack " + pack.getValue()
+                        + "; write the report outside every pack it checks"));
+            }
+        }
+        return Optional.empty();
     }
 }
