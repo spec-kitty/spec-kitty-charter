@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
+import ai.speckitty.charter.packs.fixtures.Fifos;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -284,6 +285,25 @@ class PackDoctorJarTest {
         assertThat(run.violationCodes()).containsExactly("pack_entry_linked");
         assertThat(run.out()).contains("tactics/linked.tactic.yaml").doesNotContain(marker);
         assertThat(run.err()).doesNotContain(marker);
+        onlyWarningsOnStandardError(run);
+    }
+
+    // Operator ruling R-ad, with the round trip: a FIFO in a pack (made at test time; skipped where the operating
+    // system cannot make one) is one problem naming it, exit 1; nothing opens it, so the run never blocks on it.
+    @Test
+    void aSpecialFileIsRefusedNamingItAndNeverOpened() throws Exception {
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+        assumeTrue(Fifos.make(builtIn.resolve("tactics/piped.tactic.yaml")), "the operating system cannot make a FIFO");
+
+        Run run = run("--pack", builtIn + ":built-in", "--round-trip");
+
+        assertThat(run.exit()).as(run.err()).isEqualTo(1);
+        assertThat(run.codes()).as(run.out()).containsExactly("validation_failed");
+        assertThat(run.violationCodes()).containsExactly("unreadable");
+        assertThat(run.violationPointers(0)).containsExactly("tactics/piped.tactic.yaml");
+        assertThat(run.out())
+                .contains("tactics/piped.tactic.yaml: is not a regular file or a directory; a pack holds only regular"
+                        + " files and directories");
         onlyWarningsOnStandardError(run);
     }
 

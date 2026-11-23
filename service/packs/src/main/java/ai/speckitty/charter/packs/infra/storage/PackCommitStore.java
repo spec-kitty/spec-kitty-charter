@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
+import ai.speckitty.charter.packs.infra.storage.rules.SpecialFileRules;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
@@ -993,7 +994,8 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /**
      * Copies the whole tree of {@code source} into the existing directory {@code target}. A link below the root is never
-     * copied through (D6): the copy is refused naming it, so a write never stores what a link led to.
+     * copied through (D6), and a special file is never opened (R-ad): the copy is refused naming it, so a write never
+     * stores what a link led to and never waits on a FIFO.
      */
     private static void copyTree(Path source, Path target) throws IOException {
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
@@ -1010,6 +1012,10 @@ public final class PackCommitStore implements WholePackWriteStore {
                         .replace(file.getFileSystem().getSeparator(), "/");
                 if (attrs.isSymbolicLink()) {
                     throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, LinkRules.detail(relative));
+                }
+                // Defence in depth (R-ad): the storage rules refuse a special file first; a copy would block on a FIFO.
+                if (attrs.isOther()) {
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, SpecialFileRules.detail(relative));
                 }
                 Files.copy(
                         file,

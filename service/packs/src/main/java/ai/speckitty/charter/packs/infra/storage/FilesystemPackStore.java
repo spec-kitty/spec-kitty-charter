@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
+import ai.speckitty.charter.packs.infra.storage.rules.SpecialFileRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -971,6 +972,10 @@ final class FilesystemPackStore {
         if (Files.isSymbolicLink(packYaml)) {
             // Never read through (D6): the refusal names the link, in the storage rules' words.
             throw descriptorRefusal("pack " + named + ": " + LinkRules.detail(PackFileSet.PACK_YAML));
+        }
+        if (PackFileSet.special(packYaml)) {
+            // Never opened (R-ad): the refusal names the special file, in the storage rules' words.
+            throw descriptorRefusal("pack " + named + ": " + SpecialFileRules.detail(PackFileSet.PACK_YAML));
         }
         if (!PackFileSet.unlinkedFile(directory, PackFileSet.PACK_YAML)) {
             throw descriptorRefusal("pack " + named + " has no pack.yaml");

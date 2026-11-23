@@ -28,6 +28,7 @@ import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
 import ai.speckitty.charter.packs.domain.rules.StepRules;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
+import ai.speckitty.charter.packs.infra.storage.rules.SpecialFileRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -173,7 +174,7 @@ record StoreRead(
         List<PackElementViolation> storeOnly = new ArrayList<>();
         List<ReferenceFacts> references = new ArrayList<>();
         Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add, references::add);
-        linked(walk).forEach(builder::violation);
+        refusedEntries(walk).forEach(builder::violation);
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir, strategy, trailing);
         List<String> policyFault = new ArrayList<>();
@@ -227,16 +228,22 @@ record StoreRead(
     }
 
     /**
-     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words, the path stated once
-     * by the violation's file (D6): the store half
+     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words, then one
+     * {@code unreadable} per special file, in {@code SpecialFileRules}' words (R-ad), the path stated once by the
+     * violation's file (D6): the store half
      * states it itself, as it states {@code duplicate_step_id}, so the composing read of a configured pack, which judges
-     * nothing else, refuses a pack holding a link. It is recorded on the aggregate, not among the store-only faults, so
-     * a registration and validate mode state it once, through {@code LinkRules}.
+     * nothing else, refuses a pack holding a link or a special file. It is recorded on the aggregate, not among the
+     * store-only faults, so a registration and validate mode state it once, through the storage rules.
      */
-    static List<PackElementViolation> linked(PackFileSet.Walk walk) {
-        return walk.links().stream()
+    static List<PackElementViolation> refusedEntries(PackFileSet.Walk walk) {
+        List<PackElementViolation> entries = new ArrayList<>();
+        walk.links().stream()
                 .map(link -> new PackElementViolation(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.LINKED))
-                .toList();
+                .forEach(entries::add);
+        walk.special().stream()
+                .map(file -> new PackElementViolation(file, StorageCodes.UNREADABLE, SpecialFileRules.SPECIAL))
+                .forEach(entries::add);
+        return List.copyOf(entries);
     }
 
     /** Each held artifact with the file it is stored in, in the aggregate's order. */

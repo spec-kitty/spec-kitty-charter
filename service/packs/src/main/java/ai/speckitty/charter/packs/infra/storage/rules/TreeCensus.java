@@ -17,8 +17,9 @@ import java.util.Optional;
  *     {@code policy.yaml} the descriptor does not name (open case 9). A retired file is never one: it is a read fault
  * @param manifest the {@code pack-manifest.yaml} facts
  * @param reservedShard the registered relationships' shard, as a fact (C-4)
- * @param entries every entry of the walk, each regular file that is not itself a link and each link, path-sorted, with
- *     how it stands: what the whole-pack gate accounts for, a pack whose descriptor cannot be read included
+ * @param entries every entry of the walk, each regular file that is not itself a link, each link and each special
+ *     file, path-sorted, with how it stands: what the whole-pack gate accounts for, a pack whose descriptor cannot be
+ *     read included
  * @param companions every companion file a readable artifact names inside the pack, whether or not the file is there,
  *     path-sorted, each once (its first owner): what the gate pairs a companion with
  */
@@ -62,6 +63,8 @@ public record TreeCensus(
     public enum Standing {
         /** A symbolic link, never followed. */
         LINK,
+        /** A special file: neither a regular file nor a directory (a FIFO, a socket, a device), never opened (R-ad). */
+        SPECIAL,
         /** A file a {@code files} rule maps to a schema. */
         MAPPED,
         /** A companion a readable artifact names: it stands with its owner, whatever rule maps it. */
@@ -81,7 +84,7 @@ public record TreeCensus(
      * @param standing how it stands
      * @param name the schema a rule maps it to; its owner's schema for a companion; the matching glob for a retired
      *     file; the exclusion class for an excluded one; the first path segment (the file name at the root) for a file
-     *     no rule covers; empty for a link
+     *     no rule covers; empty for a link or a special file
      * @param form the content form token ({@code file-kinds.yaml}'s {@code content_form}) a mapped file's rule
      *     declares, or a companion's declared form; empty for any other entry
      */

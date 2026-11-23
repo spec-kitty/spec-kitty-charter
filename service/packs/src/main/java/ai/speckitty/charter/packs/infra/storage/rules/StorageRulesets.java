@@ -35,7 +35,8 @@ public final class StorageRulesets {
             .must(NotHeldRules.RULES)
             .must(ReservedShardRules.RULES)
             .must(ManifestRules.RULES)
-            .must(LinkRules.RULES);
+            .must(LinkRules.RULES)
+            .must(SpecialFileRules.RULES);
 
     private static final ModularRuleset<TreeRead> REGISTRATION =
             HOLDING.must(PackRulesets.content().on(TreeRead::contents));
@@ -67,8 +68,9 @@ public final class StorageRulesets {
 
     /**
      * What the tree holds: the store's refusal of the pack as a whole, a {@code file_not_held} warning per file not held,
-     * the reserved shard no registration wrote, something at the manifest's path that is not a regular file, and a
-     * {@code pack_entry_linked} violation per link in the tree (D1).
+     * the reserved shard no registration wrote, something at the manifest's path that is not a regular file, a
+     * {@code pack_entry_linked} violation per link in the tree (D1), and an {@code unreadable} violation per special file
+     * (R-ad).
      * Collect-all, over the census and the read's assembly fact.
      *
      * @return the composition
@@ -117,7 +119,7 @@ public final class StorageRulesets {
      * fragment the store cannot read, at the step enhancement that names it (R2 row 19, as the contract places it),
      * and then nothing else is stated at the fragment. At a link's path only {@code pack_entry_linked} is stated: the
      * link is the cause of what else a read finds missing or irregular there (a {@code pack.yaml} or a manifest that is a
-     * link), and the specific code wins (D1, R2).
+     * link), and the specific code wins (D1, R2). So at a special file's path only its own refusal is stated (R-ad).
      *
      * @param read the one read
      * @return the verdict
@@ -178,7 +180,7 @@ public final class StorageRulesets {
                 .filter(fault -> trailing.contains(fault.location().file()))
                 .forEach(joined::add);
         joined.addAll(orphans);
-        return new Rationale(atLinksOnlyTheLink(joined));
+        return new Rationale(atAnEntryOnlyTheEntry(joined));
     }
 
     /**
@@ -208,16 +210,21 @@ public final class StorageRulesets {
         return stated;
     }
 
-    /** The violations, less any other than {@code pack_entry_linked} at a path a {@code pack_entry_linked} names. */
-    private static List<Reason> atLinksOnlyTheLink(List<Reason> reasons) {
-        Set<String> links = new HashSet<>();
+    /**
+     * The violations, less any other than the entry's own at a path where a link ({@code pack_entry_linked}) or a special
+     * file ({@link SpecialFileRules}) stands: the entry is the cause of what else a read finds there.
+     */
+    private static List<Reason> atAnEntryOnlyTheEntry(List<Reason> reasons) {
+        Predicate<Reason> entry =
+                reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()) || SpecialFileRules.states(reason);
+        Set<String> entries = new HashSet<>();
         reasons.stream()
-                .filter(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()))
-                .forEach(reason -> links.add(reason.location().file()));
+                .filter(entry)
+                .forEach(reason -> entries.add(reason.location().file()));
         return reasons.stream()
-                .filter(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code())
+                .filter(reason -> entry.test(reason)
                         || !reason.isFailing(Severity.VIOLATION)
-                        || !links.contains(reason.location().file()))
+                        || !entries.contains(reason.location().file()))
                 .toList();
     }
 

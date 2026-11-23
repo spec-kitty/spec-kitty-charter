@@ -1,9 +1,11 @@
 package ai.speckitty.charter.packdoctor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.packs.domain.roundtrip.Reading;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.Fifos;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
@@ -28,6 +30,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -210,6 +213,33 @@ class RemediateTest {
     }
 
     /**
+     * Operator ruling R-ad: a special file in a pack (a FIFO, made at test time; skipped where the operating system
+     * cannot make one) is a fault the precondition refuses, as validate refuses it, naming the file: the run exits 1 and
+     * the pack is left as it was. Before R-ad the precondition passed over it and the copy failed, exit 2.
+     */
+    @Test
+    @Timeout(120)
+    void aSpecialFileIsRefusedByValidateAndByRemediateNamingIt() throws IOException {
+        Path packs = packs();
+        Path org = packs.resolve(ExamplePacks.ORG);
+        assumeTrue(Fifos.make(org.resolve("notes.fifo")), "the operating system cannot make a FIFO here");
+        SortedMap<String, String> before = treeHash(org);
+
+        Run validated = validate(packs);
+        Run remediated = remediate(packs);
+
+        for (Run run : List.of(validated, remediated)) {
+            assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+            assertThat(run.codes()).containsExactly("unreadable");
+            assertThat(run.out())
+                    .contains("notes.fifo: is not a regular file or a directory; a pack holds only regular files and"
+                            + " directories");
+        }
+        assertThat(remediated.out()).contains(org + ": refused\n").contains("  unreadable at notes.fifo");
+        assertThat(treeHash(org)).isEqualTo(before);
+    }
+
+    /**
      * A file no reader can walk, which the precondition refuses: an alias bomb past the parser's alias budget, and a
      * document nested far past the depth bound. Neither {@code validate --round-trip} nor {@code remediate} reaches an
      * unguarded parse of it: each is a problem ({@code 1}), never an internal error or a crash.
@@ -357,7 +387,9 @@ class RemediateTest {
             for (Path path : paths.toList()) {
                 tree.put(
                         root.relativize(path).toString().replace('\\', '/'),
-                        Files.isDirectory(path) ? "<directory>" : digest(Files.readAllBytes(path)));
+                        Files.isDirectory(path)
+                                ? "<directory>"
+                                : Files.isRegularFile(path) ? digest(Files.readAllBytes(path)) : "<special>");
             }
         }
         return tree;

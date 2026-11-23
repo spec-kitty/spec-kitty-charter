@@ -176,6 +176,51 @@ class StorageRulesetsTest {
         }
 
         @Test
+        @DisplayName(
+                "each special file the census lists is one unreadable at it, in the one wording; no other entry is")
+        void eachSpecialFileIsOneFault() {
+            TreeCensus special = new TreeCensus(
+                    List.of(),
+                    List.of(),
+                    TreeCensus.Manifest.ABSENT,
+                    TreeCensus.ReservedShard.ABSENT,
+                    List.of(
+                            new TreeCensus.Entry(
+                                    "directives/a.directive.yaml",
+                                    TreeCensus.Standing.MAPPED,
+                                    "directive",
+                                    Optional.of("yaml")),
+                            new TreeCensus.Entry("loop", TreeCensus.Standing.LINK, "", Optional.empty()),
+                            new TreeCensus.Entry("notes.fifo", TreeCensus.Standing.SPECIAL, "", Optional.empty()),
+                            new TreeCensus.Entry("pack.yaml", TreeCensus.Standing.SPECIAL, "", Optional.empty())),
+                    List.of());
+
+            List<Reason> reasons = SpecialFileRules.RULES.apply(read(contents(), special));
+
+            assertThat(reasons)
+                    .extracting(Reason::code, Reason::location, Reason::detail)
+                    .containsExactly(
+                            tuple(
+                                    StorageCodes.UNREADABLE,
+                                    Location.in("notes.fifo"),
+                                    "notes.fifo: is not a regular file or a directory; a pack holds only regular files"
+                                            + " and directories"),
+                            tuple(
+                                    StorageCodes.UNREADABLE,
+                                    Location.in("pack.yaml"),
+                                    "pack.yaml: is not a regular file or a directory; a pack holds only regular files"
+                                            + " and directories"));
+            assertThat(reasons).allMatch(SpecialFileRules::states);
+            assertThat(SpecialFileRules.states(fault(StorageCodes.UNREADABLE, "notes.fifo")))
+                    .as("another unreadable at the same path is not the special file's")
+                    .isFalse();
+            assertThat(SpecialFileRules.RULES.apply(read(
+                            contents(),
+                            census(List.of(), TreeCensus.Manifest.ABSENT, TreeCensus.ReservedShard.ABSENT))))
+                    .isEmpty();
+        }
+
+        @Test
         @DisplayName("something at the manifest's path that is not a regular file is one unreadable at the manifest")
         void aManifestThatIsNotARegularFileIsOneFault() {
             TreeCensus.Manifest directory = new TreeCensus.Manifest(true, false, Optional.empty(), Optional.empty());
@@ -322,7 +367,7 @@ class StorageRulesetsTest {
         }
 
         @Test
-        @DisplayName("holding() is the not-held, reserved-shard, manifest and link rules, in that order")
+        @DisplayName("holding() is the not-held, reserved-shard, manifest, link and special-file rules, in that order")
         void holdingIsTheStorageRules() {
             TreeRead read = read(
                     contents(),
@@ -331,16 +376,20 @@ class StorageRulesetsTest {
                             List.of(NotHeldFile.unmodelled("notes.txt")),
                             new TreeCensus.Manifest(true, false, Optional.empty(), Optional.empty()),
                             TreeCensus.ReservedShard.UNSTAMPED,
-                            List.of(new TreeCensus.Entry("loop", TreeCensus.Standing.LINK, "", Optional.empty())),
+                            List.of(
+                                    new TreeCensus.Entry("loop", TreeCensus.Standing.LINK, "", Optional.empty()),
+                                    new TreeCensus.Entry(
+                                            "notes.fifo", TreeCensus.Standing.SPECIAL, "", Optional.empty())),
                             List.of()));
 
             assertThat(StorageRulesets.holding().apply(read))
-                    .extracting(Reason::code)
+                    .extracting(Reason::code, reason -> reason.location().file())
                     .containsExactly(
-                            StorageCodes.FILE_NOT_HELD,
-                            StorageCodes.RESERVED_SHARD,
-                            StorageCodes.UNREADABLE,
-                            StorageCodes.PACK_ENTRY_LINKED);
+                            tuple(StorageCodes.FILE_NOT_HELD, "notes.txt"),
+                            tuple(StorageCodes.RESERVED_SHARD, "registered.graph.yaml"),
+                            tuple(StorageCodes.UNREADABLE, "pack-manifest.yaml"),
+                            tuple(StorageCodes.PACK_ENTRY_LINKED, "loop"),
+                            tuple(StorageCodes.UNREADABLE, "notes.fifo"));
         }
 
         @Test

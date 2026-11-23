@@ -422,8 +422,10 @@ x-refusal:
       and substep_delegation_unresolved and substep_delegation_unscoped, a substep's delegation candidate that is no
       artifact of its kind or that the step's action has no scope edge to (FR-005). Every fault of a refused
       registration answers one specific code (#554, R2): pack_unreadable at pack.yaml (a descriptor that is missing,
-      is not YAML or breaks its schema), unreadable (a file that cannot be read or does not parse, a manifest that is
-      not a regular file, a policy file mutability_policy names that cannot be read), artifact_schema_error (an
+      is not YAML or breaks its schema), unreadable (a file that cannot be read or does not parse, a YAML document of
+      more than 1 048 576 code points, a manifest that is not a regular file, a special file of the pack, one that is
+      neither a regular file nor a directory nor a link, such as a FIFO, never opened (ruling R-ad), a policy file
+      mutability_policy names that cannot be read), artifact_schema_error (an
       artifact or manifest that breaks its schema or a rule of its kind: a file stem, a value-object invariant, a
       reference the pack does not hold), retired (a file the file-kinds table retires), case_variant (a root file that
       differs only in letter case from a root rule's file, such as Pack.yaml beside pack.yaml, refused by name under
