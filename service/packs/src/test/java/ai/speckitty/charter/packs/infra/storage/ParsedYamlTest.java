@@ -110,7 +110,9 @@ class ParsedYamlTest {
 
     @Test
     void aTooDeepDocumentIsRefusedBeforeItIsComposedAndTheStackIsNotCaught() {
-        ParsedYaml parsed = ParsedYaml.parse("[".repeat(1_000_000) + "]".repeat(1_000_000), "x.yaml");
+        // Half a million levels: the deepest text within the code-point cap.
+        int depth = Yaml.MAX_CODE_POINTS / 2;
+        ParsedYaml parsed = ParsedYaml.parse("[".repeat(depth) + "]".repeat(depth), "x.yaml");
         assertThat(parsed.failure()).isNotNull();
         assertThat(parsed.failure().firstLine()).isEqualTo(TOO_DEEP);
     }
@@ -179,6 +181,50 @@ class ParsedYamlTest {
         assertThat(ParsedYaml.parse(within, "x.yaml").failure()).isNull();
         String over = "k: [" + "1, ".repeat(ParsedYaml.MAX_NODES - 2) + "1]\n";
         assertThat(ParsedYaml.parse(over, "x.yaml").failure()).isNotNull();
+    }
+
+    // ---- a document past the code-point cap ---------------------------------------------------------
+
+    @Test
+    void aDocumentPastTheCodePointCapIsTooLargeBeforeItIsScanned() {
+        // One scalar of the cap's length: the scanner's window grows once per chunk it reads, so a single long scalar
+        // costs the square of its length; a document past the cap is refused before the scanner sees it.
+        String over = "k: " + "x".repeat(Yaml.MAX_CODE_POINTS) + "\n";
+        ParsedYaml parsed = assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse(over, "x.yaml"));
+        assertThat(parsed.failure()).isNotNull();
+        assertThat(parsed.failure().firstLine()).isEqualTo(TOO_LARGE);
+    }
+
+    /** {@code k: v} padded with comment lines to exactly {@code codePoints} code points of {@code filler}. */
+    private static String paddedTo(int codePoints, String filler) {
+        StringBuilder text = new StringBuilder("k: v\n");
+        int line = 1_000;
+        while (text.codePointCount(0, text.length()) + line + 2 <= codePoints) {
+            text.append('#').append(filler.repeat(line)).append('\n');
+        }
+        int rest = codePoints - text.codePointCount(0, text.length()) - 2;
+        return text.append('#').append(filler.repeat(rest)).append('\n').toString();
+    }
+
+    @Test
+    void aDocumentOfExactlyTheCapIsStillRead() {
+        String within = paddedTo(Yaml.MAX_CODE_POINTS, "x");
+        assertThat(within.codePointCount(0, within.length())).isEqualTo(Yaml.MAX_CODE_POINTS);
+        assertThat(assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse(within, "x.yaml"))
+                        .failure())
+                .isNull();
+        assertThat(ParsedYaml.parse(within + "#", "x.yaml").failure().firstLine())
+                .isEqualTo(TOO_LARGE);
+    }
+
+    @Test
+    void theCapCountsCodePointsNotUtf16Units() {
+        // A supplementary character is one code point and two UTF-16 units.
+        String within = paddedTo(Yaml.MAX_CODE_POINTS, "\uD83D\uDE00");
+        assertThat(within.length()).isGreaterThan(Yaml.MAX_CODE_POINTS);
+        assertThat(assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse(within, "x.yaml"))
+                        .failure())
+                .isNull();
     }
 
     // ---- a scalar that is no string, number, boolean or null --------------------------------------

@@ -17,6 +17,7 @@ import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -77,6 +78,24 @@ class StorageRootLocationsTest {
         Files.writeString(packs.resolve("garbled/pack.yaml"), "pack_level: [unclosed\n");
         Files.createDirectories(packs.resolve("galaxy"));
         Files.writeString(packs.resolve("galaxy/pack.yaml"), "pack_level: galaxy\n");
+
+        assertThat(new StorageRootLocations(packs).all())
+                .extracting(PackLocation::level)
+                .containsOnly(PackLevel.ORG);
+    }
+
+    @Test
+    void aDeclarationNoReaderCanWalkIsAnOrgPackNeverACrash() throws IOException {
+        Files.createDirectories(packs.resolve("deep"));
+        Files.writeString(
+                packs.resolve("deep/pack.yaml"), "pack_level: " + "[".repeat(100_000) + "]".repeat(100_000) + "\n");
+        Files.createDirectories(packs.resolve("bomb"));
+        StringBuilder bomb = new StringBuilder("pack_level: built-in\na0: &a0 [x, x, x, x, x, x, x, x, x]\n");
+        for (int level = 1; level <= 6; level++) {
+            bomb.append("a%d: &a%d [%s]\n"
+                    .formatted(level, level, String.join(", ", Collections.nCopies(9, "*a" + (level - 1)))));
+        }
+        Files.writeString(packs.resolve("bomb/pack.yaml"), bomb.toString());
 
         assertThat(new StorageRootLocations(packs).all())
                 .extracting(PackLocation::level)

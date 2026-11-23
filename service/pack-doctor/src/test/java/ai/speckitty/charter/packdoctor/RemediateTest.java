@@ -17,14 +17,18 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 import tools.jackson.databind.JsonNode;
@@ -200,6 +204,42 @@ class RemediateTest {
                 .contains("  drg_schema_error at drg/fragment.yaml")
                 .contains("ghost");
         assertThat(run.codes()).contains("drg_schema_error");
+        assertThat(treeHash(org)).isEqualTo(before);
+    }
+
+    /**
+     * A file no reader can walk, which the precondition refuses: an alias bomb past the parser's alias budget, and a
+     * document nested far past the depth bound. Neither {@code validate --round-trip} nor {@code remediate} reaches an
+     * unguarded parse of it: each is a problem ({@code 1}), never an internal error or a crash.
+     */
+    static Stream<Named<String>> unwalkable() {
+        StringBuilder bomb = new StringBuilder("a0: &a0 [x, x, x, x, x, x, x, x, x]\n");
+        for (int level = 1; level <= 6; level++) {
+            bomb.append("a%d: &a%d [%s]\n"
+                    .formatted(level, level, String.join(", ", Collections.nCopies(9, "*a" + (level - 1)))));
+        }
+        return Stream.of(
+                Named.of("an alias bomb", bomb.toString()),
+                Named.of("nesting 100 000 deep", "a: " + "[".repeat(100_000) + "]".repeat(100_000) + "\n"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("unwalkable")
+    void aFileNoReaderCanWalkIsAProblemForValidateWithTheRoundTripAndForRemediate(String text) throws IOException {
+        Path packs = packs();
+        Path org = packs.resolve(ExamplePacks.ORG);
+        Files.writeString(org.resolve(EDITED), text, StandardCharsets.UTF_8);
+        SortedMap<String, String> before = treeHash(org);
+
+        Run validated = validate(packs);
+        Run remediated = remediate(packs);
+
+        for (Run run : List.of(validated, remediated)) {
+            assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+            assertThat(run.err()).doesNotContain("internal error");
+            assertThat(run.codes()).contains("unreadable");
+        }
+        assertThat(remediated.out()).contains(org + ": refused\n").contains("  unreadable at " + EDITED);
         assertThat(treeHash(org)).isEqualTo(before);
     }
 
