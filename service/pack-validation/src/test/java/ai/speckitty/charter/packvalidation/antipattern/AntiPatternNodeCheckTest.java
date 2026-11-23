@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -100,6 +101,30 @@ class AntiPatternNodeCheckTest {
                         finding -> finding.location().pointer(),
                         Reason::detail)
                 .containsExactly(tuple("drg_schema_error", FRAGMENT, "/nodes/0", detail(FRAGMENT)));
+    }
+
+    @Test
+    void theNodeBesideItsFileWhoseIdIsNotItsStemGetsOnlyTheFilesFault() throws IOException {
+        // The file is there, refused for its own fault: the node has its file, so the file's fault is the one cause.
+        assertThat(validateWith(SHARD, NODE_SHARD, FILE, ANTI_PATTERN.replace("id: x", "id: other")))
+                .filteredOn(finding -> finding.isFailing(Severity.VIOLATION))
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file(),
+                        Reason::detail)
+                .containsExactly(tuple(
+                        "artifact_schema_error", FILE, FILE + ": anti_pattern id 'other' is not its file stem 'x'"));
+    }
+
+    @Test
+    void theNodeBesideItsFileMissingSeverityGetsOnlyTheFilesFault() throws IOException {
+        assertThat(validateWith(FRAGMENT, NODE_FRAGMENT, FILE, ANTI_PATTERN.replace("severity: smell\n", "")))
+                .filteredOn(finding -> finding.isFailing(Severity.VIOLATION))
+                .extracting(
+                        finding -> finding.code().value(),
+                        finding -> finding.location().file(),
+                        Reason::detail)
+                .containsExactly(tuple("artifact_schema_error", FILE, FILE + ": missing 'severity'"));
     }
 
     @Test

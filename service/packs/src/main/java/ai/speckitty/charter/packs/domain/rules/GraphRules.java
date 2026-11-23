@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -70,8 +71,13 @@ public final class GraphRules {
      * ({@code /nodes/<n>}), in document order, the shards first and then the fragment, as a node of a kind the pack may
      * not declare is ({@link GraphBinding}). Only the pack's own nodes are judged: another pack's anti-pattern is a
      * qualified edge endpoint, which the reference check judges. A node of any other kind is not judged here.
+     *
+     * <p>Over facts alone, a file the read refused holds no fact, so its node reads as having none; the storage edge,
+     * which knows the refused files, states the node's fault only when its file is not one of them
+     * ({@link #antiPatternsWithoutFile(PackContents, Predicate)}), so the file's own fault is the one cause.
      */
-    public static final Rule<PackContents> ANTI_PATTERN_WITHOUT_FILE = GraphRules::antiPatternsWithoutFile;
+    public static final Rule<PackContents> ANTI_PATTERN_WITHOUT_FILE =
+            contents -> antiPatternsWithoutFile(contents, file -> false);
 
     /** Every graph rule, in this class's order. */
     public static final ModularRuleset<PackContents> RULES = ModularRuleset.<PackContents>emptyRules()
@@ -182,7 +188,15 @@ public final class GraphRules {
         return findings;
     }
 
-    static List<Reason> antiPatternsWithoutFile(PackContents contents) {
+    /**
+     * {@link #ANTI_PATTERN_WITHOUT_FILE}, less each node whose file is there but was refused for a fault of its own
+     * (A9): the node has its file, and the file's fault is the one cause, so the node is not stated as having none.
+     *
+     * @param contents the facts of the one read
+     * @param refused whether the read refused the file at a pack-relative path, for a violation of its own
+     * @return one {@link PackCodes#DRG_SCHEMA_ERROR} per {@code anti_pattern} node with no file, in document order
+     */
+    public static List<Reason> antiPatternsWithoutFile(PackContents contents, Predicate<String> refused) {
         Set<String> held = contents.artifacts().stream()
                 .map(artifact -> artifact.kind() + ":" + artifact.id())
                 .collect(Collectors.toSet());
@@ -190,20 +204,24 @@ public final class GraphRules {
         for (RawGraph raw : read(contents)) {
             for (int i = 0; i < raw.nodes().size(); i++) {
                 Optional<Urn> urn = antiPattern(raw.shape(), raw.nodes().get(i));
-                if (urn.isPresent() && !held.contains(urn.get().toString())) {
+                if (urn.isPresent() && !held.contains(urn.get().toString()) && !refused.test(fileOf(urn.get()))) {
                     findings.add(Findings.at(
                             PackCodes.DRG_SCHEMA_ERROR,
                             raw.file(),
                             List.of(GraphBinding.NODES, Integer.toString(i)),
                             Paths.origin(contents.root().name(), raw.file()) + ": " + urn.get()
                                     + " is declared with no file; an anti-pattern is held by "
-                                    + NodeKind.ANTI_PATTERN.plural() + "/"
-                                    + urn.get().id()
-                                    + ".anti-pattern.yaml in the same pack"));
+                                    + fileOf(urn.get())
+                                    + " in the same pack"));
                 }
             }
         }
         return findings;
+    }
+
+    /** The one file that holds an anti-pattern: {@code anti_patterns/<id>.anti-pattern.yaml}. */
+    private static String fileOf(Urn antiPattern) {
+        return NodeKind.ANTI_PATTERN.plural() + "/" + antiPattern.id() + ".anti-pattern.yaml";
     }
 
     /** The URN of an {@code anti_pattern} node as written: a shard URN, or a fragment id of the plural kind. */

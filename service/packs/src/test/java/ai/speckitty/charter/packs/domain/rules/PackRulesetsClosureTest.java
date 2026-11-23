@@ -83,9 +83,10 @@ class PackRulesetsClosureTest {
     }
 
     @Test
-    @DisplayName("control: closure() alone does not judge the preset contest; the new composition adds the phase")
+    @DisplayName(
+            "control: the composition faults alone do not judge the preset contest; the composition adds the phase")
     void closureAloneDoesNotSeeThePresetContest() {
-        assertThat(PackRulesets.closure().apply(List.of(LEFT, RIGHT))).isEmpty();
+        assertThat(CompositionRules.closure().apply(List.of(LEFT, RIGHT))).isEmpty();
         assertThat(PackRulesets.closure(EACH_HOLDS_TEAM).apply(List.of(LEFT, RIGHT)))
                 .isNotEmpty();
     }

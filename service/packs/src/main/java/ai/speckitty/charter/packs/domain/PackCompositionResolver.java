@@ -1160,7 +1160,8 @@ public final class PackCompositionResolver {
      * such a mention would silently govern nothing, and a deny entry the author meant to be refused would pass. A
      * mention of an id no pack of the closure holds is no mistake this check can tell from a pack not yet configured:
      * it is left alone, and a lock on it changes no write. The refusal is {@link Failure#REFERENCE_ARTIFACT_MISSING}:
-     * the nearest existing code, a pack's reference to an artifact that the closure does not hold as written.
+     * the nearest existing code, a pack's reference to an artifact that the closure does not hold as written. The
+     * mentions are {@code CaseOnlyRules.mentionsOf}, the one body registration and pack-doctor judge them by (R-z).
      *
      * @param ordered the packs of one compose
      * @param mentionsOf the URNs, as written, that a pack's presets and policy file name

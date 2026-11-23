@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver.Refusal;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
@@ -35,8 +34,9 @@ import java.util.stream.Collectors;
  * own. Over it, each item of each preset the pack holds is judged once:
  *
  * <ol>
- *   <li>an item that names an artifact of the closure only by case gets the existing case-only answer
- *       ({@link PackCompositionResolver#caseOnlyMatches}, {@code pack_reference_artifact_missing}), and nothing else;
+ *   <li>an item that names an artifact of the closure only by case gets no fault here: its answer is the case-only one
+ *       ({@code pack_reference_artifact_missing}), which {@link CaseOnlyRules} gives over every closure the pack is a
+ *       member of (ruling R-z), and nothing else;
  *   <li>else a {@code must_have} item that no closure pack holds as an artifact file
  *       ({@link PackCompositionFacts#held()}) answers {@code preset_item_not_held};
  *   <li>else an item that no closure pack declares as its kind, by a graph node or a file
@@ -149,7 +149,10 @@ public final class PresetItemRules {
         });
     }
 
-    /** The one fault of an item, the case-only answer first; empty when the closure has it as it must. */
+    /**
+     * The one fault of an item; empty when the closure has it as it must, or names it only by case, whose answer is
+     * {@link CaseOnlyRules}'.
+     */
     private static Optional<ClosureFault> itemFault(
             PackUnderResolution pack,
             Preset preset,
@@ -159,19 +162,13 @@ public final class PresetItemRules {
             String pointer,
             Closure closure) {
         String mention = urn.toString();
-        List<Refusal> caseOnly = PackCompositionResolver.caseOnlyMatches(
-                closure.packs(),
-                member -> member.configured().equals(pack.configured()) ? List.of(mention) : List.of());
-        if (!caseOnly.isEmpty()) {
-            // The existing case-only answer stands (spec US1 scenario 3): registration's phase 6 answer, which names
-            // the packs and carries no violation of its own, under this phase's rule.
-            Refusal refusal = caseOnly.getFirst();
-            return Optional.of(ClosureFault.of(
-                    PackOrigins.of(pack.configured().id(), urn),
-                    RULE,
-                    refusal.failure().code(),
-                    refusal.detail(),
-                    refusal.packs()));
+        boolean caseOnly = !PackCompositionResolver.caseOnlyMatches(
+                        closure.packs(),
+                        member -> member.configured().equals(pack.configured()) ? List.of(mention) : List.of())
+                .isEmpty();
+        if (caseOnly) {
+            // The existing case-only answer stands alone (spec US1 scenario 3): the case-only phase gives it.
+            return Optional.empty();
         }
         String subject = "the preset `" + preset.id() + "` of pack `"
                 + pack.configured().id().value() + "`";

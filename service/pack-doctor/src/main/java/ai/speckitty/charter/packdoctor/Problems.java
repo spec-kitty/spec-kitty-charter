@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packdoctor;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
@@ -12,6 +13,7 @@ import ai.speckitty.charter.packvalidation.set.PackSetVerdict;
 import ai.speckitty.charter.packvalidation.set.PackSetVerdict.PackResult;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -221,12 +223,21 @@ final class Problems {
     }
 
     /**
-     * A composition fault's problem: its code, its detail, the packs it names and its own violations (a preset item's
-     * place in its preset file), as the registration refuses the fault alone.
+     * A composition fault's problem: its code, its detail, the packs it names, each once, and its own violations (a
+     * preset item's place in its preset file), as the registration refuses the fault alone. The registration names each
+     * pack of a closure fault once, so a fault whose packs repeat one (a pack that both mentions an artifact by case and
+     * holds it) names it once here too (A4).
      */
     private static Refused ofFault(ClosureFault fault) {
+        Map<PackIdentifier, RefusalPack> named = new LinkedHashMap<>();
+        fault.packs().forEach(pack -> named.putIfAbsent(pack.packId(), pack));
         return new Refused(
-                CharterRefusal.of(fault.code(), fault.detail(), fault.packs(), fault.violations(), fault.requiredBy()),
+                CharterRefusal.of(
+                        fault.code(),
+                        fault.detail(),
+                        List.copyOf(named.values()),
+                        fault.violations(),
+                        fault.requiredBy()),
                 Optional.empty());
     }
 

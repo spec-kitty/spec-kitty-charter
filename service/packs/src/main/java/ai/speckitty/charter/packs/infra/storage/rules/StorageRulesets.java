@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
+import ai.speckitty.charter.packs.domain.rules.GraphRules;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.domain.rules.ReferenceRules;
 import java.util.ArrayList;
@@ -147,6 +148,7 @@ public final class StorageRulesets {
         List<Reason> rules = new ArrayList<>(registration().apply(read));
         rules.removeAll(orphans);
         rules.removeAll(references);
+        rules.removeAll(nodesOfRefusedAntiPatternFiles(read));
         List<Reason> stated = new ArrayList<>(readFaults);
         stated.addAll(trailingFaults);
         stated.addAll(rules);
@@ -190,6 +192,20 @@ public final class StorageRulesets {
      */
     public static Rationale verdictWithoutTheManifestGate(TreeRead read) {
         return inRegistrationOrder(judged(read));
+    }
+
+    /**
+     * The {@code anti_pattern} nodes {@code content()} states as having no file whose file is there but the read refused
+     * for a fault of its own (A9): the file's fault is the one cause, so the node's is not stated beside it.
+     */
+    private static List<Reason> nodesOfRefusedAntiPatternFiles(TreeRead read) {
+        Set<String> refused = new HashSet<>();
+        read.readFaults().stream()
+                .filter(fault -> fault.isFailing(Severity.VIOLATION))
+                .forEach(fault -> refused.add(fault.location().file()));
+        List<Reason> stated = new ArrayList<>(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(read.contents()));
+        stated.removeAll(GraphRules.antiPatternsWithoutFile(read.contents(), refused::contains));
+        return stated;
     }
 
     /** The violations, less any other than {@code pack_entry_linked} at a path a {@code pack_entry_linked} names. */
