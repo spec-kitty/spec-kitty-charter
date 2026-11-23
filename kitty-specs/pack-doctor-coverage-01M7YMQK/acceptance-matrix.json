@@ -118,13 +118,13 @@
     },
     {
       "criterion_id": "FR-012",
-      "description": "FR-012: ADR-0083 records rulings R-a to R-s (R-r all of #154; R-s narrowed --full); amends ADR-0075 decisions 6/7/9, ADR-0042's 2026-11-12 amendment, rules A10 and C31, and the patterns page's scope table; records #535 and #52 item 3 as not the charter's to judge.",
+      "description": "FR-012: ADR-0083 records rulings R-a to R-w (R-r all of #154; R-s narrowed --full), and WP13 adds R-x (FR-001 ClosureVerdict clause deferred to #636 slice 7) and R-y (FR-016); it amends ADR-0075 decisions 6/7/9, ADR-0042's 2026-11-12 amendment, rules A10 and C31, and the patterns page's scope table; records #535 and #52 item 3 as not the charter's to judge.",
       "proof_type": "review",
-      "evidence": "lane-h: docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md:34 (R-a to R-w), :221-267 rulings verbatim incl. R-r :249, R-s :250; amends list :50-62; decision 17 :209 (#535, #52 item 3); ADR-0075 :342 amendment of decisions 6,7,9; ADR-0042 amendment status line; composition-and-activation-rules.md :80-83, :422, :1502 (A10 superseded for writes, C31); architectural-patterns-applied.md :318 scope table",
+      "evidence": "lane-l@33de257ea: docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md:34 (R-a to R-y), rulings table incl. R-r, R-s, R-x :263, R-y :264, decision 15 (R-x), decision 20 :220 (R-y); amends list :50-62; decision 17 (#535, #52 item 3); ADR-0075 :342 amendment of decisions 6/7/9; ADR-0042 status line amendment; composition-and-activation-rules.md :80-83, :422, :1502 (A10 superseded for writes, C31); architectural-patterns-applied.md :318 scope table",
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
-      "verified_at": "2026-11-22T13:44:30.056452+00:00",
-      "notes": "ADR records R-a..R-w, a superset of the required R-a..R-s (R-t..R-w were ruled after the spec was written); the spec text is stale, not the ADR. Recommend updating FR-012's wording to R-a..R-w (no operator ruling needed). A10 is handled as superseded for writes within C31's amendment rather than as a separate rule row."
+      "verified_at": "2026-11-23T08:35:40.287432+00:00",
+      "notes": "Re-checked on lane-l: status line says R-a to R-y; verbatim rows for R-x and R-y with their DM ids; decisions 15 and 20 cite them. Amendments and #535/#52 item 3 unchanged from lane-h check. A10 is handled as superseded for writes within the C31 amendment."
     },
     {
       "criterion_id": "FR-013",
