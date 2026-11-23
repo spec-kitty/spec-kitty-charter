@@ -73,7 +73,7 @@ class QualifierLoadTest {
                     assertThat(refusal.violations())
                             .as("the edge read lists the violation a registration lists (#617)")
                             .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                            .containsExactly(tuple(SHARD, "drg_schema_error"));
+                            .containsExactly(tuple(SHARD + "#/edges/0", "drg_schema_error"));
                 });
 
         Path held = PackFixtures.copyOf(DESCRIPTOR_ONLY, host.resolve("at"));

@@ -98,9 +98,13 @@ class SurfaceGoldenTest {
                 .hasSizeGreaterThan(16);
     }
 
-    /** A root graph shard or the fragment: the documents a pack's graph is read from. */
+    /**
+     * A root graph shard or the fragment: the documents a pack's graph is read from. A violation's pointer names its
+     * file before any {@code #} and the pointer into it.
+     */
     private static boolean isGraphDocument(String pointer) {
-        return pointer.equals("drg/fragment.yaml") || (pointer.endsWith(".graph.yaml") && !pointer.contains("/"));
+        String file = pointer.contains("#") ? pointer.substring(0, pointer.indexOf('#')) : pointer;
+        return file.equals("drg/fragment.yaml") || (file.endsWith(".graph.yaml") && !file.contains("/"));
     }
 
     @Test

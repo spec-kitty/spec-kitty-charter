@@ -80,10 +80,10 @@ class EdgeEndpointPlantsTest {
 
     @ParameterizedTest(name = "{0}: registration")
     @CsvSource({
-        "r30-edge-procedure-requires-action, procedure.graph.yaml",
-        "r31-edge-overrides-across-kinds, overrides.graph.yaml"
+        "r30-edge-procedure-requires-action, procedure.graph.yaml#/edges/0",
+        "r31-edge-overrides-across-kinds, overrides.graph.yaml#/edges/0"
     })
-    @DisplayName("registration: 422 validation_failed with one violation at the graph document")
+    @DisplayName("registration: 422 validation_failed with one violation at the edge of the graph document")
     void registrationRefusesIt(String plant, String document, @TempDir Path host) {
         Path pack = planted(host, plant);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());

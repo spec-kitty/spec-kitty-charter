@@ -71,6 +71,7 @@ class ProcedureEdgesTest {
         assertThat(loaded.violations())
                 .containsExactly(new PackElementViolation(
                         "ship-it.procedure.yaml",
+                        "/id",
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "procedure id 'land-it' is not its file stem 'ship-it'"));
 

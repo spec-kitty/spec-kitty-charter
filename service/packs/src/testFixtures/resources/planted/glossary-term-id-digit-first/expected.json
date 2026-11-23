@@ -21,6 +21,7 @@
     "violations": [
       {
         "file": "glossaries/core.glossary.yaml",
+        "pointer": "/terms/0/id",
         "kind": "artifact_schema_error",
         "says": "'id' does not match its pattern"
       }
