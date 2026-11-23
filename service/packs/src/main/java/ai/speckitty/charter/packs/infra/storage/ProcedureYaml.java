@@ -39,14 +39,6 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
                     optional(s, "on_success"),
                     optional(s, "on_failure")));
         }
-        List<ProcedureDso.AntiPattern> antiPatterns = new ArrayList<>();
-        for (Map<?, ?> a : mappings(root, "anti_patterns")) {
-            antiPatterns.add(new ProcedureDso.AntiPattern(
-                    required(a, "title"),
-                    optional(a, "content"),
-                    optional(a, "bad_example"),
-                    optional(a, "good_example")));
-        }
         return new ProcedureDso(
                 required(root, "id"),
                 required(root, "schema_version"),
@@ -55,7 +47,6 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
                 required(root, "entry_condition"),
                 required(root, "exit_condition"),
                 steps,
-                antiPatterns,
                 optional(root, "notes"),
                 strings(root, "applies_to_languages"));
     }
@@ -72,15 +63,6 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
             YamlDumpEmitter.scalarInto(out, "on_failure", step.onFailure());
             steps.add(out);
         }
-        List<Map<String, Object>> antiPatterns = new ArrayList<>();
-        for (ProcedureDso.AntiPattern antiPattern : procedure.antiPatterns()) {
-            Map<String, Object> out = YamlDumpEmitter.mapping();
-            out.put("title", antiPattern.title());
-            YamlDumpEmitter.scalarInto(out, "content", antiPattern.content());
-            YamlDumpEmitter.scalarInto(out, "bad_example", antiPattern.badExample());
-            YamlDumpEmitter.scalarInto(out, "good_example", antiPattern.goodExample());
-            antiPatterns.add(out);
-        }
         return new YamlDumpEmitter()
                 .scalar("schema_version", procedure.schemaVersion())
                 .scalar("id", procedure.id())
@@ -89,7 +71,6 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
                 .scalar("entry_condition", procedure.entryCondition())
                 .scalar("exit_condition", procedure.exitCondition())
                 .mappings("steps", steps)
-                .mappings("anti_patterns", antiPatterns)
                 .scalar("notes", procedure.notes())
                 .strings("applies_to_languages", procedure.appliesToLanguages())
                 .dump();

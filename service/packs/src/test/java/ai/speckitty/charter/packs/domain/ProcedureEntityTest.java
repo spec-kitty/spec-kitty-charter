@@ -44,12 +44,9 @@ class ProcedureEntityTest {
     void builderBuildsValidEntity() {
         var operatorStep = new ProcedureStep(
                 "Ask", Optional.of("Confirm."), Optional.of("operator"), Optional.of("go"), Optional.of("stop"));
-        var antiPattern = new AntiPatternEntry(
-                "Rushing", Optional.of("Do not rush."), Optional.of("skip review"), Optional.of("review first"));
 
         Procedure procedure = valid("p-1")
                 .step(operatorStep)
-                .antiPattern(antiPattern)
                 .notes("note")
                 .appliesToLanguage("java")
                 .build();
@@ -64,7 +61,6 @@ class ProcedureEntityTest {
         assertThat(procedure.entryCondition()).isEqualTo("ready");
         assertThat(procedure.exitCondition()).isEqualTo("done");
         assertThat(procedure.steps()).containsExactly(step("Do it"), operatorStep);
-        assertThat(procedure.antiPatterns()).containsExactly(antiPattern);
         assertThat(procedure.notes()).contains("note");
         assertThat(procedure.appliesToLanguages()).containsExactly("java");
     }
@@ -75,7 +71,6 @@ class ProcedureEntityTest {
         Procedure procedure = valid("p").build();
 
         assertThat(procedure.notes()).isEmpty();
-        assertThat(procedure.antiPatterns()).isEmpty();
         assertThat(procedure.appliesToLanguages()).isEmpty();
     }
 
@@ -194,15 +189,5 @@ class ProcedureEntityTest {
                         new ProcedureStep("s", Optional.empty(), Optional.of(role), Optional.empty(), Optional.empty()))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("A procedure step role must match");
-    }
-
-    @Test
-    @DisplayName("an anti-pattern entry needs a title; its other parts may be absent")
-    void anAntiPatternEntryNeedsATitle() {
-        assertThat(new AntiPatternEntry("bare", Optional.empty(), Optional.empty(), Optional.empty()).content())
-                .isEmpty();
-        assertThatThrownBy(() -> new AntiPatternEntry(" ", Optional.empty(), Optional.empty(), Optional.empty()))
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("An anti-pattern entry needs a title that is not blank.");
     }
 }
