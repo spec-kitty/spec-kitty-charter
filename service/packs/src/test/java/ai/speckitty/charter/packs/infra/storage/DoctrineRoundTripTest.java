@@ -75,7 +75,6 @@ class DoctrineRoundTripTest {
                 List.of(
                         new StyleguideDso.Pattern("n", "d", Optional.of("bad"), Optional.of("good")),
                         new StyleguideDso.Pattern("m", "e", Optional.empty(), Optional.empty())),
-                List.of(new StyleguideDso.AntiPattern("a", "b", "c", "d")),
                 Optional.of(tooling),
                 Optional.of("quality"),
                 Optional.of(new ConfigValue.Mapping(new LinkedHashMap<>(lint))),
@@ -250,7 +249,6 @@ class DoctrineRoundTripTest {
                 "T",
                 "code",
                 List.of(new PrincipleDso("p", "A principle.")),
-                List.of(),
                 List.of(),
                 tooling,
                 Optional.empty(),

@@ -1910,7 +1910,8 @@
     empty; the id need not equal the file stem (offering/schemas/procedure.schema.yaml).
   service: >-
     Requires title and description; a step names an open role token, absent when any role may act;
-    an anti-pattern is {title, content?, bad_example?, good_example?}; a reference is
+    a procedure carries no anti-pattern (an anti-pattern is its own file, named by a rejects edge,
+    ADR-0052 decision 16), and an anti_patterns key is refused as unknown; a reference is
     {type, id, when?, reason?}; an optional list holds at least one entry; the id equals the file
     stem. Core's shape, or a misnamed file, is an artifact_schema_error in validate mode and is
     refused by the load.

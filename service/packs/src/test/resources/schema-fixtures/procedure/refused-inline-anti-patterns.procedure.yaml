@@ -13,7 +13,7 @@ steps:
 - title: Land the change
 anti_patterns:
 - title: Landing unreviewed work
-  description: Work lands only after review.
+  content: Work lands only after review.
   bad_example: git push --force
   good_example: spec-kitty merge
 notes: A note.

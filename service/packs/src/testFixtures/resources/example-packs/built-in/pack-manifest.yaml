@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 25d24d8748b6a34fb0010e460ec49b073099636a965442bb7109f34da7eecc97
+manifest_hash: b32d828032c5138e269daa6da5887fdf32b4d50e50fed90549cfb7d80085361d
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -192,11 +192,11 @@ constituents:
 - kind: procedure
   id: adversarial-squad-deployment
   path: procedures/adversarial-squad-deployment.procedure.yaml
-  content_hash: 9cf80cc6660d8c7c498699564f34f22604550b254ad7993b40a8e0c13f38133b
+  content_hash: a67ede45fc5ed615aaeb211f0bd24c5c41e6319924331ebe7dba2d90ae2f5f6a
 - kind: procedure
   id: example-mapping-workshop
   path: procedures/example-mapping-workshop.procedure.yaml
-  content_hash: 29218f08124840eeadc071cd01f496da26bbef90cbe77d9bea3070c168f2f07f
+  content_hash: d6a954b58d4122ed3dd26c24cea485250186b70d7b59605fa980bcbe7ca84cb9
 - kind: procedure
   id: git-flow
   path: procedures/git-flow.procedure.yaml
@@ -212,15 +212,15 @@ constituents:
 - kind: styleguide
   id: aggregate-design-rules
   path: styleguides/aggregate-design-rules.styleguide.yaml
-  content_hash: 637a75ae427faf73877ddc96380b53983d33767ce17502d0141964f677162a04
+  content_hash: 39771aa26b045bb3db88964361ed009fd113bb10c349c564ed9f214a762ef82c
 - kind: styleguide
   id: boring-code-review
   path: styleguides/boring-code-review.styleguide.yaml
-  content_hash: 089da98c8c4ff6db74fac3d352d7f255e5424904c982b4e9d9b2b5e32c44724b
+  content_hash: c002f511287e2de40be22d19cc27050d4cbcd17e8c259b18782ed3ac9ae0944e
 - kind: styleguide
   id: java-conventions
   path: styleguides/java-conventions.styleguide.yaml
-  content_hash: 322066c38b930bf1b098008bf924c211f5c2d6417ee5826f652721f4da3805c4
+  content_hash: d4f71586c21dcc425fe7651e15e167f0aa7dbf06a195d8c7e723bc103c7f7ccf
 - kind: tactic
   id: acceptance-test-first
   path: tactics/acceptance-test-first.tactic.yaml

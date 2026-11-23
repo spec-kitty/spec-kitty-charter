@@ -233,7 +233,7 @@ public final class PackDoctorMain {
     private static PackSetVerdict verdict(Parsed parsed, Path temporary, Composition composition) {
         PackSetCheck check = new PackSetCheck(composition.reading());
         if (!parsed.roundTrip()) {
-            return check.check(parsed.packs());
+            return parsed.full() ? check.checkFull(parsed.packs()) : check.check(parsed.packs());
         }
         Path run;
         try {
@@ -243,15 +243,16 @@ public final class PackDoctorMain {
         }
         try {
             AtomicInteger next = new AtomicInteger();
-            return check.checkWithRoundTrip(
-                    parsed.packs(),
-                    // The set check round-trips only a pack whose name is a pack id (#583, D2b).
-                    root -> composition
-                            .flow()
-                            .run(
-                                    new PackIdentifier(root.name()),
-                                    Path.of(root.locator()),
-                                    run.resolve(next.incrementAndGet() + "-" + root.name())));
+            // The set check round-trips only a pack whose name is a pack id (#583, D2b).
+            RoundTripping flow = root -> composition
+                    .flow()
+                    .run(
+                            new PackIdentifier(root.name()),
+                            Path.of(root.locator()),
+                            run.resolve(next.incrementAndGet() + "-" + root.name()));
+            return parsed.full()
+                    ? check.checkFullWithRoundTrip(parsed.packs(), flow)
+                    : check.checkWithRoundTrip(parsed.packs(), flow);
         } finally {
             delete(run);
         }

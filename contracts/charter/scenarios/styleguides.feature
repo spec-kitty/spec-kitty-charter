@@ -49,7 +49,7 @@ Feature: Styleguides are read and registered functionally
         "kind": "styleguide",
         "id": "java-style",
         "packId": "qa",
-        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
+        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": [{"name": "Prefer immutability", "description": "Prefer immutability."}], "patterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/styleguide/java-style"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=styleguide"}

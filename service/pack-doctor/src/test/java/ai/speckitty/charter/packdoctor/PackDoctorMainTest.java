@@ -87,6 +87,95 @@ class PackDoctorMainTest {
     }
 
     @Test
+    void theExamplePacksWithFullRunReferencesAndAreValid() {
+        Path root = configRoot();
+
+        Run run = run("--config-root", root.toString(), "--full");
+
+        assertThat(run.exit()).as(run.out()).isEqualTo(PackDoctorMain.VALID);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES");
+        assertThat(run.report().get("problems")).isEmpty();
+    }
+
+    /** beta-pack, holding SHARE, and alpha-pack, which depends on it and relates its MINE to three targets. */
+    private static void plantAlphaAndBeta(Path beta, Path alpha) throws IOException {
+        String fragment = "nodes: []\nedges: []\n";
+        Files.createDirectories(beta.resolve("directives"));
+        Files.createDirectories(beta.resolve("drg"));
+        Files.writeString(beta.resolve("pack.yaml"), """
+                pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                pack_version: 1.0.0
+                parent_pack: null
+                name: beta-pack
+                pack_level: org
+                """);
+        Files.writeString(beta.resolve("drg/fragment.yaml"), fragment);
+        Files.writeString(beta.resolve("directives/SHARE.directive.yaml"), """
+                schema_version: '1.0'
+                id: SHARE
+                title: Share
+                intent: Share
+                enforcement: required
+                """);
+        Files.createDirectories(alpha.resolve("directives"));
+        Files.createDirectories(alpha.resolve("drg"));
+        Files.writeString(alpha.resolve("pack.yaml"), """
+                pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+                pack_version: 1.0.0
+                parent_pack: null
+                name: alpha-pack
+                pack_level: org
+                depends_on:
+                - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                  range: '>=1.0'
+                """);
+        Files.writeString(alpha.resolve("drg/fragment.yaml"), fragment);
+        Files.writeString(alpha.resolve("directives/MINE.directive.yaml"), """
+                schema_version: '1.0'
+                id: MINE
+                title: Mine
+                intent: Mine
+                enforcement: required
+                """);
+        Files.writeString(alpha.resolve("relations.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: 'directive:MINE', target: 'directive:SHARE', relation: requires}
+                - {source: 'directive:MINE', target: 'gamma-pack::directive:SHARE', relation: requires}
+                - {source: 'directive:MINE', target: 'beta-pack::directive:NOPE', relation: requires}
+                """);
+    }
+
+    /**
+     * {@code --full} answers each reference code registration answers, with its status (#632 item 3): beta-pack holds
+     * SHARE, alpha-pack depends on it and relates its MINE to each target.
+     */
+    @Test
+    void fullAnswersEveryReferenceCodeWithTheRegistrationsStatus() throws IOException {
+        Path beta = temp.resolve("references").resolve("beta");
+        Path alpha = temp.resolve("references").resolve("alpha");
+        plantAlphaAndBeta(beta, alpha);
+
+        Run run = run("--pack", beta.toString(), "--pack", alpha.toString(), "--full");
+
+        assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES");
+        assertThat(run.codes())
+                .containsExactly(
+                        "pack_reference_unqualified", "pack_reference_pack_missing", "pack_reference_artifact_missing");
+        run.report()
+                .get("problems")
+                .forEach(problem -> assertThat(problem.get("status").asInt()).isEqualTo(422));
+        Run plain = run("--pack", beta.toString(), "--pack", alpha.toString());
+        assertThat(plain.exit())
+                .as("validate without --full judges no reference")
+                .isEqualTo(PackDoctorMain.VALID);
+        assertThat(texts(plain.report().get("checks"))).containsExactly("PACK", "CLOSURE");
+    }
+
+    @Test
     void theExamplePacksAsAConfigRootAreValid() {
         Path root = configRoot();
 

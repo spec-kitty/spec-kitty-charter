@@ -12,7 +12,6 @@ value:
       - name: Name things plainly
         description: A name says what the thing is, in the reader's words.
     patterns: []
-    antiPatterns: []
     tooling: []
     qualityTest: null
     structuralLintConfig: null

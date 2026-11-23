@@ -256,6 +256,42 @@ class EnhancementComposeTest {
         }
 
         @Test
+        void onePacksTargetFaultsWithinAClosureAreEveryViolationOfTheCollectAllFormAsFaults() {
+            // The one body registration's phase 4 and pack-doctor's --full read (#632 item 3, ruling R-s): every fault,
+            // in
+            // the order of the edges, each the collect-all form's violation as its fault.
+            PackUnderResolution base = base();
+            PackUnderResolution enhancer = enhancer();
+            List<Relationship> edges = List.of(
+                    enhances("step_enhancement:x", "base::action:M/nosuch"),
+                    enhances("step_enhancement:y", "base::action:M/s"),
+                    enhances("step_enhancement:z", "gone::action:M/s"));
+            PackCompositionFacts facts = new PackCompositionFacts(
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    MutabilityPolicySource.empty(),
+                    List.of(),
+                    edges,
+                    Map.of(),
+                    PromptFacts.NONE,
+                    List.of(),
+                    List.of());
+
+            List<ClosureFault> faults = EnhancementCompose.targetFaultsOf(List.of(base, enhancer), enhancer, facts);
+
+            assertThat(faults)
+                    .extracting(ClosureFault::code)
+                    .containsExactly(
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, RefusalCode.PACK_REFERENCE_PACK_MISSING);
+            assertThat(faults)
+                    .isEqualTo(EnhancementCompose.targetFaults(List.of(base, enhancer), enhancer, edges).stream()
+                            .map(EnhancementCompose.TargetViolation::toFault)
+                            .toList());
+        }
+
+        @Test
         void eachEdgeIsVisitedOnceSoTheCheckIsLinear() {
             assertThat(visitsFor(1_000)).isEqualTo(1_000);
             assertThat(visitsFor(2_000)).isEqualTo(2_000);
