@@ -498,7 +498,7 @@ class StepEnhancementSurfacesTest {
         pack.file(pack.yamlOf(TYPE, "brief"), "schema_version: '1.0'\nid: brief\nprompt_fragments: []\n");
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(tuple("artifact_schema_error", pack.yamlOf(TYPE, "brief")));
+                .containsExactly(tuple("artifact_schema_error", pack.yamlOf(TYPE, "brief") + "#/prompt_fragments"));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
                 .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR));
@@ -526,7 +526,8 @@ class StepEnhancementSurfacesTest {
         pack.enhancement(TYPE, "brief", "Bad:Id", "one.prompt-fragment.md");
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(tuple("artifact_schema_error", pack.yamlOf(TYPE, "brief")));
+                .containsExactly(
+                        tuple("artifact_schema_error", pack.yamlOf(TYPE, "brief") + "#/prompt_fragments/0/slot"));
         assertThat(pack.validate()).isEmpty();
 
         pack.enhancement(TYPE, "brief", "spdd:slot", "one.prompt-fragment.md", "spdd:slot", "two.prompt-fragment.md");
@@ -551,7 +552,7 @@ class StepEnhancementSurfacesTest {
                 "schema_version: '1.0'\nid: other\nprompt_fragments:\n  - slot: spdd:one\n    path: brief.prompt-fragment.md\n");
         assertThat(pack.staged())
                 .extracting(RefusalViolation::code, RefusalViolation::pointer)
-                .containsExactly(tuple("artifact_schema_error", yaml));
+                .containsExactly(tuple("artifact_schema_error", yaml + "#/id"));
         assertThat(pack.validate()).isEmpty();
         assertThat(pack.validateAll())
                 .filteredOn(finding -> finding.location().file().equals(yaml))

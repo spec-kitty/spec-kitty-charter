@@ -48,6 +48,9 @@ class SubstepDelegationPlantsTest {
     private static final String SCOPE_EDGE = "- source: action:rx/a\n  target: tactic:tdd\n  relation: scope\n";
     private static final String PLACE = "/steps/0/substeps/0/delegates_to/candidates/0";
 
+    /** The place of a delegation's kind in the mission type file. */
+    private static final String KIND = "/steps/0/substeps/0/delegates_to/kind";
+
     @ParameterizedTest(name = "{0}")
     @CsvSource({
         "r35-substep-delegation-unresolved, substep_delegation_unresolved, which the pack does not hold as a tactic",
@@ -73,13 +76,15 @@ class SubstepDelegationPlantsTest {
         "r35-substep-delegation-unresolved, substep_delegation_unresolved",
         "r36-substep-delegation-unscoped, substep_delegation_unscoped"
     })
-    @DisplayName("the store's load and registration: one violation of the code at the mission type file")
+    @DisplayName(
+            "the store's load and registration: one violation of the code at the candidate's place in the mission type file")
     void theLoadAndRegistrationRefuseTheCandidate(String plant, String code, @TempDir Path host) {
         Path pack = planted(host, plant);
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
+            assertThat(violation.pointer()).isEqualTo(PLACE);
             assertThat(violation.kind().value()).isEqualTo(code);
             assertThat(violation.reason()).contains("tactic tdd");
         });
@@ -87,7 +92,7 @@ class SubstepDelegationPlantsTest {
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
-                        assertThat(violation.pointer()).isEqualTo(TYPE);
+                        assertThat(violation.pointer()).isEqualTo(TYPE + "#" + PLACE);
                         assertThat(violation.code()).isEqualTo(code);
                     });
                 });
@@ -185,7 +190,7 @@ class SubstepDelegationPlantsTest {
         assertThat(validate(pack)).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackCodes.ARTIFACT_SCHEMA_ERROR);
             assertThat(finding.location().file()).isEqualTo(TYPE);
-            assertThat(finding.location().pointer()).isEqualTo("/steps/0/substeps/0/delegates_to/kind");
+            assertThat(finding.location().pointer()).isEqualTo(KIND);
         });
     }
 
@@ -224,6 +229,7 @@ class SubstepDelegationPlantsTest {
         });
         assertThat(store.load(pack).pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(TYPE);
+            assertThat(violation.pointer()).isEqualTo(KIND);
             assertThat(violation.reason()).contains("'kind' has an unsupported value 'agent_profile'");
         });
         assertThatThrownBy(() -> StagedReads.contents(store, pack))
@@ -232,7 +238,7 @@ class SubstepDelegationPlantsTest {
                     assertThat(refusal.violations())
                             .singleElement()
                             .satisfies(
-                                    violation -> assertThat(violation.pointer()).isEqualTo(TYPE));
+                                    violation -> assertThat(violation.pointer()).isEqualTo(TYPE + "#" + KIND));
                 });
     }
 

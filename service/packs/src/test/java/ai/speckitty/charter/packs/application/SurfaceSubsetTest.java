@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The two subset checks of #554 (SC-001, NFR-002, T053), over every planted and example pack, on the recorded answers:
@@ -144,8 +145,20 @@ class SurfaceSubsetTest {
         }
     }
 
-    /** One answer of a surface: a code at a file, in its words. */
-    private record Fault(String file, String code, String detail) {}
+    /** One answer of a surface: a code at a file, or at a place in it ({@code <file>#<json-pointer>}), in its words. */
+    private record Fault(String pointer, String code, String detail) {
+
+        /** The file the fault is at, without the place in it. */
+        String file() {
+            return fileOf(pointer);
+        }
+    }
+
+    /** The file of a wire pointer: what stands before its {@code #}. */
+    private static String fileOf(String pointer) {
+        int place = pointer.indexOf('#');
+        return place < 0 ? pointer : pointer.substring(0, place);
+    }
 
     private static List<Fault> registration(String key) {
         JsonNode registration = SURFACES.get(key).get("registration");
@@ -179,12 +192,35 @@ class SurfaceSubsetTest {
         VALIDATE.get(key).get("findings").forEach(row -> {
             if (severity.equals(row.get("severity").asString())) {
                 faults.add(new Fault(
-                        row.get("file").asString(),
+                        atPlace(row.get("file").asString(), row.get("place")),
                         row.get("code").asString(),
                         row.get("detail").asString()));
             }
         });
         return faults;
+    }
+
+    /** Validate mode's file and place, as the wire names them: the file, then {@code #} and the JSON pointer. */
+    private static String atPlace(String file, JsonNode place) {
+        StringBuilder pointer = new StringBuilder();
+        place.forEach(segment ->
+                pointer.append('/').append(segment.asString().replace("~", "~0").replace("/", "~1")));
+        return pointer.isEmpty() ? file : file + "#" + pointer;
+    }
+
+    /**
+     * A registration answer as the baseline, which predates the place inside a file, names it: each violation at its
+     * file alone, and the detail naming the first at its file. The one change the in-file pointer makes to every row.
+     */
+    private static JsonNode atFiles(JsonNode registration) {
+        JsonNode copy = registration.deepCopy();
+        if (copy.get("refused") instanceof ObjectNode refused) {
+            refused.get("violations")
+                    .forEach(row -> ((ObjectNode) row)
+                            .put("pointer", fileOf(row.get("pointer").asString())));
+            refused.put("detail", refused.get("detail").asString().replaceAll("#/\\S*\\.$", "."));
+        }
+        return copy;
     }
 
     static List<Subject> subjects() {
@@ -253,26 +289,28 @@ class SurfaceSubsetTest {
         }
         JsonNode before = FIXED_PAYLOAD_ROW.equals(key) ? fixedPayload(BEFORE.get(key)) : BEFORE.get(key);
         List<Fault> was = faults(before);
+        JsonNode now = atFiles(SURFACES.get(key).get("registration"));
+        List<Fault> atFiles = faults(now);
         if (s8) {
             assertThat(was)
                     .as("%s: before WP12 the registration answered the descriptor's refusal alone", key)
                     .hasSize(1)
                     .allSatisfy(fault -> assertThat(fault.file()).isEqualTo("pack.yaml"));
-            assertThat(faults)
+            assertThat(atFiles)
                     .as("%s: that refusal is one of every fault now (S8)", key)
                     .containsAll(was);
         } else if (s2) {
-            assertThat(faults.stream()
+            assertThat(atFiles.stream()
                             .filter(fault -> !isS2(fault) && !isD1(fault))
                             .toList())
                     .as("%s: apart from S2's gains, the registration answers what it answered before WP12", key)
                     .isEqualTo(was);
         } else if (d1) {
-            assertThat(faults.stream().filter(fault -> !isD1(fault)).toList())
+            assertThat(atFiles.stream().filter(fault -> !isD1(fault)).toList())
                     .as("%s: apart from D1's links, the registration answers what it answered before WP12", key)
                     .isEqualTo(was);
         } else {
-            assertThat(SURFACES.get(key).get("registration"))
+            assertThat(now)
                     .as("%s: outside NFR-002's list, the registration answers what it answered before WP12", key)
                     .isEqualTo(before);
         }

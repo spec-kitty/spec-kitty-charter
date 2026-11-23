@@ -183,9 +183,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/run.py.asset.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at assets/run.py.asset.yaml#/id.",
         "violations" : [ {
-          "pointer" : "assets/run.py.asset.yaml",
+          "pointer" : "assets/run.py.asset.yaml#/id",
           "code" : "artifact_schema_error",
           "detail" : "assets/run.py.asset.yaml: 'id' does not match its pattern"
         } ]
@@ -700,7 +700,7 @@
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         }, {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/routing-priority",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
         } ]
@@ -717,9 +717,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml#/routing-priority.",
         "violations" : [ {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/routing-priority",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
         } ]
@@ -742,7 +742,7 @@
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         }, {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/role",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
         } ]
@@ -759,9 +759,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml#/role.",
         "violations" : [ {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/role",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: 'role' does not match its pattern"
         } ]
@@ -811,7 +811,7 @@
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         }, {
-          "pointer" : "tactics/a.tactic.yaml",
+          "pointer" : "tactics/a.tactic.yaml#/schema_version",
           "code" : "artifact_schema_error",
           "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
         } ]
@@ -828,9 +828,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactics/a.tactic.yaml#/schema_version.",
         "violations" : [ {
-          "pointer" : "tactics/a.tactic.yaml",
+          "pointer" : "tactics/a.tactic.yaml#/schema_version",
           "code" : "artifact_schema_error",
           "detail" : "tactics/a.tactic.yaml: 'schema_version' must be a string"
         } ]
@@ -853,7 +853,7 @@
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         }, {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/routing-priority",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
         } ]
@@ -870,9 +870,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml#/routing-priority.",
         "violations" : [ {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/routing-priority",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' 101 is out of range"
         } ]
@@ -931,9 +931,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml#/edges/0.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
         }, {
@@ -948,7 +948,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: tactic.graph.yaml edge: unknown key 'provenance'",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
         } ]
@@ -959,9 +959,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml#/edges/0.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
         } ]
@@ -972,7 +972,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: tactic.graph.yaml edge: unknown key 'provenance'",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml edge: unknown key 'provenance'"
         } ]
@@ -989,7 +989,7 @@
           "code" : "pack_unreadable",
           "detail" : "pack qa has no pack.yaml"
         }, {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/specialization",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
         } ]
@@ -1006,9 +1006,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at agent_profiles/p.agent.yaml#/specialization.",
         "violations" : [ {
-          "pointer" : "agent_profiles/p.agent.yaml",
+          "pointer" : "agent_profiles/p.agent.yaml#/specialization",
           "code" : "artifact_schema_error",
           "detail" : "agent_profiles/p.agent.yaml: unknown key 'bogus'"
         } ]
@@ -1055,9 +1055,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/edges/0/source.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
         } ]
@@ -1068,7 +1068,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'local-t' is not a URN",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'local-t' is not a URN"
         } ]
@@ -1079,9 +1079,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/edges/0/source.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
         } ]
@@ -1092,7 +1092,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
         } ]
@@ -1103,9 +1103,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml#/edges/0/source.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
         }, {
@@ -1120,7 +1120,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
         } ]
@@ -1131,9 +1131,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml#/edges/0/source.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
         } ]
@@ -1144,7 +1144,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: edge endpoint 'QA_404' is not a URN",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: edge endpoint 'QA_404' is not a URN"
         } ]
@@ -1155,13 +1155,13 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 3 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at tactic.graph.yaml#/nodes/0/urn.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
         }, {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
         }, {
@@ -1176,11 +1176,11 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
         }, {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
         } ]
@@ -1191,13 +1191,13 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml#/nodes/0/urn.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
         }, {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
         } ]
@@ -1208,11 +1208,11 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node urn 'not-a-urn' is not <kind>:<id>"
         }, {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node not-a-urn declares kind 'tactic'"
         } ]
@@ -1283,9 +1283,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml#/nodes/0/urn.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
         }, {
@@ -1300,7 +1300,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node directive:X declares kind 'tactic'",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
         } ]
@@ -1311,9 +1311,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml#/nodes/0/urn.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
         } ]
@@ -1324,7 +1324,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: node directive:X declares kind 'tactic'",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: node directive:X declares kind 'tactic'"
         } ]
@@ -1343,9 +1343,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/nodes/0/kind.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
         } ]
@@ -1356,7 +1356,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: node x has unknown kind 'mission_steps'",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_steps'"
         } ]
@@ -1367,9 +1367,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/nodes/0/kind.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_type'"
         } ]
@@ -1380,7 +1380,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: node x has unknown kind 'mission_type'",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: node x has unknown kind 'mission_type'"
         } ]
@@ -1391,9 +1391,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/nodes/0/id.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/nodes/0/id",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
         } ]
@@ -1404,7 +1404,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/nodes/0/id",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: node id 'bad id!' is not <kind>:<id>-safe"
         } ]
@@ -1439,9 +1439,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/edges/0/relation.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: unknown relation 'extends'"
         } ]
@@ -1452,7 +1452,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: unknown relation 'extends'",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: unknown relation 'extends'"
         } ]
@@ -1463,9 +1463,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at tactic.graph.yaml#/edges/0/relation.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: unknown relation 'extends'"
         }, {
@@ -1480,7 +1480,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: unknown relation 'extends'",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: unknown relation 'extends'"
         } ]
@@ -1491,9 +1491,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at tactic.graph.yaml#/edges/0/relation.",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: unknown relation 'extends'"
         } ]
@@ -1504,7 +1504,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/tactic.graph.yaml: unknown relation 'extends'",
         "violations" : [ {
-          "pointer" : "tactic.graph.yaml",
+          "pointer" : "tactic.graph.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "tactic.graph.yaml: unknown relation 'extends'"
         } ]
@@ -1818,9 +1818,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml#/steps/0/substeps/2/id.",
         "violations" : [ {
-          "pointer" : "missions/rx/rx.mission-type.yaml",
+          "pointer" : "missions/rx/rx.mission-type.yaml#/steps/0/substeps/2/id",
           "code" : "duplicate_step_id",
           "detail" : "missions/rx/rx.mission-type.yaml: substep id 'run' is declared more than once in the step 'a'"
         } ]
@@ -1837,9 +1837,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml#/id.",
         "violations" : [ {
-          "pointer" : "glossaries/core.glossary.yaml",
+          "pointer" : "glossaries/core.glossary.yaml#/id",
           "code" : "artifact_schema_error",
           "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
         } ]
@@ -1856,9 +1856,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/a.glossary.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/a.glossary.yaml#/id.",
         "violations" : [ {
-          "pointer" : "glossaries/a.glossary.yaml",
+          "pointer" : "glossaries/a.glossary.yaml#/id",
           "code" : "artifact_schema_error",
           "detail" : "glossaries/a.glossary.yaml: glossary id 'b' is not its file stem 'a'"
         } ]
@@ -1902,9 +1902,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml#/terms/0/see_also/0.",
         "violations" : [ {
-          "pointer" : "glossaries/core.glossary.yaml",
+          "pointer" : "glossaries/core.glossary.yaml#/terms/0/see_also/0",
           "code" : "artifact_schema_error",
           "detail" : "glossaries/core.glossary.yaml: '0' does not match its pattern"
         } ]
@@ -1921,9 +1921,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/edges/0/relation.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
         } ]
@@ -1934,7 +1934,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: 'relation' has an unsupported value 'refines'",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/relation",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: 'relation' has an unsupported value 'refines'"
         } ]
@@ -1945,9 +1945,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/edges/0/source.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
         } ]
@@ -1958,7 +1958,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'term:core/lane' is not a URN"
         } ]
@@ -1969,9 +1969,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml#/terms/0/id.",
         "violations" : [ {
-          "pointer" : "glossaries/core.glossary.yaml",
+          "pointer" : "glossaries/core.glossary.yaml#/terms/0/id",
           "code" : "artifact_schema_error",
           "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
         } ]
@@ -1988,9 +1988,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml#/terms/0/id.",
         "violations" : [ {
-          "pointer" : "glossaries/core.glossary.yaml",
+          "pointer" : "glossaries/core.glossary.yaml#/terms/0/id",
           "code" : "artifact_schema_error",
           "detail" : "glossaries/core.glossary.yaml: 'id' does not match its pattern"
         } ]
@@ -2007,9 +2007,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at glossaries/core.glossary.yaml#/terms/2/id.",
         "violations" : [ {
-          "pointer" : "glossaries/core.glossary.yaml",
+          "pointer" : "glossaries/core.glossary.yaml#/terms/2/id",
           "code" : "artifact_schema_error",
           "detail" : "glossaries/core.glossary.yaml: '/terms/2/id' breaks schema keyword 'uniqueItems'"
         } ]
@@ -2072,9 +2072,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/edges/0/source.",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
         } ]
@@ -2085,7 +2085,7 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN",
         "violations" : [ {
-          "pointer" : "drg/fragment.yaml",
+          "pointer" : "drg/fragment.yaml#/edges/0/source",
           "code" : "drg_schema_error",
           "detail" : "drg/fragment.yaml: edge endpoint 'glossary:term' is not a URN"
         } ]
@@ -2096,13 +2096,13 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 3 fault(s), the first at glossary.graph.yaml.",
+        "detail" : "The pack cannot be registered: 3 fault(s), the first at glossary.graph.yaml#/nodes/0/urn.",
         "violations" : [ {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
         }, {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
         }, {
@@ -2117,11 +2117,11 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>",
         "violations" : [ {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
         }, {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
         } ]
@@ -2132,13 +2132,13 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 2 fault(s), the first at glossary.graph.yaml.",
+        "detail" : "The pack cannot be registered: 2 fault(s), the first at glossary.graph.yaml#/nodes/0/urn.",
         "violations" : [ {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
         }, {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
         } ]
@@ -2149,11 +2149,11 @@
         "code" : "pack_unreadable",
         "detail" : "a graph document of qa cannot be read: qa/glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>",
         "violations" : [ {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/urn",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node urn 'glossary:term' is not <kind>:<id>"
         }, {
-          "pointer" : "glossary.graph.yaml",
+          "pointer" : "glossary.graph.yaml#/nodes/0/kind",
           "code" : "drg_schema_error",
           "detail" : "glossary.graph.yaml: node glossary:term has unknown kind 'glossary'"
         } ]
@@ -2194,9 +2194,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at procedure.graph.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at procedure.graph.yaml#/edges/0.",
         "violations" : [ {
-          "pointer" : "procedure.graph.yaml",
+          "pointer" : "procedure.graph.yaml#/edges/0",
           "code" : "relationship_endpoint_not_allowed",
           "detail" : "procedure.graph.yaml: a requires edge may not connect procedure to action"
         } ]
@@ -2213,9 +2213,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at overrides.graph.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at overrides.graph.yaml#/edges/0.",
         "violations" : [ {
-          "pointer" : "overrides.graph.yaml",
+          "pointer" : "overrides.graph.yaml#/edges/0",
           "code" : "relationship_endpoint_not_allowed",
           "detail" : "overrides.graph.yaml: an overrides edge may not connect directive to tactic"
         } ]
@@ -2289,9 +2289,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0.",
         "violations" : [ {
-          "pointer" : "missions/rx/rx.mission-type.yaml",
+          "pointer" : "missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0",
           "code" : "substep_delegation_unresolved",
           "detail" : "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, which the pack does not hold as a tactic"
         } ]
@@ -2308,9 +2308,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0.",
         "violations" : [ {
-          "pointer" : "missions/rx/rx.mission-type.yaml",
+          "pointer" : "missions/rx/rx.mission-type.yaml#/steps/0/substeps/0/delegates_to/candidates/0",
           "code" : "substep_delegation_unscoped",
           "detail" : "missions/rx/rx.mission-type.yaml: the substep run of the step a of mission_type:rx delegates to tactic tdd, and no graph document holds action:rx/a scope tactic:tdd"
         } ]
@@ -2327,9 +2327,9 @@
     "registration" : {
       "refused" : {
         "code" : "validation_failed",
-        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml.",
+        "detail" : "The pack cannot be registered: 1 fault(s), the first at pack.yaml#/requires_core.",
         "violations" : [ {
-          "pointer" : "pack.yaml",
+          "pointer" : "pack.yaml#/requires_core",
           "code" : "requires_core_invalid",
           "detail" : "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"
         } ]

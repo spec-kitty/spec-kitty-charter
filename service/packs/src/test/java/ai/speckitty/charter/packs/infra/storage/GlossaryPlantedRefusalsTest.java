@@ -129,6 +129,9 @@ class GlossaryPlantedRefusalsTest {
             assertThat(got.reason()).as(plant).isEqualTo(want.get("says").asString());
             if (want.has("file")) {
                 assertThat(got.file()).as(plant).isEqualTo(want.get("file").asString());
+                assertThat(got.pointer())
+                        .as(plant)
+                        .isEqualTo(want.path("pointer").asString(""));
             }
         }
     }
@@ -161,8 +164,10 @@ class GlossaryPlantedRefusalsTest {
                             assertThat(violation.detail())
                                     .endsWith(want.get("says").asString());
                             if (want.has("file")) {
+                                String pointer = want.path("pointer").asString("");
                                 assertThat(violation.pointer())
-                                        .isEqualTo(want.get("file").asString());
+                                        .isEqualTo(
+                                                want.get("file").asString() + (pointer.isEmpty() ? "" : "#" + pointer));
                             }
                         });
                     }

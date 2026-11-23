@@ -21,6 +21,7 @@
     "violations": [
       {
         "file": "glossaries/core.glossary.yaml",
+        "pointer": "/terms/2/id",
         "kind": "artifact_schema_error",
         "says": "'/terms/2/id' breaks schema keyword 'uniqueItems'"
       }

@@ -22,6 +22,7 @@
     "violations": [
       {
         "file": "glossaries/core.glossary.yaml",
+        "pointer": "/terms/0/see_also/0",
         "kind": "artifact_schema_error",
         "says": "'0' does not match its pattern"
       }

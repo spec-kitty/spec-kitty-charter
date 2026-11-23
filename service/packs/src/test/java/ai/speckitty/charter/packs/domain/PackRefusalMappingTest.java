@@ -102,6 +102,33 @@ class PackRefusalMappingTest {
     }
 
     @Test
+    @DisplayName(
+            "a violation at a place inside its file points at it as a URI reference, <file>#<json-pointer>; one of the"
+                    + " whole file points at the file")
+    void aViolationInsideAFilePointsAtThePlace() {
+        Rationale verdict = new Rationale(List.of(
+                new Reason(
+                        "self",
+                        Evaluation.FAIL,
+                        PackCodes.TENSION_SELF,
+                        Location.in("drg/directive.graph.yaml").at("/edges/3"),
+                        "a tension cannot join 'directive:a' to itself"),
+                failing(SCHEMA, "pack", "pack: no descriptor")));
+
+        CharterRefusal refusal = PackRefusalMapping.of(verdict);
+
+        assertThat(refusal.violations())
+                .extracting(RefusalViolation::pointer)
+                .containsExactly("drg/directive.graph.yaml#/edges/3", "pack");
+        assertThat(refusal.violations().getFirst().detail())
+                .as("the detail names the file, as before")
+                .isEqualTo("drg/directive.graph.yaml: a tension cannot join 'directive:a' to itself");
+        assertThat(refusal.getMessage())
+                .isEqualTo(
+                        "The pack cannot be registered: 2 fault(s), the first at drg/directive.graph.yaml#/edges/3.");
+    }
+
+    @Test
     @DisplayName("graph faults with no violation refuse nothing")
     void noGraphFaultRefusesNothing() {
         Rationale none = new Rationale(List.of(Reason.passed("checked")));
