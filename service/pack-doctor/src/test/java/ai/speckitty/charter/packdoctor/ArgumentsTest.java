@@ -15,6 +15,7 @@ import ai.speckitty.charter.packvalidation.set.PackSetEntry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,40 @@ class ArgumentsTest {
 
             assertThat(fault(Arguments.parse(new String[] {"remediate", a.toString(), a.toString()})))
                     .contains("are the same directory");
+        }
+
+        /**
+         * Squad B6: the swap would move the working directory away, so a pack that is or holds it is refused before
+         * anything is written; run {@code remediate} from outside the pack.
+         */
+        @Test
+        void remediateRefusesAPackThatIsOrHoldsTheWorkingDirectory() {
+            Path working = Path.of("").toAbsolutePath();
+            for (String value :
+                    List.of(".", "..", working.toString(), working.getParent().toString())) {
+                assertThat(fault(Arguments.parse(new String[] {"remediate", value})))
+                        .as(value)
+                        .isEqualTo("remediate " + value + " holds the working directory, which the swap would move;"
+                                + " run remediate from outside the pack");
+            }
+        }
+
+        /** Squad B9: remediate's faults name its own words, never {@code --pack}, which it does not take. */
+        @Test
+        void remediateFaultsNameRemediateNotThePackOption() {
+            Path missing = temp.resolve("missing");
+
+            assertThat(fault(Arguments.parse(new String[] {"remediate", missing.toString()})))
+                    .isEqualTo("remediate " + missing + " is not a directory");
+            assertThat(fault(Arguments.parse(new String[] {"remediate", "=org-a"})))
+                    .isEqualTo("remediate =org-a names no directory: its directory part is empty;"
+                            + " write remediate <dir>[:<level>][=<id>]");
+            assertThat(fault(Arguments.parse(new String[] {"remediate", missing + ":galaxy"})))
+                    .startsWith("unknown level galaxy in remediate " + missing + ":galaxy; the levels are ");
+            assertThat(fault(Arguments.parse(new String[] {"remediate", missing + "=Not An Id"})))
+                    .startsWith("remediate " + missing + "=Not An Id: Not An Id after the last = is not a pack id")
+                    .contains("write remediate <dir>[:<level>]=<id>")
+                    .doesNotContain("--pack");
         }
 
         @Test

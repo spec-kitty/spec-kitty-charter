@@ -59,7 +59,8 @@ final class Remediate {
          *
          * @param root the pack, configured as {@code validate} configures it
          * @return what it did
-         * @throws java.io.UncheckedIOException when the pack cannot be rewritten; the pack is then as it was
+         * @throws java.io.UncheckedIOException when the pack cannot be rewritten; its message says the pack is as it
+         *     was, or names the aside copy that holds it when it could not be put back
          * @throws IllegalStateException when the remediation fails after its precondition passed; the pack is then as
          *     it was
          */
@@ -68,7 +69,7 @@ final class Remediate {
 
     /**
      * Remediates each pack in order and prints its outcome on {@code out}. A failure stops the run: the packs before it
-     * keep what was done to them, and the failing pack is as it was.
+     * keep what was done to them, and the failing pack is as it was, or where the failure names.
      *
      * @param packs the packs, in the order given
      * @param repair the remediation
