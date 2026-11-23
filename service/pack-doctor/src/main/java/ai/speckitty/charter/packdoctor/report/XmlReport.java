@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packdoctor.report;
 
 import java.io.StringReader;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.xml.stream.XMLInputFactory;
@@ -29,14 +30,19 @@ import tools.jackson.databind.node.ObjectNode;
  *       {@code violations/violation}, {@code skipped/skip});
  *   <li>a string is an element whose text is the string; an integer is an element with {@code type="integer"} and a
  *       boolean one with {@code type="boolean"}, whose text is the value;
+ *   <li>a string holding a character XML 1.0 cannot carry (a control character other than tab, line feed and carriage
+ *       return, U+FFFE, U+FFFF, or a surrogate that is not half of a pair) is an element with {@code type="escaped"}
+ *       (ruling R-ac): in its text each such character is a backslash, {@code u} and the four upper-case hex digits of
+ *       its UTF-16 code unit, and each backslash is two backslashes; every other character is as in a plain string. A
+ *       string with no such character is never escaped, so a path's backslashes stay as they are;
  *   <li>no other attribute is written, and no value is written as an attribute; {@code &}, {@code <} and {@code >} are
  *       escaped, and a carriage return is written as the character reference to 13, so a parser's line-end handling
  *       keeps it;
  *   <li>each element is on its own line, indented by two spaces a level.
  * </ul>
  *
- * <p>A string holding a character XML 1.0 cannot carry (a control character other than tab, line feed and carriage
- * return, U+FFFE, U+FFFF or an unpaired surrogate) cannot be written: {@link #write} refuses it, naming where it is.
+ * <p>So every string the report holds can be written, and pack content (a file name, a detail) never makes the XML
+ * fail; {@link #read} undoes the escape.
  */
 public final class XmlReport {
 
@@ -48,9 +54,13 @@ public final class XmlReport {
     private static final String OBJECT = "object";
     private static final String INTEGER = "integer";
     private static final String BOOLEAN = "boolean";
+    private static final String ESCAPED = "escaped";
 
     /** The keys the writer names an element after: ASCII names, which need no namespace and no escaping. */
     private static final Pattern NAME = Pattern.compile("[A-Za-z_][A-Za-z0-9_.-]*");
+
+    /** The digits of an escape: four upper-case hex digits, as {@link #escaped} writes them. */
+    private static final Pattern HEX = Pattern.compile("[0-9A-F]{4}");
 
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
@@ -61,8 +71,8 @@ public final class XmlReport {
      *
      * @param tree the report's tree, an object
      * @return the XML
-     * @throws IllegalArgumentException for a tree that is no object, a key that is no element name, a value that is
-     *     no object, array, string, integer or boolean, or a character XML 1.0 cannot carry, naming where it is
+     * @throws IllegalArgumentException for a tree that is no object, a key that is no element name, or a value that is
+     *     no object, array, string, integer or boolean, naming where it is
      */
     public static String write(JsonNode tree) {
         if (!tree.isObject()) {
@@ -124,8 +134,9 @@ public final class XmlReport {
                 xml.append("  ".repeat(depth)).append("</").append(name).append(">\n");
             }
             case STRING -> {
-                xml.append('>');
-                text(xml, node.asString(), pointer);
+                String value = node.asString();
+                xml.append(needsEscape(value) ? " type=\"escaped\">" : ">");
+                text(xml, needsEscape(value) ? escaped(value) : value);
                 xml.append("</").append(name).append(">\n");
             }
             case NUMBER -> {
@@ -151,23 +162,83 @@ public final class XmlReport {
         }
     }
 
-    /** The text of a string, escaped; refused for a character XML 1.0 cannot carry. */
-    private static void text(StringBuilder xml, String value, String pointer) {
+    /** The text of a string, its markup characters escaped; every character in it is one XML 1.0 carries. */
+    private static void text(StringBuilder xml, String value) {
         value.codePoints().forEach(point -> {
             switch (point) {
                 case '&' -> xml.append("&amp;");
                 case '<' -> xml.append("&lt;");
                 case '>' -> xml.append("&gt;");
                 case '\r' -> xml.append("&#13;");
-                default -> {
-                    if (!isXmlCharacter(point)) {
-                        throw new IllegalArgumentException(String.format(
-                                "%s holds the character U+%04X, which XML 1.0 cannot carry", pointer, point));
-                    }
-                    xml.appendCodePoint(point);
-                }
+                default -> xml.appendCodePoint(point);
             }
         });
+    }
+
+    /** Whether a string holds a character XML 1.0 cannot carry, so it is written escaped. */
+    private static boolean needsEscape(String value) {
+        return value.codePoints().anyMatch(point -> !isXmlCharacter(point));
+    }
+
+    /**
+     * The escaped form of a string (ruling R-ac): each backslash doubled, and each character XML 1.0 cannot carry as a
+     * backslash, {@code u} and the four upper-case hex digits of its code unit. Such a character is never supplementary,
+     * so one code unit is the whole of it.
+     */
+    private static String escaped(String value) {
+        StringBuilder escaped = new StringBuilder(value.length() + 8);
+        value.codePoints().forEach(point -> {
+            if (point == '\\') {
+                escaped.append("\\\\");
+            } else if (isXmlCharacter(point)) {
+                escaped.appendCodePoint(point);
+            } else {
+                escaped.append(String.format(Locale.ROOT, "\\u%04X", point));
+            }
+        });
+        return escaped.toString();
+    }
+
+    /**
+     * The string an escaped text stands for: the inverse of {@link #escaped}. A backslash followed by anything but a
+     * backslash or {@code u} and four hex digits naming a character XML 1.0 cannot carry, or an escaped text with no
+     * such character, is never written, so it is refused.
+     */
+    private static String unescaped(XMLStreamReader reader, String text, String pointer) {
+        StringBuilder value = new StringBuilder(text.length());
+        boolean needed = false;
+        int index = 0;
+        while (index < text.length()) {
+            char c = text.charAt(index);
+            if (c != '\\') {
+                value.append(c);
+                index++;
+                continue;
+            }
+            if (text.startsWith("\\\\", index)) {
+                value.append('\\');
+                index += 2;
+                continue;
+            }
+            int point = index + 6 <= text.length() && text.charAt(index + 1) == 'u'
+                    ? hex(text.substring(index + 2, index + 6))
+                    : -1;
+            if (point < 0 || isXmlCharacter(point)) {
+                throw refused(reader, at(pointer) + " is marked escaped but holds an escape the mapping never writes");
+            }
+            value.append((char) point);
+            needed = true;
+            index += 6;
+        }
+        if (!needed) {
+            throw refused(reader, at(pointer) + " is marked escaped but holds no character that needs it");
+        }
+        return value.toString();
+    }
+
+    /** Four upper-case hex digits, as the writer writes them, as a number; -1 for anything else. */
+    private static int hex(String digits) {
+        return HEX.matcher(digits).matches() ? Integer.parseInt(digits, 16) : -1;
     }
 
     /** XML 1.0's {@code Char} production. */
@@ -181,9 +252,10 @@ public final class XmlReport {
     }
 
     /**
-     * The tree an XML report holds: the inverse of {@link #write}. A document type, an entity, a namespace, an attribute
-     * other than {@code type}, an unknown type, text beside child elements, a key given twice or an item not named after
-     * its array is refused, so only what the mapping writes reads back. Comments and the whitespace between elements are
+     * The tree an XML report holds: the inverse of {@link #write}, an escaped string unescaped. A document type, an
+     * entity, a namespace, an attribute other than {@code type}, an unknown type, text beside child elements, a key
+     * given twice, an item not named after its array, or an escape the mapping never writes is refused, so only what
+     * the mapping writes reads back. Comments and the whitespace between elements are
      * no value.
      *
      * @param xml the XML
@@ -330,6 +402,10 @@ public final class XmlReport {
                     throw refused(reader, at(pointer) + " is marked an integer but holds '" + text + "'");
                 }
                 yield number == (int) number ? NODES.numberNode((int) number) : NODES.numberNode(number);
+            }
+            case ESCAPED -> {
+                requireLeaf(reader, children, pointer);
+                yield NODES.stringNode(unescaped(reader, text, pointer));
             }
             case BOOLEAN -> {
                 requireLeaf(reader, children, pointer);

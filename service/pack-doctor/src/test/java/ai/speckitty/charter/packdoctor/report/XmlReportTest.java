@@ -119,6 +119,43 @@ class XmlReportTest {
             assertRoundTrips(tree);
         }
 
+        /**
+         * Ruling R-ac: a string holding a character XML 1.0 cannot carry is written escaped, {@code type="escaped"},
+         * each such character as a backslash, {@code u} and its four upper-case hex digits, and each backslash as two,
+         * and reads back as it was.
+         */
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "\u0000",
+                    "a\u0001b",
+                    "\u001f",
+                    "\ufffe",
+                    "\uffff",
+                    "\ud800",
+                    "x\udc00",
+                    "a \\u0001 written out \u0001 and a backslash \\",
+                    "\u0001<&>\r\n\t😀"
+                })
+        void aCharacterXmlCannotCarryIsEscapedAndReadsBackAsItWas(String text) {
+            ObjectNode tree = JSON.createObjectNode();
+            tree.putArray("packs").addObject().put("path", text);
+
+            assertRoundTrips(tree);
+        }
+
+        @Test
+        void theEscapeIsTheSchemasWordsAndOnlyAStringThatNeedsItIsEscaped() {
+            ObjectNode tree = JSON.createObjectNode();
+            tree.put("detail", "agent_profiles/x\u0001y.agent.yaml, read as C:\\packs");
+            tree.put("path", "C:\\packs\\org");
+
+            assertThat(XmlReport.write(tree))
+                    .contains(
+                            "<detail type=\"escaped\">agent_profiles/x\\u0001y.agent.yaml, read as C:\\\\packs</detail>")
+                    .contains("<path>C:\\packs\\org</path>");
+        }
+
         @Test
         void anIntegerBeyondAnIntReadsBackAsALong() {
             assertRoundTrips(tree("{\"n\": 4294967296, \"m\": -1, \"z\": 0}"));
@@ -127,18 +164,6 @@ class XmlReportTest {
 
     @Nested
     class WhatTheWriterRefuses {
-
-        @ParameterizedTest
-        @ValueSource(strings = {"\u0000", "a\u0001b", "\u001f", "￾", "￿", "\ud800", "x\udc00"})
-        void aCharacterXmlCannotCarryNamingWhereItIs(String text) {
-            ObjectNode tree = JSON.createObjectNode();
-            tree.putArray("packs").addObject().put("path", text);
-
-            assertThatThrownBy(() -> XmlReport.write(tree))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("/packs/0/path")
-                    .hasMessageContaining("XML 1.0 cannot carry");
-        }
 
         @Test
         void aValueNoReportHolds() {
@@ -203,6 +228,14 @@ class XmlReportTest {
                     "<pack-doctor-report><a type=\"integer\">one</a></pack-doctor-report>",
                     "<pack-doctor-report><a type=\"integer\"> 1</a></pack-doctor-report>",
                     "<pack-doctor-report><a type=\"boolean\">yes</a></pack-doctor-report>",
+                    // An escaped string that holds an escape the mapping never writes, or none it needs.
+                    "<pack-doctor-report><a type=\"escaped\">\\u001</a></pack-doctor-report>",
+                    "<pack-doctor-report><a type=\"escaped\">\\u00zz</a></pack-doctor-report>",
+                    "<pack-doctor-report><a type=\"escaped\">\\n</a></pack-doctor-report>",
+                    "<pack-doctor-report><a type=\"escaped\">trailing \\</a></pack-doctor-report>",
+                    "<pack-doctor-report><a type=\"escaped\">\\u0041</a></pack-doctor-report>",
+                    "<pack-doctor-report><a type=\"escaped\">nothing to escape</a></pack-doctor-report>",
+                    "<pack-doctor-report><a type=\"escaped\"><b>\\u0001</b></a></pack-doctor-report>",
                     // Not XML, or not all of it.
                     "<pack-doctor-report><a>x</a>",
                     "<pack-doctor-report/><pack-doctor-report/>",

@@ -112,6 +112,30 @@ class ReportFileTest {
                     .isEqualTo(run.report().get("inputs").get("packs"));
         }
 
+        /**
+         * Ruling R-ac: a pack directory named with a character XML 1.0 cannot carry is pack content, which never makes
+         * the run exit 2: the XML escapes it and reads back as standard output's tree.
+         */
+        @Test
+        void isXmlEvenWhenAPathHoldsACharacterXmlCannotCarry() throws IOException {
+            Path pack;
+            try {
+                pack = Files.move(builtIn(), temp.resolve("packs").resolve("built\u0001in"));
+            } catch (IOException | InvalidPathException noSuchName) {
+                assumeTrue(false, "the file system cannot name a directory with a control character");
+                return;
+            }
+            Path report = temp.resolve("report.xml");
+
+            Run without = run("--pack", pack + ":built-in");
+            Run run = run("--pack", pack + ":built-in", "--report", report.toString(), "--format", "xml");
+
+            assertThat(run.exit()).as(run.err()).isEqualTo(without.exit()).isNotEqualTo(2);
+            assertThat(run.out()).isEqualTo(without.out());
+            assertThat(Files.readString(report)).contains("built\\u0001in").doesNotContain("\u0001");
+            assertThat(XmlReport.read(Files.readString(report))).isEqualTo(run.report());
+        }
+
         @Test
         void isReplacedWhenItExists() throws IOException {
             Path pack = builtIn();
@@ -228,27 +252,6 @@ class ReportFileTest {
             assertThat(run.exit()).isEqualTo(2);
             assertThat(run.out()).isEmpty();
             assertThat(run.err()).startsWith("pack-doctor: cannot write the report " + report + ": ");
-            assertThat(report).doesNotExist();
-        }
-
-        @Test
-        void becauseXmlCannotCarryACharacterOfIt() throws IOException {
-            Path pack;
-            try {
-                pack = Files.move(builtIn(), temp.resolve("packs").resolve("built\u0001in"));
-            } catch (IOException | InvalidPathException noSuchName) {
-                assumeTrue(false, "the file system cannot name a directory with a control character");
-                return;
-            }
-            Path report = temp.resolve("report.xml");
-
-            Run run = run("--pack", pack + ":built-in", "--report", report.toString(), "--format", "xml");
-
-            assertThat(run.exit()).isEqualTo(2);
-            assertThat(run.out()).isEmpty();
-            assertThat(run.err())
-                    .startsWith("pack-doctor: cannot write the report " + report + " as XML: ")
-                    .contains("XML 1.0 cannot carry");
             assertThat(report).doesNotExist();
         }
     }
