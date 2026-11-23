@@ -2,7 +2,7 @@
 
 JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: the pack
 descriptor, graph shards, the org fragment, the presets and the pack manifest,
-the artifact kinds that have a schema (a template and an anti-pattern have none), the Markdown
+the artifact kinds that have a schema (a template has none), the Markdown
 files with a structure (a toolguide's guide, the pack document `README.md`, a mission step's prompt
 and guidelines, and a step enhancement's prompt fragment), and the project `charter.yaml`, which is not pack
 content: no rule of `file-kinds.yaml` maps it, so a `charter.yaml` inside a pack is warned as `file_not_held` (#554).
@@ -15,15 +15,15 @@ recorded in the mission's
 and in git history. Of the schemas added later, one has an outside source: `skill` is core's
 `skill.schema.yaml` at `581b5c46da` as JSON. The rest were designed here: `glossary` (ADR-0049, replacing
 the schema once authored from core's pydantic model), `preset`, `pack-manifest` and `pack-document`
-(ADR-0042), `toolguide-guide` (ADR-0043), `mission-type` with its two step schemas (ADR-0044), and `step-enhancement` with its `prompt-fragment` companion (ADR-0053 decision 22
-and ADR-0066). Where a schema differs from core's behavior, the
+(ADR-0042), `toolguide-guide` (ADR-0043), `mission-type` with its two step schemas (ADR-0044), `step-enhancement` with its `prompt-fragment` companion (ADR-0053 decision 22
+and ADR-0066), and `anti-pattern` (ADR-0052 decision 8, as amended by ADR-0053 decision 30). Where a schema differs from core's behavior, the
 [divergence register](../../docs/conformance/divergence-register.md) says why.
 
 ## Files
 
 | Path | Holds |
 |---|---|
-| `schemas/<kind>.schema.json` | One schema per kind, 27 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), five of them Markdown structure schemas (`toolguide-guide`, `pack-document`, `mission-step-prompt`, `mission-step-guidelines`, `prompt-fragment`; ADR-0043, ADR-0042 decision 8, ADR-0044, ADR-0066) |
+| `schemas/<kind>.schema.json` | One schema per kind, 28 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), five of them Markdown structure schemas (`toolguide-guide`, `pack-document`, `mission-step-prompt`, `mission-step-guidelines`, `prompt-fragment`; ADR-0043, ADR-0042 decision 8, ADR-0044, ADR-0066) |
 | `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, the retired files, the schema-less payloads and the `ignored` fallback |
 | `conformance/classifier-cases.yaml` | The classifier conformance cases (#559): a pack file path and the outcome an implementation of `file-kinds.yaml` must give it, one case for every rule at least |
 | `CHANGELOG.md` | What changed in the packs contract, newest first; its top heading is the packs contract's version |

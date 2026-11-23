@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: f9c0e3b408948b947e595c5c18b48b23a44ab02403f32627849e80c08f727546
+manifest_hash: 25d24d8748b6a34fb0010e460ec49b073099636a965442bb7109f34da7eecc97
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -21,6 +21,78 @@ constituents:
   id: reviewer-renata
   path: agent_profiles/reviewer-renata.agent.yaml
   content_hash: 0bee3de90c36de4c75a997f0db0840f7af1a2a730adb9163b2d31875f0653bba
+- kind: anti_pattern
+  id: averaging-divergent-verdicts
+  path: anti_patterns/averaging-divergent-verdicts.anti-pattern.yaml
+  content_hash: 9b0c599caef1dae238854e01daf8afd2f4296c4e0fb2bbec597c9ce33986742e
+- kind: anti_pattern
+  id: casting-by-habit
+  path: anti_patterns/casting-by-habit.anti-pattern.yaml
+  content_hash: a1d7f33a9bb089215179134534e31e6ddd4a355d25ec1149e90f5987a19ea162
+- kind: anti_pattern
+  id: clever-over-direct
+  path: anti_patterns/clever-over-direct.anti-pattern.yaml
+  content_hash: 609e7d235a0737f42edb4d26e047fb820da8093c796f52273bc1833a40cf2eb3
+- kind: anti_pattern
+  id: direct-object-references
+  path: anti_patterns/direct-object-references.anti-pattern.yaml
+  content_hash: 5d48df9ae23fdf663386343ce1a9d1129538d40539c1c46914f93b9d1a5696a8
+- kind: anti_pattern
+  id: duplicated-business-rules-called-acceptable-repetition
+  path: anti_patterns/duplicated-business-rules-called-acceptable-repetition.anti-pattern.yaml
+  content_hash: 8aba9fee0c25b4f6db19ad10a26dec57fe84d474f1e91ee10bdda44c646a90dc
+- kind: anti_pattern
+  id: example-theater
+  path: anti_patterns/example-theater.anti-pattern.yaml
+  content_hash: f022b05d1b706752cfa00860035a92cab792b8a8ff79b16a8d3ca23c2abf7bc6
+- kind: anti_pattern
+  id: happy-path-only
+  path: anti_patterns/happy-path-only.anti-pattern.yaml
+  content_hash: 96ec927a17acf33c96dea2fde3257005edb535450e3e56aa634a9bd344a95e74
+- kind: anti_pattern
+  id: hard-wiring-the-squad-as-a-gate
+  path: anti_patterns/hard-wiring-the-squad-as-a-gate.anti-pattern.yaml
+  content_hash: c3595b5dc583a02d87de48628b0447eae23399683fb257357d0b7f6d171a5a25
+- kind: anti_pattern
+  id: implementation-leakage
+  path: anti_patterns/implementation-leakage.anti-pattern.yaml
+  content_hash: 93199528c4653db5a61a835caf21cf0bf31611d240e88c067d5c7cc894f7054a
+- kind: anti_pattern
+  id: indirection-for-repetition
+  path: anti_patterns/indirection-for-repetition.anti-pattern.yaml
+  content_hash: e8f7da94c6a23f292bb20e77da3ba8382cea40e21f31c3540df356286e5c948c
+- kind: anti_pattern
+  id: model-tier-mismatch
+  path: anti_patterns/model-tier-mismatch.anti-pattern.yaml
+  content_hash: a768059efe739d0792f1a41c89cc4aeb3e701184cf361228dc36ccfaf2ffd265
+- kind: anti_pattern
+  id: persona-without-profile
+  path: anti_patterns/persona-without-profile.anti-pattern.yaml
+  content_hash: f3033b723ba1a2bc44cecc35a01882cab349d032b048494a62901eab2974360b
+- kind: anti_pattern
+  id: silently-dropped-finding
+  path: anti_patterns/silently-dropped-finding.anti-pattern.yaml
+  content_hash: 0e86f80b77c161e9027aad340571a440cd8d01e659bd0bb11088a4b820c3c38a
+- kind: anti_pattern
+  id: swallowed-exception
+  path: anti_patterns/swallowed-exception.anti-pattern.yaml
+  content_hash: 33b25a3aba9f003582fb128f237446fd9bc65307112010ccf1e5cbd1d526e80b
+- kind: anti_pattern
+  id: transaction-spanning
+  path: anti_patterns/transaction-spanning.anti-pattern.yaml
+  content_hash: 5627f169ecefeb4e89c93d4f3764539b5a510ec542bad2eeb4133bf5bde18457
+- kind: anti_pattern
+  id: trusting-a-biased-delegate
+  path: anti_patterns/trusting-a-biased-delegate.anti-pattern.yaml
+  content_hash: 344a2e5637f0accb144a0b2758fd6322105ccaba5e752b497c1b4e5ade38dc5c
+- kind: anti_pattern
+  id: unbounded-squad
+  path: anti_patterns/unbounded-squad.anti-pattern.yaml
+  content_hash: 32169bb5b1f730ce1af830997067d3c6d9c3b34a8e5ff9a4ae83f3174ea3a251
+- kind: anti_pattern
+  id: unvalidated-examples
+  path: anti_patterns/unvalidated-examples.anti-pattern.yaml
+  content_hash: 1781e14263b457386a59e90776d948ed7f5f6bca2caaecf9e85c4f3aeb16cc59
 - kind: asset
   id: carrier-lint
   path: assets/carrier_lint.py.asset.yaml

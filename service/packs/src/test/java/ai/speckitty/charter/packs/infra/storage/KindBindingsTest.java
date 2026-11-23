@@ -72,7 +72,8 @@ class KindBindingsTest {
         List<ArtifactKind> kinds = KindBindings.kinds();
         // Append-only: the ten kinds bound before it keep their positions, so a pack without mission types keeps
         // its digest.
-        assertThat(kinds).hasSize(15);
+        assertThat(kinds).hasSize(16);
+        assertThat(kinds.get(15)).isEqualTo(ArtifactKind.ANTI_PATTERN);
         assertThat(kinds.get(14)).isEqualTo(ArtifactKind.ROUTING_CATALOG);
         assertThat(kinds.get(13)).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
         assertThat(kinds.get(10)).isEqualTo(ArtifactKind.MISSION_TYPE);
@@ -258,8 +259,9 @@ class KindBindingsTest {
             + " fragment is its companion (#428, ADR-0066)")
     void theStepEnhancementIsAppendedBeforeTheRoutingCatalog() {
         List<ArtifactKind> kinds = KindBindings.kinds();
-        assertThat(kinds.get(kinds.size() - 2)).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
-        assertThat(YamlFormats.all().get(YamlFormats.all().size() - 2)).isSameAs(StepEnhancementYaml.INSTANCE);
+        assertThat(kinds.get(kinds.indexOf(ArtifactKind.ROUTING_CATALOG) - 1)).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
+        assertThat(YamlFormats.all().get(YamlFormats.all().indexOf(RoutingCatalogYaml.INSTANCE) - 1))
+                .isSameAs(StepEnhancementYaml.INSTANCE);
         assertThat(KindBindings.of(ArtifactKind.STEP_ENHANCEMENT)).containsSame(StepEnhancementBinding.INSTANCE);
         assertThat(StepEnhancementBinding.INSTANCE.fileToken()).isEqualTo("step-enhancement");
         assertThat(StepEnhancementBinding.INSTANCE.schemaName()).isEqualTo("step-enhancement");
@@ -271,15 +273,31 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName(
-            "the routing catalog is appended last, placed at routing_catalogs/<id>.routing-catalog.yaml (ADR-0080)")
-    void theRoutingCatalogIsAppendedLast() {
-        assertThat(KindBindings.kinds().getLast()).isEqualTo(ArtifactKind.ROUTING_CATALOG);
-        assertThat(YamlFormats.all().getLast()).isSameAs(RoutingCatalogYaml.INSTANCE);
+    @DisplayName("the routing catalog is appended before the anti-pattern, placed at"
+            + " routing_catalogs/<id>.routing-catalog.yaml (ADR-0080)")
+    void theRoutingCatalogIsAppendedBeforeTheAntiPattern() {
+        List<ArtifactKind> kinds = KindBindings.kinds();
+        assertThat(kinds.get(kinds.size() - 2)).isEqualTo(ArtifactKind.ROUTING_CATALOG);
+        assertThat(YamlFormats.all().get(YamlFormats.all().size() - 2)).isSameAs(RoutingCatalogYaml.INSTANCE);
         assertThat(KindBindings.of(ArtifactKind.ROUTING_CATALOG)).containsSame(RoutingCatalogBinding.INSTANCE);
         assertThat(KindBindings.bySchema("routing-catalog")).containsSame(RoutingCatalogBinding.INSTANCE);
         assertThat(RoutingCatalogBinding.INSTANCE.fileToken()).isEqualTo("routing-catalog");
         assertThat(RoutingCatalogBinding.INSTANCE.hasCompanions()).isFalse();
+    }
+
+    @Test
+    @DisplayName("the anti-pattern is appended last, spelled anti-pattern, placed at"
+            + " anti_patterns/<id>.anti-pattern.yaml (ADR-0052 decision 8, #154)")
+    void theAntiPatternIsAppendedLast() {
+        assertThat(KindBindings.kinds().getLast()).isEqualTo(ArtifactKind.ANTI_PATTERN);
+        assertThat(YamlFormats.all().getLast()).isSameAs(AntiPatternYaml.INSTANCE);
+        assertThat(KindBindings.of(ArtifactKind.ANTI_PATTERN)).containsSame(AntiPatternBinding.INSTANCE);
+        assertThat(KindBindings.bySchema("anti-pattern")).containsSame(AntiPatternBinding.INSTANCE);
+        assertThat(YamlFormats.of(AntiPatternBinding.INSTANCE)).isSameAs(AntiPatternYaml.INSTANCE);
+        assertThat(AntiPatternBinding.INSTANCE.fileToken()).isEqualTo("anti-pattern");
+        assertThat(AntiPatternBinding.INSTANCE.fileName("x")).isEqualTo("anti_patterns/x.anti-pattern.yaml");
+        assertThat(AntiPatternBinding.INSTANCE.placedAtItsFileName()).isTrue();
+        assertThat(AntiPatternBinding.INSTANCE.hasCompanions()).isFalse();
     }
 
     @Test

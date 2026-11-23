@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: unbounded-squad
+title: Unbounded squad
+description: Dozens of delegates for a question that a small, distinct set of lenses would answer; more delegates is not better.
+severity: smell
+bad_example: Deploy dozens of delegates on one question that three distinct lenses would answer.

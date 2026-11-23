@@ -16,9 +16,44 @@ nodes:
 - urn: anti_pattern:indirection-for-repetition
   kind: anti_pattern
   label: Indirection to remove a few repeated lines
+- urn: anti_pattern:clever-over-direct
+  kind: anti_pattern
+  label: Clever over direct
+- urn: anti_pattern:duplicated-business-rules-called-acceptable-repetition
+  kind: anti_pattern
+  label: Duplicated business rules called acceptable repetition
+- urn: anti_pattern:direct-object-references
+  kind: anti_pattern
+  label: Direct Object References
+- urn: anti_pattern:transaction-spanning
+  kind: anti_pattern
+  label: Transaction Spanning
+- urn: anti_pattern:swallowed-exception
+  kind: anti_pattern
+  label: Swallowed Exception
 edges:
 - source: styleguide:boring-code-review
   target: anti_pattern:indirection-for-repetition
   relation: rejects
   when: reviewing a new helper or wrapper
   reason: the styleguide names this anti-pattern
+- source: styleguide:boring-code-review
+  target: anti_pattern:clever-over-direct
+  relation: rejects
+  reason: the styleguide boring-code-review names this anti-pattern
+- source: styleguide:boring-code-review
+  target: anti_pattern:duplicated-business-rules-called-acceptable-repetition
+  relation: rejects
+  reason: the styleguide boring-code-review names this anti-pattern
+- source: styleguide:aggregate-design-rules
+  target: anti_pattern:direct-object-references
+  relation: rejects
+  reason: the styleguide aggregate-design-rules names this anti-pattern
+- source: styleguide:aggregate-design-rules
+  target: anti_pattern:transaction-spanning
+  relation: rejects
+  reason: the styleguide aggregate-design-rules names this anti-pattern
+- source: styleguide:java-conventions
+  target: anti_pattern:swallowed-exception
+  relation: rejects
+  reason: the styleguide java-conventions names this anti-pattern
