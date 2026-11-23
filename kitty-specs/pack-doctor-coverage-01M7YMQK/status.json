@@ -263,7 +263,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude::reviewer-renata",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 3,
@@ -278,7 +278,8 @@
         "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)",
         "Changes requested: R-w quote drops service-v*",
         "Cycle 3: R-w quoted as written",
-        "Review passed: cycle 3, R-w quoted whole; docs checks green"
+        "Review passed: cycle 3, R-w quoted whole; docs checks green",
+        "Reopened: lane-h integration edits predate WP08's claim, unattributed and unreviewed as code"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -289,12 +290,12 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 16680,
-      "shell_pid_created_at": "1795353442.95",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T032": "done",
-        "T033": "done",
-        "T034": "done"
+        "T032": "planned",
+        "T033": "planned",
+        "T034": "planned"
       }
     },
     "WP09": {
