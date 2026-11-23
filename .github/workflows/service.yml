@@ -8,7 +8,8 @@ name: service
 # later, which verifyAll leaves out.
 # The jar job builds the service's jar, starts it with scripts/release/smoke-service.sh and uploads it as
 # `service-jar`; then it builds the pack-doctor jar, times `validate --round-trip` over the example packs (NFR-002 of
-# mission pack-doctor-coverage-01M7YMQK: under 20 s) and uploads it as `pack-doctor-jar`. A service release attaches both (ADR-0046, as amended 2026-11-19); the
+# mission pack-doctor-coverage-01M7YMQK: under 20 s) and `validate --round-trip --full` (under 30 s), and uploads it as
+# `pack-doctor-jar`. A service release attaches both (ADR-0046, as amended 2026-11-19); the
 # native executables are service-native.yml's.
 # The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
@@ -284,9 +285,36 @@ jobs:
           fi
           echo "jar=$jar" >> "$GITHUB_OUTPUT"
 
-      # NFR-002's second step, `validate --round-trip --full` over the same set in under 30 s, joins here with WP05 of
-      # mission pack-doctor-coverage-01M7YMQK, which adds `--full`: a copy of the step above with `--full` and a
-      # 30000 ms limit. It is not added before then, since no step runs an option the jar does not have yet.
+      # NFR-002's second step (mission pack-doctor-coverage-01M7YMQK, WP05; plan D11): the same set with the round trip
+      # and `--full` (REFERENCES: per pack, within its own closure, the substep delegations, the references and the step
+      # enhancements' targets; #632 item 3, ruling R-s), in under 30 s of wall time, under its own threshold. The time
+      # goes to the step summary; a slower run, or any exit but 0, fails the job.
+      - name: Check the example packs with pack-doctor validate --round-trip --full, timed (NFR-002)
+        env:
+          PACK_DOCTOR_JAR: ${{ steps.pack-doctor.outputs.jar }}
+        run: |
+          set -euo pipefail
+          jar="$PACK_DOCTOR_JAR"
+          examples=service/packs/src/testFixtures/resources/example-packs
+          args=()
+          # Each pack is given without a level, so the level its pack.yaml declares applies.
+          for pack in "$examples"/*/; do
+            args+=(--pack "${pack%/}")
+          done
+          started="$(date +%s%N)"
+          java -jar "$jar" validate "${args[@]}" --round-trip --full > "$RUNNER_TEMP/pack-doctor-full-report.json"
+          elapsed_ms=$(( ($(date +%s%N) - started) / 1000000 ))
+          seconds="$(printf '%d.%03d' $((elapsed_ms / 1000)) $((elapsed_ms % 1000)))"
+          {
+            echo "### pack-doctor validate --full over the example packs"
+            echo
+            echo "\`java -jar $(basename "$jar") validate\` over $(( ${#args[@]} / 2 )) packs with \`--round-trip --full\`: ${seconds} s"
+            echo "(NFR-002: under 30 s)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if (( elapsed_ms >= 30000 )); then
+            echo "::error::pack-doctor --full took ${seconds} s over the example packs; NFR-002 allows under 30 s"
+            exit 1
+          fi
 
       - name: Upload the pack-doctor jar
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

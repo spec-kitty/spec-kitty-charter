@@ -43,7 +43,9 @@ final class Problems {
      * trip), the refusals the composition facts' builder raises ({@code pack_unreadable}, {@code validation_failed},
      * {@code registration_conflict}), and every {@code CLOSURE} code ({@code PackCodes.CLOSURE}, its preset phase
      * included, with the preset-item rule's case-only {@code pack_reference_artifact_missing}), which the registration
-     * answers as 422 in place of their own 500; the two preset-item codes are 422 everywhere.
+     * answers as 422 in place of their own 500; the two preset-item codes are 422 everywhere. {@code --full}'s
+     * {@code REFERENCES} adds the three reference codes, 422 at registration (#632 item 3); its delegation fault is the
+     * registration's {@code validation_failed}.
      */
     static final Map<RefusalCode, Integer> STATUS = Map.ofEntries(
             Map.entry(RefusalCode.VALIDATION_FAILED, 422),
@@ -57,6 +59,8 @@ final class Problems {
             Map.entry(RefusalCode.PACK_NAME_CONFLICT, 422),
             Map.entry(RefusalCode.PACK_DUPLICATE_ID, 422),
             Map.entry(RefusalCode.PACK_SIBLING_CONFLICT, 422),
+            Map.entry(RefusalCode.PACK_REFERENCE_UNQUALIFIED, 422),
+            Map.entry(RefusalCode.PACK_REFERENCE_PACK_MISSING, 422),
             Map.entry(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, 422),
             Map.entry(RefusalCode.PRESET_ITEM_NOT_HELD, 422),
             Map.entry(RefusalCode.PRESET_ITEM_UNDECLARED, 422));

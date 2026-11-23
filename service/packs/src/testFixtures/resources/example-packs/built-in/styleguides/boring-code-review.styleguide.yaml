@@ -31,39 +31,6 @@ patterns:
       comment where the implementation diverges from the obvious pattern or
       encodes a non-obvious constraint.
 
-anti_patterns:
-  - name: Indirection to remove a few repeated lines
-    description: >
-      Adding a helper or wrapper solely to remove a few repeated lines
-      rather than to preserve a single source of truth for business meaning.
-    bad_example: |
-      def _plus_one(x):
-          return x + 1
-      # introduced to avoid "duplicating" a one-line expression used once
-    good_example: |
-      # inline the one-line expression at its single call site instead
-  - name: Clever over direct
-    description: >
-      Using a clever language feature when a direct, familiar idiom would
-      be easier to review and change.
-    bad_example: |
-      result = next((v for v in xs if pred(v)), None)
-    good_example: |
-      result = None
-      for v in xs:
-          if pred(v):
-              result = v
-              break
-  - name: Duplicated business rules called acceptable repetition
-    description: >
-      Duplicating business rules, state rules, or fragile constants across
-      modules and calling it acceptable repetition instead of consolidating
-      the single source of truth.
-    bad_example: |
-      # tax_rate repeated as a literal constant in three separate modules
-    good_example: |
-      # tax_rate sourced from one shared constant, imported by all callers
-
 tooling:
   linters: "Boring-code-review is a review discipline, not a lint rule; apply it in human or agent code review."
 applies_to_languages:

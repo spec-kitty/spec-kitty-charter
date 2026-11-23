@@ -196,6 +196,26 @@ public record ClosureFault(
         return code() == RefusalCode.PACK_UNREADABLE && unresolvedDelegation(violations);
     }
 
+    /**
+     * The fault as a registration refuses it: an unresolved substep delegation ({@link #isUnresolvedDelegation()}) is
+     * the author's fault, refused {@code validation_failed} with its violations, as the load refuses an in-pack one
+     * (FR-005); any other fault is refused as it is. The one mapping registration's impact check and pack-doctor's
+     * {@code --full} read, so both answer the same code (#632 item 3, SC-001).
+     *
+     * @return the fault with its rule, origin, detail, packs, violations and requiring packs kept, and the code
+     *     registration answers
+     */
+    public ClosureFault asRegistrationRefuses() {
+        if (!isUnresolvedDelegation()) {
+            return this;
+        }
+        return new ClosureFault(
+                reason(reason.rule(), origin(), RefusalCode.VALIDATION_FAILED, detail()),
+                packs,
+                violations,
+                requiredBy);
+    }
+
     private static boolean unresolvedDelegation(List<RefusalViolation> violations) {
         return !violations.isEmpty()
                 && violations.stream().allMatch(violation -> SubstepDelegationRule.UNRESOLVED.equals(violation.code()));
