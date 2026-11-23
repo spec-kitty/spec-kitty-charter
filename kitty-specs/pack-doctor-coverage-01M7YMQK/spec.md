@@ -56,10 +56,13 @@ over it, and compare the codes.
    existing case-only answer stands, and it is the item's only problem.
 4. **Given** a pack already stored whose preset now breaks the rule, **When** a composing read runs, **Then** it is
    not refused, and `requiredNotHeld` still reports the unheld item.
-5. **Given** a pack whose policy file locks an id that its own closure holds only in other letter case
+5. **Given** a pack whose policy file locks an id that a pack of the composed closure holds only in other letter case
    (`directive:directive_001` where the closure holds `DIRECTIVE_001`), **When** the pack is registered or validated,
    **Then** it is refused with `pack_reference_artifact_missing`, naming the packs, with no violation of its own: the
-   answer registration's case-only check already gives (ruling R-y, FR-016).
+   answer registration's case-only check already gives (rulings R-y, R-z; FR-016).
+6. **Given** a dependency whose preset item or lock names, only in other letter case, an artifact that a pack
+   depending on it holds, **When** the two are validated together, **Then** the dependency is refused with
+   `pack_reference_artifact_missing`, as a registration of the dependent refuses it (ruling R-z, FR-016).
 
 ### User Story 2 - A stale manifest hash is refused everywhere (Priority: P1)
 
@@ -150,8 +153,8 @@ form is shown by the bytes remediate writes, not by a finding.
   preset rule runs (FR-014), so a `must_have` anti-pattern held nowhere in the own closure answers
   `preset_item_not_held`.
 - An `anti_pattern` node in a graph shard or the fragment, with no `anti_patterns/<id>.anti-pattern.yaml` in the same
-  pack, is refused `drg_schema_error`: the finding is at `/nodes/<n>` of its document, and a registration violation's
-  pointer is the document. A pack-qualified `rejects` target
+  pack, is refused `drg_schema_error`: the domain finding is at `/nodes/<n>` of its document, and the violation's
+  pointer, at registration and in `pack-doctor validate` alike, is the document. A pack-qualified `rejects` target
   (`other::anti_pattern:x`) is no node of the rejecting pack, so it needs no file there; it needs the target's pack in
   `depends_on` (`pack_reference_pack_missing` otherwise) and the file in that pack (`pack_reference_artifact_missing`).
 - An anti-pattern file with no node and no edge is valid: it is held and activatable.
@@ -162,8 +165,14 @@ form is shown by the bytes remediate writes, not by a finding.
 - Activating a styleguide or procedure that rejects an anti-pattern does not activate the anti-pattern.
 - When the round trip and the manifest gate both see the same stale field, there is one problem. A "written stale"
   red, where the writer itself is wrong, still reports.
-- A policy lock on an id that no pack of the own closure holds, in any letter case, is not refused (it changes no
+- A policy lock on an id that no pack of the composed closure holds, in any letter case, is not refused (it changes no
   write); only a lock that differs from a held id by letter case alone is (FR-016).
+- A special file in a pack (a FIFO, a socket, a device) is refused `unreadable` at its path, never opened, on
+  registration, `validate` and `remediate` alike (ruling R-ad).
+- With `--full`, a preset contest, preset-item or case-only fault does not stop `REFERENCES`; only a closure that does
+  not compose does (ruling R-aa).
+- A string in the XML report holding a character XML 1.0 cannot carry is escaped (`type="escaped"`), so pack content
+  never makes the run exit 2 (ruling R-ac).
 - A `specializes_from` cycle is not judged by `--full` (R-s); registration still refuses it, and ADR-0083 records it
   as landing with #636.
 - `remediate` on a path that is not a directory exits 2, as a usage failure. A directory with no `pack.yaml` is refused
@@ -186,11 +195,11 @@ form is shown by the bytes remediate writes, not by a finding.
 | FR-009 | `remediate <pack-dir>...` writes each pack's manifest through the service's own derivation and stamp, and rewrites each modelled file in the round trip's canonical form, through a public storage-edge entry point. It judges nothing new. It refuses, writing nothing, when the pack has a fault it does not repair. | Proposed | [build] | no |
 | FR-010 | The example packs, the contract scenarios and the whole-pack gate carry the canonical shape, and fixtures are fixed, never exempted. `built-in` gains the anti-pattern artifact its default preset requires, as a file of the kind FR-013 builds, and every other inline anti-pattern of the example packs becomes a file with its `rejects` edge. `org-base` gains, or drops, the two tactics its `spdd` preset activates. Example manifests are restamped. | Proposed | [build] | no |
 | FR-011 | The contract gains `preset_item_not_held`, `preset_item_undeclared` and `manifest_stale` with their statuses. The report schemas are added, and the registration scenarios that pinned the old behavior are rewritten. Each comes with a change fragment (`### Breaking` where a valid input is now refused). | Proposed | [build] | no |
-| FR-012 | ADR-0083 records rulings R-a to R-w (R-r: all of #154 in this PR; R-s: the narrowed `--full`); WP13 adds R-x (FR-001's `ClosureVerdict` clause deferred to #636 slice 7) and R-y (FR-016). It amends ADR-0075 (decisions 6, 7 and 9), ADR-0042 (the 2026-11-12 amendment), rules A10 and C31, and the patterns page's scope table. It records #535 and #52 item 3 as not the charter's to judge. | Proposed | [build] | no |
+| FR-012 | ADR-0083 records rulings R-a to R-w (R-r: all of #154 in this PR; R-s: the narrowed `--full`); WP13 adds R-x (FR-001's `ClosureVerdict` clause deferred to #636 slice 7) and R-y (FR-016); the pre-merge squad fold adds R-z to R-ad. It amends ADR-0075 (decisions 6, 7 and 9), ADR-0042 (the 2026-11-12 amendment), rules A10 and C31, and the patterns page's scope table. It records #535 and #52 item 3 as not the charter's to judge. | Proposed | [build] | no |
 | FR-013 | The `anti_pattern` kind has a file form (rulings R-p, R-q and R-r; ADR-0052 decision 8 as amended by ADR-0053 decision 30): `anti_patterns/<id>.anti-pattern.yaml`, a closed shape with `schema_version`, `id` (the file stem), `title`, `description`, `severity` (`smell`, `severe` or `breaking`) and `bad_example` required, and `good_example` optional. There is no default severity (ADR-0053 decision 32). The packs contract gains its schema, its `files` rule and a classifier case. The store binds, reads and writes it in one canonical form. Registration and `pack-doctor validate` hold a valid file and refuse an invalid or misplaced one with the existing answers: a missing `severity`, a missing `bad_example`, an unknown severity or an unknown key is `artifact_schema_error` at the file and the breaching pointer; a stem or placement fault is the existing stem and placement answer. Every inline anti-pattern of the example packs moves to a file of `built-in` (18 entries, 18 files) with a node and a `rejects` edge from its owner, and its inline block is removed; `built-in` holds `indirection-for-repetition`, which its default preset requires. | Proposed | [build] | no: a planted file is `file_not_held` before, held after |
-| FR-014 | A pack whose graph document (a shard or the fragment) declares an `anti_pattern` node that the same pack does not hold as an anti-pattern file is refused (ruling R-r; ADR-0052 decision 14, ADR-0053 decision 31): one `drg_schema_error` per such node, naming the node and the file it lacks. The finding is at `/nodes/<n>` of its document; a registration violation's pointer is the document. It is one content rule of `GraphRules`, composed into `PackRulesets.content()`, so registration, every write and `pack-doctor validate` refuse alike. It reads the nodes and files of the one read and walks nothing. | Proposed | [build] | no: the planted node is accepted before |
+| FR-014 | A pack whose graph document (a shard or the fragment) declares an `anti_pattern` node that the same pack does not hold as an anti-pattern file is refused (ruling R-r; ADR-0052 decision 14, ADR-0053 decision 31): one `drg_schema_error` per such node, naming the node and the file it lacks. The domain finding is at `/nodes/<n>` of its document; the violation's pointer, at registration and in `pack-doctor validate` alike, is the document. It is one content rule of `GraphRules`, composed into `PackRulesets.content()`, so registration, every write and `pack-doctor validate` refuse alike. It reads the nodes and files of the one read and walks nothing. | Proposed | [build] | no: the planted node is accepted before |
 | FR-015 | The procedure and styleguide shapes drop `anti_patterns` outright (ruling R-r; ADR-0052 decision 16): `procedure.schema.json` and `styleguide.schema.json` lose the property and its `$defs` entry; the domain (`Procedure.antiPatterns`, `Styleguide.antiPatterns`, `AntiPatternEntry`, `StyleguideAntiPattern`), the DSOs, YAML forms and bindings lose it; the charter contract's `Styleguide`, `StyleguideRegistration` and `Procedure` schemas lose `antiPatterns`, and `StyleguideAntiPattern.yaml` and `ProcedureAntiPattern.yaml` are deleted. A pack file that still carries the key is refused `artifact_schema_error` (unknown key) by the closed schema, on every surface. Contract examples, scenarios and test fixtures carry only the new shape. | Proposed | [build] | no: the planted inline block is accepted before |
-| FR-016 | A policy lock (a URN key of the pack's mutability policy file) that names an artifact of the declaring pack's own closure only by letter case is refused by `pack-doctor validate` as registration refuses it (ruling R-y, DM-01M83MFXWH2NZQ8CJWFW1JTPY6): `pack_reference_artifact_missing`, naming the mentioning pack and then the holder, with the existing case-only detail and no violation of its own. It is one phase of `CLOSURE` from the domain factory (`PackRulesets.closureFaults`), after the preset items, using the existing `PackCompositionResolver.caseOnlyMatches` over each pack's own closure, with no new walk. Registration (`OfferingReadService.judged` phase 6) and the composing read are unchanged. | Proposed | [build] | no: the planted lock passes `validate` before |
+| FR-016 | A preset item or a policy lock (a URN key of the pack's mutability policy file) that names a held artifact only by letter case is refused by `pack-doctor validate` as registration refuses it (rulings R-y, DM-01M83MFXWH2NZQ8CJWFW1JTPY6, and R-z, DM-01M84SG9JY2B1VX25M9CG9ZDKV): `pack_reference_artifact_missing`, naming the mentioning pack and then the holder, with the existing case-only detail and no violation of its own. It is the last phase of `CLOSURE` from the domain factory (`PackRulesets.closureFaults`), after the preset items: one body, `CaseOnlyRules`, which registration's phase 6 calls too, runs the existing `PackCompositionResolver.caseOnlyMatches` over the composed closure rooted at each pack of the set, every member's mentions against every member's holdings, with no new walk. Registration's answer and the composing read are unchanged. | Proposed | [build] | no: the planted lock passes `validate` before |
 
 ### Non-Functional Requirements
 

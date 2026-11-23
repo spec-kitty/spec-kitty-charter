@@ -58,7 +58,7 @@ Verb: `Closes #629`. Delivered by WP03 (FR-002 and FR-003; rulings R-a, R-k, R-l
   - `heldByTheParentIsAccepted` `:125`
   - `declaredOnlyMustHaveIsNotHeld` `:151`
   - the planted example cases `:370`
-- **Same code on both surfaces:** `deployable/…/bdd/FullPassParityTest.java:572`
+- **Same code on both surfaces:** `deployable/…/bdd/FullPassParityTest.java:822`
   (`theRegistrationAndValidateFullGiveTheSameCode`).
 - **A composing read still reports `requiredNotHeld`:** `deployable/…/bdd/RequiredNotHeldCoverageTest.java:32`.
 - **The example packs carry the canonical shape** (FR-010): `org-base` gains the two `spdd` tactics
@@ -92,7 +92,7 @@ decisions 12-14; SC-004). The rows follow the acceptance criteria.
 
 | Acceptance | Evidence |
 | --- | --- |
-| The closed schema | `contracts/packs/schemas/anti-pattern.schema.json`. Required: `schema_version`, `id`, `title`, `description`, `severity` (`smell`/`severe`/`breaking`, no default) and `bad_example`. Optional: `good_example`. The `files` rule is `contracts/packs/file-kinds.yaml:228-229`, and the token `anti_patterns: anti_pattern` is at `:134`. Fragment: `contracts/charter/changes/2026-11-21-anti-pattern-file-kind.md` |
+| The closed schema | `contracts/packs/schemas/anti-pattern.schema.json`. Required: `schema_version`, `id`, `title`, `description`, `severity` (`smell`/`severe`/`breaking`, no default) and `bad_example`. Optional: `good_example`. The `files` rule is `contracts/packs/file-kinds.yaml:231-232`, and the token `anti_patterns: anti_pattern` is at `:134`. Fragment: `contracts/charter/changes/2026-11-21-anti-pattern-file-kind.md` |
 | The dropped fields | `contracts/packs/schemas/procedure.schema.json` and `styleguide.schema.json` no longer carry `anti_patterns`. `contracts/charter/schemas/StyleguideAntiPattern.yaml` and `ProcedureAntiPattern.yaml` are deleted. `Styleguide.yaml`, `StyleguideRegistration.yaml` and `Procedure.yaml` lose `antiPatterns`. The domain type `packs/domain/StyleguideAntiPattern.java` is deleted. Fragment: `contracts/charter/changes/2026-11-21-inline-anti-patterns-dropped.md` |
 | The store binding | `packs/src/main/.../infra/storage/AntiPatternBinding.java`, `AntiPatternDso.java` and `AntiPatternYaml.java`. Tests: `packs/…/infra/storage/AntiPatternBindingTest.java`, with `theFileReadsIntoTheDomain` `:86`, `theFileWritesBackByteForByte` `:105`, `anUnknownSeverityIsRefused` `:159` and `aLoadRefusesAMisnamedAndAMisplacedFile` `:205` |
 | The four refusal tests and their codes | 1. A missing `severity` is `artifact_schema_error`: `pack-validation/…/antipattern/AntiPatternFileCheckTest.java:65`. 2. A missing `bad_example` is `artifact_schema_error`: same file, `:76`. 3. An inline `anti_patterns` block is `artifact_schema_error`, unknown key: `InlineAntiPatternCheckTest.java:98` (styleguide) and `:115` (procedure). 4. A file-less `anti_pattern` node is `drg_schema_error`: `AntiPatternNodeCheckTest.java:84` (shard) and `:95` (fragment). |
@@ -113,7 +113,7 @@ Verb: `Refs #632`. Ruling R-s; ADR-0083 decisions 8-9. R-s governs over R-q's "#
 | --- | --- | --- |
 | 1: the undeclared preset id | landed (WP03) | `preset_item_undeclared`: `CharterRefusalCode.yaml:332` and `:1144-1151`. `preset-items.feature:63`. `PresetItemRulesTest.java`: `anUndeclaredItemIsUndeclared` `:162` and `anotherKindNeverSatisfiesTheEntry` `:181` |
 | 2: manifest derivation | landed (WP07) | `pack-doctor remediate`: `PackRemediation.java`, `pack-doctor/…/RemediateTest.java`. Guide: `docs/guides/check-packs.md:182-216` |
-| 3: the closure walk, narrowed | landed (WP05) | `validate --full` is the `REFERENCES` check: delegations, references and enhancement targets, per own closure, with registration's codes. `pack-validation/…/set/ClosureWalkPhaseTest.java`. `FullPassParityTest.java:572`. Fragment: `contracts/charter/changes/2026-11-22-pack-doctor-validate-full.md` |
+| 3: the closure walk, narrowed | landed (WP05) | `validate --full` is the `REFERENCES` check: delegations, references and enhancement targets, per own closure, with registration's codes. `pack-validation/…/set/ReferencesPhaseTest.java` (the one body, `PackRulesets.references`, ruling R-ab; gated on composition faults only, R-aa). `FullPassParityTest.java:822`. Fragment: `contracts/charter/changes/2026-11-22-pack-doctor-validate-full.md` |
 
 **The remainder, to name on the issue:** item 3's `specializes_from` cycle check, the relation checks
 (`ImpactRelations`), the edge-index refusals (`EdgeIndex`) and the own-closure walk (`OwnClosureWalk`: the fallback

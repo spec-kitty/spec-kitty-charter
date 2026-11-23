@@ -193,7 +193,7 @@ example packs
   - **Architecture tests.** `HexagonalArchitectureTest`'s pack-check main rules (`COMPOSED_BY_…`, `…NAMES_TWO_ADAPTERS`,
     `ONION_…COMPOSES_TWO_ADAPTERS`) name a third adapter.
   - **Tests.**
-    - Start from a pack red for both `manifest_stale` and a form finding, and assert that red first.
+    - Start from a pack red for both `manifest_stale` and a file not in canonical form, and assert that red first.
     - After remediating, assert green, and assert the meaning is unchanged by a model comparison.
     - Assert a stray file is untouched, by its bytes.
     - Assert an unrepairable pack writes nothing, by a file-tree hash taken before and after.
@@ -225,7 +225,8 @@ example packs
 - **D9 — Dependencies.** Folded into D6: no new library, and no new verification metadata. If Jackson's YAML or XML dataformat is not already a verified dependency of
   a module `pack-doctor` may use, the YAML writer reuses the service's existing YAML emitter, and the XML writer uses
   `javax.xml.stream`. DIRECTIVE_051: no supply-chain change, so no new verification metadata.
-- **D10 — The ADR.** ADR-0083 records rulings R-a to R-y (R-x and R-y added by WP13, D15), and amends:
+- **D10 — The ADR.** ADR-0083 records rulings R-a to R-ad (R-x and R-y added by WP13, D15; R-z to R-ad by the
+  pre-merge squad fold, 2026-11-23), and amends:
   - ADR-0075 (decision 6: the CLI composes the domain phase under `--full`; decision 7: the preset phase; decision 9:
     pack-doctor, its commands, `--report`);
   - ADR-0042 (the 2026-11-12 amendment: hashes are verified on upload);
@@ -348,6 +349,13 @@ example packs
 
 - **D15 — The case-only policy lock in pack-doctor's `CLOSURE` (WP13; ruling R-y, DM-01M83MFXWH2NZQ8CJWFW1JTPY6;
   FR-016).**
+  - **Amended 2026-11-23 (ruling R-z, DM-01M84SG9JY2B1VX25M9CG9ZDKV; the pre-merge squad, A1, A4, A6).** The
+    canonical scope of the case-only answer is registration's: one body, `packs.domain.rules.CaseOnlyRules`
+    (`closure.case-only`), whose `mentionsOf` lists a pack's preset items then its locks in sorted URN order and whose
+    `matches` runs `caseOnlyMatches` over one composed closure, every member's mentions against every member's
+    holdings. Registration's phase 6 calls it; pack-doctor's `CLOSURE` calls it over the closure rooted at each pack of
+    the set, in pack-id order, each fault once. `PolicyLockRules` and the own-closure scope below are replaced, and
+    `PresetItemRules` gives no case-only answer of its own. The text below is the plan as WP13 built it.
   - **The gap.** Registration's composing judge runs phase 6, `PackCompositionResolver.caseOnlyMatches(composed,
     mentionsOf(facts))` (`OfferingReadService.java:450-475`), where `mentionsOf` is every preset item URN **and** every
     URN key of the pack's policy file (`facts.policy().urnEntries()`). Its fault is the resolver refusal lifted as it is
@@ -437,7 +445,7 @@ kitty-specs/pack-doctor-coverage-01M7YMQK/
 
 ```
 service/packs/src/main/java/ai/speckitty/charter/packs/
-├── domain/rules/        PackRulesets, CompositionRules, PresetItemRules (new), PolicyLockRules (new, D15),
+├── domain/rules/        PackRulesets, CompositionRules, PresetItemRules (new), CaseOnlyRules (new, D15 as amended),
 │                        GraphRules (D13)
 ├── domain/              PackCompositionResolver, EnhancementCompose, PackCompositionFacts, ClosureFault, PackCodes,
 │                        AntiPattern, AntiPatternIdentifier, AntiPatternSeverity (new, D12),

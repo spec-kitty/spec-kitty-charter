@@ -71,7 +71,7 @@ never delete or skip it. Fixtures are fixed, never exempted (C-002).
 | T049 | The charter contract drops `antiPatterns`; two schemas deleted; examples and scenarios; `### Breaking` fragment | WP12 | |
 | T050 | Live docs: descriptors, descriptor schemas, the procedure guide, the conformance register | WP12 | |
 | T051 | Red first: `PolicyLockRulesTest` and the `FullPassParityTest` case-only policy-lock row | WP13 | |
-| T052 | `PolicyLockRules`: `caseOnlyMatches` over each pack's own closure, for its policy's URN keys | WP13 | |
+| T052 | `PolicyLockRules`: `caseOnlyMatches` over each pack's own closure, for its policy's URN keys (replaced 2026-11-23 by `CaseOnlyRules`, ruling R-z) | WP13 | |
 | T053 | `PackRulesets.closureFaults` gains the phase after the preset items; order pinned | WP13 | |
 | T054 | Every surface green: parity row, `PackSetCheck`, goldens, the existing case-only scenario | WP13 | |
 | T055 | Records: ADR-0083 (R-x, R-y), `check-packs.md`, a `### Changed` fragment | WP13 | |

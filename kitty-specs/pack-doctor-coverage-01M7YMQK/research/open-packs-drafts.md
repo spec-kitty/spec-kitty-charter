@@ -100,22 +100,23 @@ real tag.
 >    - Today: `java -jar <jar> --pack <dir> ... --round-trip`.
 >    - New: the command word comes first, then the options: `java -jar <jar> validate --pack <dir> ... --round-trip
 >      --full`. The old flat form is no alias. It exits 2 with `pack-doctor: no command: give validate or remediate
->      before the options` and the usage (`service/pack-doctor/.../Arguments.java:179-194`; measured: exit 2).
->    - The usage, `Arguments.java:49-72`, gives the options:
+>      before the options` and the usage (`service/pack-doctor/.../Arguments.java:182-198`; measured: exit 2).
+>    - The usage, `Arguments.java:51-75`, gives the options:
 >      - `validate` takes `--config-root <dir> | --pack <dir>[:<level>][=<id>] ...`, then `[--round-trip] [--full]
 >        [--report <file> [--format yaml|xml]]`.
 >      - `remediate <dir>[:<level>][=<id>] ...` takes pack directories and no option.
 >      - `--help` alone prints the usage.
 >    - `--full` (ruling R-s; check value `REFERENCES`, R-u) checks each pack's substep delegations, references and step
->      enhancements' targets within its own closure, as registration does (`Arguments.java:63-64`).
+>      enhancements' targets, each against the packs it reaches over `depends_on`, as registration does
+>      (`Arguments.java:65-67`). It runs whenever no pack's closure fails to compose (ruling R-aa).
 >    - `--report <file> --format yaml|xml` writes the same report to a file, YAML by default (R-i;
->      `Arguments.java:65-67`).
+>      `Arguments.java:68-70`). The file must lie outside every pack checked.
 >    - Use `--full` in the gate: it is what lets (d) retire the reference and enhancement-target rules.
 > 5. **Exit codes and `--round-trip`**, copied from the shipped contract:
->    - The codes are in `Arguments.java:71` and `PackDoctorMain.java:46-49` and `:75-81`. `0` means valid, with
+>    - The codes are in `Arguments.java:74` and `PackDoctorMain.java:51-54` and `:87-94`. `0` means valid, with
 >      warnings allowed. `1` means at least one problem. `2` means a usage fault, a failure outside a pack read (the run
 >      directory, the report file) or an internal error. With `2`, nothing is on standard output.
->    - What a pack holds is never `2` (`PackDoctorMain.java:62-66`). A malformed `pack_version` is a problem (`1`),
+>    - What a pack holds is never `2` (`PackDoctorMain.java:76-79`). A malformed `pack_version` is a problem (`1`),
 >      not the rc.3 crash (spec-kitty-charter#624). So `CRASH_ISSUE`, `FAILED` and `CRASH_SIGN`
 >      (`open-packs:scripts/ci/charter_pack_check.py:58-63`) and the `failed` branch of `judge_invalid` (`:181-190`)
 >      retire, with the `failed` expectation (see 8).
@@ -128,10 +129,10 @@ real tag.
 >      `EXCLUDED_WRITTEN` in a `round_trip_red` detail matches `NOT_HELD_WRITTEN`.
 > 6. **The report keys.** Standard output is one JSON object, the tree of `contracts/charter/schemas/PackDoctorReport.yaml`
 >    (it replaces `PackCheckReport`). Its top-level keys are `tool`, `inputs`, `checks`, `packs`, `skipped` and
->    `problems`, plus `summary`. All but `skipped` are required (`:22-28`).
->    - **New:** `tool` (`:30-47`), `inputs` (`:48-85`) and `summary` (`:165-200`).
->    - `checks` gains `REFERENCES`: the enum is `[PACK, CLOSURE, REFERENCES, ROUND_TRIP]`, in that order (`:86-101`).
->    - `skipped[].check` may be `REFERENCES` (`:125-144`).
+>    `problems`, plus `summary`. All but `skipped` are required (`:26-32`).
+>    - **New:** `tool` (`:34-51`), `inputs` (`:52-89`) and `summary` (`:173-208`).
+>    - `checks` gains `REFERENCES`: the enum is `[PACK, CLOSURE, REFERENCES, ROUND_TRIP]`, in that order (`:90-107`).
+>    - `skipped[].check` may be `REFERENCES` (`:133-152`).
 >    - So the gate's `REPORT_KEYS = ("checks", "packs", "problems", "skipped")`
 >      (`open-packs:scripts/ci/charter_pack_check.py:57`) fails closed on `tool`, `inputs` and `summary` (`:154-156`).
 >      Add them.
@@ -140,7 +141,10 @@ real tag.
 >      `type`, `detail`, `instance`, `code`, `violations` and `packs`. Each violation is `pointer`, `code` and `detail`
 >      (`contracts/_shared/schemas/Problem.yaml:7-55`, `RefusalViolation.yaml:5-36`). The full key list for any
 >      parser is draft (e).
-> 7. **New refusals open-packs content hits.** Measured with the jar above:
+> 7. **New refusals open-packs content hits.** Two more refusals hit nothing here, measured over `packs/` and
+>    `tests/` with `find`: a YAML file or Markdown front matter of more than 1 048 576 code points (`unreadable`, `the
+>    document is too large`; no file here is over 1 000 KB), and a special file in a pack, such as a FIFO
+>    (`unreadable` at its path, never opened, ruling R-ad; none here). Measured with the jar above:
 >    - **The inline `anti_patterns` blocks:** `artifact_schema_error`, "unknown key 'anti_patterns'", in 60 files of
 >      15 packs. **The file-less `anti_pattern` nodes:** `drg_schema_error`, 13 nodes. These are draft (f).
 >    - The 15 packs with inline blocks cannot be read, so `CLOSURE` and `REFERENCES` are skipped for the whole set.
@@ -157,11 +161,11 @@ real tag.
 >    PR #626 landed after rc.3, in the commits `96ef87607` and `a04b94f18`.
 >    - `open-packs:tests/fixtures/invalid/case-variant-readme/expected-code:8` says `pack-check: retired`. The jar now
 >      answers `case_variant` (`service/packs/.../infra/storage/rules/StorageCodes.java:55`; contract
->      `CharterRefusalCode.yaml:423-425`). Measured: exit 1, with codes `case_variant` and `validation_failed`, and
->      no `retired`.
+>      `CharterRefusalCode.yaml:433-435`). Measured: exit 1, with the problem code `validation_failed` and the
+>      violation codes `org_fragment_missing` and `case_variant`, and no `retired`.
 >    - `open-packs:tests/fixtures/invalid/malformed-pack-version/expected-code:14` says `pack-check: failed`, the
 >      rc.3 crash. Its comment `:8-10` foresaw the change. The jar now exits 1 with `pack_version_invalid`
->      (`CharterRefusalCode.yaml:435`). Measured: exit 1, with codes `pack_version_invalid` and `validation_failed`.
+>      (`CharterRefusalCode.yaml:445`). Measured: exit 1, with codes `pack_version_invalid` and `validation_failed`.
 >    - The other three invalid fixtures (`legacy-shapes`, `retired-pack-document`, `unknown-dependency`) still carry
 >      their expected code under the new jar. The alignment pull request fixes the two lines. The key name
 >      `pack-check:` in `expected-code` (`open-packs:scripts/ci/charter_service_check.py:42`, `:79-80`, `:143`,
@@ -194,14 +198,19 @@ real tag.
 > **Why.** From `service-v<version>`, registration and `pack-doctor validate` (`CLOSURE`) judge every item of every
 > preset against the **own closure** of the pack that declares the preset. The own closure is the pack and every pack
 > it reaches over `depends_on` and `parent_pack`, never a dependent (ADR-0083 decisions 1-4; rulings R-a, R-k, R-l and
-> R-m; contract `CharterRefusalCode.yaml:1131-1151`; charter guide `docs/guides/check-packs.md:131-141`). The rule
+> R-m; contract `CharterRefusalCode.yaml:1141-1158`; charter guide `docs/guides/check-packs.md:135-145`). The rule
 > applies in this order, one fault per item:
 >
 > | The item | The answer |
 > | --- | --- |
-> | names an artifact of the closure, but only in other letter case | `pack_reference_artifact_missing` (case-only, as before) |
 > | is `must_have`, and no pack of the closure holds it as a **file** | `preset_item_not_held` |
 > | no pack of the closure declares it as its kind (a file or a graph node) | `preset_item_undeclared` |
+>
+> An item, or a policy lock, that names a held artifact only in other letter case gets neither: it is
+> `pack_reference_artifact_missing` (the case-only answer, as before), judged in registration's wider scope, the
+> composed closure each pack of the set roots (ruling R-z; ADR-0083 decision 20; guide `check-packs.md:147-157`). So a
+> dependency's item that only a pack depending on it holds in other case is refused when the two are checked
+> together.
 >
 > Each answer is 422 at registration. Its one violation is at `presets/<id>.yaml#/activated_<kinds>/<index>`. An item
 > of another kind never satisfies an entry. An `anti_pattern` is held only by its file. A composing read is not
@@ -253,10 +262,10 @@ real tag.
 >   `manifest_membership` and only when nothing else failed, and a path that membership names gets none.
 > - With `--round-trip`, the same cause is no longer also a `round_trip_red`.
 >
-> Contract: `contracts/charter/changes/2026-11-21-manifest-stale.md` and `CharterRefusalCode.yaml:431-433`. Scenario:
+> Contract: `contracts/charter/changes/2026-11-21-manifest-stale.md` and `CharterRefusalCode.yaml:441-443`. Scenario:
 > `contracts/charter/scenarios/registration/whole-pack-registration.feature:565`.
 >
-> The charter also ships the repair (ruling R-j; ADR-0083 decision 11; charter guide `docs/guides/check-packs.md:182-216`).
+> The charter also ships the repair (ruling R-j; ADR-0083 decision 11; charter guide `docs/guides/check-packs.md:209-262`).
 > `pack-doctor remediate <dir>[:<level>][=<id>] ...` does three things:
 >
 > - It derives and stamps each pack's `pack-manifest.yaml` exactly as every service write does.
@@ -265,7 +274,13 @@ real tag.
 > - It then runs `validate --round-trip` over the same set.
 >
 > It refuses, writing nothing, a pack with a fault it does not repair: any storage-verdict violation except
-> `manifest_membership` and `manifest_stale`. Files the charter does not hold are left as they are. It takes no lock.
+> `manifest_membership` and `manifest_stale`, a special file such as a FIFO (`unreadable`, ruling R-ad) among them.
+> Files the charter does not hold are left as they are. It takes no lock. It works in a copy under the Java temporary
+> directory: a pack already canonical is `unchanged`, with nothing written in or beside it, so a read-only checkout
+> works; a pack it rewrites needs write access to the directory holding it, and is swapped in through hidden siblings
+> (`.<pack>.remediate-<uuid>`, `.<pack>.aside-<uuid>`). A pack root that is a link is followed and the link kept; a
+> pack that holds the working directory is a usage fault (exit 2), so run it from the repository root, not from inside
+> a pack.
 >
 > **Today.** All 20 manifests here (`packs/` and `tests/fixtures/valid/`) verify, measured with open-packs' own
 > `stale_manifest_fields`, so nothing is refused at the repin for this. The curation of (f) adds the anti-pattern
@@ -312,6 +327,7 @@ real tag.
 > | `derived_manifest`/`derive_manifest` (`:466-550`), `membership_mismatch` (`:515-532`) under `--derived-manifests`, and `regenerate_manifest` (`:417-443`) | `manifest_membership` and `manifest_stale` judge it; `pack-doctor remediate` writes it (c) |
 > | `profile_reference_violations` (`:1301-1346`), the bare reference held only by another pack, the qualifier outside the closure, the named pack not holding it | `pack_reference_unqualified`, `pack_reference_pack_missing`, `pack_reference_artifact_missing` at `REFERENCES` (`--full`) |
 > | `prompt_fragment_composition_violations` (`:1347-1417`), the target step that does not exist (`:1380-1402`) | `pack_reference_pack_missing` / `pack_reference_artifact_missing` at `REFERENCES` (`--full`; `EnhancementCompose.targetFaultsOf`) |
+> | the same, the target step whose prompt cannot be read (`:1403-1409`) | `artifact_schema_error` at the target's mission type file, `step '<id>' names <prompt path>: missing`, at `PACK` of the target's pack |
 >
 > Also retire the old anti-pattern model in the same file, with (f):
 >
@@ -326,7 +342,7 @@ real tag.
 >   override (ADR-0053 decision 6).
 > - The bare DRG edge endpoint that resolves to no node of any pack (`:1527-1540`; DIV-007).
 > - The prompt fragment slot that the target step's prompt does not declare, the slot part of
->   `prompt_fragment_composition_violations` (`:1403-1417`). The charter refuses it only for a stored activation that
+>   `prompt_fragment_composition_violations` (`:1410-1414`). The charter refuses it only for a stored activation that
 >   has it in force (C38).
 > - The `specializes_from` cycle (`specialization_cycle_violations`, `:1418-1459`). It is the `--full` remainder of
 >   ruling R-s. The charter's registration still refuses it per composed closure (`specialization_cycle`), but
@@ -366,30 +382,38 @@ real tag.
 >
 > - **Top level** (`additionalProperties: false`; `tool`, `inputs`, `checks`, `packs`, `problems` and `summary` are
 >   required):
->   - `tool`: `{name: pack-doctor, version: <version>}` (`:30-47`).
+>   - `tool`: `{name: pack-doctor, version: <version>}` (`:34-51`).
 >   - `inputs`: `config_root` *or* `packs` (the `--pack` values as written), and `options: {full, round_trip}`
->     (`:48-85`).
+>     (`:52-89`).
 >   - `checks`: a subset of `[PACK, CLOSURE, REFERENCES, ROUND_TRIP]`, in that order. `PACK` always runs.
->     `REFERENCES` runs only with `--full` and only when `CLOSURE` ran and found no fault (`:86-101`).
->   - `packs[]`: `{name, level?, path}` (`:102-124`).
+>     `REFERENCES` runs only with `--full` and only when `CLOSURE` ran and found no composition fault, a closure that
+>     does not compose (ruling R-aa); a contest, preset-item or case-only problem stands beside it (`:90-107`).
+>   - `packs[]`: `{name, level?, path}`, `name` the pack id (`:108-132`).
 >   - `skipped[]` (only when a check was asked for and could not run): `{check: CLOSURE|REFERENCES, reason}`
->     (`:125-144`).
->   - `problems[]`: each a contract `Problem` (`:145-164`).
->   - `summary`: `{packs, violations, warnings, notices, exit_code}`, where `exit_code` is 0 or 1 (`:165-200`).
+>     (`:133-152`).
+>   - `problems[]`: each a contract `Problem` (`:153-172`).
+>   - `summary`: `{packs, violations, warnings, notices, exit_code}`, where `exit_code` is 0 or 1 (`:173-208`).
 > - **A problem** (`contracts/_shared/schemas/Problem.yaml`): `title` and `status` are required, with `type`, `detail`,
 >   `instance` (the `file:` URI of the pack's directory, for a pack's own problems), `code`, `violations[]` and
 >   `packs[]` (a composition or `REFERENCES` fault). Per pack, there is one `validation_failed` problem for its
->   violations, then one for its round-trip reasons. A composition fault has its own code and names its packs.
+>   violations, or, when the pack has none but its composition facts cannot be read, one problem with the refusal's
+>   own code (such as `pack_unreadable`), then one for its round-trip reasons (`:156-165`). A closure fault has its own
+>   code and names each of its packs once.
 > - **A violation** (`RefusalViolation.yaml`): `pointer`, `code` and `detail`, all required.
 >
-> **The XML** (`PackDoctorReport.yaml:12-19`) is the same tree in an element-per-key mapping of its own, not JUnit's:
+> **The XML** (`PackDoctorReport.yaml:12-23`) is the same tree in an element-per-key mapping of its own, not JUnit's:
 >
 > - The root is `pack-doctor-report`, in no namespace.
 > - Each array item is named for the singular of its key: `checks/check`, `packs/pack`, `problems/problem`,
 >   `violations/violation`, `skipped/skip`.
-> - A `type` attribute appears only on an array, an integer, a boolean or an empty object.
+> - A `type` attribute appears only on an array, an integer, a boolean, an empty object, or a string holding a
+>   character XML 1.0 cannot carry: such a string is `type="escaped"`, each such character `\uXXXX` (the upper-case hex
+>   of its UTF-16 code unit) and each backslash `\\` (ruling R-ac). A parser here undoes that escape.
 >
 > Parsed back by that rule, the XML gives the same tree. An xUnit-compatible form may come later (R-n).
+>
+> **The report file** must lie outside every pack the run checks (by real path; a usage fault, exit 2, otherwise). It
+> is written to a hidden sibling first and renamed into place once standard output took the report.
 >
 > **Warnings** stay on standard error, one line each: `warning: <pack>: <code> <file>: <detail>`. They never change
 > the exit code, and `summary.warnings` counts them.
@@ -417,7 +441,7 @@ it for filing.
 > **Why.** `service-v<version>` closes spec-kitty-charter#154 whole (ruling R-r; ADR-0083 decisions 12-14):
 >
 > - **An anti-pattern is its own file**, `anti_patterns/<id>.anti-pattern.yaml` (WP10; charter
->   `contracts/packs/schemas/anti-pattern.schema.json`; `contracts/packs/file-kinds.yaml:228-229`). The schema is
+>   `contracts/packs/schemas/anti-pattern.schema.json`; `contracts/packs/file-kinds.yaml:231-232`). The schema is
 >   closed:
 >   - Required: `schema_version`, `id` (the file stem), `title`, `description`, `severity` and `bad_example`.
 >   - `severity` is `smell`, `severe` or `breaking`, with no default (ADR-0052 decisions 8 and 10; ADR-0053

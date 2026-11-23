@@ -12,7 +12,8 @@
 Invariants:
 
 - Each preset item gets at most one fault.
-- The case-only answer precludes a preset-item fault for the same item.
+- The case-only answer precludes a preset-item fault for the same item: an item named only by case in its own closure
+  gets no preset-item fault (the case-only answer below gives its answer).
 - An item of another kind never satisfies the entry.
 
 The own closure is the declaring pack plus everything it reaches over `depends_on` and `parent_pack`
@@ -24,23 +25,30 @@ References (the compose, the case-only check, the registration and uninstall dif
 since a step is a value of its type's file. It is derived, never stored, so a file-less graph node (a bare
 `directive:` node) is declared but neither held nor referable (ruling R-v, DM-01M80YAS1QJABJ74REAXWNNZF9).
 
-## Case-only policy lock (domain, `ClosureFault`; plan D15, FR-016; ruling R-y)
+## Case-only answer (domain, `ClosureFault`; plan D15, FR-016; rulings R-y, R-z)
 
-A `CLOSURE` phase of the domain factory (`PolicyLockRules`, rule `closure.policy-locks`), after the preset items.
+The last `CLOSURE` phase of the domain factory (`CaseOnlyRules`, rule `closure.case-only`), after the preset items.
+Amended 2026-11-23 by ruling R-z (DM-01M84SG9JY2B1VX25M9CG9ZDKV): one body for preset items and policy locks, in
+registration's scope; the first form, `PolicyLockRules` over each pack's own closure, is gone.
 
 | Field | Value |
 |---|---|
 | reason.code | `pack_reference_artifact_missing` (the existing case-only answer, `PackCompositionResolver.caseOnlyMatches`) |
-| reason.detail | the resolver's case-only detail: the mentioning pack names `<lock URN>`, but the holder holds `<held URN>`; ids differ only by case and are matched exactly |
-| packs | the mentioning pack first, then the holder |
+| reason.detail | the resolver's case-only detail: the mentioning pack names `<URN>`, but the holder holds `<held URN>`; ids differ only by case and are matched exactly |
+| packs | the mentioning pack, then the holder, each once |
 | violations | none: registration's phase 6 answer carries no violation of its own |
-| origin | the pack and the lock's URN, as written |
+| origin | the first pack the fault names |
 
 Invariants:
 
-- A lock is a URN key of the pack's mutability policy file (`MutabilityPolicySource.urnEntries`), judged against the
-  pack's own closure (as a preset item is); a lock no pack of the own closure holds, in any letter case, is no fault.
-- One fault per such lock, in pack-id order, then the policy's entry order, after every preset-item fault.
+- A mention is a preset item's URN or a lock, a URN key of the pack's mutability policy file
+  (`MutabilityPolicySource.urnEntries`): `CaseOnlyRules.mentionsOf` lists a pack's preset items, then its locks in
+  sorted URN order.
+- `CaseOnlyRules.matches` judges one composed closure: every member's mentions against every member's holdings, the
+  holder the first in merge order. Registration's phase 6 calls it over the closure it composes; pack-doctor calls it
+  over the closure rooted at each pack of the set, in pack-id order, a fault two roots find once, and skips a root whose
+  closure reaches a pack outside the set.
+- A mention no pack of the closure holds, in any letter case, is no fault.
 - Registration answers the same code, packs and detail (its phase 6, the closure named in front); a composing read is
   unchanged.
 
@@ -85,13 +93,14 @@ Invariants:
 | Field | Value |
 |---|---|
 | code | `drg_schema_error` (`PackCodes.DRG_SCHEMA_ERROR`, VIOLATION; an existing contract code) |
-| location | the graph document (a `*.graph.yaml` shard or the fragment), pointer `/nodes/<n>` |
+| location | the graph document (a `*.graph.yaml` shard or the fragment); the domain finding's pointer is `/nodes/<n>`, and the violation of registration and of pack-doctor alike is at the document |
 | detail | `<origin>: anti_pattern:<id> is declared with no file; an anti-pattern is held by anti_patterns/<id>.anti-pattern.yaml in the same pack` |
 
 Invariants:
 
 - One finding per `anti_pattern` node of the pack's own graph documents whose URN the pack holds no file for, in
-  document order (shards, then the fragment), after the other graph rules.
+  document order (shards, then the fragment), after the other graph rules. A node whose file is there but refused for
+  a fault of its own gets none: the file's fault is the one cause (squad finding A9).
 - A pack-qualified edge endpoint is no node, so it is never judged here.
 - `action` nodes are unaffected (a mission type step is a value of its type's file).
 
@@ -132,7 +141,10 @@ The phase's faults are the existing codes, from the existing collect-all functio
 3. enhancement targets (`EnhancementCompose.targetFaults`): `pack_reference_pack_missing`,
    `pack_reference_artifact_missing`.
 
-Every fault of the first check that finds any is collected, and each pack is judged within its own closure.
+Every fault of the first check that finds any is collected, and each pack is judged within its own closure. The order
+and the stop are one body, `PackRulesets.references(closure, members, factsOf)` (ruling R-ab), which registration's
+composing judge calls with every member and pack-validation's `ReferencesPhase` per pack. The phase runs when
+`CLOSURE` found no composition fault (ruling R-aa); a contest, preset-item or case-only fault stands beside its faults.
 `PackSetVerdict.Check` gains one value for the phase, `REFERENCES` (ruling R-u). The `specializes_from` cycle,
 relations, edge-index and own-closure-walk checks are not part of it (#636 slices 2-4 and 7).
 
@@ -158,7 +170,8 @@ tree, and is validated by parsing it back and checking it against the same schem
 For each pack, remediate reports one of:
 
 - `rewritten`: the manifest and the files written in canonical form;
-- `refused`: the storage verdict's violations, except the manifest gate's, with nothing written;
-- `unchanged`: already canonical.
+- `refused`: the storage verdict's violations, except the manifest gate's, with nothing written (a special file of the
+  pack among them, `unreadable`, ruling R-ad);
+- `unchanged`: already canonical, and nothing written in or beside the pack.
 
 After writing, it validates again and reports the result.
