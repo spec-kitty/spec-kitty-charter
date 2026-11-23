@@ -1,14 +1,17 @@
 # Tasks: pack-doctor coverage
 
 **Mission**: `pack-doctor-coverage-01M7YMQK` · **Planning base / merge target**: `feat/pack-doctor-coverage` (PR to
-`main`) · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md) (D1-D14)
+`main`) · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md) (D1-D15)
 
-Execution order (one PR, R-f): WP01 → WP02 → {WP10 → {WP03, WP11, WP12}, WP04} → WP05 → WP06 → WP07 → WP08 → WP09.
+Execution order (one PR, R-f): WP01 → WP02 → {WP10 → {WP03, WP11, WP12}, WP04} → WP05 → WP06 → WP07 → WP08 → WP13 →
+WP09.
 WP10 (the `anti_pattern` file kind and the example anti-patterns as files, rulings R-p, R-q and R-r, plan D12) comes
 before WP03, which needs the built-in anti-pattern held as a file, and before WP11 (the file-less node refusal, D13)
 and WP12 (the inline drop, D14), which need example packs already in the canonical shape. WP03 does not wait for WP11
 or WP12. WP05 is no longer held: ruling R-s narrows `--full` to delegations, references and enhancement targets
-(plan D5).
+(plan D5). WP13 (added 2026-11-23, ruling R-y, plan D15) folds the case-only policy-lock check into pack-doctor's
+`CLOSURE`. It builds on WP03's preset-item phase and WP05's parity table, and runs after WP08 has landed ADR-0083 and
+the guide, which it amends with R-x and R-y; WP08's records are final once WP13 is approved.
 
 Every behavior change is written red-first (NFR-001). No PIT (C-003). Rewrite a test that pins replaced behavior;
 never delete or skip it. Fixtures are fixed, never exempted (C-002).
@@ -67,6 +70,11 @@ never delete or skip it. Fixtures are fixed, never exempted (C-002).
 | T048 | Domain, storage and API drop the field; tests and fixtures rewritten | WP12 | |
 | T049 | The charter contract drops `antiPatterns`; two schemas deleted; examples and scenarios; `### Breaking` fragment | WP12 | |
 | T050 | Live docs: descriptors, descriptor schemas, the procedure guide, the conformance register | WP12 | |
+| T051 | Red first: `PolicyLockRulesTest` and the `FullPassParityTest` case-only policy-lock row | WP13 | |
+| T052 | `PolicyLockRules`: `caseOnlyMatches` over each pack's own closure, for its policy's URN keys | WP13 | |
+| T053 | `PackRulesets.closureFaults` gains the phase after the preset items; order pinned | WP13 | |
+| T054 | Every surface green: parity row, `PackSetCheck`, goldens, the existing case-only scenario | WP13 | |
+| T055 | Records: ADR-0083 (R-x, R-y), `check-packs.md`, a `### Changed` fragment | WP13 | |
 
 ## Phase 1 — Foundation
 
@@ -168,6 +176,19 @@ T024 Parity table (WP05)
 
 Independent test: each planted delegation, reference and target fault gives the registration's code under `--full`
 and nothing without it; a `specializes_from` cycle is refused by registration and not yet reported by `--full`.
+
+### WP13 — The case-only policy lock in pack-doctor's `CLOSURE` (ruling R-y)
+Prompt: [tasks/WP13-policy-lock-case-only.md](tasks/WP13-policy-lock-case-only.md) · P2 · Depends on: WP03, WP05, WP08
+
+T051 Red first: the domain test and the parity row (WP13)
+T052 `PolicyLockRules` (WP13)
+T053 Wired into `PackRulesets.closureFaults` (WP13)
+T054 Every surface green (WP13)
+T055 Records: ADR-0083, the guide, the fragment (WP13)
+
+Independent test: a policy lock that names a held id only by case passes `pack-doctor validate` before and is
+`pack_reference_artifact_missing` with no violation after, as registration answers it; registration and the composing
+read are unchanged.
 
 ## Phase 3 — The CLI surfaces
 

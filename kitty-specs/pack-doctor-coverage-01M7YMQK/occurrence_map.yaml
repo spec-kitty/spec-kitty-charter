@@ -29,6 +29,27 @@ categories:
     action: rename
     note: the CLI's stderr prefixes; no telemetry exists
 exceptions:
+  - path: "docs/changelog/2026-11-22-pack-doctor.md"
+    action: manual_review
+    note: WP08's new changelog entry, which names the rename (not released history; the glob below keeps the rest)
+  - path: "docs/guides/check-packs.md"
+    action: rename
+    note: keeps its path (filesystem_paths); WP02 renamed its text, WP08 documents validate --full, --report, --format and remediate, WP13 the case-only policy lock
+  - path: "docs/guides/author-a-procedure.md"
+    action: manual_review
+    note: no mention of the tool; WP12 and WP08 edit its inline anti_patterns wording (FR-015)
+  - path: "contracts/packs/CHANGELOG.md"
+    action: manual_review
+    note: no mention of the tool; WP10, WP12 and WP08 add the anti-pattern lines (FR-013, FR-015)
+  - path: "contracts/charter/changes/2026-11-21-pack-doctor.md"
+    action: manual_review
+    note: the unreleased fragment that records the rename names the old tool by design (NoPackCheckSurfaceTest keeps it); WP08 corrects its remediate clause
+  - path: "contracts/charter/changes/2026-11-23-pack-doctor-policy-lock-case-only.md"
+    action: manual_review
+    note: WP13's new fragment (ruling R-y); it names pack-doctor, the tool's new name, and no old surface
+  - path: "contracts/charter/changes/2026-11-21-round-trip-not-held-code.md"
+    action: manual_review
+    note: no mention of the tool; WP04's fragment, wording folded by WP08
   - path: "kitty-specs/pack-doctor-coverage-01M7YMQK/**"
     action: manual_review
     note: this mission's own planning artifacts (the occurrence map, WP files); not history

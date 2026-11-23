@@ -3,7 +3,7 @@
 **Mission Branch**: `kitty/mission-pack-doctor-coverage-01M7YMQK` (merges into `feat/pack-doctor-coverage`, PR to `main`)
 **Created**: 2026-11-21
 **Status**: Draft
-**Input**: #629, #630, #632 and #614 (epic #549), with the operator's design rulings R-a to R-s
+**Input**: #629, #630, #632 and #614 (epic #549), with the operator's design rulings R-a to R-y
 (`decisions/`) and the research in `research/rule-coverage.md`.
 
 ## Purpose
@@ -56,6 +56,10 @@ over it, and compare the codes.
    existing case-only answer stands, and it is the item's only problem.
 4. **Given** a pack already stored whose preset now breaks the rule, **When** a composing read runs, **Then** it is
    not refused, and `requiredNotHeld` still reports the unheld item.
+5. **Given** a pack whose policy file locks an id that its own closure holds only in other letter case
+   (`directive:directive_001` where the closure holds `DIRECTIVE_001`), **When** the pack is registered or validated,
+   **Then** it is refused with `pack_reference_artifact_missing`, naming the packs, with no violation of its own: the
+   answer registration's case-only check already gives (ruling R-y, FR-016).
 
 ### User Story 2 - A stale manifest hash is refused everywhere (Priority: P1)
 
@@ -96,9 +100,10 @@ registration keeps refusing it.
 2. **Given** a step enhancement whose target step does not exist, **When** `validate --full` runs, **Then** it
    reports the registration's `pack_reference_*` code.
 3. **Given** a substep delegation candidate that names a pack of the own closure that does not hold it, **When**
-   `validate --full` runs, **Then** it reports the registration's `pack_unreadable` with the violation
+   `validate --full` runs, **Then** it reports the registration's `validation_failed` with the violation
    `substep_delegation_unresolved` at the mission type file.
-4. **Given** a set with several such faults, **Then** every one is reported, not only the first.
+4. **Given** a set with several such faults, **Then** every fault of the first check that finds any is reported, not
+   only the first; a later check runs once the earlier ones pass, as a later phase of registration does.
 
 ### User Story 4 - The checker is pack-doctor, with a report file (Priority: P2)
 
@@ -123,13 +128,14 @@ release asset.
 
 A user runs `pack-doctor remediate <pack-dir>`. It derives and stamps `pack-manifest.yaml` the way every service
 write does, and rewrites each modelled file in the round trip's canonical form. A following `validate` then reports
-no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
+no `manifest_membership` and no `manifest_stale`. The round trip compares meaning, not form (ADR-0036), so the canonical
+form is shown by the bytes remediate writes, not by a finding.
 
 **Acceptance Scenarios**:
 
 1. **Given** a pack with a stale or incomplete manifest, **When** it is remediated, **Then** a following validation of
-   the pack (with `--round-trip`) is clean of manifest and form findings, and the pack's meaning is unchanged
-   (ADR-0036).
+   the pack (with `--round-trip`) is clean of manifest findings, each modelled file is in canonical form, and the pack's
+   meaning is unchanged (ADR-0036).
 2. **Given** a pack with a fault that remediate does not repair (a domain fault), **When** it is remediated, **Then**
    the command refuses with exit 1, names the fault, and writes nothing.
 3. **Given** a stray file the census does not hold, **Then** remediate leaves it untouched.
@@ -144,7 +150,8 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
   preset rule runs (FR-014), so a `must_have` anti-pattern held nowhere in the own closure answers
   `preset_item_not_held`.
 - An `anti_pattern` node in a graph shard or the fragment, with no `anti_patterns/<id>.anti-pattern.yaml` in the same
-  pack, is refused `drg_schema_error` at `/nodes/<n>` of that document. A pack-qualified `rejects` target
+  pack, is refused `drg_schema_error`: the finding is at `/nodes/<n>` of its document, and a registration violation's
+  pointer is the document. A pack-qualified `rejects` target
   (`other::anti_pattern:x`) is no node of the rejecting pack, so it needs no file there; it needs the target's pack in
   `depends_on` (`pack_reference_pack_missing` otherwise) and the file in that pack (`pack_reference_artifact_missing`).
 - An anti-pattern file with no node and no edge is valid: it is held and activatable.
@@ -155,9 +162,12 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 - Activating a styleguide or procedure that rejects an anti-pattern does not activate the anti-pattern.
 - When the round trip and the manifest gate both see the same stale field, there is one problem. A "written stale"
   red, where the writer itself is wrong, still reports.
+- A policy lock on an id that no pack of the own closure holds, in any letter case, is not refused (it changes no
+  write); only a lock that differs from a held id by letter case alone is (FR-016).
 - A `specializes_from` cycle is not judged by `--full` (R-s); registration still refuses it, and ADR-0083 records it
   as landing with #636.
-- `remediate` on a path that is not a pack directory exits 2, as an I/O or usage failure.
+- `remediate` on a path that is not a directory exits 2, as a usage failure. A directory with no `pack.yaml` is refused
+  (exit 1), as `validate` reports it.
 
 ## Requirements
 
@@ -165,7 +175,7 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 
 | ID | Requirement | Status | Delivery | No-op passable? |
 |---|---|---|---|---|
-| FR-001 | #614, re-scoped as slice 1 of epic #636: `Origin` on `Reason`; one `ClosureFault.of(...)` factory; `CompositionFault` deleted outright from `CompositionRules`, `PackRulesets` and the checker's problem mapping; `ClosureVerdict` becomes a view over `Rationale` or is deleted. The wire codes and order of findings are unchanged. | Proposed | [build] | no: the type is deleted, and the pinning tests still pass |
+| FR-001 | #614, re-scoped as slice 1 of epic #636: `Origin` on `Reason`; one `ClosureFault.of(...)` factory; `CompositionFault` deleted outright from `CompositionRules`, `PackRulesets` and the checker's problem mapping; `ClosureVerdict` becomes a view over `Rationale` or is deleted. The wire codes and order of findings are unchanged. The `ClosureVerdict` clause is deferred to #636 slice 7 by ruling R-x (DM-01M83MFVJZX16G6NBM4YPB9XYG): `ClosureVerdict` stays a fault list with a derived `Rationale` until that slice removes it, and this mission's acceptance records the clause deferred, with the PR writing `Refs #636`. | Proposed | [build] | no: the type is deleted, and the pinning tests still pass |
 | FR-002 | One domain rule judges every preset item against the declaring pack's own closure. A `must_have` item that no closure pack holds as a file answers `preset_item_not_held`. An item that no closure pack declares as its kind answers `preset_item_undeclared`. Each item gets exactly one fault, and the case-only answer wins when it applies. | Proposed | [build] | no: the planted cases fail first |
 | FR-003 | FR-002 runs in the default validation (`CLOSURE`'s preset phase) and on every registration and write, through the same domain factory. It never runs on a composing read, where `requiredNotHeld` keeps reporting. | Proposed | [build] | no |
 | FR-004 | A stale `content_hash` (of a constituent or a preset) or a stale `manifest_hash` answers `manifest_stale` at `pack-manifest.yaml`, naming the field. It is judged in the storage manifest gate beside `manifest_membership`, so validation and whole-pack registration refuse it. Files that membership already names are skipped. | Proposed | [build] | no |
@@ -176,16 +186,17 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 | FR-009 | `remediate <pack-dir>...` writes each pack's manifest through the service's own derivation and stamp, and rewrites each modelled file in the round trip's canonical form, through a public storage-edge entry point. It judges nothing new. It refuses, writing nothing, when the pack has a fault it does not repair. | Proposed | [build] | no |
 | FR-010 | The example packs, the contract scenarios and the whole-pack gate carry the canonical shape, and fixtures are fixed, never exempted. `built-in` gains the anti-pattern artifact its default preset requires, as a file of the kind FR-013 builds, and every other inline anti-pattern of the example packs becomes a file with its `rejects` edge. `org-base` gains, or drops, the two tactics its `spdd` preset activates. Example manifests are restamped. | Proposed | [build] | no |
 | FR-011 | The contract gains `preset_item_not_held`, `preset_item_undeclared` and `manifest_stale` with their statuses. The report schemas are added, and the registration scenarios that pinned the old behavior are rewritten. Each comes with a change fragment (`### Breaking` where a valid input is now refused). | Proposed | [build] | no |
-| FR-012 | ADR-0083 records rulings R-a to R-s (R-r: all of #154 in this PR; R-s: the narrowed `--full`). It amends ADR-0075 (decisions 6, 7 and 9), ADR-0042 (the 2026-11-12 amendment), rules A10 and C31, and the patterns page's scope table. It records #535 and #52 item 3 as not the charter's to judge. | Proposed | [build] | no |
+| FR-012 | ADR-0083 records rulings R-a to R-w (R-r: all of #154 in this PR; R-s: the narrowed `--full`); WP13 adds R-x (FR-001's `ClosureVerdict` clause deferred to #636 slice 7) and R-y (FR-016). It amends ADR-0075 (decisions 6, 7 and 9), ADR-0042 (the 2026-11-12 amendment), rules A10 and C31, and the patterns page's scope table. It records #535 and #52 item 3 as not the charter's to judge. | Proposed | [build] | no |
 | FR-013 | The `anti_pattern` kind has a file form (rulings R-p, R-q and R-r; ADR-0052 decision 8 as amended by ADR-0053 decision 30): `anti_patterns/<id>.anti-pattern.yaml`, a closed shape with `schema_version`, `id` (the file stem), `title`, `description`, `severity` (`smell`, `severe` or `breaking`) and `bad_example` required, and `good_example` optional. There is no default severity (ADR-0053 decision 32). The packs contract gains its schema, its `files` rule and a classifier case. The store binds, reads and writes it in one canonical form. Registration and `pack-doctor validate` hold a valid file and refuse an invalid or misplaced one with the existing answers: a missing `severity`, a missing `bad_example`, an unknown severity or an unknown key is `artifact_schema_error` at the file and the breaching pointer; a stem or placement fault is the existing stem and placement answer. Every inline anti-pattern of the example packs moves to a file of `built-in` (18 entries, 18 files) with a node and a `rejects` edge from its owner, and its inline block is removed; `built-in` holds `indirection-for-repetition`, which its default preset requires. | Proposed | [build] | no: a planted file is `file_not_held` before, held after |
-| FR-014 | A pack whose graph document (a shard or the fragment) declares an `anti_pattern` node that the same pack does not hold as an anti-pattern file is refused (ruling R-r; ADR-0052 decision 14, ADR-0053 decision 31): one `drg_schema_error` per such node, at `/nodes/<n>` of its document, naming the node and the file it lacks. It is one content rule of `GraphRules`, composed into `PackRulesets.content()`, so registration, every write and `pack-doctor validate` refuse alike. It reads the nodes and files of the one read and walks nothing. | Proposed | [build] | no: the planted node is accepted before |
+| FR-014 | A pack whose graph document (a shard or the fragment) declares an `anti_pattern` node that the same pack does not hold as an anti-pattern file is refused (ruling R-r; ADR-0052 decision 14, ADR-0053 decision 31): one `drg_schema_error` per such node, naming the node and the file it lacks. The finding is at `/nodes/<n>` of its document; a registration violation's pointer is the document. It is one content rule of `GraphRules`, composed into `PackRulesets.content()`, so registration, every write and `pack-doctor validate` refuse alike. It reads the nodes and files of the one read and walks nothing. | Proposed | [build] | no: the planted node is accepted before |
 | FR-015 | The procedure and styleguide shapes drop `anti_patterns` outright (ruling R-r; ADR-0052 decision 16): `procedure.schema.json` and `styleguide.schema.json` lose the property and its `$defs` entry; the domain (`Procedure.antiPatterns`, `Styleguide.antiPatterns`, `AntiPatternEntry`, `StyleguideAntiPattern`), the DSOs, YAML forms and bindings lose it; the charter contract's `Styleguide`, `StyleguideRegistration` and `Procedure` schemas lose `antiPatterns`, and `StyleguideAntiPattern.yaml` and `ProcedureAntiPattern.yaml` are deleted. A pack file that still carries the key is refused `artifact_schema_error` (unknown key) by the closed schema, on every surface. Contract examples, scenarios and test fixtures carry only the new shape. | Proposed | [build] | no: the planted inline block is accepted before |
+| FR-016 | A policy lock (a URN key of the pack's mutability policy file) that names an artifact of the declaring pack's own closure only by letter case is refused by `pack-doctor validate` as registration refuses it (ruling R-y, DM-01M83MFXWH2NZQ8CJWFW1JTPY6): `pack_reference_artifact_missing`, naming the mentioning pack and then the holder, with the existing case-only detail and no violation of its own. It is one phase of `CLOSURE` from the domain factory (`PackRulesets.closureFaults`), after the preset items, using the existing `PackCompositionResolver.caseOnlyMatches` over each pack's own closure, with no new walk. Registration (`OfferingReadService.judged` phase 6) and the composing read are unchanged. | Proposed | [build] | no: the planted lock passes `validate` before |
 
 ### Non-Functional Requirements
 
 | ID | Requirement | Threshold | Status |
 |---|---|---|---|
-| NFR-001 | Each behavior change has a test that is written first and fails before the change. | 100% of FR-001 to FR-006, FR-008, FR-009 and FR-013 to FR-015 | Proposed |
+| NFR-001 | Each behavior change has a test that is written first and fails before the change. | 100% of FR-001 to FR-006, FR-008, FR-009 and FR-013 to FR-016 | Proposed |
 | NFR-002 | pack-doctor's run over the example packs keeps CI's existing time budget. | `validate --round-trip` within the NFR-002 step's 20 s, and `--full` within 30 s | Proposed |
 | NFR-003 | No new walk over packs. The own closure comes from the domain's existing closure function. | 0 new `depends_on`/`parent_pack` traversals outside `packs.domain` (ArchUnit or review) | Proposed |
 
@@ -230,7 +241,8 @@ no `manifest_membership`, no `manifest_stale` and no round-trip form finding.
 
 Closes #614, #629, #630 and #154. Refs #632: items 1 and 2 land (WP03, WP07) and item 3 lands narrowed (R-s); the
 `specializes_from` cycle, relation, edge-index and own-closure-walk checks of item 3 remain, for #636 slices 2-4 and 7.
-#52 item 3 and #535 are closed by ruling R-g. Parent epics: #549 (ticked for #614, #629, #630) and #142 (ticked for
+#52 item 3 and #535 are closed by ruling R-g. Refs #636 also for FR-001's `ClosureVerdict` clause, deferred to
+slice 7 (R-x). Parent epics: #549 (ticked for #614, #629, #630) and #142 (ticked for
 #154). Kept in view: #158. #154 is delivered whole (ruling R-r): the `anti_pattern` file kind (FR-013), the file-less
 node refusal (FR-014) and the inline drop (FR-015). Open-packs' styleguides and procedures with inline entries, and its
 13 file-less nodes, are refused at its repin until curated (`open-packs#TBD-anti-pattern-files`, C-006).

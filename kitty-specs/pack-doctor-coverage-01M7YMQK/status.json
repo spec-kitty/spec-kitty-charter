@@ -1,21 +1,21 @@
 {
-  "event_count": 94,
-  "last_event_id": "01M81D97FMDP8JRD2J687H7N5D",
-  "materialized_at": "2026-11-22T10:36:58.228276+00:00",
+  "event_count": 122,
+  "last_event_id": "01M83YMWNASRXMKM63MDXN093V",
+  "materialized_at": "2026-11-23T10:18:55.018862+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 9,
+    "approved": 13,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
-    "planned": 2
+    "in_review": 0,
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -230,20 +230,27 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M81D97FMDP8JRD2J687H7N5D",
-      "last_transition_at": "2026-11-22T10:36:58.228276+00:00",
+      "lane": "approved",
+      "last_event_id": "01M81E7VW1WAR0K3MRBVZ82BWH",
+      "last_transition_at": "2026-11-22T10:53:42.145271+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: PackRemediation facade (packs.infra.storage) with staged copy and two-rename swap; StorageRulesets.verdictWithoutTheManifestGate is the one precondition; pack-doctor remediate <dir>[:<level>][=<id>]... prints rewritten/unchanged/refused, then validate --round-trip over the set (exit 0/1/2); HexagonalArchitectureTest names the remediation as the main's third adapter and walks it framework-free. Gates green except PackSetCheckTest Closure 'a must_have no pack of the own closure holds', which fails identically on the lane base 148805047 (WP03 test edits spdd.yaml, WP04 manifest_stale flags it) - not WP07.",
-        "- 2026-11-22T10:36:23Z – claude – shell_pid=22717 – Fixed the WP03 x WP04 integration red in PackSetCheckTest$Closure (commit 2f0b19450, out-of-map): anUnheldMustHaveIsNotHeld and anUndeclaredItemIsUndeclared edit org-base presets/spdd.yaml; each now restamps with ManifestStamps.stamp after planting, asserts no pack fails, and asserts its one closure code by equality (preset_item_not_held / preset_item_undeclared). A probe over packs and pack-validation found no other unrestamped plant: every other manifest-gate hit is a test that plants the manifest fault on purpose. Fresh runs: :pack-validation:test 478 tests 0 failures (1 skipped), :packs:test 7268 tests 0 failures (7 skipped)."
+        "- 2026-11-22T10:36:23Z – claude – shell_pid=22717 – Fixed the WP03 x WP04 integration red in PackSetCheckTest$Closure (commit 2f0b19450, out-of-map): anUnheldMustHaveIsNotHeld and anUndeclaredItemIsUndeclared edit org-base presets/spdd.yaml; each now restamps with ManifestStamps.stamp after planting, asserts no pack fails, and asserts its one closure code by equality (preset_item_not_held / preset_item_undeclared). A probe over packs and pack-validation found no other unrestamped plant: every other manifest-gate hit is a test that plants the manifest fault on purpose. Fresh runs: :pack-validation:test 478 tests 0 failures (1 skipped), :packs:test 7268 tests 0 failures (7 skipped).",
+        "Review passed: remediate via PackRemediation facade (round-trip canonical bytes to source paths, stamp last), staged swap leaves nothing behind, precondition = verdict without the manifest gate; integration fix 2f0b19450 strengthens two CLOSURE tests. Fresh: packs 7268, pack-validation 478, wholePackRoundTrip 17, pack-doctor 371/15/4, contracts 314, deployable 2400, docs ok. LOWs to WP08/cleanup"
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP07-remediate/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP07-remediate/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 4195,
       "shell_pid_created_at": "1795343810.63",
@@ -255,18 +262,70 @@
       }
     },
     "WP08": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z39YD76EW63803MM1ATEX9",
-      "last_transition_at": "2026-11-21T13:04:07.080020+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M81PGC3QAKWBR8EC446AS2WK",
+      "last_transition_at": "2026-11-22T13:18:09.527078+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: ADR-0083, amendments, docs, changelog; gates green",
+        "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3",
+        "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)",
+        "Changes requested: R-w quote drops service-v*",
+        "Cycle 3: R-w quoted as written",
+        "Review passed: cycle 3, R-w quoted whole; docs checks green"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP08-adr-and-docs/review-cycle-3.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP08-adr-and-docs/review-cycle-3.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 16680,
+      "shell_pid_created_at": "1795353442.95",
+      "subtasks": {
+        "T032": "done",
+        "T033": "done",
+        "T034": "done"
+      }
     },
     "WP09": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z3A05J2FNBDGPQ87GMZF4K",
-      "last_transition_at": "2026-11-21T13:04:08.882683+00:00"
+      "actor": "Claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M83YMWNASRXMKM63MDXN093V",
+      "last_transition_at": "2026-11-23T10:18:55.018862+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Drafts a-f and closure evidence from the shipped jar (ece7b92f9 on target)",
+        "Review passed: citations, counts and jar run verified; 4 LOWs for consolidation"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP09-open-packs-drafts/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP09-open-packs-drafts/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 26512,
+      "shell_pid_created_at": "1795354242.72",
+      "subtasks": {
+        "T035": "done",
+        "T036": "done"
+      }
     },
     "WP10": {
       "actor": "claude",
@@ -367,6 +426,39 @@
         "T048": "done",
         "T049": "done",
         "T050": "done"
+      }
+    },
+    "WP13": {
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M83RBNMA89KZ4H60NTMBE29C",
+      "last_transition_at": "2026-11-23T08:29:01.450371+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "R-y: PolicyLockRules as CLOSURE's fourth phase; gates green",
+        "Review passed: parity, red-first, records verified; 4 LOWs (holder order in own closure, order wording, two test cases, packs/detail not compared) for consolidation"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP13-policy-lock-case-only/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP13-policy-lock-case-only/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 21006,
+      "shell_pid_created_at": "1795421463.51",
+      "subtasks": {
+        "T051": "done",
+        "T052": "done",
+        "T053": "done",
+        "T054": "done",
+        "T055": "done"
       }
     }
   }
