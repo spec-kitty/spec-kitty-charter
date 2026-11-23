@@ -44,8 +44,9 @@ import java.util.stream.Collectors;
  *       those facts. A pack's dependencies must be in the set.
  *       It runs only when every pack's facts are {@link PackReadout.Built} and every pack has a level; otherwise it is
  *       skipped and the verdict names the packs that stopped it (D3).
- *   <li>With {@code --full}, {@code REFERENCES} ({@link ClosureWalkPhase}; #632 item 3, ruling R-s): per pack, over its
- *       own closure, the delegation, reference and enhancement target checks in registration's phase order. It runs
+ *   <li>With {@code --full}, {@code REFERENCES} ({@link ReferencesPhase}; #632 item 3, rulings R-s, R-ab): per pack,
+ *       over its own closure, the delegation, reference and enhancement target checks in registration's phase order
+ *       ({@code PackRulesets.references}, the one body registration runs). It runs
  *       only when {@code CLOSURE} ran and found no fault, since it reads the closure {@code CLOSURE} settles; when
  *       {@code CLOSURE} is skipped, it is skipped too, naming the same packs.
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
@@ -156,7 +157,7 @@ public final class PackSetCheck {
             faults.addAll(PackRulesets.closureFaults(composed.set(), composed::factsOf));
             checks.add(Check.CLOSURE);
             if (full && faults.isEmpty()) {
-                faults.addAll(ClosureWalkPhase.faults(composed.set(), composed::factsOf));
+                faults.addAll(ReferencesPhase.faults(composed.set(), composed::factsOf));
                 checks.add(Check.REFERENCES);
             }
         } else {

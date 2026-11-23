@@ -2,10 +2,13 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.Preset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -34,6 +37,22 @@ public final class PackRulesets {
             .must(RoutingCatalogRules.RULES)
             .must(ReferenceRules.RULES)
             .must(FragmentRules.ORPHAN);
+
+    /** One member's check within a closure: the domain's one body of it. */
+    @FunctionalInterface
+    private interface MemberCheck {
+        List<ClosureFault> faults(
+                List<PackUnderResolution> closure, PackUnderResolution member, PackCompositionFacts facts);
+    }
+
+    /**
+     * {@code REFERENCES}' checks, in registration's phase order (its phases 2 to 4): the substep delegations, the
+     * references, the step enhancements' targets.
+     */
+    private static final List<MemberCheck> REFERENCES = List.of(
+            PackCompositionResolver::delegationFaultsOf,
+            PackCompositionResolver::referenceFaultsOf,
+            EnhancementCompose::targetFaultsOf);
 
     private PackRulesets() {}
 
@@ -110,6 +129,40 @@ public final class PackRulesets {
                         PolicyLockRules.phase(factsOf).apply(packs))
                 .flatMap(List::stream)
                 .toList();
+    }
+
+    /**
+     * {@code REFERENCES} within one composed closure (#632 item 3, ruling R-ab): the one body of the ordered checks and
+     * their stop rule, which registration's composing judge and pack-doctor's {@code --full} both run. In order, the
+     * substep delegations ({@link PackCompositionResolver#delegationFaultsOf}), the references
+     * ({@link PackCompositionResolver#referenceFaultsOf}) and the step enhancements' targets
+     * ({@link EnhancementCompose#targetFaultsOf}), each judged for every member given, in the order given; the first
+     * check that finds any fault answers all of them, and the later checks do not run, since a later check would answer
+     * the same cause again (a delegation candidate is also the reference of its {@code scope} edge). Registration judges
+     * every member of the closure it composes; pack-doctor judges each pack alone within its own closure.
+     *
+     * @param closure the composed closure, in merge order
+     * @param members the members whose checks run, each a pack of the closure
+     * @param factsOf each member's composition facts
+     * @return every fault of the first check that finds any, member by member; empty when every check passes
+     */
+    public static List<ClosureFault> references(
+            List<PackUnderResolution> closure,
+            List<PackUnderResolution> members,
+            Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(members, "members");
+        Objects.requireNonNull(factsOf, "factsOf");
+        for (MemberCheck check : REFERENCES) {
+            List<ClosureFault> found = new ArrayList<>();
+            for (PackUnderResolution member : members) {
+                found.addAll(check.faults(closure, member, factsOf.apply(member)));
+            }
+            if (!found.isEmpty()) {
+                return List.copyOf(found);
+            }
+        }
+        return List.of();
     }
 
     /**

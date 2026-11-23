@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Test;
  * pack, over its own closure, the delegation, reference and enhancement target checks, in registration's phase order,
  * each the domain's one body, every fault of the first check that finds any.
  */
-@DisplayName("ClosureWalkPhase: delegations, references, enhancement targets per own closure (#632 item 3, R-s)")
-class ClosureWalkPhaseTest {
+@DisplayName("ReferencesPhase: delegations, references, enhancement targets per own closure (#632 item 3, R-s)")
+class ReferencesPhaseTest {
 
     private static final String WRITING = "01M7WR0000000000000000WRTG";
     private static final String READER = "01M7RD0000000000000000RDER";
@@ -95,7 +95,7 @@ class ClosureWalkPhaseTest {
     }
 
     private List<ClosureFault> faults(PackUnderResolution... set) {
-        return ClosureWalkPhase.faults(List.of(set), this::factsOf);
+        return ReferencesPhase.faults(List.of(set), this::factsOf);
     }
 
     private static Relationship enhances(String from, String to) {
