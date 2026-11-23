@@ -138,13 +138,13 @@
     },
     {
       "criterion_id": "FR-014",
-      "description": "Verify FR-014 is satisfied",
+      "description": "FR-014: a pack whose graph document declares an anti_pattern node it does not hold as an anti-pattern file is refused: one drg_schema_error per node naming the node and the missing file; the finding is at /nodes/<n> of its document, and a registration violation's pointer is the document; one GraphRules content rule in PackRulesets.content(), so registration, every write and pack-doctor validate refuse alike; walks nothing.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Added after the spec gained FR-013 to FR-016 (rulings R-p..R-r, R-y); finalize only creates a matrix when none exists"
+      "evidence": "lane-l@33de257ea: packs/domain/rules/GraphRules.java:74,:81 (ANTI_PATTERN_WITHOUT_FILE in RULES), :185-207 (Findings.at(DRG_SCHEMA_ERROR, document, [nodes, i], detail naming URN and file)); PackRulesets.java:27 (GraphRules.RULES in content()); pack-validation antipattern/AntiPatternNodeCheckTest :84 (shard), :95 (fragment): document + /nodes/0 + detail, 3/3; contracts/charter/scenarios/registration/anti-pattern-nodes.feature:71,:90 (registration violation pointer = document, :81, :107); FilesystemPackStore.java:1596",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:09.020082+00:00",
+      "notes": "Re-checked against the amended wording: the finding is located at the document and /nodes/<n> (pack-doctor reports both); registration's violation pointer is the document, as the scenarios pin; code and detail match on both surfaces; the rule reads only the one read's nodes and files. Minor: anti-pattern-nodes.feature header line 5 still says pack-doctor gives the same pointer (wording only)."
     },
     {
       "criterion_id": "FR-015",
