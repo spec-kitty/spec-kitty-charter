@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,14 +28,50 @@ public final class Findings {
      * @return the failing reason
      */
     public static Reason at(ReasonCode code, String file, List<String> place, String detail) {
-        Location where = Location.in(file);
-        if (!place.isEmpty()) {
-            StringBuilder pointer = new StringBuilder();
-            place.forEach(segment ->
-                    pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
-            where = where.at(pointer.toString());
-        }
-        return new Reason(code.value(), Evaluation.FAIL, code, where, detail);
+        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file).at(pointer(place)), detail);
+    }
+
+    /**
+     * The finding of a pack violation, at its file and the place in it the violation names.
+     *
+     * @param violation the violation
+     * @return the failing reason, in the violation's words
+     */
+    public static Reason of(PackElementViolation violation) {
+        return new Reason(
+                violation.kind().value(),
+                Evaluation.FAIL,
+                violation.kind(),
+                Location.in(violation.file()).at(violation.pointer()),
+                violation.reason());
+    }
+
+    /**
+     * The violation of a fault at an edge of a graph document: {@code /edges/<index>} in it.
+     *
+     * @param file the graph document
+     * @param index the edge's index in the document's {@code edges} list
+     * @param code the code
+     * @param reason the reason
+     * @return the violation at the edge
+     */
+    public static PackElementViolation atEdge(String file, int index, ReasonCode code, String reason) {
+        return new PackElementViolation(
+                file, pointer(List.of(GraphBinding.EDGES, Integer.toString(index))), code, reason);
+    }
+
+    /**
+     * The JSON pointer (RFC 6901) of a place: each segment escaped ({@code ~} as {@code ~0}, {@code /} as {@code ~1}),
+     * the inverse of {@link #segments}.
+     *
+     * @param place the segments; none for the whole file
+     * @return the pointer; empty for the whole file
+     */
+    public static String pointer(List<String> place) {
+        StringBuilder pointer = new StringBuilder();
+        place.forEach(
+                segment -> pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1")));
+        return pointer.toString();
     }
 
     /**

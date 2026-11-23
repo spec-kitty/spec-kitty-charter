@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.ReferenceFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
 import ai.speckitty.charter.packs.domain.rules.StepRules;
@@ -566,6 +567,7 @@ record StoreRead(
                 .stream()
                 .map(fault -> new PackElementViolation(
                         fault.file(),
+                        Findings.pointer(fault.place()),
                         SubstepDelegationRule.UNRESOLVED.equals(fault.code())
                                 ? PackCodes.SUBSTEP_DELEGATION_UNRESOLVED
                                 : PackCodes.SUBSTEP_DELEGATION_UNSCOPED,
@@ -579,7 +581,8 @@ record StoreRead(
      * composing read refuses the pack with the content rule's answer (FR-004, S7).
      */
     private static PackElementViolation heldBack(Reason finding) {
-        return new PackElementViolation(finding.location().file(), finding.code(), finding.detail());
+        return new PackElementViolation(
+                finding.location().file(), finding.location().pointer(), finding.code(), finding.detail());
     }
 
     /**
