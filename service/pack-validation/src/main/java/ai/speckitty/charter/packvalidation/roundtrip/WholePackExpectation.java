@@ -487,7 +487,7 @@ public final class WholePackExpectation {
                     redundantExclusions.add(i);
                 }
             }
-            String notHeldBecause = notHeldBecause(notHeldFile);
+            String notHeldBecause = notHeldFile.notHeld();
             Optional<String> written = observed.getOrDefault(
                     path, Optional.of("the gate did not check whether the store wrote this not-held file"));
             if (written.isEmpty()) {
@@ -558,16 +558,12 @@ public final class WholePackExpectation {
         private Optional<String> uncompared(String path) {
             NotHeldFile notHeldFile = notHeld.get(path);
             if (notHeldFile != null) {
-                return Optional.of(notHeldBecause(notHeldFile));
+                return Optional.of(notHeldFile.notHeld());
             }
             return excludedPaths.contains(path) ? Optional.of("excluded by " + EXCLUSIONS_RESOURCE) : Optional.empty();
         }
 
         /** The one wording of why the census does not hold a file, as the {@code file_not_held} warning gives it. */
-        private static String notHeldBecause(NotHeldFile notHeldFile) {
-            return "not held (" + notHeldFile.reason() + ")";
-        }
-
         void checkFileEntries() {
             for (FileEntry entry : files) {
                 Optional<String> uncompared = uncompared(entry.path());

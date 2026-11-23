@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -55,7 +56,12 @@ class AntiPatternFileCheckTest {
 
     @Test
     void aValidAntiPatternFileIsHeldWithNoFindingNamingIt() throws IOException {
-        assertThat(validateWith(FILE, VALID))
+        List<Reason> findings = validateWith(FILE, VALID);
+        assertThat(findings)
+                .as("the pack with the valid file is valid")
+                .filteredOn(finding -> finding.isFailing(Severity.VIOLATION))
+                .isEmpty();
+        assertThat(findings)
                 .as("neither a violation nor a file_not_held diagnostic names the file")
                 .noneMatch(finding -> finding.location().file().equals(FILE)
                         || finding.detail().contains(FILE));

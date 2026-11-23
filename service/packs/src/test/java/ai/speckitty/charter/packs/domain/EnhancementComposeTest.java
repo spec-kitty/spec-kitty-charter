@@ -258,8 +258,7 @@ class EnhancementComposeTest {
         @Test
         void onePacksTargetFaultsWithinAClosureAreEveryViolationOfTheCollectAllFormAsFaults() {
             // The one body registration's phase 4 and pack-doctor's --full read (#632 item 3, ruling R-s): every fault,
-            // in
-            // the order of the edges, each the collect-all form's violation as its fault.
+            // in the order of the edges, each the collect-all form's violation as its fault.
             PackUnderResolution base = base();
             PackUnderResolution enhancer = enhancer();
             List<Relationship> edges = List.of(

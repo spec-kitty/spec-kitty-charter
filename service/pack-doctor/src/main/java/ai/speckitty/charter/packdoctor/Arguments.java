@@ -62,8 +62,9 @@ final class Arguments {
                                        under the pack id <id> when given, else under the directory's name;
                                        repeat it to check a set of packs together
               --round-trip             also round-trip every pack through the charter's model
-              --full                   also check, per pack within its own closure, its substep delegations, its
-                                       references and its step enhancements' targets, as registration does
+              --full                   also check, per pack, its substep delegations, its references and its
+                                       step enhancements' targets, each against the packs it reaches over
+                                       depends_on, as registration does
               --report <file>          also write the report to <file>, replacing it: the same report as on
                                        standard output, in YAML unless --format says otherwise
               --format yaml|xml        the report file's format, yaml by default; only with --report

@@ -293,15 +293,16 @@ public enum RefusalCode {
      */
     PACK_HAS_DEPENDENTS("pack_has_dependents"),
     /**
-     * A preset's {@code must_have} item that no pack of the declaring pack's own closure ({@code depends_on} and
-     * {@code parent_pack}) holds as an artifact file (#629, rulings R-a, R-l, R-m). Raised by a registration and by
+     * A preset's {@code must_have} item that no pack of the declaring pack's own closure (the pack and every pack it
+     * reaches over {@code depends_on} and {@code parent_pack}) holds as an artifact file (#629, rulings R-a, R-k, R-l,
+     * R-m). Raised by a registration and by
      * every write judged over the closures its pack joins, answered as 422; a composing read reports the item as
      * {@code requiredNotHeld} instead.
      */
     PRESET_ITEM_NOT_HELD("preset_item_not_held"),
     /**
      * A preset item that no pack of the declaring pack's own closure declares as its kind, by a graph node or an
-     * artifact file (#632 item 1, rulings R-a, R-l, R-m). Raised and answered as {@link #PRESET_ITEM_NOT_HELD}.
+     * artifact file (#632 item 1, rulings R-a, R-k, R-l, R-m). Raised and answered as {@link #PRESET_ITEM_NOT_HELD}.
      */
     PRESET_ITEM_UNDECLARED("preset_item_undeclared");
 

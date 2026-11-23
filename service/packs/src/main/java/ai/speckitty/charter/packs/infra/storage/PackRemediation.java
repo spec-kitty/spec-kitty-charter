@@ -53,8 +53,8 @@ import org.jspecify.annotations.Nullable;
  * <p>A pack root that is a symbolic link is remediated in the directory it resolves to, which is swapped; the link is
  * kept. Rewriting needs write access to that directory's parent. An entry that is neither a directory nor a regular file
  * (a FIFO, a socket, a device) is a violation of the storage verdict ({@code unreadable}, operator ruling R-ad), so the
- * precondition refuses the pack; the copy still refuses such an entry ({@code is not a regular file}), in defence in
- * depth, should one appear after the precondition: the pack is then as it was.
+ * precondition refuses the pack; the copy still refuses such an entry ({@code is not a regular file}), as a second line
+ * of defense, should one appear after the precondition: the pack is then as it was.
  *
  * <p>It adds no serialization and no classifier: the canonical form is the round trip's, the census is the round
  * trip's, and the manifest is the store's derivation and stamp. It takes no lock and no generation and names no commit

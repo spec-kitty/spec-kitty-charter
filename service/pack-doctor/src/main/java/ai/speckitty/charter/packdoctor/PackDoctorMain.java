@@ -175,20 +175,10 @@ public final class PackDoctorMain {
             Objects.requireNonNull(flow, "flow");
             Objects.requireNonNull(repair, "repair");
         }
-
-        /**
-         * A reader and a round trip of the caller's, with the production remediation.
-         *
-         * @param reading the reader
-         * @param flow the round trip
-         */
-        Composition(PackReading reading, Flow flow) {
-            this(reading, flow, PackDoctorMain::remediated);
-        }
     }
 
     /** The production remediation of one pack ({@link PackRemediation}), its outcome in the command's words. */
-    private static Remediate.Result remediated(PackRoot root) {
+    static Remediate.Result remediated(PackRoot root) {
         return switch (new PackRemediation().remediate(root)) {
             case PackRemediation.Rewritten rewritten -> new Remediate.Rewritten();
             case PackRemediation.Unchanged unchanged -> new Remediate.Unchanged();

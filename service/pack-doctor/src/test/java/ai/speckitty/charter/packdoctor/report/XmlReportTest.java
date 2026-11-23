@@ -211,8 +211,10 @@ class XmlReportTest {
                     "<pack-doctor-report><a type=\"number\">1</a></pack-doctor-report>",
                     "<pack-doctor-report><a kind=\"x\">1</a></pack-doctor-report>",
                     "<pack-doctor-report xmlns:q=\"urn:q\"><a q:type=\"integer\">1</a></pack-doctor-report>",
-                    // An element in a namespace.
+                    // An element in a namespace, or a namespace declared and never used (WP06 review LOW).
                     "<pack-doctor-report xmlns=\"urn:q\"><a>1</a></pack-doctor-report>",
+                    "<pack-doctor-report xmlns:q=\"urn:q\"><a>1</a></pack-doctor-report>",
+                    "<pack-doctor-report><a xmlns:q=\"urn:q\">1</a></pack-doctor-report>",
                     // Text beside the keys of an object.
                     "<pack-doctor-report>text<a>x</a></pack-doctor-report>",
                     // A key twice.

@@ -256,10 +256,9 @@ public final class XmlReport {
 
     /**
      * The tree an XML report holds: the inverse of {@link #write}, an escaped string unescaped. A document type, an
-     * entity, a namespace, an attribute other than {@code type}, an unknown type, text beside child elements, a key
-     * given twice, an item not named after its array, or an escape the mapping never writes is refused, so only what
-     * the mapping writes reads back. Comments and the whitespace between elements are
-     * no value.
+     * entity, a namespace or a namespace declaration, an attribute other than {@code type}, an unknown type, text beside
+     * child elements, a key given twice, an item not named after its array, or an escape the mapping never writes is
+     * refused, so only what the mapping writes reads back. Comments and the whitespace between elements are no value.
      *
      * @param xml the XML
      * @return the tree, an object
@@ -323,6 +322,9 @@ public final class XmlReport {
         String namespace = reader.getNamespaceURI();
         if (namespace != null && !namespace.isEmpty()) {
             throw refused(reader, "the element " + name + " is in the namespace " + namespace);
+        }
+        if (reader.getNamespaceCount() > 0) {
+            throw refused(reader, "the element " + name + " declares a namespace");
         }
         @Nullable String type = null;
         for (int index = 0; index < reader.getAttributeCount(); index++) {

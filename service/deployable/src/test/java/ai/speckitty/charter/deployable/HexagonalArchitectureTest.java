@@ -391,9 +391,9 @@ class HexagonalArchitectureTest {
      * implementation: the walk follows the classes a class names, so the inspector the composition root plugs in is walked
      * from its own root ({@link #THE_PACKS_LOAD_REACHES_NO_FRAMEWORK}). pack-doctor's main ({@link #PACK_DOCTOR_MAIN},
      * #478), the module's composition root, may name the file-system inspector, the production round trip and the
-     * remediation (FR-009, plan D7), in this
-     * rule's direct half ({@link #THE_PACK_DOCTOR_MAIN_NAMES_THREE_ADAPTERS}) and in {@code ONION_DEPENDS_INWARD}; no other
-     * class of either module may, and the transitive half walks from the main through both. A lock is caught
+     * remediation (FR-009, plan D7), in this rule's direct half ({@link #THE_PACK_DOCTOR_MAIN_NAMES_THREE_ADAPTERS}) and
+     * in {@code ONION_DEPENDS_INWARD}; no other class of either module may, and the transitive half walks from the main
+     * through both. A lock is caught
      * by its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
      * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and the commit stores and locks are a list of
      * names ({@link #COMMIT_STORES_AND_LOCKS}): review checks a new one.

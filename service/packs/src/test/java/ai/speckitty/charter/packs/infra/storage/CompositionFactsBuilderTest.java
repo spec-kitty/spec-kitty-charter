@@ -98,6 +98,23 @@ class CompositionFactsBuilderTest {
 
     @Test
     @DisplayName(
+            "a step is referable only when the pack holds its mission type's file: a step a graph declares without it is"
+                    + " declared and never referable (WP03 LOW, ruling R-v)")
+    void aStepWithoutItsMissionTypeFileIsDeclaredAndNotReferable() {
+        PackCompositionFacts facts = new PackCompositionFacts(
+                List.of(),
+                List.of("directive:A", "mission_type:held"),
+                List.of("directive:A", "mission_type:held", "action:held/build", "action:ghost/build"),
+                List.of());
+
+        assertThat(facts.declared()).contains("action:held/build", "action:ghost/build");
+        assertThat(facts.referable())
+                .containsExactly("directive:A", "mission_type:held", "action:held/build")
+                .doesNotContain("action:ghost/build");
+    }
+
+    @Test
+    @DisplayName(
             "held is the artifact files and declared every graph node too: a directive file is in both, a mission type"
                     + " step only a graph node names is declared and never held, an anti-pattern file is in both")
     void heldIsTheFilesAndDeclaredTheGraphNodesToo(@TempDir Path host) {

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -137,10 +138,10 @@ class GraphRulesTest {
         assertThat(findings)
                 .extracting(Reason::code, Reason::location)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(
+                        tuple(
                                 PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
                                 Location.in(SHARD).at("/edges/1")),
-                        org.assertj.core.groups.Tuple.tuple(
+                        tuple(
                                 PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED,
                                 Location.in(SHARD).at("/edges/0")));
         assertThat(findings.get(1).detail()).isEqualTo(SHARD + ": a requires edge may not connect procedure to action");
@@ -406,9 +407,8 @@ class GraphRulesTest {
         assertThat(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(contents))
                 .extracting(Reason::location, Reason::detail)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(Location.in(SHARD).at("/nodes/0"), withoutFile(SHARD, "x")),
-                        org.assertj.core.groups.Tuple.tuple(
-                                Location.in(FRAGMENT).at("/nodes/0"), withoutFile(FRAGMENT, "y")));
+                        tuple(Location.in(SHARD).at("/nodes/0"), withoutFile(SHARD, "x")),
+                        tuple(Location.in(FRAGMENT).at("/nodes/0"), withoutFile(FRAGMENT, "y")));
         assertThat(GraphRules.RULES.apply(contents))
                 .extracting(Reason::code)
                 .containsExactly(PackCodes.TENSION_ORIENTATION, PackCodes.DRG_SCHEMA_ERROR, PackCodes.DRG_SCHEMA_ERROR);

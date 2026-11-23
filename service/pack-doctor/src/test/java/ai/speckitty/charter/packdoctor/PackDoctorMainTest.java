@@ -328,11 +328,13 @@ class PackDoctorMainTest {
     void theRoundTripIsHandedTheGivenId() throws IOException {
         Path pack = misnamed(ExamplePacks.BUILT_IN, "Bad_Name");
         List<String> handed = new ArrayList<>();
-        PackDoctorMain.Composition recording =
-                new PackDoctorMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
+        PackDoctorMain.Composition recording = new PackDoctorMain.Composition(
+                new FileSystemPackInspector(),
+                (packId, source, target) -> {
                     handed.add(packId.value() + " " + source);
                     return PackRoundTrip.run(packId, source, target);
-                });
+                },
+                PackDoctorMain::remediated);
 
         Path temporary = Files.createDirectories(temp.resolve("tmp"));
 
@@ -553,12 +555,14 @@ class PackDoctorMainTest {
         Files.writeString(builtIn.resolve("qa/notes.txt"), "a stray log line\n");
         Files.writeString(builtIn.resolve("qa/notes.md"), "# A stray note\n");
         List<PackRoundTripResult> results = new ArrayList<>();
-        PackDoctorMain.Composition recording =
-                new PackDoctorMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
+        PackDoctorMain.Composition recording = new PackDoctorMain.Composition(
+                new FileSystemPackInspector(),
+                (packId, source, target) -> {
                     PackRoundTripResult result = PackRoundTrip.run(packId, source, target);
                     results.add(result);
                     return result;
-                });
+                },
+                PackDoctorMain::remediated);
 
         for (boolean roundTrip : new boolean[] {false, true}) {
             Path temporary = Files.createDirectories(temp.resolve("tmp-" + roundTrip));
@@ -696,7 +700,8 @@ class PackDoctorMainTest {
                 new PrintStream(out, true, StandardCharsets.UTF_8),
                 new PrintStream(err, true, StandardCharsets.UTF_8),
                 temp,
-                new PackDoctorMain.Composition(new FileSystemPackInspector(), PackRoundTrip::run),
+                new PackDoctorMain.Composition(
+                        new FileSystemPackInspector(), PackRoundTrip::run, PackDoctorMain::remediated),
                 args -> {
                     throw new IllegalStateException("the parser broke on " + args[0]);
                 });
@@ -716,7 +721,8 @@ class PackDoctorMainTest {
                 root -> {
                     throw new IllegalStateException("the reader broke on " + root.name());
                 },
-                PackRoundTrip::run);
+                PackRoundTrip::run,
+                PackDoctorMain::remediated);
 
         Run run = run(temp, failing, "--pack", builtIn + ":built-in");
 
@@ -734,13 +740,15 @@ class PackDoctorMainTest {
         Path root = configRoot();
         Path temporary = Files.createDirectories(temp.resolve("midway-tmp"));
         AtomicInteger calls = new AtomicInteger();
-        PackDoctorMain.Composition midway =
-                new PackDoctorMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
+        PackDoctorMain.Composition midway = new PackDoctorMain.Composition(
+                new FileSystemPackInspector(),
+                (packId, source, target) -> {
                     if (calls.incrementAndGet() == 2) {
                         throw new UncheckedIOException(new IOException("the disk is full"));
                     }
                     return PackRoundTrip.run(packId, source, target);
-                });
+                },
+                PackDoctorMain::remediated);
 
         Run run = run(temporary, midway, "--config-root", root.toString(), "--round-trip");
 
@@ -757,13 +765,15 @@ class PackDoctorMainTest {
         Path root = configRoot();
         Path temporary = Files.createDirectories(temp.resolve("midway-tmp"));
         AtomicInteger calls = new AtomicInteger();
-        PackDoctorMain.Composition midway =
-                new PackDoctorMain.Composition(new FileSystemPackInspector(), (packId, source, target) -> {
+        PackDoctorMain.Composition midway = new PackDoctorMain.Composition(
+                new FileSystemPackInspector(),
+                (packId, source, target) -> {
                     if (calls.incrementAndGet() == 2) {
                         throw new IllegalStateException("the flow broke");
                     }
                     return PackRoundTrip.run(packId, source, target);
-                });
+                },
+                PackDoctorMain::remediated);
 
         Run run = run(temporary, midway, "--config-root", root.toString(), "--round-trip");
 

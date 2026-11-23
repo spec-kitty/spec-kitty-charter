@@ -129,7 +129,12 @@ class AntiPatternNodeCheckTest {
 
     @Test
     void theNodeBesideItsFileGivesNoFindingNamingEither() throws IOException {
-        assertThat(validateWith(SHARD, NODE_SHARD, FILE, ANTI_PATTERN))
+        List<Reason> findings = validateWith(SHARD, NODE_SHARD, FILE, ANTI_PATTERN);
+        assertThat(findings)
+                .as("the pack with the node beside its file is valid")
+                .filteredOn(finding -> finding.isFailing(Severity.VIOLATION))
+                .isEmpty();
+        assertThat(findings)
                 .noneMatch(finding -> finding.location().file().equals(SHARD)
                         || finding.location().file().equals(FILE)
                         || finding.detail().contains("anti_pattern:x"));

@@ -1,12 +1,14 @@
-// The pack-doctor CLI (ADR-0075 decision 9, #478): a thin main over pack-validation, with no Spring and no CLI framework,
-// that checks a set of packs and writes the contract's problem JSON. Its main, PackDoctorMain, is the composition root:
-// it plugs the packs slice's file-system reader (FileSystemPackInspector) and the production round trip (PackRoundTrip)
-// into pack-validation's pack-set check, so it names :packs too. The jar that ships on the service-v* release, its
-// licences and its jar test come from the build-logic convention charter.pack-doctor-jar (#478, WP06), not from here.
+// The pack-doctor CLI (ADR-0075 decision 9, #478; ADR-0083): a thin main over pack-validation, with no Spring and no CLI
+// framework. `validate` checks a set of packs and writes the contract's problem JSON, and with --report the same tree to
+// a file as YAML or XML; `remediate` rewrites a pack in canonical form and restamps its manifest. Its main,
+// PackDoctorMain, is the composition root: it plugs the packs slice's file-system reader (FileSystemPackInspector), the
+// production round trip (PackRoundTrip) and the remediation (PackRemediation) into pack-validation's pack-set check, so
+// it names :packs too. The jar that ships on the service-v* release, its licences and its jar test come from the
+// build-logic convention charter.pack-doctor-jar (#478, WP06), not from here.
 //
-// It may depend on pack-validation, :packs, a JSON writer and a YAML emitter only, pinned below. HexagonalArchitectureTest's
-// PACK_VALIDATION_IS_FRAMEWORK_FREE pins the classes it uses: no Spring, HTTP, commit store or lock, and only
-// PackDoctorMain may name the two adapters.
+// It may depend on pack-validation, :packs, a JSON writer and a YAML emitter only, pinned below; the XML writer is the
+// JDK's. HexagonalArchitectureTest's PACK_VALIDATION_IS_FRAMEWORK_FREE pins the classes it uses: no Spring, HTTP, commit
+// store or lock, and only PackDoctorMain may name the three adapters.
 plugins {
     id("charter.java-base")
     id("charter.hand-written")
