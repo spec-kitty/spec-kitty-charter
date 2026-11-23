@@ -318,6 +318,14 @@ class FullPassParityTest {
                     false,
                     "pack_reference_artifact_missing",
                     List.of(),
+                    true),
+            // CLOSURE's policy-lock phase (WP13, ruling R-y): registration's phase 6 answer, no violation of its own.
+            new Row(
+                    "a policy lock that names a held artifact only by case",
+                    policyLocking("directive:a"),
+                    false,
+                    "pack_reference_artifact_missing",
+                    List.of(),
                     true)
         };
     }
@@ -462,6 +470,17 @@ class FullPassParityTest {
                 id: team
                 description: The team's preset.
                 """ + items);
+    }
+
+    /** acme naming its policy file, which locks one URN. */
+    private static Map<String, String> policyLocking(String urn) {
+        Map<String, String> files = acme(Map.of("policy.yaml", """
+                schema_version: 1
+                artifacts:
+                  %s: locked
+                """.formatted(urn)));
+        files.put("pack.yaml", files.get("pack.yaml") + "mutability_policy: policy.yaml\n");
+        return files;
     }
 
     private static Map<String, String> specializationCycle() {
