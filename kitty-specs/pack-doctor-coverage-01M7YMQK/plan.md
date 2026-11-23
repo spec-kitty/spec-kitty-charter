@@ -2,7 +2,7 @@
 
 **Branch**: `kitty/mission-pack-doctor-coverage-01M7YMQK` → `feat/pack-doctor-coverage` → PR to `main` | **Date**: 2026-11-21 | **Spec**: [spec.md](spec.md)
 **Input**: [spec.md](spec.md); research in [research/rule-coverage.md](research/rule-coverage.md) and
-[research/squad-dispositions.md](research/squad-dispositions.md); rulings R-a to R-s in `decisions/`.
+[research/squad-dispositions.md](research/squad-dispositions.md); rulings R-a to R-y in `decisions/`.
 
 ## Summary
 
@@ -25,9 +25,10 @@ The work is eleven ordered work packages in one PR (R-f), plus the planning WP09
 6. The preset-item rule.
 7. `manifest_stale`.
 8. The `--full` domain phase (narrowed, R-s).
-9. The report.
-10. `remediate`.
-11. The ADR, the contract and the docs.
+9. The case-only policy lock in pack-doctor's `CLOSURE` (WP13, R-y), after WP05 and before WP08's records are final.
+10. The report.
+11. `remediate`.
+12. The ADR, the contract and the docs.
 
 ## Technical Context
 
@@ -55,7 +56,11 @@ example packs
   - One `ClosureFault.of(...)` factory replaces both `of(Refusal)` and `of(CompositionFault)`.
   - `CompositionFault` is deleted, and `CompositionRules`, `PackRulesets`, `PackSetVerdict` and `Problems` carry
     `ClosureFault`.
-  - `ClosureVerdict` becomes a view over `Rationale`, or is deleted.
+  - `ClosureVerdict` becomes a view over `Rationale`, or is deleted. **Deferred by ruling R-x**
+    (DM-01M83MFVJZX16G6NBM4YPB9XYG, 2026-11-23): `ClosureVerdict` shipped as a fault list with a derived `Rationale`
+    (a reason has no slot for the packs and violations a refusal names), and #636 slice 7 removes it once the ledger
+    carries what faults hold. No code change in this mission; FR-001's acceptance records the clause deferred, the PR
+    writes `Refs #636` for it, and ADR-0083 decision 15 cites R-x (WP13 T055).
   - Codes and order are unchanged. The call sites change, but no expected code or order changes in
     `CompositionRulesTest`, `PackRulesetsClosureTest`, `ProblemsTest` or `PackCheckReportContractTest`.
   - An ArchUnit or reflection test asserts that `CompositionFault` is gone. Fixtures and contract examples assert
@@ -220,7 +225,7 @@ example packs
 - **D9 — Dependencies.** Folded into D6: no new library, and no new verification metadata. If Jackson's YAML or XML dataformat is not already a verified dependency of
   a module `pack-doctor` may use, the YAML writer reuses the service's existing YAML emitter, and the XML writer uses
   `javax.xml.stream`. DIRECTIVE_051: no supply-chain change, so no new verification metadata.
-- **D10 — The ADR.** ADR-0083 records rulings R-a to R-s, and amends:
+- **D10 — The ADR.** ADR-0083 records rulings R-a to R-y (R-x and R-y added by WP13, D15), and amends:
   - ADR-0075 (decision 6: the CLI composes the domain phase under `--full`; decision 7: the preset phase; decision 9:
     pack-doctor, its commands, `--report`);
   - ADR-0042 (the 2026-11-12 amendment: hashes are verified on upload);
@@ -341,6 +346,54 @@ example packs
     doctrine for this repository, written by the spec-kitty tool; no charter test reads them, and core realigns them
     through its generated client (charter: core aligns later). They are not example packs and are not edited.
 
+- **D15 — The case-only policy lock in pack-doctor's `CLOSURE` (WP13; ruling R-y, DM-01M83MFXWH2NZQ8CJWFW1JTPY6;
+  FR-016).**
+  - **The gap.** Registration's composing judge runs phase 6, `PackCompositionResolver.caseOnlyMatches(composed,
+    mentionsOf(facts))` (`OfferingReadService.java:450-475`), where `mentionsOf` is every preset item URN **and** every
+    URN key of the pack's policy file (`facts.policy().urnEntries()`). Its fault is the resolver refusal lifted as it is
+    (`ResolverFaults::of`): `pack_reference_artifact_missing`, naming the mentioning pack then the holder, no violation
+    of its own; `ClosureImpactCheck.place` names the closure in its detail. pack-doctor's `CLOSURE`
+    (`PackRulesets.closureFaults`, `PackRulesets.java:95-110`: compose, preset contests, preset items) runs
+    `caseOnlyMatches` only per preset item, inside `PresetItemRules.itemFault` (`PresetItemRules.java:152-197`). So a
+    case-only policy lock passes `validate` and is refused at registration (ADR-0075 decision 9 broken).
+  - **Placement (ADR-0082: the rule in the factory, the domain owns the walk).** One new rule class,
+    `packs.domain.rules.PolicyLockRules`, rule name `closure.policy-locks`, a public static `phase(factsOf)` returning
+    `Function<List<PackUnderResolution>, List<ClosureFault>>`, as `PresetItemRules.phase` does. For each pack of the
+    set, in pack-id order (the preset-item phase's order), whose policy has URN entries, it runs the existing
+    `PackCompositionResolver.caseOnlyMatches` over the pack's **own closure** (R-k; computed by
+    `PresetItemRules.ownClosure`, made package-private and shared, not copied; a pack whose own closure reaches a pack
+    outside the set is skipped, as there), with the mentions function answering that pack's policy URN keys
+    (`facts.policy().urnEntries().keySet()`, as written) and nothing for the others. Each `Refusal` becomes
+    `ClosureFault.of(PackOrigins.of(pack, lockUrn), RULE, refusal.failure().code(), refusal.detail(),
+    refusal.packs())`, no violation: the code, detail and packs registration's phase 6 gives, the closure prefix aside,
+    which registration adds in `place`. No new walk (NFR-003), no new code, no new `PackSetVerdict.Check`.
+  - **Order.** `PackRulesets.closureFaults` becomes compose, preset contests, preset items, **policy locks**:
+    `PolicyLockRules.phase(factsOf)` is the fourth stream, and `PackRulesets.closure(factsOf)` takes it through
+    `closureFaults` (one derivation). This is registration's order restricted to what pack-doctor runs, as D3 states
+    for the preset items: registration's phase 6 follows the contests (phase 5) and lists, per pack, its preset
+    mentions before its policy mentions, so a pack's case-only preset item comes before its case-only lock on both
+    surfaces. Registration's phase 6 halts the closure, so there a case-only lock never stands beside a
+    `preset_item_not_held` or `preset_item_undeclared`; pack-doctor's `CLOSURE` collects every phase (D3, unchanged),
+    so it reports both, each with registration's code. Across packs, pack-doctor groups by phase then pack id, and
+    registration lists by pack in composed order; the codes per pack are equal (SC-001 compares codes).
+  - **What does not change.** Registration and every write (`ClosureImpactCheck`), the composing read
+    (`OfferingReadService.judged` and its private `mentionsOf`), `PresetItemRules`' judgement, the `--full` phase,
+    `PackSetCheck` (it takes the phase through `closureFaults`), the contract and its codes. Moving the read's phase 6
+    into the factory, so `mentionsOf` has one body, lands with #636 (slice 7), recorded in ADR-0083.
+  - **Tests (red first, NFR-001).** `PolicyLockRulesTest` (domain): a lock that differs from a held id by case alone is
+    one `pack_reference_artifact_missing` with the packs and no violation; a lock held exactly, a lock no closure pack
+    holds in any case, and a case match held only by a dependent (outside the own closure) are accepted; a pack with a
+    case-only preset item and a case-only lock gets the preset item's fault, then the lock's, through
+    `PackRulesets.closureFaults`. `FullPassParityTest.closureRows()` gains the row "a policy lock that names a held
+    artifact only by case" (`pack_reference_artifact_missing`, no violations, `fullReports` true), red before the rule:
+    registration refuses it, `validate` passes it.
+  - **Records.** ADR-0083: R-x and R-y in the rulings table and the status line ("R-a to R-y"), decision 15 cites R-x,
+    one new decision for R-y, and Batch 5 of the alternatives ("Do it in this mission" declined for R-x; "Follow-up via
+    #636" declined for R-y). `docs/guides/check-packs.md`: the `CLOSURE` text gains the policy lock. A new change
+    fragment `contracts/charter/changes/2026-11-23-pack-doctor-policy-lock-case-only.md` under `### Changed`, as the
+    `--full` fragment is: no code or wire change, registration already refused it, and core regenerates nothing. The
+    preset-item fragment (WP03's) is not edited.
+
 ## Charter Check
 
 - **Canonical model (C-002):** the shapes are replaced outright: `presetIdsOf` → presets, `CompositionFault` deleted,
@@ -355,7 +408,8 @@ example packs
 - **Adversarial squad:** run at pre-spec (dispositions recorded). A pre-merge squad runs over the aggregate diff. Tier
   R: a separate reviewer session reviews before ready. Pass.
 - **Issue rules:**
-  - `Closes #614 #629 #630 #154`, `Refs #632` with the remainder named (R-s);
+  - `Closes #614 #629 #630 #154`, `Refs #632` with the remainder named (R-s); `Refs #636` for FR-001's
+    `ClosureVerdict` clause (R-x);
   - #52 item 3 and #535 are closed with evidence;
   - #549 and #142 are ticked;
   - open-packs consequences are drafted (C-006).
@@ -383,7 +437,8 @@ kitty-specs/pack-doctor-coverage-01M7YMQK/
 
 ```
 service/packs/src/main/java/ai/speckitty/charter/packs/
-├── domain/rules/        PackRulesets, CompositionRules, PresetItemRules (new), GraphRules (D13)
+├── domain/rules/        PackRulesets, CompositionRules, PresetItemRules (new), PolicyLockRules (new, D15),
+│                        GraphRules (D13)
 ├── domain/              PackCompositionResolver, EnhancementCompose, PackCompositionFacts, ClosureFault, PackCodes,
 │                        AntiPattern, AntiPatternIdentifier, AntiPatternSeverity (new, D12),
 │                        Procedure, Styleguide (lose antiPatterns; AntiPatternEntry, StyleguideAntiPattern deleted, D14)
@@ -516,9 +571,19 @@ service/packs/src/testFixtures/resources/example-packs/ (built-in anti_patterns/
 - **Sequencing/depends-on**: IC-04.
 - **Risks**: an in-place write. Mitigation: a staged copy, then the swap, then validation again.
 
+### IC-12 — The case-only policy lock in `CLOSURE`
+- **Purpose**: D15.
+- **Relevant requirements**: FR-016, NFR-001, NFR-003, SC-001, C-001.
+- **Affected surfaces**: `PolicyLockRules` (new), `PackRulesets.closureFaults`, `PresetItemRules.ownClosure` (shared),
+  `PolicyLockRulesTest` (new), `FullPassParityTest.closureRows()`, ADR-0083, `docs/guides/check-packs.md`, a change
+  fragment.
+- **Sequencing/depends-on**: IC-03, IC-05 (the parity table), IC-08 (ADR-0083 and the guide exist).
+- **Risks**: the order of `CLOSURE`'s findings for sets that already pass is unchanged (a new phase appended last).
+  Mitigation: `PackRulesetsClosureTest` and the goldens stay green with no expected-value edit.
+
 ### IC-08 — Decision record, contract and docs
 - **Purpose**: D8, D10, C-006.
-- **Relevant requirements**: FR-011, FR-012.
+- **Relevant requirements**: FR-011, FR-012 (R-x and R-y added by IC-12).
 - **Affected surfaces**: ADR-0083, the ADR-0075/0042 amendments, the rules doc, the patterns page, `docs/guides/check-packs.md`
   (text only), `contracts/charter/changes/`, the open-packs drafts.
 - **Sequencing/depends-on**: IC-01 to IC-07, IC-09 to IC-11.

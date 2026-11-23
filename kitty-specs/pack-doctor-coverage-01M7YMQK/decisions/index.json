@@ -513,6 +513,52 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-23T07:21:24.319197Z",
+      "decision_id": "01M83MFVJZX16G6NBM4YPB9XYG",
+      "final_answer": "Defer to #636 slice 7 (Recommended)",
+      "input_key": "closure_verdict_view",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "Defer to #636 slice 7 (Recommended)",
+        "Do it in this mission"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "FR-001 says ClosureVerdict becomes a view over a Rationale; it shipped as a fault list with a derived Rationale, and no ruling authorised deferring that. How is it settled?",
+      "rationale": "Operator ruling R-x (2026-11-23), source: operator (AskUserQuestion in this session), answer: \"Defer to #636 slice 7 (Recommended)\". The ClosureVerdict clause of FR-001 (becomes a view over a Rationale) is deferred to #636 slice 7, which removes the type once the ledger carries what faults hold. FR-001's wording is aligned; its acceptance verdict is recorded deferred with follow-up #636; the PR writes Refs #636 for it. No code change.",
+      "resolved_at": "2026-11-23T07:21:34.983802Z",
+      "resolved_by": "claude",
+      "slot_key": "closure_verdict_view",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-23T07:21:26.673195Z",
+      "decision_id": "01M83MFXWH2NZQ8CJWFW1JTPY6",
+      "final_answer": "Fold into this PR",
+      "input_key": "policy_lock_case_only",
+      "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+      "mission_slug": "pack-doctor-coverage-01M7YMQK",
+      "opened_by": "claude",
+      "options": [
+        "Follow-up via #636 (Recommended)",
+        "Fold into this PR"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Registration case-only check also covers policy-lock URNs; pack-doctor validate checks case-only only for preset items. Fold the policy-lock case-only check into this PR?",
+      "rationale": "Operator ruling R-y (2026-11-23), source: operator (AskUserQuestion in this session), answer: \"Fold into this PR\". pack-doctor's CLOSURE gains the case-only check for policy-lock URNs through the domain factory, so validate answers a case-only policy lock as registration's phase 6 does (pack_reference_artifact_missing, no violation of its own), with a FullPassParityTest row. Added as WP13.",
+      "resolved_at": "2026-11-23T07:21:37.355371Z",
+      "resolved_by": "claude",
+      "slot_key": "policy_lock_case_only",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",

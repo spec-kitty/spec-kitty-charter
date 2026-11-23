@@ -1,17 +1,5 @@
 {
   "rows": {
-    "#52": {
-      "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
-      "fr": null,
-      "nfr": null,
-      "repo": null,
-      "sc": null,
-      "scope": null,
-      "source_file": "spec.md",
-      "title": "Closure checker and YAML adapter follow-ups",
-      "verdict": "in-mission",
-      "wp": "WP09"
-    },
     "#142": {
       "evidence_ref": "Context only: parent epic of #154; ticked for #154 at landing",
       "fr": null,
@@ -48,6 +36,18 @@
       "verdict": "not-applicable",
       "wp": "WP04"
     },
+    "#4141": {
+      "evidence_ref": "Context only: analysis-report.md X4 cites spec-kitty's own tracker (planning-pin advance on a planning amendment), not a spec-kitty-charter issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#478": {
       "evidence_ref": "Context only: plan.md cites the existing #478 CI timing step, relabelled; no WP delivers it",
       "fr": null,
@@ -59,6 +59,18 @@
       "title": null,
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#52": {
+      "evidence_ref": "Item 3 closed as obsolete with evidence by ruling R-g (WP09 closure evidence)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Closure checker and YAML adapter follow-ups",
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#535": {
       "evidence_ref": "Recorded as not the charter's to judge in ADR-0083 (ruling R-g); closed not_planned",

@@ -4,6 +4,37 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-doctor-coverage-01M7YMQK
 mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
+generated_at: '2026-11-23T07:29:44.576890+00:00'
+analyzer_agent: claude
+input_artifacts:
+  spec.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/spec.md
+    sha256: 5fc31701e743b2a3a9bea098b0821be3a8ee5d1d4a44e574f2d4501a1ab2c858
+  plan.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/plan.md
+    sha256: 804d720b35967aa6b340e7df9ad632ef00ecb2ce546a808d9fe207e8a63353e1
+  tasks.md:
+    path: .worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks.md
+    sha256: b47798ca51e1aaa0126e4ae78e910b28d4ff8dada244ad95fa53ddaa2a5f5df0
+  charter:
+    path: .kittify/charter/charter.yaml
+    sha256: 78969118cd3893697d6eae119c7306a91003f27d64a8ddfdb4744d92c50e4503
+verdict: unknown
+issue_counts:
+  low:
+  info:
+  critical:
+  medium:
+  high:
+findings: []
+---
+
+---
+schema_version: 1
+artifact_type: spec-kitty.analysis-report
+command: /spec-kitty.analyze
+mission_slug: pack-doctor-coverage-01M7YMQK
+mission_id: 01M7YMQKJ7VHPK74YWKCQW8XBT
 generated_at: '2026-11-22T13:07:02.976514+00:00'
 analyzer_agent: claude
 input_artifacts:
@@ -259,3 +290,45 @@ added or dropped.
 - occurrence_map.yaml: WP08's doc paths classified.
 
 Verdict: ready. Critical issues: 0. No operator question open.
+
+## Re-analysis 2026-11-23 (R-x, R-y)
+
+Re-run after operator rulings R-x (DM-01M83MFVJZX16G6NBM4YPB9XYG, "Defer to #636 slice 7 (Recommended)") and R-y
+(DM-01M83MFXWH2NZQ8CJWFW1JTPY6, "Fold into this PR"), with WP01-WP12 approved. Planning commits `f6939113e` (spec,
+plan D15, data model, tasks, WP13, occurrence map) and `c430cc6c5` (lanes).
+
+- **R-x.** FR-001 keeps its text and states that its `ClosureVerdict` clause is deferred to #636 slice 7; plan D1 says
+  so, and the Charter Check's issue rules add `Refs #636` for it. No code change. The FR-001 acceptance row
+  (recorded `fail`, 2026-11-22) is to be re-recorded `deferred` with follow-up #636 by the reviewer; ADR-0083 decision
+  15 cites R-x through WP13 T055.
+- **R-y.** New FR-016 (status Proposed, as every FR), US1 scenario 5 and an edge case. Plan D15 places the check as one
+  `CLOSURE` phase of the domain factory, `PolicyLockRules` (rule `closure.policy-locks`), appended to
+  `PackRulesets.closureFaults` after the preset items, running the existing `caseOnlyMatches` over each pack's own
+  closure (shared `PresetItemRules.ownClosure`, no new walk). Registration's phase 6 and the composing read are
+  unchanged. Verified on lane-h `744df9b61`: `OfferingReadService.java:450-475` (phase 6 over preset and policy
+  mentions), `PackRulesets.java:95-110`, `PresetItemRules.java:152-197`, `ClosureImpactCheck.place` (no violation added
+  for a case-only fault), `activation-register.feature:334`.
+- **FR-012** lists the rulings ADR-0083 records (R-a to R-w), with R-x and R-y added by WP13. **FR-014** and its edge
+  case state the shipped pointers: the finding at `/nodes/<n>` of its document, a registration violation's pointer the
+  document (`anti-pattern-nodes.feature:5-7,107`; `AntiPatternNodeCheckTest:84,95`).
+- **WP13** (T051-T055; depends on WP03, WP05, WP08; java-jenny): red-first `PolicyLockRulesTest` and a
+  `FullPassParityTest.closureRows()` row; ADR-0083 (R-x, R-y, a new decision, Batch 5), `check-packs.md`, and a new
+  `### Changed` fragment `2026-11-23-pack-doctor-policy-lock-case-only.md` (the `--full` fragment's precedent: no code
+  or wire change; WP03's fragment is not edited). `finalize-tasks` put it in a new `lane-l` on lanes c, e and h.
+
+| ID | Category | Severity | Location(s) | Summary | Recommendation |
+|----|----------|----------|-------------|---------|----------------|
+| X1 | Ownership | LOW | WP13 owned_files | Owning `PackRulesets.java`, `FullPassParityTest.java`, ADR-0083 or `check-packs.md` makes `finalize-tasks` merge started lanes b, c, e and h (`LANE_MEMBERSHIP_FROZEN`) | WP13 owns only the three files it creates; the six edits to approved WPs' files are listed in its prompt as justified out-of-map edits; lane-l starts from lane-h |
+| X2 | Consistency | LOW | plan D15 | Registration's phase 6 halts the closure, pack-doctor's `CLOSURE` collects every phase, so beside an unheld preset item registration reports only the lock and pack-doctor reports both | Same codes per fault (SC-001); the existing collect-all difference of D3, unchanged |
+| X3 | Coverage | LOW | acceptance-matrix.json | The matrix holds FR-001 to FR-012; FR-013 to FR-016 are not criteria yet | Add them when the acceptance gate regenerates the matrix; verdicts are not edited by planning |
+| X4 | Process | LOW | lanes.json | `finalize-tasks` advanced `planning_commit_sha` from `172ed233f` to the target tip `ece7b92f9` (pin class "advanced") | Expected for a planning amendment (#4141); no lane membership changed |
+| X5 | Records | LOW | WP09 closure evidence | The PR body needs `Refs #636` for FR-001's deferred clause (R-x) beside the existing `Refs #632`/`#636` lines | Add at landing; WP09 stays approved |
+
+**Coverage:** FR-001 to FR-016 each map to at least one task (FR-016: T051-T055); NFR-001's threshold now names FR-016.
+Total requirements: 16 FR + 3 NFR + 6 C + 4 SC. Total tasks: 55 (T001-T055).
+
+**Charter alignment:** none open. Canonical model: no legacy reader, no alias, the parity row carries the canonical
+policy shape; ADR-0082: the rule is one class in `packs.domain.rules`, composed by `PackRulesets`, with no walk of its
+own; no PIT; no issue filed (the rulings come from the operator).
+
+Verdict: ready. Critical issues: 0. High: 0. No operator question open.
