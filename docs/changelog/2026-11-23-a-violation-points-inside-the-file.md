@@ -31,6 +31,7 @@ pack file named the file alone. A graph document with forty edges and one bad on
 - **A fault at an edge points at the edge**, `/edges/<index>` in the document's `edges` list: a malformed pack
   qualifier, an edge that joins an artifact to itself, an endpoint the relation's table or the source rule refuses. A
   schema fault keeps the place the schema names, such as `/edges/0/relation` for an unknown relation.
+- **A fragment node whose `body_path` leaves the pack** points at `/nodes/<index>`.
 - **With no place inside the file**, the pointer stays the bare path, or `pack`, as before. A graph document that is
   not YAML is one example.
 - **Every surface that lists pack-file violations** carries it: a registration's `422 validation_failed`, a per-file

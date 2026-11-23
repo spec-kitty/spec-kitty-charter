@@ -9,9 +9,9 @@ value:
     title: Validation failed
     status: 422
     code: validation_failed
-    detail: 'The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml.'
+    detail: 'The pack cannot be registered: 1 fault(s), the first at drg/fragment.yaml#/nodes/0.'
     violations:
-    - pointer: drg/fragment.yaml
+    - pointer: drg/fragment.yaml#/nodes/0
       code: drg_schema_error
       detail: "drg/fragment.yaml: node A body_path '../outside.directive.yaml' escapes the pack root"
   _links:
