@@ -33,6 +33,7 @@
   "purpose_tldr": "One answer on every surface: pack-doctor and registration refuse the same pack faults, and pack-doctor can repair manifests.",
   "slug": "pack-doctor-coverage-01M7YMQK",
   "source_description": "#629, #630, #632, #614 (epic #549); operator rulings R-a..R-m",
+  "status_phase": "1",
   "target_branch": "feat/pack-doctor-coverage",
   "topology": "lanes_with_coord",
   "topology_decision": {
