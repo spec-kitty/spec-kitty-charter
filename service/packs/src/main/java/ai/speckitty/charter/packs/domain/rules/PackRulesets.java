@@ -65,7 +65,8 @@ public final class PackRulesets {
      * {@code CLOSURE} with its preset phase: the set check pack-doctor runs (#478), so pack-doctor names one composition
      * and defines no rule of its own. The preset phase is the preset contests ({@link CompositionRules#presetFaults}),
      * judged in merge order so the answer does not depend on the order the packs are given in, then the preset items
-     * ({@link PresetItemRules}, #629, #632 item 1), judged over each pack's own closure. Its reasons are
+     * ({@link PresetItemRules}, #629, #632 item 1), judged over each pack's own closure, then the policy locks
+     * ({@link PolicyLockRules}, ruling R-y), judged over the same own closure. Its reasons are
      * {@link #closureFaults}', in that order, each from its phase's origin and so with its phase's rule name: there is
      * one derivation, and the closure walk's checks (#556) extend it in {@link #closureFaults}. The service paths that
      * judge presets elsewhere keep {@link #closure()}; registration and every write run {@link #presetItemFaults}.
@@ -84,14 +85,15 @@ public final class PackRulesets {
 
     /**
      * The faults of {@link #closure(Function)}, with the packs each names (#478, A-M4): every fault of {@code CLOSURE},
-     * then every preset contest, then every preset-item fault, in the order the ruleset reports them: the one place the
-     * composition is defined. Each fault's rule is its phase's ({@link CompositionRules#RULE},
-     * {@link CompositionRules#PRESETS_RULE}, {@link PresetItemRules#RULE}). What pack-doctor reports, so it and the
-     * ruleset cannot disagree.
+     * then every preset contest, then every preset-item fault, then every case-only policy lock, in the order the
+     * ruleset reports them: the one place the composition is defined. Each fault's rule is its phase's
+     * ({@link CompositionRules#RULE}, {@link CompositionRules#PRESETS_RULE}, {@link PresetItemRules#RULE},
+     * {@link PolicyLockRules#RULE}). What pack-doctor reports, so it and the ruleset cannot disagree.
      *
      * @param packs the packs with their descriptors
      * @param factsOf each pack's composition facts
-     * @return the faults; empty when the set resolves, no preset is contested and every preset item is in its closure
+     * @return the faults; empty when the set resolves, no preset is contested, every preset item is in its closure and no
+     *     policy lock names an artifact of its closure only by case
      * @throws IllegalStateException when a descriptor is not well formed, as {@link CompositionRules#faults} refuses it
      */
     public static List<ClosureFault> closureFaults(
@@ -104,7 +106,8 @@ public final class PackRulesets {
                                 pack -> factsOf.apply(pack).presets().stream()
                                         .map(Preset::id)
                                         .toList()),
-                        presetItemFaults(packs, factsOf))
+                        presetItemFaults(packs, factsOf),
+                        PolicyLockRules.phase(factsOf).apply(packs))
                 .flatMap(List::stream)
                 .toList();
     }

@@ -98,7 +98,7 @@ public final class PresetItemRules {
     }
 
     /** The packs of a pack's own closure, in {@code compositionClosure} order; empty when one is not in the set. */
-    private static Optional<List<PackUnderResolution>> ownClosure(
+    static Optional<List<PackUnderResolution>> ownClosure(
             PackUnderResolution pack, Map<String, PackUnderResolution> byPackId) {
         List<PackUnderResolution> closure = new ArrayList<>();
         for (String packId : PackCompositionResolver.compositionClosure(

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -53,25 +52,24 @@ class PolicyLockRulesTest {
 
     private final Map<String, PackCompositionFacts> facts = new HashMap<>();
 
-    private Function<PackUnderResolution, PackCompositionFacts> factsOf() {
-        return pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE);
+    private PackCompositionFacts factsOf(PackUnderResolution pack) {
+        return facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE);
     }
 
     /** As the readout builds a pack under resolution: what a reference can name is the facts' referable list. */
     private List<PackUnderResolution> read(PackUnderResolution... packs) {
-        Function<PackUnderResolution, PackCompositionFacts> factsOf = factsOf();
         return Arrays.stream(packs)
                 .map(pack -> new PackUnderResolution(
                         pack.configured(),
                         pack.descriptor(),
                         List.of(),
-                        factsOf.apply(pack).referable(),
+                        factsOf(pack).referable(),
                         Set.of()))
                 .toList();
     }
 
     private List<ClosureFault> judge(PackUnderResolution... packs) {
-        return PolicyLockRules.phase(factsOf()).apply(read(packs));
+        return PolicyLockRules.phase(this::factsOf).apply(read(packs));
     }
 
     @Test
@@ -164,7 +162,7 @@ class PolicyLockRulesTest {
                                 Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("Directive_001"))))),
                         locking("directive:directive_001")));
 
-        assertThat(PackRulesets.closureFaults(read(BASE, ORG), factsOf()))
+        assertThat(PackRulesets.closureFaults(read(BASE, ORG), this::factsOf))
                 .extracting(
                         ClosureFault::code,
                         fault -> fault.reason().rule(),
