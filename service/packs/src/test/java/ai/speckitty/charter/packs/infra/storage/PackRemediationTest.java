@@ -16,9 +16,12 @@ import ai.speckitty.charter.packs.infra.storage.rules.TreeRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -170,7 +173,7 @@ class PackRemediationTest {
 
         PackRemediation.Outcome outcome = new PackRemediation().remediate(root(red));
 
-        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
         assertThat(violationCodes(red)).isEmpty();
         assertThat(Files.readString(red.resolve(EDITED), StandardCharsets.UTF_8))
                 .isEqualTo(canonicalOf(ExamplePacks.pack(ExamplePacks.ORG), EDITED))
@@ -187,7 +190,8 @@ class PackRemediationTest {
     @Test
     void aSecondRunIsUnchanged() throws IOException {
         Path red = redForManifestAndForm();
-        assertThat(new PackRemediation().remediate(root(red))).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(new PackRemediation().remediate(root(red)))
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
         SortedMap<String, String> remediated = treeHash(red);
 
         assertThat(new PackRemediation().remediate(root(red))).isEqualTo(new PackRemediation.Unchanged());
@@ -200,7 +204,8 @@ class PackRemediationTest {
         Path pack = orgPack("bare");
         Files.delete(pack.resolve(PackFileSet.MANIFEST));
 
-        assertThat(new PackRemediation().remediate(root(pack))).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(new PackRemediation().remediate(root(pack)))
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
         assertThat(pack.resolve(PackFileSet.MANIFEST)).isRegularFile();
         assertThat(violationCodes(pack)).isEmpty();
     }
@@ -279,6 +284,118 @@ class PackRemediationTest {
                 .containsExactly(asides.getFirst().getFileName().toString());
     }
 
+    @Test
+    void aMoveThatFailsUncheckedIsWordedAsAnyFailedMoveAndThePackIsAsItWas() throws IOException {
+        Path red = redForManifestAndForm();
+        SortedMap<String, String> before = treeHash(red);
+        AtomicInteger moves = new AtomicInteger();
+        PackRemediation remediation = new PackRemediation((from, to) -> {
+            if (moves.incrementAndGet() == 2) {
+                throw new IllegalStateException("planted: an unchecked failure of the move into place");
+            }
+            Files.move(from, to);
+        });
+
+        assertThatThrownBy(() -> remediation.remediate(root(red)))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining("it is unchanged")
+                .hasRootCauseMessage("planted: an unchecked failure of the move into place");
+        assertThat(treeHash(red)).isEqualTo(before);
+        assertThat(besides(red)).containsExactly(ExamplePacks.ORG);
+    }
+
+    @Test
+    void anUncheckedFailureWhosePutBackFailsTooCarriesThePutBackWherePackDoctorPrintsIt() throws IOException {
+        Path red = redForManifestAndForm();
+        AtomicInteger moves = new AtomicInteger();
+        List<Path> asides = new ArrayList<>();
+        PackRemediation remediation = new PackRemediation((from, to) -> {
+            int move = moves.incrementAndGet();
+            if (move == 1) {
+                asides.add(to);
+                Files.move(from, to);
+                return;
+            }
+            throw new IllegalStateException("planted: move " + move + " fails");
+        });
+
+        assertThatThrownBy(() -> remediation.remediate(root(red)))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining(asides.getFirst().toString())
+                .satisfies(thrown -> {
+                    // pack-doctor prints the cause and each failure suppressed on it.
+                    assertThat(thrown.getCause()).isInstanceOf(IOException.class);
+                    assertThat(thrown.getCause()).hasRootCauseMessage("planted: move 2 fails");
+                    assertThat(thrown.getCause().getSuppressed())
+                            .singleElement()
+                            .satisfies(restore -> assertThat(restore).hasMessage("planted: move 3 fails"));
+                });
+    }
+
+    // --- the old copy (fold review MEDIUM 1)
+    // --------------------------------------------------------------------------
+
+    /** Whether this process can write into a directory its mode keeps read-only, as root with a DAC override can. */
+    private boolean bypassesPermissions() throws IOException {
+        Path probe = Files.createDirectory(temp.resolve("probe"));
+        Files.setPosixFilePermissions(probe, PosixFilePermissions.fromString("r-xr-xr-x"));
+        try {
+            Files.createFile(probe.resolve("written"));
+            return true;
+        } catch (AccessDeniedException denied) {
+            return false;
+        } finally {
+            Files.setPosixFilePermissions(probe, PosixFilePermissions.fromString("rwxr-xr-x"));
+        }
+    }
+
+    @Test
+    void aPackWithReadOnlyDirectoriesIsRewrittenAndNoOldCopyIsLeftBesideIt() throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"), "no POSIX modes here");
+        assumeTrue(!bypassesPermissions(), "this process writes through any mode (root with a DAC override)");
+        Path red = redForManifestAndForm();
+        Path profiles = red.resolve("agent_profiles");
+        Files.setPosixFilePermissions(profiles, PosixFilePermissions.fromString("r-xr-xr-x"));
+        Files.setPosixFilePermissions(red, PosixFilePermissions.fromString("r-xr-xr-x"));
+        try {
+            assertThat(new PackRemediation().remediate(root(red)))
+                    .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+            assertThat(besides(red)).containsExactly(ExamplePacks.ORG);
+            assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(profiles)))
+                    .as("the rewritten pack keeps its own modes")
+                    .isEqualTo("r-xr-xr-x");
+        } finally {
+            Files.setPosixFilePermissions(red, PosixFilePermissions.fromString("rwxr-xr-x"));
+            Files.setPosixFilePermissions(profiles, PosixFilePermissions.fromString("rwxr-xr-x"));
+        }
+    }
+
+    @Test
+    void anOldCopyThatCannotBeDeletedIsNamedAndTheSwapStands() throws IOException {
+        Path red = redForManifestAndForm();
+        List<Path> asides = new ArrayList<>();
+        PackRemediation remediation = new PackRemediation(
+                (from, to) -> {
+                    if (to.getFileName().toString().contains(".aside-")) {
+                        asides.add(to);
+                    }
+                    PackRemediation.rename(from, to);
+                },
+                new Hooks(false),
+                copy -> {
+                    if (copy.getFileName().toString().contains(".aside-")) {
+                        throw new AccessDeniedException(copy.toString(), null, "planted: the old copy stays");
+                    }
+                    PackRemediation.removeTree(copy);
+                });
+
+        PackRemediation.Outcome outcome = remediation.remediate(root(red));
+
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.of(asides.getFirst())));
+        assertThat(violationCodes(red)).as("the swap stands").isEmpty();
+        assertThat(asides.getFirst()).isDirectory();
+    }
+
     // --- a pack root that is a link (B3) -----------------------------------------------------------------------------
 
     @Test
@@ -295,7 +412,7 @@ class PackRemediationTest {
         PackRemediation.Outcome outcome =
                 new PackRemediation().remediate(new PackRoot(ExamplePacks.ORG, Optional.empty(), link.toString()));
 
-        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
         assertThat(Files.isSymbolicLink(link)).isTrue();
         assertThat(Files.readSymbolicLink(link)).isEqualTo(red);
         assertThat(violationCodes(red)).isEmpty();
@@ -308,7 +425,8 @@ class PackRemediationTest {
     @Test
     void anUnchangedPackHasNothingWrittenBesideItOrInIt() throws IOException {
         Path red = redForManifestAndForm();
-        assertThat(new PackRemediation().remediate(root(red))).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(new PackRemediation().remediate(root(red)))
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
         FileTime longAgo = FileTime.from(Instant.parse("2001-01-01T00:00:00Z"));
         Files.setLastModifiedTime(red.getParent(), longAgo);
         Files.setLastModifiedTime(red, longAgo);
@@ -389,7 +507,7 @@ class PackRemediationTest {
                 },
                 hooks);
 
-        assertThat(remediation.remediate(root(red))).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(remediation.remediate(root(red))).isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
         hooks.registered.getFirst().join(10_000);
 
         assertThat(violationCodes(red)).isEmpty();

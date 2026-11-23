@@ -255,6 +255,25 @@ class ReportFileTest {
             assertThat(pack.resolve("report.yaml")).doesNotExist();
         }
 
+        /** Fold review LOW: a report path that is a dangling link into a pack is judged where it leads. */
+        @Test
+        void aReportThatIsADanglingLinkIntoAPackItChecks() throws IOException {
+            Path pack = builtIn();
+            Path report = temp.resolve("report.yaml");
+            try {
+                Files.createSymbolicLink(report, pack.resolve("r.yaml"));
+            } catch (IOException | UnsupportedOperationException noLinks) {
+                assumeTrue(false, "the file system cannot make a symbolic link");
+                return;
+            }
+
+            assertUsageFault(
+                    run("--pack", pack.toString(), "--report", report.toString()),
+                    "--report " + report + " lies inside the pack " + pack
+                            + "; write the report outside every pack it checks");
+            assertThat(pack.resolve("r.yaml")).doesNotExist();
+        }
+
         @Test
         void theUsageNamesBothOptions() {
             Run run = run("--help");

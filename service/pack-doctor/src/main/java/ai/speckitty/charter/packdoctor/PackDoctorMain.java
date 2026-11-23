@@ -180,7 +180,7 @@ public final class PackDoctorMain {
     /** The production remediation of one pack ({@link PackRemediation}), its outcome in the command's words. */
     static Remediate.Result remediated(PackRoot root) {
         return switch (new PackRemediation().remediate(root)) {
-            case PackRemediation.Rewritten rewritten -> new Remediate.Rewritten();
+            case PackRemediation.Rewritten rewritten -> new Remediate.Rewritten(rewritten.oldCopyLeft());
             case PackRemediation.Unchanged unchanged -> new Remediate.Unchanged();
             case PackRemediation.Refused refused -> new Remediate.Refused(refused.violations());
         };
@@ -252,7 +252,7 @@ public final class PackDoctorMain {
             Arguments.Remediate remediate, PrintStream out, PrintStream err, Path temporary, Composition composition) {
         boolean refused;
         try {
-            refused = Remediate.run(remediate.validation().packs(), composition.repair(), out);
+            refused = Remediate.run(remediate.validation().packs(), composition.repair(), out, err);
         } catch (UncheckedIOException failure) {
             // The message says whether the pack is as it was or where its aside copy is; the cause says why, and a
             // failure suppressed on either (a put-back that failed too) is said after it.

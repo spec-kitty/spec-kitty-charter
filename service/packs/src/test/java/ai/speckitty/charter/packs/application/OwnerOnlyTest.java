@@ -186,6 +186,18 @@ class OwnerOnlyTest {
             assertThat(Files.exists(bare.getPath("/spool"))).isFalse();
             assertThat(Files.exists(file)).isFalse();
         }
+
+        @Test
+        void aModeIsNeitherCarriedNorWidenedAndNothingFails() throws IOException {
+            Path from = Files.createDirectories(bare.getPath("/pack"));
+            Path to = Files.createDirectories(bare.getPath("/copy"));
+
+            assertThatCode(() -> {
+                        OwnerOnly.carryMode(from, to);
+                        OwnerOnly.ownerWritable(to);
+                    })
+                    .doesNotThrowAnyException();
+        }
     }
 
     @Nested
@@ -198,6 +210,29 @@ class OwnerOnlyTest {
         @AfterEach
         void closePosix() throws IOException {
             posix.close();
+        }
+
+        @Test
+        void aCarriedModeIsThePacksOwnAndNoneIsBuilt() throws IOException {
+            Path from = Files.createDirectories(posix.getPath("/pack/docs"));
+            Path to = Files.createDirectories(posix.getPath("/copy/docs"));
+            Files.setPosixFilePermissions(from, PosixFilePermissions.fromString("r-xr-x---"));
+
+            OwnerOnly.carryMode(from, to);
+
+            assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(to)))
+                    .isEqualTo("r-xr-x---");
+        }
+
+        @Test
+        void aReadOnlyDirectoryMadeOwnerWritableKeepsEveryOtherBit() throws IOException {
+            Path aside = Files.createDirectories(posix.getPath("/.pack.aside-1"));
+            Files.setPosixFilePermissions(aside, PosixFilePermissions.fromString("r-xr-x---"));
+
+            OwnerOnly.ownerWritable(aside);
+
+            assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(aside)))
+                    .isEqualTo("rwxr-x---");
         }
 
         @Test

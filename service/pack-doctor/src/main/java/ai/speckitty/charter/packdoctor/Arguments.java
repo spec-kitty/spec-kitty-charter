@@ -624,11 +624,14 @@ final class Arguments {
 
     /**
      * The report file refused when it lies inside a pack the run checks, by real path (squad B7): writing it would change
-     * the pack. A path whose directory does not exist is left for the write to refuse.
+     * the pack. A report path that is a link is judged where the link leads, link after link, so a link to a file not
+     * written yet inside a pack is refused too (fold review LOW). A path whose directory does not exist is left for the
+     * write to refuse.
      */
-    private static Optional<UsageFault> reportInsideAPack(Path report, Map<Path, String> packsByRealPath) {
+    private static Optional<UsageFault> reportInsideAPack(Path given, Map<Path, String> packsByRealPath) {
         Path real;
         try {
+            Path report = linkTarget(given);
             Path parent = report.toAbsolutePath().getParent();
             Path name = report.getFileName();
             if (Files.exists(report)) {
@@ -643,10 +646,27 @@ final class Arguments {
         }
         for (Map.Entry<Path, String> pack : packsByRealPath.entrySet()) {
             if (real.startsWith(pack.getKey())) {
-                return Optional.of(new UsageFault(REPORT + " " + report + " lies inside the pack " + pack.getValue()
+                return Optional.of(new UsageFault(REPORT + " " + given + " lies inside the pack " + pack.getValue()
                         + "; write the report outside every pack it checks"));
             }
         }
         return Optional.empty();
+    }
+
+    /** The most links a report path is followed through before the write is left to refuse it, as the kernel's bound. */
+    private static final int MAX_LINKS = 40;
+
+    /**
+     * Where a path leads when it is a link, each link's text resolved against the link's own directory, whether or not
+     * the last target exists; the path itself when it is no link.
+     */
+    private static Path linkTarget(Path path) throws IOException {
+        Path at = path.toAbsolutePath();
+        for (int hop = 0; hop < MAX_LINKS && Files.isSymbolicLink(at); hop++) {
+            Path text = Files.readSymbolicLink(at);
+            Path directory = at.getParent();
+            at = directory == null ? text.toAbsolutePath() : directory.resolve(text);
+        }
+        return at;
     }
 }

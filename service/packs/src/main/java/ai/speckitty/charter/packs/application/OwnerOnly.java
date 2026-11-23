@@ -35,7 +35,9 @@ import java.util.Set;
  * check (plan, security squad 8). A staged upload is untrusted input of one client, and the process may share a host or
  * a volume with others.
  *
- * <p>This is the only place in the module that builds a POSIX permission attribute (#510). Where the file system has
+ * <p>This is the only place in the module that builds a POSIX permission attribute or sets a POSIX mode (#510): it
+ * also carries a pack's own mode to a copy ({@link #carryMode}) and makes a directory about to be deleted writable by
+ * its owner ({@link #ownerWritable}), each a no-op without a POSIX view. Where the file system has
  * POSIX permissions, a directory is created with mode {@code 0700} and a file with {@code 0600}, at creation. Where it
  * has none but has ACLs (NTFS, on Windows), it is created without the attribute and, before it is used, given an ACL
  * with one entry that allows its owner everything; a directory's entry is inherited by what is created in it. Where
@@ -210,6 +212,51 @@ public final class OwnerOnly {
             throw failure;
         }
         return Channels.newOutputStream(channel);
+    }
+
+    /**
+     * Carries a path's own POSIX mode to its copy, as a copy made with its attributes carries it. It exists for
+     * {@code pack-doctor remediate} (FR-009), which rewrites a pack in a copy beside it and must leave each directory
+     * and file with the mode the author gave it. It builds no mode: it only repeats one the file system already holds,
+     * and where either path has no POSIX view (NTFS, on Windows) it does nothing, so the copy keeps the mode it was made
+     * with (#510). It is here, with every other call that sets a POSIX mode, so OWNER_ONLY_MODES_ARE_BUILT_IN_ONE_PLACE
+     * has one place to allow.
+     *
+     * @param from the original
+     * @param to its copy
+     * @throws IOException when the mode cannot be read or set
+     */
+    public static void carryMode(Path from, Path to) throws IOException {
+        PosixFileAttributeView original =
+                Files.getFileAttributeView(from, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        PosixFileAttributeView copy =
+                Files.getFileAttributeView(to, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        if (original != null && copy != null) {
+            copy.setPermissions(original.readAttributes().permissions());
+        }
+    }
+
+    /**
+     * Gives a directory's owner read, write and search on it, every other bit as it was. It exists for a tree about to
+     * be deleted whose directories carry a read-only mode, such as the copy {@code pack-doctor remediate} moves aside
+     * once the rewritten pack is in place: a directory its owner cannot write cannot be emptied. Where the path has no
+     * POSIX view it does nothing (#510).
+     *
+     * @param directory the directory
+     * @throws IOException when its mode cannot be read or set
+     */
+    public static void ownerWritable(Path directory) throws IOException {
+        PosixFileAttributeView view =
+                Files.getFileAttributeView(directory, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        if (view == null) {
+            return;
+        }
+        Set<PosixFilePermission> mode = EnumSet.noneOf(PosixFilePermission.class);
+        mode.addAll(view.readAttributes().permissions());
+        if (mode.addAll(EnumSet.of(
+                PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE))) {
+            view.setPermissions(mode);
+        }
     }
 
     /** How a path is made the owner's alone where there are no POSIX permissions; a test substitutes a failure. */

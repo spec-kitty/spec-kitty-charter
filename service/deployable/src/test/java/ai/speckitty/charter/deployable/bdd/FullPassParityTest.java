@@ -806,15 +806,17 @@ class FullPassParityTest {
 
     /**
      * Whether a problem of pack-doctor's is the registration's fault as pack-doctor words it: the same code, the same
-     * detail but for the closure the registration names in front, and the same packs but for the roots the registration
-     * names after them.
+     * detail but for the closure the registration names in front, and the same packs, at least one, but for the root
+     * the registration appends after them when they do not name it ({@code ClosureImpactCheck.withRoots}).
      */
-    private static boolean isTheFault(JsonNode problem, String code, String detail, List<List<String>> packs) {
+    private static boolean isTheFault(
+            JsonNode problem, String code, String detail, List<List<String>> packs, String root) {
         List<List<String>> named = packsOf(problem);
+        boolean rootAppended = !packs.isEmpty() && packs.getLast().get(1).equals(root);
         return problem.get("code").asString().equals(code)
                 && detail.endsWith(problem.get("detail").asString())
-                && named.size() <= packs.size()
-                && packs.subList(0, named.size()).equals(named);
+                && !named.isEmpty()
+                && (named.equals(packs) || (rootAppended && named.equals(packs.subList(0, packs.size() - 1))));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -876,7 +878,7 @@ class FullPassParityTest {
             assertThat(problems)
                     .as("pack-doctor's problem naming the registration's packs and detail (%s)", refused.getMessage())
                     .anyMatch(problem -> isTheFault(
-                            problem, refused.code().token(), refused.getMessage(), packsOf(refused.packs())));
+                            problem, refused.code().token(), refused.getMessage(), packsOf(refused.packs()), name));
         }
         assertThat(run.exit()).isEqualTo(1);
     }

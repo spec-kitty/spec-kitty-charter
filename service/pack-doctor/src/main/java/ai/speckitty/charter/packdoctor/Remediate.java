@@ -4,8 +4,10 @@ import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packvalidation.set.PackSetEntry;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The {@code remediate} command of pack-doctor (FR-009 of mission pack-doctor-coverage-01M7YMQK, ruling R-j, plan D7,
@@ -29,8 +31,21 @@ final class Remediate {
     /** What remediating one pack did, as the remediation answers it. */
     sealed interface Result permits Rewritten, Unchanged, Refused {}
 
-    /** The pack was rewritten in canonical form and its manifest restamped. */
-    record Rewritten() implements Result {}
+    /**
+     * The pack was rewritten in canonical form and its manifest restamped.
+     *
+     * @param oldCopyLeft the hidden copy of the pack as it was, when it could not be deleted after the swap
+     */
+    record Rewritten(Optional<Path> oldCopyLeft) implements Result {
+        /**
+         * Checks the field.
+         *
+         * @param oldCopyLeft the copy left behind, if any
+         */
+        Rewritten {
+            Objects.requireNonNull(oldCopyLeft, "oldCopyLeft");
+        }
+    }
 
     /** The pack was already canonical and stamped: nothing was written. */
     record Unchanged() implements Result {}
@@ -69,20 +84,30 @@ final class Remediate {
 
     /**
      * Remediates each pack in order and prints its outcome on {@code out}. A failure stops the run: the packs before it
-     * keep what was done to them, and the failing pack is as it was, or where the failure names.
+     * keep what was done to them, and the failing pack is as it was, or where the failure names. A rewritten pack whose
+     * old copy could not be deleted is still rewritten; a warning on {@code err} names the copy to delete, and the exit
+     * code does not change.
      *
      * @param packs the packs, in the order given
      * @param repair the remediation
      * @param out where the outcomes go
+     * @param err where a warning goes
      * @return whether any pack was refused
      */
-    static boolean run(List<PackSetEntry> packs, Repair repair, PrintStream out) {
+    static boolean run(List<PackSetEntry> packs, Repair repair, PrintStream out, PrintStream err) {
         Objects.requireNonNull(repair, "repair");
         boolean refused = false;
         for (PackSetEntry pack : packs) {
             String locator = pack.root().locator();
             switch (repair.repair(pack.root())) {
-                case Rewritten rewritten -> out.println(locator + ": rewritten");
+                case Rewritten rewritten -> {
+                    out.println(locator + ": rewritten");
+                    rewritten
+                            .oldCopyLeft()
+                            .ifPresent(copy -> err.println("pack-doctor: warning: " + locator
+                                    + " was rewritten, but its old copy could not be deleted: " + copy
+                                    + "; delete it"));
+                }
                 case Unchanged unchanged -> out.println(locator + ": unchanged");
                 case Refused refusal -> {
                     refused = true;

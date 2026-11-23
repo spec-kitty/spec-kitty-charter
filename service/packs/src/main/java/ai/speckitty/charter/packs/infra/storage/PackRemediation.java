@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.roundtrip.FileOutcome;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
@@ -15,12 +16,11 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFileAttributeView;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -47,7 +47,9 @@ import org.jspecify.annotations.Nullable;
  *       canonical pack needs no write access. Otherwise the copy is written beside the pack, in a hidden sibling
  *       {@code .<pack>.remediate-<uuid>} that keeps the pack's file modes, and takes the pack's place ({@link
  *       Rewritten}): the pack is moved aside to {@code .<pack>.aside-<uuid>}, the sibling is moved in, and the aside
- *       copy is deleted. A move that fails puts the pack back.
+ *       copy is deleted, each of its directories made writable by its owner first, since it carries the pack's own
+ *       modes. When it still cannot be deleted, the swap stands and the outcome names the copy left behind
+ *       ({@link Rewritten#oldCopyLeft}). A move that fails puts the pack back.
  * </ol>
  *
  * <p>A pack root that is a symbolic link is remediated in the directory it resolves to, which is swapped; the link is
@@ -76,8 +78,22 @@ public final class PackRemediation {
     /** What one remediation did. */
     public sealed interface Outcome permits Rewritten, Unchanged, Refused {}
 
-    /** The pack was rewritten: its modelled files in canonical form and its manifest derived and stamped. */
-    public record Rewritten() implements Outcome {}
+    /**
+     * The pack was rewritten: its modelled files in canonical form and its manifest derived and stamped.
+     *
+     * @param oldCopyLeft the hidden copy of the pack as it was, {@code .<pack>.aside-<uuid>}, when it could not be
+     *     deleted after the swap; the swap stands, so it is the caller's to report and the user's to delete
+     */
+    public record Rewritten(Optional<Path> oldCopyLeft) implements Outcome {
+        /**
+         * Checks the field.
+         *
+         * @param oldCopyLeft the copy left behind, if any
+         */
+        public Rewritten {
+            Objects.requireNonNull(oldCopyLeft, "oldCopyLeft");
+        }
+    }
 
     /** The pack was already canonical and stamped: nothing was written. */
     public record Unchanged() implements Outcome {}
@@ -109,6 +125,18 @@ public final class PackRemediation {
          * @throws IOException when it cannot be moved
          */
         void move(Path from, Path to) throws IOException;
+    }
+
+    /** A deletion of a whole tree: the seam a test uses to make the old copy's deletion fail. */
+    @FunctionalInterface
+    interface Remover {
+        /**
+         * Deletes {@code root} and everything under it, if it is there.
+         *
+         * @param root the tree
+         * @throws IOException when it cannot be deleted whole
+         */
+        void remove(Path root) throws IOException;
     }
 
     /** Where the run's shutdown hook is held: the JVM's own, or a test's, which runs it when it chooses. */
@@ -147,6 +175,7 @@ public final class PackRemediation {
 
     private final Mover mover;
     private final Interruption interruption;
+    private final Remover remover;
 
     /** The remediation with the file system's own move, atomic where the platform renames atomically. */
     public PackRemediation() {
@@ -169,8 +198,20 @@ public final class PackRemediation {
      * @param interruption where the run's shutdown hook is held
      */
     PackRemediation(Mover mover, Interruption interruption) {
+        this(mover, interruption, PackRemediation::removeTree);
+    }
+
+    /**
+     * The remediation with a move, a place for its shutdown hook and a deletion of the caller's.
+     *
+     * @param mover the move the swap makes
+     * @param interruption where the run's shutdown hook is held
+     * @param remover the deletion of a copy the run no longer needs
+     */
+    PackRemediation(Mover mover, Interruption interruption, Remover remover) {
         this.mover = Objects.requireNonNull(mover, "mover");
         this.interruption = Objects.requireNonNull(interruption, "interruption");
+        this.remover = Objects.requireNonNull(remover, "remover");
     }
 
     /**
@@ -236,9 +277,8 @@ public final class PackRemediation {
                 Path sibling = sibling(live, "remediate");
                 besides = sibling;
                 materialize(staged, live, sibling);
-                swap(sibling, live);
+                return new Rewritten(swap(sibling, live));
             }
-            return new Rewritten();
         }
 
         private Path workDirectory() throws IOException {
@@ -273,32 +313,60 @@ public final class PackRemediation {
                 siblingCopy = besides;
             }
             if (workCopy != null) {
-                deleteTree(workCopy);
+                quietlyRemove(workCopy);
             }
             if (siblingCopy != null) {
-                deleteTree(siblingCopy); // gone already when the swap moved it in
+                quietlyRemove(siblingCopy); // gone already when the swap moved it in
             }
         }
 
-        /** The live pack aside, the sibling in its place, the aside copy deleted; a failed move puts the pack back. */
-        private void swap(Path sibling, Path live) throws IOException {
-            Path aside = sibling(live, "aside");
-            mover.move(live, aside);
+        /** Deletes a copy the run no longer needs; a failure never changes what the remediation answered. */
+        private void quietlyRemove(Path copy) {
             try {
-                mover.move(sibling, live);
-            } catch (IOException | RuntimeException failure) {
+                remover.remove(copy);
+            } catch (IOException | RuntimeException ignored) {
+                // A copy left behind is hidden beside the pack or in the temporary directory.
+            }
+        }
+
+        /**
+         * The live pack aside, the sibling in its place, the aside copy deleted; a failed move puts the pack back. A
+         * move's failure, checked or not, is an {@link IOException}, so the caller words it as any failed move, and a
+         * failed put-back is suppressed on it, where pack-doctor prints it.
+         *
+         * @return the aside copy when it could not be deleted once the swap stood; empty when it is gone
+         */
+        private Optional<Path> swap(Path sibling, Path live) throws IOException {
+            Path aside = sibling(live, "aside");
+            move(live, aside);
+            try {
+                move(sibling, live);
+            } catch (IOException failure) {
                 try {
-                    mover.move(aside, live);
-                } catch (IOException | RuntimeException restore) {
+                    move(aside, live);
+                } catch (IOException restore) {
                     failure.addSuppressed(restore);
                     throw new UncheckedIOException(
                             "cannot remediate " + root.locator() + ", and it could not be put back: the pack as it was"
                                     + " is at " + aside,
-                            failure instanceof IOException io ? io : new IOException(failure));
+                            failure);
                 }
                 throw failure;
             }
-            deleteTree(aside);
+            try {
+                remover.remove(aside);
+                return Optional.empty();
+            } catch (IOException | RuntimeException leftBehind) {
+                return Optional.of(aside);
+            }
+        }
+
+        private void move(Path from, Path to) throws IOException {
+            try {
+                mover.move(from, to);
+            } catch (RuntimeException unchecked) {
+                throw new IOException(unchecked.getMessage(), unchecked);
+            }
         }
     }
 
@@ -402,21 +470,15 @@ public final class PackRemediation {
     }
 
     /**
-     * The pack's own POSIX mode carried to the copy, as a copy with its attributes carries it, where both have a POSIX
-     * view, and its modification time when asked. No mode is built here (OwnerOnly owns that, #510): on a file system
-     * with no POSIX view nothing is carried, and the copy keeps the mode it was made with.
+     * The pack's own POSIX mode carried to the copy ({@link OwnerOnly#carryMode}, the one place a mode is set, #510),
+     * and its modification time when asked. On a file system with no POSIX view nothing is carried, and the copy keeps
+     * the mode it was made with.
      */
     private static void keepAttributes(Path original, Path copy, boolean time) throws IOException {
         if (time) {
             Files.setLastModifiedTime(copy, Files.getLastModifiedTime(original, LinkOption.NOFOLLOW_LINKS));
         }
-        PosixFileAttributeView from =
-                Files.getFileAttributeView(original, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
-        PosixFileAttributeView to =
-                Files.getFileAttributeView(copy, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
-        if (from != null && to != null) {
-            to.setPermissions(from.readAttributes().permissions());
-        }
+        OwnerOnly.carryMode(original, copy);
     }
 
     private static boolean sameBytes(Path left, Path right) throws IOException {
@@ -455,17 +517,36 @@ public final class PackRemediation {
         return tree;
     }
 
-    /** Deletes a tree if it is there; a failure is left for the caller's outcome, never masking it. */
-    private static void deleteTree(Path root) {
+    /**
+     * Deletes a tree if it is there. Each directory is made writable by its owner first ({@link OwnerOnly#ownerWritable}):
+     * the copy carries the pack's own modes, and a directory the pack keeps read-only could not be emptied otherwise.
+     * Its mode no longer matters, since it is about to go.
+     */
+    static void removeTree(Path root) throws IOException {
         if (!Files.exists(root, LinkOption.NOFOLLOW_LINKS)) {
             return;
         }
-        try (Stream<Path> paths = Files.walk(root)) {
-            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
-                Files.deleteIfExists(path);
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) throws IOException {
+                OwnerOnly.ownerWritable(dir);
+                return FileVisitResult.CONTINUE;
             }
-        } catch (IOException | UncheckedIOException ignored) {
-            // A copy left behind is hidden beside the pack; it never changes what the remediation answered.
-        }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, @Nullable IOException failure) throws IOException {
+                if (failure != null) {
+                    throw failure;
+                }
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }

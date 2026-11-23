@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -307,6 +308,35 @@ class RemediateTest {
                 .contains("planted: the staged pack cannot take the pack's place")
                 .contains("planted: the pack cannot be put back")
                 .doesNotContain("unchanged");
+    }
+
+    /**
+     * Fold review MEDIUM 1: a pack rewritten whose old copy could not be deleted is still rewritten and the run's exit
+     * stands; a warning on standard error names the copy to delete.
+     */
+    @Test
+    void anOldCopyLeftBehindIsAWarningNamingItAndTheExitStands() throws IOException {
+        Path packs = packs();
+        Remediate.Repair leftBehind =
+                root -> new Remediate.Rewritten(Optional.of(Path.of("/planted/.org-base.aside-1")));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String[] given = values(packs);
+
+        int exit = PackDoctorMain.run(
+                new String[] {"remediate", given[0], given[1]},
+                new PrintStream(out, true, StandardCharsets.UTF_8),
+                new PrintStream(err, true, StandardCharsets.UTF_8),
+                Files.createDirectories(temp.resolve("tmp")),
+                new PackDoctorMain.Composition(new FileSystemPackInspector(), PackRoundTrip::run, leftBehind));
+
+        assertThat(exit).isEqualTo(PackDoctorMain.VALID);
+        assertThat(out.toString(StandardCharsets.UTF_8))
+                .contains(given[0].substring(0, given[0].lastIndexOf(':')) + ": rewritten");
+        assertThat(err.toString(StandardCharsets.UTF_8))
+                .contains("pack-doctor: warning: ")
+                .contains(
+                        "was rewritten, but its old copy could not be deleted: /planted/.org-base.aside-1; delete it");
     }
 
     // --- the command line ------------------------------------------------------------------------------------------
