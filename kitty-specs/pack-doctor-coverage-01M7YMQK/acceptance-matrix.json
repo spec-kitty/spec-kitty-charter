@@ -128,13 +128,13 @@
     },
     {
       "criterion_id": "FR-013",
-      "description": "Verify FR-013 is satisfied",
+      "description": "FR-013: the anti_pattern kind gets a file form anti_patterns/<id>.anti-pattern.yaml, closed (schema_version, id=stem, title, description, severity smell|severe|breaking, bad_example required; good_example optional; no default severity); the packs contract gains its schema, files rule and classifier case; the store binds/reads/writes it in one canonical form; registration and validate hold a valid file and refuse invalid or misplaced ones with existing answers; 18 inline entries become built-in files with node and rejects edge, incl. indirection-for-repetition.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": "claude",
-      "verified_at": "2026-11-23T08:29:15.803787+00:00",
-      "notes": "row registered; awaiting verifier"
+      "evidence": "lane-l@33de257ea: contracts/packs/schemas/anti-pattern.schema.json (additionalProperties false; required schema_version,id,title,description,severity,bad_example :54-61; severity enum, no default); contracts/packs/file-kinds.yaml:134,:228-229; contracts/packs/conformance/classifier-cases.yaml:68; packs infra/storage/AntiPatternBinding.java, AntiPatternDso.java, AntiPatternYaml.java; AntiPatternBindingTest :86,:105,:159,:205; pack-validation antipattern/AntiPatternFileCheckTest :57,:65,:76; contracts/charter/scenarios/registration/anti-pattern-files.feature:57,:90; example-packs/built-in/anti_patterns (18 files)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-23T08:36:04.777119+00:00",
+      "notes": "Verified schema, files rule, classifier case, binding and its tests, the missing-severity and missing-bad_example refusals, and 18 fixture files. packs and pack-validation suites green on the lane-l gates."
     },
     {
       "criterion_id": "FR-014",
