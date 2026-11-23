@@ -257,7 +257,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "artifact_schema_error"
-    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml#/prompt_fragments/0/slot"
     When I PUT "/packs/enhancer" with the archive "enhancer"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -281,7 +281,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "artifact_schema_error"
-    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml#/prompt_fragments/0/slot"
     When I PUT "/packs/enhancer" with the archive "enhancer"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -302,7 +302,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "artifact_schema_error"
-    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml#/prompt_fragments"
     When I PUT "/packs/enhancer" with the archive "enhancer"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -563,7 +563,7 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "artifact_schema_error"
-    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml"
+    And the field at "/problem/violations/0/pointer" is "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml#/id"
     When I PUT "/packs/enhancer" with the archive "enhancer"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"

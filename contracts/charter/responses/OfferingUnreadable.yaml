@@ -48,7 +48,7 @@ content:
             a graph document of foundation cannot be read: foundation/directive.graph.yaml: unknown relation
             'in_tension_with'
           violations:
-            - pointer: directive.graph.yaml
+            - pointer: directive.graph.yaml#/edges/0/relation
               code: drg_schema_error
               detail: "directive.graph.yaml: unknown relation 'in_tension_with'"
       prompt-slot-missing:
