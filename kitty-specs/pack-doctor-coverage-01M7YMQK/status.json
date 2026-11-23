@@ -263,7 +263,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 3,
@@ -280,7 +280,8 @@
         "Cycle 3: R-w quoted as written",
         "Review passed: cycle 3, R-w quoted whole; docs checks green",
         "Reopened: lane-h integration edits predate WP08's claim, unattributed and unreviewed as code",
-        "Integration edits re-authored after claim (5b6d9ef71, e9df19a9b), tree unchanged; needs code review of the integration edits"
+        "Integration edits re-authored after claim (5b6d9ef71, e9df19a9b), tree unchanged; needs code review of the integration edits",
+        "Review passed: cycle 4 code review of the lane-h integration edits; 3 LOWs"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
