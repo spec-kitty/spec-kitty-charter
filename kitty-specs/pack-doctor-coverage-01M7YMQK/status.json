@@ -1,21 +1,21 @@
 {
-  "event_count": 79,
-  "last_event_id": "01M80ZSCGEYK5G14QCMNYABS56",
-  "materialized_at": "2026-11-22T06:41:07.598918+00:00",
+  "event_count": 122,
+  "last_event_id": "01M83YMWNASRXMKM63MDXN093V",
+  "materialized_at": "2026-11-23T10:18:55.018862+00:00",
   "mission_number": "",
   "mission_slug": "pack-doctor-coverage-01M7YMQK",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 6,
+    "approved": 13,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
-    "planned": 5
+    "in_review": 0,
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -91,29 +91,30 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M80ZSCGEYK5G14QCMNYABS56",
-      "last_transition_at": "2026-11-22T06:41:07.598918+00:00",
+      "lane": "approved",
+      "last_event_id": "01M810MV0RQGE53BF0H0NWVJ2Z",
+      "last_transition_at": "2026-11-22T06:56:07.192486+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-21T18:01:26Z – claude – shell_pid=9644 – Blocked (T015 stop condition): anti_pattern has no file form. contracts/packs/file-kinds.yaml has no *.anti-pattern.yaml files rule and no anti-pattern schema; ADR-0052 d8 rules the file shape but it is not built (kernel AntiPattern is GraphAuthored; CompositionFactsBuilder.declaredWithoutFile). built-in/presets/default.yaml requires anti_pattern:indirection-for-repetition (must_have), which R-l (must_have = held as a file) can never satisfy, so the rule would refuse built-in and turn the example packs and whole-pack gate red. Needs an operator ruling: (1) build the anti_pattern file kind first (ADR-0052 d8, own mission), (2) drop must_have on that item in the fixture (declared as a graph node, so accepted), or (3) amend R-l so a graph-authored kind is held when declared. No code changed.",
         "Held by operator ruling R-p (DM-01M7ZPVTTGHYCSC2Y39BZV0FXT): build the anti_pattern file kind first; anti_pattern has no file form, so a must_have anti_pattern can never be held under R-l",
         "Unblocked: WP10 approved",
         "Ready for review. Commits bf5cbc207 (T011), c4057242f (T012-T015), 5e8038799, ce1219ba9, ed43c652d. Merged lane-j (WP11, 46b2c7488) at 3afd2bb8a per coordinator: CompositionFactsTest/DomainRepositoryServiceTest resolved so anti-patterns with files are held, tactic/action nodes declared only. Rule: PresetItemRules (packs.domain.rules), rule closure.preset-items; per item case-only (pack_reference_artifact_missing) first, then preset_item_not_held / preset_item_undeclared, own closure via compositionClosure; runs in PackRulesets.closureFaults after contests and in ClosureImpactCheck.walkFaults beside OwnClosureWalk, never in OfferingReadService.judged. Out-of-map edits: readers of defined (PackRegistrationService, PackUninstallService, OfferingReadService, PackReadout, StepHolding javadoc, WholePackWriteStore.Remains/WholePackStore salvage defined->held, PackCompositionResolver javadoc), ~45 PackCompositionFacts constructor calls in packs/activations/profiles-edge tests, facts/example-packs.json re-recorded (held/declared/referable), ClosureFault.of overload (rule+violations), Problems (status table + violations on closure faults), RefusalHandler (422 family), CompositionRulesTest, PackRulesetsClosureTest, PackCodesTest, PackCodesCoverageTest, PerArtifactImpactTest, PresetRoundTripTest + presets-pack fixture, ClosureImpactCheckTest, OfferingReadServiceTest, DomainRepositoryServiceTest, CompositionFactsTest (rename only + merge), MissionTypeStepsHeldTest, StepEnhancementCompositionTest, OneReadTest, WholePackStore(Read)Test, CompositionFactsCacheTest, CompositionFactsLanguagesTest, ReadoutFactsTest, directives.feature, errors.feature, ReservedRefusalCodesTest, PackDoctorReportContractTest, org-base/pack-manifest.yaml. Gates green.",
-        "Cycle 1 fixes in 57d4eebf9 (on bf5cbc207, c4057242f, merge of lane-j WP11 at 3afd2bb8a, 5e8038799, ce1219ba9, ed43c652d). (1) ClosureImpactCheckTest.aWriteToAPackTheDeclaringPackBuildsOnIsJudgedForTheDeclaringPacksPreset: base holds X_ONE, mid depends on base, top depends on mid with preset team must_have X_ONE; re-registering mid without depends_on base is refused preset_item_not_held, pointer presets/team.yaml#/activated_directives/0, detail closure (top, mid), mid unchanged, control REPLACED. Dropping X_ONE from base itself is the inbound-reference 409 artifact_referenced, so the dependent case is reached by taking base out of top's closure. Red shown by restricting the declaring filter. (2) R-v: PackUnderResolution.definedArtifacts -> referableArtifacts; referable() keeps only steps of a held mission type; PackRegistrationService Before.held/heldBy -> referable/referableBy; PackUninstallService heldBy -> referableBy; DomainRepositoryServiceTest test renamed heldAndReferableNameEveryKindThePackHoldsAndNoFileLessNode; local 'defined' variables renamed in StepHolding, EdgeIndex, ClosureQueries, LayerMerge, PackMutabilityPolicy and tests. Left as plain English: resolver contest message 'both define the artifact', 'composition is defined' etc. (3) composed keyed by roots. (4) OfferingReadServiceTest asserts the floor's unheld directive:NOT_HELD via ClosureQueries.snapshot. (6) example-packs.json ends with a newline. Out-of-map edits, by name: main: PackRegistrationService, PackUninstallService, OfferingReadService, PackReadout, StepHolding, WholePackWriteStore (Remains.held), WholePackStore (salvage), PackCompositionResolver (referableArtifacts, javadoc), EdgeIndex, ClosureQueries, LayerMerge, PackMutabilityPolicy, EnhancementCompose (rename), ClosureFault (new of overload with rule and violations), Problems (pack-doctor status table and fault violations), RefusalHandler (422 family); tests/fixtures: every PackCompositionFacts constructor call in packs, activations and profiles-edge tests, EffectiveReadFixture, EffectiveSetTest, ClosureQueriesTest, OfferingReadServiceTest, ClosureViewGovernanceTest, ClosureViewTest, CompositionFactsCacheTest, CompositionFactsTest (WP11 file: rename and merge only), CompositionFactsLanguagesTest, DomainRepositoryServiceTest, MissionTypeStepsHeldTest, OneReadTest, ReadoutFactsTest, StepEnhancementCompositionTest, StepHoldingTest, WholePackStoreReadTest, WholePackStoreTest, CompositionRulesTest, PackRulesetsClosureTest, PackCodesTest, PackCodesCoverageTest, PerArtifactImpactTest, PresetRoundTripTest with the presets-pack fixture (pack.yaml, convenience.yaml, governing.yaml), ClosureImpactCheckTest, facts/example-packs.json, org-base/pack-manifest.yaml; contract: directives.feature, errors.feature, ReservedRefusalCodesTest, PackDoctorReportContractTest. Gates fresh: packs 7246, pack-validation 477, wholePackRoundTrip 17, pack-doctor 263+4, contracts 314, activations 1102, deployable 2394, all 0 failures; spotlessCheck green."
+        "Cycle 1 fixes in 57d4eebf9 (on bf5cbc207, c4057242f, merge of lane-j WP11 at 3afd2bb8a, 5e8038799, ce1219ba9, ed43c652d). (1) ClosureImpactCheckTest.aWriteToAPackTheDeclaringPackBuildsOnIsJudgedForTheDeclaringPacksPreset: base holds X_ONE, mid depends on base, top depends on mid with preset team must_have X_ONE; re-registering mid without depends_on base is refused preset_item_not_held, pointer presets/team.yaml#/activated_directives/0, detail closure (top, mid), mid unchanged, control REPLACED. Dropping X_ONE from base itself is the inbound-reference 409 artifact_referenced, so the dependent case is reached by taking base out of top's closure. Red shown by restricting the declaring filter. (2) R-v: PackUnderResolution.definedArtifacts -> referableArtifacts; referable() keeps only steps of a held mission type; PackRegistrationService Before.held/heldBy -> referable/referableBy; PackUninstallService heldBy -> referableBy; DomainRepositoryServiceTest test renamed heldAndReferableNameEveryKindThePackHoldsAndNoFileLessNode; local 'defined' variables renamed in StepHolding, EdgeIndex, ClosureQueries, LayerMerge, PackMutabilityPolicy and tests. Left as plain English: resolver contest message 'both define the artifact', 'composition is defined' etc. (3) composed keyed by roots. (4) OfferingReadServiceTest asserts the floor's unheld directive:NOT_HELD via ClosureQueries.snapshot. (6) example-packs.json ends with a newline. Out-of-map edits, by name: main: PackRegistrationService, PackUninstallService, OfferingReadService, PackReadout, StepHolding, WholePackWriteStore (Remains.held), WholePackStore (salvage), PackCompositionResolver (referableArtifacts, javadoc), EdgeIndex, ClosureQueries, LayerMerge, PackMutabilityPolicy, EnhancementCompose (rename), ClosureFault (new of overload with rule and violations), Problems (pack-doctor status table and fault violations), RefusalHandler (422 family); tests/fixtures: every PackCompositionFacts constructor call in packs, activations and profiles-edge tests, EffectiveReadFixture, EffectiveSetTest, ClosureQueriesTest, OfferingReadServiceTest, ClosureViewGovernanceTest, ClosureViewTest, CompositionFactsCacheTest, CompositionFactsTest (WP11 file: rename and merge only), CompositionFactsLanguagesTest, DomainRepositoryServiceTest, MissionTypeStepsHeldTest, OneReadTest, ReadoutFactsTest, StepEnhancementCompositionTest, StepHoldingTest, WholePackStoreReadTest, WholePackStoreTest, CompositionRulesTest, PackRulesetsClosureTest, PackCodesTest, PackCodesCoverageTest, PerArtifactImpactTest, PresetRoundTripTest with the presets-pack fixture (pack.yaml, convenience.yaml, governing.yaml), ClosureImpactCheckTest, facts/example-packs.json, org-base/pack-manifest.yaml; contract: directives.feature, errors.feature, ReservedRefusalCodesTest, PackDoctorReportContractTest. Gates fresh: packs 7246, pack-validation 477, wholePackRoundTrip 17, pack-doctor 263+4, contracts 314, activations 1102, deployable 2394, all 0 failures; spotlessCheck green.",
+        "Review passed (cycle 2): dependent-write test covers the per-closure path; R-v renames complete and referable() keeps only held mission types' steps; fresh 11,518 tests 0 failures. LOW folded: no test pins the referable step filter. Merge note: re-stamp both example manifests after merging lane-d"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP03-preset-item-rule/review-cycle-1.md",
-        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP03-preset-item-rule/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP03-preset-item-rule/review-cycle-2.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP03-preset-item-rule/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
       "role": "reviewer",
       "shell_pid": 16724,
@@ -166,39 +167,165 @@
       }
     },
     "WP05": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z39S9EZMK1K1DPT26495MF",
-      "last_transition_at": "2026-11-21T13:04:01.838691+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M81740GDP0JWQ7NCW80R3DHD",
+      "last_transition_at": "2026-11-22T08:49:15.789102+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: --full adds REFERENCES (delegations, references, enhancement targets per own closure, registration order; R-s, R-u). One body per check in packs.domain. SC-001 parity table (11 rows; cycle row documents #636 remainder; manifest_stale row awaits WP04, not in this lane). Timed --full CI step added. Default validate byte-identical to base jar. Out-of-map: ClosureFault, ClosureImpactCheck, ResolverFaults, PackSetCheck/Verdict, Arguments, PackDoctorMain, Problems, PackDoctorReport.yaml + fragment, service.yml, tests.",
+        "Review passed: --full REFERENCES (delegations, references, targets) via the domain's own bodies and closure, registration unchanged; codes identical (parity 11/11, sabotage 5/11 red); stdout byte-identical bar usage; fresh: packs 7244, pack-validation 494, wholePackRoundTrip 17, pack-doctor 266/15/4, contracts 314, deployable 2406. Post-merge DoD: parity rows for manifest_stale, case-only preset, missing target pack. LOWs folded"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP05-validate-full/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP05-validate-full/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 29411,
+      "shell_pid_created_at": "1795336039.15",
+      "subtasks": {
+        "T022": "done",
+        "T023": "done",
+        "T024": "done"
+      }
     },
     "WP06": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z39TZ05QX5RMP6G308T2WA",
-      "last_transition_at": "2026-11-21T13:04:03.552213+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M8179VPQSKBSH8B5E33SJJWY",
+      "last_transition_at": "2026-11-22T08:52:27.479449+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: one report tree (stdout JSON gains tool/inputs/summary; existing keys byte-identical), --report YAML (SnakeYAML Engine, no new lib) / XML (JDK, own mapping + tested reader), PackDoctorReport the only schema (REFERENCES admitted), contract test asserts the three trees equal. Gates green: pack-doctor 360+4+15, contracts 314, deployable 2400. Note: stdout gains keys per the task file, which conflicts with the 'stdout byte-identical' instruction; see report.",
+        "Review passed: one report tree (stdout gains tool/inputs/summary, existing keys byte-identical; --report adds nothing to stdout), closed schema, XML own mapping with safe exact-inverse parser, no new deps. Fresh: pack-doctor 360/15, contracts 314, deployable 2400, docs ok. Integration: ReportWriter.java:768 full from parsed.full() + test; Arguments/schema merge per forecast. LOWs folded"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP06-report-file/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP06-report-file/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4357,
+      "shell_pid_created_at": "1795336466.94",
+      "subtasks": {
+        "T025": "done",
+        "T026": "done",
+        "T027": "done"
+      }
     },
     "WP07": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z39WNCFFBRTY5HX7AKDK4Z",
-      "last_transition_at": "2026-11-21T13:04:05.292239+00:00"
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M81E7VW1WAR0K3MRBVZ82BWH",
+      "last_transition_at": "2026-11-22T10:53:42.145271+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: PackRemediation facade (packs.infra.storage) with staged copy and two-rename swap; StorageRulesets.verdictWithoutTheManifestGate is the one precondition; pack-doctor remediate <dir>[:<level>][=<id>]... prints rewritten/unchanged/refused, then validate --round-trip over the set (exit 0/1/2); HexagonalArchitectureTest names the remediation as the main's third adapter and walks it framework-free. Gates green except PackSetCheckTest Closure 'a must_have no pack of the own closure holds', which fails identically on the lane base 148805047 (WP03 test edits spdd.yaml, WP04 manifest_stale flags it) - not WP07.",
+        "- 2026-11-22T10:36:23Z – claude – shell_pid=22717 – Fixed the WP03 x WP04 integration red in PackSetCheckTest$Closure (commit 2f0b19450, out-of-map): anUnheldMustHaveIsNotHeld and anUndeclaredItemIsUndeclared edit org-base presets/spdd.yaml; each now restamps with ManifestStamps.stamp after planting, asserts no pack fails, and asserts its one closure code by equality (preset_item_not_held / preset_item_undeclared). A probe over packs and pack-validation found no other unrestamped plant: every other manifest-gate hit is a test that plants the manifest fault on purpose. Fresh runs: :pack-validation:test 478 tests 0 failures (1 skipped), :packs:test 7268 tests 0 failures (7 skipped).",
+        "Review passed: remediate via PackRemediation facade (round-trip canonical bytes to source paths, stamp last), staged swap leaves nothing behind, precondition = verdict without the manifest gate; integration fix 2f0b19450 strengthens two CLOSURE tests. Fresh: packs 7268, pack-validation 478, wholePackRoundTrip 17, pack-doctor 371/15/4, contracts 314, deployable 2400, docs ok. LOWs to WP08/cleanup"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP07-remediate/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP07-remediate/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4195,
+      "shell_pid_created_at": "1795343810.63",
+      "subtasks": {
+        "T028": "done",
+        "T029": "done",
+        "T030": "done",
+        "T031": "done"
+      }
     },
     "WP08": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z39YD76EW63803MM1ATEX9",
-      "last_transition_at": "2026-11-21T13:04:07.080020+00:00"
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M81PGC3QAKWBR8EC446AS2WK",
+      "last_transition_at": "2026-11-22T13:18:09.527078+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: ADR-0083, amendments, docs, changelog; gates green",
+        "Changes requested: MEDIUM check-packs.md rc.3 pack-doctor asset; LOW L1-L3",
+        "Cycle 2: MEDIUM and L1-L3 fixed (43303b023)",
+        "Changes requested: R-w quote drops service-v*",
+        "Cycle 3: R-w quoted as written",
+        "Review passed: cycle 3, R-w quoted whole; docs checks green"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP08-adr-and-docs/review-cycle-3.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP08-adr-and-docs/review-cycle-3.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 16680,
+      "shell_pid_created_at": "1795353442.95",
+      "subtasks": {
+        "T032": "done",
+        "T033": "done",
+        "T034": "done"
+      }
     },
     "WP09": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7Z3A05J2FNBDGPQ87GMZF4K",
-      "last_transition_at": "2026-11-21T13:04:08.882683+00:00"
+      "actor": "Claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M83YMWNASRXMKM63MDXN093V",
+      "last_transition_at": "2026-11-23T10:18:55.018862+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Drafts a-f and closure evidence from the shipped jar (ece7b92f9 on target)",
+        "Review passed: citations, counts and jar run verified; 4 LOWs for consolidation"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP09-open-packs-drafts/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP09-open-packs-drafts/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 26512,
+      "shell_pid_created_at": "1795354242.72",
+      "subtasks": {
+        "T035": "done",
+        "T036": "done"
+      }
     },
     "WP10": {
       "actor": "claude",
@@ -299,6 +426,39 @@
         "T048": "done",
         "T049": "done",
         "T050": "done"
+      }
+    },
+    "WP13": {
+      "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M83RBNMA89KZ4H60NTMBE29C",
+      "last_transition_at": "2026-11-23T08:29:01.450371+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "R-y: PolicyLockRules as CLOSURE's fourth phase; gates green",
+        "Review passed: parity, red-first, records verified; 4 LOWs (holder order in own closure, order wording, two test cases, packs/detail not compared) for consolidation"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-doctor-coverage-01M7YMQK-coord/kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP13-policy-lock-case-only/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP13-policy-lock-case-only/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 21006,
+      "shell_pid_created_at": "1795421463.51",
+      "subtasks": {
+        "T051": "done",
+        "T052": "done",
+        "T053": "done",
+        "T054": "done",
+        "T055": "done"
       }
     }
   }
