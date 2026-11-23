@@ -318,6 +318,28 @@ class PackDoctorJarTest {
         onlyWarningsOnStandardError(run);
     }
 
+    // Squad B1: a file no reader can walk, in the jar's own JVM and its main thread's stack: a document nested 20 000
+    // deep overflowed it (exit 1, nothing on standard output) and an alias bomb was an internal error (exit 2), both in
+    // the round trip. Each is now one problem, unreadable at the file.
+    @Test
+    void aFileNoReaderCanWalkIsAProblemWithTheRoundTripNeverACrash() throws Exception {
+        StringBuilder bomb = new StringBuilder("a0: &a0 [x, x, x, x, x, x, x, x, x]\n");
+        for (int level = 1; level <= 6; level++) {
+            bomb.append("a%d: &a%d [%s]\n"
+                    .formatted(level, level, String.join(", ", Collections.nCopies(9, "*a" + (level - 1)))));
+        }
+        for (String text : List.of("a: " + "[".repeat(20_000) + "]".repeat(20_000) + "\n", bomb.toString())) {
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, Files.createTempDirectory(temp, "packs"));
+            Files.writeString(builtIn.resolve("agent_profiles/generic-agent.agent.yaml"), text, StandardCharsets.UTF_8);
+
+            Run run = run("--pack", builtIn + ":built-in", "--round-trip");
+
+            assertThat(run.exit()).as(run.err()).isEqualTo(1);
+            assertThat(run.violationCodes()).as(run.out()).contains("unreadable");
+            assertThat(run.err()).doesNotContain("internal error").doesNotContain("StackOverflowError");
+        }
+    }
+
     // Case 6.
     @Test
     void noArgumentsIsAUsageFaultThatExitsTwoWithNothingOnStandardOutput() throws Exception {

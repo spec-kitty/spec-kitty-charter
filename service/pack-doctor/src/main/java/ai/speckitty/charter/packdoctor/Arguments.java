@@ -38,10 +38,12 @@ import java.util.stream.Collectors;
  * {@code --pack} value that could name two directories ({@code x:org} and {@code x}, or {@code x=id} and {@code x}, both
  * exist), two packs with one directory (by real path), one inside another or one id, and an entry of the config
  * root's {@code packs/} that is a link resolving to no directory (to nothing, or to a file), {@code --report} or
- * {@code --format} given twice, {@code --format} without {@code --report}, and a format that is neither {@code yaml} nor
- * {@code xml}. Whether the report file can be written is learnt by writing it. A value that starts with
- * {@code --} is a missing value, unless it follows {@code --}, which ends the options. It judges the command line and
- * the directories it names, never a pack's content: that is {@code pack-validation}'s.
+ * {@code --format} given twice, {@code --format} without {@code --report}, a format that is neither {@code yaml} nor
+ * {@code xml}, a {@code --report} file inside a pack the run checks (by real path), and a {@code remediate} pack that is
+ * or holds the working directory. A fault of a {@code remediate} value names {@code remediate}, which takes its values
+ * bare, where a {@code validate} one names {@code --pack}. Whether the report file can be written is learnt by writing
+ * it. A value that starts with {@code --} is a missing value, unless it follows {@code --}, which ends the options. It
+ * judges the command line and the directories it names, never a pack's content: that is {@code pack-validation}'s.
  */
 final class Arguments {
 
@@ -236,13 +238,21 @@ final class Arguments {
             }
             collected.packs.add(arg);
         }
+        collected.option = REMEDIATE;
         collected.roundTrip = true;
         Outcome outcome = collected.outcome();
-        return outcome instanceof Parsed parsed ? new Remediate(parsed) : outcome;
+        if (!(outcome instanceof Parsed parsed)) {
+            return outcome;
+        }
+        Optional<UsageFault> holdsWorkingDirectory = holdingTheWorkingDirectory(parsed);
+        return holdsWorkingDirectory.isPresent() ? holdsWorkingDirectory.get() : new Remediate(parsed);
     }
 
     /** What the options asked for so far. */
     private static final class Collected {
+        /** How a fault names a pack value: {@code --pack}, or {@code remediate}, which takes its values bare (B9). */
+        private String option = PACK;
+
         private Optional<String> configRoot = Optional.empty();
         private final List<String> packs = new ArrayList<>();
         private boolean roundTrip;
@@ -266,7 +276,10 @@ final class Arguments {
             return Optional.empty();
         }
 
-        /** The value of {@code --config-root} or {@code --pack}: a missing one is one that starts with {@code --}. */
+        /**
+         * The value of {@code --config-root}, {@code --pack}, {@code --report} or {@code --format}: a missing one is one
+         * that starts with {@code --}.
+         */
         private Optional<UsageFault> value(String option, Iterator<String> rest) {
             String value = rest.hasNext() ? rest.next() : END_OF_OPTIONS;
             if (value.startsWith(END_OF_OPTIONS)) {
@@ -364,11 +377,38 @@ final class Arguments {
         return distinct(roots, asked);
     }
 
+    /**
+     * The pack of {@code remediate} that is or holds the working directory, refused (squad B6): the swap moves the pack's
+     * directory aside and deletes it, so the working directory, and every relative path the check after it reads, would
+     * name nothing.
+     */
+    private static Optional<UsageFault> holdingTheWorkingDirectory(Parsed parsed) {
+        Path working;
+        try {
+            working = Path.of("").toRealPath();
+        } catch (IOException failure) {
+            return Optional.of(new UsageFault("cannot resolve the working directory: " + failure.getMessage()));
+        }
+        for (PackSetEntry entry : parsed.packs()) {
+            String locator = entry.root().locator();
+            try {
+                if (working.startsWith(Path.of(locator).toRealPath())) {
+                    return Optional.of(new UsageFault(REMEDIATE + " " + locator
+                            + " holds the working directory, which the swap would move; run " + REMEDIATE
+                            + " from outside the pack"));
+                }
+            } catch (IOException failure) {
+                return Optional.of(new UsageFault("cannot resolve " + locator + ": " + failure.getMessage()));
+            }
+        }
+        return Optional.empty();
+    }
+
     /** The packs of repeated {@code --pack}, each at its level when one is given, under its id when one is given. */
     private static Outcome given(List<String> values, Collected asked) {
         List<PackRoot> roots = new ArrayList<>();
         for (String value : values) {
-            Given given = packRoot(value);
+            Given given = packRoot(value, asked.option);
             if (given.fault().isPresent()) {
                 return given.fault().get();
             }
@@ -415,35 +455,35 @@ final class Arguments {
      * value is ambiguous. A text after the last {@code =} that is no pack id is a usage fault unless the value, read
      * with no id, names a directory: it is never taken into the path of a directory that does not exist.
      */
-    private static Given packRoot(String value) {
+    private static Given packRoot(String value, String option) {
         int equals = value.lastIndexOf('=');
         if (equals < 0) {
-            return levelled(value);
+            return levelled(value, option);
         }
         String id = value.substring(equals + 1);
         String rest = value.substring(0, equals);
-        Given plain = levelled(value);
+        Given plain = levelled(value, option);
         if (!PackIdentifier.isPackId(id)) {
             if (plain.named()) {
                 return plain;
             }
-            return Given.refused(PACK + " " + value + ": "
+            return Given.refused(option + " " + value + ": "
                     + (id.isEmpty() ? "nothing follows the last =" : id + " after the last = is not a pack id")
-                    + ", and " + value + " is not a directory; write " + PACK + " <dir>[:<level>]=<id>. "
+                    + ", and " + value + " is not a directory; write " + option + " <dir>[:<level>]=<id>. "
                     + PackIdentifier.GRAMMAR_DETAIL);
         }
         if (rest.isEmpty() && !plain.named()) {
-            return emptyDirectory(value);
+            return emptyDirectory(value, option);
         }
-        Given withId = levelled(rest);
+        Given withId = levelled(rest, option);
         if (withId.named() && plain.named()) {
             if (withId.root().isEmpty()) {
                 // The id reading is itself ambiguous (x:org and x are both directories): no one spelling names it.
-                return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
+                return Given.ambiguous(option + " " + value + " is ambiguous: it names the directory " + value
                         + " under its own name, and " + rest + " is itself ambiguous; rename one of the directories");
             }
             PackRoot idReading = withId.root().orElseThrow();
-            return Given.ambiguous(PACK + " " + value + " is ambiguous: it names the directory " + value
+            return Given.ambiguous(option + " " + value + " is ambiguous: it names the directory " + value
                     + " under its own name, and the directory " + idReading.locator() + " under the id " + id
                     + "; rename one, write " + unambiguous(idReading, id) + " for " + idReading.locator()
                     + " under the id " + id + ", or write " + value + "=<id> for " + value + " under an id");
@@ -474,37 +514,37 @@ final class Arguments {
      * the text before the colon is not, the whole value is the directory, at no configured level; when both are, the
      * value is ambiguous.
      */
-    private static Given levelled(String value) {
+    private static Given levelled(String value, String option) {
         int colon = value.lastIndexOf(':');
         String suffix = colon < 0 ? "" : value.substring(colon + 1);
         Optional<PackLevel> level = PackLevel.fromToken(suffix);
         String path = level.isPresent() ? value.substring(0, colon) : value;
         if (level.isPresent() && Files.isDirectory(Path.of(value)) && Files.isDirectory(Path.of(path))) {
-            return Given.ambiguous(PACK + " " + value + " is ambiguous: " + value + " and " + path
+            return Given.ambiguous(option + " " + value + " is ambiguous: " + value + " and " + path
                     + " are both directories; rename one, or write " + value + ":<level>");
         }
         if (level.isEmpty() && isBareWord(suffix) && !Files.isDirectory(Path.of(value))) {
-            return Given.refused("unknown level " + suffix + " in " + PACK + " " + value + "; the levels are "
+            return Given.refused("unknown level " + suffix + " in " + option + " " + value + "; the levels are "
                     + Arrays.stream(PackLevel.values()).map(PackLevel::token).collect(Collectors.joining(", ")));
         }
         if (level.isPresent() && Files.isDirectory(Path.of(value)) && !Files.isDirectory(Path.of(path))) {
             // x:org is a directory and x is not: the value names the directory x:org, at no configured level.
-            return directoryOf(value, Optional.empty(), value);
+            return directoryOf(value, Optional.empty(), value, option);
         }
         // An empty path (:org, or an empty value) names the working directory and passes here; directoryOf refuses it.
         if (level.isPresent() && !Files.isDirectory(Path.of(path))) {
             // Neither x:org nor x is a directory: name the value as given, and the directory it was read as.
-            return Given.refused(PACK + " " + value + " is not a directory, and nor is " + path);
+            return Given.refused(option + " " + value + " is not a directory, and nor is " + path);
         }
-        return directoryOf(path, level, value);
+        return directoryOf(path, level, value, option);
     }
 
     /**
      * A {@code --pack} value whose directory part is empty ({@code =<id>}, {@code :<level>}): refused, never read as the
      * working directory, which the empty path names.
      */
-    private static Given emptyDirectory(String value) {
-        return Given.refused(PACK + " " + value + " names no directory: its directory part is empty; write " + PACK
+    private static Given emptyDirectory(String value, String option) {
+        return Given.refused(option + " " + value + " names no directory: its directory part is empty; write " + option
                 + " <dir>[:<level>][=<id>]");
     }
 
@@ -515,19 +555,20 @@ final class Arguments {
      * @param path the directory part of the value
      * @param level the configured level, when one is given
      * @param given the {@code --pack} value {@code path} was read from, which a refusal of an empty path names
+     * @param option how a refusal names the value: {@code --pack}, or {@code remediate}
      * @return the pack, or why there is none
      */
-    private static Given directoryOf(String path, Optional<PackLevel> level, String given) {
+    private static Given directoryOf(String path, Optional<PackLevel> level, String given, String option) {
         if (path.isEmpty()) {
-            return emptyDirectory(given);
+            return emptyDirectory(given, option);
         }
         Path directory = Path.of(path);
         if (!Files.isDirectory(directory)) {
-            return Given.refused(PACK + " " + path + " is not a directory");
+            return Given.refused(option + " " + path + " is not a directory");
         }
         Path name = directory.toAbsolutePath().normalize().getFileName();
         if (name == null) {
-            return Given.refused(PACK + " " + path + " names no pack directory");
+            return Given.refused(option + " " + path + " names no pack directory");
         }
         return Given.of(new PackRoot(name.toString(), level, path));
     }
@@ -570,6 +611,41 @@ final class Arguments {
             }
             entries.add(new PackSetEntry(root));
         }
-        return new Parsed(entries, asked.roundTrip, asked.full, asked.inputs(), asked.reportFile());
+        Optional<ReportFile> report = asked.reportFile();
+        if (report.isPresent()) {
+            Optional<UsageFault> inside = reportInsideAPack(report.get().path(), byRealPath);
+            if (inside.isPresent()) {
+                return inside.get();
+            }
+        }
+        return new Parsed(entries, asked.roundTrip, asked.full, asked.inputs(), report);
+    }
+
+    /**
+     * The report file refused when it lies inside a pack the run checks, by real path (squad B7): writing it would change
+     * the pack. A path whose directory does not exist is left for the write to refuse.
+     */
+    private static Optional<UsageFault> reportInsideAPack(Path report, Map<Path, String> packsByRealPath) {
+        Path real;
+        try {
+            Path parent = report.toAbsolutePath().getParent();
+            Path name = report.getFileName();
+            if (Files.exists(report)) {
+                real = report.toRealPath();
+            } else if (parent != null && name != null && Files.isDirectory(parent)) {
+                real = parent.toRealPath().resolve(name);
+            } else {
+                return Optional.empty();
+            }
+        } catch (IOException failure) {
+            return Optional.empty(); // the write says why the file cannot be written
+        }
+        for (Map.Entry<Path, String> pack : packsByRealPath.entrySet()) {
+            if (real.startsWith(pack.getKey())) {
+                return Optional.of(new UsageFault(REPORT + " " + report + " lies inside the pack " + pack.getValue()
+                        + "; write the report outside every pack it checks"));
+            }
+        }
+        return Optional.empty();
     }
 }

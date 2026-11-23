@@ -508,6 +508,30 @@ class PackDoctorReportContractTest {
             assertThat(trees.getFirst().get("problems").get(0).get("packs")).isNotEmpty();
         }
 
+        /**
+         * Ruling R-ac: a file name holding a character XML 1.0 cannot carry (U+0001) is pack content, so it never makes
+         * the run exit 2: the XML escapes it as the schema's mapping states, and {@link XmlReport#read} gives back the
+         * same tree, which validates against the schema.
+         */
+        @Test
+        void aFileNameWithAControlCharacterIsEscapedInTheXmlAndReadsBackAsTheSameTree() throws IOException {
+            Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+            Path profile;
+            try (Stream<Path> profiles = Files.list(pack.resolve("agent_profiles"))) {
+                profile = profiles.sorted().findFirst().orElseThrow();
+            }
+            Files.move(profile, profile.resolveSibling("x\u0001y.agent.yaml"));
+
+            List<JsonNode> trees = threeTrees(1, "--pack", pack + ":built-in");
+
+            assertOneTree(trees);
+            assertThat(trees.getFirst().toString()).contains("x\\u0001y.agent.yaml");
+            assertThat(Files.readString(temp.resolve("report.xml")))
+                    .contains(" type=\"escaped\">")
+                    .contains("x\\u0001y.agent.yaml")
+                    .doesNotContain("\u0001");
+        }
+
         @Test
         void aPackOfAHundredAndOneViolationsCountsThemAll() throws IOException {
             Path pack = aPackOfAHundredAndOneFaults();

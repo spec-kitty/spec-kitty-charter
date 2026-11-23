@@ -176,7 +176,8 @@ public final class PackRoundTrip {
     }
 
     /**
-     * A YAML file, parsed as the readers parse it. For the manifest (#195), its derived fields, which the comparison
+     * A YAML file, parsed as the readers parse it, through their guards: a side they refuse is refused here with their
+     * words. For the manifest (#195), its derived fields, which the comparison
      * skips (ADR-0042), are verified on the written side, against the written file each listed path paired with: a
      * written-stale field is the writer's fault. The source side's are not: a source manifest that does not verify
      * against its own bytes is the storage edge's {@code manifest_stale} (#630), one problem for one cause.
@@ -188,8 +189,18 @@ public final class PackRoundTrip {
             String sourceText,
             String writtenText,
             Map<String, Outcome> outcomes) {
-        Reading.Yaml sourceTree = new Reading.Yaml(Yaml.load(sourceText));
-        Reading.Yaml writtenTree = new Reading.Yaml(Yaml.load(writtenText));
+        // Each side through the readers' guards (ParsedYaml): a text no reader takes is refused, never loaded
+        // unguarded.
+        ParsedYaml.Checked source = ParsedYaml.check(sourceText);
+        if (source.problem() != null) {
+            return new FileOutcome.Refused("the source file does not parse: " + source.problem());
+        }
+        ParsedYaml.Checked written = ParsedYaml.check(writtenText);
+        if (written.problem() != null) {
+            return new FileOutcome.Refused("read-back: the written file does not parse: " + written.problem());
+        }
+        Reading.Yaml sourceTree = new Reading.Yaml(source.document());
+        Reading.Yaml writtenTree = new Reading.Yaml(written.document());
         if (!DomainRoundTrip.MANIFEST.equals(kind)) {
             return new FileOutcome.Written(writtenPath, sourceTree, writtenTree);
         }

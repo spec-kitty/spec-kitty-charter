@@ -514,7 +514,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * still refused by the reader, just not named here.
      */
     private static String unknownFields(String kind, String text) {
-        if (!(Yaml.load(text) instanceof Map<?, ?> document)) {
+        if (!(ParsedYaml.documentOrNull(text) instanceof Map<?, ?> document)) {
             return "";
         }
         List<String> declared = PackSchemas.bundled().declaredProperties(kind);
@@ -821,9 +821,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!build.findings().isEmpty()) {
             return new Refused("the graph does not build: " + build.findings());
         }
-        @Nullable String generatedBy = Yaml.load(text) instanceof Map<?, ?> document && document.get("generated_by") != null
-                ? String.valueOf(document.get("generated_by"))
-                : null;
+        @Nullable String generatedBy =
+                ParsedYaml.documentOrNull(text) instanceof Map<?, ?> document && document.get("generated_by") != null
+                        ? String.valueOf(document.get("generated_by"))
+                        : null;
         String writtenText;
         try {
             writtenText = shape == Shape.FRAGMENT
@@ -871,14 +872,11 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 .orElseThrow(() -> new IllegalStateException("no stored kind is validated by the schema " + kind));
     }
 
+    /** The declared id of a source file; none for a text the readers' guards refuse ({@link ParsedYaml}). */
     private static @Nullable String idOf(String text, String idKey) {
-        try {
-            return Yaml.load(text) instanceof Map<?, ?> map && map.get(idKey) != null
-                    ? String.valueOf(map.get(idKey))
-                    : null;
-        } catch (RuntimeException unparsable) {
-            return null;
-        }
+        return ParsedYaml.documentOrNull(text) instanceof Map<?, ?> map && map.get(idKey) != null
+                ? String.valueOf(map.get(idKey))
+                : null;
     }
 
     private static String read(Path file) {

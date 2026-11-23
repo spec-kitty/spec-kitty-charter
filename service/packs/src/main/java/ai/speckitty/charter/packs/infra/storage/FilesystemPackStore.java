@@ -471,9 +471,31 @@ final class FilesystemPackStore {
      */
     PackRead read(
             PackDirectory pack, List<KindBinding<?, ?>> kinds, GraphRead graphs, PackFileSet.@Nullable Walk walk) {
+        return read(pack, pack.name(), kinds, graphs, walk);
+    }
+
+    /**
+     * {@link #read(PackDirectory, List, GraphRead, PackFileSet.Walk)} of a pack known by a name other than its
+     * directory's: a refusal of its {@code pack.yaml} names the pack by {@code named}, the id it is read under, as its
+     * violations do, never by the directory it happens to sit in.
+     *
+     * @param pack the pack's directory
+     * @param named the pack's name, as a refusal names it
+     * @param kinds the bindings to read, in order
+     * @param graphs the pack's graph documents, as {@link #readGraphs} read them for this read
+     * @param walk the pack's walk; {@code null} walks it here
+     * @return as {@link #read(PackDirectory, List)} answers
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackRead read(
+            PackDirectory pack,
+            String named,
+            List<KindBinding<?, ?>> kinds,
+            GraphRead graphs,
+            PackFileSet.@Nullable Walk walk) {
         READS.increment();
         Path directory = existingDirectory(pack);
-        PackDescriptorDso descriptor = descriptorOf(directory, pack);
+        PackDescriptorDso descriptor = descriptorOf(directory, named);
         PackFileSet.Listing listing = walk == null
                 ? PackFileSet.listing(directory, companionRules.table())
                 : PackFileSet.listing(directory, companionRules.table(), walk);
@@ -755,7 +777,7 @@ final class FilesystemPackStore {
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
     PackDescriptorDso readDescriptor(PackDirectory pack) {
-        return descriptorOf(existingDirectory(pack), pack);
+        return descriptorOf(existingDirectory(pack), pack.name());
     }
 
     /**
@@ -772,7 +794,7 @@ final class FilesystemPackStore {
         if (!Files.exists(directory.resolve(PackFileSet.PACK_YAML), LinkOption.NOFOLLOW_LINKS)) {
             return Optional.empty();
         }
-        return Optional.of(descriptorOf(directory, pack));
+        return Optional.of(descriptorOf(directory, pack.name()));
     }
 
     /**
@@ -943,23 +965,23 @@ final class FilesystemPackStore {
                 .toList();
     }
 
-    private PackDescriptorDso descriptorOf(Path directory, PackDirectory pack) {
+    /** The descriptor of the pack in {@code directory}; a refusal names the pack {@code named}. */
+    private PackDescriptorDso descriptorOf(Path directory, String named) {
         Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (Files.isSymbolicLink(packYaml)) {
             // Never read through (D6): the refusal names the link, in the storage rules' words.
-            throw descriptorRefusal("pack " + pack.name() + ": " + LinkRules.detail(PackFileSet.PACK_YAML));
+            throw descriptorRefusal("pack " + named + ": " + LinkRules.detail(PackFileSet.PACK_YAML));
         }
         if (!PackFileSet.unlinkedFile(directory, PackFileSet.PACK_YAML)) {
-            throw descriptorRefusal("pack " + pack.name() + " has no pack.yaml");
+            throw descriptorRefusal("pack " + named + " has no pack.yaml");
         }
         return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {
             case FileRead.Read<PackDescriptorDso> good -> good.value();
             // The refusal names why, in validate mode's words: the parse failure, or each schema fault (an undeclared
             // key such as the retired active_charter named), so the author sees what to fix (FR-010, #554 R2).
-            case FileRead.Unreadable<PackDescriptorDso> bad ->
-                throw descriptorRefusal(descriptorFault(pack.name(), bad));
+            case FileRead.Unreadable<PackDescriptorDso> bad -> throw descriptorRefusal(descriptorFault(named, bad));
             case FileRead.Absent<PackDescriptorDso> absent ->
-                throw descriptorRefusal("pack " + pack.name() + " has no pack.yaml");
+                throw descriptorRefusal("pack " + named + " has no pack.yaml");
         };
     }
 

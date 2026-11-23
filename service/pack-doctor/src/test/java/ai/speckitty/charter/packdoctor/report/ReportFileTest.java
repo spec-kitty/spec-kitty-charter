@@ -7,11 +7,13 @@ import ai.speckitty.charter.packdoctor.PackDoctorMain;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -112,6 +114,30 @@ class ReportFileTest {
                     .isEqualTo(run.report().get("inputs").get("packs"));
         }
 
+        /**
+         * Ruling R-ac: a pack directory named with a character XML 1.0 cannot carry is pack content, which never makes
+         * the run exit 2: the XML escapes it and reads back as standard output's tree.
+         */
+        @Test
+        void isXmlEvenWhenAPathHoldsACharacterXmlCannotCarry() throws IOException {
+            Path pack;
+            try {
+                pack = Files.move(builtIn(), temp.resolve("packs").resolve("built\u0001in"));
+            } catch (IOException | InvalidPathException noSuchName) {
+                assumeTrue(false, "the file system cannot name a directory with a control character");
+                return;
+            }
+            Path report = temp.resolve("report.xml");
+
+            Run without = run("--pack", pack + ":built-in");
+            Run run = run("--pack", pack + ":built-in", "--report", report.toString(), "--format", "xml");
+
+            assertThat(run.exit()).as(run.err()).isEqualTo(without.exit()).isNotEqualTo(2);
+            assertThat(run.out()).isEqualTo(without.out());
+            assertThat(Files.readString(report)).contains("built\\u0001in").doesNotContain("\u0001");
+            assertThat(XmlReport.read(Files.readString(report))).isEqualTo(run.report());
+        }
+
         @Test
         void isReplacedWhenItExists() throws IOException {
             Path pack = builtIn();
@@ -194,6 +220,41 @@ class ReportFileTest {
                     run("--pack", builtIn().toString(), "--report", "a", "--format"), "--format needs a value");
         }
 
+        /** Squad B7: a report written inside a pack it checks would change the pack; it is refused, the pack untouched. */
+        @Test
+        void aReportInsideAPackItChecks() throws IOException {
+            Path pack = builtIn();
+            byte[] descriptor = Files.readAllBytes(pack.resolve("pack.yaml"));
+
+            for (Path report : List.of(pack.resolve("pack.yaml"), pack.resolve("report.yaml"), pack)) {
+                assertUsageFault(
+                        run("--pack", pack.toString(), "--report", report.toString()),
+                        "--report " + report + " lies inside the pack " + pack
+                                + "; write the report outside every pack it checks");
+            }
+            assertThat(Files.readAllBytes(pack.resolve("pack.yaml"))).isEqualTo(descriptor);
+            assertThat(pack.resolve("report.yaml")).doesNotExist();
+        }
+
+        @Test
+        void aReportReachedThroughALinkIntoAPackItChecks() throws IOException {
+            Path pack = builtIn();
+            Path link = temp.resolve("into-the-pack");
+            try {
+                Files.createSymbolicLink(link, pack);
+            } catch (IOException | UnsupportedOperationException noLinks) {
+                assumeTrue(false, "the file system cannot make a symbolic link");
+                return;
+            }
+            Path report = link.resolve("report.yaml");
+
+            assertUsageFault(
+                    run("--pack", pack.toString(), "--report", report.toString()),
+                    "--report " + report + " lies inside the pack " + pack
+                            + "; write the report outside every pack it checks");
+            assertThat(pack.resolve("report.yaml")).doesNotExist();
+        }
+
         @Test
         void theUsageNamesBothOptions() {
             Run run = run("--help");
@@ -219,6 +280,38 @@ class ReportFileTest {
             assertThat(run.err()).startsWith("pack-doctor: cannot write the report " + directory + ": ");
         }
 
+        /**
+         * Squad B8: standard output that cannot be written exits 2, so the report file, which names the exit code, is
+         * never written for that run; a file already there is left as it was, and no staged copy stays beside it.
+         */
+        @Test
+        void becauseStandardOutputCannotBeWrittenLeavesTheFileAsItWas() throws IOException {
+            Path report = Files.writeString(temp.resolve("report.yaml"), "an earlier run's report\n");
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
+            PrintStream closed = new PrintStream(
+                    new OutputStream() {
+                        @Override
+                        public void write(int b) throws IOException {
+                            throw new IOException("closed");
+                        }
+                    },
+                    true,
+                    StandardCharsets.UTF_8);
+
+            int exit = PackDoctorMain.run(
+                    new String[] {"validate", "--pack", builtIn().toString(), "--report", report.toString()},
+                    closed,
+                    new PrintStream(err, true, StandardCharsets.UTF_8));
+
+            assertThat(exit).isEqualTo(2);
+            assertThat(err.toString(StandardCharsets.UTF_8)).contains("cannot write to standard output");
+            assertThat(Files.readString(report)).isEqualTo("an earlier run's report\n");
+            try (Stream<Path> entries = Files.list(temp)) {
+                assertThat(entries.map(entry -> entry.getFileName().toString()))
+                        .containsExactlyInAnyOrder("packs", "report.yaml");
+            }
+        }
+
         @Test
         void becauseItsDirectoryDoesNotExist() {
             Path report = temp.resolve("missing").resolve("report.yaml");
@@ -228,27 +321,6 @@ class ReportFileTest {
             assertThat(run.exit()).isEqualTo(2);
             assertThat(run.out()).isEmpty();
             assertThat(run.err()).startsWith("pack-doctor: cannot write the report " + report + ": ");
-            assertThat(report).doesNotExist();
-        }
-
-        @Test
-        void becauseXmlCannotCarryACharacterOfIt() throws IOException {
-            Path pack;
-            try {
-                pack = Files.move(builtIn(), temp.resolve("packs").resolve("built\u0001in"));
-            } catch (IOException | InvalidPathException noSuchName) {
-                assumeTrue(false, "the file system cannot name a directory with a control character");
-                return;
-            }
-            Path report = temp.resolve("report.xml");
-
-            Run run = run("--pack", pack + ":built-in", "--report", report.toString(), "--format", "xml");
-
-            assertThat(run.exit()).isEqualTo(2);
-            assertThat(run.out()).isEmpty();
-            assertThat(run.err())
-                    .startsWith("pack-doctor: cannot write the report " + report + " as XML: ")
-                    .contains("XML 1.0 cannot carry");
             assertThat(report).doesNotExist();
         }
     }

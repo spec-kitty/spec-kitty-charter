@@ -53,6 +53,18 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
     private static final String NOT_PLAIN = "a value is not a string, a number, a boolean or null";
 
     /**
+     * The document of YAML text put through the guards of {@link #parse}, or {@code null} when they refuse it: for a
+     * reader that only looks at a text the pack readers have already judged (the round trip's), so no load of pack
+     * content goes unguarded.
+     *
+     * @param text the YAML text
+     * @return the document; {@code null} for an empty stream, a YAML null, and a text the guards refuse
+     */
+    static @Nullable Object documentOrNull(String text) {
+        return check(text).document();
+    }
+
+    /**
      * Parses a file's text.
      *
      * @param text the file's YAML text
@@ -84,6 +96,9 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
      * @return the document or the problem; never throws on content
      */
     static Checked check(String text) {
+        if (text.codePointCount(0, text.length()) > Yaml.MAX_CODE_POINTS) {
+            return new Checked(null, TOO_LARGE, 0);
+        }
         if (nestedTooDeeply(text)) {
             return new Checked(null, TOO_DEEP, 0);
         }

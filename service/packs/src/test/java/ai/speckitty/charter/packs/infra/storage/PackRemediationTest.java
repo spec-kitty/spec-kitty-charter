@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.Reason;
@@ -17,8 +18,11 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -238,6 +242,157 @@ class PackRemediationTest {
                 .hasRootCauseMessage("planted: the staged pack cannot take the live pack's place");
         assertThat(moves).hasValue(3);
         assertThat(treeHash(red)).isEqualTo(before);
+        assertThat(besides(red)).containsExactly(ExamplePacks.ORG);
+    }
+
+    @Test
+    void aSwapWhosePutBackFailsNamesWhereThePackIsAndNeverSaysItIsUnchanged() throws IOException {
+        Path red = redForManifestAndForm();
+        SortedMap<String, String> before = treeHash(red);
+        AtomicInteger moves = new AtomicInteger();
+        List<Path> asides = new ArrayList<>();
+        // The live pack goes aside; the staged pack cannot take its place, and the pack cannot be put back.
+        PackRemediation remediation = new PackRemediation((from, to) -> {
+            int move = moves.incrementAndGet();
+            if (move == 1) {
+                asides.add(to);
+                Files.move(from, to);
+                return;
+            }
+            throw new IOException("planted: move " + move + " fails");
+        });
+
+        assertThatThrownBy(() -> remediation.remediate(root(red)))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageNotContaining("unchanged")
+                .hasMessageContaining(asides.getFirst().toString())
+                .satisfies(thrown -> {
+                    assertThat(thrown.getCause()).hasMessage("planted: move 2 fails");
+                    assertThat(thrown.getCause().getSuppressed())
+                            .singleElement()
+                            .satisfies(restore -> assertThat(restore).hasMessage("planted: move 3 fails"));
+                });
+        assertThat(red).doesNotExist();
+        assertThat(treeHash(asides.getFirst())).isEqualTo(before);
+        assertThat(besides(asides.getFirst()))
+                .as("only the aside copy, which holds the pack; the staged copy is gone")
+                .containsExactly(asides.getFirst().getFileName().toString());
+    }
+
+    // --- a pack root that is a link (B3) -----------------------------------------------------------------------------
+
+    @Test
+    void aPackRootThatIsALinkIsRemediatedInTheDirectoryItNamesAndTheLinkIsKept() throws IOException {
+        Path red = redForManifestAndForm();
+        Path link = temp.resolve("current");
+        try {
+            Files.createSymbolicLink(link, red);
+        } catch (IOException | UnsupportedOperationException noLinks) {
+            assumeTrue(false, "the file system cannot make a symbolic link");
+            return;
+        }
+
+        PackRemediation.Outcome outcome =
+                new PackRemediation().remediate(new PackRoot(ExamplePacks.ORG, Optional.empty(), link.toString()));
+
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten());
+        assertThat(Files.isSymbolicLink(link)).isTrue();
+        assertThat(Files.readSymbolicLink(link)).isEqualTo(red);
+        assertThat(violationCodes(red)).isEmpty();
+        assertThat(besides(red)).containsExactlyInAnyOrder(ExamplePacks.ORG);
+        assertThat(besides(link)).contains("current").noneMatch(name -> name.startsWith("."));
+    }
+
+    // --- nothing beside an unchanged pack (B4) -----------------------------------------------------------------------
+
+    @Test
+    void anUnchangedPackHasNothingWrittenBesideItOrInIt() throws IOException {
+        Path red = redForManifestAndForm();
+        assertThat(new PackRemediation().remediate(root(red))).isEqualTo(new PackRemediation.Rewritten());
+        FileTime longAgo = FileTime.from(Instant.parse("2001-01-01T00:00:00Z"));
+        Files.setLastModifiedTime(red.getParent(), longAgo);
+        Files.setLastModifiedTime(red, longAgo);
+
+        assertThat(new PackRemediation().remediate(root(red))).isEqualTo(new PackRemediation.Unchanged());
+
+        assertThat(Files.getLastModifiedTime(red.getParent()))
+                .as("no staged copy was made beside the pack, so a read-only parent is no obstacle")
+                .isEqualTo(longAgo);
+        assertThat(Files.getLastModifiedTime(red)).isEqualTo(longAgo);
+    }
+
+    // --- a stop of the JVM (B5) --------------------------------------------------------------------------------------
+
+    /** The hook a remediation registers, run by the test as the JVM would run it. */
+    private static final class Hooks implements PackRemediation.Interruption {
+        private final List<Thread> registered = new ArrayList<>();
+        private final List<Thread> unregistered = new ArrayList<>();
+        private final boolean runAtOnce;
+
+        Hooks(boolean runAtOnce) {
+            this.runAtOnce = runAtOnce;
+        }
+
+        @Override
+        public void register(Thread hook) {
+            registered.add(hook);
+            if (runAtOnce) {
+                // The stop arrives at once: the hook runs to its end before the remediation goes on.
+                hook.start();
+                try {
+                    hook.join(10_000);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(interrupted);
+                }
+            }
+        }
+
+        @Override
+        public void unregister(Thread hook) {
+            unregistered.add(hook);
+        }
+    }
+
+    @Test
+    void aStopBeforeTheSwapLeavesThePackAsItWasAndNothingBesideIt() throws IOException {
+        Path red = redForManifestAndForm();
+        SortedMap<String, String> before = treeHash(red);
+        Hooks hooks = new Hooks(true);
+
+        assertThatThrownBy(() -> new PackRemediation(PackRemediation::rename, hooks).remediate(root(red)))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining("it is unchanged");
+        assertThat(treeHash(red)).isEqualTo(before);
+        assertThat(besides(red)).containsExactly(ExamplePacks.ORG);
+        assertThat(hooks.unregistered).isEqualTo(hooks.registered).hasSize(1);
+    }
+
+    @Test
+    void aStopDuringTheSwapWaitsForItThenLeavesNothingBesideThePack() throws Exception {
+        Path red = redForManifestAndForm();
+        Hooks hooks = new Hooks(false);
+        AtomicInteger moves = new AtomicInteger();
+        PackRemediation remediation = new PackRemediation(
+                (from, to) -> {
+                    if (moves.incrementAndGet() == 1) {
+                        // The JVM is told to stop as the swap begins: its hook must wait for the swap to end.
+                        Thread hook = hooks.registered.getFirst();
+                        hook.start();
+                        long deadline = System.nanoTime() + 10_000_000_000L;
+                        while (hook.getState() != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+                            Thread.onSpinWait();
+                        }
+                        assertThat(hook.getState()).isEqualTo(Thread.State.BLOCKED);
+                    }
+                    PackRemediation.rename(from, to);
+                },
+                hooks);
+
+        assertThat(remediation.remediate(root(red))).isEqualTo(new PackRemediation.Rewritten());
+        hooks.registered.getFirst().join(10_000);
+
+        assertThat(violationCodes(red)).isEmpty();
         assertThat(besides(red)).containsExactly(ExamplePacks.ORG);
     }
 

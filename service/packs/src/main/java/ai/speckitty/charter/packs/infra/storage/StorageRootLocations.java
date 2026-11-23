@@ -512,8 +512,9 @@ public final class StorageRootLocations implements Locations {
             return PackLevel.ORG;
         }
         try {
-            // Never through a link (D6): a pack.yaml that became one after the check is no level.
-            Object document = Yaml.load(PackFileSet.noFollowText(packYaml));
+            // Never through a link (D6): a pack.yaml that became one after the check is no level. Through the readers'
+            // guards (ParsedYaml), so a declaration no reader can walk is no level, never a crash of the listing.
+            Object document = ParsedYaml.documentOrNull(PackFileSet.noFollowText(packYaml));
             if (document instanceof Map<?, ?> map && map.get("pack_level") instanceof String token) {
                 return PackLevel.fromToken(token).orElse(PackLevel.ORG);
             }
