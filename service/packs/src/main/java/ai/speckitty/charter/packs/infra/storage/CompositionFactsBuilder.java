@@ -415,13 +415,16 @@ final class CompositionFactsBuilder {
      * case the schema and the bare check cannot see (see {@link GraphBinding#selfJoin}).
      */
     static List<PackElementViolation> selfJoins(String packName, List<GraphDocument> documents) {
-        return documents.stream()
-                .flatMap(document -> document.edges().stream()
-                        .flatMap(
-                                edge -> GraphBinding.selfJoin(
-                                        packName, document.file(), edge.source(), edge.target(), edge.relation())
-                                        .stream()))
-                .toList();
+        List<PackElementViolation> out = new ArrayList<>();
+        for (GraphDocument document : documents) {
+            List<GraphDocument.Edge> edges = document.edges();
+            for (int i = 0; i < edges.size(); i++) {
+                GraphDocument.Edge edge = edges.get(i);
+                GraphBinding.selfJoin(packName, document.file(), i, edge.source(), edge.target(), edge.relation())
+                        .ifPresent(out::add);
+            }
+        }
+        return out;
     }
 
     /**

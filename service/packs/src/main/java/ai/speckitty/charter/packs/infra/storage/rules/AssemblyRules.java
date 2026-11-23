@@ -137,12 +137,12 @@ public final class AssemblyRules {
                                         violation.kind(),
                                         companionOf(violation.file(), violation.reason()),
                                         why(violation.reason()))
-                                : fault(violation.kind(), violation.file(), violation.reason()));
+                                : Findings.of(violation));
             }
         }
         for (PackElementViolation selfJoin : held.selfJoins()) {
             if (stated.stream().noneMatch(reason -> sameFault(selfJoin, reason))) {
-                out.add(fault(selfJoin.kind(), selfJoin.file(), selfJoin.reason()));
+                out.add(Findings.of(selfJoin));
             }
         }
         return out;

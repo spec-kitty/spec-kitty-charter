@@ -312,13 +312,14 @@ public final class GraphBinding {
      *
      * @param packName the descriptor name of the pack that writes the edge
      * @param file the edge's pack-relative graph document
+     * @param index the edge's index in the document's {@code edges} list, which the fault points at
      * @param source the source as written
      * @param target the target as written
      * @param relation the relation as written
      * @return the fault, when the edge joins an artifact to itself
      */
     public static Optional<PackElementViolation> selfJoin(
-            String packName, String file, String source, String target, String relation) {
+            String packName, String file, int index, String source, String target, String relation) {
         Optional<PackQualifiedReference> from = reference(source);
         Optional<PackQualifiedReference> to = reference(target);
         if (from.isEmpty() || to.isEmpty() || !joinsItself(packName, from.get(), to.get())) {
@@ -327,8 +328,8 @@ public final class GraphBinding {
         return from.get()
                 .asUrn()
                 .map(urn -> RelationType.TENSION.token().equals(relation)
-                        ? new PackElementViolation(file, PackCodes.TENSION_SELF, selfTension(urn))
-                        : new PackElementViolation(file, PackCodes.DRG_SCHEMA_ERROR, selfLoop(urn)));
+                        ? Findings.atEdge(file, index, PackCodes.TENSION_SELF, selfTension(urn))
+                        : Findings.atEdge(file, index, PackCodes.DRG_SCHEMA_ERROR, selfLoop(urn)));
     }
 
     private static String selfTension(Urn urn) {

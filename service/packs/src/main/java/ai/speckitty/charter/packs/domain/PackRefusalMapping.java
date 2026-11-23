@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
 import java.util.Arrays;
@@ -24,7 +25,7 @@ public final class PackRefusalMapping {
     /**
      * The refusal of a pack whose verdict fails: {@code validation_failed}, one violation per violation of the verdict,
      * in its order, each at its file in the one wording ({@link PackCodes#detail}), and the problem detail
-     * {@code The pack cannot be registered: N fault(s), the first at <file>.}
+     * {@code The pack cannot be registered: N fault(s), the first at <pointer>.}
      *
      * @param verdict the verdict of the one read
      * @return the refusal
@@ -92,7 +93,20 @@ public final class PackRefusalMapping {
 
     private static RefusalViolation violation(Reason reason) {
         String file = reason.location().file();
-        return new RefusalViolation(file, reason.code().value(), PackCodes.detail(file, reason.detail()));
+        return new RefusalViolation(
+                pointer(reason.location()), reason.code().value(), PackCodes.detail(file, reason.detail()));
+    }
+
+    /**
+     * The wire pointer of a pack-file violation (#617 follow-up): a URI reference, the pack-relative file, then
+     * {@code #} and the RFC 6901 JSON pointer into it when the place inside the file is known, for example
+     * {@code drg/directive.graph.yaml#/edges/3}; the bare file when it is not.
+     *
+     * @param location where the violation is
+     * @return the pointer the violation is listed at
+     */
+    static String pointer(Location location) {
+        return location.pointer().isEmpty() ? location.file() : location.file() + "#" + location.pointer();
     }
 
     private static Diagnostic diagnostic(Reason reason) {

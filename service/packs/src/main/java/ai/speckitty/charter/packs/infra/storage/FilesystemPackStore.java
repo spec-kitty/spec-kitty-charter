@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -307,7 +308,7 @@ final class FilesystemPackStore {
                 pack,
                 new Rationale(faults.stream()
                         .sorted(Comparator.comparing(PackElementViolation::file))
-                        .map(fault -> Findings.at(fault.kind(), fault.file(), List.of(), fault.reason()))
+                        .map(Findings::of)
                         .toList()));
     }
 
@@ -509,7 +510,7 @@ final class FilesystemPackStore {
         List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations, storeOnly);
         Optional<Stored<MarkdownDocument>> document =
                 listing.document().flatMap(file -> readDocument(directory, file, violations));
-        violations.addAll(endpointViolations(edgesOf(graphs), endpointScope(descriptor, elements)));
+        violations.addAll(endpointViolations(graphs, endpointScope(descriptor, elements)));
         return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document, storeOnly);
     }
 
@@ -527,20 +528,30 @@ final class FilesystemPackStore {
      * {@code GraphRules} lists them.
      */
     private static List<PackElementViolation> endpointViolations(
-            List<RelationshipEndpointRule.Edge> edges, RelationshipEndpointRule.Scope scope) {
+            GraphRead graphs, RelationshipEndpointRule.Scope scope) {
         List<PackElementViolation> sources = new ArrayList<>();
         List<PackElementViolation> table = new ArrayList<>();
-        for (RelationshipEndpointRule.Edge edge : edges) {
-            RelationshipEndpointRule.refusal(edge, scope).ifPresent(refused -> {
-                boolean byTable = RelationshipEndpointRule.CODE.equals(refused.code());
-                (byTable ? table : sources)
-                        .add(new PackElementViolation(
-                                edge.file(),
-                                byTable
-                                        ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
-                                        : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
-                                refused.reason()));
-            });
+        for (GraphDocument document : graphs.documents()) {
+            List<GraphDocument.Edge> edges = document.edges();
+            for (int i = 0; i < edges.size(); i++) {
+                GraphDocument.Edge edge = edges.get(i);
+                int index = i;
+                RelationshipEndpointRule.refusal(
+                                new RelationshipEndpointRule.Edge(
+                                        document.file(), edge.source(), edge.target(), edge.relation()),
+                                scope)
+                        .ifPresent(refused -> {
+                            boolean byTable = RelationshipEndpointRule.CODE.equals(refused.code());
+                            (byTable ? table : sources)
+                                    .add(Findings.atEdge(
+                                            document.file(),
+                                            index,
+                                            byTable
+                                                    ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
+                                                    : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
+                                            refused.reason()));
+                        });
+            }
         }
         List<PackElementViolation> out = new ArrayList<>(sources);
         out.addAll(table);
@@ -560,18 +571,6 @@ final class FilesystemPackStore {
             }
         }
         return new RelationshipEndpointRule.Scope(descriptor.name(), held);
-    }
-
-    /** The edges of the readable graph documents as written, in document order. */
-    private static List<RelationshipEndpointRule.Edge> edgesOf(GraphRead graphs) {
-        List<RelationshipEndpointRule.Edge> edges = new ArrayList<>();
-        for (GraphDocument document : graphs.documents()) {
-            for (GraphDocument.Edge edge : document.edges()) {
-                edges.add(new RelationshipEndpointRule.Edge(
-                        document.file(), edge.source(), edge.target(), edge.relation()));
-            }
-        }
-        return edges;
     }
 
     /**
@@ -908,12 +907,15 @@ final class FilesystemPackStore {
      * registration's staging does. The document is refused whole, as one that cannot be read is.
      */
     private static List<PackElementViolation> malformedQualifiers(GraphDocument document) {
-        return document.edges().stream()
-                .flatMap(edge -> Stream.of(edge.source(), edge.target())
+        List<GraphDocument.Edge> edges = document.edges();
+        return IntStream.range(0, edges.size())
+                .boxed()
+                .flatMap(index -> Stream.of(
+                                edges.get(index).source(), edges.get(index).target())
                         .filter(endpoint -> endpoint.contains("::"))
                         .flatMap(endpoint -> malformedQualifier(endpoint).stream())
-                        .limit(1))
-                .map(reason -> new PackElementViolation(document.file(), PackCodes.DRG_SCHEMA_ERROR, reason))
+                        .limit(1)
+                        .map(reason -> Findings.atEdge(document.file(), index, PackCodes.DRG_SCHEMA_ERROR, reason)))
                 .toList();
     }
 
@@ -977,7 +979,12 @@ final class FilesystemPackStore {
                     // The stem rule validate mode applies too (FileStems): a misnamed file is refused, not loaded.
                     Optional<String> misnamed = FileStems.mismatch(kind, file, kind.idOf(good.value()));
                     if (misnamed.isPresent()) {
-                        violations.add(new PackElementViolation(file, PackCodes.ARTIFACT_SCHEMA_ERROR, misnamed.get()));
+                        // At the id, as validate mode places it (FileSystemPackInspector#misnamedArtifact).
+                        violations.add(new PackElementViolation(
+                                file,
+                                Findings.pointer(List.of(kind.idKey())),
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
+                                misnamed.get()));
                         continue;
                     }
                     Optional<String> unnamed =
@@ -1619,7 +1626,8 @@ final class FilesystemPackStore {
     }
 
     private static PackElementViolation violationOf(Reason finding) {
-        return new PackElementViolation(finding.location().file(), finding.code(), reasonOf(finding));
+        return new PackElementViolation(
+                finding.location().file(), finding.location().pointer(), finding.code(), reasonOf(finding));
     }
 
     /**
