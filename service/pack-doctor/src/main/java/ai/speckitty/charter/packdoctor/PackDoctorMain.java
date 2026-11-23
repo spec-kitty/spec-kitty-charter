@@ -4,12 +4,14 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packdoctor.Arguments.Help;
 import ai.speckitty.charter.packdoctor.Arguments.Outcome;
 import ai.speckitty.charter.packdoctor.Arguments.Parsed;
-import ai.speckitty.charter.packdoctor.Arguments.Remediate;
 import ai.speckitty.charter.packdoctor.Arguments.UsageFault;
 import ai.speckitty.charter.packdoctor.Problems.Problem;
+import ai.speckitty.charter.packdoctor.report.ReportFile;
 import ai.speckitty.charter.packs.domain.PackReading;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.PackRemediation;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripping;
 import ai.speckitty.charter.packvalidation.set.PackSetCheck;
@@ -17,6 +19,7 @@ import ai.speckitty.charter.packvalidation.set.PackSetVerdict;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,12 +27,15 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The pack-doctor CLI (ADR-0075 decision 9, #478, FR-001, FR-006, T017): the composition root of the pack-set check,
- * which its {@code validate} command runs. {@code remediate} is not available yet: it exits {@code 2}.
+ * which its {@code validate} command runs, and of the remediation its {@code remediate} command runs (FR-009 of mission
+ * pack-doctor-coverage-01M7YMQK, plan D7).
  *
  * <p>It plugs the file-system reader ({@link FileSystemPackInspector}, the {@code PackReading} port) into
  * {@link PackSetCheck}, and, with {@code --round-trip}, the production round trip ({@link PackRoundTrip}) as the
@@ -41,6 +47,18 @@ import java.util.function.Function;
  * {@code 2} on a usage fault, a failure outside a pack read (the run directory, writing the report) or an internal
  * error ({@code pack-doctor: internal error: ...} and its stack trace on standard error), with nothing on standard
  * output. The report is built whole before it is written, so no partial report reaches standard output.
+ *
+ * <p>With {@code --report <file>} (FR-008 of mission pack-doctor-coverage-01M7YMQK), the same report is written to that
+ * file too, as YAML or XML, before anything reaches standard output: a file that cannot be written, or a report the
+ * format cannot carry, exits {@code 2} with nothing on standard output. Writing it never changes the exit code of a run,
+ * and standard output is the same with it as without.
+ *
+ * <p>{@code remediate} plugs the storage edge's {@link PackRemediation} into {@link Remediate}, which prints each pack's
+ * outcome on standard output ({@code rewritten}, {@code unchanged}, or {@code refused} and its faults), then runs the
+ * check of the same set with the round trip and writes its report after those lines. It exits {@code 0} when no pack was
+ * refused and the check holds no problem, {@code 1} when a pack was refused or the check holds a problem, and {@code 2}
+ * on a usage fault or a failure, the outcome lines already printed left on standard output: a pack that fails while it
+ * is remediated is as it was, and the packs before it keep what was done to them.
  *
  * <p>Pack content never reaches the internal-error path (#624): every fault a pack holds, a malformed {@code pack.yaml}
  * field included, is a problem ({@code 1}), and {@code CLOSURE} judges only descriptors the read accepted. An internal
@@ -97,7 +115,12 @@ public final class PackDoctorMain {
      * @return the exit code
      */
     static int run(String[] args, PrintStream out, PrintStream err, Path temporary) {
-        return run(args, out, err, temporary, new Composition(new FileSystemPackInspector(), PackRoundTrip::run));
+        return run(
+                args,
+                out,
+                err,
+                temporary,
+                new Composition(new FileSystemPackInspector(), PackRoundTrip::run, PackDoctorMain::remediated));
     }
 
     /**
@@ -119,23 +142,45 @@ public final class PackDoctorMain {
     }
 
     /**
-     * What the composition root plugs into the pack-set check: the reader and the production round trip. A test gives
-     * its own to reach a failure no canonical pack provokes.
+     * What the composition root plugs into the pack-set check and the remediation: the reader, the production round trip
+     * and the storage edge's remediation. A test gives its own to reach a failure no canonical pack provokes.
      *
      * @param reading the port that reads one pack root once
      * @param flow the production round trip of one pack, under its id, from its directory into an empty target
+     * @param repair the remediation of one pack
      */
-    record Composition(PackReading reading, Flow flow) {
+    record Composition(PackReading reading, Flow flow, Remediate.Repair repair) {
         /**
          * Checks the fields.
          *
          * @param reading the reader
          * @param flow the round trip
+         * @param repair the remediation
          */
         Composition {
             Objects.requireNonNull(reading, "reading");
             Objects.requireNonNull(flow, "flow");
+            Objects.requireNonNull(repair, "repair");
         }
+
+        /**
+         * A reader and a round trip of the caller's, with the production remediation.
+         *
+         * @param reading the reader
+         * @param flow the round trip
+         */
+        Composition(PackReading reading, Flow flow) {
+            this(reading, flow, PackDoctorMain::remediated);
+        }
+    }
+
+    /** The production remediation of one pack ({@link PackRemediation}), its outcome in the command's words. */
+    private static Remediate.Result remediated(PackRoot root) {
+        return switch (new PackRemediation().remediate(root)) {
+            case PackRemediation.Rewritten rewritten -> new Remediate.Rewritten();
+            case PackRemediation.Unchanged unchanged -> new Remediate.Unchanged();
+            case PackRemediation.Refused refused -> new Remediate.Refused(refused.violations());
+        };
     }
 
     /**
@@ -190,12 +235,34 @@ public final class PackDoctorMain {
                 err.print(Arguments.USAGE);
                 yield FAILED;
             }
-            case Remediate remediate -> {
-                err.println("pack-doctor: remediate is not available yet");
-                yield FAILED;
-            }
+            case Arguments.Remediate remediate -> remediate(remediate, out, err, temporary, composition);
             case Parsed parsed -> check(parsed, out, err, temporary, composition);
         };
+    }
+
+    /**
+     * The remediation of each pack, its outcome printed, then the check of the same set with the round trip: {@link
+     * #PROBLEMS} when a pack was refused, else the check's code. A failure while a pack is remediated exits {@link
+     * #FAILED} before the check.
+     */
+    private static int remediate(
+            Arguments.Remediate remediate, PrintStream out, PrintStream err, Path temporary, Composition composition) {
+        boolean refused;
+        try {
+            refused = Remediate.run(remediate.validation().packs(), composition.repair(), out);
+        } catch (UncheckedIOException failure) {
+            err.println("pack-doctor: " + failure.getMessage() + ": " + failure.getCause());
+            return FAILED;
+        } catch (IllegalStateException failure) {
+            err.println("pack-doctor: " + failure.getMessage());
+            return FAILED;
+        } catch (RuntimeException failure) {
+            err.println("pack-doctor: internal error: " + failure);
+            failure.printStackTrace(err);
+            return FAILED;
+        }
+        int checked = check(remediate.validation(), out, err, temporary, composition);
+        return checked == VALID && refused ? PROBLEMS : checked;
     }
 
     /**
@@ -207,17 +274,26 @@ public final class PackDoctorMain {
         List<Problem> problems;
         List<String> warnings;
         String report;
+        Optional<String> file;
         try {
             PackSetVerdict verdict = verdict(parsed, temporary, composition);
             problems = Problems.of(verdict);
             warnings = ReportWriter.warnings(verdict);
-            report = ReportWriter.report(verdict, problems);
+            JsonNode tree = ReportWriter.tree(parsed, verdict, problems);
+            report = ReportWriter.json(tree);
+            file = parsed.report().map(target -> fileText(target, tree));
+        } catch (UnrepresentableReport failure) {
+            err.println("pack-doctor: " + failure.getMessage());
+            return FAILED;
         } catch (UncheckedIOException failure) {
             err.println("pack-doctor: " + failure.getMessage());
             return FAILED;
         } catch (RuntimeException failure) {
             err.println("pack-doctor: internal error: " + failure);
             failure.printStackTrace(err);
+            return FAILED;
+        }
+        if (file.isPresent() && !written(parsed.report().orElseThrow(), file.get(), err)) {
             return FAILED;
         }
         warnings.forEach(err::println);
@@ -227,6 +303,38 @@ public final class PackDoctorMain {
             return written;
         }
         return problems.isEmpty() ? VALID : PROBLEMS;
+    }
+
+    /** A report the file's format cannot carry: a usage-level failure, not an internal error. */
+    private static final class UnrepresentableReport extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        UnrepresentableReport(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /** The report file's text, built before anything is written. */
+    private static String fileText(ReportFile target, JsonNode tree) {
+        try {
+            return target.format().write(tree);
+        } catch (IllegalArgumentException unrepresentable) {
+            throw new UnrepresentableReport(
+                    "cannot write the report " + target.path() + " as "
+                            + target.format().name() + ": " + unrepresentable.getMessage(),
+                    unrepresentable);
+        }
+    }
+
+    /** Writes the report file, replacing any file there; false, said on {@code err}, when it cannot be written. */
+    private static boolean written(ReportFile target, String text, PrintStream err) {
+        try {
+            Files.writeString(target.path(), text, StandardCharsets.UTF_8);
+        } catch (IOException failure) {
+            err.println("pack-doctor: cannot write the report " + target.path() + ": " + failure);
+            return false;
+        }
+        return true;
     }
 
     /** The verdict of the set; with the round trip, its run directory is gone when this returns. */

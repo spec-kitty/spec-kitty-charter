@@ -31,6 +31,7 @@ import ai.speckitty.charter.packs.domain.rules.PresetItemRules;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.PlantedPacks;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
+import ai.speckitty.charter.packs.infra.storage.ManifestStamps;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packs.infra.storage.RoundTripControls;
 import ai.speckitty.charter.packvalidation.PackCheck;
@@ -123,6 +124,8 @@ class PackSetCheckTest {
                 mandate.resolve("pack-manifest.yaml"),
                 text -> text.replace("id: mandate\n", "id: spdd\n")
                         .replace("presets/mandate.yaml", "presets/spdd.yaml"));
+        // #630: the renamed preset's hashes, so the preset contest is the one fault.
+        ManifestStamps.stamp(mandate, ExamplePacks.ORG_MANDATE);
     }
 
     private static void dependOn(Path pack, String packId) {
@@ -274,11 +277,14 @@ class PackSetCheckTest {
             rewrite(
                     base.resolve("presets/spdd.yaml"),
                     text -> text.replace("  - id: issue-triage\n", "  - id: issue-triage-gone\n"));
+            // #630: the edited preset's hashes, so the planted item is the one cause.
+            ManifestStamps.stamp(base, ExamplePacks.ORG);
 
             PackSetVerdict verdict = CHECK.check(
                     List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, base, Optional.of(PackLevel.ORG))));
 
             assertThat(verdict.packs()).noneMatch(PackResult::failing);
+            assertThat(codes(verdict.faults())).isEqualTo(List.of(RefusalCode.PRESET_ITEM_NOT_HELD.token()));
             assertThat(verdict.faults()).singleElement().satisfies(fault -> {
                 assertThat(fault.code()).isEqualTo(RefusalCode.PRESET_ITEM_NOT_HELD);
                 assertThat(fault.reason().rule()).isEqualTo(PresetItemRules.RULE);
@@ -301,11 +307,14 @@ class PackSetCheckTest {
             rewrite(
                     base.resolve("presets/spdd.yaml"),
                     text -> text.replace("  - id: triage-status\n", "  - id: triage-status-gone\n"));
+            // #630: the edited preset's hashes, so the planted item is the one cause.
+            ManifestStamps.stamp(base, ExamplePacks.ORG);
 
             PackSetVerdict verdict = CHECK.check(
                     List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, base, Optional.of(PackLevel.ORG))));
 
-            assertThat(codes(verdict.faults())).containsExactly(RefusalCode.PRESET_ITEM_UNDECLARED.token());
+            assertThat(verdict.packs()).noneMatch(PackResult::failing);
+            assertThat(codes(verdict.faults())).isEqualTo(List.of(RefusalCode.PRESET_ITEM_UNDECLARED.token()));
             assertThat(verdict.faults().getFirst().violations())
                     .extracting(RefusalViolation::pointer)
                     .containsExactly("presets/spdd.yaml#/activated_skills/1");

@@ -2,8 +2,8 @@
 title: "ADR-0052: Procedures tightened, and anti-patterns as authored artifacts"
 description: "The procedure kind stays with a tightened definition and a re-homing list; anti-patterns become authored files with a severity, referenced through rejects."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-05 (ADR-0064)'
+updated: 2026-11-22T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-05 (ADR-0064); status note 2026-11-22 (ADR-0083: decisions 8, 10, 13, 14 and 16 applied)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -62,6 +62,34 @@ The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/is
 - decision 9: no kind carries a `rejects` list, and no field mints `Relation.rejects`. Guidance rejects an
   anti-pattern with a `rejects` edge in its graph documents, and a `references` entry of `type: anti_pattern`
   migrates to that edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
+
+### Status note 2026-11-22 (operator ruling R-r): the anti-pattern decisions are applied
+
+Mission `pack-doctor-coverage-01M7YMQK` delivered #154 whole, on the operator's ruling R-r of 2026-11-21
+([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/) decisions 12 to 14).
+This note records what is now applied. The original text stands.
+
+- **Applied by the mission's WP10 to WP12:**
+  - decision 8, as amended by [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 30:
+    the file `anti_patterns/<id>.anti-pattern.yaml`, closed, with `bad_example` required
+    (`contracts/packs/schemas/anti-pattern.schema.json`), bound and held by the store (WP10);
+  - decision 10: `severity` is `smell`, `severe` or `breaking`;
+  - decision 13: activating guidance that rejects an anti-pattern does not activate it (`rejects` is no cascade
+    relation; pinned by `RejectsIsNotCascadedTest`, WP11);
+  - decision 14, as ruled by ADR-0053 decision 31: an `anti_pattern` graph node with no file in its pack is refused
+    `drg_schema_error` at `/nodes/<n>` of its document (WP11);
+  - decision 16: `procedure.schema.json` and `styleguide.schema.json` drop `anti_patterns`, so a file that still carries
+    the key is refused `artifact_schema_error` (unknown key), and the charter contract's `Styleguide`,
+    `StyleguideRegistration` and `Procedure` drop `antiPatterns` (WP12).
+- **Already met:** decision 9, as amended by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)
+  decision 12, by the existing `rejects` edge from guidance to an anti-pattern; decision 11 by the existing reference
+  check, which refuses a qualified `rejects` target outside the rejecting pack's `depends_on` closure
+  (`pack_reference_pack_missing`).
+- **Severity has no default** (ADR-0053 decision 32): the example packs' 18 migrated entries each carry one.
+- **Decision 15, the curation, is spec-kitty-open-packs' work.** Until it is done, open-packs' styleguides and
+  procedures with inline entries, and its graph documents with file-less nodes, are refused at its repin.
+- **The Follow-ups are done,** except the additive HTTP read of the kind ("Contract, additive"): the charter API serves
+  no `anti_pattern` body yet, as for `step_enhancement`.
 
 ## Context
 

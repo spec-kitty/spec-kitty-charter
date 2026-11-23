@@ -87,8 +87,46 @@ class ArgumentsTest {
         }
 
         @Test
-        void remediateIsItsOwnOutcome() {
-            assertThat(Arguments.parse(new String[] {"remediate"})).isInstanceOf(Remediate.class);
+        void remediateTakesPackDirectoriesAndChecksThemWithTheRoundTrip() throws IOException {
+            Path a = pack("a");
+            Path b = pack("b");
+
+            Outcome outcome = Arguments.parse(new String[] {"remediate", a.toString(), b + ":org=org-b"});
+
+            assertThat(outcome).isInstanceOf(Remediate.class);
+            Parsed validation = ((Remediate) outcome).validation();
+            assertThat(validation.roundTrip()).isTrue();
+            assertThat(validation.report()).isEmpty();
+            assertThat(validation.packs())
+                    .extracting(
+                            entry -> entry.root().name(), entry -> entry.root().locator())
+                    .containsExactly(tuple("a", a.toString()), tuple("org-b", b.toString()));
+        }
+
+        @Test
+        void remediateWithNoPackIsAUsageFault() {
+            assertThat(fault(Arguments.parse(new String[] {"remediate"})))
+                    .isEqualTo("nothing to remediate: give one or more <dir>[:<level>][=<id>]");
+        }
+
+        @Test
+        void remediateTakesNoOption() throws IOException {
+            assertThat(fault(
+                            Arguments.parse(new String[] {"remediate", pack("a").toString(), "--report", "r.yaml"})))
+                    .isEqualTo("unknown option --report");
+        }
+
+        @Test
+        void remediateRefusesTheSameDirectoryTwice() throws IOException {
+            Path a = pack("a");
+
+            assertThat(fault(Arguments.parse(new String[] {"remediate", a.toString(), a.toString()})))
+                    .contains("are the same directory");
+        }
+
+        @Test
+        void remediateHelpAsksForTheUsage() {
+            assertThat(Arguments.parse(new String[] {"remediate", "--help"})).isInstanceOf(Help.class);
         }
 
         @Test
@@ -112,7 +150,7 @@ class ArgumentsTest {
         void theUsageNamesBothCommands() {
             assertThat(Arguments.USAGE)
                     .startsWith("usage: pack-doctor validate (--config-root <dir> | --pack")
-                    .contains("pack-doctor remediate");
+                    .contains("pack-doctor remediate <dir>[:<level>][=<id>] ...");
         }
     }
 

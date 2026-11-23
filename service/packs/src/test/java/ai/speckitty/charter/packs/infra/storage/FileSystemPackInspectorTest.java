@@ -1894,7 +1894,9 @@ class FileSystemPackInspectorTest {
                 .contains(ManifestMembership.entries(PackManifestDerivation.derivedAt(
                         new PackIdentifier(ExamplePacks.BUILT_IN), dir, new YamlSerializationStrategy())));
         assertThat(ManifestRules.mismatch(
-                        manifest.listed().orElseThrow(), manifest.derived().orElseThrow()))
+                                manifest.listed().orElseThrow(),
+                                manifest.derived().orElseThrow())
+                        .reasons())
                 .as("the example pack's manifest lists what it holds")
                 .isEmpty();
 
@@ -1905,7 +1907,8 @@ class FileSystemPackInspectorTest {
         Files.delete(tactic);
         TreeCensus.Manifest short1 = INSPECTOR.readTree(root).census().manifest();
         assertThat(ManifestRules.mismatch(
-                        short1.listed().orElseThrow(), short1.derived().orElseThrow()))
+                                short1.listed().orElseThrow(), short1.derived().orElseThrow())
+                        .reasons())
                 .as("a listed file the pack no longer holds is a mismatch of the two facts")
                 .singleElement()
                 .asString()

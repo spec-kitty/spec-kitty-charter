@@ -163,8 +163,15 @@ public final class PresetItemRules {
                 closure.packs(),
                 member -> member.configured().equals(pack.configured()) ? List.of(mention) : List.of());
         if (!caseOnly.isEmpty()) {
+            // The existing case-only answer stands (spec US1 scenario 3): registration's phase 6 answer, which names
+            // the packs and carries no violation of its own, under this phase's rule.
             Refusal refusal = caseOnly.getFirst();
-            return Optional.of(fault(pack, urn, refusal.failure().code(), refusal.detail(), refusal.packs(), pointer));
+            return Optional.of(ClosureFault.of(
+                    PackOrigins.of(pack.configured().id(), urn),
+                    RULE,
+                    refusal.failure().code(),
+                    refusal.detail(),
+                    refusal.packs()));
         }
         String subject = "the preset `" + preset.id() + "` of pack `"
                 + pack.configured().id().value() + "`";

@@ -531,19 +531,21 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 404
 
   # #110 (ADR-0042 amendment of 2026-11-12): the manifest's lists are derived from the pack. An uploaded manifest whose
-  # lists differ is refused at the manifest, one violation per entry; its order and its hashes are not judged, as the
-  # registration restamps them (the control: both directives listed, every hash a placeholder).
+  # lists differ is refused at the manifest, one violation per entry; its order is not judged, as the registration
+  # restamps it. #630 (operator ruling R-b): its hashes are judged on the uploaded bytes (manifest_stale, below), so
+  # each manifest here carries the hashes ADR-0042 decision 5's recipes give for v1's files, and each refusal has one
+  # cause.
   Scenario: An uploaded manifest that leaves out an artifact the pack holds is refused at the manifest
     Given the archive "partial" is a copy of the archive "v1"
     And the archive "partial" holds the file "pack-manifest.yaml":
       """
       schema_version: '1.0'
-      manifest_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      manifest_hash: 8109354851a2228e93d54a0c503a33f7c1ae452e6332ebcb43d9166ebf178ed4
       constituents:
       - kind: directive
         id: A
         path: directives/A.directive.yaml
-        content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+        content_hash: 36ac29abcc75b1da62d563e97b10ca11fdc44f04c0a2df86c3e2387a399ddd90
       """
     When I PUT "/packs/acme" with the archive "partial"
     And I poll the registration until it ends
@@ -557,21 +559,54 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme"
     Then the response status is 404
 
-  Scenario: An uploaded manifest that lists every artifact registers, its order and its stale hashes restamped
-    Given the archive "listed" is a copy of the archive "v1"
-    And the archive "listed" holds the file "pack-manifest.yaml":
+  # #630 (operator ruling R-b, amending ADR-0042's amendment of 2026-11-12): a content_hash or a manifest_hash that does
+  # not match the uploaded bytes is refused at the manifest, one manifest_stale per field, naming it. The lists match and
+  # the manifest_hash is that of the manifest as uploaded, so the one stale field is B's content_hash.
+  Scenario: An uploaded manifest with a stale content_hash is refused at the manifest, naming the field
+    Given the archive "stale" is a copy of the archive "v1"
+    And the archive "stale" holds the file "pack-manifest.yaml":
       """
       schema_version: '1.0'
-      manifest_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      manifest_hash: 4990bacf877ec6fc8d5db5ea721d784549fe3fc1d8976380c5c0628103d34f80
       constituents:
+      - kind: directive
+        id: A
+        path: directives/A.directive.yaml
+        content_hash: 36ac29abcc75b1da62d563e97b10ca11fdc44f04c0a2df86c3e2387a399ddd90
       - kind: directive
         id: B
         path: directives/B.directive.yaml
         content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+      """
+    When I PUT "/packs/acme" with the archive "stale"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 1 item(s)
+    And the field at "/problem/violations/0/code" is "manifest_stale"
+    And the field at "/problem/violations/0/pointer" is "pack-manifest.yaml"
+    And the field at "/problem/violations/0/detail" contains "constituents{directives/B.directive.yaml}.content_hash does not match the bytes of directives/B.directive.yaml"
+    When I GET "/packs/acme"
+    Then the response status is 404
+
+  # The control: the same lists with the hashes v1's files give register, in any order. The stored manifest is the one
+  # the registration derives, so v1 sent again without a manifest changes nothing.
+  Scenario: An uploaded manifest whose hashes match registers, its order restamped
+    Given the archive "listed" is a copy of the archive "v1"
+    And the archive "listed" holds the file "pack-manifest.yaml":
+      """
+      schema_version: '1.0'
+      manifest_hash: a68b204a1224a8054a41a5f2c0e2a00844495a0f2f1fc142e5b798e0c3245ffb
+      constituents:
+      - kind: directive
+        id: B
+        path: directives/B.directive.yaml
+        content_hash: c41b11b9d1d8a40fb560f6d7a118f883f2297b971727462c7efeb5467fdaec47
       - kind: directive
         id: A
         path: directives/A.directive.yaml
-        content_hash: 0000000000000000000000000000000000000000000000000000000000000000
+        content_hash: 36ac29abcc75b1da62d563e97b10ca11fdc44f04c0a2df86c3e2387a399ddd90
       """
     When I PUT "/packs/acme" with the archive "listed"
     And I poll the registration until it ends
@@ -579,6 +614,13 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/result/outcome" is "created"
     When I GET "/packs/acme/artifacts/directive/B"
     Then the response status is 200
+    When I GET "/packs/acme"
+    And I remember the field "revision" of the response body
+    And I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "unchanged"
+    And the field at "/result/revision" is the remembered one
 
   # FR-010, SC-003 (operator ruling Q1, #554): a file no pack file kind models, Markdown or not, is an author's aid that
   # does not affect the service. The registration warns about it, does not hold it and never round-trips it, so the

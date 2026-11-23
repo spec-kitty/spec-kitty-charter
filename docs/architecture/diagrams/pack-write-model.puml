@@ -4,7 +4,7 @@
 '   contracts/packs/file-kinds.yaml (node kinds, fragment kind vocabulary)
 '   service/kernel (kernel.domain): PackDescriptor, DrgNode, DrgEdge, Relation, PackLevel
 '   Decided design: ADR-0048 (composition), ADR-0049 (glossary), ADR-0050 (mission types, lifecycles, gates),
-'   ADR-0051 (event registry), ADR-0052 (anti-patterns). Accepted 2026-11-02; none of it is built yet.
+'   ADR-0051 (event registry), ADR-0052 (anti-patterns). Accepted 2026-11-02; ADR-0052's anti-pattern file is built (ADR-0083).
 ' Edges carry no provenance: it is not authored and the schema refuses it (ADR-0017, DIV-019); a shard node may.
 ' charter.schema.json validates the project's charter.yaml, not a pack file, so it is not drawn.
 ' Notation: + required, - optional, [0..1] / [0..*] multiplicity.
@@ -51,7 +51,7 @@ class ShardNode {
   - label : string
   - provenance : string
   - tags : string[]
-  anti_pattern node with no file : refused after migration <color:#8A6D00>[pending ADR-0052 OQ3]</color>
+  anti_pattern node with no file : refused, drg_schema_error (ADR-0053 d31; built, ADR-0083)
 }
 class FragmentNode {
   + id : string
@@ -74,11 +74,11 @@ class GlossaryFile <<pending>> {
   glossaries/<context-id>.glossary.yaml
   one glossary context per file, terms inside <color:#8A6D00>[pending ADR-0049 OQ1: layout]</color>
 }
-class AntiPatternFile <<pending>> {
+class AntiPatternFile <<*.anti-pattern.yaml>> {
   anti_patterns/<id>.anti-pattern.yaml
   severity : smell | severe | breaking
-  migrated entries default to smell <color:#8A6D00>[pending ADR-0052 OQ4]</color>
-  shape and layout <color:#8A6D00>[pending ADR-0052 OQ2]</color>
+  no default severity (ADR-0053 d32)
+  shape: ADR-0052 d8, ADR-0053 d30 (built, ADR-0083)
 }
 class LifecycleFile <<pending>> {
   lifecycles/<id>.lifecycle.yaml
@@ -121,7 +121,7 @@ enum FragmentKind {
   assets, templates, mission_types, actions
   lifecycles
   <glossary plural> (not spelled by ADR-0049; follow-up #114)
-  anti_patterns <color:#8A6D00>[pending ADR-0052 OQ3: file-less nodes]</color>
+  anti_patterns (only beside the node's file, ADR-0053 d31)
   gates <color:#8A6D00>[pending ADR-0050 OQ2]</color>
   event_registries <color:#8A6D00>[pending ADR-0051 OQ3]</color>
 }

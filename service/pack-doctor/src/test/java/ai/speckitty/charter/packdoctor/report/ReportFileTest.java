@@ -1,0 +1,255 @@
+package ai.speckitty.charter.packdoctor.report;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import ai.speckitty.charter.packdoctor.PackDoctorMain;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * {@code pack-doctor validate --report <file> [--format yaml|xml]} (FR-008, rulings R-i and R-n, T027), run in process:
+ * the file holds standard output's tree, in YAML unless {@code --format xml}; standard output is the same with it as
+ * without; a usage fault or a report that cannot be written exits {@code 2} with nothing on standard output; and writing
+ * the report never changes the exit code of a run.
+ */
+class ReportFileTest {
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    @TempDir
+    Path temp;
+
+    private record Run(int exit, String out, String err) {
+        JsonNode report() {
+            return JSON.readTree(out);
+        }
+    }
+
+    private static Run run(String... options) {
+        String[] args = Stream.concat(Stream.of("validate"), Stream.of(options)).toArray(String[]::new);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        int exit = PackDoctorMain.run(
+                args,
+                new PrintStream(out, true, StandardCharsets.UTF_8),
+                new PrintStream(err, true, StandardCharsets.UTF_8));
+        return new Run(exit, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
+    }
+
+    private Path builtIn() {
+        return ExamplePacks.copyOf(ExamplePacks.BUILT_IN, temp.resolve("packs"));
+    }
+
+    private static JsonNode yaml(Path file) throws IOException {
+        return JSON.valueToTree(new Load(LoadSettings.builder().build()).loadFromString(Files.readString(file)));
+    }
+
+    /** The usage fault's line, then the usage, and nothing on standard output. */
+    private static void assertUsageFault(Run run, String message) {
+        assertThat(run.exit()).isEqualTo(2);
+        assertThat(run.out()).isEmpty();
+        assertThat(run.err()).startsWith("pack-doctor: " + message + System.lineSeparator() + "usage: ");
+    }
+
+    @Nested
+    class TheFile {
+
+        @Test
+        void isYamlByDefaultAndHoldsStandardOutputsTree() throws IOException {
+            Path pack = builtIn();
+            Path report = temp.resolve("report.yaml");
+
+            Run without = run("--pack", pack.toString());
+            Run with = run("--pack", pack.toString(), "--report", report.toString());
+
+            assertThat(with.exit()).isZero().isEqualTo(without.exit());
+            assertThat(with.out()).isEqualTo(without.out());
+            assertThat(with.err()).isEqualTo(without.err());
+            assertThat(Files.readString(report)).startsWith("tool:\n  name: pack-doctor\n");
+            assertThat(yaml(report)).isEqualTo(with.report());
+        }
+
+        @Test
+        void isYamlWithFormatYaml() throws IOException {
+            Path pack = builtIn();
+            Path report = temp.resolve("report.yaml");
+
+            Run run = run("--pack", pack.toString(), "--report", report.toString(), "--format", "yaml");
+
+            assertThat(run.exit()).isZero();
+            assertThat(yaml(report)).isEqualTo(run.report());
+        }
+
+        @Test
+        void isXmlWithFormatXmlGivenBeforeOrAfterTheReport() throws IOException {
+            Path pack = builtIn();
+            Path after = temp.resolve("after.xml");
+            Path before = temp.resolve("before.xml");
+
+            Run run = run("--pack", pack.toString(), "--report", after.toString(), "--format", "xml");
+            run("--format", "xml", "--report", before.toString(), "--pack", pack.toString());
+
+            assertThat(run.exit()).isZero();
+            assertThat(Files.readString(after))
+                    .startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<pack-doctor-report>\n");
+            assertThat(XmlReport.read(Files.readString(after))).isEqualTo(run.report());
+            assertThat(XmlReport.read(Files.readString(before)).get("inputs").get("packs"))
+                    .isEqualTo(run.report().get("inputs").get("packs"));
+        }
+
+        @Test
+        void isReplacedWhenItExists() throws IOException {
+            Path pack = builtIn();
+            Path report = Files.writeString(temp.resolve("report.yaml"), "an older and much longer file\n".repeat(200));
+
+            Run run = run("--pack", pack.toString(), "--report", report.toString());
+
+            assertThat(yaml(report)).isEqualTo(run.report());
+        }
+
+        @Test
+        void leavesTheExitCodeOfAFailingRunAsItIs() throws IOException {
+            Path project = ExamplePacks.copyOf(ExamplePacks.PROJECT, temp.resolve("packs"));
+            Path report = temp.resolve("report.xml");
+
+            Run without = run("--pack", project + ":project");
+            Run with = run("--pack", project + ":project", "--report", report.toString(), "--format", "xml");
+
+            assertThat(with.exit()).isEqualTo(1).isEqualTo(without.exit());
+            assertThat(with.out()).isEqualTo(without.out());
+            JsonNode written = XmlReport.read(Files.readString(report));
+            assertThat(written).isEqualTo(with.report());
+            assertThat(written.get("summary").get("exit_code").asInt()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    class AUsageFault {
+
+        @Test
+        void formatWithoutReport() {
+            assertUsageFault(run("--pack", builtIn().toString(), "--format", "xml"), "--format needs --report");
+        }
+
+        @Test
+        void anUnknownFormat() {
+            Path report = temp.resolve("report.json");
+
+            assertUsageFault(
+                    run("--pack", builtIn().toString(), "--report", report.toString(), "--format", "json"),
+                    "unknown format json for --format; the formats are yaml, xml");
+            assertThat(report).doesNotExist();
+        }
+
+        @Test
+        void aFormatInUpperCaseIsUnknown() {
+            assertUsageFault(
+                    run(
+                            "--pack",
+                            builtIn().toString(),
+                            "--report",
+                            temp.resolve("r").toString(),
+                            "--format",
+                            "XML"),
+                    "unknown format XML for --format; the formats are yaml, xml");
+        }
+
+        @Test
+        void reportTwice() {
+            assertUsageFault(
+                    run("--pack", builtIn().toString(), "--report", "a", "--report", "b"), "--report is given twice");
+        }
+
+        @Test
+        void formatTwice() {
+            assertUsageFault(
+                    run("--pack", builtIn().toString(), "--report", "a", "--format", "xml", "--format", "yaml"),
+                    "--format is given twice");
+        }
+
+        @Test
+        void reportWithNoValue() {
+            assertUsageFault(run("--pack", builtIn().toString(), "--report"), "--report needs a value");
+            assertUsageFault(run("--report", "--pack", builtIn().toString()), "--report needs a value");
+        }
+
+        @Test
+        void formatWithNoValue() {
+            assertUsageFault(
+                    run("--pack", builtIn().toString(), "--report", "a", "--format"), "--format needs a value");
+        }
+
+        @Test
+        void theUsageNamesBothOptions() {
+            Run run = run("--help");
+
+            assertThat(run.out())
+                    .contains("[--report <file> [--format yaml|xml]]")
+                    .contains("--report <file>")
+                    .contains("--format yaml|xml");
+        }
+    }
+
+    @Nested
+    class AReportThatCannotBeWritten {
+
+        @Test
+        void becauseItIsADirectoryExitsTwoWithNothingOnStandardOutput() throws IOException {
+            Path directory = Files.createDirectories(temp.resolve("a-directory"));
+
+            Run run = run("--pack", builtIn().toString(), "--report", directory.toString());
+
+            assertThat(run.exit()).isEqualTo(2);
+            assertThat(run.out()).isEmpty();
+            assertThat(run.err()).startsWith("pack-doctor: cannot write the report " + directory + ": ");
+        }
+
+        @Test
+        void becauseItsDirectoryDoesNotExist() {
+            Path report = temp.resolve("missing").resolve("report.yaml");
+
+            Run run = run("--pack", builtIn().toString(), "--report", report.toString(), "--format", "yaml");
+
+            assertThat(run.exit()).isEqualTo(2);
+            assertThat(run.out()).isEmpty();
+            assertThat(run.err()).startsWith("pack-doctor: cannot write the report " + report + ": ");
+            assertThat(report).doesNotExist();
+        }
+
+        @Test
+        void becauseXmlCannotCarryACharacterOfIt() throws IOException {
+            Path pack;
+            try {
+                pack = Files.move(builtIn(), temp.resolve("packs").resolve("built\u0001in"));
+            } catch (IOException | InvalidPathException noSuchName) {
+                assumeTrue(false, "the file system cannot name a directory with a control character");
+                return;
+            }
+            Path report = temp.resolve("report.xml");
+
+            Run run = run("--pack", pack + ":built-in", "--report", report.toString(), "--format", "xml");
+
+            assertThat(run.exit()).isEqualTo(2);
+            assertThat(run.out()).isEmpty();
+            assertThat(run.err())
+                    .startsWith("pack-doctor: cannot write the report " + report + " as XML: ")
+                    .contains("XML 1.0 cannot carry");
+            assertThat(report).doesNotExist();
+        }
+    }
+}

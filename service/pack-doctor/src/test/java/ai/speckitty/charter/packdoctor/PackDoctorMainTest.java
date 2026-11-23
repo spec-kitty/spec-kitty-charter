@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /** {@link PackDoctorMain#run}, in process, over the example packs and planted packs (#478, T017). */
 class PackDoctorMainTest {
@@ -196,7 +197,7 @@ class PackDoctorMainTest {
         });
         assertThat(report.has("skipped")).isFalse();
         assertThat(report.get("problems")).isEmpty();
-        assertThat(report.propertyNames()).containsExactly("checks", "packs", "problems");
+        assertThat(report.propertyNames()).containsExactly("tool", "inputs", "checks", "packs", "problems", "summary");
     }
 
     @Test
@@ -212,8 +213,14 @@ class PackDoctorMainTest {
         Run given = run(args.toArray(String[]::new));
         Run configured = run("--config-root", root.toString());
 
+        // The same report, but for its inputs, which name what was given: the --pack values, not the config root.
+        ObjectNode expected = (ObjectNode) configured.report().deepCopy();
+        ObjectNode inputs = JSON.createObjectNode();
+        args.stream().filter(arg -> !"--pack".equals(arg)).forEach(inputs.putArray("packs")::add);
+        inputs.putObject("options").put("full", false).put("round_trip", false);
+        expected.set("inputs", inputs);
         assertThat(given.exit()).isZero();
-        assertThat(given.out()).isEqualTo(configured.out());
+        assertThat(JSON.writeValueAsString(given.report())).isEqualTo(JSON.writeValueAsString(expected));
         assertThat(given.err()).isEqualTo(configured.err());
     }
 

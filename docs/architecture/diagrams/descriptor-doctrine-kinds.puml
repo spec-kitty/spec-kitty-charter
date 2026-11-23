@@ -2,7 +2,8 @@
 ' Field-level schemas of the six doctrine descriptor kinds.
 ' Sources: src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml
 ' Notation: + required, - optional. All top-level objects are additionalProperties:false.
-' Decided design: ADR-0052 (procedures tightened, anti-patterns as authored artifacts), accepted 2026-11-02; not built yet.
+' Decided design: ADR-0052 (procedures tightened, anti-patterns as authored artifacts), accepted 2026-11-02.
+'   Built 2026-11-22 (ADR-0083): the anti-pattern file (d8), the file-less node refusal (d14), the inline drop (d16).
 '   Inline anti-patterns leave procedure and styleguide (d4, d16); guidance carries rejects (d9); AntiPattern is a file (d8).
 ' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
@@ -145,18 +146,18 @@ class Pattern {
   - bad_example : string
   - good_example : string
 }
-class AntiPattern <<pending>> <<anti-pattern.schema.yaml>> {
+class AntiPattern <<anti-pattern.schema.json>> {
   + schema_version : "1.0"
   + id : string (kebab-case, the file stem)
   + title : string
   + description : string
-  + severity : Severity <color:#8A6D00>[pending ADR-0052 OQ2]</color>
-  - bad_example : string
+  + severity : Severity
+  + bad_example : string
   - good_example : string
   --
-  file: anti_patterns/<id>.anti-pattern.yaml <color:#8A6D00>[pending ADR-0052 OQ2]</color>
-  migrated entries default to smell <color:#8A6D00>[pending ADR-0052 OQ4]</color>
-  a file-less anti_pattern node is refused <color:#8A6D00>[pending ADR-0052 OQ3]</color>
+  file: anti_patterns/<id>.anti-pattern.yaml (ADR-0053 d30)
+  no default severity (ADR-0053 d32)
+  a file-less anti_pattern node is refused, drg_schema_error (ADR-0053 d31)
 }
 enum Severity {
   smell

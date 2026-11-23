@@ -141,41 +141,91 @@ public record TreeCensus(
     }
 
     /**
-     * The manifest's facts (#110, ADR-0042): whether something stands at its path, whether that is a regular file (read
-     * without following a link), the lists it declares when it is readable, and the lists the reader derives from what
-     * the pack holds ({@code PackManifestDerivation}), so a rule compares facts and derives nothing.
+     * The manifest's facts (#110, #630, ADR-0042): whether something stands at its path, whether that is a regular file
+     * (read without following a link), the lists it declares when it is readable, the lists the reader derives from
+     * what the pack holds ({@code PackManifestDerivation}), and the derived fields that do not verify against the
+     * incoming bytes ({@code PackManifests.stale}), so a rule compares facts and derives nothing.
      *
      * @param present whether anything stands at {@code pack-manifest.yaml}
      * @param regular whether that is a regular file, not a directory or a link
      * @param listed the lists the manifest declares; empty when it is absent or unreadable
      * @param derived the lists derived from what the pack holds; empty when nothing is listed, or the pack cannot be
      *     loaded
+     * @param stale the derived fields of a readable manifest that do not verify against the pack's bytes, in the
+     *     manifest's order (each constituent's {@code content_hash}, each preset's, then {@code manifest_hash}); never a
+     *     listed path with no file, which membership owns; empty when it is absent or unreadable
      */
-    public record Manifest(boolean present, boolean regular, Optional<Entries> listed, Optional<Entries> derived) {
+    public record Manifest(
+            boolean present,
+            boolean regular,
+            Optional<Entries> listed,
+            Optional<Entries> derived,
+            List<StaleField> stale) {
 
         /** No manifest at all. */
         public static final Manifest ABSENT = new Manifest(false, false, Optional.empty(), Optional.empty());
 
         /**
-         * Checks the fields.
+         * Checks the fields and copies the list.
+         *
+         * @param present whether anything stands at the path
+         * @param regular whether it is a regular file
+         * @param listed the declared lists
+         * @param derived the derived lists
+         * @param stale the stale derived fields
+         */
+        public Manifest {
+            Objects.requireNonNull(listed, "listed");
+            Objects.requireNonNull(derived, "derived");
+            stale = List.copyOf(stale);
+            if (regular && !present) {
+                throw new IllegalArgumentException("a manifest that is a regular file is present");
+            }
+        }
+
+        /**
+         * The facts of a manifest whose derived fields all verify.
          *
          * @param present whether anything stands at the path
          * @param regular whether it is a regular file
          * @param listed the declared lists
          * @param derived the derived lists
          */
-        public Manifest {
-            Objects.requireNonNull(listed, "listed");
-            Objects.requireNonNull(derived, "derived");
-            if (regular && !present) {
-                throw new IllegalArgumentException("a manifest that is a regular file is present");
-            }
+        public Manifest(boolean present, boolean regular, Optional<Entries> listed, Optional<Entries> derived) {
+            this(present, regular, listed, derived, List.of());
+        }
+    }
+
+    /**
+     * One derived field of the manifest that does not verify against the incoming bytes (#630, ADR-0042 decision 5's
+     * recipes).
+     *
+     * @param field the field as the manifest's verification names it: {@code constituents{<path>}.content_hash},
+     *     {@code presets{<path>}.content_hash} or {@code manifest_hash}
+     * @param place the JSON pointer segments of the field inside the manifest, for example
+     *     {@code [constituents, 3, content_hash]}
+     * @param file the pack-relative file whose bytes a {@code content_hash} does not match; empty for
+     *     {@code manifest_hash}
+     */
+    public record StaleField(String field, List<String> place, Optional<String> file) {
+        /**
+         * Checks the fields and copies the list.
+         *
+         * @param field the field
+         * @param place the pointer segments
+         * @param file the file it hashes
+         */
+        public StaleField {
+            Objects.requireNonNull(field, "field");
+            place = List.copyOf(place);
+            Objects.requireNonNull(file, "file");
         }
     }
 
     /**
      * A manifest's two lists, each entry in the manifest's own words: a constituent as {@code <kind>:<id> at <path>}, a
-     * preset entry as {@code <id> at <path>}, each list in the manifest's order.
+     * preset entry as {@code <id> at <path>}, each list in the manifest's order. Neither a kind token nor an id holds a
+     * space, so the path is what follows an entry's first {@value #AT} ({@link #pathOf}).
      *
      * @param constituents the constituents
      * @param presets the preset entries
@@ -190,6 +240,23 @@ public record TreeCensus(
         public Entries {
             constituents = List.copyOf(constituents);
             presets = List.copyOf(presets);
+        }
+
+        /** What separates an entry's kind and id from its path. */
+        public static final String AT = " at ";
+
+        /**
+         * The path an entry names, the inverse of how the entry is written.
+         *
+         * @param entry a constituent or a preset entry, in the manifest's own words
+         * @return its pack-relative path
+         */
+        public static String pathOf(String entry) {
+            int at = entry.indexOf(AT);
+            if (at < 0) {
+                throw new IllegalArgumentException("not a manifest entry: " + entry);
+            }
+            return entry.substring(at + AT.length());
         }
     }
 }

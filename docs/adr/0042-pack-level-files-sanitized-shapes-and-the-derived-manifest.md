@@ -2,8 +2,8 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed); decisions 8 and 9 amended 2026-11-11 (README.md is the pack document; pack.md, PROVENANCE.md and org-charter.yaml retired, #451, #431); decision 5 amended 2026-11-12 (manifest membership derived and restamped on every write, #110)'
+updated: 2026-11-22T00:00:00Z
+decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed); decisions 8 and 9 amended 2026-11-11 (README.md is the pack document; pack.md, PROVENANCE.md and org-charter.yaml retired, #451, #431); decision 5 amended 2026-11-12 (manifest membership derived and restamped on every write, #110); the 2026-11-12 amendment amended 2026-11-22 (uploaded hashes are judged, manifest_stale, ADR-0083)'
 decision_date: '2026-10-28'
 type: ADR
 kind: ADR
@@ -168,6 +168,9 @@ The calls the Op made beyond the rulings, open to review:
   derived hashes are restamped, as decision 5 already held for the reader. The lists' order is therefore a derived
   field: the gate's comparator compares each list in path order (ADR-0036's `pack-manifest.yaml` row, amended the same
   day).
+  *(Amended 2026-11-22, #630, ruling R-b: the hashes are judged. An uploaded or validated manifest with a stale hash is
+  refused `manifest_stale`, one per field; order is still not judged, and every write still restamps. See the amendment
+  of 2026-11-22.)*
 - **A `pack-manifest.yaml` that is not a regular file is refused.** A registration writes the manifest at that path, so
   a directory or a link there is refused `422` (`unreadable`) before the stamp.
 - **The check runs on an otherwise clean upload.** An artifact refused for its own fault would also read as left out,
@@ -221,6 +224,30 @@ changes.
   removes an asset, guard, lifecycle or template yet: work breakdown item 13 adds them, and each inherits the refusal.
 - **One standing test holds the paths together**: `ClosureSymmetryTest`, a table of broken packs, each row with a
   repaired control.
+
+### Amendment 2026-11-22 (#630, operator ruling R-b): uploaded hashes are judged
+
+Made by mission `pack-doctor-coverage-01M7YMQK`, on the operator's ruling R-b of 2026-11-21, which
+[ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/) records verbatim. It
+amends the amendment of 2026-11-12, whose call "Order and hashes are not judged" carries a note where it stands, and
+decision 5's read.
+
+- **A stale hash is refused.** An uploaded or validated `pack-manifest.yaml` whose `content_hash` (of a constituent or a
+  preset) or `manifest_hash` does not match the incoming bytes is refused `422 validation_failed`, one violation per
+  field, code `manifest_stale`, at `pack-manifest.yaml`. The detail names the field: `constituents{<path>}.content_hash`,
+  `presets{<path>}.content_hash` or `manifest_hash`. The check is decision 5's recipe (`PackManifests.stale`) over the
+  incoming bytes.
+- **It is judged in the manifest gate.** It runs after `manifest_membership`, and only when nothing else failed, at the
+  storage edge (`ManifestRules`, its token in `StorageCodes`). A path membership already names gets no `manifest_stale`.
+  So whole-pack registration, validate mode and `pack-doctor validate` refuse it alike.
+- **Every write still stamps.** A whole-pack registration of a correctly hashed manifest restamps it unchanged, and a
+  per-artifact write, a removal and the store's whole-pack write stamp the manifest from the bytes they write, as
+  before. A pack with no manifest still gets one generated. Order is still not judged.
+- **The round trip drops its duplicate.** With `pack-doctor validate --round-trip`, a source-stale field is no longer
+  reported as `round_trip_red`: the cause is the one `manifest_stale`. A written-stale field, where the writer itself is
+  wrong, still reports `round_trip_red`, since it judges the writer.
+- **What open-packs must do.** A manifest whose hashes it wrote by hand, or carried over from an edit, is refused on
+  registration and by pack-doctor. `pack-doctor remediate` derives and stamps it as a service write does.
 
 ## Context
 
@@ -407,6 +434,8 @@ so canonical number output is never needed.
   violation on the aggregate, so the whole-pack write refuses the pack. `FilesystemPackStore` and
   `DomainRepositoryService` never parse it, so a registration pays nothing for it. The reader
   never checks the derived fields, as core does not.
+  *(Amended 2026-11-22, #630, ruling R-b: the manifest gate checks them on the incoming bytes and refuses a stale one,
+  `manifest_stale`. See the amendment under Status.)*
 - **Write.** The write stages every other file first. It then recomputes every derived field from
   the staged bytes and writes the manifest last. A listed path that the write did not stage
   refuses the write, before anything reaches the target: `pack-manifest.yaml of <pack> lists

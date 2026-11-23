@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Mode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.packs.infra.storage.ManifestStamps;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -74,6 +75,8 @@ class FullPassParityTest {
     private static final String BETA_ID = "01M4P01D5TWB5FKZGNNQG3943S";
 
     private static final String FRAGMENT = "nodes: []\nedges: []\n";
+
+    private static final String MANIFEST = "pack-manifest.yaml";
 
     private static Path configRoot = Path.of("");
 
@@ -242,69 +245,101 @@ class FullPassParityTest {
     }
 
     static Stream<Row> rows() {
-        return Stream.of(
-                // REFERENCES (#632 item 3, ruling R-s): the three checks --full adds.
-                closure(
-                        "an unqualified reference (a bare reference only another pack holds)",
-                        relates("directive:SHARE"),
-                        "pack_reference_unqualified"),
-                closure(
-                        "a missing referenced artifact",
-                        relates("beta::directive:NOPE"),
-                        "pack_reference_artifact_missing"),
-                closure(
-                        "a referenced pack the compose does not hold",
-                        relates("gamma::directive:SHARE"),
-                        "pack_reference_pack_missing"),
-                closure(
-                        "a missing target step",
-                        stepEnhancementOf("beta::action:software-dev/nosuch"),
-                        "pack_reference_artifact_missing"),
-                new Row(
-                        "an unresolved substep delegation",
-                        alpha(delegationTo("tdd")),
-                        true,
-                        "validation_failed",
-                        List.of("substep_delegation_unresolved"),
-                        true),
-                // CLOSURE's preset-item phase (WP03).
-                new Row(
-                        "a must_have preset item no pack of the own closure holds",
-                        acme(preset("""
+        return Stream.of(referenceRows(), closureRows(), fileRows(), remainderRows())
+                .flatMap(Stream::of);
+    }
+
+    private static Row[] referenceRows() {
+        return new Row[] {
+            // REFERENCES (#632 item 3, ruling R-s): the three checks --full adds.
+            closure(
+                    "an unqualified reference (a bare reference only another pack holds)",
+                    relates("directive:SHARE"),
+                    "pack_reference_unqualified"),
+            closure(
+                    "a missing referenced artifact",
+                    relates("beta::directive:NOPE"),
+                    "pack_reference_artifact_missing"),
+            closure(
+                    "a referenced pack the compose does not hold",
+                    relates("gamma::directive:SHARE"),
+                    "pack_reference_pack_missing"),
+            closure(
+                    "a missing target step",
+                    stepEnhancementOf("beta::action:software-dev/nosuch"),
+                    "pack_reference_artifact_missing"),
+            closure(
+                    "an enhancement target whose pack is missing",
+                    stepEnhancementOf("gamma::action:software-dev/plan"),
+                    "pack_reference_pack_missing"),
+            new Row(
+                    "an unresolved substep delegation",
+                    alpha(delegationTo("tdd")),
+                    true,
+                    "validation_failed",
+                    List.of("substep_delegation_unresolved"),
+                    true)
+        };
+    }
+
+    private static Row[] closureRows() {
+        return new Row[] {
+            // CLOSURE's preset-item phase (WP03).
+            new Row(
+                    "a must_have preset item no pack of the own closure holds",
+                    acme(preset("""
                                 activated_directives:
                                   - id: A
                                     must_have: true
                                   - id: B
                                     must_have: true
                                 """)),
-                        false,
-                        "preset_item_not_held",
-                        List.of("preset_item_not_held"),
-                        true),
-                new Row(
-                        "a preset item no pack of the own closure declares",
-                        acme(preset("""
+                    false,
+                    "preset_item_not_held",
+                    List.of("preset_item_not_held"),
+                    true),
+            new Row(
+                    "a preset item no pack of the own closure declares",
+                    acme(preset("""
                                 activated_tactics:
                                   - id: ghost
                                 """)),
-                        false,
-                        "preset_item_undeclared",
-                        List.of("preset_item_undeclared"),
-                        true),
-                // The anti-pattern refusals (WP10 to WP12), validate mode's at the file.
-                refusedAtTheFile(
-                        "an anti-pattern file missing severity",
-                        Map.of("anti_patterns/clever-over-direct.anti-pattern.yaml", """
+                    false,
+                    "preset_item_undeclared",
+                    List.of("preset_item_undeclared"),
+                    true),
+            // The existing case-only answer stands for a preset item, with no violation of its own (US1 scenario 3).
+            new Row(
+                    "a preset item that names a held artifact only by case",
+                    acme(preset("""
+                                activated_directives:
+                                  - id: a
+                                """)),
+                    false,
+                    "pack_reference_artifact_missing",
+                    List.of(),
+                    true)
+        };
+    }
+
+    private static Row[] fileRows() {
+        return new Row[] {
+            // The manifest gate (WP04): a constituent edited after its content_hash was stamped.
+            refusedAtTheFile("a stale manifest content_hash", staleManifest(), "manifest_stale"),
+            // The anti-pattern refusals (WP10 to WP12), validate mode's at the file.
+            refusedAtTheFile(
+                    "an anti-pattern file missing severity",
+                    Map.of("anti_patterns/clever-over-direct.anti-pattern.yaml", """
                                 schema_version: '1.0'
                                 id: clever-over-direct
                                 title: Clever over direct
                                 description: A clever feature where a direct idiom would be easier to review.
                                 bad_example: next(...)
                                 """),
-                        "artifact_schema_error"),
-                refusedAtTheFile(
-                        "an inline anti_patterns block",
-                        Map.of("styleguides/java-style.styleguide.yaml", """
+                    "artifact_schema_error"),
+            refusedAtTheFile(
+                    "an inline anti_patterns block",
+                    Map.of("styleguides/java-style.styleguide.yaml", """
                                 schema_version: '1.0'
                                 id: java-style
                                 title: Java style
@@ -318,9 +353,8 @@ class FullPassParityTest {
                                   bad_example: private String name;
                                   good_example: private final String name;
                                 """),
-                        "artifact_schema_error"),
-                refusedAtTheFile(
-                        "a file-less anti_pattern node", Map.of("styleguide.graph.yaml", """
+                    "artifact_schema_error"),
+            refusedAtTheFile("a file-less anti_pattern node", Map.of("styleguide.graph.yaml", """
                                 schema_version: '1.0'
                                 generated_at: STATIC
                                 nodes:
@@ -331,17 +365,39 @@ class FullPassParityTest {
                                 - source: directive:A
                                   target: anti_pattern:x
                                   relation: rejects
-                                """), "drg_schema_error"),
-                // The remainder ruling R-s leaves: the specializes_from cycle lands in the domain factory with #636
-                // (slices 2-4 and 7, ADR-0083). The registration refuses it; --full does not report it yet. When #636
-                // lands it, this row becomes a parity row (fullReports true).
-                new Row(
-                        "a specializes_from cycle (#636: registration only, for now)",
-                        acme(specializationCycle()),
-                        false,
-                        "specialization_cycle",
-                        List.of(),
-                        false));
+                                """), "drg_schema_error")
+        };
+    }
+
+    private static Row[] remainderRows() {
+        return new Row[] {
+            // The remainder ruling R-s leaves: the specializes_from cycle lands in the domain factory with #636
+            // (slices 2-4 and 7, ADR-0083). The registration refuses it; --full does not report it yet. When #636
+            // lands it, this row becomes a parity row (fullReports true).
+            new Row(
+                    "a specializes_from cycle (#636: registration only, for now)",
+                    acme(specializationCycle()),
+                    false,
+                    "specialization_cycle",
+                    List.of(),
+                    false)
+        };
+    }
+
+    /**
+     * acme with a manifest stamped from its files, then its directive A edited, so A's {@code content_hash} is stale.
+     */
+    private static Map<String, String> staleManifest() {
+        Map<String, String> files = acme(Map.of());
+        try {
+            Path stamped = plant(Files.createTempDirectory("charter-full-pass-parity-manifest"), files);
+            ManifestStamps.stamp(stamped, "acme");
+            files.put(MANIFEST, Files.readString(stamped.resolve(MANIFEST), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        files.put("directives/A.directive.yaml", directive("A") + "# edited\n");
+        return files;
     }
 
     private static Map<String, String> stepEnhancementOf(String target) {

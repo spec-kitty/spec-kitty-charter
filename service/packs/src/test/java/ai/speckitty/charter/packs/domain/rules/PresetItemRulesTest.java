@@ -216,10 +216,8 @@ class PresetItemRulesTest {
             assertThat(fault.origin()).isEqualTo(new Origin("org::directive:dir-1"));
             assertThat(fault.packs()).extracting(RefusalPack::name).containsExactly("org", "base");
             assertThat(fault.detail()).contains("`directive:dir-1`", "`directive:DIR-1`", "differ only by case");
-            assertThat(fault.violations())
-                    .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                    .containsExactly(
-                            tuple("presets/team.yaml#/activated_directives/0", "pack_reference_artifact_missing"));
+            // The existing case-only answer stands: registration's, which carries no violation of its own.
+            assertThat(fault.violations()).isEmpty();
         });
     }
 

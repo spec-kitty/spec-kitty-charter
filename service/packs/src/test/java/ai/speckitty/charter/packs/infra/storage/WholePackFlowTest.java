@@ -125,12 +125,14 @@ class WholePackFlowTest {
     }
 
     /**
-     * #195: the flow verifies the manifest's derived fields on both sides, which the comparison skips. A writer that
-     * keeps the source's hashes is red at {@code written stale}, an edited source at {@code source stale}; the faithful
-     * run over the fresh fixture is green.
+     * #195: the flow verifies the written manifest's derived fields, which the comparison skips. A writer that keeps the
+     * source's hashes is red at {@code written stale}; the faithful run over the fresh fixture is green. #630: an edited
+     * source is not the round trip's to report: its stale {@code content_hash} is the storage edge's
+     * {@code manifest_stale} ({@code ManifestRulesTest}), so the round trip of it is green, and the cause is one
+     * problem.
      */
     @Test
-    void theManifestsDerivedFieldsAreVerifiedOnBothSides(@TempDir Path temp) throws IOException, URISyntaxException {
+    void theWrittenManifestsDerivedFieldsAreVerified(@TempDir Path temp) throws IOException, URISyntaxException {
         Path fresh = PackManifestRoundTripTest.fixture(temp.resolve("fresh"));
         Path edited = PackManifestRoundTripTest.fixture(temp.resolve("edited"));
         Path tactic = edited.resolve(PackManifestRoundTripTest.TACTIC);
@@ -161,8 +163,9 @@ class WholePackFlowTest {
                                 + "constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash, "
                                 + "presets{presets/convenience.yaml}.content_hash, "
                                 + "presets{presets/governing.yaml}.content_hash");
-        assertThat(sourceStale.get(PackFileSet.MANIFEST))
-                .contains("source stale: constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash");
+        assertThat(sourceStale)
+                .as("a source-stale manifest is manifest_stale, not a round-trip red")
+                .allSatisfy((path, red) -> assertThat(red).as(path).isEmpty());
     }
 
     /**

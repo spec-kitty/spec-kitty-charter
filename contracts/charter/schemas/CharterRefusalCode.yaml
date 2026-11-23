@@ -428,7 +428,9 @@ x-refusal:
       reserved_shard (a registered.graph.yaml no registration wrote), pack_entry_linked (a symbolic link inside the
       pack, to a file, a directory or nothing: never read through, refused at registration and at load, where the
       composing read answers pack_unreadable naming it; the pack root itself may be a link), manifest_membership (a
-      manifest whose lists differ from the pack, judged when nothing else failed), drg_schema_error,
+      manifest whose lists differ from the pack, judged when nothing else failed), manifest_stale (a content_hash or
+      manifest_hash of pack-manifest.yaml that does not match the uploaded bytes, one per field, naming it, judged
+      with and after manifest_membership; a path manifest_membership names gets none), drg_schema_error,
       prompt_fragment_invalid, prompt_slot_malformed and prompt_slot_not_empty, and the format checks of the one read
       (#554, S2): requires_core_invalid, pack_version_invalid and dependency_range_invalid (a requires_core,
       pack_version or depends_on range of pack.yaml that is not PEP 440) and asset_mime_invalid (an asset mime that is

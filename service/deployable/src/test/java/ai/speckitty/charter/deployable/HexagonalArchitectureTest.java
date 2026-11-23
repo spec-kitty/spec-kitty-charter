@@ -117,22 +117,29 @@ class HexagonalArchitectureTest {
     /**
      * pack-doctor's main (ADR-0075 decision 9, #478): the CLI's composition root, named by its fully qualified name. It is
      * the one class outside the service's composition root that may name an adapter of the packs slice, and it may name
-     * only the two it plugs into {@code pack-validation} ({@link #COMPOSED_BY_THE_PACK_DOCTOR_MAIN}).
+     * only the three it composes ({@link #COMPOSED_BY_THE_PACK_DOCTOR_MAIN}).
      */
     private static final String PACK_DOCTOR_MAIN = ROOT + ".packdoctor.PackDoctorMain";
 
+    /** The storage edge's remediation (FR-009, plan D7), the third adapter pack-doctor's main composes. */
+    private static final String PACK_REMEDIATION = ROOT + ".packs.infra.storage.PackRemediation";
+
     /**
-     * The adapters pack-doctor's main plugs in: the file-system reader (the {@code PackReading} port) and the production
-     * round trip (the {@code RoundTripping} port), ADR-0075 as amended 2026-11-13 and 2026-11-15, #478 S5.
+     * The adapters pack-doctor's main composes: the file-system reader (the {@code PackReading} port) and the production
+     * round trip (the {@code RoundTripping} port), ADR-0075 as amended 2026-11-13 and 2026-11-15, #478 S5; and the
+     * storage edge's remediation {@code remediate} runs, with the outcome types nested in it (FR-009 and plan D7 of
+     * mission pack-doctor-coverage-01M7YMQK).
      */
     private static final DescribedPredicate<JavaClass> COMPOSED_BY_THE_PACK_DOCTOR_MAIN = DescribedPredicate.describe(
-            "are the file-system reader or the production round trip pack-doctor's main plugs in",
+            "are the file-system reader, the production round trip or the remediation pack-doctor's main composes",
             (JavaClass c) -> c.getName().equals(ROOT + ".packs.infra.storage.FileSystemPackInspector")
-                    || c.getName().equals(ROOT + ".packs.infra.storage.PackRoundTrip"));
+                    || c.getName().equals(ROOT + ".packs.infra.storage.PackRoundTrip")
+                    || c.getName().equals(PACK_REMEDIATION)
+                    || c.getName().startsWith(PACK_REMEDIATION + "$"));
 
     /**
      * ONION_DEPENDS_INWARD (3/3): only the composition root composes the adapters. pack-doctor's main, the CLI's
-     * composition root, is held by {@link #ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_TWO_ADAPTERS} instead.
+     * composition root, is held by {@link #ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_THREE_ADAPTERS} instead.
      */
     private static final ArchRule ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS = noClasses()
             .that()
@@ -144,19 +151,19 @@ class HexagonalArchitectureTest {
             .resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH, PACKS_ARCHIVE);
 
     /**
-     * ONION_DEPENDS_INWARD (3/3), pack-doctor's main: of the slice's adapters it names the two it plugs in, and no other.
+     * ONION_DEPENDS_INWARD (3/3), pack-doctor's main: of the slice's adapters it names the three it composes, and no
+     * other.
      * It fails when the main is missing, so the exemption cannot outlive the class.
      */
-    private static final ArchRule ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_TWO_ADAPTERS = noClasses()
+    private static final ArchRule ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_THREE_ADAPTERS = noClasses()
             .that()
             .haveFullyQualifiedName(PACK_DOCTOR_MAIN)
             .should()
             .dependOnClassesThat(
                     JavaClass.Predicates.resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH, PACKS_ARCHIVE)
                             .and(DescribedPredicate.not(COMPOSED_BY_THE_PACK_DOCTOR_MAIN)))
-            .as(
-                    "ONION_DEPENDS_INWARD (pack-doctor's main): of the packs slice's adapters, only the file-system reader and"
-                            + " the production round trip");
+            .as("ONION_DEPENDS_INWARD (pack-doctor's main): of the packs slice's adapters, only the file-system reader,"
+                    + " the production round trip and the remediation");
 
     /** ONION_DEPENDS_INWARD (3/3): nothing, the edge rings included, depends on the composition root. */
     private static final ArchRule ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT = noClasses()
@@ -172,7 +179,7 @@ class HexagonalArchitectureTest {
         ONION_DOMAIN_DEPENDS_ON_NOTHING_OUTWARD.check(classes);
         ONION_APPLICATION_DEPENDS_ON_DOMAIN_ONLY.check(classes);
         ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS.check(classes);
-        ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_TWO_ADAPTERS.check(classes);
+        ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_THREE_ADAPTERS.check(classes);
         ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT.check(classes);
     }
 
@@ -383,8 +390,9 @@ class HexagonalArchitectureTest {
      * beans, commit stores and locks. A class of the JDK or a library is not walked into, and nor is a port's
      * implementation: the walk follows the classes a class names, so the inspector the composition root plugs in is walked
      * from its own root ({@link #THE_PACKS_LOAD_REACHES_NO_FRAMEWORK}). pack-doctor's main ({@link #PACK_DOCTOR_MAIN},
-     * #478), the module's composition root, may name the file-system inspector and the production round trip, in this
-     * rule's direct half ({@link #THE_PACK_DOCTOR_MAIN_NAMES_TWO_ADAPTERS}) and in {@code ONION_DEPENDS_INWARD}; no other
+     * #478), the module's composition root, may name the file-system inspector, the production round trip and the
+     * remediation (FR-009, plan D7), in this
+     * rule's direct half ({@link #THE_PACK_DOCTOR_MAIN_NAMES_THREE_ADAPTERS}) and in {@code ONION_DEPENDS_INWARD}; no other
      * class of either module may, and the transitive half walks from the main through both. A lock is caught
      * by its type ({@code java.util.concurrent.locks}, {@code FileLock}); a {@code FileChannel.lock()} whose result is
      * discarded, a {@code Semaphore} or a {@code synchronized} block is not, and the commit stores and locks are a list of
@@ -406,17 +414,17 @@ class HexagonalArchitectureTest {
     }
 
     /**
-     * The direct half of {@link #packModuleIsFrameworkFree} for pack-doctor's main: the same refusals, except the two
-     * adapters it plugs in ({@link #COMPOSED_BY_THE_PACK_DOCTOR_MAIN}). It fails when the main is missing.
+     * The direct half of {@link #packModuleIsFrameworkFree} for pack-doctor's main: the same refusals, except the three
+     * adapters it composes ({@link #COMPOSED_BY_THE_PACK_DOCTOR_MAIN}). It fails when the main is missing.
      */
-    private static final ArchRule THE_PACK_DOCTOR_MAIN_NAMES_TWO_ADAPTERS = noClasses()
+    private static final ArchRule THE_PACK_DOCTOR_MAIN_NAMES_THREE_ADAPTERS = noClasses()
             .that()
             .haveFullyQualifiedName(PACK_DOCTOR_MAIN)
             .should()
             .dependOnClassesThat(FRAMEWORK_HTTP_STORE_OR_LOCK.or(
                     OUTSIDE_THE_DOMAIN.and(DescribedPredicate.not(COMPOSED_BY_THE_PACK_DOCTOR_MAIN))))
-            .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (pack-doctor's main), direct: only the packs domain and the two"
-                    + " adapters it plugs in, no Spring, HTTP, commit store or lock");
+            .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (pack-doctor's main), direct: only the packs domain and the three"
+                    + " adapters it composes, no Spring, HTTP, commit store or lock");
 
     /**
      * The walk of the transitive half: from a class, through every charter class it reaches, to a class in
@@ -480,6 +488,19 @@ class HexagonalArchitectureTest {
             .as("PACK_VALIDATION_IS_FRAMEWORK_FREE (the packs load), transitive: nothing reached uses Spring, HTTP, a"
                     + " commit store or a lock");
 
+    /**
+     * The transitive half over the remediation pack-doctor's main composes (FR-009, plan D7): the storage edge's
+     * {@code PackRemediation}, which stages and swaps a pack directory without Spring, reaches no charter class that uses
+     * Spring, HTTP, a commit store or a lock. It fails when the remediation is missing.
+     */
+    private static final ArchRule THE_PACKS_REMEDIATION_REACHES_NO_FRAMEWORK = classes()
+            .that()
+            .haveFullyQualifiedName(PACK_REMEDIATION)
+            .should(REACHES_NO_FRAMEWORK)
+            .as(
+                    "PACK_VALIDATION_IS_FRAMEWORK_FREE (the packs remediation), transitive: nothing reached uses Spring, HTTP,"
+                            + " a commit store or a lock");
+
     /** The chain of classes from the checked class to {@code last}, by simple name. */
     private static String path(java.util.Map<JavaClass, JavaClass> via, JavaClass last) {
         java.util.Deque<String> names = new java.util.ArrayDeque<>();
@@ -499,8 +520,9 @@ class HexagonalArchitectureTest {
             packModuleIsFrameworkFree(module).check(classes);
             packModuleReachesNoFramework(module).check(classes);
         }
-        THE_PACK_DOCTOR_MAIN_NAMES_TWO_ADAPTERS.check(classes);
+        THE_PACK_DOCTOR_MAIN_NAMES_THREE_ADAPTERS.check(classes);
         THE_PACKS_LOAD_REACHES_NO_FRAMEWORK.check(classes);
+        THE_PACKS_REMEDIATION_REACHES_NO_FRAMEWORK.check(classes);
     }
 
     @Test
@@ -1161,7 +1183,7 @@ class HexagonalArchitectureTest {
 
     /**
      * ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS per slice: only the slice's adapters and the root name them. pack-doctor's
-     * main is held by {@link #ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_TWO_ADAPTERS} instead.
+     * main is held by {@link #ONION_THE_PACK_DOCTOR_MAIN_COMPOSES_THREE_ADAPTERS} instead.
      */
     private static ArchRule onlyDeployableComposesAdapters(String slice) {
         return noClasses()

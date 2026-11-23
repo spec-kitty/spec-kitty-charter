@@ -61,6 +61,8 @@ final class ClosureWalkPhase {
      * @param set the packs, which {@code CLOSURE} passed, in the order the set was given
      * @param factsOf each pack's composition facts
      * @return the faults, as registration answers each; empty when every pack passes
+     * @throws IllegalStateException when a pack's own closure has a composition fault, which {@code CLOSURE} passing
+     *     rules out
      */
     static List<ClosureFault> faults(
             List<PackUnderResolution> set, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
@@ -68,9 +70,13 @@ final class ClosureWalkPhase {
         Objects.requireNonNull(factsOf, "factsOf");
         List<ClosureFault> faults = new ArrayList<>();
         for (PackUnderResolution pack : set) {
-            List<PackUnderResolution> closure = PackCompositionResolver.composeRooted(
-                            set, List.of(pack.configured().id()))
-                    .order();
+            PackCompositionResolver.Rooted rooted = PackCompositionResolver.composeRooted(
+                    set, List.of(pack.configured().id()));
+            if (!rooted.faults().isEmpty()) {
+                throw new IllegalStateException("REFERENCES runs only after CLOSURE passed, yet the own closure of "
+                        + pack.configured().id().value() + " has composition faults: " + rooted.faults());
+            }
+            List<PackUnderResolution> closure = rooted.order();
             PackCompositionFacts facts = factsOf.apply(pack);
             for (Check phase : PHASES) {
                 List<ClosureFault> found = phase.faults(closure, pack, facts);

@@ -189,6 +189,13 @@ class PackCodesCoverageTest {
 
     /** The companion, the descriptor format and the storage codes. */
     private static List<Written> storagePacks() {
+        List<Written> packs = new ArrayList<>(descriptorPacks());
+        packs.addAll(manifestPacks());
+        return List.copyOf(packs);
+    }
+
+    /** The companion, the descriptor format and the tree's storage codes. */
+    private static List<Written> descriptorPacks() {
         return List.of(
                 bare("companion", StorageCodes.COMPANION, pack -> {
                     write(pack, "toolguides/make.toolguide.yaml", """
@@ -226,7 +233,12 @@ class PackCodesCoverageTest {
                         pack -> write(
                                 pack,
                                 "registered.graph.yaml",
-                                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\n")),
+                                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\n")));
+    }
+
+    /** The manifest's storage codes, each over the example project pack. */
+    private static List<Written> manifestPacks() {
+        return List.of(
                 new Written(
                         "manifest_membership",
                         StorageCodes.MANIFEST_MEMBERSHIP,
@@ -240,6 +252,17 @@ class PackCodesCoverageTest {
                                                     "- kind: skill\\n  id: project-triage\\n  path:"
                                                             + " skills/project-triage.skill.yaml\\n  content_hash: [0-9a-f]+\\n",
                                                     ""),
+                                    StandardCharsets.UTF_8);
+                        }),
+                new Written(
+                        "manifest_stale (#630)",
+                        StorageCodes.MANIFEST_STALE,
+                        Optional.of(ExamplePacks.PROJECT),
+                        pack -> {
+                            Path skill = pack.resolve("skills/project-triage.skill.yaml");
+                            Files.writeString(
+                                    skill,
+                                    Files.readString(skill, StandardCharsets.UTF_8) + "# edited\n",
                                     StandardCharsets.UTF_8);
                         }));
     }
@@ -536,6 +559,14 @@ class PackCodesCoverageTest {
                         List.of(
                                 pack(ordered("DEP"), "dep", PackLevel.PROJECT, depends(ordered("ORG"), ">=1.0")),
                                 org)));
+        fixtures.putAll(identityFixtures(org));
+        fixtures.putAll(presetFixtures(base));
+        return fixtures;
+    }
+
+    /** The name, id and sibling conflicts, beside {@code org}. */
+    private static Map<ReasonCode, ClosureFixture> identityFixtures(PackUnderResolution org) {
+        Map<ReasonCode, ClosureFixture> fixtures = new LinkedHashMap<>();
         fixtures.put(
                 code(RefusalCode.PACK_NAME_CONFLICT),
                 new ClosureFixture(
@@ -559,6 +590,12 @@ class PackCodesCoverageTest {
                         List.of(
                                 refining(ordered("LEFT"), "left", PackLevel.ORG),
                                 refining(ordered("RIGHT"), "right", PackLevel.PROJECT))));
+        return fixtures;
+    }
+
+    /** The preset-item rule's two codes, over a pack that depends on {@code base}. */
+    private static Map<ReasonCode, ClosureFixture> presetFixtures(PackUnderResolution base) {
+        Map<ReasonCode, ClosureFixture> fixtures = new LinkedHashMap<>();
         PackUnderResolution presetting =
                 pack(ordered("PRESETS"), "presets", PackLevel.ORG, depends(ordered("BASE"), ">=1.0"));
         Preset requiring =

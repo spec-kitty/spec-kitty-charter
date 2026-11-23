@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packvalidation.set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -117,6 +118,16 @@ class ClosureWalkPhaseTest {
 
     private static List<String> codes(List<ClosureFault> faults) {
         return faults.stream().map(fault -> fault.code().token()).toList();
+    }
+
+    @Test
+    @DisplayName("an own closure with a composition fault is no input: CLOSURE passing rules it out, so it throws")
+    void anOwnClosureWithACompositionFaultThrows() {
+        PackUnderResolution reader = reader();
+
+        assertThatThrownBy(() -> faults(reader))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("reader");
     }
 
     @Test

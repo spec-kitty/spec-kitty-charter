@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.packdoctor.PackDoctorMain;
 import ai.speckitty.charter.packdoctor.PackDoctorSeam;
+import ai.speckitty.charter.packdoctor.report.XmlReport;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
@@ -42,6 +43,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -61,7 +64,9 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <ul>
  *   <li>its standard output validates against {@code charter/schemas/PackDoctorReport.yaml}, its problems against the
- *       shared {@code Problem}, and each problem's {@code instance} is the {@code file:} URI of a pack it checked;
+ *       shared {@code Problem}, each problem's {@code instance} is the {@code file:} URI of a pack it checked, and its
+ *       summary matches its packs, its problems and its exit code;
+ *   <li>its report file, YAML or XML, parsed back, is the same tree and validates against the same schema (FR-008);
  *   <li>for one fixture per code family, each problem but its {@code instance} equals what {@link RefusalHandler}
  *       renders for {@code getPackRegistration} from the same refusal, built from the registration's mapping
  *       ({@link PackRefusalMapping#of}) or from the composing read's resolver ({@link PackCompositionResolver}), never
@@ -153,6 +158,15 @@ class PackDoctorReportContractTest {
                 assertThat(Path.of(instance)).as("the pack the instance names").isIn(directories);
             }
         }
+        JsonNode summary = report.get("summary");
+        assertThat(summary.get("packs").asInt())
+                .as("summary.packs")
+                .isEqualTo(report.get("packs").size());
+        assertThat(summary.get("exit_code").asInt()).as("summary.exit_code").isEqualTo(run.exit());
+        assertThat(summary.get("violations").asInt() == 0)
+                .as("summary.violations is 0 exactly when problems is empty")
+                .isEqualTo(report.get("problems").isEmpty());
+        assertThat(report.get("tool").get("name").asString()).isEqualTo("pack-doctor");
     }
 
     /** What {@link RefusalHandler} renders for a refused registration, as JSON, its absent members left out. */
@@ -382,6 +396,137 @@ class PackDoctorReportContractTest {
             assertThat(run.exit()).as(run.out()).isZero();
             assertConforms(run);
             assertThat(run.report().get("checks").toString()).contains("ROUND_TRIP");
+        }
+    }
+
+    /**
+     * FR-008 (plan D6): {@code --report <file>} writes the same tree as standard output, in YAML by default or in XML
+     * with {@code --format xml}. Each file is parsed back (the YAML with SnakeYAML, the XML by {@link XmlReport#read},
+     * the inverse of its mapping), each of the three trees validates against {@code PackDoctorReport}, and the three are
+     * one tree, key order and scalar types included. Standard output is the same with {@code --report} as without.
+     */
+    @Nested
+    @DisplayName("the report file is the same tree in YAML and in XML, and validates against PackDoctorReport (FR-008)")
+    class TheReportFile {
+
+        private static String[] with(String[] options, String... more) {
+            return Stream.concat(Stream.of(options), Stream.of(more)).toArray(String[]::new);
+        }
+
+        /** Standard output's tree, the YAML file's and the XML file's, each run exiting {@code exit}. */
+        private List<JsonNode> threeTrees(int exit, String... options) throws IOException {
+            Path yaml = temp.resolve("report.yaml");
+            Path xml = temp.resolve("report.xml");
+
+            Run json = run(options);
+            Run withYaml = run(with(options, "--report", yaml.toString()));
+            Run withXml = run(with(options, "--report", xml.toString(), "--format", "xml"));
+
+            for (Run each : List.of(json, withYaml, withXml)) {
+                assertThat(each.exit())
+                        .as("the exit code (stderr: %s)", each.err())
+                        .isEqualTo(exit);
+            }
+            assertThat(withYaml.out()).as("standard output with --report").isEqualTo(json.out());
+            assertThat(withXml.out())
+                    .as("standard output with --report --format xml")
+                    .isEqualTo(json.out());
+            assertThat(withYaml.err()).isEqualTo(json.err());
+            assertThat(withXml.err()).isEqualTo(json.err());
+            JsonNode fromYaml =
+                    JSON.valueToTree(new Load(LoadSettings.builder().build()).loadFromString(Files.readString(yaml)));
+            JsonNode fromXml = XmlReport.read(Files.readString(xml));
+            return List.of(json.report(), fromYaml, fromXml);
+        }
+
+        /** Each tree validates against the schema, and the three are one tree, in order and type. */
+        private void assertOneTree(List<JsonNode> trees) {
+            List<String> formats = List.of("standard output's JSON", "the YAML report", "the XML report");
+            for (int n = 0; n < trees.size(); n++) {
+                assertThat(contract.schemaViolations(SCHEMA, trees.get(n)))
+                        .as("%s's violations of %s", formats.get(n), SCHEMA)
+                        .isEmpty();
+            }
+            for (int n = 1; n < trees.size(); n++) {
+                assertThat(trees.get(n)).as("%s's tree", formats.get(n)).isEqualTo(trees.getFirst());
+                assertThat(JSON.writeValueAsString(trees.get(n)))
+                        .as("%s's tree, in key order", formats.get(n))
+                        .isEqualTo(JSON.writeValueAsString(trees.getFirst()));
+            }
+        }
+
+        @Test
+        void theExamplePacksAsAConfigRoot() throws IOException {
+            Path root = configRoot();
+
+            List<JsonNode> trees = threeTrees(0, "--config-root", root.toString());
+
+            assertOneTree(trees);
+            assertThat(trees.getFirst().get("inputs").get("config_root").asString())
+                    .isEqualTo(root.toString());
+        }
+
+        @Test
+        void theExamplePacksAsPacksWithTheRoundTrip() throws IOException {
+            Path root = configRoot();
+            List<String> options = new ArrayList<>();
+            ExamplePacks.names().stream().sorted().forEach(name -> {
+                options.add("--pack");
+                options.add(root.resolve("packs").resolve(name).toString());
+            });
+            options.add("--round-trip");
+
+            List<JsonNode> trees = threeTrees(0, options.toArray(String[]::new));
+
+            assertOneTree(trees);
+            assertThat(trees.getFirst()
+                            .get("inputs")
+                            .get("options")
+                            .get("round_trip")
+                            .asBoolean())
+                    .isTrue();
+        }
+
+        @Test
+        void onePlantedPackFaultWithItsViolations() throws IOException {
+            Path pack = plant(PLANT);
+
+            List<JsonNode> trees = threeTrees(1, "--pack", pack.toString());
+
+            assertOneTree(trees);
+            assertThat(trees.getFirst().get("problems").get(0).get("violations"))
+                    .isNotEmpty();
+        }
+
+        @Test
+        void theProjectPackAloneACompositionFaultWithItsPacks() throws IOException {
+            Path project = ExamplePacks.copyOf(ExamplePacks.PROJECT, temp.resolve("packs"));
+
+            List<JsonNode> trees = threeTrees(1, "--pack", project + ":project");
+
+            assertOneTree(trees);
+            assertThat(trees.getFirst().get("problems").get(0).get("packs")).isNotEmpty();
+        }
+
+        @Test
+        void aPackOfAHundredAndOneViolationsCountsThemAll() throws IOException {
+            Path pack = aPackOfAHundredAndOneFaults();
+
+            List<JsonNode> trees = threeTrees(1, "--pack", pack.toString());
+
+            assertOneTree(trees);
+            // Every violation, the ones the list leaves out included: as many as the problem's detail counts.
+            JsonNode problem = trees.getFirst().get("problems").get(0);
+            assertThat(trees.getFirst().get("problems")).hasSize(1);
+            assertThat(problem.get("violations")).hasSize(100);
+            Matcher counted = Pattern.compile(": (\\d+) fault\\(s\\)")
+                    .matcher(problem.get("detail").asString());
+            assertThat(counted.find())
+                    .as("the detail counts the faults: %s", problem.get("detail"))
+                    .isTrue();
+            assertThat(trees.getFirst().get("summary").get("violations").asInt())
+                    .isEqualTo(Integer.parseInt(counted.group(1)))
+                    .isGreaterThan(100);
         }
     }
 
