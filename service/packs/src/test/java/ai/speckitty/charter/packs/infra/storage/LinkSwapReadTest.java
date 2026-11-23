@@ -160,7 +160,7 @@ class LinkSwapReadTest {
                 .noneSatisfy(file -> assertThat(new String(file.payload().bytes(), StandardCharsets.UTF_8))
                         .contains(MARKER));
         assertThat(read.violations())
-                .contains(new PackElementViolation("assets/logo.bin", StorageCodes.UNREADABLE, LinkRules.LINKED));
+                .contains(PackElementViolation.wholeFile("assets/logo.bin", StorageCodes.UNREADABLE, LinkRules.LINKED));
     }
 
     @Test

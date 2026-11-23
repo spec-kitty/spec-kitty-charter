@@ -34,8 +34,6 @@ import java.util.stream.Collectors;
  */
 public final class GraphRules {
 
-    private static final String EDGES = "edges";
-
     /**
      * A node or an edge of a document the read read that does not bind: one {@link PackCodes#DRG_SCHEMA_ERROR} per
      * node or edge, at its place ({@code /nodes/<n>} or {@code /edges/<n>}), in document order, the shards first and
@@ -100,7 +98,7 @@ public final class GraphRules {
                                             ? PackCodes.RELATIONSHIP_ENDPOINT_NOT_ALLOWED
                                             : PackCodes.OVERRIDES_SOURCE_NOT_ACTIVATABLE,
                                     raw.file(),
-                                    List.of(EDGES, Integer.toString(i)),
+                                    List.of(GraphBinding.EDGES, Integer.toString(i)),
                                     Paths.origin(contents.root().name(), raw.file()) + ": "
                                             + refusal.get().reason()));
                 }
@@ -133,7 +131,7 @@ public final class GraphRules {
                     // Not a reference, or a tension of an artifact with itself: the binding reports it.
                     continue;
                 }
-                List<String> place = List.of(EDGES, Integer.toString(i));
+                List<String> place = List.of(GraphBinding.EDGES, Integer.toString(i));
                 String written = raw.file() + " /edges/" + i;
                 Set<Urn> pair = Set.of(from.get(), to.get());
                 String first = seen.putIfAbsent(pair, written);

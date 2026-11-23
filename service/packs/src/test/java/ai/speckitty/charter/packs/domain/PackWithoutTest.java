@@ -40,7 +40,7 @@ class PackWithoutTest {
     private static final PackDocument DOCUMENT =
             new PackDocument(Optional.empty(), Optional.empty(), "The pack.", List.of());
     private static final PackElementViolation VIOLATION =
-            new PackElementViolation("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
+            PackElementViolation.wholeFile("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
 
     private static Pack pack() {
         return Pack.builder()

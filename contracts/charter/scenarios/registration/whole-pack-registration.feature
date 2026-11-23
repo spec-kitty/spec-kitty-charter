@@ -803,7 +803,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/code" is "validation_failed"
     And the field at "/problem/violations" holds exactly 1 item(s)
     And the field at "/problem/violations/0/code" is "drg_schema_error"
-    And the field at "/problem/violations/0/pointer" is "drg/fragment.yaml"
+    And the field at "/problem/violations/0/pointer" is "drg/fragment.yaml#/nodes/0"
     And the field at "/problem/violations/0/detail" is "drg/fragment.yaml: node A body_path '../outside.directive.yaml' escapes the pack root"
     When I GET "/packs/acme"
     Then the response status is 404

@@ -38,8 +38,9 @@ public record PackElementViolation(String file, String pointer, ReasonCode kind,
      * @param file the file name
      * @param kind the kind of problem
      * @param reason the reason
+     * @return the violation, with the empty pointer
      */
-    public PackElementViolation(String file, ReasonCode kind, String reason) {
-        this(file, "", kind, reason);
+    public static PackElementViolation wholeFile(String file, ReasonCode kind, String reason) {
+        return new PackElementViolation(file, "", kind, reason);
     }
 }

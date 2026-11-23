@@ -420,21 +420,25 @@ public record PackContents(
      * @param refusal what the store's rule says of the file when it is refused rather than unparseable; empty for a
      *     parse failure
      * @param code the code of the refusal, which the reader that refused the file names; empty for a parse failure
+     * @param place the JSON pointer segments of the place in the file the refusal names; empty for the whole file
      */
-    public record ParseFailure(String file, String firstLine, Optional<String> refusal, Optional<ReasonCode> code) {
+    public record ParseFailure(
+            String file, String firstLine, Optional<String> refusal, Optional<ReasonCode> code, List<String> place) {
         /**
-         * Checks the fields.
+         * Checks the fields and copies the place.
          *
          * @param file the pack-relative path
          * @param firstLine the first line of the message
          * @param refusal the store rule's refusal, possibly empty
          * @param code the refusal's code, possibly empty
+         * @param place the JSON pointer segments of the place in the file the refusal names; empty for the whole file
          */
         public ParseFailure {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(firstLine, "firstLine");
             Objects.requireNonNull(refusal, "refusal");
             Objects.requireNonNull(code, "code");
+            place = List.copyOf(place);
         }
 
         /**
@@ -444,7 +448,7 @@ public record PackContents(
          * @param firstLine the first line of the parser's message
          */
         public ParseFailure(String file, String firstLine) {
-            this(file, firstLine, Optional.empty(), Optional.empty());
+            this(file, firstLine, Optional.empty(), Optional.empty(), List.of());
         }
 
         /**
@@ -456,7 +460,21 @@ public record PackContents(
          * @return the failure
          */
         public static ParseFailure refused(String file, String refusal, ReasonCode code) {
-            return new ParseFailure(file, refusal, Optional.of(refusal), Optional.of(code));
+            return refusedAt(file, List.of(), refusal, code);
+        }
+
+        /**
+         * The failure of a file that parses but that a store rule refuses at a place in it, such as a fragment node
+         * whose {@code body_path} leaves the pack ({@code /nodes/<index>}).
+         *
+         * @param file the pack-relative path
+         * @param place the JSON pointer segments of the place the rule refuses
+         * @param refusal what the rule says, read after the file ({@code <file>: <refusal>})
+         * @param code the code the load refuses the file with
+         * @return the failure
+         */
+        public static ParseFailure refusedAt(String file, List<String> place, String refusal, ReasonCode code) {
+            return new ParseFailure(file, refusal, Optional.of(refusal), Optional.of(code), place);
         }
     }
 

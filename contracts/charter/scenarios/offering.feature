@@ -333,7 +333,7 @@ Feature: The offering lists the configured packs in force
     # A composing read names the graph document and the reason, and lists registration's violations (#617, #628).
     And the field "detail" of the response body is "a graph document of docs cannot be read: docs/drg/fragment.yaml: node D1 body_path '/etc/passwd' escapes the pack root"
     And the field at "/violations" holds exactly 1 item
-    And the field at "/violations/0/pointer" is "drg/fragment.yaml"
+    And the field at "/violations/0/pointer" is "drg/fragment.yaml#/nodes/0"
     And the field at "/violations/0/code" is "drg_schema_error"
     And the field at "/violations/0/detail" is "drg/fragment.yaml: node D1 body_path '/etc/passwd' escapes the pack root"
     And the response has no "Charter-Source-Fingerprint" header

@@ -12,7 +12,8 @@ class PackElementViolationTest {
     @Test
     @DisplayName("a violation of the whole file has the empty pointer")
     void aWholeFileViolationHasTheEmptyPointer() {
-        PackElementViolation violation = new PackElementViolation("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR, "d");
+        PackElementViolation violation =
+                PackElementViolation.wholeFile("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR, "d");
 
         assertThat(violation.file()).isEqualTo("a.graph.yaml");
         assertThat(violation.pointer()).isEmpty();

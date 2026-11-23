@@ -350,7 +350,7 @@ class DomainRepositoryServiceTest {
 
         assertThat(pack.assets()).isEmpty();
         assertThat(pack.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         "assets/debrief/logo.png.asset.yaml",
                         PackCodes.ASSET,
                         "payload assets/debrief/logo.png does not exist"));

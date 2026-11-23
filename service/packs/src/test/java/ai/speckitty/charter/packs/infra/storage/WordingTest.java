@@ -113,8 +113,8 @@ class WordingTest {
     @Test
     void aRefusalWithNoCodeTakesTheCodeOfItsFilesKind() {
         String artifact = "tactics/x.tactic.yaml";
-        ParseFailure refused =
-                new ParseFailure(artifact, "names x.md: missing", Optional.of("names x.md: missing"), Optional.empty());
+        ParseFailure refused = new ParseFailure(
+                artifact, "names x.md: missing", Optional.of("names x.md: missing"), Optional.empty(), List.of());
         assertThat(Wording.unreadable("qa", new FileRead.Unreadable<>(artifact, refused, List.of())))
                 .containsExactly(Findings.at(
                         PackCodes.ARTIFACT_SCHEMA_ERROR, artifact, List.of(), artifact + ": names x.md: missing"));

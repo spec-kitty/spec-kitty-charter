@@ -669,7 +669,7 @@ class WholePackStoreTest {
         Path target = host.resolve("out");
 
         assertThat(loaded.pack().violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         "assets/debrief/logo.png.asset.yaml",
                         PackCodes.ASSET,
                         "payload assets/debrief/logo.png does not exist"));
@@ -790,7 +790,7 @@ class WholePackStoreTest {
         Path target = host.resolve("out");
 
         assertThat(loaded.pack().violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         SKILL_FILE,
                         StorageCodes.COMPANION,
                         "../" + claimed + ": is a pack file of kind "

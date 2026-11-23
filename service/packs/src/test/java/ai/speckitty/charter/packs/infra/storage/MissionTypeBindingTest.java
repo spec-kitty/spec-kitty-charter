@@ -262,7 +262,7 @@ class MissionTypeBindingTest {
         Files.writeString(pack.resolve(FILE), withTemplate);
 
         assertThat(read().violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         FILE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "templates/spec-template.md (named by step 'scoping'): missing"));
@@ -375,10 +375,10 @@ class MissionTypeBindingTest {
                 + " missions/research/templates/spec-template.md";
 
         assertThat(read().violations())
-                .containsExactly(new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, reason));
+                .containsExactly(PackElementViolation.wholeFile(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, reason));
         assertThat(load(pack).violations())
                 .as("the type is refused once, by the file check; the resolution never sees it")
-                .containsExactly(new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, reason));
+                .containsExactly(PackElementViolation.wholeFile(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, reason));
         TreeRead validated =
                 new FileSystemPackInspector().readTree(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()));
         assertThat(validated.readFaults())
@@ -451,7 +451,7 @@ class MissionTypeBindingTest {
                     .isEmpty();
             assertThat(refused.violations())
                     .as("%s", templates)
-                    .containsExactly(new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
+                    .containsExactly(PackElementViolation.wholeFile(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
         }
     }
 
@@ -476,7 +476,7 @@ class MissionTypeBindingTest {
         assertThat(asked).as("the template is read through the seam, once").containsOnlyOnce(template);
         assertThat(read.templates()).isEmpty();
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         "missions/research/templates/spec-template.md",
                         StorageCodes.UNREADABLE,
                         "the file cannot be read"));
@@ -488,11 +488,11 @@ class MissionTypeBindingTest {
         assertThat(assembled.artifacts(ArtifactKind.MISSION_TYPE)).isEmpty();
         assertThat(assembled.violations())
                 .containsExactly(
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 "missions/research/templates/spec-template.md",
                                 StorageCodes.UNREADABLE,
                                 "the file cannot be read"),
-                        new PackElementViolation(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
+                        PackElementViolation.wholeFile(FILE, PackCodes.ARTIFACT_SCHEMA_ERROR, UNRESOLVED));
     }
 
     @Test
@@ -671,8 +671,8 @@ class MissionTypeBindingTest {
 
         assertThat(read.dsos(MissionTypeBinding.INSTANCE)).isEmpty();
         assertThat(read.violations())
-                .containsExactly(
-                        new PackElementViolation(FILE, StorageCodes.COMPANION, "steps/scoping.prompt.md: missing"));
+                .containsExactly(PackElementViolation.wholeFile(
+                        FILE, StorageCodes.COMPANION, "steps/scoping.prompt.md: missing"));
     }
 
     // ---- the gate -------------------------------------------------------------------------------------------------

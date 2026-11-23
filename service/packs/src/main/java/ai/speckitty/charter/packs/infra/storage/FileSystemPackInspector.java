@@ -33,6 +33,7 @@ import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
 import ai.speckitty.charter.packs.domain.rules.Findings;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
@@ -1438,12 +1439,18 @@ public final class FileSystemPackInspector implements PackReading {
         FileRead<RawGraph> read =
                 GraphDocumentReader.read(text, GraphDocumentReader.Shape.FRAGMENT, PackFileSet.FRAGMENT);
         if (read instanceof FileRead.Read<RawGraph> good) {
-            for (PackContents.RawNode node : good.value().nodes()) {
+            List<PackContents.RawNode> nodes = good.value().nodes();
+            for (int i = 0; i < nodes.size(); i++) {
+                PackContents.RawNode node = nodes.get(i);
                 Optional<String> escape = Paths.bodyPathEscape(node.ref(), node.bodyPath());
                 if (escape.isPresent()) {
                     return new FileRead.Unreadable<>(
                             PackFileSet.FRAGMENT,
-                            ParseFailure.refused(PackFileSet.FRAGMENT, escape.get(), PackCodes.DRG_SCHEMA_ERROR),
+                            ParseFailure.refusedAt(
+                                    PackFileSet.FRAGMENT,
+                                    List.of(GraphBinding.NODES, Integer.toString(i)),
+                                    escape.get(),
+                                    PackCodes.DRG_SCHEMA_ERROR),
                             List.of());
                 }
             }

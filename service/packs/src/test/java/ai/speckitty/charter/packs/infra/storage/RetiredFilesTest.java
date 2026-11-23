@@ -249,7 +249,7 @@ class RetiredFilesTest {
 
             assertThat(violations)
                     .containsExactlyInAnyOrderElementsOf(files.entrySet().stream()
-                            .map(e -> new PackElementViolation(
+                            .map(e -> PackElementViolation.wholeFile(
                                     e.getKey(), StorageCodes.RETIRED, RetiredFileFixture.RULES.get(e.getValue())))
                             .toList());
         }
@@ -270,9 +270,9 @@ class RetiredFilesTest {
 
             assertThat(store.read(new PackDirectory("qa")).violations())
                     .containsExactlyInAnyOrder(
-                            new PackElementViolation(
+                            PackElementViolation.wholeFile(
                                     "pack.md", StorageCodes.RETIRED, RetiredFileFixture.RULES.get("*/pack.md")),
-                            new PackElementViolation(
+                            PackElementViolation.wholeFile(
                                     "PROVENANCE.md",
                                     StorageCodes.RETIRED,
                                     RetiredFileFixture.RULES.get("*/PROVENANCE.md")));
@@ -286,7 +286,7 @@ class RetiredFilesTest {
 
                 assertThat(store.read(new PackDirectory(name)).violations())
                         .as(variant.getKey())
-                        .containsExactly(new PackElementViolation(
+                        .containsExactly(PackElementViolation.wholeFile(
                                 variant.getKey(),
                                 StorageCodes.CASE_VARIANT,
                                 "differs only in letter case from '"

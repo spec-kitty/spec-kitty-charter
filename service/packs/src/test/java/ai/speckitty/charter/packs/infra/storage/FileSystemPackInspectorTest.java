@@ -2091,7 +2091,7 @@ class FileSystemPackInspectorTest {
     void anAggregateBreachIsTheReadsRefusalAsAWholeAfterTheGraphFaults() {
         // A-M1 row 3: no planted pack reaches the aggregate's build() breach, so the fact is built directly.
         PackElementViolation graphFault =
-                new PackElementViolation("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR, "not valid YAML");
+                PackElementViolation.wholeFile("a.graph.yaml", PackCodes.DRG_SCHEMA_ERROR, "not valid YAML");
 
         StoreRead read =
                 StoreRead.breached(List.of(graphFault), "A pack must not hold two tactics with the same identifier.");

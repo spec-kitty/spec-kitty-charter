@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
 import ai.speckitty.charter.packs.examples.GoldenSubjects.Subject;
@@ -202,9 +203,9 @@ class SurfaceSubsetTest {
 
     /** Validate mode's file and place, as the wire names them: the file, then {@code #} and the JSON pointer. */
     private static String atPlace(String file, JsonNode place) {
-        StringBuilder pointer = new StringBuilder();
-        place.forEach(segment ->
-                pointer.append('/').append(segment.asString().replace("~", "~0").replace("/", "~1")));
+        List<String> segments = new ArrayList<>();
+        place.forEach(segment -> segments.add(segment.asString()));
+        String pointer = Findings.pointer(segments);
         return pointer.isEmpty() ? file : file + "#" + pointer;
     }
 
@@ -221,6 +222,20 @@ class SurfaceSubsetTest {
             refused.put("detail", refused.get("detail").asString().replaceAll("#/\\S*\\.$", "."));
         }
         return copy;
+    }
+
+    /**
+     * The baseline predates the place inside a file, so the reverse subset compares rows at their files; the place each
+     * row names is held here to validate mode's, file#place, row by row.
+     */
+    private static void assertPlacesAreValidateModes(String key, List<Fault> faults) {
+        List<Fault> placed = validate(key, "violation");
+        assertThat(faults.stream().filter(fault -> fault.pointer().contains("#")))
+                .as("%s: each place a row names is validate mode's place for that fault", key)
+                .allSatisfy(fault -> assertThat(placed).anySatisfy(validated -> {
+                    assertThat(validated.pointer()).isEqualTo(fault.pointer());
+                    assertThat(validated.code()).isEqualTo(fault.code());
+                }));
     }
 
     static List<Subject> subjects() {
@@ -289,8 +304,8 @@ class SurfaceSubsetTest {
         }
         JsonNode before = FIXED_PAYLOAD_ROW.equals(key) ? fixedPayload(BEFORE.get(key)) : BEFORE.get(key);
         List<Fault> was = faults(before);
-        JsonNode now = atFiles(SURFACES.get(key).get("registration"));
-        List<Fault> atFiles = faults(now);
+        List<Fault> atFiles = faults(atFiles(SURFACES.get(key).get("registration")));
+        assertPlacesAreValidateModes(key, faults);
         if (s8) {
             assertThat(was)
                     .as("%s: before WP12 the registration answered the descriptor's refusal alone", key)
@@ -310,7 +325,7 @@ class SurfaceSubsetTest {
                     .as("%s: apart from D1's links, the registration answers what it answered before WP12", key)
                     .isEqualTo(was);
         } else {
-            assertThat(now)
+            assertThat(atFiles(SURFACES.get(key).get("registration")))
                     .as("%s: outside NFR-002's list, the registration answers what it answered before WP12", key)
                     .isEqualTo(before);
         }

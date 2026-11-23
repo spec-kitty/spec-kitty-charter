@@ -112,7 +112,7 @@ final class PackAssembly {
             try {
                 templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                PackElementViolation fault = new PackElementViolation(
+                PackElementViolation fault = PackElementViolation.wholeFile(
                         place, PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage()));
                 templateViolations.add(fault);
                 storeOnly.accept(fault);
@@ -137,7 +137,7 @@ final class PackAssembly {
                 record(
                         builder,
                         storeOnly,
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }
@@ -149,7 +149,7 @@ final class PackAssembly {
                 record(
                         builder,
                         storeOnly,
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         });
@@ -381,7 +381,7 @@ final class PackAssembly {
         List<PackElementViolation> violations = read.violations().stream()
                 .map(violation -> FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
                                 && violation.file().endsWith(enhancementSuffix())
-                        ? new PackElementViolation(violation.file(), kind, violation.reason())
+                        ? PackElementViolation.wholeFile(violation.file(), kind, violation.reason())
                         : violation)
                 .toList();
         Map<ArtifactKind, List<FilesystemPackStore.Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
@@ -428,15 +428,15 @@ final class PackAssembly {
                 E entity = kind.toEntity(pack, stored.dso());
                 Optional<String> unclosed = ReferenceSubjects.of(entity).flatMap(closure::firstUnresolved);
                 if (unclosed.isPresent()) {
-                    builder.violation(
-                            new PackElementViolation(stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
+                    builder.violation(PackElementViolation.wholeFile(
+                            stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, unclosed.get()));
                     continue;
                 }
                 Urn urn = entity.urn();
                 String first = places.get(urn);
                 if (first != null) {
                     // #554, R2 row 10: the first file in the read's order owns the id; a repeat is its own fault.
-                    builder.violation(new PackElementViolation(
+                    builder.violation(PackElementViolation.wholeFile(
                             stored.file(),
                             PackCodes.DUPLICATE_ARTIFACT_ID,
                             PackCodes.duplicateArtifactId(kind.kind().token(), kind.idOf(stored.dso()), first)));
@@ -448,7 +448,7 @@ final class PackAssembly {
                 record(
                         builder,
                         storeOnly,
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 stored.file(), PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())));
             }
         }

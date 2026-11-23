@@ -45,7 +45,7 @@ class PackAggregateTest {
     @DisplayName("the builder composes descriptor, tactics and read violations")
     void builderComposesTheAggregate() {
         var violation =
-                new PackElementViolation("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
+                PackElementViolation.wholeFile("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
         Pack pack = Pack.builder()
                 .id(ID)
                 .descriptor(DESCRIPTOR)
@@ -63,7 +63,7 @@ class PackAggregateTest {
     @DisplayName("violations are carried by the aggregate and do not affect its tactics or identity")
     void violationsLiveOnTheAggregateOnly() {
         var violation =
-                new PackElementViolation("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
+                PackElementViolation.wholeFile("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
         Pack clean = Pack.builder().id(ID).descriptor(DESCRIPTOR).build();
         Pack partial = Pack.builder()
                 .id(ID)

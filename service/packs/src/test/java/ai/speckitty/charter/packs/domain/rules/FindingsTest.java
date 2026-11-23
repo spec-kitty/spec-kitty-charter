@@ -46,7 +46,7 @@ class FindingsTest {
         assertThat(finding.location()).isEqualTo(Location.in("a.yaml").at("/edges/1"));
         assertThat(finding.code()).isEqualTo(PackCodes.DRG_SCHEMA_ERROR);
         assertThat(finding.detail()).isEqualTo("d");
-        assertThat(Findings.of(new PackElementViolation("a.yaml", PackCodes.DRG_SCHEMA_ERROR, "d"))
+        assertThat(Findings.of(PackElementViolation.wholeFile("a.yaml", PackCodes.DRG_SCHEMA_ERROR, "d"))
                         .location())
                 .as("a violation of the whole file points at the file")
                 .isEqualTo(Location.in("a.yaml"));

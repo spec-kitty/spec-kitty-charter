@@ -36,10 +36,10 @@ class AssemblyRulesTest {
     @DisplayName("a companion fault is the reader's fault at the companion, or its 'missing' at the artifact; nothing"
             + " else at the artifact is the same fault")
     void aCompanionFaultIsTheSameFaultOnlyByItsMapping() {
-        PackElementViolation broken = new PackElementViolation(
+        PackElementViolation broken = PackElementViolation.wholeFile(
                 "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: structure: const violated");
-        PackElementViolation missing =
-                new PackElementViolation("toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: missing");
+        PackElementViolation missing = PackElementViolation.wholeFile(
+                "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: missing");
 
         assertThat(AssemblyRules.sameFault(
                         broken, stated("toolguides/a.guide.md", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad")))
@@ -88,7 +88,7 @@ class AssemblyRulesTest {
     @Test
     @DisplayName("any other store fault is the same fault only at its file, with its code, in words that end with its")
     void anyOtherFaultIsTheSameFaultByFileCodeAndWords() {
-        PackElementViolation breach = new PackElementViolation(
+        PackElementViolation breach = PackElementViolation.wholeFile(
                 "presets/dup.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: twice");
 
         assertThat(AssemblyRules.sameFault(
@@ -111,9 +111,9 @@ class AssemblyRulesTest {
     @DisplayName("a fragment's read fault the store states stands unless the reader states the fragment missing")
     void aFragmentFaultIsTheSameFaultOnlyWhenMissing() {
         String enhancement = "missions/x/enhancements/e.step-enhancement.yaml";
-        PackElementViolation blank =
-                new PackElementViolation(enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank");
-        PackElementViolation gone = new PackElementViolation(
+        PackElementViolation blank = PackElementViolation.wholeFile(
+                enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank");
+        PackElementViolation gone = PackElementViolation.wholeFile(
                 enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: missing");
         Reason twice = stated(
                 enhancement,
@@ -140,12 +140,12 @@ class AssemblyRulesTest {
     @DisplayName("review cycle 2: a companion fault needs the reader's companion or schema code at the companion; a"
             + " mission type breach is the reader's step fault only for a step id standing twice")
     void theMappingsMatchTheirCodeAndSubject() {
-        PackElementViolation broken = new PackElementViolation(
+        PackElementViolation broken = PackElementViolation.wholeFile(
                 "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: structure: const violated");
         String type = "missions/x/x.mission-type.yaml";
-        PackElementViolation stepTwice = new PackElementViolation(
+        PackElementViolation stepTwice = PackElementViolation.wholeFile(
                 type, PackCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: " + AssemblyRules.STEP_STANDS_ONCE);
-        PackElementViolation keyTwice = new PackElementViolation(
+        PackElementViolation keyTwice = PackElementViolation.wholeFile(
                 type,
                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                 "Constraint breached: An artifact key stands once in a mission type's expected outputs.");
