@@ -31,8 +31,8 @@ audience:
 
 ## Status
 
-**Accepted**, 2026-11-22. Decider: Stijn Dejongh (operator). It records the operator's rulings R-a to R-w of mission
-`pack-doctor-coverage-01M7YMQK` (2026-11-21 and 2026-11-22), held as Decision Moments under that mission's
+**Accepted**, 2026-11-22. Decider: Stijn Dejongh (operator). It records the operator's rulings R-a to R-y of mission
+`pack-doctor-coverage-01M7YMQK` (2026-11-21 to 2026-11-23), held as Decision Moments under that mission's
 `decisions/`, except R-o, which the operator gave in review and the mission's WP01 task file records. Each ruling is
 quoted below, verbatim. The mission delivers issues
 [#614](https://github.com/spec-kitty/spec-kitty-charter/issues/614),
@@ -109,7 +109,8 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    Each new code is a `CharterRefusalCode` value with status 422 and one violation at
    `presets/<id>.yaml#/activated_<kinds>/<index>`. An item of another kind never satisfies the entry.
 4. **Where it runs** (R-a). `PackRulesets` exposes it, and every surface that judges a write takes it from there:
-   - pack-doctor, in `CLOSURE`'s preset phase, after the compose and the preset contests;
+   - pack-doctor, in `CLOSURE`'s preset phase, after the compose and the preset contests, and before the case-only
+     policy locks (decision 20);
    - registration and every per-artifact write, in `ClosureImpactCheck`, over each single-root closure the write joins,
      after the own-closure walk;
    - never a composing read. A stored pack whose preset now breaks the rule still composes, and `requiredNotHeld` still
@@ -197,11 +198,11 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
 
 ### The rest of the mission
 
-15. **One closure fault type** (#614, slice 1 of #636; R-o). `CompositionFault` is deleted, and one `ClosureFault.of(...)`
+15. **One closure fault type** (#614, slice 1 of #636; R-o, R-x). `CompositionFault` is deleted, and one `ClosureFault.of(...)`
     factory builds every closure fault. `Reason` gains an `Origin`: an opaque element identifier owned by the kernel
     (ADR-0082 decision 4), never a copy of `Reason.rule`; `Origin.NONE` is the origin of a reason about no element.
-    `ClosureVerdict` stays a fault list with a derived `Rationale`, because a reason has no slot for the packs and
-    violations a refusal names; #636 slice 7 removes it. No wire code, status, detail or order changed.
+    `ClosureVerdict` stays a fault list with a derived `Rationale` by ruling R-x, because a reason has no slot for the
+    packs and violations a refusal names; #636 slice 7 removes it. No wire code, status, detail or order changed.
 16. **The round-trip codes** (R-t). `EXCLUDED_WRITTEN` is retired outright, with no alias: an excluded file the store
     wrote is `NOT_HELD_WRITTEN`, like a file no rule covers and a mapped file nothing names, its detail giving the
     census's reason. The `STALE_BASELINE` and `STALE_KNOWN_FAILURE` wordings for such an entry merge into one. These are
@@ -216,6 +217,13 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     spec-kitty-open-packs house rules.
 19. **No release before this lands** (R-w). No `service-v*` release is cut until this mission lands, so
     spec-kitty-open-packs aligns once, against the release that carries pack-doctor.
+20. **The case-only policy lock** (R-y). pack-doctor's `CLOSURE` answers a policy lock (a URN key of the pack's
+    mutability policy file) that names an artifact of the pack's own closure only by letter case as registration's
+    phase 6 does: `pack_reference_artifact_missing`, naming the declaring pack then the holder, with the resolver's
+    case-only detail and no violation of its own. One rule, `PolicyLockRules` (`closure.policy-locks`), runs the
+    existing `caseOnlyMatches` over the own closure of decision 1, after the preset items; a lock no pack of that
+    closure holds in any case changes no write and is no fault. Registration, every write and the composing read are
+    unchanged; the read's `mentionsOf` moves into the factory with #636 slice 7.
 <!-- markdownlint-enable MD029 -->
 
 ## The rulings, verbatim
@@ -252,6 +260,8 @@ source and operator words where the table gives them), which is dropped.
 | R-u | `01M8035FAMHXG0A04SCBD7QTKD` | "REFERENCES"; rationale: "the --full check value is REFERENCES, naming what the phase checks; CLOSURE_WALK stays free for #636's own-closure walk." | Decision 8 |
 | R-v | `01M80YAS1QJABJ74REAXWNNZF9` | "Derived referable()"; rationale: "references resolve against a derived referable() view = held files plus held mission types' step (action:) nodes; no stored third field. Rename the retired-word carriers (PackUnderResolution.definedArtifacts, PackRegistrationService Before.held/heldBy, DomainRepositoryServiceTest.definedArtifactsNameEveryKindThePackHolds) to referable. A file-less node (directive:GHOST) does not resolve." | Decision 2 |
 | R-w | `01M812KK99P3T1FQ7ZBXT4Z3T1` | "No release until this mission lands"; operator words: "yes, no release yet, untill the charter validation module and cli are finalized, so open packs can allign properly."; rationale: "No service-v\* release until WP01-WP09 land; open-packs aligns once against that release. WP09 draft (a) widened to the full alignment specification." | Decision 19 |
+| R-x | `01M83MFVJZX16G6NBM4YPB9XYG` | "Defer to #636 slice 7 (Recommended)"; rationale: "The ClosureVerdict clause of FR-001 (becomes a view over a Rationale) is deferred to #636 slice 7, which removes the type once the ledger carries what faults hold. FR-001's wording is aligned; its acceptance verdict is recorded deferred with follow-up #636; the PR writes Refs #636 for it. No code change." | Decision 15 |
+| R-y | `01M83MFXWH2NZQ8CJWFW1JTPY6` | "Fold into this PR"; rationale: "pack-doctor's CLOSURE gains the case-only check for policy-lock URNs through the domain factory, so validate answers a case-only policy lock as registration's phase 6 does (pack_reference_artifact_missing, no violation of its own), with a FullPassParityTest row. Added as WP13." | Decision 20 |
 
 Two further Decision Moments confirm without a letter: the intent and the alignment squad over ADR-0082
 (`01M7Z1A6RXQB141EKZHB3BD2AH`) and the order of the work packages (`01M7Z2EXFG0K83SMFBVBGFEGBC`).
@@ -296,9 +306,9 @@ Two further Decision Moments confirm without a letter: the intent and the alignm
   registration. A pack with both kinds of fault can lead with a different first code on each surface. Mitigation: the
   parity table (`FullPassParityTest`) pins each planted fault's code on both surfaces.
 - **A case-only policy-lock URN.** Registration's case-only check (`OfferingReadService.judged`, phase 6) covers the
-  URNs of a pack's presets and of its policy file; pack-doctor's preset phase checks preset items only, so a policy
-  lock that differs from a held id only by case may answer differently. Mitigation: a parity row, or the check moved
-  into the factory with #636.
+  URNs of a pack's presets and of its policy file, and pack-doctor judges the same mentions in two phases, the preset
+  items and the policy locks (decision 20), so the mentions have two bodies until #636 slice 7 moves the read's into
+  the factory. Mitigation: the parity table pins a case-only lock's code on both surfaces.
 
 ## Alternatives considered
 
@@ -330,9 +340,14 @@ The Decision Moments of R-a to R-m record no options, so only the alternatives t
 - **What a reference resolves against** (R-v): "Steps go into held" and "Compose reads declared" were declined.
 - **Release now** (R-w): declined.
 
+### Batch 5 (2026-11-23)
+
+- **FR-001's `ClosureVerdict` clause** (R-x): "Do it in this mission" was declined.
+- **The case-only policy lock** (R-y): "Follow-up via #636 (Recommended)" was declined.
+
 ## References
 
-- Mission `pack-doctor-coverage-01M7YMQK`: `spec.md`, `plan.md` (D1 to D14), `data-model.md`, `decisions/`,
+- Mission `pack-doctor-coverage-01M7YMQK`: `spec.md`, `plan.md` (D1 to D15), `data-model.md`, `decisions/`,
   `research/rule-coverage.md` and `research/squad-dispositions.md`.
 - Issues [#614](https://github.com/spec-kitty/spec-kitty-charter/issues/614),
   [#629](https://github.com/spec-kitty/spec-kitty-charter/issues/629),

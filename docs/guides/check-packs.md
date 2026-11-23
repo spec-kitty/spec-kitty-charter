@@ -140,6 +140,11 @@ Give its dependencies too, or use a config root that holds them.
 A preset item problem has one violation, at `presets/<id>.yaml#/activated_<kinds>/<index>`. An anti-pattern is held
 only by its file, `anti_patterns/<id>.anti-pattern.yaml`.
 
+**A policy lock is judged against the same closure.** A lock in the pack's policy file (the file `mutability_policy`
+names) that names an artifact of its own closure only in other letter case is `pack_reference_artifact_missing`,
+naming the packs, after the preset items, as a registration answers it. A lock on an id that no pack of the closure
+holds is not a problem.
+
 **A manifest's hashes are checked.** A `content_hash` or `manifest_hash` of `pack-manifest.yaml` that does not match the
 pack's bytes is `manifest_stale`, one violation per field, naming it. `remediate` restamps it; see
 [Repair a pack](#repair-a-pack).

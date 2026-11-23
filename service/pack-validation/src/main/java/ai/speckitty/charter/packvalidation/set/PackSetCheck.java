@@ -40,7 +40,8 @@ import java.util.stream.Collectors;
  *   <li>Per pack, validate mode ({@link PackCheck#check}): one read, whose readout also carries the pack's composition
  *       facts (S1), so no pack is read twice.
  *   <li>Over the set as given (D5), {@code CLOSURE} with its preset phase ({@link PackRulesets#closureFaults}, the
- *       faults of {@code PackRulesets.closure(factsOf)}: the contests, then the preset items), on those facts. A pack's dependencies must be in the set.
+ *       faults of {@code PackRulesets.closure(factsOf)}: the contests, then the preset items, then the policy locks), on
+ *       those facts. A pack's dependencies must be in the set.
  *       It runs only when every pack's facts are {@link PackReadout.Built} and every pack has a level; otherwise it is
  *       skipped and the verdict names the packs that stopped it (D3).
  *   <li>With {@code --full}, {@code REFERENCES} ({@link ClosureWalkPhase}; #632 item 3, ruling R-s): per pack, over its
