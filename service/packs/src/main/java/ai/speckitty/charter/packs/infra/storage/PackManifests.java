@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.infra.storage.rules.TreeCensus;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -22,9 +23,9 @@ import java.util.function.Function;
  *       {@code presets} (each {@code id}, {@code path}, {@code content_hash}).
  * </ul>
  *
- * <p>The writer recomputes every derived field from the bytes it writes; the reader takes them as written and checks
- * nothing; the round-trip gate verifies them on both sides by diffing a recompute against what
- * was read ({@link #stale}). One walk serves all three.
+ * <p>The writer recomputes every derived field from the bytes it writes; the reader verifies the incoming manifest's
+ * fields against the incoming bytes ({@link #staleFields}), which the manifest gate states as {@code manifest_stale}
+ * (#630); the round-trip gate verifies the written side's ({@link #stale}). One walk serves all three.
  */
 final class PackManifests {
 
@@ -100,11 +101,9 @@ final class PackManifests {
 
     /**
      * Every derived field of {@code read} that does not verify against its own side's bytes, and every listed path with
-     * no file: the gate's verification, in this order: {@code constituents{<path>}.content_hash},
-     * {@code presets{<path>}.content_hash}, {@code manifest_hash}, {@code missing: <path>}. A {@code content_hash} is
-     * checked against the file's bytes; the {@code manifest_hash} against the manifest's own fields as read, so a
-     * restamped manifest with one stale file flags only that file. It takes the bytes rather than a {@link Recomputed},
-     * so one walk serves the check.
+     * no file: the round-trip gate's verification of the written side, in this order:
+     * {@code constituents{<path>}.content_hash}, {@code presets{<path>}.content_hash}, {@code manifest_hash},
+     * {@code missing: <path>}. The fields are {@link #staleFields}'s.
      *
      * @param read the manifest as read
      * @param bytesAt the bytes of a pack-relative path on the same side, or empty when there is no such file
@@ -113,12 +112,38 @@ final class PackManifests {
     static List<String> stale(PackManifestDso read, Function<String, Optional<byte[]>> bytesAt) {
         Recomputed recomputed = recompute(read, bytesAt);
         List<String> out = new ArrayList<>();
+        staleFields(read, recomputed).forEach(field -> out.add(field.field()));
+        recomputed.missing().forEach(path -> out.add("missing: " + path));
+        return List.copyOf(out);
+    }
+
+    /**
+     * Every derived field of {@code read} that does not verify against its own side's bytes (#195, #630), in the
+     * manifest's order: each constituent's {@code content_hash}, each preset's, then {@code manifest_hash}. A
+     * {@code content_hash} is checked against the file's bytes; the {@code manifest_hash} against the manifest's own
+     * fields as read, so a restamped manifest with one stale file flags only that file. A listed path with no file is
+     * not a stale field: what lists it is membership's to judge. It takes the bytes rather than a {@link Recomputed},
+     * so one walk serves the check. The reader states these at the incoming manifest ({@code manifest_stale}).
+     *
+     * @param read the manifest as read
+     * @param bytesAt the bytes of a pack-relative path, or empty when there is no such file
+     * @return the stale fields; empty when every derived field verifies
+     */
+    static List<TreeCensus.StaleField> staleFields(PackManifestDso read, Function<String, Optional<byte[]>> bytesAt) {
+        return staleFields(read, recompute(read, bytesAt));
+    }
+
+    private static List<TreeCensus.StaleField> staleFields(PackManifestDso read, Recomputed recomputed) {
+        List<TreeCensus.StaleField> out = new ArrayList<>();
         List<PackManifestDso.Constituent> fresh = recomputed.stamped().constituents();
         for (int i = 0; i < fresh.size(); i++) {
             PackManifestDso.Constituent c = read.constituents().get(i);
             if (!recomputed.missing().contains(c.path())
                     && !c.contentHash().equals(fresh.get(i).contentHash())) {
-                out.add("constituents{" + c.path() + "}.content_hash");
+                out.add(new TreeCensus.StaleField(
+                        "constituents{" + c.path() + "}.content_hash",
+                        List.of("constituents", String.valueOf(i), "content_hash"),
+                        Optional.of(c.path())));
             }
         }
         List<PackManifestDso.PresetEntry> freshPresets = recomputed.stamped().presets();
@@ -126,13 +151,15 @@ final class PackManifests {
             PackManifestDso.PresetEntry p = read.presets().get(i);
             if (!recomputed.missing().contains(p.path())
                     && !p.contentHash().equals(freshPresets.get(i).contentHash())) {
-                out.add("presets{" + p.path() + "}.content_hash");
+                out.add(new TreeCensus.StaleField(
+                        "presets{" + p.path() + "}.content_hash",
+                        List.of("presets", String.valueOf(i), "content_hash"),
+                        Optional.of(p.path())));
             }
         }
         if (!read.manifestHash().equals(manifestHash(read))) {
-            out.add("manifest_hash");
+            out.add(new TreeCensus.StaleField("manifest_hash", List.of("manifest_hash"), Optional.empty()));
         }
-        recomputed.missing().forEach(path -> out.add("missing: " + path));
         return List.copyOf(out);
     }
 

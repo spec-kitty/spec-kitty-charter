@@ -385,6 +385,8 @@ class WholePackStoreTest {
                                 "presets:\n",
                                 "- kind: tactic\n  id: ghost\n  path: tactics/ghost.tactic.yaml\n  content_hash: "
                                         + "0".repeat(64) + "\npresets:\n"));
+        // #630: the manifest_hash of the edited lists, so membership is the one cause.
+        ManifestStamps.rehash(pack);
         write(pack, "notes.txt", "stray");
 
         assertThatThrownBy(() -> StagedReads.contents(store, pack))
