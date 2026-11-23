@@ -161,7 +161,8 @@ public final class AssemblyRules {
      *       states the fragment missing, or named more than once, there;
      *   <li>a mission type whose step id stands twice is the reader's {@code step '<id>' stands twice ...} at that
      *       file, the one breach the reader states in its own words ({@link #statesMissionTypeRefusal});
-     *   <li>any other fault is the reader's or a rule's at the same file with the same code whose words end with the
+     *   <li>any other fault is the reader's or a rule's at the same file, and at the same place in it when the store
+     *       names one (two equal edges of one document are two faults), with the same code whose words end with the
      *       store's.
      * </ul>
      *
@@ -187,6 +188,8 @@ public final class AssemblyRules {
             return true;
         }
         return file.equals(violation.file())
+                && (violation.pointer().isEmpty()
+                        || violation.pointer().equals(reason.location().pointer()))
                 && violation.kind().equals(reason.code())
                 && reason.detail().endsWith(violation.reason());
     }

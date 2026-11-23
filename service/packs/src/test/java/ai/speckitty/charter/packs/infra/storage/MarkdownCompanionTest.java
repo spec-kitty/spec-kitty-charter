@@ -145,11 +145,11 @@ class MarkdownCompanionTest {
         assertThat(read.dsos(MarkdownSkill.INSTANCE)).isEmpty();
         assertThat(read.violations())
                 .containsExactlyInAnyOrder(
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 "skills/broken.skill.yaml",
                                 StorageCodes.COMPANION,
                                 "broken.md: structure: minContains violated at /sections"),
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 SKILL_FILE,
                                 StorageCodes.COMPANION,
                                 "land.md: line 4: a carriage return is not admitted"));

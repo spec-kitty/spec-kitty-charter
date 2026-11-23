@@ -85,7 +85,10 @@ public final class Wording {
             if (parse.refusal().isPresent()) {
                 String refusal = parse.refusal().get();
                 return List.of(Findings.at(
-                        parse.code().orElseGet(() -> codeFor(file)), file, List.of(), PackCodes.detail(file, refusal)));
+                        parse.code().orElseGet(() -> codeFor(file)),
+                        file,
+                        parse.place(),
+                        PackCodes.detail(file, refusal)));
             }
             if (PACK_YAML.equals(file)) {
                 return List.of(Findings.at(

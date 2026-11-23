@@ -342,7 +342,8 @@ class ToolguideGuideTest {
 
         assertThat(read.dsos(ToolguideBinding.INSTANCE)).isEmpty();
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(TOOLGUIDE_FILE, StorageCodes.COMPANION, GUIDE + ": missing"));
+                .containsExactly(
+                        PackElementViolation.wholeFile(TOOLGUIDE_FILE, StorageCodes.COMPANION, GUIDE + ": missing"));
     }
 
     @Test
@@ -355,7 +356,7 @@ class ToolguideGuideTest {
                 new FilesystemPackStore(host, strategy).read(PACK_DIRECTORY, List.of(ToolguideBinding.INSTANCE));
 
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         TOOLGUIDE_FILE, StorageCodes.COMPANION, GUIDE + ": structure: const violated at /preamble"));
     }
 
@@ -371,7 +372,7 @@ class ToolguideGuideTest {
 
         assertThat(loaded.toolguides()).isEmpty();
         assertThat(loaded.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         TOOLGUIDE_FILE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "the guide has the H1 'Another title', which differs from the toolguide title '" + TITLE
@@ -390,7 +391,7 @@ class ToolguideGuideTest {
 
         assertThat(loaded.toolguides()).isEmpty();
         assertThat(loaded.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         TOOLGUIDE_FILE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "the guide has no H1; a stored guide carries its toolguide's title '" + TITLE + "' as its H1"));

@@ -76,7 +76,7 @@ class CommitStorePackWriteStoreAuthoredTest {
                     // #617: a per-file write or removal lists the violation a registration lists.
                     assertThat(refusal.violations())
                             .containsExactly(new RefusalViolation(
-                                    "drg/fragment.yaml",
+                                    "drg/fragment.yaml#/nodes/0",
                                     "drg_schema_error",
                                     "drg/fragment.yaml: node D1 body_path '../outside.directive.yaml' escapes"
                                             + " the pack root"));

@@ -131,7 +131,7 @@ class TemplateStoreTest {
         Map<Urn, String> places = new java.util.HashMap<>();
         Pack pack = PackAssembly.assembly(SOURCE, read, places).build();
 
-        PackElementViolation duplicate = new PackElementViolation(
+        PackElementViolation duplicate = PackElementViolation.wholeFile(
                 "templates/plan/x.md",
                 PackCodes.DUPLICATE_ARTIFACT_ID,
                 "template plan/x.md is already read from missions/plan/templates/x.md");

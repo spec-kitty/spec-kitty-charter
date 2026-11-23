@@ -122,7 +122,7 @@ class PackKindMapTest {
     void withAddsAndKeepsEverythingElse() {
         Procedure procedure = new Procedure(ID, "landing");
         var violation =
-                new PackElementViolation("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
+                PackElementViolation.wholeFile("broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps");
         Pack current = Pack.builder()
                 .id(ID)
                 .descriptor(DESCRIPTOR)
@@ -171,7 +171,7 @@ class PackKindMapTest {
                 .id(ID)
                 .descriptor(DESCRIPTOR)
                 .artifact(new Procedure(ID, "landing"))
-                .violation(new PackElementViolation(
+                .violation(PackElementViolation.wholeFile(
                         "broken.tactic.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "missing steps"))
                 .build();
 

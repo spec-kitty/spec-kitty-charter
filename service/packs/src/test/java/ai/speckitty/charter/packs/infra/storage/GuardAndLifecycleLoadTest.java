@@ -74,7 +74,7 @@ class GuardAndLifecycleLoadTest {
 
     /** The refusal of the lifecycle once a guard it names in_progress -> for_review is left out (the cascade). */
     private static PackElementViolation lifecycleLoses(String guard) {
-        return new PackElementViolation(
+        return PackElementViolation.wholeFile(
                 LIFECYCLE,
                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                 "lifecycle 'work-package' transition in_progress -> for_review names guard '" + guard
@@ -199,12 +199,12 @@ class GuardAndLifecycleLoadTest {
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations())
                 .containsExactly(
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 ASSET_GUARD,
                                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack does"
                                         + " not hold"),
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 LIFECYCLE,
                                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "lifecycle 'work-package' transition in_progress -> for_review names guard"
@@ -223,7 +223,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations())
                 .containsExactly(
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 ASSET_GUARD,
                                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "guard 'traceability-ready' is implemented_by asset:notes, which declares no executable"
@@ -243,7 +243,7 @@ class GuardAndLifecycleLoadTest {
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations())
                 .containsExactly(
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 ASSET_GUARD,
                                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "guard 'traceability-ready' is implemented_by qa::asset:qa-traceability-lint, a"
@@ -263,7 +263,7 @@ class GuardAndLifecycleLoadTest {
 
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         LIFECYCLE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "lifecycle 'work-package' transition in_progress -> for_review names guard qa::guard:other,"
@@ -303,7 +303,7 @@ class GuardAndLifecycleLoadTest {
 
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         LIFECYCLE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "lifecycle 'work-package' transition in_progress -> for_review: the config of guard"
@@ -324,7 +324,7 @@ class GuardAndLifecycleLoadTest {
 
         assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
         assertThat(loaded.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         LIFECYCLE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "lifecycle 'work-package' transition for_review -> done: guard 'subtasks-ready' declares no"
@@ -506,7 +506,7 @@ class GuardAndLifecycleLoadTest {
     }
 
     private static PackElementViolation guardLosesItsAsset() {
-        return new PackElementViolation(
+        return PackElementViolation.wholeFile(
                 ASSET_GUARD,
                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                 "guard 'traceability-ready' is implemented_by asset:carrier-lint, which the pack does not hold");

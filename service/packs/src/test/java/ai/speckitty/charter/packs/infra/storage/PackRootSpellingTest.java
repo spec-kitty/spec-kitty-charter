@@ -90,7 +90,7 @@ class PackRootSpellingTest {
 
     private static void assertLoadMissesOnlyTheTemplate(List<PackElementViolation> violations) {
         assertThat(violations)
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         FILE,
                         PackCodes.ARTIFACT_SCHEMA_ERROR,
                         "templates/spec-template.md (named by step 'scoping'): missing"));

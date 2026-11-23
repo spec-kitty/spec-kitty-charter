@@ -135,7 +135,7 @@ class PackAssetFilesTest {
     @DisplayName("with(directive) keeps the asset, its file and the violations, and stays valid (P3)")
     void withKeepsAssetFiles() {
         PackElementViolation violation =
-                new PackElementViolation("broken.directive.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad");
+                PackElementViolation.wholeFile("broken.directive.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad");
         Pack pack = bare().assetFile(LOGO)
                 .assetFile(CONFIG)
                 .artifact(asset("logo", LOGO.path()))

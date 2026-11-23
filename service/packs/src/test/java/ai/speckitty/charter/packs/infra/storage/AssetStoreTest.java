@@ -202,7 +202,7 @@ class AssetStoreTest {
 
         assertThat(ids(read)).containsExactly("here");
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         "assets/gone.md.asset.yaml", PackCodes.ASSET, "payload assets/gone.md does not exist"));
     }
 
@@ -379,7 +379,7 @@ class AssetStoreTest {
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("kept.bin");
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
+                .containsExactly(PackElementViolation.wholeFile(
                         "assets/broken.bin", StorageCodes.UNREADABLE, "the file cannot be read"));
     }
 

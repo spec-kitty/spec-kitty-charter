@@ -236,7 +236,7 @@ record StoreRead(
      */
     static List<PackElementViolation> linked(PackFileSet.Walk walk) {
         return walk.links().stream()
-                .map(link -> new PackElementViolation(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.LINKED))
+                .map(link -> PackElementViolation.wholeFile(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.LINKED))
                 .toList();
     }
 
@@ -364,7 +364,7 @@ record StoreRead(
             case FileRead.Read<PackManifestDso> good -> {
                 List<String> misplaced = misplacedPresetEntries(good.value());
                 misplaced.forEach(reason -> violations.add(
-                        new PackElementViolation(PackFileSet.MANIFEST, PackCodes.ARTIFACT_SCHEMA_ERROR, reason)));
+                        PackElementViolation.wholeFile(PackFileSet.MANIFEST, PackCodes.ARTIFACT_SCHEMA_ERROR, reason)));
                 return misplaced.isEmpty() ? Optional.of(good.value()) : Optional.empty();
             }
             case FileRead.Unreadable<PackManifestDso> bad -> violations.addAll(FilesystemPackStore.violationsOf(bad));
@@ -399,7 +399,7 @@ record StoreRead(
             return Optional.of(PolicyYaml.readNamed(packDir, named));
         } catch (PolicyYaml.Unreadable invalid) {
             fault.add(String.valueOf(invalid.getMessage()));
-            violations.add(new PackElementViolation(
+            violations.add(PackElementViolation.wholeFile(
                     named, StorageCodes.UNREADABLE, "named by mutability_policy, the file " + invalid.getMessage()));
             return Optional.empty();
         }
@@ -499,7 +499,7 @@ record StoreRead(
                 .forEach(violation -> storeOnly.accept(
                         FilesystemPackStore.COMPANION_KIND.equals(violation.kind())
                                         && violation.file().endsWith(ENHANCEMENT_FILE)
-                                ? new PackElementViolation(
+                                ? PackElementViolation.wholeFile(
                                         violation.file(), PackCodes.PROMPT_FRAGMENT_INVALID, violation.reason())
                                 : violation));
         List<StepEnhancementFault.Finding> faults = FragmentRules.judge(
@@ -527,7 +527,8 @@ record StoreRead(
         repeats.forEach(builder::violation);
         recordPromptSlotFaults(read, builder, warnings);
         faults.stream()
-                .map(fault -> new PackElementViolation(fault.path(), PackCodes.PROMPT_FRAGMENT_INVALID, fault.reason()))
+                .map(fault ->
+                        PackElementViolation.wholeFile(fault.path(), PackCodes.PROMPT_FRAGMENT_INVALID, fault.reason()))
                 .forEach(builder::violation);
         missionStepViolations(read, places, graphs).forEach(builder::violation);
         substepDelegationViolations(read, places, graphs).forEach(builder::violation);
@@ -546,7 +547,8 @@ record StoreRead(
             return List.of();
         }
         return MissionStepLinkRule.judge(read.descriptor().name(), heldTypes(read, places), edgesOf(graphs)).stream()
-                .map(fault -> new PackElementViolation(fault.file(), PackCodes.MISSION_STEP_UNLINKED, fault.reason()))
+                .map(fault ->
+                        PackElementViolation.wholeFile(fault.file(), PackCodes.MISSION_STEP_UNLINKED, fault.reason()))
                 .toList();
     }
 
@@ -634,7 +636,7 @@ record StoreRead(
                         PromptSlots.parse(MarkdownCodec.write(step.prompt().get()));
                 for (PromptSlotRules.Fault fault : PromptSlotRules.faults(parse, versioned)) {
                     if (fault.code().severity() == Severity.VIOLATION) {
-                        builder.violation(new PackElementViolation(file, fault.code(), fault.reason()));
+                        builder.violation(PackElementViolation.wholeFile(file, fault.code(), fault.reason()));
                     } else {
                         warnings.add(PromptSlotRules.finding(file, fault));
                     }

@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Findings;
+import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.domain.rules.Paths;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
@@ -490,7 +491,7 @@ final class FilesystemPackStore {
                     assetFiles.add(new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes)));
                 } catch (ConstraintBreachException breach) {
                     storeOnly(
-                            new PackElementViolation(
+                            PackElementViolation.wholeFile(
                                     file, PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())),
                             violations,
                             storeOnly);
@@ -607,14 +608,15 @@ final class FilesystemPackStore {
                     Optional<String> mismatch =
                             PresetFiles.stemMismatch(file, good.value().id());
                     if (mismatch.isPresent()) {
-                        violations.add(new PackElementViolation(file, PackCodes.ARTIFACT_SCHEMA_ERROR, mismatch.get()));
+                        violations.add(
+                                PackElementViolation.wholeFile(file, PackCodes.ARTIFACT_SCHEMA_ERROR, mismatch.get()));
                         // A preset left out for its stem still answers its own value-object breach (WP12 review
                         // MAJOR-1): two faults of one file are two violations.
                         try {
                             PresetFiles.toPreset(good.value());
                         } catch (ConstraintBreachException breach) {
                             storeOnly(
-                                    new PackElementViolation(
+                                    PackElementViolation.wholeFile(
                                             file, PackCodes.ARTIFACT_SCHEMA_ERROR, String.valueOf(breach.getMessage())),
                                     violations,
                                     storeOnly);
@@ -647,7 +649,7 @@ final class FilesystemPackStore {
         for (SidecarPayloads.Refused one : SidecarPayloads.refused(
                 read, assetFiles.stream().map(AssetFile::path).toList())) {
             refused.add(one.file());
-            violations.add(new PackElementViolation(one.file(), PackCodes.ASSET, one.reason()));
+            violations.add(PackElementViolation.wholeFile(one.file(), PackCodes.ASSET, one.reason()));
         }
         List<Stored<?>> kept = new ArrayList<>(sidecars);
         kept.removeIf(stored -> refused.contains(stored.file()));
@@ -672,7 +674,7 @@ final class FilesystemPackStore {
             String claimant = readFrom.get(id);
             if (claimant != null) {
                 storeOnly(
-                        new PackElementViolation(
+                        PackElementViolation.wholeFile(
                                 file,
                                 PackCodes.DUPLICATE_ARTIFACT_ID,
                                 "template " + id + " is already read from " + claimant),
@@ -695,7 +697,8 @@ final class FilesystemPackStore {
     private static List<PackElementViolation> retiredViolations(PackFileSet.Listing listing) {
         List<PackElementViolation> out = new ArrayList<>();
         listing.refused()
-                .forEach((file, refused) -> out.add(new PackElementViolation(file, refused.code(), refused.reason())));
+                .forEach((file, refused) ->
+                        out.add(PackElementViolation.wholeFile(file, refused.code(), refused.reason())));
         return out;
     }
 
@@ -710,7 +713,7 @@ final class FilesystemPackStore {
                 directory,
                 file,
                 payloadRead,
-                reason -> violations.add(new PackElementViolation(file, StorageCodes.UNREADABLE, reason)));
+                reason -> violations.add(PackElementViolation.wholeFile(file, StorageCodes.UNREADABLE, reason)));
     }
 
     /**
@@ -937,12 +940,19 @@ final class FilesystemPackStore {
         if (!(document instanceof GraphDocument.Fragment fragment)) {
             return List.of();
         }
-        return fragment.nodes().stream()
-                .flatMap(node -> Paths.bodyPathEscape(node.id(), node.bodyPath()).stream())
-                .findFirst()
-                .map(reason -> new PackElementViolation(document.file(), PackCodes.DRG_SCHEMA_ERROR, reason))
-                .stream()
-                .toList();
+        List<GraphDocument.FragmentNode> nodes = fragment.nodes();
+        for (int i = 0; i < nodes.size(); i++) {
+            Optional<String> escape =
+                    Paths.bodyPathEscape(nodes.get(i).id(), nodes.get(i).bodyPath());
+            if (escape.isPresent()) {
+                return List.of(new PackElementViolation(
+                        document.file(),
+                        Findings.pointer(List.of(GraphBinding.NODES, Integer.toString(i))),
+                        PackCodes.DRG_SCHEMA_ERROR,
+                        escape.get()));
+            }
+        }
+        return List.of();
     }
 
     private PackDescriptorDso descriptorOf(Path directory, PackDirectory pack) {
@@ -990,7 +1000,8 @@ final class FilesystemPackStore {
                     Optional<String> unnamed =
                             missingNamedFile(directory, file, kind.namedFiles(good.value()), companionRules.table());
                     if (unnamed.isPresent()) {
-                        violations.add(new PackElementViolation(file, PackCodes.ARTIFACT_SCHEMA_ERROR, unnamed.get()));
+                        violations.add(
+                                PackElementViolation.wholeFile(file, PackCodes.ARTIFACT_SCHEMA_ERROR, unnamed.get()));
                         continue;
                     }
                     withCompanions(companionRules, directory, file, kind, good.value(), violations, storeOnly, claimed)
@@ -1100,7 +1111,7 @@ final class FilesystemPackStore {
             }
             if (refusal != null) {
                 String reason = companion.path() + ": " + refusal;
-                storeOnly(new PackElementViolation(file, COMPANION_KIND, reason), violations, storeOnly);
+                storeOnly(PackElementViolation.wholeFile(file, COMPANION_KIND, reason), violations, storeOnly);
                 return Optional.empty();
             }
         }
@@ -1616,7 +1627,7 @@ final class FilesystemPackStore {
      */
     static List<PackElementViolation> violationsOf(FileRead.Unreadable<?> bad) {
         if (bad.parse() != null) {
-            return List.of(new PackElementViolation(
+            return List.of(PackElementViolation.wholeFile(
                     bad.file(), StorageCodes.UNREADABLE, bad.parse().firstLine()));
         }
         // No descriptor reaches here, so the pack's name never shows in a detail.
