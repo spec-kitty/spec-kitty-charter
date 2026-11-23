@@ -11,7 +11,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackRoot;
-import ai.speckitty.charter.packs.fixtures.Fifos;
+import ai.speckitty.charter.testfixtures.Fifos;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

@@ -74,7 +74,8 @@ public final class PackDoctorSeam {
                             read.rationale(),
                             PackReadout.Unreadable.noAssembly(root.name()));
                 },
-                PackRoundTrip::run);
+                PackRoundTrip::run,
+                PackDoctorMain::remediated);
         return PackDoctorMain.run(args, out, err, temporary, noFacts);
     }
 
@@ -93,7 +94,11 @@ public final class PackDoctorSeam {
     public static int runWithRoundTrip(
             String[] args, PrintStream out, PrintStream err, Path temporary, ControlFlow flow) {
         return PackDoctorMain.run(
-                args, out, err, temporary, new PackDoctorMain.Composition(new FileSystemPackInspector(), flow::run));
+                args,
+                out,
+                err,
+                temporary,
+                new PackDoctorMain.Composition(new FileSystemPackInspector(), flow::run, PackDoctorMain::remediated));
     }
 
     /** A round trip of one pack in place of the production one, for a test outside this package. */

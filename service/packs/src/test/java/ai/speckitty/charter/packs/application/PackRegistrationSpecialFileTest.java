@@ -10,7 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
-import ai.speckitty.charter.packs.fixtures.Fifos;
+import ai.speckitty.charter.testfixtures.Fifos;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;

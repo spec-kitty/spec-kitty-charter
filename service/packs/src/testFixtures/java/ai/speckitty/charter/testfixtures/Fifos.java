@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.fixtures;
+package ai.speckitty.charter.testfixtures;
 
 import java.io.IOException;
 import java.nio.file.Files;

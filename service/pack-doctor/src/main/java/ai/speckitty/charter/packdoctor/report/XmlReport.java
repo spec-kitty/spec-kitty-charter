@@ -317,8 +317,8 @@ public final class XmlReport {
         return tree;
     }
 
-    /** The value of the element the reader is at the start of; the reader is left at its end. */
-    private static JsonNode value(XMLStreamReader reader, String name, String pointer) throws XMLStreamException {
+    /** Refuses an element in a namespace, or one that declares a namespace, used or not: the mapping writes neither. */
+    private static void refuseNamespaces(XMLStreamReader reader, String name) {
         String namespace = reader.getNamespaceURI();
         if (namespace != null && !namespace.isEmpty()) {
             throw refused(reader, "the element " + name + " is in the namespace " + namespace);
@@ -326,6 +326,11 @@ public final class XmlReport {
         if (reader.getNamespaceCount() > 0) {
             throw refused(reader, "the element " + name + " declares a namespace");
         }
+    }
+
+    /** The value of the element the reader is at the start of; the reader is left at its end. */
+    private static JsonNode value(XMLStreamReader reader, String name, String pointer) throws XMLStreamException {
+        refuseNamespaces(reader, name);
         @Nullable String type = null;
         for (int index = 0; index < reader.getAttributeCount(); index++) {
             String attributeNamespace = reader.getAttributeNamespace(index);

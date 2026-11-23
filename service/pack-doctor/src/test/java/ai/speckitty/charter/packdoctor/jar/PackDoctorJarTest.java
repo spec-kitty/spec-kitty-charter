@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.examples.GoldenSubjects;
-import ai.speckitty.charter.packs.fixtures.Fifos;
+import ai.speckitty.charter.testfixtures.Fifos;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

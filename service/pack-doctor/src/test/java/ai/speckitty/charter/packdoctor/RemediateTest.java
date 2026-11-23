@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.packs.domain.roundtrip.Reading;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
-import ai.speckitty.charter.packs.fixtures.Fifos;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.PackRoundTrip;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
+import ai.speckitty.charter.testfixtures.Fifos;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
