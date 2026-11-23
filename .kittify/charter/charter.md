@@ -20,8 +20,8 @@ legacy shapes get no compatibility. Amended 2026-11-11 (operator, ADR-0070): the
 runs over charter's own example packs; spec-kitty-open-packs proves its content against a pinned charter release.
 Amended 2026-11-11 (operator, issue triage Op 01M75XTFKEJG0AGWB78QZMCC12): rules for filing and
 closing issues. Amended 2026-11-20 (operator): mutation testing never runs in mission work; only the
-weekly scheduled run (or a manual dispatch) runs it (ADR-0062). Amended 2026-11-22 (operator): nits and minors are
-folded when we can.
+weekly scheduled run (or a manual dispatch) runs it (ADR-0062). Amended 2026-11-22 (operator): nits
+and minors are folded before the merge.
 
 ## What this repository is for
 
@@ -66,11 +66,11 @@ two.
   floor; and **PIT tuning work** (#530, #531) may run narrowed PIT locally, confirmed through `workflow_dispatch`.
 - **Issues stay small** (operator, 2026-11-11; the detail is in
   `docs/development/issue-tracker.md`):
-  - **Nits and minors are addressed when we can** (operator, 2026-11-22): deferred ones tend to cause
-    big problems later on. A squad finding below MEDIUM is folded into the pull request before it
-    merges, also when it predates the change. One that cannot be folded is recorded under its
-    "Not done" with a concrete reason. It is never filed. The boy-scout rule files only defects found outside the Mission's
-    domain, not tidy-ups.
+  - **Nits and minors are folded** (operator, 2026-11-22: "deferred nits and minors tend to cause
+    big problems later on; address them when we can"). A squad finding below MEDIUM is folded into
+    the pull request before it merges, also when it predates the change. One that cannot be folded
+    is recorded under its "Not done" with a concrete reason. It is never filed. The boy-scout rule
+    files only defects found outside the Mission's domain, not tidy-ups.
   - Every Mission closeout and landing closes the issues it delivered, with evidence, and ticks
     the parent epic.
   - An auto-filed follow-up carries the `follow-up` label and expires after 21 days without a

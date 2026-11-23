@@ -32,9 +32,9 @@ Read `.kittify/charter/charter.md` before planning. Two rules from it that sessi
 
 Read `docs/development/issue-tracker.md` before you file or close an issue. In short:
 
-- Fold a squad finding below MEDIUM, nits included, before the merge (deferred ones tend to cause big
-  problems later on); record a concrete reason when you cannot. File an issue only for a correctness, data or
-  security risk, or when the operator asks, with the `follow-up` label.
+- Fold a squad finding below MEDIUM, nits included, before the merge (deferred ones tend to cause
+  big problems later on); record a concrete reason when you cannot. File an issue only for a
+  correctness, data or security risk, or when the operator asks, with the `follow-up` label.
 - At every closeout and landing, close the issues the work delivered (`Closes #N`, or close them
   with evidence) and tick the parent epic.
 - Pack content goes to `spec-kitty-open-packs`; core work is not filed here until incorporation.
