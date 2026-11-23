@@ -279,7 +279,8 @@
         "Changes requested: R-w quote drops service-v*",
         "Cycle 3: R-w quoted as written",
         "Review passed: cycle 3, R-w quoted whole; docs checks green",
-        "Reopened: lane-h integration edits predate WP08's claim, unattributed and unreviewed as code"
+        "Reopened: lane-h integration edits predate WP08's claim, unattributed and unreviewed as code",
+        "Integration edits re-authored after claim (5b6d9ef71, e9df19a9b), tree unchanged; needs code review of the integration edits"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
