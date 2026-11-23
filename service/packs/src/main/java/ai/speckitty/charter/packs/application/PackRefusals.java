@@ -29,7 +29,7 @@ import java.util.Set;
  *   <li>A registration's (#554, FR-008, S6): the verdict of the one read, as the domain port {@code PackReading}
  *       returns it, is the refusal of the upload ({@link #of}) and the diagnostics of an accepted one
  *       ({@link #diagnostics}), through the domain's one mapping ({@link PackRefusalMapping}, #478 S3), which
- *       pack-check calls too.
+ *       pack-doctor calls too.
  *   <li>The closure checks' (#556, ADR-0075 decision 6, D1): the verdict of a write's closure checks is the write's one
  *       refusal ({@link #of(ClosureVerdict)}), the closure edge's mapper.
  * </ul>

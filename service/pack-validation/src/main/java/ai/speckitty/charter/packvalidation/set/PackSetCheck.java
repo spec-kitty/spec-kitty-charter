@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The pack-set check (#478, FR-002 to FR-004, FR-007, T011): what pack-check runs over a set of packs.
+ * The pack-set check (#478, FR-002 to FR-004, FR-007, T011): what pack-doctor runs over a set of packs.
  *
  * <ol>
  *   <li>Per pack, validate mode ({@link PackCheck#check}): one read, whose readout also carries the pack's composition

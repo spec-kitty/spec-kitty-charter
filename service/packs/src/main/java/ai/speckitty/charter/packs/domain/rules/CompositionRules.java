@@ -17,7 +17,7 @@ import java.util.function.Function;
 
 /**
  * {@code CLOSURE} (#554, FR-003, IC-07): the composition checks of a set of packs with levels as a kernel ruleset, for
- * pack-check (#478) and every caller that wants each fault, not the first. It reports every duplicate {@code pack_id},
+ * pack-doctor (#478) and every caller that wants each fault, not the first. It reports every duplicate {@code pack_id},
  * name conflict, pair of disjoint ranges, dependency and parent fault, sibling contest and dependency cycle that
  * {@link PackCompositionResolver#faults} collects, in the order the resolver judges them, so the first {@link Reason}
  * is the refusal the offering answers. Its codes are {@link PackCodes#CLOSURE}, built from today's

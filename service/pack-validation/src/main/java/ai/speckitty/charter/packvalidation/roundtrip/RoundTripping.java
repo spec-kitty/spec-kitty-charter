@@ -6,7 +6,7 @@ import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 /**
  * The production round trip of one pack, as the pack-set check asks for it (#478, FR-004, T012): read, domain, write,
  * read back, judging nothing. The validation edge cannot name the flow ({@code packs.infra.storage.PackRoundTrip}), so a
- * composition root supplies it: pack-check's main runs it into a temporary target it deletes after, and a test runs it
+ * composition root supplies it: pack-doctor's main runs it into a temporary target it deletes after, and a test runs it
  * the same way. {@link WholePackRoundTripRule} judges what it returns.
  *
  * <p>The boundary of its failures (#478, M2): a refusal of the pack itself, a {@link

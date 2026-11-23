@@ -52,7 +52,7 @@ public final class PackRulesets {
 
     /**
      * {@code CLOSURE}, the pack set's consistency ({@link CompositionRules#closure()}): every composition fault of a set
-     * of packs with levels, collect-all. Validate mode does not run it; the pack-set check is pack-check's (#478).
+     * of packs with levels, collect-all. Validate mode does not run it; the pack-set check is pack-doctor's (#478).
      *
      * @return the composition
      */
@@ -61,8 +61,8 @@ public final class PackRulesets {
     }
 
     /**
-     * {@code CLOSURE} with its preset phase ({@link CompositionRules#presetFaults}): the set check pack-check runs (#478), so
-     * pack-check names one composition and defines no rule of its own. The preset phase judges the packs in merge order,
+     * {@code CLOSURE} with its preset phase ({@link CompositionRules#presetFaults}): the set check pack-doctor runs (#478), so
+     * pack-doctor names one composition and defines no rule of its own. The preset phase judges the packs in merge order,
      * so the answer does not depend on the order the packs are given in. Its reasons are {@link #closureFaults}', in
      * that order, each from its phase's origin and so with its phase's rule name: there is one derivation, and the
      * closure walk's checks (#556) extend it in {@link #closureFaults}. The service paths that judge presets elsewhere keep {@link #closure()}.
@@ -83,7 +83,7 @@ public final class PackRulesets {
      * The faults of {@link #closure(Function)}, with the packs each names (#478, A-M4): every fault of {@code CLOSURE},
      * then every preset contest, in the order the ruleset reports them: the one place the composition is defined. Each
      * fault's rule is its phase's ({@link CompositionRules#RULE}, {@link CompositionRules#PRESETS_RULE}). What
-     * pack-check reports, so it and the ruleset cannot disagree.
+     * pack-doctor reports, so it and the ruleset cannot disagree.
      *
      * @param packs the packs with their descriptors
      * @param presetIdsOf the ids of the presets a pack holds
