@@ -1,5 +1,5 @@
 schema_version: '1.0'
-manifest_hash: 9f347d473bdc3fb648d0d4187215f0fa118d3f79d80a832a041461c82ac51852
+manifest_hash: f9c0e3b408948b947e595c5c18b48b23a44ab02403f32627849e80c08f727546
 constituents:
 - kind: agent_profile
   id: generic-agent
@@ -46,6 +46,10 @@ constituents:
   path: directives/010-specification-fidelity-requirement.directive.yaml
   content_hash: 950b30ca27d33bf2229409052012b430de651cb579281c960fc286bb41b999d3
 - kind: directive
+  id: DIRECTIVE_024
+  path: directives/024-locality-of-change.directive.yaml
+  content_hash: 51ff43e7ca3e2703929cef790b08495e8b1438f225d7504bbe6ccc676590078b
+- kind: directive
   id: DIRECTIVE_030
   path: directives/030-test-and-typecheck-quality-gate.directive.yaml
   content_hash: 201c160f0ca0497cd467b41cd6c300c094b62e71cd9e11e393ab402b693516a9
@@ -53,14 +57,14 @@ constituents:
   id: DIRECTIVE_037
   path: directives/037-living-documentation-sync.directive.yaml
   content_hash: f8cc220e158fb455fed30bbe4e26ce89b6b3d95945e2bbf18245aaf45bc2170b
-- kind: directive
-  id: DIRECTIVE_024
-  path: directives/024-locality-of-change.directive.yaml
-  content_hash: 51ff43e7ca3e2703929cef790b08495e8b1438f225d7504bbe6ccc676590078b
 - kind: glossary
   id: spec-kitty-core
   path: glossaries/spec-kitty-core.glossary.yaml
   content_hash: e0c94b2baef8d200da60c50c71af56fcdebc0328e98322b9fe474638f125b53c
+- kind: guard
+  id: spec-kitty-pre-review
+  path: guards/spec-kitty-pre-review.guard.yaml
+  content_hash: 111594aaa9a0dd8d01d0c4bd05b6105a3ff8614702b7f6033510bdc971dbcd23
 - kind: guard
   id: subtasks-ready
   path: guards/subtasks-ready.guard.yaml
@@ -69,10 +73,6 @@ constituents:
   id: traceability-ready
   path: guards/traceability-ready.guard.yaml
   content_hash: fffca74b8d2dc9982319feca7dc685a481dcc190c81d0b3c91bfe62fea581557
-- kind: guard
-  id: spec-kitty-pre-review
-  path: guards/spec-kitty-pre-review.guard.yaml
-  content_hash: 111594aaa9a0dd8d01d0c4bd05b6105a3ff8614702b7f6033510bdc971dbcd23
 - kind: lifecycle
   id: work-package
   path: lifecycles/work-package.lifecycle.yaml
@@ -129,6 +129,10 @@ constituents:
   id: git-flow
   path: procedures/git-flow.procedure.yaml
   content_hash: 4b44d69a755a240970e128ba12a52c430ec5a7c392675a2bb01ad8a98d053d96
+- kind: routing_catalog
+  id: default
+  path: routing_catalogs/default.routing-catalog.yaml
+  content_hash: 415b761f9c072b18da4e2cb4dec62420339e0b9d55dbd9501515ea72eb12022a
 - kind: skill
   id: review-checklist
   path: skills/review-checklist.skill.yaml
@@ -146,6 +150,14 @@ constituents:
   path: styleguides/java-conventions.styleguide.yaml
   content_hash: 322066c38b930bf1b098008bf924c211f5c2d6417ee5826f652721f4da3805c4
 - kind: tactic
+  id: acceptance-test-first
+  path: tactics/acceptance-test-first.tactic.yaml
+  content_hash: f46f6e12a838898b281f2460da03c41abccbbc5e4d36dfa24c6606ad82aa3b72
+- kind: tactic
+  id: adr-drafting-workflow
+  path: tactics/adr-drafting-workflow.tactic.yaml
+  content_hash: ba6d2ed3f1f6ab2c84adef50d230805fbf7f55e83e650910317e84e99adb8303
+- kind: tactic
   id: adversarial-qa-handoff
   path: tactics/adversarial-qa-handoff.tactic.yaml
   content_hash: 7b5e5c1873dadcac01104186f416b4a6f35a70ad57e86391c5f06e45a5f7f559
@@ -158,41 +170,25 @@ constituents:
   path: tactics/autonomous-operation-protocol.tactic.yaml
   content_hash: 1a50ad533d46d870be5df64262205cd4147dbfbfb2288d06d8ceb374f4c39184
 - kind: tactic
-  id: tdd-red-green-refactor
-  path: tactics/tdd-red-green-refactor.tactic.yaml
-  content_hash: f7b80628d0f8727636ac436487848646b430f503ce892f863581609386476bf9
-- kind: tactic
-  id: acceptance-test-first
-  path: tactics/acceptance-test-first.tactic.yaml
-  content_hash: f46f6e12a838898b281f2460da03c41abccbbc5e4d36dfa24c6606ad82aa3b72
-- kind: tactic
   id: change-apply-smallest-viable-diff
   path: tactics/change-apply-smallest-viable-diff.tactic.yaml
   content_hash: d6da622d0a7b6fa756fc4516884be737fa54880ab78ebda8567f1c96a533e039
-- kind: tactic
-  id: requirements-validation-workflow
-  path: tactics/requirements-validation-workflow.tactic.yaml
-  content_hash: 46d388bb2fe63332a16b52c95fe77e72b9b2d90b0629f86a78ca8a2b70f0b073
-- kind: tactic
-  id: adr-drafting-workflow
-  path: tactics/adr-drafting-workflow.tactic.yaml
-  content_hash: ba6d2ed3f1f6ab2c84adef50d230805fbf7f55e83e650910317e84e99adb8303
-- kind: tactic
-  id: usage-examples-sync
-  path: tactics/usage-examples-sync.tactic.yaml
-  content_hash: 2fb0bb8639377f03144f317e628e3c54900fb1be74186e4690d45d0f1d2cb004
 - kind: tactic
   id: problem-decomposition
   path: tactics/problem-decomposition.tactic.yaml
   content_hash: 86f0103faa8ca1cf5cb71bc177f8044eeda81d98e0d4551ba15946a7830f2b14
 - kind: tactic
-  id: review-intent-and-risk-first
-  path: tactics/review-intent-and-risk-first.tactic.yaml
-  content_hash: 11ab916a30e25df3ff6e0076ecda65cd584062a3a8bdcd0478c09da7965e9f5e
-- kind: tactic
   id: quality-gate-verification
   path: tactics/quality-gate-verification.tactic.yaml
   content_hash: 1ea589e4c4b69dbd112bca95aa4d9659aa921a44e62ccfbfa0891caafa585c45
+- kind: tactic
+  id: requirements-validation-workflow
+  path: tactics/requirements-validation-workflow.tactic.yaml
+  content_hash: 46d388bb2fe63332a16b52c95fe77e72b9b2d90b0629f86a78ca8a2b70f0b073
+- kind: tactic
+  id: review-intent-and-risk-first
+  path: tactics/review-intent-and-risk-first.tactic.yaml
+  content_hash: 11ab916a30e25df3ff6e0076ecda65cd584062a3a8bdcd0478c09da7965e9f5e
 - kind: tactic
   id: stopping-conditions
   path: tactics/stopping-conditions.tactic.yaml
@@ -201,6 +197,14 @@ constituents:
   id: supply-chain-install-safety
   path: tactics/supply-chain-install-safety.tactic.yaml
   content_hash: 9a1062e074a22224ce4ec85b97d3db74eb562cdf958d6f0d0af053b4982e4e58
+- kind: tactic
+  id: tdd-red-green-refactor
+  path: tactics/tdd-red-green-refactor.tactic.yaml
+  content_hash: f7b80628d0f8727636ac436487848646b430f503ce892f863581609386476bf9
+- kind: tactic
+  id: usage-examples-sync
+  path: tactics/usage-examples-sync.tactic.yaml
+  content_hash: 2fb0bb8639377f03144f317e628e3c54900fb1be74186e4690d45d0f1d2cb004
 - kind: template
   id: writing/meeting-discussion-notes.md
   path: templates/writing/meeting-discussion-notes.md
@@ -217,10 +221,6 @@ constituents:
   id: execution-lanes
   path: toolguides/execution-lanes.toolguide.yaml
   content_hash: 9732e16dcd12c422c432bfc86d3a54b4e90ff725404083356102873391aa2749
-- kind: routing_catalog
-  id: default
-  path: routing_catalogs/default.routing-catalog.yaml
-  content_hash: 415b761f9c072b18da4e2cb4dec62420339e0b9d55dbd9501515ea72eb12022a
 presets:
 - id: default
   path: presets/default.yaml

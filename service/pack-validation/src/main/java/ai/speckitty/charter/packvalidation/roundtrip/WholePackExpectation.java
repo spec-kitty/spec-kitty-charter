@@ -435,7 +435,6 @@ public final class WholePackExpectation {
         private final Set<Integer> usedExclusions = new HashSet<>();
         private final Set<Integer> redundantExclusions = new HashSet<>();
         private final Set<String> excludedPaths = new HashSet<>();
-        private final Set<String> notHeldPaths = new HashSet<>();
 
         Judgement(
                 SortedMap<String, String> census,
@@ -479,32 +478,23 @@ public final class WholePackExpectation {
         /**
          * A file the census does not hold is not pack content: checked, not compared, never red for what it holds
          * (#451; operator ruling R34, #631). The store must not have written it. A gate exclusion over it is redundant:
-         * one that matches only such files is stale, and says so.
+         * one that matches only such files is stale, and says so. Why the census does not hold it is the
+         * {@link NotHeldFile}'s reason, never the code: every such file is judged, and worded, alike (#636).
          */
         private void judgeNotHeldFile(String path, String kind, NotHeldFile notHeldFile) {
-            boolean excluded = notHeldFile.kind() == NotHeldFile.Kind.EXCLUDED;
-            (excluded ? excludedPaths : notHeldPaths).add(path);
             for (int i = 0; i < patterns.size(); i++) {
                 if (patterns.get(i).matcher(path).matches()) {
                     redundantExclusions.add(i);
                 }
             }
+            String notHeldBecause = notHeldBecause(notHeldFile);
             Optional<String> written = observed.getOrDefault(
-                    path,
-                    Optional.of("the gate did not check whether the store wrote this "
-                            + (excluded ? "excluded" : "not-held") + " file"));
+                    path, Optional.of("the gate did not check whether the store wrote this not-held file"));
             if (written.isEmpty()) {
-                results.add(new FileResult(
-                        path,
-                        kind,
-                        Status.EXCLUDED,
-                        excluded
-                                ? "excluded by " + notHeldFile.reason() + ": not written"
-                                : "not held (" + notHeldFile.reason() + "): not written"));
+                results.add(new FileResult(path, kind, Status.EXCLUDED, notHeldBecause + ": not written"));
             } else {
                 results.add(new FileResult(path, kind, Status.RED, written.get()));
-                problems.add((excluded ? "EXCLUDED_WRITTEN " : "NOT_HELD_WRITTEN ") + path + " (" + kind + "): "
-                        + written.get());
+                problems.add("NOT_HELD_WRITTEN " + path + " (" + kind + "): " + notHeldBecause + "; " + written.get());
             }
         }
 
@@ -561,16 +551,31 @@ public final class WholePackExpectation {
             return new FileResult(path, kind, Status.RED, red);
         }
 
+        /**
+         * Why a census file is not compared, if it is not: the census does not hold it (with the census's reason), or
+         * a gate exclusion takes it. A list entry over such a file is stale, in one wording (#636).
+         */
+        private Optional<String> uncompared(String path) {
+            NotHeldFile notHeldFile = notHeld.get(path);
+            if (notHeldFile != null) {
+                return Optional.of(notHeldBecause(notHeldFile));
+            }
+            return excludedPaths.contains(path) ? Optional.of("excluded by " + EXCLUSIONS_RESOURCE) : Optional.empty();
+        }
+
+        /** The one wording of why the census does not hold a file, as the {@code file_not_held} warning gives it. */
+        private static String notHeldBecause(NotHeldFile notHeldFile) {
+            return "not held (" + notHeldFile.reason() + ")";
+        }
+
         void checkFileEntries() {
             for (FileEntry entry : files) {
+                Optional<String> uncompared = uncompared(entry.path());
                 if (!census.containsKey(entry.path())) {
                     problems.add("STALE_BASELINE " + entry.path() + ": no such file; remove it from "
                             + EXPECTED_RED_RESOURCE);
-                } else if (excludedPaths.contains(entry.path())) {
-                    problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
-                            + EXPECTED_RED_RESOURCE);
-                } else if (notHeldPaths.contains(entry.path())) {
-                    problems.add("STALE_BASELINE " + entry.path() + ": the file is not held; remove it from "
+                } else if (uncompared.isPresent()) {
+                    problems.add("STALE_BASELINE " + entry.path() + ": " + uncompared.get() + "; remove it from "
                             + EXPECTED_RED_RESOURCE);
                 } else if (!modelledKinds.contains(census.get(entry.path()))) {
                     problems.add("FILE_ENTRY_UNMODELLED " + entry.path() + " (" + census.get(entry.path())
@@ -583,14 +588,12 @@ public final class WholePackExpectation {
         void checkKnownFailures() {
             for (KnownFailure entry : knownFailures) {
                 @Nullable String kind = census.get(entry.path());
+                Optional<String> uncompared = uncompared(entry.path());
                 if (kind == null) {
                     problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": no such file; remove it from "
                             + KNOWN_FAILURES_RESOURCE);
-                } else if (excludedPaths.contains(entry.path())) {
-                    problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is excluded; remove it from "
-                            + KNOWN_FAILURES_RESOURCE);
-                } else if (notHeldPaths.contains(entry.path())) {
-                    problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is not held; remove it from "
+                } else if (uncompared.isPresent()) {
+                    problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": " + uncompared.get() + "; remove it from "
                             + KNOWN_FAILURES_RESOURCE);
                 } else if (!modelledKinds.contains(kind)) {
                     problems.add("KNOWN_FAILURE_UNMODELLED " + entry.path() + " (" + kind
@@ -626,7 +629,7 @@ public final class WholePackExpectation {
                         + (redundantExclusions.contains(i)
                                 ? ": matches only files the census does not hold, which the gate never compares;"
                                         + " remove it from " + EXCLUSIONS_RESOURCE
-                                : ": matches no file"));
+                                : ": matches no file; remove it from " + EXCLUSIONS_RESOURCE));
             }
         }
 

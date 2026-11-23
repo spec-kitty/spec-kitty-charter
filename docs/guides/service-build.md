@@ -289,7 +289,7 @@ own append-only list of files it does not compare. The gate passes only when the
   (`CHANGED_RED`);
 - a listed file that now round-trips fails it too (`UNEXPECTEDLY_GREEN`): remove the entry in the same change that
   turns it green;
-- a file entry for a missing or excluded file (`STALE_BASELINE`) or for a file of an unmodelled kind
+- a file entry for a missing, excluded or not-held file (`STALE_BASELINE`) or for a file of an unmodelled kind
   (`FILE_ENTRY_UNMODELLED`), an exclusion that matches nothing or a modelled file, a `kinds:` entry for a modelled
   kind (`BASELINED_MODELLED_KIND`) and an empty pack fail it, so it cannot pass vacuously.
 
@@ -327,7 +327,7 @@ The gate fails on:
 - a malformed entry, or an issue that is not in the form above (the list does not load);
 - `CHANGED_RED`, when the differences of a listed file no longer match `at`;
 - `UNEXPECTEDLY_GREEN`, when a listed file round-trips;
-- `STALE_KNOWN_FAILURE`, when the file does not exist in the pack or is excluded;
+- `STALE_KNOWN_FAILURE`, when the file does not exist in the pack, is excluded or is not held;
 - `KNOWN_FAILURE_UNMODELLED`, when no adapter models the file's kind, so the entry could never expire;
 - `AMBIGUOUS_ENTRY`, when the file is also in `expected-red.yaml`.
 
