@@ -436,6 +436,29 @@
       "parallel_group": 6
     },
     {
+      "lane_id": "lane-l",
+      "wp_ids": [
+        "WP13"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-23-pack-doctor-policy-lock-case-only.md",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PolicyLockRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/PolicyLockRulesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-e",
+        "lane-h"
+      ],
+      "parallel_group": 7
+    },
+    {
       "lane_id": "lane-planning",
       "wp_ids": [
         "WP09"
@@ -453,10 +476,10 @@
       "parallel_group": 7
     }
   ],
-  "computed_at": "2026-11-21T22:10:50.062500+00:00",
+  "computed_at": "2026-11-23T07:28:53.318243+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP09"
   ],
-  "planning_commit_sha": "172ed233f0a9d2d6f8ebaa7ae04e01a97fd1ff4a"
+  "planning_commit_sha": "ece7b92f99fb9e3d79cb9fbb887f43c34d8368de"
 }
