@@ -159,6 +159,42 @@ class MalformedDescriptorTest {
         assertThat(closureSkips).as(run.out()).anyMatch(reason -> reason.contains(ExamplePacks.ORG + " ("));
     }
 
+    /**
+     * A pack given its id ({@code <dir>=<id>}) whose directory is named otherwise is named by its id everywhere: in the
+     * violations and in the reason {@code CLOSURE} is skipped, never by its directory's name (squad B12).
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("unreadableDescriptors")
+    void aPackGivenItsIdIsNamedByItsIdInTheSkipReasonToo(String text) throws IOException {
+        Path packs = temp.resolve("packs");
+        ExamplePacks.copyOf(ExamplePacks.BUILT_IN, packs);
+        Path renamed = Files.move(ExamplePacks.copyOf(ExamplePacks.ORG, temp.resolve("copied")), packs.resolve("x"));
+        if (text.isEmpty()) {
+            Files.delete(renamed.resolve(PACK_YAML));
+        } else {
+            Files.writeString(renamed.resolve(PACK_YAML), text);
+        }
+
+        Run run = run(
+                "--pack", packs.resolve(ExamplePacks.BUILT_IN) + ":" + level(ExamplePacks.BUILT_IN),
+                "--pack", renamed + ":" + level(ExamplePacks.ORG) + "=" + ExamplePacks.ORG);
+
+        assertThat(run.exit()).as(run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(run.out())
+                .as("the directory's name is never the pack's")
+                .doesNotContain(" of x ", " of x:", "pack x ");
+        List<String> reasons = new ArrayList<>();
+        run.report()
+                .get("skipped")
+                .forEach(skip -> reasons.add(skip.get("reason").asString()));
+        assertThat(reasons).isNotEmpty().allMatch(reason -> reason.contains(ExamplePacks.ORG));
+    }
+
+    static Stream<String> unreadableDescriptors() {
+        // Unparsable, a key given twice, and no pack.yaml at all (the empty text).
+        return Stream.of("pack_level: [unclosed\n", "pack_id: Other\npack_id: Again\n", "");
+    }
+
     private static String level(String name) {
         return ExamplePacks.level(name).token();
     }

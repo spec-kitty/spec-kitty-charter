@@ -162,7 +162,7 @@ record StoreRead(
         RUNS.increment();
         Path packDir = directory.toAbsolutePath().normalize();
         List<StoreRead> refusal = new ArrayList<>();
-        DsoRead dso = dsoRead(packDir, strategy, companionRules, bindings, walk, refusal);
+        DsoRead dso = dsoRead(packDir, id.value(), strategy, companionRules, bindings, walk, refusal);
         if (dso == null) {
             return refusal.getFirst();
         }
@@ -255,6 +255,7 @@ record StoreRead(
      */
     private static @Nullable DsoRead dsoRead(
             Path packDir,
+            String named,
             SerializationStrategy strategy,
             Companions.Rules companionRules,
             List<KindBinding<?, ?>> bindings,
@@ -267,19 +268,21 @@ record StoreRead(
             return null;
         }
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        return dsoRead(store, PackDirectory.of(packDir), bindings, walk, refusal);
+        return dsoRead(store, PackDirectory.of(packDir), named, bindings, walk, refusal);
     }
 
     /** What the store's reader read of a pack: its graph documents, then everything else. */
     private record DsoRead(FilesystemPackStore.GraphRead graphs, FilesystemPackStore.PackRead read) {}
 
     /**
-     * The store's read of a pack, its graph documents first; a refusal of either goes to {@code refusal}, the graph
+     * The store's read of a pack, its graph documents first, its {@code pack.yaml} refused under the name {@code named}
+     * (the id it is read under, whatever its directory is called); a refusal of either goes to {@code refusal}, the graph
      * read's fault kept when the rest is refused.
      */
     private static @Nullable DsoRead dsoRead(
             FilesystemPackStore store,
             PackDirectory key,
+            String named,
             List<KindBinding<?, ?>> bindings,
             PackFileSet.Walk walk,
             List<StoreRead> refusal) {
@@ -291,7 +294,7 @@ record StoreRead(
             return null;
         }
         try {
-            return new DsoRead(graphs, store.read(key, bindings, graphs, walk));
+            return new DsoRead(graphs, store.read(key, named, bindings, graphs, walk));
         } catch (CharterRefusal refused) {
             // The graph read found the directory, so the rest of the read refuses only the descriptor: its fault is
             // placed at pack.yaml with no second read of the file (#554, WP04 review MINOR-4).
