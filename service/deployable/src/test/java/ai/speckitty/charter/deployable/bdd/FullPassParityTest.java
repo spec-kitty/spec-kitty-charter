@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.deployable.CharterServiceApplication;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packdoctor.PackDoctorMain;
 import ai.speckitty.charter.packs.application.PackRegistrationService;
@@ -21,10 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -52,8 +55,15 @@ import tools.jackson.databind.json.JsonMapper;
  * </ul>
  *
  * <p>Each row states the code (and, for a {@code validation_failed}, the violation codes) both must answer, so a row
- * cannot pass by both sides being wrong. pack-doctor answers exactly one problem per row, as the registration refuses
- * with one fault.
+ * cannot pass by both sides being wrong. pack-doctor answers one problem per row, as the registration refuses with one
+ * fault, unless the row states pack-doctor's problems: a closure fault the registration halts on before another phase
+ * (registration halts at its first failing phase; pack-doctor's {@code CLOSURE} collects every phase, and
+ * {@code REFERENCES} runs whenever no own closure fails to compose, ruling R-aa). Where both name packs and a detail,
+ * pack-doctor's are the registration's, which names the closure in front and its roots after the packs.
+ *
+ * <p>A row may plant its own base pack (a pack the planted pack depends on), registered once and committed as
+ * {@code beta} is, so the cross-pack shapes of ruling R-z (a dependency's mention that a dependent holds by case alone)
+ * are judged on both sides. The passing rows ({@link #passingRows()}) are shapes both accept.
  *
  * <p>The {@code specializes_from} cycle row is the remainder ruling R-s leaves (#636 slices 2-4 and 7, recorded in
  * ADR-0083): the registration refuses it {@code specialization_cycle}, and {@code --full} does not report it yet. When
@@ -74,13 +84,19 @@ class FullPassParityTest {
 
     private static final String BETA_ID = "01M4P01D5TWB5FKZGNNQG3943S";
 
+    private static final String DELTA_ID = "01M4P01D5TWB5FKZGNNQG3943V";
+
+    private static final String EPSILON_ID = "01M4P01D5TWB5FKZGNNQG3943W";
+
     private static final String FRAGMENT = "nodes: []\nedges: []\n";
 
     private static final String MANIFEST = "pack-manifest.yaml";
 
-    private static Path configRoot = Path.of("");
+    /** The run's own directory, deleted after it: the config root and the stamped manifest's scratch copy. */
+    @TempDir
+    static Path shared;
 
-    private static boolean betaRegistered;
+    private static final Set<String> REGISTERED = new HashSet<>();
 
     private static ContractConformance contract;
 
@@ -92,7 +108,7 @@ class FullPassParityTest {
 
     @DynamicPropertySource
     static void registrationOn(DynamicPropertyRegistry registry) throws IOException {
-        configRoot = Files.createTempDirectory("charter-full-pass-parity");
+        Path configRoot = shared.resolve("config-root");
         Files.createDirectories(configRoot.resolve(ConfigRoot.PACKS));
         registry.add("charter.worktree-token", () -> TOKEN);
         registry.add("charter.config-root", () -> configRoot.toString());
@@ -105,28 +121,66 @@ class FullPassParityTest {
     }
 
     /**
+     * A pack the planted pack depends on, registered once and committed, and given to pack-doctor beside it.
+     *
+     * @param name the name it is registered under, and its directory's
+     * @param files its files, by path
+     */
+    record Base(String name, Map<String, String> files) {}
+
+    /**
      * One planted fault.
      *
      * @param fault what the row plants
      * @param pack the planted pack's files, by path
-     * @param dependsOnBeta whether the planted pack depends on the base pack {@code beta}
+     * @param base the pack the planted pack depends on; empty when it stands alone
      * @param code the code both answer; for the remainder row, the code the registration alone answers
      * @param violations the violation codes of a {@code validation_failed}, in order; empty for a closure code
      * @param fullReports whether {@code --full} reports it: false only for the remainder ruling R-s leaves to #636
+     * @param doctorCodes the codes of pack-doctor's problems, in order: the registration's code alone, unless
+     *     pack-doctor also reports a fault the registration halts before
      */
     record Row(
             String fault,
             Map<String, String> pack,
-            boolean dependsOnBeta,
+            Optional<Base> base,
             String code,
             List<String> violations,
-            boolean fullReports) {
+            boolean fullReports,
+            List<String> doctorCodes) {
+
+        Row(
+                String fault,
+                Map<String, String> pack,
+                Optional<Base> base,
+                String code,
+                List<String> violations,
+                boolean fullReports) {
+            this(fault, pack, base, code, violations, fullReports, List.of(code));
+        }
 
         @Override
         public String toString() {
             return fault;
         }
     }
+
+    /**
+     * A shape both accept.
+     *
+     * @param shape what the row plants
+     * @param pack the planted pack's files, by path
+     * @param base the pack the planted pack depends on; empty when it stands alone
+     */
+    record Passing(String shape, Map<String, String> pack, Optional<Base> base) {
+
+        @Override
+        public String toString() {
+            return shape;
+        }
+    }
+
+    private static final Base BETA = new Base("beta", beta());
 
     // ---- the base pack and the two planted packs' common files ----------------------------------------------------
 
@@ -183,6 +237,11 @@ class FullPassParityTest {
 
     /** alpha, which depends on beta, with one directive, MINE, and the files a row adds. */
     private static Map<String, String> alpha(Map<String, String> added) {
+        return alpha(BETA_ID, added);
+    }
+
+    /** alpha, which depends on the base of this pack_id, with one directive, MINE, and the files a row adds. */
+    private static Map<String, String> alpha(String baseId, Map<String, String> added) {
         Map<String, String> files = new LinkedHashMap<>();
         files.put("pack.yaml", """
                 pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -193,7 +252,7 @@ class FullPassParityTest {
                 depends_on:
                 - pack_id: %s
                   range: '>=1.0'
-                """.formatted(BETA_ID));
+                """.formatted(baseId));
         files.put("drg/fragment.yaml", FRAGMENT);
         files.put("directives/MINE.directive.yaml", directive("MINE"));
         files.putAll(added);
@@ -236,16 +295,53 @@ class FullPassParityTest {
                 """.formatted(target));
     }
 
+    /**
+     * A base pack standing alone at org level, with one directive, D, and the files it adds: what a row's planted alpha
+     * depends on when beta will not do.
+     */
+    private static Map<String, String> base(String id, String name, Map<String, String> added) {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("pack.yaml", """
+                pack_id: %s
+                pack_version: 1.0.0
+                parent_pack: null
+                name: %s
+                pack_level: org
+                """.formatted(id, name));
+        files.put("drg/fragment.yaml", FRAGMENT);
+        files.put("directives/D.directive.yaml", directive("D"));
+        files.putAll(added);
+        return files;
+    }
+
+    /** A pack's files with a policy file that locks the URNs, which its pack.yaml names. */
+    private static Map<String, String> locking(Map<String, String> pack, String... urns) {
+        Map<String, String> files = new LinkedHashMap<>(pack);
+        StringBuilder policy = new StringBuilder("schema_version: 1\nartifacts:\n");
+        for (String urn : urns) {
+            policy.append("  ").append(urn).append(": locked\n");
+        }
+        files.put("policy.yaml", policy.toString());
+        files.put("pack.yaml", files.get("pack.yaml") + "mutability_policy: policy.yaml\n");
+        return files;
+    }
+
     private static Row closure(String fault, Map<String, String> added, String code) {
-        return new Row(fault, alpha(added), true, code, List.of(), true);
+        return new Row(fault, alpha(added), Optional.of(BETA), code, List.of(), true);
     }
 
     private static Row refusedAtTheFile(String fault, Map<String, String> added, String violation) {
-        return new Row(fault, acme(added), false, "validation_failed", List.of(violation), true);
+        return new Row(fault, acme(added), Optional.empty(), "validation_failed", List.of(violation), true);
+    }
+
+    private static Map<String, String> with(Map<String, String> first, Map<String, String> second) {
+        Map<String, String> files = new LinkedHashMap<>(first);
+        files.putAll(second);
+        return files;
     }
 
     static Stream<Row> rows() {
-        return Stream.of(referenceRows(), closureRows(), fileRows(), remainderRows())
+        return Stream.of(referenceRows(), closureRows(), crossPackRows(), fileRows(), remainderRows())
                 .flatMap(Stream::of);
     }
 
@@ -275,7 +371,7 @@ class FullPassParityTest {
             new Row(
                     "an unresolved substep delegation",
                     alpha(delegationTo("tdd")),
-                    true,
+                    Optional.of(BETA),
                     "validation_failed",
                     List.of("substep_delegation_unresolved"),
                     true)
@@ -294,7 +390,7 @@ class FullPassParityTest {
                                   - id: B
                                     must_have: true
                                 """)),
-                    false,
+                    Optional.empty(),
                     "preset_item_not_held",
                     List.of("preset_item_not_held"),
                     true),
@@ -304,7 +400,7 @@ class FullPassParityTest {
                                 activated_tactics:
                                   - id: ghost
                                 """)),
-                    false,
+                    Optional.empty(),
                     "preset_item_undeclared",
                     List.of("preset_item_undeclared"),
                     true),
@@ -315,7 +411,7 @@ class FullPassParityTest {
                                 activated_directives:
                                   - id: a
                                 """)),
-                    false,
+                    Optional.empty(),
                     "pack_reference_artifact_missing",
                     List.of(),
                     true),
@@ -323,11 +419,95 @@ class FullPassParityTest {
             new Row(
                     "a policy lock that names a held artifact only by case",
                     policyLocking("directive:a"),
-                    false,
+                    Optional.empty(),
                     "pack_reference_artifact_missing",
+                    List.of(),
+                    true),
+            // Several locks of one pack, each its own fault: the registration lists every one in violations.
+            new Row(
+                    "several policy locks that name held artifacts only by case",
+                    locking(acme(Map.of("directives/B.directive.yaml", directive("B"))), "directive:b", "directive:a"),
+                    Optional.empty(),
+                    "pack_reference_artifact_missing",
+                    List.of("pack_reference_artifact_missing", "pack_reference_artifact_missing"),
+                    true,
+                    List.of("pack_reference_artifact_missing", "pack_reference_artifact_missing"))
+        };
+    }
+
+    private static Row[] crossPackRows() {
+        Base delta = new Base("delta", locking(base(DELTA_ID, "delta", Map.of()), "directive:mine"));
+        Base epsilon = new Base(
+                "epsilon", base(EPSILON_ID, "epsilon", Map.of("presets/team.yaml", """
+                                schema_version: '1.0'
+                                id: team
+                                description: The team's preset.
+                                activated_directives:
+                                  - id: mine
+                                """, "drg/fragment.yaml", """
+                                nodes:
+                                - {id: mine, kind: directives, title: Mine}
+                                edges: []
+                                """)));
+        return new Row[] {
+            // Ruling R-z: the case-only answer is judged per root over the composed closure, every member's mentions
+            // against every member's holdings, as the registration's phase 6 judges it. A dependency's mention that
+            // its dependent holds by case alone is refused when the dependent is registered, and by pack-doctor.
+            new Row(
+                    "a dependency's policy lock that the dependent holds only by case",
+                    alpha(DELTA_ID, Map.of()),
+                    Optional.of(delta),
+                    "pack_reference_artifact_missing",
+                    List.of(),
+                    true),
+            new Row(
+                    "a dependency's preset item that the dependent holds only by case",
+                    alpha(EPSILON_ID, Map.of()),
+                    Optional.of(epsilon),
+                    "pack_reference_artifact_missing",
+                    List.of(),
+                    true),
+            // Ruling R-aa: REFERENCES is gated only on composition faults. The registration halts at its references
+            // phase; pack-doctor's CLOSURE reports the later phase's fault, and REFERENCES the reference fault.
+            new Row(
+                    "a missing referenced artifact beside a must_have preset item no pack holds",
+                    alpha(with(relates("beta::directive:NOPE"), preset("""
+                                activated_directives:
+                                  - id: NOPE
+                                    must_have: true
+                                """))),
+                    Optional.of(BETA),
+                    "pack_reference_artifact_missing",
+                    List.of(),
+                    true,
+                    List.of("preset_item_not_held", "pack_reference_artifact_missing")),
+            new Row(
+                    "a missing referenced artifact beside a case-only policy lock",
+                    locking(alpha(relates("beta::directive:NOPE")), "directive:mine"),
+                    Optional.of(BETA),
+                    "pack_reference_artifact_missing",
+                    List.of(),
+                    true,
+                    List.of("pack_reference_artifact_missing", "pack_reference_artifact_missing")),
+            // An own closure that reaches a pack outside the set is a composition fault, and only that: the case-only
+            // answer and REFERENCES are not judged over a closure that does not compose.
+            new Row(
+                    "a dependency no pack declares, beside a case-only policy lock",
+                    locking(alpha("01M4P01D5TWB5FKZGNNQG3943X", Map.of()), "directive:mine"),
+                    Optional.empty(),
+                    "pack_dependency_unknown",
                     List.of(),
                     true)
         };
+    }
+
+    static Stream<Passing> passingRows() {
+        return Stream.of(new Passing(
+                "a must_have preset item held only by a depends_on pack", alpha(preset("""
+                            activated_directives:
+                              - id: SHARE
+                                must_have: true
+                            """)), Optional.of(BETA)));
     }
 
     private static Row[] fileRows() {
@@ -373,7 +553,27 @@ class FullPassParityTest {
                                 - source: directive:A
                                   target: anti_pattern:x
                                   relation: rejects
-                                """), "drg_schema_error")
+                                """), "drg_schema_error"),
+            // A9: the node's file is there, refused for its own fault, so that fault is the one cause.
+            refusedAtTheFile(
+                    "an anti-pattern file whose id is not its stem, beside its node",
+                    Map.of("anti_patterns/x.anti-pattern.yaml", """
+                                schema_version: '1.0'
+                                id: other
+                                title: X
+                                description: The anti-pattern the graph node declares.
+                                severity: smell
+                                bad_example: the bad example
+                                """, "styleguide.graph.yaml", """
+                                schema_version: '1.0'
+                                generated_at: STATIC
+                                nodes:
+                                - urn: anti_pattern:x
+                                  kind: anti_pattern
+                                  label: X
+                                edges: []
+                                """),
+                    "artifact_schema_error")
         };
     }
 
@@ -385,7 +585,7 @@ class FullPassParityTest {
             new Row(
                     "a specializes_from cycle (#636: registration only, for now)",
                     acme(specializationCycle()),
-                    false,
+                    Optional.empty(),
                     "specialization_cycle",
                     List.of(),
                     false)
@@ -398,7 +598,7 @@ class FullPassParityTest {
     private static Map<String, String> staleManifest() {
         Map<String, String> files = acme(Map.of());
         try {
-            Path stamped = plant(Files.createTempDirectory("charter-full-pass-parity-manifest"), files);
+            Path stamped = plant(Files.createDirectories(shared.resolve("stamped-manifest")), files);
             ManifestStamps.stamp(stamped, "acme");
             files.put(MANIFEST, Files.readString(stamped.resolve(MANIFEST), StandardCharsets.UTF_8));
         } catch (IOException e) {
@@ -474,13 +674,7 @@ class FullPassParityTest {
 
     /** acme naming its policy file, which locks one URN. */
     private static Map<String, String> policyLocking(String urn) {
-        Map<String, String> files = acme(Map.of("policy.yaml", """
-                schema_version: 1
-                artifacts:
-                  %s: locked
-                """.formatted(urn)));
-        files.put("pack.yaml", files.get("pack.yaml") + "mutability_policy: policy.yaml\n");
-        return files;
+        return locking(acme(Map.of()), urn);
     }
 
     private static Map<String, String> specializationCycle() {
@@ -529,25 +723,27 @@ class FullPassParityTest {
         return directory;
     }
 
-    /** beta, registered once and committed, so a dependent's registration composes the closure it joins. */
-    private synchronized void registerBeta() {
-        if (betaRegistered) {
-            return;
+    /** A base, registered once and committed, so a dependent's registration composes the closure it joins. */
+    private void register(Optional<Base> base) {
+        synchronized (REGISTERED) {
+            if (base.isEmpty() || REGISTERED.contains(base.get().name())) {
+                return;
+            }
+            registration.register(
+                    base.get().name(),
+                    new StagedPack(plant(
+                            temp.resolve("staged-" + base.get().name()),
+                            base.get().files())),
+                    Preconditions.none(),
+                    () -> {},
+                    Mode.COMMIT);
+            REGISTERED.add(base.get().name());
         }
-        registration.register(
-                "beta",
-                new StagedPack(plant(temp.resolve("staged-beta"), beta())),
-                Preconditions.none(),
-                () -> {},
-                Mode.COMMIT);
-        betaRegistered = true;
     }
 
     /** What the registration answers for the planted pack: its refusal, judged in a dry run. */
     private CharterRefusal registrationRefusal(Row row, String name) {
-        if (row.dependsOnBeta()) {
-            registerBeta();
-        }
+        register(row.base());
         StagedPack staged = new StagedPack(plant(temp.resolve("staged-" + name), row.pack()));
         List<CharterRefusal> refused = new ArrayList<>();
         assertThatThrownBy(() -> registration.register(name, staged, Preconditions.none(), () -> {}, Mode.DRY_RUN))
@@ -563,16 +759,14 @@ class FullPassParityTest {
         }
     }
 
-    private Run fullPass(Row row, String name) {
+    private Run fullPass(Optional<Base> base, Map<String, String> pack, String name) {
         List<String> args = new ArrayList<>(List.of("validate", "--full"));
-        if (row.dependsOnBeta()) {
-            args.addAll(List.of(
-                    "--pack",
-                    plant(temp.resolve("doctor").resolve("beta"), beta()).toString()));
-        }
-        args.addAll(List.of(
+        base.ifPresent(present -> args.addAll(List.of(
                 "--pack",
-                plant(temp.resolve("doctor").resolve(name), row.pack()).toString()));
+                plant(temp.resolve("doctor").resolve(present.name()), present.files())
+                        .toString())));
+        args.addAll(List.of(
+                "--pack", plant(temp.resolve("doctor").resolve(name), pack).toString()));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         int exit = PackDoctorMain.run(
@@ -586,13 +780,44 @@ class FullPassParityTest {
         return violations.stream().map(RefusalViolation::code).toList();
     }
 
+    /** The fault's packs, as the contract writes each: its descriptorPackId, packId and name. */
+    private static List<List<String>> packsOf(List<RefusalPack> packs) {
+        return packs.stream()
+                .map(pack ->
+                        List.of(pack.descriptorPackId().value(), pack.packId().value(), pack.name()))
+                .toList();
+    }
+
+    private static List<List<String>> packsOf(JsonNode problem) {
+        List<List<String>> packs = new ArrayList<>();
+        Optional.ofNullable(problem.get("packs"))
+                .ifPresent(named -> named.forEach(pack -> packs.add(List.of(
+                        pack.get("descriptorPackId").asString(),
+                        pack.get("packId").asString(),
+                        pack.get("name").asString()))));
+        return packs;
+    }
+
+    /**
+     * Whether a problem of pack-doctor's is the registration's fault as pack-doctor words it: the same code, the same
+     * detail but for the closure the registration names in front, and the same packs but for the roots the registration
+     * names after them.
+     */
+    private static boolean isTheFault(JsonNode problem, String code, String detail, List<List<String>> packs) {
+        List<List<String>> named = packsOf(problem);
+        return problem.get("code").asString().equals(code)
+                && detail.endsWith(problem.get("detail").asString())
+                && named.size() <= packs.size()
+                && packs.subList(0, named.size()).equals(named);
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("rows")
     void theRegistrationAndValidateFullGiveTheSameCode(Row row) {
-        String name = row.dependsOnBeta() ? "alpha" : "acme";
+        String name = row.base().isPresent() ? "alpha" : "acme";
 
         CharterRefusal refused = registrationRefusal(row, name);
-        Run run = fullPass(row, name);
+        Run run = fullPass(row.base(), row.pack(), name);
 
         assertThat(refused.code().token())
                 .as("the registration's code for %s", row)
@@ -615,14 +840,57 @@ class FullPassParityTest {
             assertThat(run.exit()).isEqualTo(0);
             return;
         }
-        assertThat(problems).as("--full's problems for %s", row).singleElement().satisfies(problem -> {
-            assertThat(problem.get("code").asString()).isEqualTo(refused.code().token());
+        assertThat(problems)
+                .as("--full's problems for %s", row)
+                .extracting(problem -> problem.get("code").asString())
+                .isEqualTo(row.doctorCodes());
+        boolean severalFaults = refused.getMessage().endsWith("fault(s); every one is in violations)");
+        if (row.doctorCodes().size() == 1) {
+            JsonNode problem = problems.getFirst();
             List<String> codes = new ArrayList<>();
             Optional.ofNullable(problem.get("violations"))
                     .ifPresent(violations ->
                             violations.forEach(v -> codes.add(v.get("code").asString())));
             assertThat(codes).isEqualTo(violationCodes(refused.violations()));
-        });
+        }
+        if (severalFaults) {
+            // Every fault of the registration is one violation of its refusal, and one problem of pack-doctor's.
+            assertThat(refused.violations()).hasSameSizeAs(problems);
+            for (RefusalViolation fault : refused.violations()) {
+                assertThat(problems)
+                        .as("pack-doctor's problem for the registration's fault %s", fault.detail())
+                        .anySatisfy(problem -> {
+                            assertThat(problem.get("code").asString()).isEqualTo(fault.code());
+                            assertThat(fault.detail())
+                                    .endsWith(problem.get("detail").asString());
+                        });
+            }
+        } else if (refused.violations().isEmpty()) {
+            // A closure fault: the problem names the registration's packs and detail (A5).
+            assertThat(problems)
+                    .as("pack-doctor's problem naming the registration's packs and detail (%s)", refused.getMessage())
+                    .anyMatch(problem -> isTheFault(
+                            problem, refused.code().token(), refused.getMessage(), packsOf(refused.packs())));
+        }
         assertThat(run.exit()).isEqualTo(1);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("passingRows")
+    void theRegistrationAndValidateFullBothAccept(Passing row) {
+        String name = row.base().isPresent() ? "alpha" : "acme";
+        register(row.base());
+        StagedPack staged = new StagedPack(plant(temp.resolve("staged-" + name), row.pack()));
+
+        registration.register(name, staged, Preconditions.none(), () -> {}, Mode.DRY_RUN);
+        Run run = fullPass(row.base(), row.pack(), name);
+
+        assertThat(contract.schemaViolations(SCHEMA, run.report()))
+                .as("the --full report's violations of %s", SCHEMA)
+                .isEmpty();
+        assertThat(run.report().get("problems"))
+                .as("--full's problems for %s", row)
+                .isEmpty();
+        assertThat(run.exit()).as("stderr: %s", run.err()).isEqualTo(0);
     }
 }
