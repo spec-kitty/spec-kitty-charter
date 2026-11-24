@@ -40,6 +40,20 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
     id, is refused by the reads that judge it until it is registered again.
   - A consumer rewrites a pack name that is not a pack id. The spec-kitty-open-packs census at `3bedeef` found none:
     24 pack names and 607 qualified references, all pack ids.
+- `procedure.schema.json` and `styleguide.schema.json` drop `anti_patterns` and their `$defs` (`AntiPatternEntry`,
+  `AntiPattern`) (ADR-0052 decision 16; #154): an anti-pattern is its own file, named by a `rejects` edge. Both roots
+  stay closed, so a file that still carries the key is refused `artifact_schema_error`, unknown key `anti_patterns`.
+  spec-kitty-open-packs' 60 styleguide and procedure files with inline blocks are refused at its repin until they are
+  curated into anti-pattern files (ADR-0052 decision 15).
+
+### Added
+
+- The anti-pattern file (ADR-0052 decision 8, as amended by ADR-0053 decision 30; #154):
+  `schemas/anti-pattern.schema.json`, closed, with `schema_version`, `id` (the file stem), `title`, `description`,
+  `severity` (`smell`, `severe` or `breaking`, no default) and `bad_example` required and `good_example` optional, and
+  the `files` rule `**/*.anti-pattern.yaml` that maps `anti_patterns/<id>.anti-pattern.yaml` to it, with its classifier
+  case. No list of kinds changes: `anti_pattern` was already a node, artifact and fragment kind. A file such a rule
+  maps was `unmodelled` (warned `file_not_held`) before, and is now judged.
 
 ### Changed
 

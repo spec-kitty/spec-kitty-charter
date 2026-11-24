@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/anti-pattern.schema.json",
+  "additionalProperties": false,
+  "description": "A recognisable practice that guidance rejects (URN anti_pattern:<id>; ADR-0052 decision 8, as amended by ADR-0053 decision 30): one file per anti-pattern, anti_patterns/<id>.anti-pattern.yaml. The file is the only form of an anti-pattern; a graph node of the same URN in the pack's graph documents declares it and is the target of a rejects edge from the guidance that rejects it (ADR-0064 decision 12). It carries no relationship fields. Its severity is always written: there is no default (ADR-0053 decision 32). JSON Schema cannot state that the id equals the file stem and that the file sits at anti_patterns/<id>.anti-pattern.yaml: those are the store's stem and placement rule, applied at registration and in validate mode.",
+  "properties": {
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "The anti-pattern's id, kebab-case; it is the file stem.",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "description": "A short name of the practice.",
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "description": "What the practice is and why guidance rejects it.",
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "severity": {
+      "description": "How much the practice weighs in a review (ADR-0052 decision 10): smell is worth a remark, severe should block review, breaking must block. Always written (ADR-0053 decision 32).",
+      "enum": [
+        "smell",
+        "severe",
+        "breaking"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "bad_example": {
+      "description": "A short, concrete instance of the practice (ADR-0053 decision 30).",
+      "minLength": 1,
+      "title": "Bad Example",
+      "type": "string"
+    },
+    "good_example": {
+      "description": "What to do instead, when the author states it.",
+      "minLength": 1,
+      "title": "Good Example",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "description",
+    "severity",
+    "bad_example"
+  ],
+  "title": "Anti-pattern",
+  "type": "object"
+}
