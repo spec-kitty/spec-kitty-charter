@@ -1,0 +1,130 @@
+# Bulk edit: the standalone pack checker is renamed from pack-check to pack-doctor (operator rulings R-c, R-e, R-f).
+target:
+  term: pack-check
+  replacement: pack-doctor
+  operation: rename
+categories:
+  code_symbols:
+    action: rename
+    note: PackCheckMain -> PackDoctorMain, and the CLI module's other classes named after the tool, plus PackCheckReport -> PackDoctorReport (contract test and schema). pack-validation's PackCheck (validate mode over one pack) is a domain term and is NOT renamed (see exceptions).
+  import_paths:
+    action: rename
+    note: the package ai.speckitty.charter.packcheck -> ai.speckitty.charter.packdoctor (main, test, and service/deployable's packcheck test package)
+  filesystem_paths:
+    action: rename
+    note: service/pack-check -> service/pack-doctor (with its licenses/ directory); build-logic charter.pack-check-jar.gradle.kts -> charter.pack-doctor-jar.gradle.kts; PackCheckLicences(.kt/Test) -> PackDoctorLicences; docs/guides/check-packs.md keeps its path (it names the task, not the tool) and its text is updated; IC-08 edits its text only
+  serialized_keys:
+    action: rename
+    note: the jar's META-INF/pack-check/libraries.txt -> META-INF/pack-doctor/libraries.txt; the contract schema file PackCheckReport.yaml -> PackDoctorReport.yaml and its _index.yaml entry. No wire refusal or finding code changes.
+  cli_commands:
+    action: rename
+    note: java -jar pack-check-<v>.jar [options] -> java -jar pack-doctor-<v>.jar validate [options]; Gradle task :pack-check:packCheckJar -> :pack-doctor:packDoctorJar; settings.gradle.kts include
+  user_facing_strings:
+    action: rename
+    note: usage text, error prefixes, release notes text, attestation text, CI step names and artifact names (pack-check-jar -> pack-doctor-jar), live docs and guides
+  tests_fixtures:
+    action: rename
+    note: test class names and assertions that name the tool or the jar (jar smoke test, parity test, contract test, build-logic allowlist tests); fixture pack content is unaffected
+  logs_telemetry:
+    action: rename
+    note: the CLI's stderr prefixes; no telemetry exists
+exceptions:
+  - path: "docs/changelog/2026-11-22-pack-doctor.md"
+    action: manual_review
+    note: WP08's new changelog entry, which names the rename (not released history; the glob below keeps the rest)
+  - path: "docs/guides/check-packs.md"
+    action: rename
+    note: keeps its path (filesystem_paths); WP02 renamed its text, WP08 documents validate --full, --report, --format and remediate, WP13 the case-only policy lock
+  - path: "docs/guides/author-a-procedure.md"
+    action: manual_review
+    note: no mention of the tool; WP12 and WP08 edit its inline anti_patterns wording (FR-015)
+  - path: "contracts/packs/CHANGELOG.md"
+    action: manual_review
+    note: no mention of the tool; WP10, WP12 and WP08 add the anti-pattern lines (FR-013, FR-015)
+  - path: "contracts/charter/changes/2026-11-21-pack-doctor.md"
+    action: manual_review
+    note: the unreleased fragment that records the rename names the old tool by design (NoPackCheckSurfaceTest keeps it); WP08 corrects its remediate clause
+  - path: "contracts/charter/changes/2026-11-23-pack-doctor-policy-lock-case-only.md"
+    action: manual_review
+    note: WP13's new fragment (ruling R-y); it names pack-doctor, the tool's new name, and no old surface
+  - path: "contracts/charter/changes/2026-11-21-round-trip-not-held-code.md"
+    action: manual_review
+    note: no mention of the tool; WP04's fragment, wording folded by WP08
+  - path: "kitty-specs/pack-doctor-coverage-01M7YMQK/**"
+    action: manual_review
+    note: this mission's own planning artifacts (the occurrence map, WP files); not history
+  - path: "kitty-specs/**"
+    action: do_not_change
+    note: earlier missions' records are history (C-004)
+  - path: "kitty-ops/**"
+    action: do_not_change
+    note: Op records are history (C-004)
+  - path: "docs/changelog/**"
+    action: do_not_change
+    note: released changelog entries are history; a new entry names the rename
+  - path: "contracts/charter/CHANGELOG.md"
+    action: do_not_change
+    note: released contract history; the rename gets a new change fragment
+  - path: "docs/adr/**"
+    action: manual_review
+    note: ADR bodies keep their historical wording; ADR-0075 decision 9 gets an amendment naming pack-doctor, and ADR-0083 records the rename
+  - path: "docs/plans/engineering-notes/**"
+    action: do_not_change
+    note: dated assessments are history
+  - path: "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/PackCheck.java"
+    action: manual_review
+    note: validate mode over one pack; a domain term, not the tool name, so the class keeps its name. Javadoc mentions of the tool are updated
+  - path: "service/pack-validation/**"
+    action: manual_review
+    note: Javadoc that names the tool is updated; the PackCheck class and its callers keep their names
+  - path: "service/packs/**"
+    action: manual_review
+    note: Javadoc mentions of the tool are updated; no symbol is renamed by the rename (WP01 deletes CompositionFault separately)
+  - path: "service/charter-reports/build.gradle.kts"
+    action: rename
+    note: the package-mapped allowlist entry "pack-check" to ...packcheck breaks on rename
+  - path: "service/deployable/**"
+    action: rename
+    note: build.gradle.kts, CharterWiringTest, HexagonalArchitectureTest (rule names and the main class), the packcheck test package and PackCheckReportContractTest
+  - path: "contracts/src/test/**"
+    action: rename
+    note: ReachableContractFilesTest names the report schema
+  - path: ".github/workflows/mutation-testing.yml"
+    action: rename
+    note: the module list names pack-check
+  - path: "gradle.properties"
+    action: rename
+    note: a comment naming the tool
+  - path: "contracts/packs/conformance/classifier-cases.yaml"
+    action: manual_review
+    note: its pack-check mentions name open-packs' own usage and are not renamed; WP10 adds the anti-pattern classifier case (a behaviour change, not a rename)
+  - path: "contracts/charter/changes/2026-11-20-pack-doctor-skipped-reasons.md"
+    action: rename
+    note: an unreleased change fragment is live, not released history
+  - path: "docs/conformance/**"
+    action: rename
+    note: divergence-register.md and divergences.yaml name the tool as a live surface
+  - path: "docs/development/notes/pack-code-unification.md"
+    action: rename
+    note: live note
+  - path: "docs/architecture/**"
+    action: rename
+    note: hexagonal-service.md, architectural-patterns-applied.md (scope rows), graph-walk-*.puml; the .svg files are regenerated with the pinned PlantUML, never hand-edited
+  - path: ".kittify/evidence/**"
+    action: do_not_change
+    note: evidence records are history
+  - path: "service/pack-doctor/**"
+    action: rename
+    note: the renamed module (filesystem_paths), its build.gradle.kts and its licenses/ SOURCE files, which name the module path
+  - path: "build-logic/**"
+    action: rename
+    note: charter.pack-doctor-jar.gradle.kts, PackDoctorLicences and the build-logic allowlists (filesystem_paths, cli_commands)
+  - path: "settings.gradle.kts"
+    action: rename
+    note: the include of the renamed module (cli_commands)
+  - path: "scripts/release/**"
+    action: rename
+    note: service-release-assets.sh and rehearse-service-release.sh name the jar and its task (user_facing_strings, cli_commands)
+  - path: "contracts/charter/scenarios/**"
+    action: manual_review
+    note: behaviour scenarios change with the mission's rules (WP03 preset items, WP04 manifest_stale), not with the rename; reviewers check each scenario edit against the ruling it implements

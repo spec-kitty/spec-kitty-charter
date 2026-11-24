@@ -1,0 +1,242 @@
+{
+  "event_count": 143,
+  "last_event_id": "01M83ZYMPZJT9NM957A63JW2TW",
+  "materialized_at": "2026-11-23T10:41:43.135596+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-doctor-coverage-01M7YMQK",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 13,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZXRG37JNBZ9AS63NABYXW",
+      "last_transition_at": "2026-11-23T10:41:14.243720+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP01-one-closure-fault-type/review-cycle-3.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP01-one-closure-fault-type/review-cycle-3.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 30481,
+      "shell_pid_created_at": "1795274853.73"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZXTWYDJCZ51H67EEZ8TQM",
+      "last_transition_at": "2026-11-23T10:41:16.702777+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP02-pack-check-becomes-pack-doctor/review-cycle-2.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP02-pack-check-becomes-pack-doctor/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 30632,
+      "shell_pid_created_at": "1795281849.98"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZY1XPDTENKPBQTCD9Q9VR",
+      "last_transition_at": "2026-11-23T10:41:23.894208+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP03-preset-item-rule/review-cycle-2.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP03-preset-item-rule/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 592,
+      "shell_pid_created_at": "1795328152.53"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZXX60PMYANAZ4655GRXYY",
+      "last_transition_at": "2026-11-23T10:41:19.040260+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP04-manifest-stale/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP04-manifest-stale/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3974,
+      "shell_pid_created_at": "1795298156.1"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZY9243SV192VMCVQEFN6T",
+      "last_transition_at": "2026-11-23T10:41:31.204461+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP05-validate-full/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP05-validate-full/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 30619,
+      "shell_pid_created_at": "1795330577.81"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZYBABG2NNP08H35HFT03G",
+      "last_transition_at": "2026-11-23T10:41:33.515669+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP06-report-file/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP06-report-file/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 2632,
+      "shell_pid_created_at": "1795331120.71"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZYDPHVTG8SPTMNX9QF9NV",
+      "last_transition_at": "2026-11-23T10:41:35.953559+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP07-remediate/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP07-remediate/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 22717,
+      "shell_pid_created_at": "1795337559.16"
+    },
+    "WP08": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 3,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZYFWTK1QBMQAB1CJRQNTP",
+      "last_transition_at": "2026-11-23T10:41:38.202564+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP08-adr-and-docs/review-cycle-3.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP08-adr-and-docs/review-cycle-3.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 5078,
+      "shell_pid_created_at": "1795429577.4"
+    },
+    "WP09": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 3,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZYMPZJT9NM957A63JW2TW",
+      "last_transition_at": "2026-11-23T10:41:43.135596+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP09-open-packs-drafts/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP09-open-packs-drafts/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 18588,
+      "shell_pid_created_at": "1795353479.33"
+    },
+    "WP10": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZXZD67TWRZTTBK3AA2PYH",
+      "last_transition_at": "2026-11-23T10:41:21.318244+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP10-anti-pattern-file-kind/review-cycle-2.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP10-anti-pattern-file-kind/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 16193,
+      "shell_pid_created_at": "1795304527.05"
+    },
+    "WP11": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZY4ED7CSZQBY4V4G9ZWX1",
+      "last_transition_at": "2026-11-23T10:41:26.477472+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP11-anti-pattern-node-refusal/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP11-anti-pattern-node-refusal/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3369,
+      "shell_pid_created_at": "1795306100.86"
+    },
+    "WP12": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZY6SCWWAAMWEKX40HNXTE",
+      "last_transition_at": "2026-11-23T10:41:28.876140+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP12-inline-anti-patterns-dropped/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP12-inline-anti-patterns-dropped/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3369,
+      "shell_pid_created_at": "1795306100.86"
+    },
+    "WP13": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M83ZYJAZADBPJSPVVNMG6QC2",
+      "last_transition_at": "2026-11-23T10:41:40.703823+00:00",
+      "review_result": {
+        "feedback_path": "kitty-specs/pack-doctor-coverage-01M7YMQK/tasks/WP13-policy-lock-case-only/review-cycle-1.md",
+        "reference": "review-cycle://pack-doctor-coverage-01M7YMQK/WP13-policy-lock-case-only/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3815,
+      "shell_pid_created_at": "1795419077.57"
+    }
+  }
+}
