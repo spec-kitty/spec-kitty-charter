@@ -2,7 +2,7 @@
 title: Author a procedure
 description: "The checklist for a procedure pack artifact: what loading the pack already refuses, and the three refusals of ADR-0052 that review applies."
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-22T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -59,10 +59,10 @@ The shape is
 the sanitized shape of [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) decision 2.
 Review does not need to look for any of the following, because loading the pack refuses them:
 
-- **An undeclared key, at any level.** The root, each step, each reference and each inline anti-pattern entry are
-  closed (`additionalProperties: false`). The schema has no output field, so an `outputs` or `deliverable` key is
-  refused as unknown. The procedure binding declares no output template either; a mission type is the kind that
-  does.
+- **An undeclared key, at any level.** The root, each step and each reference are closed
+  (`additionalProperties: false`). The schema has no output field and no anti-patterns, so an `outputs`,
+  `deliverable` or inline `anti_patterns` key is refused as unknown. The procedure binding declares no output template
+  either; a mission type is the kind that does.
 - **A missing entry or exit condition.** `entry_condition` and `exit_condition` are required non-empty strings.
   `steps` needs at least one step, and each step needs a non-empty `title`.
 - **A reference of type `action`.** A reference's `type` must be one of the artifact kinds the schema lists, and
@@ -114,8 +114,10 @@ as amended by [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-q
 
 ## Anti-patterns
 
-Write anti-patterns inline in `anti_patterns` for now. ADR-0052 replaces them with a `rejects` list, but that is
-decided and not built ([descriptors](/architecture/descriptors/#procedure--procedureyaml)).
+An anti-pattern is its own file, `anti_patterns/<id>.anti-pattern.yaml`, and the procedure rejects it with a
+`rejects` edge in the pack's graph ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)).
+A procedure carries no `anti_patterns` key: loading refuses one as an unknown key
+([descriptors](/architecture/descriptors/#procedure--procedureyaml)).
 
 ## See also
 

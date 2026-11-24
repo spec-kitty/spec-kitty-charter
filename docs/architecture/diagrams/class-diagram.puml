@@ -135,7 +135,6 @@ package "packs.domain  «CORE»" #F2F9FD {
   class DirectiveReference <<ValueObject>> #EAF4FB
   class ParadigmReference <<ValueObject>> #EAF4FB
   class StyleguidePattern <<ValueObject>> #EAF4FB
-  class StyleguideAntiPattern <<ValueObject>> #EAF4FB
   enum Enforcement <<ValueObject>> #EAF4FB
   enum StyleguideScope <<ValueObject>> #EAF4FB
   class PackElementViolation <<ValueObject>> #EAF4FB
@@ -264,7 +263,6 @@ Directive "1" *-- "0..*" DirectiveReference : references
 Directive --> Enforcement : enforcement
 Paradigm "1" *-- "0..*" ParadigmReference : references
 Styleguide "1" *-- "0..*" StyleguidePattern : patterns
-Styleguide "1" *-- "0..*" StyleguideAntiPattern : antiPatterns
 Styleguide --> StyleguideScope : scope
 Styleguide "1" *-- "0..1" ConfigValue : structuralLintConfig
 

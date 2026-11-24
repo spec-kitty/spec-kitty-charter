@@ -2,7 +2,7 @@
 title: "Note: one code per pack fault (the R2 table)"
 description: "The R2 code table of #554: for each pack fault, what validate mode and the registration answer today, and the one code and wording kept."
 doc_status: draft
-updated: 2026-11-18T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -98,9 +98,14 @@ at a pointer, which is the file unless the row says otherwise.
 | 37 | Org pack has no `drg/fragment.yaml` | `org_fragment_missing` | not judged | unchanged (validate only) | none | none | checked against golden: `org-fragment-missing` and every `+pack.yaml` org plant |
 | 38 | `requires_core`, `pack_version` or a `depends_on` range is not PEP 440 | `requires_core_invalid`, `pack_version_invalid`, `dependency_range_invalid` | not judged (accepted); the offering answers the first as `pack_unreadable` | unchanged (validate only; one descriptor function, IC-03) | none | none | checked against golden: `requires-core-invalid` (registration accepts it) |
 | 39 | A symbolic link below the pack root (D1, D6, #597) | not judged (a file link was read through) | not judged (a file link was read through, #597) | `pack_entry_linked`, `<link>: is a symbolic link; a pack holds no links`; owner `StorageCodes` (`LinkRules`, and the store half in `StoreRead`); surfaces: registration, validate mode, the configured load (the composing read answers `pack_unreadable` naming it); the pack root may be a link (#174) | R, V | R, V | checked against golden: `pack-entry-linked-file`, `asset-path-escape-through-a-symlink`, `asset-path-inside-through-a-symlink-is-contained`, `asset-path-symlink-loop` |
+| 40 | A manifest `content_hash` or `manifest_hash` that does not match the pack's bytes (#630, ruling R-b, added 2026-11-22) | not judged (`--round-trip` reported it as `round_trip_red`) | not judged (restamped) | `manifest_stale` at `pack-manifest.yaml`, one per field, naming it (`constituents{<path>}.content_hash`, `presets{<path>}.content_hash`, `manifest_hash`); owner `StorageCodes` (`ManifestRules`), after `manifest_membership` and only when nothing else failed; a path membership names gets none | R, V | R, V | no golden subject; `ManifestRulesTest`, contract scenario `whole-pack-registration.feature` |
+| 41 | A special file below the pack root: a FIFO, a socket, a device (ruling R-ad, added 2026-11-23) | not judged (the walk passed over it) | not judged (the commit's copy blocked on a FIFO) | `unreadable`, `<file>: is not a regular file or a directory; a pack holds only regular files and directories`, at its path and nothing else there; owner `StorageCodes` (`SpecialFileRules`, and the store half in `StoreRead`); surfaces: registration, validate mode, remediation's precondition, the configured load (the composing read answers `pack_unreadable` naming it) | R, V | R, V | no golden subject (git cannot carry a FIFO); `SpecialEntriesTest`, `PackRegistrationSpecialFileTest`, `RemediateTest`, `PackDoctorJarTest`, each with a FIFO made at test time |
+| 42 | A YAML document, or Markdown front matter, of more than 1 048 576 code points (added 2026-11-23) | parsed and accepted | parsed and accepted | `unreadable`, `the document is too large`, at the file; `pack_unreadable` at `pack.yaml`; owner `ParsedYaml` (`Yaml.MAX_CODE_POINTS`), as the alias and nesting budgets | R, V | R, V | no golden subject; `ParsedYamlTest` |
 
-39 rows. 30 change a surface: 22 change validate mode and 15 change registration, 7 of them both. Row 33 changes under
-Q1, row 39 under rulings D1 and D6 of #478 (added 2026-11-19), the others under R2.
+40 rows. 31 change a surface: 23 change validate mode and 16 change registration, 8 of them both. Row 33 changes under
+Q1, row 39 under rulings D1 and D6 of #478 (added 2026-11-19), row 40 under ruling R-b of mission
+`pack-doctor-coverage-01M7YMQK` (added 2026-11-22,
+[ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)), the others under R2.
 
 ## Open cases
 

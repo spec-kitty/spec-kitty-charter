@@ -4,7 +4,7 @@
 '   service/kernel (kernel.validation): Rule, ModularRuleset, Constraint, Rationale, Reason, ReasonCode, Severity, Location
 '   service/packs (packs.domain.rules): PackRulesets; (packs.application): PackRefusals
 '   service/packs (packs.infra.api): PackRegistrationController
-'   service/pack-validation: PackVerdicts, PackCheck
+'   service/pack-validation: PackVerdicts, PackCheck; service/pack-doctor: PackDoctorMain
 '   Decided: ADR-0082 (the domain owns every graph walk). Proposed: the type design on architectural-patterns-applied.md.
 ' Notation: a <<proposed>> class is part of the approved target design, not built yet; every other class exists.
 !include _style.iuml
@@ -123,7 +123,8 @@ package "packs.domain (owns HOW to walk)" {
 
 package "edge (ports and adapters)" {
   class PackRegistrationController <<driving adapter>>
-  class PackCheck <<CLI>>
+  class PackDoctorMain <<CLI>>
+  class PackCheck <<validate mode>>
   class PackRefusals {
     Rationale -> CharterRefusal
   }
@@ -160,6 +161,7 @@ PackRulesets ..> Scope : builds
 PackRulesets ..> ModularRuleset : builds
 
 PackRegistrationController ..> PackRulesets : imports rules and scope
+PackDoctorMain ..> PackCheck
 PackCheck ..> PackRulesets : imports rules and scope
 PackRegistrationController ..> PackRefusals
 PackCheck ..> PackVerdicts

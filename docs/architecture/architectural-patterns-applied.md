@@ -2,12 +2,13 @@
 title: Architectural patterns applied
 description: How the charter service applies hexagonal, onion and screaming architecture - the layout, the pattern role of each concern, and a walk through Pack, Tactic and its steps.
 doc_status: active
-updated: 2026-11-21T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
   - adr/0006-onion-vertical-slices-archunit
   - adr/0082-the-domain-owns-every-graph-walk-and-ports-transform-and-interface
+  - adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor
   - architecture/hexagonal-service
   - development/how-to-ddd
   - development/code-style-and-conventions
@@ -224,8 +225,8 @@ Design* (2003), chapter 9.
 **What it is.** Instead of throwing on the first error, a check collects every problem it finds into one object, the
 notification, and hands it back. The caller then decides what to do with all of them.
 
-**Why here.** A pack author wants every violation in one answer, not one per attempt. The API, pack-check and the
-doctor need the same list, ranked by severity.
+**Why here.** A pack author wants every violation in one answer, not one per attempt. The API, pack-doctor and the
+active-set doctor need the same list, ranked by severity.
 
 **How it maps.**
 
@@ -234,10 +235,12 @@ doctor need the same list, ranked by severity.
   `{@link ai.speckitty.charter.kernel.validation.ReasonCode#severity}`, a
   `{@link ai.speckitty.charter.kernel.validation.Severity}`: `VIOLATION`, `WARNING` or `NOTICE`. Where it was found is a
   `{@link ai.speckitty.charter.kernel.validation.Location}` (a file and a pointer into it).
-- *Proposed:* an `Origin` on each `Reason`: an opaque element identifier owned by the kernel. `packs.domain` fills
-  it from a pack id, or a pack id and a URN. The kernel never names a pack. A `ValidationWalker` appends to the
-  `Rationale` as it walks. No parallel result shape is kept beside it: `CompositionFault`,
-  `PackCompositionResolver.Refusal` and the string notices of `ImpactCheck` fold into it.
+- *Built (slice 1, #614; [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)
+  decision 15):* an `Origin` on each `Reason`, an opaque element identifier owned by the kernel. `packs.domain` fills
+  it from a pack id, or a pack id and a URN (`PackOrigins`). The kernel never names a pack. `CompositionFault` is
+  deleted, and one `ClosureFault.of(...)` factory builds every closure fault.
+- *Proposed:* a `ValidationWalker` appends to the `Rationale` as it walks. No parallel result shape is kept beside it:
+  `PackCompositionResolver.Refusal`, `ClosureVerdict` and the string notices of `ImpactCheck` fold into it.
 
 Reference: Fowler, [*Replacing Throwing Exceptions with Notification in
 Validations*](https://martinfowler.com/articles/replaceThrowWithNotification.html).
@@ -268,7 +271,7 @@ Reference: [refactoring.guru: Strategy](https://refactoring.guru/design-patterns
 **What it is.** A class with public static methods that build and return ready-made objects, with names that say what
 you get (`closure()`, `activeSet(..)`). Callers never assemble the parts themselves.
 
-**Why here.** The API, pack-check and the doctor must use the *same* rules and scopes. One public factory in the
+**Why here.** The API, pack-doctor and the active-set doctor must use the *same* rules and scopes. One public factory in the
 domain is the single place they come from.
 
 **How it maps.** ADR-0082 decides that the domain exposes its walkers, and a public static rule factory built on
@@ -293,11 +296,12 @@ adapter (a file store) is called out to. The domain never names an adapter.
 **How it maps.**
 
 - *Exists:* the reading port `PackReading` and the storage reader `FileSystemPackInspector`; the driving adapters
-  `{@link ai.speckitty.charter.packs.infra.api.PackRegistrationController}` and
+  `{@link ai.speckitty.charter.packs.infra.api.PackRegistrationController}` and the `pack-doctor` CLI's
+  `{@link ai.speckitty.charter.packdoctor.PackDoctorMain}`, which runs validate mode,
   `{@link ai.speckitty.charter.packvalidation.PackCheck}`; the mappers
   `{@link ai.speckitty.charter.packs.application.PackRefusals}` (to a
   `{@link ai.speckitty.charter.kernel.domain.CharterRefusal}`) and
-  `{@link ai.speckitty.charter.packvalidation.PackVerdicts}` (to a report and an exit code). `PackRefusals`, pack-check
+  `{@link ai.speckitty.charter.packvalidation.PackVerdicts}` (to a report and an exit code). `PackRefusals`, pack-doctor
   and the stored reads share the wording in `{@link ai.speckitty.charter.packs.domain.PackRefusalMapping}`; slice 7
   settles where it lives.
 - *Proposed:* the judging ports of PR #618 (`ClosureWalk`, `ImpactCheck`, `MutabilityCheck`) are replaced.
@@ -314,12 +318,13 @@ Reference: Cockburn, [*Hexagonal architecture*](https://alistair.cockburn.us/hex
 |---|---|---|
 | Compose (`CLOSURE`) | the roots; the check follows `DEPENDS_ON` and `PARENT_PACK` | per pack: the descriptor checks; at the end: duplicates, names, ranges, sibling contests, cycles, presets |
 | Relations | the composed closure; the check follows `OVERRIDES`, `ENHANCES` and `SPECIALIZES` | per edge: self override, not permitted, a locked step enhanced, a stray step edge, the edge-index refusals; at the end: conflicts, one cycle fault per strongly connected group |
-| Own closure | a single-root closure; predicate: the declaring pack or its profiles | fallback profile, role pins, profile enhancements (moved to `packs.domain.rules`) |
+| Own closure | a single-root closure; predicate: the declaring pack or its profiles | fallback profile, role pins, profile enhancements (moved to `packs.domain.rules`); then the preset-item phase, built (`PresetItemRules`: `preset_item_not_held`, `preset_item_undeclared`; ADR-0083) |
+| Case-only answer | the composed closure of each root; every member's mentions against every member's holdings | a preset item or a policy lock that names a held artifact only by letter case, built (`CaseOnlyRules`, one body: registration's phase 6 and pack-doctor's `CLOSURE`; R-y, R-z, ADR-0083 decision 20) |
 | Impact | `closuresHolding(written)` | per closure, in phase order: compose (gate), relations including the edge-index rules (gate), own closure; then the application's notices and `requireComposable` |
 | Mutability | `ancestorsOf(pack)`; predicate: the written artifacts | the policy level; one fault per refused write |
 | Removal dependents | the removed pack; the check follows reverse edges, plus `REFERENCES` into it | `pack_has_dependents`, judged first |
-| pack-check set check | a determined selection (the CLI's entries) | `CLOSURE` with presets |
-| Doctor (planned) | the active set | all of the above, collect-all, every severity |
+| pack-doctor `validate` | a determined selection (the CLI's entries) | default: `CLOSURE`, in order the composition faults, the preset contests, the preset items and the case-only answer; `--full` adds `REFERENCES` when no rooted closure fails to compose (R-aa), per root over the composed closure, every pack in it (R-ae): the substep delegations, the references and the step enhancements' targets, one body with registration's (`PackRulesets.references`, R-ab; built, ADR-0083) |
+| Active-set doctor (planned) | the active set | all of the above, collect-all, every severity |
 
 ### A registration, step by step (proposed)
 
@@ -328,7 +333,7 @@ Reference: Cockburn, [*Hexagonal architecture*](https://alistair.cockburn.us/hex
 The use case resolves the scope to pack ids first, asks `PackRulesets` for the rules and the scope, builds the
 `ValidationWalker`, and lets `PackGraph` walk in stable order. The phase gate stops later phases after a violation.
 A passing `Rationale` commits the pack; a failing one goes through `PackRefusals` to a problem with every violation.
-pack-check takes the same path and ends in `PackVerdicts` and an exit code.
+pack-doctor takes the same path and ends in `PackVerdicts` and an exit code.
 
 ### The refusal mapping at the edge (unchanged)
 
@@ -379,6 +384,8 @@ merged; otherwise they delete nothing and #618's ports are not built.
 
 1. **Ledger entry.** `Origin` on `Reason`; unify `CompositionFault` and `Refusal` into the closure fault (#614). No
    behavior change. Fixtures, contract examples and round-trip checks assert `Origin`; no test excludes it.
+   *Built 2026-11-21 (#614, ADR-0083 decision 15): `CompositionFault` is deleted; the resolver's `Refusal` and
+   `ClosureVerdict` stay, and slice 7 removes `ClosureVerdict`.*
 2. **`PackGraph` and `Scope` in the domain.** Move the composition closure, the `ClosureRoots` index, and the cycle
    and strongly-connected-group code; delete the duplicate walks in `InboundReferences`, `PackMutabilityPolicy` and
    `RemovalDependents`.

@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-20T00:00:00Z
+updated: 2026-11-23T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -718,7 +718,7 @@ Core paths are at spec-kitty `3131fffa`.
 ### DIV-401: The procedure shape
 
 - **Core:** Requires `name` and `purpose`; a step names who acts with `actor` (`human`, `agent` or `system`, default `agent`); an anti-pattern is `{name, description}`, both required; a reference is `{type, id, reason?}`; an optional list may be empty; the `id` is `^[a-z][a-z0-9-]*$` and need not equal the file stem (`offering/schemas/procedure.schema.yaml`).
-- **Service:** Requires `title` and `description`; a step names the acting `role` (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, absent when any role may act), never `actor`; an anti-pattern is `{title, content?, bad_example?, good_example?}`; a reference is `{type, id, when?, reason?}`; an optional list holds at least one entry; the `id` is `^[a-z0-9]+(-[a-z0-9]+)*$` and equals the file stem. A procedure in core's shape, or one whose `id` is not its stem, is an `artifact_schema_error` in validate mode and is refused by the load.
+- **Service:** Requires `title` and `description`; a step names the acting `role` (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, absent when any role may act), never `actor`; a procedure carries no anti-pattern (an anti-pattern is its own file, named by a `rejects` edge, [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) decision 16), and an `anti_patterns` key is refused as unknown; a reference is `{type, id, when?, reason?}`; an optional list holds at least one entry; the `id` is `^[a-z0-9]+(-[a-z0-9]+)*$` and equals the file stem. A procedure in core's shape, or one whose `id` is not its stem, is an `artifact_schema_error` in validate mode and is refused by the load.
 - **Rationale:** The sanitized artifact shapes of ADR-0043 (S1, S10 to S16); a step names a role, not an agent kind (ADR-0032).
 - **Ruling:** operator rulings on #194 (2026-10-28, 2026-10-29); #186 "as if core does not exist"
 - **Status:** open, since 2026-10-29
@@ -749,6 +749,18 @@ Core paths are at spec-kitty `3131fffa`.
 - **Evidence:**
   - Charter: `contracts/packs/schemas/toolguide-guide.schema.json`; `GuideMarkdown`; `FileSystemPackInspectorTest`, a guide with a preamble, without an overview or without an H1 reported in validate mode; `ToolguideGuideTest`
   - Corpus case: the 24 pinned guides at `openPacksRef` `5df92a5d`
+
+### DIV-404: The styleguide's anti-patterns
+
+- **Core:** A styleguide carries an inline `anti_patterns` list, each entry `{name, description, bad_example, good_example}` (`offering/schemas/styleguide.schema.yaml`; the merged shape ADR-0043 kept).
+- **Service:** A styleguide carries no anti-pattern (an anti-pattern is its own file, `anti_patterns/<id>.anti-pattern.yaml`, named by a `rejects` edge, [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) decision 16), and an `anti_patterns` key is refused as unknown: `artifact_schema_error` in validate mode and at registration. The charter contract's `Styleguide` and `StyleguideRegistration` carry no `antiPatterns`.
+- **Rationale:** An anti-pattern has one home, its file, with a severity (ADR-0052 decisions 8 and 16, [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/) decision 12), as for a procedure (DIV-401).
+- **Ruling:** operator ruling R-r (2026-11-21, all of #154); #186 "as if core does not exist"
+- **Status:** open, since 2026-11-21
+- **Evidence:**
+  - Core: `offering/schemas/styleguide.schema.yaml` (`anti_patterns`)
+  - Charter: `contracts/packs/schemas/styleguide.schema.json` (closed, no `anti_patterns`); `InlineAntiPatternCheckTest`
+  - Charter: `contracts/charter/scenarios/registration/inline-anti-patterns.feature`
 
 ## Mission types (DIV-501..599, ADR-0044)
 
