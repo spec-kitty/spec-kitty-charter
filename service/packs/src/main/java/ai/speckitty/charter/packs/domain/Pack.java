@@ -308,6 +308,16 @@ public final class Pack {
     }
 
     /**
+     * The readable anti-patterns, each held by its file {@code anti_patterns/<id>.anti-pattern.yaml} (ADR-0052 decision
+     * 8), in a stable order.
+     *
+     * @return an immutable list; empty when the pack holds none
+     */
+    public List<AntiPattern> antiPatterns() {
+        return artifacts(ArtifactKind.ANTI_PATTERN, AntiPattern.class);
+    }
+
+    /**
      * The readable assets, in a stable order.
      *
      * @return an immutable list; empty when the pack holds none
@@ -472,6 +482,16 @@ public final class Pack {
          * @return this builder
          */
         public Builder paradigm(Paradigm value) {
+            return artifact(value);
+        }
+
+        /**
+         * Appends an anti-pattern.
+         *
+         * @param value the anti-pattern
+         * @return this builder
+         */
+        public Builder antiPattern(AntiPattern value) {
             return artifact(value);
         }
 

@@ -12,15 +12,21 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
  * OWNER_ONLY_MODES_ARE_BUILT_IN_ONE_PLACE (#510): no class of the packs module but {@link OwnerOnly} builds a POSIX
- * permission attribute or sets POSIX permissions on a path. Five call sites that each built their own failed on Windows, where the file system has no
- * POSIX permissions; the helper falls back to an ACL, and a sixth call site that skips it would fail the same way.
+ * permission attribute or sets POSIX permissions on a path, by any of the JDK's calls that do: {@code
+ * PosixFilePermissions.asFileAttribute}, {@code Files.setPosixFilePermissions}, {@code PosixFileAttributeView
+ * .setPermissions}, and {@code Files.setAttribute}, which sets {@code posix:permissions} among others (a call's
+ * attribute name is a value the rule cannot read, so every call is the helper's). Five call sites that each built their
+ * own failed on Windows, where the file system has no POSIX permissions; the helper falls back to an ACL, or does
+ * nothing where a mode is only carried, and a sixth call site that skips it would fail the same way.
  *
  * <p>The known-bad control follows {@code NetworkCodeBoundaryTest}: a test-only class in a {@code badfixture} package,
  * against which the unchanged production rule must fail.
@@ -35,6 +41,10 @@ class OwnerOnlyBoundaryTest {
             .callMethod(PosixFilePermissions.class, "asFileAttribute", Set.class)
             .orShould()
             .callMethod(Files.class, "setPosixFilePermissions", Path.class, Set.class)
+            .orShould()
+            .callMethod(PosixFileAttributeView.class, "setPermissions", Set.class)
+            .orShould()
+            .callMethod(Files.class, "setAttribute", Path.class, String.class, Object.class, LinkOption[].class)
             .because("a POSIX mode fails on a file system without POSIX permissions; OwnerOnly falls back to an ACL"
                     + " (#510)");
 
@@ -56,6 +66,8 @@ class OwnerOnlyBoundaryTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("ArchiveBuildsPosixMode")
                 .hasMessageContaining("PosixFilePermissions.asFileAttribute")
-                .hasMessageContaining("Files.setPosixFilePermissions");
+                .hasMessageContaining("Files.setPosixFilePermissions")
+                .hasMessageContaining("PosixFileAttributeView.setPermissions")
+                .hasMessageContaining("Files.setAttribute");
     }
 }

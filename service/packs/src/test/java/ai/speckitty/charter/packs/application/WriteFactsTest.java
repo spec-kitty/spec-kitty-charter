@@ -22,6 +22,9 @@ class WriteFactsTest {
 
     private static final SlotId REASONS = new SlotId("spdd:reasons-block");
 
+    /** A mission type step only a graph node names: declared by the pack, never held as a file. */
+    private static final String STEP = "action:software-dev/plan";
+
     private static Urn directive(String id) {
         return Urn.parse("directive:" + id).orElseThrow();
     }
@@ -41,6 +44,7 @@ class WriteFactsTest {
         return new PackCompositionFacts(
                 List.of("base::directive:OLD"),
                 List.of("directive:A", "directive:B"),
+                List.of(STEP),
                 List.of("directive:A", "base::directive:OLD"),
                 MutabilityPolicySource.empty(),
                 presets,
@@ -53,13 +57,40 @@ class WriteFactsTest {
 
         PackCompositionFacts added = WriteFacts.withArtifact(facts, directive("C"));
 
-        assertThat(added.defined()).containsExactly("directive:A", "directive:B", "directive:C");
+        assertThat(added.held()).containsExactly("directive:A", "directive:B", "directive:C");
         assertThat(WriteFacts.withArtifact(added, directive("C")))
                 .as("a replace")
                 .isSameAs(added);
         assertThat(WriteFacts.withArtifact(facts, directive("A")))
                 .as("the control: an id the pack holds")
                 .isSameAs(facts);
+    }
+
+    @Test
+    void anArtifactWriteHoldsItAndDeclaresItAndKeepsTheGraphOnlyNodes() {
+        PackCompositionFacts after = WriteFacts.withArtifact(facts(List.of(), List.of()), directive("C"));
+
+        assertThat(after.held()).containsExactly("directive:A", "directive:B", "directive:C");
+        assertThat(after.declared()).containsExactlyInAnyOrder(STEP, "directive:A", "directive:B", "directive:C");
+    }
+
+    @Test
+    void anArtifactRemovalNeitherHoldsNorDeclaresItAndKeepsTheGraphOnlyNodes() {
+        PackCompositionFacts after = WriteFacts.withoutArtifact(facts(List.of(), List.of()), directive("A"), List.of());
+
+        assertThat(after.held()).containsExactly("directive:B");
+        assertThat(after.declared()).containsExactlyInAnyOrder(STEP, "directive:B");
+    }
+
+    @Test
+    void aRegisteredEdgeWriteKeepsWhatIsHeldAndDeclared() {
+        PackCompositionFacts facts = facts(List.of(), List.of());
+
+        PackCompositionFacts after = WriteFacts.withRegisteredEdges(
+                facts, List.of(), List.of(edge("A", "OTHER", RelationType.OVERRIDES, "base")));
+
+        assertThat(after.held()).isEqualTo(facts.held());
+        assertThat(after.declared()).isEqualTo(facts.declared()).contains(STEP);
     }
 
     @Test
@@ -119,7 +150,7 @@ class WriteFactsTest {
 
         PackCompositionFacts after = WriteFacts.withoutArtifact(facts, directive("A"), List.of(outgoing));
 
-        assertThat(after.defined()).containsExactly("directive:B");
+        assertThat(after.held()).containsExactly("directive:B");
         assertThat(after.edges()).isEmpty();
         assertThat(after.presets())
                 .as("a directive item goes, the tactic of the same id stays, and a key left empty is left out")
@@ -152,7 +183,8 @@ class WriteFactsTest {
         PackCompositionFacts facts = facts(edges, List.of());
         return new PackCompositionFacts(
                 facts.changed(),
-                facts.defined(),
+                facts.held(),
+                facts.declared(),
                 facts.references(),
                 facts.policy(),
                 facts.presets(),
@@ -217,6 +249,7 @@ class WriteFactsTest {
         return new PackCompositionFacts(
                 facts.changed(),
                 List.of("glossary_context:g", "glossary_context:h", "directive:A"),
+                List.of(),
                 facts.references(),
                 facts.policy(),
                 facts.presets(),

@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,12 +110,16 @@ public final class EnhancementCompose {
         }
 
         /**
-         * The violation as a closure fault (#556): the code, the detail and the packs named.
+         * The violation as a closure fault (#556): the code, the detail and the packs named, about the enhancement in
+         * the enhancing pack, the pack that broke the rule.
          *
          * @return the fault
          */
         public ClosureFault toFault() {
-            return ClosureFault.of(code, detail, packs);
+            Origin origin = packs.isEmpty()
+                    ? Origin.NONE
+                    : PackOrigins.of(packs.getFirst().packId(), enhancement);
+            return ClosureFault.of(origin, code, detail, packs);
         }
     }
 
@@ -239,6 +244,26 @@ public final class EnhancementCompose {
         return List.copyOf(violations);
     }
 
+    /**
+     * C37 over one pack within a closure, every fault kept (#632 item 3, ruling R-s): {@link #targetFaults} over the
+     * edges its facts list, each violation as its fault ({@link TargetViolation#toFault()}). It is the one body of the
+     * enhancement target check, through {@code PackRulesets.references}: the offering's phase runs it for every member
+     * of the closure it composes, and pack-doctor's {@code --full} for every member of each root's composed closure
+     * (ruling R-ae).
+     *
+     * @param closure the closure the pack is judged in, every pack once, the pack among it
+     * @param enhancing the pack whose edges are judged
+     * @param facts the pack's composition facts
+     * @return every fault, in the order of the edges; empty when every step enhancement's step is held
+     */
+    public static List<ClosureFault> targetFaultsOf(
+            List<PackUnderResolution> closure, PackUnderResolution enhancing, PackCompositionFacts facts) {
+        Objects.requireNonNull(facts, "facts");
+        return targetFaults(closure, enhancing, facts.edges()).stream()
+                .map(TargetViolation::toFault)
+                .toList();
+    }
+
     private static Optional<TargetViolation> judge(
             StepEnhancement enhancement,
             PackUnderResolution enhancing,
@@ -265,7 +290,7 @@ public final class EnhancementCompose {
                     writes + "pack `" + holder.descriptor().name() + "` is outside its depends_on closure"));
         }
         Set<String> held = heldBy.computeIfAbsent(
-                holder.descriptor().packId(), packId -> new HashSet<>(holder.definedArtifacts()));
+                holder.descriptor().packId(), packId -> new HashSet<>(holder.referableArtifacts()));
         if (!StepHolding.heldByPack(held, enhancement.target())) {
             return Optional.of(violation(
                     RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,

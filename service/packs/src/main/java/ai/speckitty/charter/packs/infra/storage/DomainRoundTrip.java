@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
@@ -197,8 +198,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         Map<String, @Nullable String> sourceIds = sourceIds(source, kindOf, companions.keySet());
         Loaded loaded = load(from, id);
         @Nullable Pack pack = loaded.pack();
-        @Nullable String descriptorFailure =
-                writeAll(from, to, id, pack == null ? null : beforeSave.apply(pack), sourcePlaces(sourceIds, kindOf));
+        Map<String, String> notWritten = new HashMap<>();
+        @Nullable Pack saved = pack == null ? null : beforeSave.apply(pack);
+        @Nullable String descriptorFailure = writeAll(from, to, id, saved, sourcePlaces(sourceIds, kindOf), notWritten);
         // #476: the policy on its own, so a source policy that cannot be read refuses only the policy file.
         @Nullable String policyFailure = descriptorFailure == null ? writePolicy(from, to, id) : null;
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
@@ -222,6 +224,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 refusals,
                 readBack,
                 written,
+                notWritten,
                 pack == null ? Map.of() : missingPayloads(pack),
                 shards,
                 reloaded);
@@ -293,6 +296,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             Map<String, List<String>> refusals,
             Map<String, List<String>> readBack,
             Map<String, String> written,
+            Map<String, String> notWritten,
             Map<String, List<String>> missingPayloads,
             Map<String, Outcome> shards,
             Loaded reloaded) {}
@@ -313,6 +317,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                     rewrite.refusals(),
                     rewrite.readBack(),
                     rewrite.written(),
+                    rewrite.notWritten(),
                     rewrite.kindOf(),
                     rewrite.sourceIds(),
                     rewrite.assemblyFailure());
@@ -322,6 +327,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             return payload(path, kind, rewrite.pack(), rewrite.assemblyFailure(), rewrite.reloaded());
         } else if (MANIFEST.equals(kind)) {
             return manifest(rewrite.id(), rewrite.source(), rewrite.target(), path, rewrite.written());
+        } else if (PRESET.equals(kind) && rewrite.notWritten().containsKey(path)) {
+            return new Refused(rewrite.notWritten().get(path));
         } else if (PRESET.equals(kind)) {
             return inPlace(
                     path,
@@ -383,40 +390,86 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * Writes the descriptor and every artefact of {@code pack} through {@code to}; when the pack did not load, only the
      * descriptor is copied.
      *
+     * <p>An artefact whose canonical form is past the code-point cap ({@link Yaml#MAX_CODE_POINTS}) is not written: no
+     * reader would take it back, so it is refused at its own file, naming the cause, and no unreadable copy is left in
+     * the written pack (Tier R B4). The cap judges the canonical form here, where it is made, as the readers judge a
+     * source text: a source inside the cap can grow past it, as a tab written {@code \t} in a double-quoted scalar does.
+     *
      * @param places the source place of each artefact of a kind in {@link #NOT_PLACED_BY_ID}, keyed
      *     {@code <gate kind>/<id>}
+     * @param notWritten filled with why each artefact left unwritten was, keyed {@code <gate kind>/<id>}
      * @return why the descriptor could not be read or written, or null when it was written
      */
-    private static @Nullable String writeAll(
+    private @Nullable String writeAll(
             DomainRepositoryService from,
             DomainRepositoryService to,
             PackIdentifier id,
             @Nullable Pack pack,
-            Map<String, String> places) {
+            Map<String, String> places,
+            Map<String, String> notWritten) {
         try {
             if (pack == null) {
                 to.save(id, from.get(id));
                 return null;
+            }
+            @Nullable String descriptorTooLarge = pastTheCap(strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor())));
+            if (descriptorTooLarge != null) {
+                return descriptorTooLarge;
             }
             to.save(id, pack.descriptor());
             // #193: asset files byte for byte, in place; sidecars and templates are artefacts like any other.
             pack.assetFiles().forEach(file -> to.writeAssetFile(id, file));
             // A kind not placed by id is written where its source file sat; every other kind at its canonical place.
             for (CharterArtifact artifact : pack.artifacts()) {
+                @Nullable KindBinding<?, ?> binding = KindBindings.of(artifact.kind()).orElse(null);
+                @Nullable String tooLarge = binding == null ? null : pastTheCap(canonicalText(binding, artifact));
+                if (binding != null && tooLarge != null) {
+                    notWritten.put(binding.schemaName() + "/" + artifact.localId(), tooLarge);
+                    continue;
+                }
                 if (NOT_PLACED_BY_ID.contains(artifact.kind())) {
                     to.saveArtifact(id, artifact, placeOf(artifact, places));
                 } else {
                     to.saveArtifact(artifact);
                 }
             }
-            // #195: presets in place, at presets/<id>.yaml.
-            pack.presets().forEach(preset -> to.writePreset(id, preset));
+            // #195: presets in place, at presets/<id>.yaml, keyed by that path when left unwritten.
+            for (Preset preset : pack.presets()) {
+                @Nullable String tooLarge = pastTheCap(strategy.writePreset(PresetFiles.toDso(preset)));
+                if (tooLarge != null) {
+                    notWritten.put(PresetFiles.pathOf(preset.id()), tooLarge);
+                } else {
+                    to.writePreset(id, preset);
+                }
+            }
             // #260: the pack document in place, at README.md.
             pack.document().ifPresent(document -> to.writePackDocument(id, document));
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
             return String.valueOf(refused.getMessage());
         }
+    }
+
+    /** The canonical form the store writes for {@code artifact}: the strategy's text of its DSO. */
+    private <D> String canonicalText(KindBinding<D, ?> binding, CharterArtifact artifact) {
+        return strategy.write(binding, binding.dsoOf(artifact));
+    }
+
+    /**
+     * Why a canonical text the round trip would write is not written: it holds more code points than the readers' cap
+     * ({@link Yaml#MAX_CODE_POINTS}), so no reader would take it back (Tier R B4, N5). Every YAML text the round trip
+     * writes is measured here before it is written: an artefact's, a preset's, the policy's, the descriptor's, a graph
+     * shard's or the fragment's, and the manifest's. A Markdown document is bounded by its front matter's reader alone.
+     *
+     * @param text the canonical text
+     * @return the refusal, naming the count; {@code null} within the cap
+     */
+    static @Nullable String pastTheCap(String text) {
+        int codePoints = text.codePointCount(0, text.length());
+        return codePoints > Yaml.MAX_CODE_POINTS
+                ? "not written: its canonical form holds " + codePoints + " code points, past the cap of "
+                        + Yaml.MAX_CODE_POINTS + ": the document is too large"
+                : null;
     }
 
     /**
@@ -466,6 +519,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             Map<String, List<String>> refusals,
             Map<String, List<String>> readBack,
             Map<String, String> written,
+            Map<String, String> notWritten,
             Map<String, String> kindOf,
             Map<String, @Nullable String> sourceIds,
             @Nullable String assemblyFailure) {
@@ -489,6 +543,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             return new Refused("the pack does not assemble: " + assemblyFailure);
         }
         @Nullable String writtenPath = written.get(kind + "/" + elementId);
+        @Nullable String tooLarge = notWritten.get(kind + "/" + elementId);
+        if (writtenPath == null && tooLarge != null) {
+            return new Refused(tooLarge);
+        }
         if (writtenPath == null) {
             List<String> domain = refusals.getOrDefault(elementId, List.of());
             return new Refused(
@@ -514,7 +572,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * still refused by the reader, just not named here.
      */
     private static String unknownFields(String kind, String text) {
-        if (!(Yaml.load(text) instanceof Map<?, ?> document)) {
+        if (!(ParsedYaml.documentOrNull(text) instanceof Map<?, ?> document)) {
             return "";
         }
         List<String> declared = PackSchemas.bundled().declaredProperties(kind);
@@ -586,7 +644,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     private @Nullable String writePolicy(DomainRepositoryService from, DomainRepositoryService to, PackIdentifier id) {
         try {
             if (from.get(id).paths().mutabilityPolicy().isPresent()) {
-                to.writePolicy(id, beforePolicySave.apply(from.policyOf(id)));
+                MutabilityPolicySource policy = beforePolicySave.apply(from.policyOf(id));
+                @Nullable String tooLarge = pastTheCap(PolicyYaml.write(policy));
+                if (tooLarge != null) {
+                    return tooLarge;
+                }
+                to.writePolicy(id, policy);
             }
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
@@ -719,7 +782,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             return new Refused(
                     path + " lists " + recomputed.missing().getFirst() + ", which the round trip did not write");
         }
-        write(target.resolve(path), strategy.writeManifest(recomputed.stamped()));
+        String stamped = strategy.writeManifest(recomputed.stamped());
+        @Nullable String tooLarge = pastTheCap(stamped);
+        if (tooLarge != null) {
+            return new Refused(tooLarge);
+        }
+        write(target.resolve(path), stamped);
         return new Written(path);
     }
 
@@ -821,9 +889,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!build.findings().isEmpty()) {
             return new Refused("the graph does not build: " + build.findings());
         }
-        @Nullable String generatedBy = Yaml.load(text) instanceof Map<?, ?> document && document.get("generated_by") != null
-                ? String.valueOf(document.get("generated_by"))
-                : null;
+        @Nullable String generatedBy =
+                ParsedYaml.documentOrNull(text) instanceof Map<?, ?> document && document.get("generated_by") != null
+                        ? String.valueOf(document.get("generated_by"))
+                        : null;
         String writtenText;
         try {
             writtenText = shape == Shape.FRAGMENT
@@ -832,7 +901,18 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         } catch (IllegalArgumentException e) {
             return new Refused("the " + noun + " cannot be written: " + e.getMessage());
         }
+        @Nullable String tooLarge = pastTheCap(writtenText);
+        if (tooLarge != null) {
+            return new Refused(tooLarge);
+        }
         write(target.resolve(path), writtenText);
+        return readBackShard(name, path, shape, build.graph(), writtenText);
+    }
+
+    /** The written shard or fragment read back and rebuilt: {@link Written} when it builds into the same graph. */
+    private static Outcome readBackShard(
+            String name, String path, Shape shape, DoctrineGraph graph, String writtenText) {
+        String noun = shape == Shape.FRAGMENT ? "fragment" : "shard";
         if (!(GraphDocumentReader.read(writtenText, shape, path) instanceof FileRead.Read<RawGraph> reread)) {
             return new Refused("read-back: the written " + noun + " does not read");
         }
@@ -840,7 +920,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!rebuilt.findings().isEmpty()) {
             return new Refused("read-back: the written " + noun + " does not build: " + rebuilt.findings());
         }
-        if (!sameGraph(build.graph(), rebuilt.graph())) {
+        if (!sameGraph(graph, rebuilt.graph())) {
             return new Refused("read-back: the written " + noun + " builds into another graph");
         }
         return new Written(path);
@@ -871,14 +951,11 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 .orElseThrow(() -> new IllegalStateException("no stored kind is validated by the schema " + kind));
     }
 
+    /** The declared id of a source file; none for a text the readers' guards refuse ({@link ParsedYaml}). */
     private static @Nullable String idOf(String text, String idKey) {
-        try {
-            return Yaml.load(text) instanceof Map<?, ?> map && map.get(idKey) != null
-                    ? String.valueOf(map.get(idKey))
-                    : null;
-        } catch (RuntimeException unparsable) {
-            return null;
-        }
+        return ParsedYaml.documentOrNull(text) instanceof Map<?, ?> map && map.get(idKey) != null
+                ? String.valueOf(map.get(idKey))
+                : null;
     }
 
     private static String read(Path file) {

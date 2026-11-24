@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -230,6 +231,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
             return Optional.empty();
         }
         return Optional.of(ClosureFault.of(
+                PackOrigins.of(pack.id(), target),
                 RefusalCode.GOVERNANCE_POLICY_VIOLATION,
                 "Operation " + operation + " on " + target + " is refused: pack "
                         + level.setBy().map(PackUlid::value).orElse(pack.id().value()) + " of the composition of "
@@ -394,7 +396,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
     /** The artifacts a pack holds, as URNs. */
     private static Set<Urn> held(PackUnderResolution member) {
         Set<Urn> held = new HashSet<>();
-        member.definedArtifacts().forEach(defined -> Urn.parse(defined).ifPresent(held::add));
+        member.referableArtifacts().forEach(referable -> Urn.parse(referable).ifPresent(held::add));
         return held;
     }
 

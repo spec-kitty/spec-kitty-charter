@@ -16,7 +16,6 @@ import java.util.Optional;
  * @param entryCondition the {@code entry_condition}
  * @param exitCondition the {@code exit_condition}
  * @param steps the {@code steps}, in authored order
- * @param antiPatterns the {@code anti_patterns}, in authored order
  * @param notes the {@code notes}, when stated
  * @param appliesToLanguages the {@code applies_to_languages}, in authored order
  */
@@ -28,7 +27,6 @@ record ProcedureDso(
         String entryCondition,
         String exitCondition,
         List<Step> steps,
-        List<AntiPattern> antiPatterns,
         Optional<String> notes,
         List<String> appliesToLanguages) {
 
@@ -42,7 +40,6 @@ record ProcedureDso(
      * @param entryCondition the entry condition
      * @param exitCondition the exit condition
      * @param steps the steps
-     * @param antiPatterns the anti-patterns
      * @param notes the notes
      * @param appliesToLanguages the languages
      */
@@ -55,7 +52,6 @@ record ProcedureDso(
         Objects.requireNonNull(exitCondition, "exitCondition");
         Objects.requireNonNull(notes, "notes");
         steps = List.copyOf(steps);
-        antiPatterns = List.copyOf(antiPatterns);
         appliesToLanguages = List.copyOf(appliesToLanguages);
     }
 
@@ -89,32 +85,6 @@ record ProcedureDso(
             Objects.requireNonNull(role, "role");
             Objects.requireNonNull(onSuccess, "onSuccess");
             Objects.requireNonNull(onFailure, "onFailure");
-        }
-    }
-
-    /**
-     * One anti-pattern entry of a procedure.
-     *
-     * @param title the entry's {@code title}
-     * @param content the entry's {@code content}, when stated
-     * @param badExample the entry's {@code bad_example}, when stated
-     * @param goodExample the entry's {@code good_example}, when stated
-     */
-    record AntiPattern(
-            String title, Optional<String> content, Optional<String> badExample, Optional<String> goodExample) {
-        /**
-         * Checks that every component is present.
-         *
-         * @param title the title
-         * @param content the content
-         * @param badExample the bad example
-         * @param goodExample the good example
-         */
-        AntiPattern {
-            Objects.requireNonNull(title, "title");
-            Objects.requireNonNull(content, "content");
-            Objects.requireNonNull(badExample, "badExample");
-            Objects.requireNonNull(goodExample, "goodExample");
         }
     }
 }

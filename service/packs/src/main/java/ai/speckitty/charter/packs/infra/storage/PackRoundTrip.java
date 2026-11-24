@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  *
  * <p>It judges nothing. The verdict, equality of meaning against an expected baseline, is {@code pack-validation}'s,
  * over the {@link PackRoundTripResult} this returns. A composition root calls it: the whole-pack gate and the drift test,
- * and later {@code pack-check --round-trip} (#478).
+ * and later {@code pack-doctor validate --round-trip} (#478).
  */
 public final class PackRoundTrip {
 
@@ -171,34 +171,40 @@ public final class PackRoundTrip {
             case TEXT ->
                 new FileOutcome.Written(
                         written.writtenPath(), new Reading.Text(text(sourceFile)), new Reading.Text(text(writtenFile)));
-            case YAML ->
-                yaml(kind, source, target, written.writtenPath(), text(sourceFile), text(writtenFile), outcomes);
+            case YAML -> yaml(kind, target, written.writtenPath(), text(sourceFile), text(writtenFile), outcomes);
         };
     }
 
     /**
-     * A YAML file, parsed as the readers parse it. For the manifest (#195), its derived fields, which the comparison
-     * skips (ADR-0042), are verified on both sides: the source against the source bytes, the written manifest against the
-     * written file each listed path paired with.
+     * A YAML file, parsed as the readers parse it, through their guards: a side they refuse is refused here with their
+     * words. For the manifest (#195), its derived fields, which the comparison
+     * skips (ADR-0042), are verified on the written side, against the written file each listed path paired with: a
+     * written-stale field is the writer's fault. The source side's are not: a source manifest that does not verify
+     * against its own bytes is the storage edge's {@code manifest_stale} (#630), one problem for one cause.
      */
     private static FileOutcome yaml(
             String kind,
-            Path source,
             Path target,
             String writtenPath,
             String sourceText,
             String writtenText,
             Map<String, Outcome> outcomes) {
-        Reading.Yaml sourceTree = new Reading.Yaml(Yaml.load(sourceText));
-        Reading.Yaml writtenTree = new Reading.Yaml(Yaml.load(writtenText));
+        // Each side through the readers' guards (ParsedYaml): a text no reader takes is refused, never loaded
+        // unguarded.
+        ParsedYaml.Checked source = ParsedYaml.check(sourceText);
+        if (source.problem() != null) {
+            return new FileOutcome.Refused("the source file does not parse: " + source.problem());
+        }
+        ParsedYaml.Checked written = ParsedYaml.check(writtenText);
+        if (written.problem() != null) {
+            return new FileOutcome.Refused("read-back: the written file does not parse: " + written.problem());
+        }
+        Reading.Yaml sourceTree = new Reading.Yaml(source.document());
+        Reading.Yaml writtenTree = new Reading.Yaml(written.document());
         if (!DomainRoundTrip.MANIFEST.equals(kind)) {
             return new FileOutcome.Written(writtenPath, sourceTree, writtenTree);
         }
         YamlSerializationStrategy yaml = new YamlSerializationStrategy();
-        List<String> sourceStale =
-                yaml.readManifest(sourceText, PackFileSet.MANIFEST) instanceof FileRead.Read<PackManifestDso> read
-                        ? PackManifests.stale(read.value(), file -> optionalBytes(source.resolve(file)))
-                        : List.of();
         List<String> writtenStale =
                 yaml.readManifest(writtenText, PackFileSet.MANIFEST) instanceof FileRead.Read<PackManifestDso> stamped
                         ? PackManifests.stale(
@@ -207,7 +213,7 @@ public final class PackRoundTrip {
                                         ? optionalBytes(target.resolve(w.writtenPath()))
                                         : Optional.empty())
                         : List.of();
-        return new FileOutcome.Written(writtenPath, sourceTree, writtenTree, sourceStale, writtenStale);
+        return new FileOutcome.Written(writtenPath, sourceTree, writtenTree, writtenStale);
     }
 
     /** A text of the Markdown form, read into its model, or the reader's refusal naming its line. */

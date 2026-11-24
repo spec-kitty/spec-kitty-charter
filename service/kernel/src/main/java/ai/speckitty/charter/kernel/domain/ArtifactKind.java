@@ -33,7 +33,11 @@ public enum ArtifactKind {
     GLOSSARY("glossary", "glossaries", true),
     /** A pack skill: an agent capability a pack ships. */
     SKILL("skill", "skills", true),
-    /** An anti-pattern: a re-kinded node inside another kind's graph fragment, never a standalone file. */
+    /**
+     * An anti-pattern: a practice guidance rejects, authored as its own file, {@code anti_patterns/<id>.anti-pattern.yaml}
+     * (ADR-0052 decision 8, as amended by ADR-0053 decision 30). A graph node of it declares it and is the target of a
+     * {@code rejects} edge (ADR-0064 decision 12); the file holds it.
+     */
     ANTI_PATTERN("anti_pattern", "anti_patterns", true),
     /** An asset: a blob described by a sidecar manifest; never activated. */
     ASSET("asset", "assets", false),

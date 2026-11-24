@@ -59,7 +59,7 @@ class WholePackStoreReadTest {
 
         assertThat(PackFileSet.walks()).as("no walk").isEqualTo(walks);
         assertThat(StoreRead.runs()).as("no read").isEqualTo(runs);
-        assertThat(contents.facts().defined()).doesNotContain("tactic:late");
+        assertThat(contents.facts().held()).doesNotContain("tactic:late");
     }
 
     @Test
@@ -194,7 +194,7 @@ class WholePackStoreReadTest {
 
         WholePackWriteStore.Contents contents = StagedReads.contents(store, pack);
 
-        assertThat(contents.facts().defined())
+        assertThat(contents.facts().held())
                 .contains("tactic:alpha-tactic", "tactic:gamma-tactic", "directive:DIRECTIVE_043");
         assertThat(contents.pack().descriptor().packId()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
     }

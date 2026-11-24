@@ -67,8 +67,6 @@ class ProcedureSchemaTest {
                 "refused-name-instead-of-title | additionalProperties / name; required / title",
                 "refused-purpose-instead-of-description | additionalProperties / purpose; required / description",
                 "refused-step-actor | additionalProperties /steps/0 actor",
-                "refused-anti-pattern-name | additionalProperties /anti_patterns/0 name; required /anti_patterns/0 title",
-                "refused-anti-pattern-description | additionalProperties /anti_patterns/0 description",
                 "refused-unknown-top-level-key | additionalProperties / remarks",
                 "refused-integer-schema-version | const /schema_version -; type /schema_version -",
                 "refused-uppercase-role | pattern /steps/0/role -"
@@ -82,8 +80,6 @@ class ProcedureSchemaTest {
         "refused-name-instead-of-title",
         "refused-purpose-instead-of-description",
         "refused-step-actor",
-        "refused-anti-pattern-name",
-        "refused-anti-pattern-description",
         "refused-unknown-top-level-key",
         "refused-integer-schema-version",
         "refused-uppercase-role"
@@ -100,6 +96,20 @@ class ProcedureSchemaTest {
             }
         }
         assertThat(differing).as("lines that differ").hasSize(1);
+    }
+
+    /**
+     * ADR-0052 decision 16 (#154, ruling R-r): a procedure carries no inline anti-pattern; an anti-pattern is its own
+     * file. The fixture is the accepted one plus an {@code anti_patterns} block, and the closed root refuses the key.
+     */
+    @Test
+    @DisplayName("a procedure carrying an inline anti_patterns block is refused as an unknown key")
+    void anInlineAntiPatternsBlockIsRefusedAsAnUnknownKey() throws IOException {
+        assertThat(facts(validate("refused-inline-anti-patterns")))
+                .containsExactly("additionalProperties / anti_patterns");
+        assertThat(fixture("refused-inline-anti-patterns").replaceAll("(?m)^anti_patterns:\n(?:[- ] .*\n)+", ""))
+                .as("the refused fixture is the accepted one plus the block")
+                .isEqualTo(fixture(ACCEPTED));
     }
 
     @Test

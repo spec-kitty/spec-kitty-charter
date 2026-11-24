@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: casting-by-habit
+title: Casting by habit
+description: Reusing the same cast regardless of the point-cut's question instead of choosing profiles whose declared focus actually answers it.
+severity: smell
+bad_example: Reuse the last point-cut's cast for this one without checking that each profile's declared focus answers its question.

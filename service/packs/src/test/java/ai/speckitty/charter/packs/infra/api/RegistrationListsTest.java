@@ -35,7 +35,7 @@ class RegistrationListsTest {
                 .as("a paradigm registration's only list is its principles (ADR-0067)")
                 .containsExactly("principles");
         assertThat(RegistrationLists.of(StyleguideRegistration.class))
-                .containsExactly("antiPatterns", "appliesToLanguages", "patterns", "principles", "tooling");
+                .containsExactly("appliesToLanguages", "patterns", "principles", "tooling");
         assertThat(RegistrationLists.of(ToolguideRegistration.class)).containsExactly("appliesToLanguages", "commands");
     }
 

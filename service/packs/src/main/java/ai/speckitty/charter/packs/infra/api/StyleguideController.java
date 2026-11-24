@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.StyleguidesApi;
 import ai.speckitty.charter.api.model.Artifact;
-import ai.speckitty.charter.api.model.StyleguideAntiPattern;
 import ai.speckitty.charter.api.model.StyleguidePattern;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
@@ -74,7 +73,6 @@ public class StyleguideController implements StyleguidesApi {
                 body.getScope(),
                 body.getPrinciples(),
                 OptionalLists.orEmpty(body.getPatterns()),
-                OptionalLists.orEmpty(body.getAntiPatterns()),
                 OptionalLists.orEmpty(body.getTooling()),
                 body.getQualityTest(),
                 body.getStructuralLintConfig(),
@@ -100,7 +98,6 @@ public class StyleguideController implements StyleguidesApi {
                 body.getScope(),
                 body.getPrinciples(),
                 OptionalLists.orEmpty(body.getPatterns()),
-                OptionalLists.orEmpty(body.getAntiPatterns()),
                 OptionalLists.orEmpty(body.getTooling()),
                 body.getQualityTest(),
                 body.getStructuralLintConfig(),
@@ -131,7 +128,6 @@ public class StyleguideController implements StyleguidesApi {
             String scope,
             List<ai.speckitty.charter.api.model.Principle> principles,
             List<StyleguidePattern> patterns,
-            List<StyleguideAntiPattern> antiPatterns,
             List<StyleguideToolEntry> tooling,
             @Nullable String qualityTest,
             @Nullable String structuralLintConfig,
@@ -154,12 +150,6 @@ public class StyleguideController implements StyleguidesApi {
                                 p.getDescription(),
                                 Optional.ofNullable(p.getBadExample()),
                                 Optional.ofNullable(p.getGoodExample())))
-                        .toList());
-            }
-            if (!antiPatterns.isEmpty()) {
-                builder.antiPatterns(antiPatterns.stream()
-                        .map(a -> new ai.speckitty.charter.packs.domain.StyleguideAntiPattern(
-                                a.getName(), a.getDescription(), a.getBadExample(), a.getGoodExample()))
                         .toList());
             }
             if (!tooling.isEmpty()) {

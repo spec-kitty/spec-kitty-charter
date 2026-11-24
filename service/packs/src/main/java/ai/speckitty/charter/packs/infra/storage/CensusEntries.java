@@ -18,15 +18,15 @@ import java.util.TreeMap;
  * <p>A file a {@code files} rule maps stands with its schema; a companion a readable artifact names stands with its
  * owner's schema, whatever rule maps it, so the gate models it with its owner (ADR-0039, #194); a retired file with its
  * rule's glob; an excluded one (an {@code exclusions} rule, or the {@code ignored} fallback for Markdown nothing models,
- * #451) with its rule's glob; any other file with its first path segment, or its name at the pack root; and a link,
- * never followed, as a link.
+ * #451) with its rule's glob; any other file with its first path segment, or its name at the pack root; a link, never
+ * followed, as a link; and a special file, never opened, as a special file (R-ad).
  */
 final class CensusEntries {
 
     private CensusEntries() {}
 
     /**
-     * Every entry of a walk, path-sorted: each regular file that is not itself a link, and each link.
+     * Every entry of a walk, path-sorted: each regular file that is not itself a link, each link and each special file.
      *
      * @param packName the pack directory's name ({@code file-kinds.yaml} globs start at the directory holding packs)
      * @param walk the walk
@@ -42,6 +42,9 @@ final class CensusEntries {
         }
         for (String link : walk.links()) {
             entries.put(link, new TreeCensus.Entry(link, TreeCensus.Standing.LINK, "", Optional.empty()));
+        }
+        for (String special : walk.special()) {
+            entries.put(special, new TreeCensus.Entry(special, TreeCensus.Standing.SPECIAL, "", Optional.empty()));
         }
         return List.copyOf(entries.values());
     }

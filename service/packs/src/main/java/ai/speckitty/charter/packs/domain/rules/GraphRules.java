@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.domain.PackContents.RawNode;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import java.util.ArrayList;
@@ -20,12 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
  * The content rules of a pack's graph documents (#554, FR-001, FR-011, T036): each node and edge binds
- * ({@link GraphBinding}), and each edge's relation allows its endpoints (slice F's bridge, {@link
- * RelationshipEndpointRule}). Each is a kernel rule over the facts of the one read ({@link PackContents}); it reads no
+ * ({@link GraphBinding}), each edge's relation allows its endpoints (slice F's bridge, {@link
+ * RelationshipEndpointRule}), the pack's tensions are consistent, and each {@code anti_pattern} node has its file
+ * (ADR-0052 decision 14). Each is a kernel rule over the facts of the one read ({@link PackContents}); it reads no
  * file and knows no surface.
  *
  * <p>Both judge only the documents the read read: a document the read refused is a read fault of its own
@@ -59,11 +62,27 @@ public final class GraphRules {
      */
     public static final Rule<PackContents> TENSION_CONSISTENCY = GraphRules::tensions;
 
+    /**
+     * An {@code anti_pattern} node the pack declares with no file (ADR-0052 decision 14, ADR-0053 decision 31; #154): an
+     * anti-pattern is held by its file, {@code anti_patterns/<id>.anti-pattern.yaml}, and a node of it in a graph
+     * document of the same pack only declares it. One {@link PackCodes#DRG_SCHEMA_ERROR} per such node, at its place
+     * ({@code /nodes/<n>}), in document order, the shards first and then the fragment, as a node of a kind the pack may
+     * not declare is ({@link GraphBinding}). Only the pack's own nodes are judged: another pack's anti-pattern is a
+     * qualified edge endpoint, which the reference check judges. A node of any other kind is not judged here.
+     *
+     * <p>Over facts alone, a file the read refused holds no fact, so its node reads as having none; the storage edge,
+     * which knows the refused files, states the node's fault only when its file is not one of them
+     * ({@link #antiPatternsWithoutFile(PackContents, Predicate)}), so the file's own fault is the one cause.
+     */
+    public static final Rule<PackContents> ANTI_PATTERN_WITHOUT_FILE =
+            contents -> antiPatternsWithoutFile(contents, file -> false);
+
     /** Every graph rule, in this class's order. */
     public static final ModularRuleset<PackContents> RULES = ModularRuleset.<PackContents>emptyRules()
             .must(UNBOUND)
             .must(ENDPOINT_NOT_ALLOWED)
-            .must(TENSION_CONSISTENCY);
+            .must(TENSION_CONSISTENCY)
+            .must(ANTI_PATTERN_WITHOUT_FILE);
 
     private GraphRules() {}
 
@@ -165,6 +184,54 @@ public final class GraphRules {
             }
         }
         return findings;
+    }
+
+    /**
+     * {@link #ANTI_PATTERN_WITHOUT_FILE}, less each node whose file is there but was refused for a fault of its own
+     * (A9): the node has its file, and the file's fault is the one cause, so the node is not stated as having none.
+     *
+     * @param contents the facts of the one read
+     * @param refused whether the read refused the file at a pack-relative path, for a violation of its own
+     * @return one {@link PackCodes#DRG_SCHEMA_ERROR} per {@code anti_pattern} node with no file, in document order
+     */
+    public static List<Reason> antiPatternsWithoutFile(PackContents contents, Predicate<String> refused) {
+        Set<String> held = contents.artifacts().stream()
+                .map(artifact -> artifact.kind() + ":" + artifact.id())
+                .collect(Collectors.toSet());
+        List<Reason> findings = new ArrayList<>();
+        for (RawGraph raw : read(contents)) {
+            for (int i = 0; i < raw.nodes().size(); i++) {
+                Optional<Urn> urn = antiPattern(raw.shape(), raw.nodes().get(i));
+                if (urn.isPresent() && !held.contains(urn.get().toString()) && !refused.test(fileOf(urn.get()))) {
+                    findings.add(Findings.at(
+                            PackCodes.DRG_SCHEMA_ERROR,
+                            raw.file(),
+                            List.of(GraphBinding.NODES, Integer.toString(i)),
+                            Paths.origin(contents.root().name(), raw.file()) + ": " + urn.get()
+                                    + " is declared with no file; an anti-pattern is held by "
+                                    + fileOf(urn.get())
+                                    + " in the same pack"));
+                }
+            }
+        }
+        return findings;
+    }
+
+    /** The one file that holds an anti-pattern: {@code anti_patterns/<id>.anti-pattern.yaml}. */
+    private static String fileOf(Urn antiPattern) {
+        return NodeKind.ANTI_PATTERN.plural() + "/" + antiPattern.id() + ".anti-pattern.yaml";
+    }
+
+    /** The URN of an {@code anti_pattern} node as written: a shard URN, or a fragment id of the plural kind. */
+    private static Optional<Urn> antiPattern(RawGraph.Shape shape, RawNode node) {
+        return switch (shape) {
+            case SHARD -> Urn.parse(node.ref()).filter(urn -> urn.kind() == NodeKind.ANTI_PATTERN);
+            case FRAGMENT ->
+                NodeKind.ANTI_PATTERN.plural().equals(node.kind())
+                                && !node.ref().isEmpty()
+                        ? Optional.of(new Urn(NodeKind.ANTI_PATTERN, node.ref()))
+                        : Optional.empty();
+        };
     }
 
     /** Whether the pack holds the artifact a reference names: a bare reference, or one qualified with its own name. */

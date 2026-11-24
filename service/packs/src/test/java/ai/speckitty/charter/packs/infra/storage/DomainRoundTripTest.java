@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
@@ -31,8 +32,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The domain adapter of the whole-pack gate over a small pack: one file of each modelled kind (small real examples
@@ -218,6 +222,41 @@ class DomainRoundTripTest {
                                         .contains("Built_In")
                                         .contains(PackIdentifier.GRAMMAR_DETAIL)));
         assertThat(target).doesNotExist();
+    }
+
+    /**
+     * A source the reader refuses for its shape: an alias bomb past the parser's alias budget, and a document nested
+     * far past the depth bound, which an unguarded load overflows the stack on.
+     */
+    static Stream<Named<String>> unwalkable() {
+        StringBuilder bomb = new StringBuilder("profile-id: a\na0: &a0 [x, x, x, x, x, x, x, x, x]\n");
+        for (int level = 1; level <= 6; level++) {
+            String alias = "*a" + (level - 1);
+            bomb.append("a")
+                    .append(level)
+                    .append(": &a")
+                    .append(level)
+                    .append(" [")
+                    .append(String.join(", ", Collections.nCopies(9, alias)))
+                    .append("]\n");
+        }
+        return Stream.of(
+                Named.of("an alias bomb", bomb.toString()),
+                Named.of(
+                        "nesting 100 000 deep",
+                        "profile-id: a\nx: " + "[".repeat(100_000) + "]".repeat(100_000) + "\n"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("unwalkable")
+    void aSourceTheReaderRefusesForItsShapeIsRefusedNeverThrown(String text) throws IOException {
+        String profile = "agent_profiles/a-file-named-otherwise.agent.yaml";
+        put(profile, "agent-profile", text);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get(profile)).isInstanceOf(Refused.class);
+        assertThat(((Refused) outcomes.get(profile)).reason()).doesNotContain("unknown field");
     }
 
     @Test

@@ -12,28 +12,24 @@ public sealed interface FileOutcome permits FileOutcome.Written, FileOutcome.Ref
      * @param writtenPath the target-relative path of the written file it pairs with
      * @param source the source file, read
      * @param written the written file, read
-     * @param sourceStale the source manifest's derived fields that do not match the source bytes (#195, ADR-0042); empty
-     *     for every other kind
-     * @param writtenStale the written manifest's derived fields that do not match the written files it lists; empty for
-     *     every other kind
+     * @param writtenStale the written manifest's derived fields that do not match the written files it lists (#195,
+     *     ADR-0042): the writer's fault; empty for every other kind. The source manifest's stale fields are the
+     *     storage edge's {@code manifest_stale} (#630), not the round trip's
      */
-    record Written(
-            String writtenPath, Reading source, Reading written, List<String> sourceStale, List<String> writtenStale)
+    record Written(String writtenPath, Reading source, Reading written, List<String> writtenStale)
             implements FileOutcome {
         /**
-         * Checks every field and copies the lists.
+         * Checks every field and copies the list.
          *
          * @param writtenPath the written file's path
          * @param source the source, read
          * @param written the written file, read
-         * @param sourceStale the source's stale derived fields
          * @param writtenStale the written file's stale derived fields
          */
         public Written {
             Objects.requireNonNull(writtenPath, "writtenPath");
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(written, "written");
-            sourceStale = List.copyOf(sourceStale);
             writtenStale = List.copyOf(writtenStale);
         }
 
@@ -45,7 +41,7 @@ public sealed interface FileOutcome permits FileOutcome.Written, FileOutcome.Ref
          * @param written the written file, read
          */
         public Written(String writtenPath, Reading source, Reading written) {
-            this(writtenPath, source, written, List.of(), List.of());
+            this(writtenPath, source, written, List.of());
         }
     }
 

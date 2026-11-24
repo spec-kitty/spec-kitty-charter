@@ -60,8 +60,9 @@ import org.jspecify.annotations.Nullable;
  * hidden directories are entered, a directory link below the root is not followed, an entry that vanishes mid-walk is
  * not listed), every regular file that is not itself a link classified once, in {@link String} order. A link below the
  * root, to a file, a directory or nothing, is never read through (D6): the walk lists it apart, and the storage rules
- * refuse it ({@code pack_entry_linked}). Every entry point normalizes the directory first, so a configured root such
- * as {@code packs/foo/.} classifies like the store's own normalized directory.
+ * refuse it ({@code pack_entry_linked}). A special file (a FIFO, a socket, a device) is never opened (R-ad): the walk
+ * lists it apart too, and the storage rules refuse it ({@code unreadable}). Every entry point normalizes the directory
+ * first, so a configured root such as {@code packs/foo/.} classifies like the store's own normalized directory.
  */
 final class PackFileSet {
 
@@ -221,27 +222,31 @@ final class PackFileSet {
 
     /**
      * One walk of a pack tree (#554, T028): every regular file that is not itself a link (the store's listing and the
-     * census), and every link, never followed (the census, which refuses it, D6), each pack-relative,
-     * {@code /}-separated and in {@link String} order. No surface reads a file but through {@link #regular()}, so none
-     * reads through a link. Every tree walk of a pack goes through here, so a test counts them ({@link #walks()}).
+     * census), every link, never followed (the census, which refuses it, D6), and every special file, never opened (the
+     * census, which refuses it, R-ad), each pack-relative, {@code /}-separated and in {@link String} order. No surface
+     * reads a file but through {@link #regular()}, so none reads through a link or opens a FIFO. Every tree walk of a
+     * pack goes through here, so a test counts them ({@link #walks()}).
      *
      * @param regular every regular file that is not itself a link
      * @param links every symbolic link, to a file, a directory or nothing
+     * @param special every entry that is neither a regular file, a directory nor a link: a FIFO, a socket, a device
      */
-    record Walk(List<String> regular, List<String> links) {
+    record Walk(List<String> regular, List<String> links, List<String> special) {
         /**
          * Copies the lists.
          *
          * @param regular the regular files
          * @param links the links
+         * @param special the special files
          */
         Walk {
             regular = List.copyOf(regular);
             links = List.copyOf(links);
+            special = List.copyOf(special);
         }
 
         /** A walk of nothing: a tree the read could not enter. */
-        static final Walk NONE = new Walk(List.of(), List.of());
+        static final Walk NONE = new Walk(List.of(), List.of(), List.of());
     }
 
     private static final java.util.concurrent.atomic.LongAdder WALKS = new java.util.concurrent.atomic.LongAdder();
@@ -257,8 +262,8 @@ final class PackFileSet {
 
     /**
      * Walks a pack tree once, from the directory's real path, so a root configured through a link is entered (#174,
-     * #284); a link below the root is listed as a link and never read through, and an entry that vanishes while the
-     * tree is walked is skipped.
+     * #284); a link below the root is listed as a link and never read through, a special file is listed as one and never
+     * opened (R-ad), and an entry that vanishes while the tree is walked is skipped.
      *
      * @param directory the pack directory
      * @param packName the pack's name, which a refusal to list it names
@@ -270,15 +275,17 @@ final class PackFileSet {
         WALKS.increment();
         List<String> regular = new ArrayList<>();
         List<String> links = new ArrayList<>();
+        List<String> special = new ArrayList<>();
         try {
             Path root = directory.toRealPath();
-            Files.walkFileTree(root, new FileCollector(root, regular, links));
+            Files.walkFileTree(root, new FileCollector(root, regular, links, special));
         } catch (IOException | UncheckedIOException e) {
             throw unlistable(packName, e);
         }
         Collections.sort(regular);
         Collections.sort(links);
-        return new Walk(regular, links);
+        Collections.sort(special);
+        return new Walk(regular, links, special);
     }
 
     /**
@@ -599,18 +606,20 @@ final class PackFileSet {
     }
 
     /**
-     * Collects the regular files that are not themselves links, and the links apart, never followed; an entry that is
-     * gone by the time it is visited is skipped.
+     * Collects the regular files that are not themselves links, the links apart, never followed, and the special files
+     * apart, never opened (R-ad); an entry that is gone by the time it is visited is skipped.
      */
     private static final class FileCollector extends SimpleFileVisitor<Path> {
         private final Path root;
         private final List<String> found;
         private final List<String> links;
+        private final List<String> special;
 
-        FileCollector(Path root, List<String> found, List<String> links) {
+        FileCollector(Path root, List<String> found, List<String> links, List<String> special) {
             this.root = root;
             this.found = found;
             this.links = links;
+            this.special = special;
         }
 
         @Override
@@ -625,6 +634,11 @@ final class PackFileSet {
             }
             if (attrs.isSymbolicLink()) {
                 links.add(relative);
+            }
+            // Neither a regular file, a directory nor a link: a FIFO, a socket or a device, which a read could block
+            // on.
+            if (attrs.isOther()) {
+                special.add(relative);
             }
             return FileVisitResult.CONTINUE;
         }
@@ -744,6 +758,22 @@ final class PackFileSet {
             return Optional.empty();
         }
         return Optional.of(noFollowBytes(directory.resolve(packRelative)));
+    }
+
+    /**
+     * Whether a special file stands at {@code file} (R-ad): neither a regular file, a directory nor a link, asked without
+     * following a link and without opening it.
+     *
+     * @param file the path
+     * @return true for a FIFO, a socket or a device; false for anything else, or nothing
+     */
+    static boolean special(Path file) {
+        try {
+            return Files.readAttributes(file, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS)
+                    .isOther();
+        } catch (IOException absent) {
+            return false;
+        }
     }
 
     /**

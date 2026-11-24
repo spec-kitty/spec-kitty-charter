@@ -1,0 +1,6 @@
+schema_version: '1.0'
+id: nu
+title: Nu
+description: A fixture anti-pattern.
+severity: smell
+bad_example: nu

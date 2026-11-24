@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
+import ai.speckitty.charter.packs.domain.rules.GraphRules;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.domain.rules.ReferenceRules;
 import java.util.ArrayList;
@@ -22,9 +23,10 @@ import java.util.function.Predicate;
 /**
  * The storage edge's named compositions over the one read of a pack tree (#554, FR-002, S3, S6): what the tree holds
  * ({@link #holding()}), the registration's composition ({@link #registration()}), the manifest gate
- * ({@link #manifestMembership}) and the verdict of the read that the domain port {@code PackReading} returns
- * ({@link #verdict}). Nothing outside {@code packs.infra.storage} and the composition root names this class: a
- * registration and the validation edge see only the verdict, as the readout's {@link Rationale}.
+ * ({@link #manifestGate}), the verdict of the read that the domain port {@code PackReading} returns
+ * ({@link #verdict}) and that verdict without the manifest gate, remediation's precondition
+ * ({@link #verdictWithoutTheManifestGate}). Nothing outside {@code packs.infra.storage} and the composition root names
+ * this class: a registration and the validation edge see only the verdict, as the readout's {@link Rationale}.
  */
 public final class StorageRulesets {
 
@@ -33,7 +35,8 @@ public final class StorageRulesets {
             .must(NotHeldRules.RULES)
             .must(ReservedShardRules.RULES)
             .must(ManifestRules.RULES)
-            .must(LinkRules.RULES);
+            .must(LinkRules.RULES)
+            .must(SpecialFileRules.RULES);
 
     private static final ModularRuleset<TreeRead> REGISTRATION =
             HOLDING.must(PackRulesets.content().on(TreeRead::contents));
@@ -53,19 +56,21 @@ public final class StorageRulesets {
 
     /**
      * The faults a registration lists last, in its order: the reserved shard, then a manifest that is not a regular file,
-     * then the manifest's membership.
+     * then the manifest's membership, then its stale derived fields (#630).
      */
     private static final List<Predicate<Reason>> LAST = List.of(
             reason -> StorageCodes.RESERVED_SHARD.equals(reason.code()),
             ManifestRules::statesNotRegular,
-            reason -> StorageCodes.MANIFEST_MEMBERSHIP.equals(reason.code()));
+            reason -> StorageCodes.MANIFEST_MEMBERSHIP.equals(reason.code()),
+            reason -> StorageCodes.MANIFEST_STALE.equals(reason.code()));
 
     private StorageRulesets() {}
 
     /**
      * What the tree holds: the store's refusal of the pack as a whole, a {@code file_not_held} warning per file not held,
-     * the reserved shard no registration wrote, something at the manifest's path that is not a regular file, and a
-     * {@code pack_entry_linked} violation per link in the tree (D1).
+     * the reserved shard no registration wrote, something at the manifest's path that is not a regular file, a
+     * {@code pack_entry_linked} violation per link in the tree (D1), and an {@code unreadable} violation per special file
+     * (R-ad).
      * Collect-all, over the census and the read's assembly fact.
      *
      * @return the composition
@@ -86,16 +91,20 @@ public final class StorageRulesets {
     }
 
     /**
-     * The manifest gate (#110): the manifest's membership ({@link ManifestRules#membership}), a plain function, not a
-     * member of a composition, since a composition is collect-all and the kernel has no combinator that runs a rule only
-     * when the rules before it passed. {@link #verdict} runs it only when the read faults and {@link #registration()}
-     * found no violation, as an artifact refused elsewhere would read as left out.
+     * The manifest gate (#110, #630): the manifest's membership ({@link ManifestRules#membership}), then its stale
+     * derived fields ({@link ManifestRules#stale}), plain functions, not members of a composition, since a composition is
+     * collect-all and the kernel has no combinator that runs a rule only when the rules before it passed.
+     * {@link #verdict} runs it only when the read faults and {@link #registration()} found no violation, as an artifact
+     * refused elsewhere would read as left out, and a file refused for its own fault would read as stale.
      *
      * @param read the one read
-     * @return the membership reasons; empty when the manifest lists what the pack holds, or there is none
+     * @return the membership reasons, then the stale ones; empty when the manifest lists what the pack holds and its
+     *     derived fields verify, or there is none
      */
-    public static List<Reason> manifestMembership(TreeRead read) {
-        return ManifestRules.membership(read);
+    public static List<Reason> manifestGate(TreeRead read) {
+        List<Reason> gate = new ArrayList<>(ManifestRules.membership(read));
+        gate.addAll(ManifestRules.stale(read));
+        return List.copyOf(gate);
     }
 
     /**
@@ -110,12 +119,19 @@ public final class StorageRulesets {
      * fragment the store cannot read, at the step enhancement that names it (R2 row 19, as the contract places it),
      * and then nothing else is stated at the fragment. At a link's path only {@code pack_entry_linked} is stated: the
      * link is the cause of what else a read finds missing or irregular there (a {@code pack.yaml} or a manifest that is a
-     * link), and the specific code wins (D1, R2).
+     * link), and the specific code wins (D1, R2). So at a special file's path only its own refusal is stated (R-ad).
      *
      * @param read the one read
      * @return the verdict
      */
     public static Rationale verdict(TreeRead read) {
+        Rationale judged = judged(read);
+        Rationale gated = judged.isPassing() ? judged.and(new Rationale(manifestGate(read))) : judged;
+        return inRegistrationOrder(gated);
+    }
+
+    /** {@link #verdict} before the manifest gate, in the order the faults are joined. */
+    private static Rationale judged(TreeRead read) {
         Optional<String> policy = AssemblyRules.unreadablePolicy(read);
         Set<String> trailing = new HashSet<>();
         trailing.add(MANIFEST);
@@ -134,6 +150,7 @@ public final class StorageRulesets {
         List<Reason> rules = new ArrayList<>(registration().apply(read));
         rules.removeAll(orphans);
         rules.removeAll(references);
+        rules.removeAll(nodesOfRefusedAntiPatternFiles(read));
         List<Reason> stated = new ArrayList<>(readFaults);
         stated.addAll(trailingFaults);
         stated.addAll(rules);
@@ -163,21 +180,51 @@ public final class StorageRulesets {
                 .filter(fault -> trailing.contains(fault.location().file()))
                 .forEach(joined::add);
         joined.addAll(orphans);
-        Rationale judged = new Rationale(atLinksOnlyTheLink(joined));
-        Rationale gated = judged.isPassing() ? judged.and(new Rationale(manifestMembership(read))) : judged;
-        return inRegistrationOrder(gated);
+        return new Rationale(atAnEntryOnlyTheEntry(joined));
     }
 
-    /** The violations, less any other than {@code pack_entry_linked} at a path a {@code pack_entry_linked} names. */
-    private static List<Reason> atLinksOnlyTheLink(List<Reason> reasons) {
-        Set<String> links = new HashSet<>();
+    /**
+     * The storage verdict of one read without the manifest gate (FR-009, plan D7): {@link #verdict} as it stands before
+     * {@link #manifestGate} is joined, in registration's wire order. It is the precondition of
+     * {@code PackRemediation}, which derives and stamps the manifest itself: a violation here is a fault remediation does
+     * not repair. The round trip's form findings are no part of the storage verdict, so nothing else is left out.
+     *
+     * @param read the one read
+     * @return the verdict, the manifest's membership and stale fields not judged
+     */
+    public static Rationale verdictWithoutTheManifestGate(TreeRead read) {
+        return inRegistrationOrder(judged(read));
+    }
+
+    /**
+     * The {@code anti_pattern} nodes {@code content()} states as having no file whose file is there but the read refused
+     * for a fault of its own (A9): the file's fault is the one cause, so the node's is not stated beside it.
+     */
+    private static List<Reason> nodesOfRefusedAntiPatternFiles(TreeRead read) {
+        Set<String> refused = new HashSet<>();
+        read.readFaults().stream()
+                .filter(fault -> fault.isFailing(Severity.VIOLATION))
+                .forEach(fault -> refused.add(fault.location().file()));
+        List<Reason> stated = new ArrayList<>(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(read.contents()));
+        stated.removeAll(GraphRules.antiPatternsWithoutFile(read.contents(), refused::contains));
+        return stated;
+    }
+
+    /**
+     * The violations, less any other than the entry's own at a path where a link ({@code pack_entry_linked}) or a special
+     * file ({@link SpecialFileRules}) stands: the entry is the cause of what else a read finds there.
+     */
+    private static List<Reason> atAnEntryOnlyTheEntry(List<Reason> reasons) {
+        Predicate<Reason> entry =
+                reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()) || SpecialFileRules.states(reason);
+        Set<String> entries = new HashSet<>();
         reasons.stream()
-                .filter(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code()))
-                .forEach(reason -> links.add(reason.location().file()));
+                .filter(entry)
+                .forEach(reason -> entries.add(reason.location().file()));
         return reasons.stream()
-                .filter(reason -> StorageCodes.PACK_ENTRY_LINKED.equals(reason.code())
+                .filter(reason -> entry.test(reason)
                         || !reason.isFailing(Severity.VIOLATION)
-                        || !links.contains(reason.location().file()))
+                        || !entries.contains(reason.location().file()))
                 .toList();
     }
 
@@ -231,8 +278,8 @@ public final class StorageRulesets {
      * violations: every graph fault ({@code drg_schema_error}) first, in path order; then the refusal of the pack as a
      * whole ({@code pack_unreadable} or the aggregate's, at {@code pack.yaml} or {@code pack}); then the read faults and
      * the rule faults in the order given (the reader's, then the composition's, the orphan fragments last); then the
-     * reserved shard, the manifest that is not a regular file and the manifest's membership. The warnings: in the order
-     * given, the files not held last, in path order. Any other reason keeps its place after them.
+     * reserved shard, the manifest that is not a regular file, the manifest's membership and its stale fields. The
+     * warnings: in the order given, the files not held last, in path order. Any other reason keeps its place after them.
      *
      * @param verdict the joined verdict
      * @return the same reasons, in registration's order

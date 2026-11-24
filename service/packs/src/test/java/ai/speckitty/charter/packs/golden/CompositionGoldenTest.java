@@ -13,9 +13,14 @@ import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.rules.CaseOnlyRules;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +48,7 @@ import tools.jackson.databind.JsonNode;
  * <p>The sequence is the resolver's part of {@code OfferingReadService#composed}, in its order: {@link
  * PackCompositionResolver#composeRooted}, then each member's references ({@link PackCompositionResolver#referenceFaults}
  * over {@link PackCompositionResolver#resolveReference}), then {@link PackCompositionResolver#presetContests},
- * then {@link PackCompositionResolver#caseOnlyMatches}. The delegation and step-enhancement checks the offering
+ * then {@link CaseOnlyRules#matches}. The delegation and step-enhancement checks the offering
  * runs between them are not the resolver's, and no case here writes either. Nor is the offering's
  * {@code refuseTargetOnlyAnUnreadablePackCouldDeclare}: every pack here is readable, so it never refuses.
  *
@@ -483,6 +488,13 @@ class CompositionGoldenTest {
         Golden.write(Golden.COMPOSITION, all);
     }
 
+    /** Facts of a pack whose policy locks the URNs: what a case's mentions are, as the offering reads them. */
+    private static PackCompositionFacts lockingFacts(List<String> urns) {
+        MutabilityPolicySource.Builder policy = MutabilityPolicySource.builder();
+        urns.forEach(urn -> policy.entry(Urn.parse(urn).orElseThrow(), MutabilityLevel.LOCKED));
+        return new PackCompositionFacts(List.of(), List.of(), List.of(), List.of(), policy.build(), List.of());
+    }
+
     /** The offering's composition sequence over the case, and what it answers. */
     private static Map<String, Object> offer(Case compose) {
         List<PackIdentifier> roots = compose.roots().isEmpty()
@@ -505,9 +517,10 @@ class CompositionGoldenTest {
             PackCompositionResolver.refuseFirst(PackCompositionResolver.presetContests(
                     composed,
                     pack -> compose.presets().getOrDefault(pack.descriptor().packId(), List.of())));
-            PackCompositionResolver.refuseFirst(PackCompositionResolver.caseOnlyMatches(
+            PackCompositionResolver.refuseFirst(CaseOnlyRules.matches(
                     composed,
-                    pack -> compose.mentions().getOrDefault(pack.descriptor().packId(), List.of())));
+                    pack -> lockingFacts(
+                            compose.mentions().getOrDefault(pack.descriptor().packId(), List.of()))));
             return Map.of(
                     "composed",
                     composed.stream()

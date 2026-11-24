@@ -71,7 +71,9 @@ class ActivationImpactAffectedTest {
             packs.add(new PackUnderResolution(
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), urns));
             facts.put(
-                    name, new PackCompositionFacts(List.of(), urns, List.of(), policy, List.of(), List.of(), Map.of()));
+                    name,
+                    new PackCompositionFacts(
+                            List.of(), urns, List.of(), List.of(), policy, List.of(), List.of(), Map.of()));
             policies.put(FixtureUlids.ulid(name), policy);
             return this;
         }

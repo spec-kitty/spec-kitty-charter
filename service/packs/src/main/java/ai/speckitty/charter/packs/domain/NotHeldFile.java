@@ -109,6 +109,15 @@ public record NotHeldFile(String path, Kind kind, String reason) {
      * @return {@code <path>: not held (<reason>)}
      */
     public String detail() {
-        return path + ": not held (" + reason + ")";
+        return path + ": " + notHeld();
+    }
+
+    /**
+     * Why the file is not held, without its path: the wording {@link #detail} and the whole-pack gate's results share.
+     *
+     * @return {@code not held (<reason>)}
+     */
+    public String notHeld() {
+        return "not held (" + reason + ")";
     }
 }

@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.validation.Evaluation;
 import ai.speckitty.charter.kernel.validation.Location;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -12,7 +13,8 @@ import java.util.List;
  * How a pack fault is stated (#554, FR-001): a failing kernel {@link Reason} of its code, at its file and the place in
  * it as a JSON pointer (RFC 6901), with the detail its owner wrote. The description is the code's token. The content
  * rules, the graph binding and the one reader all state their faults through here, so a finding reads the same
- * whichever owner states it, and the pointer is encoded, and decoded, in one place.
+ * whichever owner states it, and the pointer is encoded, and decoded, in one place. A finding judges one pack's file,
+ * which its {@link Location} names; it is about no element the owner can name, so its origin is {@link Origin#NONE}.
  */
 public final class Findings {
 
@@ -28,7 +30,13 @@ public final class Findings {
      * @return the failing reason
      */
     public static Reason at(ReasonCode code, String file, List<String> place, String detail) {
-        return new Reason(code.value(), Evaluation.FAIL, code, Location.in(file).at(pointer(place)), detail);
+        return new Reason(
+                code.value(),
+                Origin.NONE,
+                Evaluation.FAIL,
+                code,
+                Location.in(file).at(pointer(place)),
+                detail);
     }
 
     /**
@@ -40,6 +48,7 @@ public final class Findings {
     public static Reason of(PackElementViolation violation) {
         return new Reason(
                 violation.kind().value(),
+                Origin.NONE,
                 Evaluation.FAIL,
                 violation.kind(),
                 Location.in(violation.file()).at(violation.pointer()),

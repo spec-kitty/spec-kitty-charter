@@ -23,6 +23,18 @@ final class Yaml {
     private Yaml() {}
 
     /**
+     * The most code points a YAML text may hold: 1 Mi (1 048 576). The scanner's window grows once per chunk it reads,
+     * so one long scalar costs the square of its length (8 Mi code points in one scalar take over a minute to scan),
+     * and the bound keeps a read to seconds. Real pack files are far smaller: the largest open-packs file, a glossary,
+     * holds about 125 000 characters, so the bound leaves eight times that. {@link ParsedYaml} refuses a longer text
+     * as {@code the document is too large} before the scanner sees it, as it refuses a document past its node budget;
+     * the loader's own limit is the same bound, for the readers that load without it. {@link ParsedYaml} also bounds the
+     * strings a loaded document holds at the same count, a shared (aliased) string counted at each reach, so no
+     * accepted document expands past it (Tier R B3).
+     */
+    static final int MAX_CODE_POINTS = 1024 * 1024;
+
+    /**
      * The JSON schema, plus the plain null forms {@code ~}, {@code Null} and {@code NULL} that core's parser reads as
      * null (R18), and a finite float read as the exact {@link BigDecimal} its text writes (ADR-0080 decision 10, R3):
      * no binary double step, so {@code 0.1} is 0.1 and a value of any precision keeps every digit. A non-finite float
@@ -127,7 +139,7 @@ final class Yaml {
         return LoadSettings.builder()
                 .setSchema(schema())
                 .setAllowDuplicateKeys(false)
-                .setCodePointLimit(Integer.MAX_VALUE)
+                .setCodePointLimit(MAX_CODE_POINTS)
                 .setLabel("charter")
                 .build();
     }

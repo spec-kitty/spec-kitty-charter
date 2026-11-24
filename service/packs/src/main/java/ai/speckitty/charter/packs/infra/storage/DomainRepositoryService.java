@@ -66,7 +66,7 @@ import java.util.function.Function;
  * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
  * {@link MutabilityPolicyRepository}, {@link PackCompanionFiles} and {@link PackDocumentRepository} over the filesystem.
  * It is a plain class, framework-free: {@code StorageConfiguration} registers it as the one bean realizing the pack
- * ports, and the production round trip ({@link PackRoundTrip}) builds it directly, so pack-check, which runs the round
+ * ports, and the production round trip ({@link PackRoundTrip}) builds it directly, so pack-doctor, which runs the round
  * trip without Spring, reaches no Spring type through it (ADR-0075 as amended 2026-11-13, #478). The ports in the
  * domain stay plain interfaces, and a database-backed sibling would be registered in its place.
  *
@@ -570,7 +570,7 @@ public final class DomainRepositoryService
         // endpoint whose qualifier is no pack id, #582) is left out, and its violation is not carried. A removal still
         // fails closed: it reads the pack's authored edges too, and that read refuses such a pack (authored()).
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
-        // One walk, shared with the store's read, so the load records each link as StoreRead.of does (D6).
+        // One walk, shared with the store's read, so the load records each link and special file as StoreRead.of does.
         PackFileSet.Walk walk = PackFileSet.walk(resolved.directory, pack.value());
         // No read serves the warnings in phase 1: the list is filled and dropped.
         Pack.Builder builder = StoreRead.assembly(
@@ -579,7 +579,7 @@ public final class DomainRepositoryService
                 new HashMap<>(),
                 graphs,
                 new ArrayList<>());
-        StoreRead.linked(walk).forEach(builder::violation);
+        StoreRead.refusedEntries(walk).forEach(builder::violation);
         return builder.build();
     }
 

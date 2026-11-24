@@ -291,7 +291,20 @@ public enum RefusalCode {
      * A configured pack, a stored activation or another pack's artifact still depends on the pack a pack {@code DELETE}
      * removes (ADR-0081 D7); the refusal names the dependent packs and every dependent. Answered as 409.
      */
-    PACK_HAS_DEPENDENTS("pack_has_dependents");
+    PACK_HAS_DEPENDENTS("pack_has_dependents"),
+    /**
+     * A preset's {@code must_have} item that no pack of the declaring pack's own closure (the pack and every pack it
+     * reaches over {@code depends_on} and {@code parent_pack}) holds as an artifact file (#629, rulings R-a, R-k, R-l,
+     * R-m). Raised by a registration and by
+     * every write judged over the closures its pack joins, answered as 422; a composing read reports the item as
+     * {@code requiredNotHeld} instead.
+     */
+    PRESET_ITEM_NOT_HELD("preset_item_not_held"),
+    /**
+     * A preset item that no pack of the declaring pack's own closure declares as its kind, by a graph node or an
+     * artifact file (#632 item 1, rulings R-a, R-k, R-l, R-m). Raised and answered as {@link #PRESET_ITEM_NOT_HELD}.
+     */
+    PRESET_ITEM_UNDECLARED("preset_item_undeclared");
 
     /** The codes about what was asked rather than about the offering; {@link #notFound()} answers from it. */
     private static final Set<RefusalCode> NOT_FOUND = EnumSet.of(
