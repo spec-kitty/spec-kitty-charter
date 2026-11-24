@@ -99,8 +99,8 @@ the service (#431, [Enforce presets on an organization's projects](/guides/enfor
 
 > **Decided design:** this diagram draws
 > [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/): anti-patterns are
-> authored files that `rejects` references, not inline fields. Today's schemas still carry the inline
-> anti-patterns. Today's shape comes from
+> authored files that `rejects` references, not inline fields. The charter's schemas carry this shape: a
+> styleguide or procedure with an inline `anti_patterns` key is refused as an unknown key. Core's older shape comes from
 > `src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml` in
 > core.
 

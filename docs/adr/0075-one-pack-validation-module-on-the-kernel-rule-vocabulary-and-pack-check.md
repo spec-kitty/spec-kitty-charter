@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-21T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631)
+updated: 2026-11-23T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -54,6 +54,10 @@ reason, so pack-validation never re-derives why a file is not held. ADR-0070's w
 now over the files the census holds. The adapter is never handed them, and
 the verdict checks only that the store did not write them. "#547 holds" below now reads "every file the census holds
 needs an outcome": a held file of a schema the round trip does not model still fails.
+
+**Amendment 2026-11-22** ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):
+the CLI is renamed pack-doctor, with `validate` and `remediate`; decision 6 gains what `validate --full` composes;
+decision 7's `CLOSURE` gains the preset items and the case-only answer; see the amendment below the landing note.
 
 The work is tracked in epic [#549](https://github.com/spec-kitty/spec-kitty-charter/issues/549), slices 1 to 7 (#550 to #556), slice 8 (#478, `pack-check`) and slice 9 (#557), with #547.
 
@@ -335,6 +339,59 @@ decision; this note records what was built and the calls made on the way.
   attestation ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/), amendment of 2026-11-19). It is a
   jar only, and it needs Java 25. The pack-author guide is [Check packs](/guides/check-packs/).
 
+### Amendment 2026-11-22 (operator, ADR-0083): pack-doctor, the preset items and `--full`
+
+Mission `pack-doctor-coverage-01M7YMQK` (#629, #630, #632, #614) changed decisions 6, 7 and 9 on the operator's rulings
+R-a to R-ae, which [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)
+records verbatim. This amendment governs those decisions, and the landing note above, where they differ. Each changed
+decision carries a note where it stands.
+
+- **Decision 6: what the CLI composes.** By default the CLI still composes `PACK` and `CLOSURE` only (R-h). With
+  `validate --full` it adds the check `REFERENCES` (rulings R-s and R-u; scope by R-ae): per root of the set, over the
+  closure the root composes (the root and what it reaches over `depends_on` and `parent_pack`), every pack of it, the
+  substep delegations, the references and the step enhancements' targets, in registration's phase order, a fault
+  several roots find reported once. Each is the packs domain's one body of the check
+  (`PackCompositionResolver.delegationFaultsOf` and `referenceFaultsOf`, `EnhancementCompose.targetFaultsOf`), collects
+  every fault, and answers the code registration answers: an unresolved delegation is `validation_failed` with the
+  violation `substep_delegation_unresolved`, the others `pack_reference_unqualified`, `pack_reference_pack_missing`
+  or `pack_reference_artifact_missing`. A later check runs only when the earlier ones pass: that order and that stop
+  are one body, `PackRulesets.references`, which registration's composing judge calls too (R-ab). `REFERENCES` runs
+  when `CLOSURE` ran and found no composition fault, a closure that does not compose (R-aa); a contest, a
+  preset-item fault or a case-only answer is reported beside it. No walk is written for it (ADR-0082). The `specializes_from` cycle, the
+  relation checks, the edge-index refusals and the own-closure walk stay with the service until #636 slices 2 to 4 and
+  7 land them in the domain factory.
+- **Decision 7: `CLOSURE`'s steps.** `CLOSURE` runs, in order: the composition faults, the preset contests, the preset
+  items, then the case-only answer. The preset-item step judges each preset item of each pack against the pack's own
+  closure (`PresetItemRules`, rulings R-a and R-k to R-m), once per item: a `must_have` item no closure pack holds as a
+  file is `preset_item_not_held`; an item no closure pack declares as its kind is `preset_item_undeclared`; an item that
+  names a held artifact only by letter case gets no fault here. The case-only step (`CaseOnlyRules`, rulings R-y and
+  R-z) judges every preset item and every policy lock (a URN key of the pack's mutability policy file) as
+  registration's phase 6 does, over the composed closure rooted at each pack of the set: a mention that names a held
+  artifact only by letter case is `pack_reference_artifact_missing`, naming the mentioning pack then the holder, with
+  no violation of its own. `PackRulesets.closure(...)` and `closureFaults(...)` take each pack's presets, which replace
+  `presetIdsOf` outright. Registration and every write run the same rules from the factory, so `CLOSURE` still needs
+  only every pack's contents, never the closure walk.
+- **Decision 9: pack-doctor.** `service/pack-check` is renamed `service/pack-doctor` outright, with no alias (R-c,
+  R-f): the jar `pack-doctor-<version>.jar` and its checksum, the main class `PackDoctorMain`, the package
+  `ai.speckitty.charter.packdoctor` and the report schema `PackDoctorReport`. It takes a command word (R-e):
+  - `pack-doctor validate` with `--config-root <dir>` or repeated `--pack <dir>[:<level>][=<id>]`, and `--round-trip`,
+    `--full`, `--report <file>` and `--format yaml|xml` (R-i: YAML by default). The report on standard output is the
+    contract's problem JSON as before, with the keys `tool`, `inputs` and `summary` added; `--report` writes the same
+    tree to a file, as YAML or as XML in our own element-per-key shape (R-n). The JSON Schema is the only normative
+    schema of all three.
+  - `pack-doctor remediate <dir>[:<level>][=<id>]...` (R-j): it refuses a pack with a fault it does not repair,
+    writing nothing; it rewrites each modelled file in the round trip's canonical form and derives and stamps the
+    manifest, through the storage edge's `PackRemediation`; then it validates the set with `--round-trip`.
+  - A command line with no command word is a usage fault. The exit codes are unchanged.
+- **The manifest gate** (ruling R-b) now refuses a stale hash with `manifest_stale` in validate mode as in
+  registration, and `--round-trip` no longer reports the same cause as `round_trip_red`
+  ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), amendment of 2026-11-22).
+- **The composition root names three adapters.** `PackDoctorMain` alone may name `FileSystemPackInspector`,
+  `PackRoundTrip` and `PackRemediation`; `HexagonalArchitectureTest` holds it to those three.
+
+**A note on the title.** The title and the file name still say pack-check. ADR file names never change, and the operator
+has not ruled a new title, so both stand as history; this amendment names the tool.
+
 ## Context
 
 - **The kernel's validator is a port of `modular-validators`.** `ai.speckitty.charter.kernel.validation` is a lean
@@ -451,6 +508,10 @@ decision; this note records what was built and the calls made on the way.
    - The service composes `PACK`, `CLOSURE` and these checks. The CLI composes `PACK` and `CLOSURE` only. Leaving the
      walk out means not composing it; no rule carries a flag for it.
    - The impact and fallback checks collect every fault instead of the first.
+
+   *Amended 2026-11-22 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):
+   the CLI composes `REFERENCES` too under `validate --full`: the delegations, the references and the enhancement
+   targets, per root over the composed closure (R-ae). See the amendment under Status.*
 7. **The descriptor-level closure checks run without the walk** *(operator)*. `CLOSURE` covers:
    - the dependency cycle;
    - the unknown and the out-of-range dependency;
@@ -460,6 +521,11 @@ decision; this note records what was built and the calls made on the way.
 
    It runs over the descriptors of a set of packs with their levels. It needs every `pack.yaml`, never the graph, and
    it is part of the CLI.
+
+   *Amended 2026-11-22 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):
+   the preset phase also judges each preset item against its pack's own closure (`preset_item_not_held`,
+   `preset_item_undeclared`), and then the case-only answer over each root's composed closure, as registration's
+   phase 6 does (R-y, R-z). See the amendment under Status.*
 8. **The round trip moves into main code** *(amended 2026-11-15, operator ruling 2: the flow in `packs`, the verdict in
    `pack-validation`; see the amendment above)*.
    - The whole-pack round trip (ADR-0036) moves from the test source set into main code: the production flow into
@@ -476,6 +542,10 @@ decision; this note records what was built and the calls made on the way.
    - **Output.** The contract's problem JSON, with the same codes the API answers. A contract test checks it against
      `contracts/charter/schemas`.
    - **Exit codes.** `0` when valid (warnings allowed), `1` on a violation, `2` on a usage or I/O failure.
+
+   *Amended 2026-11-22 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)):
+   the module and jar are pack-doctor, with the commands `validate` (adding `--full`, `--report` and `--format`) and
+   `remediate`. See the amendment under Status.*
 10. **The vendored port stays; the design is offered upstream** *(operator)*.
     - Charter cannot depend on the library today. It is an unreleased Java 21 `1.1.1-SNAPSHOT`, and it brings in
       commons-lang3, slf4j and first-party commons, which the kernel's purity rule refuses.

@@ -262,8 +262,9 @@ Conventions for a kind of work. Schema: `styleguide.schema.yaml`.
   ([ADR-0067](/adr/0067-paradigms-and-styleguides-state-named-principles/)); a name is 1 to 64
   characters, a description 1 to 255, neither blank, and a name is unique within the list,
   ignoring case and surrounding white space.
-- **Key fields:** `patterns`, `anti_patterns`, `tooling`, `quality_test`,
-  `applies_to_languages`, `structural_lint_config`. A citation that names no pack artifact lives
+- **Key fields:** `patterns`, `tooling`, `quality_test`, `applies_to_languages`,
+  `structural_lint_config`. A styleguide carries no anti-pattern: an anti-pattern is its own file,
+  and a `rejects` graph edge names it. A citation that names no pack artifact lives
   in the text, as "(source: …)" or a closing "Sources: …" in the last principle.
 - **CRG:** `styleguide:<id>`.
 
@@ -306,13 +307,17 @@ A multi-step operating procedure with entry and exit conditions. Schema:
   `entry_condition`, `exit_condition`, `steps` (at least one).
 - **Steps:** `{title, description?, role?, on_success?, on_failure?}`; `role` is an open role
   token such as `operator`, absent when any role may act.
-- **Key fields:** `anti_patterns` (`{title, content?, bad_example?, good_example?}`), `notes`,
-  `applies_to_languages`. An optional list holds at least one entry when present.
+- **Key fields:** `notes`, `applies_to_languages`. An optional list holds at least one entry when
+  present. A procedure carries no anti-pattern: an anti-pattern is its own file, and a `rejects`
+  graph edge names it.
 - **CRG:** `procedure:<id>`.
 
-> **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
-> tightens the procedure definition and drops the inline `anti_patterns` of a procedure and a styleguide in favor
-> of authored anti-pattern files that a `rejects` graph edge targets. Today's schemas still carry them. The [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) draws the decided shape.
+> **Built:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) drops the inline
+> `anti_patterns` of a procedure and a styleguide in favor of authored anti-pattern files
+> (`anti_patterns/<id>.anti-pattern.yaml`) that a `rejects` graph edge targets. The file kind is built, an
+> `anti_pattern` node with no file is refused, and the inline field is gone: both schemas are closed, so a file that
+> still carries `anti_patterns` is refused `artifact_schema_error` as an unknown key. The
+> [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) draws this shape.
 
 ### Agent profile — `*.agent.yaml`
 
