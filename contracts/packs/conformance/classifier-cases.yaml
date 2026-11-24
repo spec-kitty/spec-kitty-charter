@@ -1,7 +1,7 @@
 # Classifier conformance cases of the packs contract (#559).
 #
 # Each case is a pack file path and what an implementation of file-kinds.yaml must make of it. A reader of packs
-# that classifies files (doc-kitty's adapter, open-packs' pack-check, the charter service) runs every case against
+# that classifies files (doc-kitty's adapter, open-packs' pack-doctor, the charter service) runs every case against
 # its own classifier and passes only if each outcome matches. The charter service runs them against its own
 # classifier in CI (ClassifierConformanceTest), and that test also fails when a rule of file-kinds.yaml has no case.
 #
@@ -65,6 +65,7 @@ cases:
   - {path: core/missions/plan/enhancements/spdd.prompt-fragment.md, expect: mapped, rule: "*/missions/*/enhancements/*.prompt-fragment.md", kind: prompt-fragment, schema: schemas/prompt-fragment.schema.json, content_form: markdown}
   - {path: core/guards/subtasks-complete.guard.yaml, expect: mapped, rule: "**/*.guard.yaml", kind: guard, schema: schemas/guard.schema.json, content_form: yaml}
   - {path: core/lifecycles/work-package.lifecycle.yaml, expect: mapped, rule: "**/*.lifecycle.yaml", kind: lifecycle, schema: schemas/lifecycle.schema.json, content_form: yaml}
+  - {path: core/anti_patterns/x.anti-pattern.yaml, expect: mapped, rule: "**/*.anti-pattern.yaml", kind: anti-pattern, schema: schemas/anti-pattern.schema.json, content_form: yaml}
 
   # files: how globs match. `**/` matches zero or more whole segments, `*` stays within one segment.
   - {path: core/a.directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}

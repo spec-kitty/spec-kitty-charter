@@ -217,8 +217,11 @@ description: >-
   holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
   answer 422 there, because the request is what is wrong, and are refused before any file is written. On
   putPackRelationship a preset or lock mismatch also answers 422 until the pack is fixed; the detail names the pack.
-  A preset item or policy lock naming a held artifact only by case is pack_reference_artifact_missing, and a preset
-  item whose id is outside the id grammar is pack_unreadable.
+  A preset item or policy lock naming a held artifact only by case is pack_reference_artifact_missing, judged over the
+  composed closure of each root, and a preset item whose id is outside the id grammar is pack_unreadable. A preset
+  item that the declaring pack's own closure does not hold or declare answers preset_item_not_held or
+  preset_item_undeclared (422) on getPackRegistration and on every write judged over the closures its pack joins
+  alike.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
   pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing and
@@ -333,6 +336,8 @@ enum:
   - routing_catalog_conflict
   - task_type_not_found
   - pack_has_dependents
+  - preset_item_not_held
+  - preset_item_undeclared
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -420,8 +425,10 @@ x-refusal:
       and substep_delegation_unresolved and substep_delegation_unscoped, a substep's delegation candidate that is no
       artifact of its kind or that the step's action has no scope edge to (FR-005). Every fault of a refused
       registration answers one specific code (#554, R2): pack_unreadable at pack.yaml (a descriptor that is missing,
-      is not YAML or breaks its schema), unreadable (a file that cannot be read or does not parse, a manifest that is
-      not a regular file, a policy file mutability_policy names that cannot be read), artifact_schema_error (an
+      is not YAML or breaks its schema), unreadable (a file that cannot be read or does not parse, a YAML document of
+      more than 1 048 576 code points, a manifest that is not a regular file, a special file of the pack, one that is
+      neither a regular file nor a directory nor a link, such as a FIFO, never opened (ruling R-ad), a policy file
+      mutability_policy names that cannot be read), artifact_schema_error (an
       artifact or manifest that breaks its schema or a rule of its kind: a file stem, a value-object invariant, a
       reference the pack does not hold), retired (a file the file-kinds table retires), case_variant (a root file that
       differs only in letter case from a root rule's file, such as Pack.yaml beside pack.yaml, refused by name under
@@ -431,7 +438,9 @@ x-refusal:
       reserved_shard (a registered.graph.yaml no registration wrote), pack_entry_linked (a symbolic link inside the
       pack, to a file, a directory or nothing: never read through, refused at registration and at load, where the
       composing read answers pack_unreadable naming it; the pack root itself may be a link), manifest_membership (a
-      manifest whose lists differ from the pack, judged when nothing else failed), drg_schema_error,
+      manifest whose lists differ from the pack, judged when nothing else failed), manifest_stale (a content_hash or
+      manifest_hash of pack-manifest.yaml that does not match the uploaded bytes, one per field, naming it, judged
+      with and after manifest_membership; a path manifest_membership names gets none), drg_schema_error,
       prompt_fragment_invalid, prompt_slot_malformed and prompt_slot_not_empty, and the format checks of the one read
       (#554, S2): requires_core_invalid, pack_version_invalid and dependency_range_invalid (a requires_core,
       pack_version or depends_on range of pack.yaml that is not PEP 440) and asset_mime_invalid (an asset mime that is
@@ -1129,6 +1138,28 @@ x-refusal:
       the detail counting the rest), with the code depends_on, parent_pack, activation or artifact_reference. Raised by
       deletePack alone, after its 412 and a 500 pack_unreadable of a pack that cannot be judged, and before the strict
       compose
+  preset_item_not_held:
+    status: 422
+    retryable: false
+    raised: true
+    description: >-
+      a preset's must_have item that no pack of the declaring pack's own closure (the pack and every pack it reaches over
+      depends_on and parent_pack, never a dependent) holds as an artifact file (issue #629; rulings R-a, R-k, R-l,
+      R-m); one per item, with one violation whose pointer is presets/<id>.yaml#/activated_<kinds>/<index> and whose code is the code, the
+      detail naming the preset, the item <kind>:<id>, that it is must_have, and the own closure's packs in order. An item
+      that names a held artifact only by case is pack_reference_artifact_missing instead, judged over the composed
+      closure of each root as registration's phase 6 judges it (rulings R-y, R-z). Raised by
+      getPackRegistration (in the problem of a refused registration) and by every write judged over the closures its
+      pack joins, after the compose and the closure walk; a composing read never raises it and reports the item as
+      requiredNotHeld
+  preset_item_undeclared:
+    status: 422
+    retryable: false
+    raised: true
+    description: >-
+      a preset item that no pack of the declaring pack's own closure declares as its kind, by a graph node or an
+      artifact file (issue #632 item 1; rulings R-a, R-k, R-l, R-m); an item of another kind never declares it. Raised
+      and placed as preset_item_not_held, which a must_have item that is not held answers instead
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

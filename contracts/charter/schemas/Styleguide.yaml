@@ -14,7 +14,6 @@ required:
   - scope
   - principles
   - patterns
-  - antiPatterns
   - tooling
   - qualityTest
   - structuralLintConfig
@@ -61,14 +60,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
       symbol: Styleguide.patterns
-  antiPatterns:
-    type: array
-    description: The anti-patterns, in authored order; empty when the field is absent.
-    items:
-      $ref: StyleguideAntiPattern.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
-      symbol: Styleguide.antiPatterns
   tooling:
     type: array
     description: >-
