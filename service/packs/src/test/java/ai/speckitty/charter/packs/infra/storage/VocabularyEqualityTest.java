@@ -274,8 +274,8 @@ class VocabularyEqualityTest {
 
         assertThat(FileSystemPackInspector.artifactKinds()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(FileSystemPackInspector.artifactKinds())
-                .as("the ten kinds that were listed by hand, the mission type (#194), the guard, the lifecycle and the"
-                        + " routing catalog (ADR-0080)")
+                .as("the ten kinds that were listed by hand, the mission type (#194), the guard, the lifecycle, the"
+                        + " routing catalog (ADR-0080) and the anti-pattern (ADR-0052 decision 8)")
                 .containsExactlyInAnyOrder(
                         "mission-type",
                         "step-enhancement",
@@ -290,7 +290,8 @@ class VocabularyEqualityTest {
                         "asset",
                         "glossary",
                         "skill",
-                        "routing-catalog");
+                        "routing-catalog",
+                        "anti-pattern");
     }
 
     @Test

@@ -17,7 +17,7 @@ import java.util.TreeSet;
  * that the write did not produce it (operator ruling R34, #631).
  *
  * @param census every pack-relative path ({@code /}-separated) to its gate kind: a {@code file-kinds.yaml} schema name, or
- *     {@link #OTHER}, {@link #RETIRED}, {@link #EXCLUDED} or {@link #SYMLINK}
+ *     {@link #OTHER}, {@link #RETIRED}, {@link #EXCLUDED}, {@link #SYMLINK} or {@link #SPECIAL}
  * @param notHeld every census file the census does not hold ({@code TreeCensus.notHeld}), by path: an excluded file, a
  *     file no rule covers, and a mapped file nothing names (a {@code policy.yaml} the descriptor does not name, a
  *     companion no artifact names), each with the census's own kind and reason
@@ -34,6 +34,12 @@ public record PackRoundTripResult(
 
     /** The gate kind of a symbolic link: counted, never followed, so "every file once" holds. */
     public static final String SYMLINK = "other:symlink";
+
+    /**
+     * The gate kind of a special file (a FIFO, a socket, a device; operator ruling R-ad): counted, never opened, so
+     * "every file once" holds.
+     */
+    public static final String SPECIAL = "other:special";
 
     /** The prefix of a gate kind for a file no schema covers, followed by its first path segment. */
     public static final String OTHER = "other:";

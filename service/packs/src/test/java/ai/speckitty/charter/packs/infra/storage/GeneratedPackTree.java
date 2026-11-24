@@ -124,6 +124,7 @@ final class GeneratedPackTree {
         LIFECYCLE("lifecycle", "lc-"),
         STEP_ENHANCEMENT("step-enhancement", "se-"),
         ROUTING_CATALOG("routing-catalog", "rc-"),
+        ANTI_PATTERN("anti-pattern", "an-"),
         // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
         ASSET("asset", "a-");
 
@@ -537,6 +538,7 @@ final class GeneratedPackTree {
             case GLOSSARY -> "glossaries/" + stem + ".glossary.yaml";
             case STEP_ENHANCEMENT -> "missions/t" + n + "/enhancements/" + stem + ".step-enhancement.yaml";
             case ROUTING_CATALOG -> "routing_catalogs/" + stem + ".routing-catalog.yaml";
+            case ANTI_PATTERN -> "anti_patterns/" + stem + ".anti-pattern.yaml";
             default -> loadedPath(shape, stem, kind);
         };
         boolean valid =
@@ -564,14 +566,16 @@ final class GeneratedPackTree {
         // and a lifecycle at lifecycles/<id>.lifecycle.yaml (ADR-0054, ADR-0050): each is planted there in the plain
         // shape, and a tactic stands in for it in every other shape.
         // A step enhancement sits at missions/<type>/enhancements/<id>.step-enhancement.yaml (ADR-0066), its fragment
-        // beside it, a glossary context at glossaries/<id>.glossary.yaml (ADR-0049) and a routing catalog at
-        // routing_catalogs/<id>.routing-catalog.yaml (ADR-0080).
+        // beside it, a glossary context at glossaries/<id>.glossary.yaml (ADR-0049), a routing catalog at
+        // routing_catalogs/<id>.routing-catalog.yaml (ADR-0080) and an anti-pattern at
+        // anti_patterns/<id>.anti-pattern.yaml (ADR-0052 decision 8).
         boolean placed = wanted == Kind.MISSION_TYPE
                 || wanted == Kind.GUARD
                 || wanted == Kind.LIFECYCLE
                 || wanted == Kind.STEP_ENHANCEMENT
                 || wanted == Kind.GLOSSARY
-                || wanted == Kind.ROUTING_CATALOG;
+                || wanted == Kind.ROUTING_CATALOG
+                || wanted == Kind.ANTI_PATTERN;
         return (wanted == Kind.PROCEDURE && dottedStem) || (placed && shape != Shape.LOADED_PLAIN)
                 ? Kind.TACTIC
                 : wanted;
@@ -584,7 +588,8 @@ final class GeneratedPackTree {
                 || kind == Kind.LIFECYCLE
                 || kind == Kind.STEP_ENHANCEMENT
                 || kind == Kind.GLOSSARY
-                || kind == Kind.ROUTING_CATALOG;
+                || kind == Kind.ROUTING_CATALOG
+                || kind == Kind.ANTI_PATTERN;
     }
 
     /** A valid file's content; an asset's sidecar names the payload planted with it. */
@@ -884,6 +889,8 @@ final class GeneratedPackTree {
                         + "      tier: low\nrouting_policy:\n  objective: balanced\n  weights: {quality: 1, cost: 0,"
                         + " risk: 0, latency: 0}\nsources:\n  - name: N\n    url: U\n    access_method: manual\n"
                         + "    snapshot_at: S\n";
+            case ANTI_PATTERN ->
+                "schema_version: '1.0'\nid: " + id + "\ntitle: T\ndescription: D\nseverity: smell\nbad_example: B\n";
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }

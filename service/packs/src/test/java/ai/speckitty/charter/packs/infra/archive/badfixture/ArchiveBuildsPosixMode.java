@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.archive.badfixture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
 
 /**
@@ -34,5 +35,27 @@ public final class ArchiveBuildsPosixMode {
      */
     public static Path restrict(Path path) throws IOException {
         return Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwx------"));
+    }
+
+    /**
+     * Sets mode {@code 0700} through the attribute view, the call c9683265f first used to carry a mode; never called.
+     *
+     * @param path the path
+     * @throws IOException never, the method is not called
+     */
+    public static void restrictThroughTheView(Path path) throws IOException {
+        Files.getFileAttributeView(path, PosixFileAttributeView.class)
+                .setPermissions(PosixFilePermissions.fromString("rwx------"));
+    }
+
+    /**
+     * Sets mode {@code 0700} by the attribute's name; never called.
+     *
+     * @param path the path
+     * @return the path
+     * @throws IOException never, the method is not called
+     */
+    public static Path restrictByName(Path path) throws IOException {
+        return Files.setAttribute(path, "posix:permissions", PosixFilePermissions.fromString("rwx------"));
     }
 }

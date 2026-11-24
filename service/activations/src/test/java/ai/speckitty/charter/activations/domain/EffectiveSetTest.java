@@ -767,7 +767,8 @@ class EffectiveSetTest {
                 Optional.empty());
         PackCompositionFacts facts = new PackCompositionFacts(
                 List.of(),
-                List.of("mission_type:M", "action:M/s", "step_enhancement:x"),
+                List.of("mission_type:M", "step_enhancement:x"),
+                List.of("action:M/s"),
                 List.of(),
                 MutabilityPolicySource.empty(),
                 List.of(),

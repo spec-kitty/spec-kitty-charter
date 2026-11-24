@@ -146,103 +146,6 @@ class PackCompositionResolverTest {
                         "01ZTNZP0000000000000000000", "01MHZD00000000000000000000", "01AKZEAF000000000000000000");
     }
 
-    /** A preset item or a policy lock that names a held id only by case would silently govern nothing. */
-    @Nested
-    class CaseOnlyMatches {
-
-        private PackUnderResolution holding(String id, String name, PackLevel level, String... urns) {
-            return new PackUnderResolution(
-                    new ConfiguredPack(registeredIdOf(id), level),
-                    new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
-                    List.of(),
-                    List.of(urns));
-        }
-
-        private void check(List<PackUnderResolution> packs, Map<String, List<String>> mentions) {
-            PackCompositionResolver.refuseFirst(PackCompositionResolver.caseOnlyMatches(
-                    packs, pack -> mentions.getOrDefault(pack.descriptor().packId(), List.of())));
-        }
-
-        @Test
-        void aMentionOfAHeldIdOnlyByCaseIsRefusedNamingTheMentioningAndTheHoldingPack() {
-            PackUnderResolution holder =
-                    holding("01HNZKZD000000000000000000", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
-            PackUnderResolution mentioner = holding("01MENT00000000000000000000", "mentioner", PackLevel.ORG);
-
-            PackCompositionResolver.Refusal refusal = refusing(() -> check(
-                    List.of(holder, mentioner),
-                    Map.of("01MENT00000000000000000000", List.of("directive:directive_001"))));
-
-            assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
-            assertThat(refusal.packs())
-                    .extracting(pack -> pack.packId().value())
-                    .containsExactly(
-                            registeredIdOf("01MENT00000000000000000000").value(),
-                            registeredIdOf("01HNZKZD000000000000000000").value());
-            assertThat(refusal.detail())
-                    .contains("directive:directive_001", "directive:DIRECTIVE_001", "differ only by case");
-        }
-
-        @Test
-        void everyCaseOnlyMentionIsFoundInThePacksOrder() {
-            PackUnderResolution holder = holding(
-                    "01HNZKZD000000000000000000",
-                    "holder",
-                    PackLevel.ORG,
-                    "directive:DIRECTIVE_001",
-                    "directive:DIRECTIVE_002");
-            PackUnderResolution mentioner = holding("01MENT00000000000000000000", "mentioner", PackLevel.ORG);
-
-            List<PackCompositionResolver.Refusal> faults = PackCompositionResolver.caseOnlyMatches(
-                    List.of(holder, mentioner),
-                    pack -> Map.of(
-                                    "01MENT00000000000000000000",
-                                    List.of(
-                                            "directive:directive_001",
-                                            "directive:DIRECTIVE_001",
-                                            "directive:directive_002"))
-                            .getOrDefault(pack.descriptor().packId(), List.of()));
-
-            assertThat(faults)
-                    .extracting(PackCompositionResolver.Refusal::detail)
-                    .satisfiesExactly(
-                            first -> assertThat(first).contains("directive:directive_001"),
-                            second -> assertThat(second).contains("directive:directive_002"));
-        }
-
-        @Test
-        void anExactMentionAndAMentionOfAnIdNoPackHoldsAreNotRefused() {
-            PackUnderResolution holder =
-                    holding("01HNZKZD000000000000000000", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
-
-            assertThatCode(() -> check(
-                            List.of(holder),
-                            Map.of(
-                                    "01HNZKZD000000000000000000",
-                                    List.of("directive:DIRECTIVE_001", "directive:NOT_HELD", "tactic:x"))))
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        void aMentionOfAnotherKindWithTheSameIdIsNotACaseMatch() {
-            PackUnderResolution holder =
-                    holding("01HNZKZD000000000000000000", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
-
-            assertThatCode(() -> check(
-                            List.of(holder), Map.of("01HNZKZD000000000000000000", List.of("tactic:directive_001"))))
-                    .doesNotThrowAnyException();
-        }
-
-        private PackCompositionResolver.Refusal refusing(Runnable check) {
-            try {
-                check.run();
-            } catch (PackCompositionResolver.Refusal refusal) {
-                return refusal;
-            }
-            throw new AssertionError("the check was expected to refuse");
-        }
-    }
-
     private static PackCompositionResolver.Refusal refusing(List<PackUnderResolution> packs) {
         try {
             PackCompositionResolver.resolve(packs);
@@ -476,7 +379,7 @@ class PackCompositionResolverTest {
 
     @Test
     void aQualifiedReferenceToAnArtifactThePackHoldsIsAcceptedWhateverItsKind() {
-        // an anti_pattern is held only as a graph node, and the qualified form must stand like a directive's
+        // an anti_pattern is held by its file, and the qualified form must stand like a directive's
         PackUnderResolution writing = defining(
                 "01WRHZ00000000000000000000",
                 "writing",
@@ -633,7 +536,7 @@ class PackCompositionResolverTest {
 
     @Test
     void aBareReferenceThatResolvesOnlyInAnotherPackIsRefusedNamingTheHoldingPack() {
-        // the anti_pattern kind is held only as a graph node: the bare form still finds its holder
+        // an anti_pattern is held by its file, as any artifact is: the bare form still finds its holder
         PackUnderResolution writing =
                 defining("01WRHZ00000000000000000000", "writing", PackLevel.BUILT_IN, "anti_pattern:big-ball-of-mud");
         PackUnderResolution reader = pack("01REA000000000000000000000", "reader", "1.0.0", PackLevel.PROJECT);
@@ -901,6 +804,88 @@ class PackCompositionResolverTest {
             }
             throw new AssertionError("the compose was expected to refuse");
         }
+    }
+
+    // ---- one pack's checks within a closure: the one body registration and pack-doctor --full read (#632, R-s) ----
+
+    /** A pack's facts that write only these references and these substep delegation candidates. */
+    private static PackCompositionFacts writing(
+            List<String> references, List<SubstepDelegationRule.QualifiedCandidate> delegations) {
+        return new PackCompositionFacts(
+                List.of(),
+                List.of(),
+                List.of(),
+                references,
+                MutabilityPolicySource.empty(),
+                List.of(),
+                List.of(),
+                Map.of(),
+                PromptFacts.NONE,
+                List.of(),
+                delegations);
+    }
+
+    private static SubstepDelegationRule.QualifiedCandidate delegating(String reference) {
+        return new SubstepDelegationRule.QualifiedCandidate(
+                "missions/rx/mission.yaml", "rx", "implement", "delegate", PackQualifiedReference.parse(reference));
+    }
+
+    @Test
+    void onePacksDelegationFaultsWithinAClosureAreEveryFaultOfTheCollectAllForm() {
+        PackUnderResolution writing = pack("01WRHZ00000000000000000000", "writing", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution reader = pack(
+                "01REA000000000000000000000",
+                "reader",
+                "1.0.0",
+                PackLevel.PROJECT,
+                List.of(new PackDependency("01WRHZ00000000000000000000", ">=1.0")));
+        List<PackUnderResolution> closure = List.of(writing, reader);
+        List<SubstepDelegationRule.QualifiedCandidate> candidates =
+                List.of(delegating("writing::tactic:first"), delegating("writing::tactic:second"));
+
+        List<ClosureFault> faults =
+                PackCompositionResolver.delegationFaultsOf(closure, reader, writing(List.of(), candidates));
+
+        assertThat(faults).hasSize(2).allSatisfy(fault -> {
+            assertThat(fault.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(fault.violations())
+                    .singleElement()
+                    .satisfies(violation -> assertThat(violation.code()).isEqualTo(SubstepDelegationRule.UNRESOLVED));
+        });
+        assertThat(faults.getFirst().detail()).contains("tactic:first");
+        assertThat(faults.get(1).detail()).contains("tactic:second");
+        assertThat(faults)
+                .isEqualTo(PackCompositionResolver.unresolvedDelegations(
+                        closure, "01REA000000000000000000000", candidates));
+    }
+
+    @Test
+    void onePacksReferenceFaultsWithinAClosureAreEveryFaultAndTheFirstIsWhatAOneRefusalCallerAnswers() {
+        PackUnderResolution writing =
+                defining("01WRHZ00000000000000000000", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
+        PackUnderResolution reader = pack(
+                "01REA000000000000000000000",
+                "reader",
+                "1.0.0",
+                PackLevel.PROJECT,
+                List.of(new PackDependency("01WRHZ00000000000000000000", ">=1.0")));
+        List<PackUnderResolution> closure = List.of(writing, reader);
+        String[] written = {"writing::directive:DIRECTIVE_001", "writing::directive:DIRECTIVE_009", "gone::directive:X"
+        };
+
+        List<ClosureFault> faults =
+                PackCompositionResolver.referenceFaultsOf(closure, reader, writing(List.of(written), List.of()));
+
+        assertThat(faults)
+                .extracting(ClosureFault::code)
+                .containsExactly(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, RefusalCode.PACK_REFERENCE_PACK_MISSING);
+        assertThatThrownBy(() -> check(closure, "01REA000000000000000000000", written))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, first -> {
+                    assertThat(first.failure().code())
+                            .isEqualTo(faults.getFirst().code());
+                    assertThat(first.detail()).isEqualTo(faults.getFirst().detail());
+                    assertThat(first.packs()).isEqualTo(faults.getFirst().packs());
+                });
     }
 
     /** The references one pack writes, each with the pack the compose says holds it, checked as the offering checks. */

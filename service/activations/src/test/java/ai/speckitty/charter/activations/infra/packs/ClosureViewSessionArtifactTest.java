@@ -415,7 +415,7 @@ class ClosureViewSessionArtifactTest {
             facts.put(
                     name,
                     new PackCompositionFacts(
-                            List.of(), held, List.of(), policy, List.of(), Arrays.asList(edges), Map.of()));
+                            List.of(), held, List.of(), List.of(), policy, List.of(), Arrays.asList(edges), Map.of()));
             policies.put(new PackUlid(id), policy);
             return this;
         }

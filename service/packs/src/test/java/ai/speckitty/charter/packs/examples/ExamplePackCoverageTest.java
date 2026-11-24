@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -80,6 +82,104 @@ class ExamplePackCoverageTest {
         assertThat(lines(packs, files, ".mission-type.yaml"))
                 .as("a step's tier")
                 .contains("  model_tier: low");
+    }
+
+    /**
+     * WP10, T040 (ADR-0052 decision 8, #154): {@code built-in} holds the anti-pattern its default preset requires as a
+     * file, and every {@code activated_anti_patterns} item of an example preset names an anti-pattern file its own pack
+     * holds, so a {@code must_have} is held, not only declared.
+     */
+    @Test
+    void everyPresetAntiPatternIsAFileItsPackHolds() {
+        Path packs = ExamplePacks.packsDirectory();
+        List<String> files = ExampleCoverage.files(packs);
+
+        assertThat(files).contains("built-in/anti_patterns/indirection-for-repetition.anti-pattern.yaml");
+        List<String> presetItems = new ArrayList<>();
+        for (String file : files) {
+            if (ExampleCoverage.matches("*/presets/*.yaml", file)) {
+                String pack = file.substring(0, file.indexOf('/'));
+                JsonNode preset = MAPPER.valueToTree(yaml(packs.resolve(file)));
+                for (JsonNode item : preset.path("activated_anti_patterns")) {
+                    presetItems.add(pack + "/" + antiPatternFile(item.path("id").asString()));
+                }
+            }
+        }
+        assertThat(presetItems).as("the preset items of the example packs").isNotEmpty();
+        assertThat(files).containsAll(presetItems);
+    }
+
+    /**
+     * WP10, T042 (ruling R-r, #154): every {@code anti_pattern} node of an example pack's graph documents names an
+     * anti-pattern file the same pack holds: the node declares, the file holds.
+     */
+    @Test
+    void everyExampleAntiPatternNodeNamesAFileItsPackHolds() {
+        Path packs = ExamplePacks.packsDirectory();
+        List<String> files = ExampleCoverage.files(packs);
+        List<String> nodeFiles = new ArrayList<>();
+        for (String file : files) {
+            if (ExampleCoverage.matches("*/*.graph.yaml", file)) {
+                String pack = file.substring(0, file.indexOf('/'));
+                JsonNode shard = MAPPER.valueToTree(yaml(packs.resolve(file)));
+                for (JsonNode node : shard.path("nodes")) {
+                    if ("anti_pattern".equals(node.path("kind").asString())) {
+                        String urn = node.path("urn").asString();
+                        nodeFiles.add(pack + "/" + antiPatternFile(urn.substring(urn.indexOf(':') + 1)));
+                    }
+                }
+            }
+        }
+        assertThat(nodeFiles).as("the anti-pattern nodes of the example packs").hasSize(18);
+        assertThat(files).containsAll(nodeFiles);
+    }
+
+    /**
+     * WP10, T042 (ADR-0052 decision 10, ADR-0053 decision 32): the example anti-pattern files write each of the three
+     * severities at least once, so the fixtures cover the enum.
+     */
+    @Test
+    void theExampleAntiPatternsCoverEverySeverity() {
+        Path packs = ExamplePacks.packsDirectory();
+        List<String> severities = new ArrayList<>();
+        for (String file : ExampleCoverage.files(packs)) {
+            if (file.endsWith(".anti-pattern.yaml")) {
+                severities.add(MAPPER.valueToTree(yaml(packs.resolve(file)))
+                        .path("severity")
+                        .asString());
+            }
+        }
+        assertThat(severities).contains("smell", "severe", "breaking");
+    }
+
+    /**
+     * WP12, T047a (ruling R-r, ADR-0052 decision 16, #154): no styleguide or procedure of an example pack carries an
+     * inline {@code anti_patterns} block; every anti-pattern is its own file, rejected by a {@code rejects} edge.
+     */
+    @Test
+    void noExampleStyleguideOrProcedureCarriesAnInlineAntiPattern() throws IOException {
+        Path packs = ExamplePacks.packsDirectory();
+        List<String> carriers = new ArrayList<>();
+        for (String file : ExampleCoverage.files(packs)) {
+            if ((file.endsWith(".styleguide.yaml") || file.endsWith(".procedure.yaml"))
+                    && Files.readAllLines(packs.resolve(file)).stream()
+                            .anyMatch(line -> line.startsWith("anti_patterns:"))) {
+                carriers.add(file);
+            }
+        }
+        assertThat(carriers).isEmpty();
+    }
+
+    private static String antiPatternFile(String id) {
+        return "anti_patterns/" + id + ".anti-pattern.yaml";
+    }
+
+    private static Object yaml(Path file) {
+        try {
+            return new Load(LoadSettings.builder().build()).loadFromString(Files.readString(file));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static List<String> lines(Path packs, List<String> files, String suffix) throws IOException {

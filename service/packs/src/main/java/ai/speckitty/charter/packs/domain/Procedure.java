@@ -16,7 +16,8 @@ import org.jspecify.annotations.Nullable;
  * steps, each naming the role that acts. It is a child entity identified by its {@link ProcedureIdentifier}; two
  * procedures are equal when they have the same identity, whatever their other fields hold.
  *
- * <p>It owns its steps and anti-patterns; their order and duplicates are significant. Its relationships are authored
+ * <p>It owns its steps; their order and duplicates are significant. It carries no anti-pattern: an anti-pattern is its
+ * own file, which the procedure rejects by a graph edge (ADR-0052 decision 16). Its relationships are authored
  * in the pack's graph documents (ADR-0064). Build one with
  * {@link #builder()}.
  */
@@ -48,7 +49,6 @@ public final class Procedure implements CharterArtifact {
     private final String entryCondition;
     private final String exitCondition;
     private final List<ProcedureStep> steps;
-    private final List<AntiPatternEntry> antiPatterns;
     private final Optional<String> notes;
     private final List<String> appliesToLanguages;
 
@@ -64,7 +64,6 @@ public final class Procedure implements CharterArtifact {
      * @param entryCondition the condition under which the procedure starts
      * @param exitCondition the condition under which the procedure is done
      * @param steps the steps, in authored order; never empty
-     * @param antiPatterns the anti-patterns, in authored order
      * @param notes the notes, possibly empty
      * @param appliesToLanguages the applicable languages, in authored order
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
@@ -78,7 +77,6 @@ public final class Procedure implements CharterArtifact {
             String entryCondition,
             String exitCondition,
             List<ProcedureStep> steps,
-            List<AntiPatternEntry> antiPatterns,
             Optional<String> notes,
             List<String> appliesToLanguages) {
         this.id = Objects.requireNonNull(id, "id");
@@ -89,7 +87,6 @@ public final class Procedure implements CharterArtifact {
         this.entryCondition = Objects.requireNonNull(entryCondition, "entryCondition");
         this.exitCondition = Objects.requireNonNull(exitCondition, "exitCondition");
         this.steps = List.copyOf(steps);
-        this.antiPatterns = List.copyOf(antiPatterns);
         this.notes = Objects.requireNonNull(notes, "notes");
         this.appliesToLanguages = List.copyOf(appliesToLanguages);
         RULES.guard(this);
@@ -200,15 +197,6 @@ public final class Procedure implements CharterArtifact {
     }
 
     /**
-     * The anti-patterns, in authored order.
-     *
-     * @return an immutable list
-     */
-    public List<AntiPatternEntry> antiPatterns() {
-        return antiPatterns;
-    }
-
-    /**
      * The {@code notes}.
      *
      * @return the notes, empty when absent
@@ -252,7 +240,6 @@ public final class Procedure implements CharterArtifact {
         private @Nullable String entryCondition;
         private @Nullable String exitCondition;
         private final List<ProcedureStep> steps = new ArrayList<>();
-        private final List<AntiPatternEntry> antiPatterns = new ArrayList<>();
         private Optional<String> notes = Optional.empty();
         private final List<String> appliesToLanguages = new ArrayList<>();
 
@@ -347,17 +334,6 @@ public final class Procedure implements CharterArtifact {
         }
 
         /**
-         * Appends an anti-pattern.
-         *
-         * @param value the anti-pattern
-         * @return this builder
-         */
-        public Builder antiPattern(AntiPatternEntry value) {
-            this.antiPatterns.add(value);
-            return this;
-        }
-
-        /**
          * Sets the notes.
          *
          * @param value the notes, or null for none
@@ -397,7 +373,6 @@ public final class Procedure implements CharterArtifact {
                     Objects.requireNonNull(entryCondition, "entryCondition"),
                     Objects.requireNonNull(exitCondition, "exitCondition"),
                     steps,
-                    antiPatterns,
                     notes,
                     appliesToLanguages);
         }

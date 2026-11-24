@@ -29,6 +29,7 @@ import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
 import ai.speckitty.charter.packs.domain.rules.StepRules;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
+import ai.speckitty.charter.packs.infra.storage.rules.SpecialFileRules;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -163,7 +164,7 @@ record StoreRead(
         RUNS.increment();
         Path packDir = directory.toAbsolutePath().normalize();
         List<StoreRead> refusal = new ArrayList<>();
-        DsoRead dso = dsoRead(packDir, strategy, companionRules, bindings, walk, refusal);
+        DsoRead dso = dsoRead(packDir, id.value(), strategy, companionRules, bindings, walk, refusal);
         if (dso == null) {
             return refusal.getFirst();
         }
@@ -174,7 +175,7 @@ record StoreRead(
         List<PackElementViolation> storeOnly = new ArrayList<>();
         List<ReferenceFacts> references = new ArrayList<>();
         Pack.Builder builder = assembly(id, read, places, graphs, warnings, storeOnly::add, references::add);
-        linked(walk).forEach(builder::violation);
+        refusedEntries(walk).forEach(builder::violation);
         List<PackElementViolation> trailing = new ArrayList<>();
         Optional<PackManifestDso> manifest = manifest(packDir, strategy, trailing);
         List<String> policyFault = new ArrayList<>();
@@ -228,16 +229,22 @@ record StoreRead(
     }
 
     /**
-     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words, the path stated once
-     * by the violation's file (D6): the store half
+     * One {@code pack_entry_linked} per link of the walk, at the link, in {@code LinkRules}' words, then one
+     * {@code unreadable} per special file, in {@code SpecialFileRules}' words (R-ad), the path stated once by the
+     * violation's file (D6): the store half
      * states it itself, as it states {@code duplicate_step_id}, so the composing read of a configured pack, which judges
-     * nothing else, refuses a pack holding a link. It is recorded on the aggregate, not among the store-only faults, so
-     * a registration and validate mode state it once, through {@code LinkRules}.
+     * nothing else, refuses a pack holding a link or a special file. It is recorded on the aggregate, not among the
+     * store-only faults, so a registration and validate mode state it once, through the storage rules.
      */
-    static List<PackElementViolation> linked(PackFileSet.Walk walk) {
-        return walk.links().stream()
+    static List<PackElementViolation> refusedEntries(PackFileSet.Walk walk) {
+        List<PackElementViolation> entries = new ArrayList<>();
+        walk.links().stream()
                 .map(link -> PackElementViolation.wholeFile(link, StorageCodes.PACK_ENTRY_LINKED, LinkRules.LINKED))
-                .toList();
+                .forEach(entries::add);
+        walk.special().stream()
+                .map(file -> PackElementViolation.wholeFile(file, StorageCodes.UNREADABLE, SpecialFileRules.SPECIAL))
+                .forEach(entries::add);
+        return List.copyOf(entries);
     }
 
     /** Each held artifact with the file it is stored in, in the aggregate's order. */
@@ -256,6 +263,7 @@ record StoreRead(
      */
     private static @Nullable DsoRead dsoRead(
             Path packDir,
+            String named,
             SerializationStrategy strategy,
             Companions.Rules companionRules,
             List<KindBinding<?, ?>> bindings,
@@ -268,19 +276,21 @@ record StoreRead(
             return null;
         }
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        return dsoRead(store, PackDirectory.of(packDir), bindings, walk, refusal);
+        return dsoRead(store, PackDirectory.of(packDir), named, bindings, walk, refusal);
     }
 
     /** What the store's reader read of a pack: its graph documents, then everything else. */
     private record DsoRead(FilesystemPackStore.GraphRead graphs, FilesystemPackStore.PackRead read) {}
 
     /**
-     * The store's read of a pack, its graph documents first; a refusal of either goes to {@code refusal}, the graph
+     * The store's read of a pack, its graph documents first, its {@code pack.yaml} refused under the name {@code named}
+     * (the id it is read under, whatever its directory is called); a refusal of either goes to {@code refusal}, the graph
      * read's fault kept when the rest is refused.
      */
     private static @Nullable DsoRead dsoRead(
             FilesystemPackStore store,
             PackDirectory key,
+            String named,
             List<KindBinding<?, ?>> bindings,
             PackFileSet.Walk walk,
             List<StoreRead> refusal) {
@@ -292,7 +302,7 @@ record StoreRead(
             return null;
         }
         try {
-            return new DsoRead(graphs, store.read(key, bindings, graphs, walk));
+            return new DsoRead(graphs, store.read(key, named, bindings, graphs, walk));
         } catch (CharterRefusal refused) {
             // The graph read found the directory, so the rest of the read refuses only the descriptor: its fault is
             // placed at pack.yaml with no second read of the file (#554, WP04 review MINOR-4).

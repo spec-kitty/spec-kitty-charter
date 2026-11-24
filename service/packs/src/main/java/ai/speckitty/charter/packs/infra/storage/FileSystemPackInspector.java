@@ -494,9 +494,10 @@ public final class FileSystemPackInspector implements PackReading {
 
     /**
      * The manifest's facts, read without following a link: whether anything stands at its path and whether it is a
-     * regular file; the lists it declares, read by the store's own manifest reader when the read found it valid; and
-     * the lists derived from what the pack holds ({@link PackManifestDerivation}, T024), so the membership rule compares
-     * two facts. A pack the store cannot load has no derived lists.
+     * regular file; the lists it declares, read by the store's own manifest reader when the read found it valid; the
+     * lists derived from what the pack holds ({@link PackManifestDerivation}, T024), so the membership rule compares
+     * two facts; and the declared derived fields that do not verify against the files' bytes, read without following a
+     * link ({@link PackManifests#staleFields}, #630). A pack the store cannot load has no derived lists.
      */
     private TreeCensus.Manifest manifest(Path directory, boolean readable, StoreRead store) {
         Path file = directory.resolve(PackFileSet.MANIFEST);
@@ -506,12 +507,16 @@ public final class FileSystemPackInspector implements PackReading {
         }
         boolean regular = Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS);
         Optional<TreeCensus.Entries> listed = Optional.empty();
+        List<TreeCensus.StaleField> stale = List.of();
         if (readable
                 && FilesystemPackStore.readText(file)
                                 .map(text -> strategy.readManifest(text, PackFileSet.MANIFEST))
                                 .orElse(null)
                         instanceof FileRead.Read<PackManifestDso> good) {
             listed = Optional.of(ManifestMembership.entries(good.value()));
+            // #630: the derived fields, verified against the incoming bytes; a listed path with no file is
+            // membership's.
+            stale = PackManifests.staleFields(good.value(), path -> ManifestMembership.bytesAt(directory, path));
         }
         Optional<TreeCensus.Entries> derived = Optional.empty();
         if (listed.isPresent() && store.assembly() instanceof Assembly.Assembled held) {
@@ -519,7 +524,7 @@ public final class FileSystemPackInspector implements PackReading {
             derived = Optional.of(ManifestMembership.entries(
                     PackManifestDerivation.derived(PackAssembly.build(held), store.layout())));
         }
-        return new TreeCensus.Manifest(present, regular, listed, derived);
+        return new TreeCensus.Manifest(present, regular, listed, derived, stale);
     }
 
     /** What stands at the reserved shard's path, read without following a link (C-4). */

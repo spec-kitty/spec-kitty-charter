@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.LayerMerge;
@@ -105,6 +106,7 @@ class EdgeIndexTest {
                     new PackCompositionFacts(
                             List.of(),
                             held,
+                            List.of(),
                             List.of(),
                             MutabilityPolicySource.empty(),
                             List.of(),
@@ -309,7 +311,8 @@ class EdgeIndexTest {
 
     @Test
     void anIndexedAnswerIsEitherAnIndexOrFaultsNeverBothNorNeither() {
-        ClosureFault fault = ClosureFault.of(RefusalCode.PACK_REFERENCE_PACK_MISSING, "outside", List.of());
+        ClosureFault fault =
+                ClosureFault.of(Origin.NONE, RefusalCode.PACK_REFERENCE_PACK_MISSING, "outside", List.of());
 
         assertThatThrownBy(() -> new EdgeIndex.Indexed(java.util.Optional.empty(), List.of()))
                 .isInstanceOf(IllegalArgumentException.class);

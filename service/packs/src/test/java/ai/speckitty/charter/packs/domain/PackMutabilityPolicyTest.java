@@ -263,12 +263,13 @@ class PackMutabilityPolicyTest {
                         List.of(),
                         List.of("directive:X"),
                         List.of(),
+                        List.of(),
                         MutabilityPolicySource.builder()
                                 .entry(locked, MutabilityLevel.LOCKED)
                                 .build(),
                         List.of()),
                 PACK.value(),
-                new PackCompositionFacts(List.of(), ownHeld, List.of(), own, List.of()));
+                new PackCompositionFacts(List.of(), ownHeld, List.of(), List.of(), own, List.of()));
         PackCatalogRepository catalog =
                 () -> List.of(new ConfiguredPack(q, PackLevel.BUILT_IN), new ConfiguredPack(PACK, PackLevel.ORG));
         PackDescriptorRepository byId = new PackDescriptorRepository() {

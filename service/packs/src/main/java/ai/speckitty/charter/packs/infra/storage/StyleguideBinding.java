@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Styleguide;
-import ai.speckitty.charter.packs.domain.StyleguideAntiPattern;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguidePattern;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
@@ -49,9 +48,6 @@ enum StyleguideBinding implements KindBinding<StyleguideDso, Styleguide> {
         dso.patterns()
                 .forEach(p -> builder.pattern(
                         new StyleguidePattern(p.name(), p.description(), p.badExample(), p.goodExample())));
-        dso.antiPatterns()
-                .forEach(a -> builder.antiPattern(
-                        new StyleguideAntiPattern(a.name(), a.description(), a.badExample(), a.goodExample())));
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
         return builder.build();
     }
@@ -66,10 +62,6 @@ enum StyleguideBinding implements KindBinding<StyleguideDso, Styleguide> {
                 PrincipleYaml.toDso(styleguide.principles()),
                 styleguide.patterns().stream()
                         .map(p -> new StyleguideDso.Pattern(p.name(), p.description(), p.badExample(), p.goodExample()))
-                        .toList(),
-                styleguide.antiPatterns().stream()
-                        .map(a -> new StyleguideDso.AntiPattern(
-                                a.name(), a.description(), a.badExample(), a.goodExample()))
                         .toList(),
                 styleguide.tooling(),
                 styleguide.qualityTest(),

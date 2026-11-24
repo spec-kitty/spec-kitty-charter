@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -63,13 +64,13 @@ class PresetRoundTripTest {
         assertThat(governing.required())
                 .containsEntry(ArtifactKind.DIRECTIVE, List.of("DIRECTIVE_001"))
                 .containsEntry(ArtifactKind.TACTIC, List.of("acceptance-test-first"))
-                .containsEntry(ArtifactKind.AGENT_PROFILE, List.of("implementer"))
-                .containsEntry(ArtifactKind.SKILL, List.of("pr-review"))
+                .containsEntry(ArtifactKind.AGENT_PROFILE, List.of("implementer-ivan"))
+                .containsEntry(ArtifactKind.SKILL, List.of("review-checklist"))
                 .containsEntry(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
                 .doesNotContainKey(ArtifactKind.GLOSSARY);
         assertThat(governing.artifacts().get(ArtifactKind.GLOSSARY))
                 .extracting(PresetItem::id)
-                .containsExactly("core-terms");
+                .containsExactly("spec-kitty-core");
 
         Path target = host.resolve("written").resolve(FIXTURE);
         store.write(loaded, target);
@@ -158,7 +159,12 @@ class PresetRoundTripTest {
     void aRegistrationLeavesThePresetsByteIdentical(@TempDir Path host) throws IOException, URISyntaxException {
         Path pack = fixture(host);
         Map<String, byte[]> before = presetBytes(pack);
-        Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
+        // The fixture's presets name built-in's artifacts, so built-in is configured beside it: every preset item is in
+        // the fixture's own closure, as registration requires (#629, #632 item 1).
+        Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host.resolve("closure"));
+        Locations locations = () -> List.of(
+                new PackLocation(ExamplePacks.BUILT_IN, PackLevel.BUILT_IN, builtIn),
+                new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations, strategy);
         CommitStorePackWriteStore writeStore =

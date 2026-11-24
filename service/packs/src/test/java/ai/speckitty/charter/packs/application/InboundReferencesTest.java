@@ -454,6 +454,7 @@ class InboundReferencesTest {
                 List.of(),
                 List.of(keep.toString(), gone.toString()),
                 List.of(),
+                List.of(),
                 MutabilityPolicySource.empty(),
                 List.of(),
                 List.of(Relationship.of(

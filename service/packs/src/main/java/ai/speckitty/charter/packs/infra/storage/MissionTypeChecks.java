@@ -86,7 +86,10 @@ final class MissionTypeChecks {
             if (!named.equals(derived)) {
                 return Optional.of("step '" + id + "' names " + named + ", not its derived path " + derived);
             }
-            if (!Files.isRegularFile(base.resolve(named))) {
+            Path at = base.resolve(named);
+            // A special file there is refused at its own path (SpecialFileRules, R-ad): that is the one cause, so the
+            // mission type that names it is not refused beside it (Tier R N3, as A9 for an anti-pattern file).
+            if (!Files.isRegularFile(at) && !PackFileSet.special(at)) {
                 return Optional.of("step '" + id + "' names " + named + ": missing");
             }
         }

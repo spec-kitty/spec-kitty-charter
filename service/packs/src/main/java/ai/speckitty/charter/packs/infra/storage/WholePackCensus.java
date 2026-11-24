@@ -37,6 +37,9 @@ final class WholePackCensus {
     /** The gate kind of a symbolic link ({@link PackRoundTripResult#SYMLINK}). */
     static final String SYMLINK = PackRoundTripResult.SYMLINK;
 
+    /** The gate kind of a special file ({@link PackRoundTripResult#SPECIAL}). */
+    static final String SPECIAL = PackRoundTripResult.SPECIAL;
+
     /** The prefix of a gate kind for a file no schema covers ({@link PackRoundTripResult#OTHER}). */
     static final String OTHER = PackRoundTripResult.OTHER;
 
@@ -111,8 +114,8 @@ final class WholePackCensus {
     }
 
     /**
-     * Every regular file under {@code pack} with its gate kind, and every symbolic link as kind {@link #SYMLINK}, never
-     * followed.
+     * Every regular file under {@code pack} with its gate kind, every symbolic link as kind {@link #SYMLINK}, never
+     * followed, and every special file as kind {@link #SPECIAL}, never opened.
      *
      * @param pack the pack directory
      * @return pack-relative path ({@code /}-separated) to gate kind, sorted by path
@@ -148,7 +151,8 @@ final class WholePackCensus {
     /**
      * The gate kind of one census entry: the schema name of a mapped file, the owner's for a companion,
      * {@link #RETIRED} and the rule's glob for a retired file, {@link #EXCLUDED} and the rule's glob for an excluded
-     * one, {@link #OTHER} and the first path segment for any other file, {@link #SYMLINK} for a link.
+     * one, {@link #OTHER} and the first path segment for any other file, {@link #SYMLINK} for a link, {@link #SPECIAL}
+     * for a special file.
      *
      * @param entry the entry
      * @return the gate kind
@@ -156,6 +160,7 @@ final class WholePackCensus {
     static String kindOf(TreeCensus.Entry entry) {
         return switch (entry.standing()) {
             case LINK -> SYMLINK;
+            case SPECIAL -> SPECIAL;
             case MAPPED, COMPANION -> entry.name();
             case RETIRED -> RETIRED + entry.name();
             case EXCLUDED -> EXCLUDED + entry.name();

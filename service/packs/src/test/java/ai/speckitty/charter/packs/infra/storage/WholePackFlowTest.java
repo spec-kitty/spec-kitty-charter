@@ -11,10 +11,12 @@ import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packvalidation.roundtrip.MeaningComparator;
 import ai.speckitty.charter.packvalidation.roundtrip.RoundTripObservation;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -125,12 +127,14 @@ class WholePackFlowTest {
     }
 
     /**
-     * #195: the flow verifies the manifest's derived fields on both sides, which the comparison skips. A writer that
-     * keeps the source's hashes is red at {@code written stale}, an edited source at {@code source stale}; the faithful
-     * run over the fresh fixture is green.
+     * #195: the flow verifies the written manifest's derived fields, which the comparison skips. A writer that keeps the
+     * source's hashes is red at {@code written stale}; the faithful run over the fresh fixture is green. #630: an edited
+     * source is not the round trip's to report: its stale {@code content_hash} is the storage edge's
+     * {@code manifest_stale} ({@code ManifestRulesTest}), so the round trip of it is green, and the cause is one
+     * problem.
      */
     @Test
-    void theManifestsDerivedFieldsAreVerifiedOnBothSides(@TempDir Path temp) throws IOException, URISyntaxException {
+    void theWrittenManifestsDerivedFieldsAreVerified(@TempDir Path temp) throws IOException, URISyntaxException {
         Path fresh = PackManifestRoundTripTest.fixture(temp.resolve("fresh"));
         Path edited = PackManifestRoundTripTest.fixture(temp.resolve("edited"));
         Path tactic = edited.resolve(PackManifestRoundTripTest.TACTIC);
@@ -161,8 +165,9 @@ class WholePackFlowTest {
                                 + "constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash, "
                                 + "presets{presets/convenience.yaml}.content_hash, "
                                 + "presets{presets/governing.yaml}.content_hash");
-        assertThat(sourceStale.get(PackFileSet.MANIFEST))
-                .contains("source stale: constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash");
+        assertThat(sourceStale)
+                .as("a source-stale manifest is manifest_stale, not a round-trip red")
+                .allSatisfy((path, red) -> assertThat(red).as(path).isEmpty());
     }
 
     /**
@@ -211,6 +216,46 @@ class WholePackFlowTest {
         });
         assertThat(result.outcomes()).doesNotContainKeys(extras.toArray(String[]::new));
         assertThat(result.written()).doesNotContainAnyElementsOf(extras);
+    }
+
+    /**
+     * The flow reads each YAML side through the readers' guards (#B1 of the pre-merge squad): a written file an adapter
+     * answers that no reader would take (an alias bomb past the parser's alias budget) is refused, with the guard's
+     * words, and never thrown.
+     */
+    @Test
+    void aWrittenYamlFileTheGuardsRefuseIsRefusedNeverThrown(@TempDir Path temp) {
+        Path pack = ExamplePacks.pack(BUILT_IN);
+        String profile = "agent_profiles/generic-agent.agent.yaml";
+        StringBuilder bomb = new StringBuilder("a0: &a0 [x, x, x, x, x, x, x, x, x]\n");
+        for (int level = 1; level <= 6; level++) {
+            bomb.append("a%d: &a%d [%s]\n"
+                    .formatted(level, level, String.join(", ", Collections.nCopies(9, "*a" + (level - 1)))));
+        }
+        WholePackRoundTrip writesABomb = new WholePackRoundTrip() {
+            @Override
+            public Set<String> modelledKinds() {
+                return DomainRoundTrip.MODELLED;
+            }
+
+            @Override
+            public Map<String, Outcome> roundTrip(String name, Path source, Path target, Map<String, String> kindOf) {
+                try {
+                    Files.createDirectories(target.resolve(profile).getParent());
+                    Files.writeString(target.resolve(profile), bomb.toString());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                return Map.of(profile, new WholePackRoundTrip.Written(profile));
+            }
+        };
+
+        PackRoundTripResult result =
+                PackRoundTrip.run(writesABomb, new PackIdentifier(BUILT_IN), pack, temp.resolve(BUILT_IN));
+
+        assertThat(result.outcomes().get(profile))
+                .isEqualTo(new FileOutcome.Refused("read-back: the written file does not parse: "
+                        + "Number of aliases for non-scalar nodes exceeds the specified max=50"));
     }
 
     /** The census: every file of a pack with its gate kind (#451, ADR-0044 decision 6). */
