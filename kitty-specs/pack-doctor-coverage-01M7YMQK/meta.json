@@ -1,0 +1,51 @@
+{
+  "accept_commit": "d282ad1b6cded91ffd6ce17beb1661a971814e29",
+  "acceptance_history": [
+    {
+      "accept_commit": "d282ad1b6cded91ffd6ce17beb1661a971814e29",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-23T08:36:53.572931+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "85fcb02b1d6564eb2ed911749ba70996dfd44aa6"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-23T08:36:53.572931+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "85fcb02b1d6564eb2ed911749ba70996dfd44aa6",
+  "baseline_merge_commit": "ece7b92f99fb9e3d79cb9fbb887f43c34d8368de",
+  "change_mode": "bulk_edit",
+  "contracts": "none",
+  "contracts_rationale": "The mission changes the repository's own contract under contracts/charter (refusal codes, the PackDoctorReport schemas, scenarios, change fragments); it defines no separate planning-time interface contracts.",
+  "create_return_branch": "feat/pack-doctor-coverage",
+  "created_at": "2026-11-21T08:49:26.777275+00:00",
+  "flattened": true,
+  "friendly_name": "pack-doctor coverage",
+  "merged_at": "2026-11-23T10:41:49.036781+00:00",
+  "merged_commit": "93dd26efa4b0d8a4ba1114ec42f9938b996ad193",
+  "mid8": "01M7YMQK",
+  "mission_base_sha": "a5d5f9a96df67caa7b8c934c54fd5b372030df79",
+  "mission_branch": "kitty/mission-pack-doctor-coverage-01M7YMQK",
+  "mission_id": "01M7YMQKJ7VHPK74YWKCQW8XBT",
+  "mission_number": 30,
+  "mission_slug": "pack-doctor-coverage-01M7YMQK",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Open-packs still runs a Python copy of the charter's cross-pack rules because pack-check misses some faults that registration refuses and both accept some faults the operator now rules must be refused. This mission renames pack-check to pack-doctor (validate and remediate), makes registration and pack-doctor refuse unheld or undeclared preset ids and stale manifest hashes, adds the closure walk under --full, and adds a structured report and a manifest and canonical-form remediation, so open-packs can retire its Python rules.",
+  "purpose_tldr": "One answer on every surface: pack-doctor and registration refuse the same pack faults, and pack-doctor can repair manifests.",
+  "slug": "pack-doctor-coverage-01M7YMQK",
+  "source_description": "#629, #630, #632, #614 (epic #549); operator rulings R-a..R-m",
+  "status_phase": "1",
+  "target_branch": "feat/pack-doctor-coverage",
+  "topology_decision": {
+    "code_lane_count": 8,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 9
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git"
+}
