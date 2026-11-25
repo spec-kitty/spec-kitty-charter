@@ -80,15 +80,19 @@ serves is always one a consumer can download and pin. Decisions 3 and 7 now read
   `contracts/charter/openapi.yaml`) and the packs contract (the top heading of `contracts/packs/CHANGELOG.md`), which
   its pack-doctor jar and its pack reads check against.
 - **Every release, a pre-release too, bundles released contracts.** `contract-charter-v<info.version>` is merged into
-  the tagged commit, and its GitHub release is published with `charter-openapi.yaml` and its `.sha256`. The packs
-  contract's `contract-packs-v<version>` is merged and published with `packs-contract.tar.gz` and its checksums; while
-  the packs heading is a `-SNAPSHOT` and no packs contract file (`file-kinds.yaml`, `schemas/`, `conformance/`)
-  changed since the highest merged `contract-packs-v*` release, the bundled packs contract is that release. A pre-release no longer bundles a
-  `-SNAPSHOT` contract.
+  the tagged commit, and its GitHub release is published with all four of its assets. The packs contract's
+  `contract-packs-v<version>` is merged and published with `packs-contract.tar.gz` and its checksums. While the packs
+  heading is a `-SNAPSHOT` and no packs contract file (`file-kinds.yaml`, `schemas/`, `conformance/`) changed since the
+  highest merged `contract-packs-v*` release, the bundled packs contract is that release. A pre-release no longer
+  bundles a `-SNAPSHOT` contract.
+- **A released version is the bytes of its release.** A contract whose version is released must hold the files of its
+  tag: a contract file changed without reopening the version as a `-SNAPSHOT` is refused. The workflow also compares
+  the published assets with the commit's contracts: the bundle's checksum, the scenarios, the activation document and
+  the packs contract's files.
 - **A final release bundles final releases of both**, never a release candidate.
 - **The release notes** name both contract releases.
 
-`ServiceReleaseGate` judges the tags, `service-release.yml` checks the two releases' assets, and
+`ServiceReleaseGate` judges the tags and the files, `service-release.yml` checks the two releases' assets, and
 `scripts/release/rehearse-service-release.sh` rehearses every case. Consumers read
 [For contract consumers](/development/contract-consumers/).
 

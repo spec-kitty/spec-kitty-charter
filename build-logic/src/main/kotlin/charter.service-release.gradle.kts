@@ -3,11 +3,12 @@
 // It judges the tag against the checked-out commit (ServiceReleaseGate): the tag's form, the build's version and, for
 // every release, a pre-release too (#650), the two contracts it bundles released and merged: the charter contract as
 // contract-charter-v<info.version>, and the packs contract as contract-packs-v<top heading of contracts/packs/CHANGELOG.md>
-// or, while that heading is a -SNAPSHOT and no packs contract file (file-kinds.yaml, schemas/, conformance/) changed
-// since the highest merged contract-packs-v* release, as that release. It fails naming the cause, or writes
+// or, while that heading is a -SNAPSHOT and no packs contract file changed since the highest merged contract-packs-v*
+// release, as that release. A released version must also hold the files of its tag: a contract file changed without
+// reopening the version as a -SNAPSHOT is refused. It fails naming the cause, or writes
 // build/service-release/gate.properties (version, prerelease, contract, packsContract, contractNote) for the release
-// workflow. That the commit is on main, that both contract releases are published with their assets, and that the tag
-// still names the commit when publishing are the workflow's checks: they need the remote.
+// workflow. That the commit is on main, that both contract releases are published with the assets this commit bundles,
+// and that the tag still names the commit when publishing are the workflow's checks: they need the remote.
 // scripts/release/rehearse-service-release.sh rehearses every refusal.
 
 val root = layout.projectDirectory.asFile.absolutePath
@@ -19,6 +20,29 @@ fun tagMerged(tag: Provider<String>): Provider<Boolean> = tag.flatMap { name ->
         isIgnoreExitValue = true
     }.result.map { it.exitValue == 0 }
 }
+
+/**
+ * Whether the files of [paths] at HEAD differ from those at `refs/tags/<tag>`; a tag that does not exist differs. It is
+ * consulted only for a tag the gate found merged.
+ */
+fun changedSince(tag: Provider<String>, paths: List<String>): Provider<Boolean> = tag.flatMap { name ->
+    providers.exec {
+        commandLine(listOf("git", "-C", root, "diff", "--quiet", "refs/tags/$name", "HEAD", "--") + paths)
+        isIgnoreExitValue = true
+    }.result.map { it.exitValue != 0 }
+}
+
+// The files of the charter contract's release assets (scripts/release/contract-release-assets.sh): the YAML the bundle
+// is built from, the scenarios and the activation document. The CHANGELOG and its change notes are not the contract.
+val charterContractFiles = listOf(
+    ":(glob)contracts/charter/**/*.yaml", ":(glob)contracts/_shared/**/*.yaml", "contracts/charter/scenarios",
+    "contracts/offering/schemas/ActivationConfig.schema.json",
+)
+
+// The packs contract's files, as its CHANGELOG defines them. The README and the CHANGELOG are not the contract.
+val packsContractFiles = listOf(
+    "contracts/packs/file-kinds.yaml", "contracts/packs/schemas", "contracts/packs/conformance",
+)
 
 val contractVersion: Provider<String> = contractInfoVersion
 
@@ -41,16 +65,14 @@ val newestPacksTag: Provider<String> = providers.exec {
     isIgnoreExitValue = true
 }.standardOutput.asText.map { it.lineSequence().firstOrNull { line -> line.isNotBlank() }?.trim().orEmpty() }
 
-// The release of that tag when the packs contract's files at HEAD, as its CHANGELOG defines them (file-kinds.yaml,
-// schemas/, conformance/), are those of the tag, or "". The README and the CHANGELOG are not the contract.
+// The release of that tag when the packs contract's files at HEAD are those of the tag, or "".
 val packsUnchangedSince: Provider<String> = newestPacksTag.flatMap { tag ->
-    providers.exec {
-        commandLine(
-            "git", "-C", root, "diff", "--quiet", if (tag.isEmpty()) "HEAD" else "refs/tags/$tag", "HEAD", "--",
-            "contracts/packs/file-kinds.yaml", "contracts/packs/schemas", "contracts/packs/conformance",
-        )
-        isIgnoreExitValue = true
-    }.result.map { if (tag.isNotEmpty() && it.exitValue == 0) tag.removePrefix("contract-packs-v") else "" }
+    if (tag.isEmpty()) {
+        providers.provider { "" }
+    } else {
+        changedSince(providers.provider { tag }, packsContractFiles)
+            .map { changed -> if (changed) "" else tag.removePrefix("contract-packs-v") }
+    }
 }
 
 tasks.register("checkServiceReleaseTag") {
@@ -60,8 +82,10 @@ tasks.register("checkServiceReleaseTag") {
     val buildVersion = project.version.toString()
     val contract = contractVersion
     val contractMerged = tagMerged(contractVersion.map { "contract-charter-v$it" })
+    val contractChanged = changedSince(contractVersion.map { "contract-charter-v$it" }, charterContractFiles)
     val packs = packsVersion
     val packsMerged = tagMerged(packsVersion.map { "contract-packs-v$it" })
+    val packsChanged = changedSince(packsVersion.map { "contract-packs-v$it" }, packsContractFiles)
     val packsUnchanged = packsUnchangedSince
     val gate = layout.buildDirectory.file("service-release/gate.properties")
     outputs.file(gate)
@@ -71,8 +95,13 @@ tasks.register("checkServiceReleaseTag") {
         val verdict = ServiceReleaseGate.check(
             pushed,
             buildVersion,
-            ServiceReleaseGate.Bundled(contract.get(), contractMerged.get()),
-            ServiceReleaseGate.Bundled(packs.get(), packsMerged.get(), packsUnchanged.get().ifEmpty { null }),
+            ServiceReleaseGate.Bundled(contract.get(), contractMerged.get(), changedSinceTag = contractChanged.get()),
+            ServiceReleaseGate.Bundled(
+                packs.get(),
+                packsMerged.get(),
+                packsUnchanged.get().ifEmpty { null },
+                changedSinceTag = packsChanged.get(),
+            ),
         )
         when (verdict) {
             is ServiceReleaseGate.Refusal -> throw GradleException("The release tag $pushed is refused: ${verdict.reason}")

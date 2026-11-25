@@ -14,7 +14,8 @@
 # charter contract. Last, over contract release candidates (operator ruling R1): a final release refused, a
 # pre-release let through, and a final release over a final charter contract but a packs candidate refused. And the
 # unchanged packs contract: a README edit does not end it, and of several releases on one commit, the highest version
-# counts (a final above its candidates).
+# counts (a final above its candidates). A released version is the bytes of its release (review probe P1): a packs or
+# charter contract file edited without reopening the version as a -SNAPSHOT is refused, a CHANGELOG or README edit is not.
 # It then assembles the asset set from placeholder build outputs (scripts/release/service-release-assets.sh) and
 # expects exactly the ADR's 13 files (ADR-0046 as amended 2026-11-19, #478: the pack-doctor jar joins), 6 lines in
 # SHA256SUMS and checksums that verify, a refusal when the pack-doctor jar is missing, and one when a target is missing.
@@ -148,7 +149,29 @@ refused service-v0.3.1 "needs a final packs contract release, but the bundled pa
 git tag -d contract-packs-v0.3.1-rc.1 > /dev/null
 passes service-v0.3.1 "packsContract=0.3.0"
 
-echo "== 4. The asset set"
+echo "== 4. A released version is the bytes of its release (review probe P1)"
+set_version 0.3.2
+set_packs 0.3.0
+commit "release 0.3.2 over the released contracts"
+passes service-v0.3.2 "contract=0.3.0" "packsContract=0.3.0"
+printf '# a rehearsal change\n' >> contracts/packs/file-kinds.yaml
+commit "release 0.3.2 after a packs contract edit that kept the released version"
+refused service-v0.3.2 "packs contract 0.3.0, but its files changed since contract-packs-v0.3.0"
+git reset --quiet --hard HEAD~1
+printf '# a rehearsal change\n' >> contracts/charter/openapi.yaml
+commit "release 0.3.2 after a charter contract edit that kept the released version"
+refused service-v0.3.2 "charter contract 0.3.0, but its files changed since contract-charter-v0.3.0"
+git reset --quiet --hard HEAD~1
+printf '# a rehearsal change\n' >> contracts/charter/scenarios/README.md
+commit "release 0.3.2 after a charter scenario edit that kept the released version"
+refused service-v0.3.2 "charter contract 0.3.0, but its files changed since contract-charter-v0.3.0"
+git reset --quiet --hard HEAD~1
+printf '\na rehearsal note\n' >> contracts/charter/CHANGELOG.md
+printf '\na rehearsal note\n' >> contracts/packs/README.md
+commit "release 0.3.2 after CHANGELOG and README edits, which are not the contracts"
+passes service-v0.3.2 "contract=0.3.0" "packsContract=0.3.0"
+
+echo "== 5. The asset set"
 in="$work/in"
 prefix=spec-kitty-charter-service
 for target in linux-x64 linux-arm64 macos-arm64; do

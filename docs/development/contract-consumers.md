@@ -42,7 +42,9 @@ There are two contracts, versioned apart:
 
 A service release (`service-v<version>`), a pre-release too, is published only when both contracts it bundles are
 released, with their assets (#650). The charter contract is released with every service release, even when nothing
-in it changed; the packs contract only when it changed. The release gate refuses the tag otherwise
+in it changed; the packs contract only when it changed. A bundled contract is the one its release published, byte for
+byte: the release workflow compares the published assets with the contracts the service release bundles. The release
+gate refuses the tag otherwise
 ([Release a service version](/guides/service-build/#release-a-service-version)). So, from the next service release on,
 the contract a running service serves is one you can download, verify and pin, and the service release notes name both
 contract releases, for example:

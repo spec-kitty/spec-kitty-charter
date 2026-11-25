@@ -1,14 +1,17 @@
 /**
  * The publishing gate of a service release (ADR-0046 decisions 1 to 3 and 7): whether a pushed `service-v*` tag may be
  * published from the commit it names. The facts come from that commit: the build's `version` (gradle.properties), and
- * the two contracts the release bundles, each with whether its release tag is merged into it. The tag's commit being on
- * `main`, the contract releases being published with their assets, and the tag still naming the commit when publishing
- * are checked by the release workflow, which has the remote.
+ * the two contracts the release bundles, each with whether its release tag is merged into it and whether its files
+ * changed since that tag. The tag's commit being on `main`, the contract releases being published with the bundled
+ * assets, and the tag still naming the commit when publishing are checked by the release workflow, which has the
+ * remote.
  *
  * Every release, a pre-release too, bundles released contracts (#650): the charter contract as
  * `contract-charter-v<info.version>`, and the packs contract as `contract-packs-v<version>`, where an unchanged packs
- * contract is the release it is unchanged since. A final release bundles final contract releases, never a release
- * candidate (operator ruling R1, 2026-11-16). ADR-0046 decisions 3 and 7 as amended 2026-11-25 hold the rules.
+ * contract is the release it is unchanged since. A released version is the bytes of its release: a contract whose
+ * files changed since its version's tag is refused until that version is reopened as a `-SNAPSHOT`. A final release
+ * bundles final contract releases, never a release candidate (operator ruling R1, 2026-11-16). ADR-0046 decisions 3
+ * and 7 as amended 2026-11-25 hold the rules.
  */
 object ServiceReleaseGate {
 
@@ -32,8 +35,16 @@ object ServiceReleaseGate {
      * @property unchangedSince the version of the highest release merged into the commit whose contract files the
      *   commit holds unchanged, or null; consulted for the packs contract only, whose version is reopened as a
      *   `-SNAPSHOT` right after each release
+     * @property changedSinceTag whether the commit's contract files differ from those at the release tag of [version]:
+     *   a released version names the bytes of its release, so a change made without reopening the version as a
+     *   `-SNAPSHOT` mislabels the contract the release bundles
      */
-    data class Bundled(val version: String, val tagMerged: Boolean, val unchangedSince: String? = null)
+    data class Bundled(
+        val version: String,
+        val tagMerged: Boolean,
+        val unchangedSince: String? = null,
+        val changedSinceTag: Boolean = false,
+    )
 
     /** What the gate answers. */
     sealed interface Verdict
@@ -94,8 +105,10 @@ object ServiceReleaseGate {
         }
         val prerelease = match.groupValues[2].isNotEmpty()
         val charter = releaseOf(contract, unchangedCounts = false) ?: return unreleased(tag, "charter", contract)
+        mislabelled(tag, "charter", contract)?.let { return it }
         candidate(tag, prerelease, "charter", charter)?.let { return it }
         val packs = releaseOf(packsContract, unchangedCounts = true) ?: return unreleased(tag, "packs", packsContract)
+        mislabelled(tag, "packs", packsContract)?.let { return it }
         candidate(tag, prerelease, "packs", packs)?.let { return it }
         return Release(version, prerelease, charter, packs)
     }
@@ -123,6 +136,20 @@ object ServiceReleaseGate {
         return Refusal(
             "The release '$tag' needs a released $line contract, but $why: $fix (contract-$line-v<version>), as every" +
                 " service release, a pre-release too, bundles released contracts (#650)",
+        )
+    }
+
+    /**
+     * A released version whose files changed since its tag is refused: the release would bundle a contract that is not
+     * the one published under that version (#650). A packs contract taken as the release it is unchanged since was
+     * diffed against that release's tag already.
+     */
+    private fun mislabelled(tag: String, line: String, bundled: Bundled): Refusal? {
+        if (bundled.version.endsWith(SNAPSHOT, ignoreCase = true) || !bundled.changedSinceTag) return null
+        return Refusal(
+            "The release '$tag' bundles the $line contract ${bundled.version}, but its files changed since" +
+                " contract-$line-v${bundled.version}: reopen the version as a -SNAPSHOT and release the changed contract" +
+                " first, as a release bundles the contract its tag published (#650)",
         )
     }
 

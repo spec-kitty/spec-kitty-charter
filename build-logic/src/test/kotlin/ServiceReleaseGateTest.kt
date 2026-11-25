@@ -173,4 +173,25 @@ class ServiceReleaseGateTest {
             ),
         ).contains("charter contract 0.2.0-SNAPSHOT").doesNotContain("packs contract")
     }
+
+    @Test
+    fun aReleasedContractWhoseFilesChangedSinceItsTagIsRefused() {
+        // Reviewer probe P1: both contracts tagged and merged, then edited without reopening -SNAPSHOT. The version
+        // still names the release, but the bundled bytes are no longer those it published.
+        val charterEdited = ServiceReleaseGate.Bundled("0.9.0", tagMerged = true, changedSinceTag = true)
+        val packsEdited = ServiceReleaseGate.Bundled("0.9.0", tagMerged = true, changedSinceTag = true)
+        assertThat(refusal("service-v0.2.0", contract = charterEdited))
+            .contains("charter contract 0.9.0", "changed since contract-charter-v0.9.0", "-SNAPSHOT")
+        assertThat(refusal("service-v0.2.0-rc.1", build = "0.2.0-rc.1", packsContract = packsEdited))
+            .contains("packs contract 0.9.0", "changed since contract-packs-v0.9.0", "-SNAPSHOT")
+    }
+
+    @Test
+    fun aSnapshotHasNoTagToDifferFromSoOnlyItsUnchangedReleaseCounts() {
+        // The build diffs against contract-packs-v<version>, which no -SNAPSHOT has: the diff reports a change, and
+        // the release the packs contract is unchanged since was diffed against its own tag already.
+        val reopened = ServiceReleaseGate.Bundled("0.10.0-SNAPSHOT", false, unchangedSince = "0.9.0", changedSinceTag = true)
+        assertThat(check("service-v0.2.0", packsContract = reopened))
+            .isEqualTo(ServiceReleaseGate.Release("0.2.0", prerelease = false, contract = "0.1.0", packsContract = "0.9.0"))
+    }
 }
