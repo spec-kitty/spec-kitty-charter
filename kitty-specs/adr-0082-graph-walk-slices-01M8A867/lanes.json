@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+  "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+  "mission_branch": "kitty/mission-adr-0082-graph-walk-slices-01M8A867",
+  "target_branch": "feat/adr-0082-graph-walk-slices",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "docs/_meta/spelling-words.txt",
+        "docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md",
+        "docs/architecture/composition-and-activation-rules.md",
+        "docs/changelog/2026-11-25-pack-graph-owns-the-walks.md",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureRoleFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureRoots.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/InboundReferences.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackMutabilityPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RemovalDependents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackGraph.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PresetItemRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/PackGraphWalkBoundaryTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/badfixture/HandWrittenDescent.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackGraphTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Descent.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/GraphWalker.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/GraphWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/Reachability.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/graph/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphWalkTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackGraphWalkTest.java"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "docs/architecture/architectural-patterns-applied.md",
+        "docs/changelog/2026-11-25-own-closure-rules-from-the-factory.md",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureImpactCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/FallbackProfileRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OwnClosureWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ProfileEnhancementRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RolePinRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureFacts.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ClosureWalk.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Findings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GraphCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ImpactCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ValidationWalker.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/FallbackProfileRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/PackRulesets.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ProfileEnhancementRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/ProfileReader.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/RolePinRule.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureImpactCheckTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/OwnClosureWalkTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackUninstallServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ValidationWalkerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/OwnClosureRulesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/QualifierLoadTest.java"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ImpactRelations.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/SpecializationCycleRule.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ComposedRelations.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/rules/RelationRules.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ImpactRelationsEnhancementTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ImpactRelationsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/RelationRulesEnhancementTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/RelationRulesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-26-edge-index-refusal-codes.md",
+        "contracts/charter/responses/OfferingUnreadable.yaml",
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/mission-types.feature",
+        "contracts/charter/scenarios/registration/closure-faults.feature",
+        "contracts/charter/scenarios/step-enhancement-compose.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "docs/architecture/offering-and-activation.md",
+        "docs/conformance/ruleset-scenario-trace.md",
+        "docs/development/http-status-codes.md",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/EdgeIndex.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/EdgeIndexTest.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/RefusalHandler.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/RefusalHandlerTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "docs/changelog/2026-11-26-pack-doctor-judges-relations.md",
+        "docs/guides/check-packs.md",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/FullPassParityTest.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/PackSetCheck.java",
+        "service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/RelationsPhase.java",
+        "service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/set/RelationsPhaseTest.java"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 5
+    }
+  ],
+  "computed_at": "2026-11-25T21:37:11.137128+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "ebe6eca72626ea4b055887ff15ca9ff53f837449"
+}
