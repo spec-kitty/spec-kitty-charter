@@ -1,8 +1,8 @@
 ---
 title: Check packs
-description: "Get the pack-doctor jar, check a set of packs with no service, repair a pack's manifest and form, read its report and exit codes, and know what only the service checks."
+description: "Get the pack-doctor jar, check packs with no service, repair a pack's manifest, form and quoted numbers, read its report and exit codes, and know what only the service checks."
 doc_status: draft
-updated: 2026-11-23T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -233,13 +233,22 @@ java -jar pack-doctor-<version>.jar remediate packs/built-in:built-in packs/org-
 For each pack, in the order given, it:
 
 1. refuses the pack when the pack has a fault it does not repair: any violation of the storage verdict except the
-   manifest's (`manifest_membership`, `manifest_stale`). It names the faults and writes nothing. A directory with no
-   `pack.yaml` is refused this way too, as `validate` reports it; a path that is not a directory is a usage fault (`2`).
-2. rewrites each file the charter models in the round trip's canonical form. The meaning stays the same; comments,
+   manifest's (`manifest_membership`, `manifest_stale`) and a quoted number in a number field (step 2). It names the
+   faults and writes nothing. A directory with no `pack.yaml` is refused this way too, as `validate` reports it; a path
+   that is not a directory is a usage fault (`2`).
+2. repairs a quoted number in a field the schema types `number` or `integer`: `input_per_1m_usd: "15"` becomes
+   `input_per_1m_usd: 15`. This is the one fault of a file's content it repairs, the one whose detail ends `write 15
+   without quotes, or run pack-doctor remediate`. It writes the text inside the quotes without them, and step 3 puts
+   it in canonical form (`"1e-3"` ends as `0.001`). Only a value that, written plain, is a finite number of the field's
+   type is repaired; an `integer` field takes integers only, so `"1.5"` there is not. It then checks the pack again,
+   and refuses it, writing nothing, when anything is still wrong: a quoted value that is no such number (`"fifteen"`),
+   any other fault beside the quoted numbers, or a number the field's range refuses once it is plain (`"-15"` for a
+   price). A quoted string in a field typed `string` is never touched, even one that looks like a number.
+3. rewrites each file the charter models in the round trip's canonical form. The meaning stays the same; comments,
    quoting, key order and line folding may change. A file the round trip refuses, such as one whose canonical form is
    past the size bound, cannot be rewritten: the pack is refused, each such file named on an indented
    `the round trip refused <file>: <reason>` line, and nothing is written.
-3. derives `pack-manifest.yaml` from the files and stamps its hashes, as every write of the service does. A pack with
+4. derives `pack-manifest.yaml` from the files and stamps its hashes, as every write of the service does. A pack with
    no manifest gets one.
 
 Files the charter does not hold, such as your own notes, are left as they are. `remediate` takes no lock: do not run
@@ -279,8 +288,15 @@ java -jar pack-doctor-<version>.jar remediate packs/built-in:built-in packs/org-
 ```
 
 It prints one line per pack, `<dir>: rewritten`, `<dir>: unchanged` or `<dir>: refused` followed by the faults or the
-files the round trip refused, then
-checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no pack was
+files the round trip refused. A pack whose quoted numbers it repaired is `<dir>: rewritten, <n> quoted numbers
+repaired` (`1 quoted number` for one), followed by one line for each, in the order `validate` reports them:
+
+```text
+packs/org-base: rewritten, 1 quoted number repaired
+  repaired at routing_catalogs/cost-led.routing-catalog.yaml#/models/0/cost/input_per_1m_usd: "15" is now a number
+```
+
+Then it checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no pack was
 refused and the check finds no problem, `1` when a pack was refused or the check finds a problem, and `2` on a usage
 fault or a failure. Give the packs a pack depends on too, as for `validate`. A usage fault names `remediate`, as in
 `remediate . holds the working directory`.
