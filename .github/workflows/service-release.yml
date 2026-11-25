@@ -9,12 +9,15 @@ name: service-release
 # Nothing is published unless:
 #   - the tag has core's form service-vX.Y.Z[-pre] and is not a placeholder or a -SNAPSHOT;
 #   - the tagged commit is on main, and its build version is the tag's;
-#   - a final release's bundled contract is released (contract-charter-v<info.version> merged into the commit);
+#   - every release, a pre-release too, bundles released contracts (#650): contract-charter-v<info.version> and the
+#     packs contract's contract-packs-v<version> are merged into the commit (an unchanged packs contract is the release
+#     it is unchanged since), both GitHub Releases are published with the contract assets and their checksums
+#     (charter-openapi.yaml, packs-contract.tar.gz), and a final release bundles no contract release candidate;
 #   - verifyAll, the jar and all four native executables built and passed their start-and-answer check, and the
 #     pack-doctor jar built and checked the example packs;
 #   - the tag still names the built commit when publishing starts.
-# The gate is :checkServiceReleaseTag (ServiceReleaseGate in build-logic); the commit's place on main and the tag's
-# stability are checked here, where the remote is. Only the publish job can write, and it runs no build. A release is
+# The gate is :checkServiceReleaseTag (ServiceReleaseGate in build-logic); the commit's place on main, the contract
+# releases' assets and the tag's stability are checked here, where the remote is. Only the publish job can write, and it runs no build. A release is
 # never marked latest, and a tag with a pre-release suffix makes a GitHub pre-release. An existing release fails the run;
 # nothing is replaced. The workflow runs from the tagged commit, so these checks guard against mistakes, not against
 # someone who can push tags: a tag ruleset on service-v* limits who can publish.
@@ -112,8 +115,40 @@ jobs:
           {
             echo "version=$(value version)"
             echo "prerelease=$(value prerelease)"
+            echo "contract=$(value contract)"
+            echo "packs-contract=$(value packsContract)"
             echo "contract-note=$(value contractNote)"
           } >> "$GITHUB_OUTPUT"
+
+      # The gate proved both contract tags are merged; this proves their releases are published, with the assets a
+      # consumer fetches and verifies (docs/development/contract-consumers.md). A draft or a release without them stops
+      # the run, on a rehearsal too.
+      - name: Check the contract releases are published
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CONTRACT: ${{ steps.gate.outputs.contract }}
+          PACKS_CONTRACT: ${{ steps.gate.outputs.packs-contract }}
+        run: |
+          set -euo pipefail
+          published() { # published <tag> <asset>...
+            local tag="$1" assets
+            shift
+            if ! assets="$(gh release view "$tag" --repo "$REPO" --json isDraft,assets \
+                --jq 'if .isDraft then "draft" else .assets[].name end')"; then
+              echo "::error::No release $tag is published (none exists, or it is a draft): publish it before this service release (#650)"
+              exit 1
+            fi
+            for asset in "$@"; do
+              if ! grep -qxF "$asset" <<<"$assets"; then
+                echo "::error::The release $tag has no $asset: it is a draft or incomplete; publish it before this service release (#650)"
+                exit 1
+              fi
+            done
+            echo "$tag is published with $*"
+          }
+          published "contract-charter-v$CONTRACT" charter-openapi.yaml charter-openapi.yaml.sha256
+          published "contract-packs-v$PACKS_CONTRACT" packs-contract.tar.gz packs-contract.tar.gz.sha256 packs-contract.sha256
 
   # The whole service build (verifyAll) and the jars: the service's jar, started and checked, is the `service-jar`
   # artifact; the pack-doctor jar, run over the example packs, is the `pack-doctor-jar` artifact.
