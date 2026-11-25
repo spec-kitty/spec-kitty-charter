@@ -30,21 +30,16 @@ audience:
   (`dependsOnClosure`), the `parent_pack` line (`onParentLine`, `related`), the dependency order (`topologicalOrder`,
   Kahn's pass) and the cycles it leaves (`leftoverCycles`), each moved as written and pinned by a test.
 
-`ImpactRelations`, `SpecializationCycleRule`, `ClosureRoots`, `RemovalDependents`, `PackMutabilityPolicy`,
-`OfferingReadService`, `InboundReferences` and `ClosureRoleFacts` call `PackGraph`; none keeps a walk of its own,
-and none reads a descriptor's `depends_on` or `parent_pack` itself, but two read-model projections.
-`PackGraphWalkBoundaryTest` pins that no application class holds a work queue or reads those edges, by a call or a
-method reference. The
-walks and the collections they order now use insertion-ordered collections, never hash order.
+The application classes that walked by hand (`ImpactRelations`, `ClosureRoots`, `RemovalDependents`,
+`PackMutabilityPolicy`, `InboundReferences`, `ClosureRoleFacts` and others) now call `PackGraph`.
+`PackGraphWalkBoundaryTest` fails the build when an application class holds a walk's work queue or reads a descriptor's
+edges, but two read-model projections. Walks order by insertion, never by hash.
 
-Two walks stay outside it: `activations`' parent-line walk in its closure snapshot (another module), and the
-application layer's walks over artifact relationships (`GraphWalk`, `Reachability`, `GovernanceWalk`,
-`ActionContextWalk`), which epic #636 schedules.
+Still outside: `activations`' parent-line walk (another module) and the artifact walks (`GraphWalk`, `Reachability`,
+`GovernanceWalk`, `ActionContextWalk`), which epic #636 schedules.
 
 ## What did not change
 
-No refusal code, detail, order of findings or wire shape changes. The existing composition, removal, mutability, offering
-and relation tests pass; where a test called the moved `compositionClosure`, only the call and the type of its lookup
-helper changed. The cycle
-tests moved to `PackGraphTest` with their cases as they were. The `specializes_from` cycle check already runs on
-`PackGraph.cyclesIn`; what #632 still needs is that check over the composed closure of a whole set (epic #636).
+No refusal code, detail, order of findings or wire shape changes. The existing tests pass; the cycle tests moved to
+`PackGraphTest` with their cases as they were. #632 still needs the `specializes_from` cycle over a whole set's composed
+closure (epic #636).
