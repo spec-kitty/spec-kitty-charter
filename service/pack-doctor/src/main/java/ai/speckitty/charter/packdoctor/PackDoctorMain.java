@@ -29,6 +29,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -260,9 +261,9 @@ public final class PackDoctorMain {
      */
     private static int remediate(
             Arguments.Remediate remediate, PrintStream out, PrintStream err, Path temporary, Composition composition) {
-        boolean refused;
+        Remediate.Done done;
         try {
-            refused = Remediate.run(remediate.validation().packs(), composition.repair(), out, err);
+            done = Remediate.run(remediate.validation().packs(), composition.repair(), out, err);
         } catch (UncheckedIOException failure) {
             // The message says whether the pack is as it was or where its aside copy is; the cause says why, and a
             // failure suppressed on either (a put-back that failed too) is said after it.
@@ -280,8 +281,9 @@ public final class PackDoctorMain {
             failure.printStackTrace(err);
             return FAILED;
         }
-        int checked = check(remediate.validation(), out, err, temporary, composition);
-        return checked == VALID && refused ? PROBLEMS : checked;
+        int checked =
+                check(remediate.validation(), Optional.of(Remediate.reported(done)), out, err, temporary, composition);
+        return checked == VALID && done.refused() ? PROBLEMS : checked;
     }
 
     /**
@@ -290,6 +292,17 @@ public final class PackDoctorMain {
      * always means a report that lists problems.
      */
     private static int check(Parsed parsed, PrintStream out, PrintStream err, Path temporary, Composition composition) {
+        return check(parsed, Optional.empty(), out, err, temporary, composition);
+    }
+
+    /** The check, its report carrying {@code repairs} when remediate made them (Q14, #651). */
+    private static int check(
+            Parsed parsed,
+            Optional<List<Map<String, String>>> repairs,
+            PrintStream out,
+            PrintStream err,
+            Path temporary,
+            Composition composition) {
         List<Problem> problems;
         List<String> warnings;
         String report;
@@ -298,7 +311,7 @@ public final class PackDoctorMain {
             PackSetVerdict verdict = verdict(parsed, temporary, composition);
             problems = Problems.of(verdict);
             warnings = ReportWriter.warnings(verdict);
-            JsonNode tree = ReportWriter.tree(parsed, verdict, problems);
+            JsonNode tree = ReportWriter.tree(parsed, verdict, problems, repairs);
             report = ReportWriter.json(tree);
             file = parsed.report().map(target -> fileText(target, tree));
         } catch (UnrepresentableReport failure) {

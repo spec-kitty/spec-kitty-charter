@@ -1,6 +1,7 @@
 title: PackDoctorReport
 description: >-
-  What pack-doctor validate reports (ADR-0075 decision 9; FR-008 of mission pack-doctor-coverage-01M7YMQK): the tool
+  What pack-doctor validate reports, and pack-doctor remediate after its outcome lines, with the repairs it made
+  (ADR-0075 decision 9; FR-008 of mission pack-doctor-coverage-01M7YMQK; #651): the tool
   and the inputs of the run, the checks that ran over the set of packs, the packs it checked, any check it skipped and
   why, the problems, each a Problem with the code and the shape the registration answers for the same fault (the round
   trip, which the registration does not run, words its own lead sentence), and a summary. No operation serves it
@@ -12,7 +13,8 @@ description: >-
   The XML is a mechanical mapping of the same tree, its own shape, not JUnit's or xUnit's: the root element is
   pack-doctor-report, in no namespace. An object is an element with one child element per key, named after the key, in
   the tree's order. An array is an element with type="array" and one child element per item, named after the singular
-  of the array's key (checks/check, packs/pack, problems/problem, violations/violation, skipped/skip). A string is an
+  of the array's key (checks/check, packs/pack, problems/problem, violations/violation, skipped/skip, repairs/repair).
+  A string is an
   element whose text is the string; an integer is an element with type="integer", a boolean one with type="boolean",
   whose text is the value; an object with no key is an element with type="object". A string holding a character XML
   1.0 cannot carry (a control character other than tab, line feed and carriage return, U+FFFE, U+FFFF, or a surrogate
@@ -170,6 +172,42 @@ properties:
         trip's lead sentence is its own.
       inputs:
         - the packs checked
+  repairs:
+    type: array
+    description: >-
+      Only in the report of pack-doctor remediate, and there always (operator ruling Q14 of 2026-11-25, #651): each
+      quoted number in a field the pack schema types number or integer that remediate wrote plain in a pack it
+      rewrote, per pack in the order given and within a pack in the order its outcome lines name them. Empty when it
+      wrote none. A pack it refused or left unchanged has none: nothing of it was written. pack-doctor validate never
+      writes this key.
+    items:
+      type: object
+      additionalProperties: false
+      required: [pack, file, pointer, value, type]
+      properties:
+        pack:
+          type: string
+          minLength: 1
+          description: The pack's id, as packs names it.
+        file:
+          type: string
+          minLength: 1
+          description: The file that held the value, relative to the pack's directory.
+        pointer:
+          type: string
+          pattern: '^/'
+          description: The JSON pointer of the value in its file.
+        value:
+          type: string
+          description: The text the value held inside its quotes, now written as a number.
+        type:
+          type: string
+          enum: [number, integer]
+          description: The type the pack schema gives the field, which the value now has.
+    x-derived:
+      rule: The quoted numbers remediate wrote plain, as its outcome lines name them.
+      inputs:
+        - the packs remediated
   summary:
     type: object
     additionalProperties: false
