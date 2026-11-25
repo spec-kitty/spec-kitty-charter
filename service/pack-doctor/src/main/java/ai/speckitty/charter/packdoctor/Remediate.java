@@ -245,8 +245,8 @@ final class Remediate {
     /** One repair: where the value lies, and what it is now. */
     static String line(Repaired repaired) {
         // A repair is always at a typed field, never a file's root, so its pointer is never empty (the report's ^/).
-        return "repaired at " + repaired.file() + "#" + repaired.pointer() + ": \"" + repaired.value()
-                + "\" is now " + (repaired.integer() ? "an integer" : "a number");
+        return "repaired at " + repaired.file() + "#" + repaired.pointer() + ": \"" + repaired.value() + "\" is now "
+                + (repaired.integer() ? "an integer" : "a number");
     }
 
     /** Each repair of the run as the report's {@code repairs} item: pack, file, pointer, value and type. */
