@@ -17,12 +17,14 @@ import collections, itertools, json, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.environ.get("ANALYSIS_OUT", os.path.join(os.getcwd(), "build", "analysis", "hotspots"))
-REV, BASE = "25e24c372bae838d95a9328be57ee2063f6c05d1", "fd20faacb"
+REV = os.environ.get("ANALYSIS_REV", "25e24c372bae838d95a9328be57ee2063f6c05d1")
+BASE = os.environ.get("ANALYSIS_BASE", "fd20faacb")
+REV8, BASE8 = REV[:8], BASE[:8]
 MAXCS, MINREV, MINSHARED = 30, 8, 5
 
 C = json.load(open(os.path.join(OUT, "commits.json")))
-CX = {r["path"]: r for r in json.load(open(os.path.join(OUT, "cx-25e24c37.json")))}
-CX0 = json.load(open(os.path.join(OUT, "cx-fd20faac.json")))
+CX = {r["path"]: r for r in json.load(open(os.path.join(OUT, f"cx-{REV8}.json")))}
+CX0 = json.load(open(os.path.join(OUT, f"cx-{BASE8}.json")))
 
 def sh(*a):
     return subprocess.run(a, capture_output=True, text=True, check=True).stdout
@@ -206,7 +208,7 @@ for c in C:
 cx0 = {}
 for r in CX0:
     cx0[old2new.get(r["path"], r["path"])] = r
-md.append(f"## Trend: {BASE} (2026-11-12 06:52) .. 25e24c37 ({DAYS_AFTER:.1f} days, {len(after)} commits) vs 30 days before {BASE} ({len(before)} commits)\n")
+md.append(f"## Trend: {BASE} .. {REV8} ({DAYS_AFTER:.1f} days, {len(after)} commits) vs 30 days before {BASE} ({len(before)} commits)\n")
 NA = sum(1 for c in nb if c["h"] in after); NBF = sum(1 for c in nb if c["h"] in before)
 md.append(f"Non-bookkeeping commits: {NBF} in the 30 days before ({NBF/DAYS_BEFORE*7:.0f}/week), {NA} after ({NA/DAYS_AFTER*7:.0f}/week). "
           "The label compares each file's SHARE of the window's non-bookkeeping commits, so the faster commit rate after "
@@ -247,7 +249,7 @@ for r in CX0:
     if r["srcset"] == "main": agg0[r["module"]] += r["sum_ccn"]
 for r in main.values(): agg1[r["module"]] += r["sum_ccn"]
 md.append("### Main-code CCN by module, then vs now\n")
-table(["module", "CCN fd20faac", "CCN 25e24c37", "delta"], [(m, agg0[m], agg1[m], f"{agg1[m]-agg0[m]:+d}") for m in sorted(set(agg0) | set(agg1), key=lambda m: -agg1[m])])
+table(["module", f"CCN {BASE8}", f"CCN {REV8}", "delta"], [(m, agg0[m], agg1[m], f"{agg1[m]-agg0[m]:+d}") for m in sorted(set(agg0) | set(agg1), key=lambda m: -agg1[m])])
 
 # ---------- 5. team / streams ----------
 ISSUE = re.compile(r"#(\d+)")
@@ -306,7 +308,7 @@ loc = collections.defaultdict(lambda: collections.Counter())
 for r in CX.values():
     k = "main" if r["srcset"] == "main" else "test"
     loc[r["module"]][k + "_files"] += 1; loc[r["module"]][k + "_lines"] += r["lines"]; loc[r["module"]][k + "_nloc"] += r["nloc"]
-md.append("## Java LOC by module at 25e24c37 (main = src/main; test = src/test + testFixtures + driftTest)\n")
+md.append(f"## Java LOC by module at {REV8} (main = src/main; test = src/test + testFixtures + driftTest)\n")
 rows = [(m, v["main_files"], v["main_lines"], v["main_nloc"], v["test_files"], v["test_lines"], v["test_nloc"],
          f"{v['test_nloc']/v['main_nloc']:.2f}" if v["main_nloc"] else "-") for m, v in sorted(loc.items(), key=lambda kv: -kv[1]["main_nloc"])]
 T = [sum(r[i] for r in rows) for i in range(1, 7)]
