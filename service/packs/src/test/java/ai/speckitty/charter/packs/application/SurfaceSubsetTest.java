@@ -315,9 +315,7 @@ class SurfaceSubsetTest {
                     .isFalse();
             return;
         }
-        JsonNode before = FIXED_PAYLOAD_ROW.equals(key)
-                ? fixedPayload(BEFORE.get(key))
-                : QUOTED_NUMBER_ROWS.contains(key) ? quotedNumberHint(BEFORE.get(key)) : BEFORE.get(key);
+        JsonNode before = baseline(key);
         List<Fault> was = faults(before);
         List<Fault> atFiles = faults(atFiles(SURFACES.get(key).get("registration")));
         assertPlacesAreValidateModes(key, faults);
@@ -356,6 +354,14 @@ class SurfaceSubsetTest {
                 .as("the baseline names the payload path the landing fixed")
                 .contains(PAYLOAD_BEFORE);
         return JSON.readTree(text.replace(PAYLOAD_BEFORE, PAYLOAD_AFTER));
+    }
+
+    /** The frozen baseline answer of a row, with the one named rewrite its row may carry. */
+    private static JsonNode baseline(String key) {
+        if (FIXED_PAYLOAD_ROW.equals(key)) {
+            return fixedPayload(BEFORE.get(key));
+        }
+        return QUOTED_NUMBER_ROWS.contains(key) ? quotedNumberHint(BEFORE.get(key)) : BEFORE.get(key);
     }
 
     /**
