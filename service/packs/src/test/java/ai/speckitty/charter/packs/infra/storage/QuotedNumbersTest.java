@@ -145,7 +145,10 @@ class QuotedNumbersTest {
     void theRepairsAreInTheFindingsOrderAcrossFiles() throws IOException {
         Files.writeString(pack.resolve("b.yaml"), "x: \"1\"\n", StandardCharsets.UTF_8);
         Reason inB = Findings.at(
-                PackCodes.ARTIFACT_SCHEMA_ERROR, "b.yaml", List.of("x"), "b.yaml: 'x': " + QuotedNumbers.fault("1", true));
+                PackCodes.ARTIFACT_SCHEMA_ERROR,
+                "b.yaml",
+                List.of("x"),
+                "b.yaml: 'x': " + QuotedNumbers.fault("1", true));
 
         Repairs repairs = repairs("y: \"2\"\nz: \"3\"\n", fixable("2", true, "y"), inB, fixable("3", true, "z"));
 
@@ -166,8 +169,8 @@ class QuotedNumbersTest {
     void theRemedyIsDroppedWhereRemediateCannotRepairAndReworded() {
         String detail = FILE + ": 'a': " + QuotedNumbers.fault("15", false);
 
-        assertThat(QuotedNumbers.withoutRemedy(detail)).isEqualTo(FILE + ": 'a': \"15\" must be a number: write 15"
-                + " without quotes");
+        assertThat(QuotedNumbers.withoutRemedy(detail))
+                .isEqualTo(FILE + ": 'a': \"15\" must be a number: write 15" + " without quotes");
         assertThat(QuotedNumbers.withoutRemedy("other")).isEqualTo("other");
         Reason finding = fixable("15", false, "a");
         assertThat(QuotedNumbers.blocked(finding).detail())

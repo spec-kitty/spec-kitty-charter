@@ -287,6 +287,28 @@ public final class OwnerOnly {
         }
     }
 
+    /**
+     * Gives a file's owner read and write on it, every other bit as it was. It exists for the work copy
+     * {@code pack-doctor remediate} rewrites, which takes each file's mode: a read-only file must still take its
+     * repaired and canonical bytes there, and the pack's own mode is carried back when the copy is written beside the
+     * pack ({@link #carryMode}). Where the path has no POSIX view it does nothing (#510).
+     *
+     * @param file the file
+     * @throws IOException when its mode cannot be read or set
+     */
+    public static void ownerReadWrite(Path file) throws IOException {
+        PosixFileAttributeView view =
+                Files.getFileAttributeView(file, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+        if (view == null) {
+            return;
+        }
+        Set<PosixFilePermission> mode = EnumSet.noneOf(PosixFilePermission.class);
+        mode.addAll(view.readAttributes().permissions());
+        if (mode.addAll(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))) {
+            view.setPermissions(mode);
+        }
+    }
+
     /** How a path is made the owner's alone where there are no POSIX permissions; a test substitutes a failure. */
     @FunctionalInterface
     interface Restriction {

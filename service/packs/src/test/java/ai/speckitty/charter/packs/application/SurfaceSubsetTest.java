@@ -364,7 +364,9 @@ class SurfaceSubsetTest {
      */
     private static JsonNode quotedNumberHint(JsonNode before) {
         String text = JSON.writeValueAsString(before);
-        assertThat(text).as("the baseline names the quoted number without its fix").contains(QUOTED_BEFORE);
+        assertThat(text)
+                .as("the baseline names the quoted number without its fix")
+                .contains(QUOTED_BEFORE);
         return JSON.readTree(text.replace(QUOTED_BEFORE, QUOTED_AFTER));
     }
 

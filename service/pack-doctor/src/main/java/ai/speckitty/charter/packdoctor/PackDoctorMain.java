@@ -63,8 +63,10 @@ import tools.jackson.databind.JsonNode;
  * a link is followed and the file it names replaced. Writing it never changes the exit code of a run, and standard
  * output is the same with it as without.
  *
- * <p>{@code remediate} plugs the storage edge's {@link PackRemediation} into {@link Remediate}, which prints each pack's
- * outcome on standard output ({@code rewritten}, {@code unchanged}, or {@code refused} and its faults), then runs the
+ * <p>{@code remediate} plugs the storage edge's {@link PackRemediation} into {@link Remediate}: it repairs a pack's
+ * manifest, the form of its files, and a quoted number in a number field, which it writes plain (#651). {@link Remediate}
+ * prints each pack's outcome on standard output ({@code rewritten} with a line for each quoted number repaired,
+ * {@code unchanged}, or {@code refused} and its faults), then runs the
  * check of the same set with the round trip and writes its report after those lines. It exits {@code 0} when no pack was
  * refused and the check holds no problem, {@code 1} when a pack was refused or the check holds a problem, and {@code 2}
  * on a usage fault or a failure, the outcome lines already printed left on standard output: a pack that fails while it

@@ -405,7 +405,8 @@ class PackRemediationTest {
         Path profile = red.resolve(EDITED);
         String text = Files.readString(profile, StandardCharsets.UTF_8);
         Files.writeString(
-                profile, text.replace("role: operator\n", "role: operator\nrouting-priority: \"40\"\n"),
+                profile,
+                text.replace("role: operator\n", "role: operator\nrouting-priority: \"40\"\n"),
                 StandardCharsets.UTF_8);
         Files.setPosixFilePermissions(profile, PosixFilePermissions.fromString("r--r--r--"));
         try {

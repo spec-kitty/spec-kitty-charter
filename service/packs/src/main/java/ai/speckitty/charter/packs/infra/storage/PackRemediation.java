@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.domain.PackRoot;
@@ -20,10 +21,13 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -42,10 +46,13 @@ import org.jspecify.annotations.Nullable;
  *       {@link QuotedNumbers});
  *   <li>a work directory under the JVM's temporary directory takes a copy of the pack, every file byte for byte, so a
  *       file the census does not hold (a stray file, an author's note) stays as it was;
- *   <li>when the precondition found quoted numbers, each is written plain in the copy, as the text inside its quotes,
- *       and the copy is judged again: any violation left is {@link Refused}, and nothing is written. So a quoted value
- *       that is no number of the field's type, any other fault beside a quoted number, and a number the field's range
- *       refuses once it is plain all refuse the pack;
+ *   <li>when the precondition found quoted numbers, each is written plain in the copy, its value in place of its whole
+ *       node (quotes, a tag, escapes, a block scalar's lines), and the copy is judged again: any violation left is
+ *       {@link Refused}, and nothing is written. So a quoted value that is no number of the field's type, one it cannot
+ *       write plain (an anchor on it, an alias or a second document in its file), any other fault beside a quoted
+ *       number, and a number the field's range refuses once it is plain all refuse the pack; a quoted number's detail
+ *       then says it is repaired once the rest is fixed, or why it cannot be, never to run remediate. A file a finding
+ *       names that is gone from the copy is the pack changed during remediation;
  *   <li>each modelled file is rewritten in the copy in the round trip's canonical form (ADR-0036: the same meaning;
  *       formatting and comments may change), the bytes {@link DomainRoundTrip}'s writer writes for it. A modelled file
  *       the round trip refuses (its canonical form past the code-point cap, say) cannot be rewritten: the pack is
@@ -143,9 +150,9 @@ public final class PackRemediation {
     /**
      * The pack holds a fault remediation does not repair, or changed while it was remediated: nothing was written.
      *
-     * @param violations the storage verdict's violations without the manifest gate, in registration's order (when the
-     *     pack's only violations were quoted numbers, those of its copy once they were written plain), or the one reason
-     *     that the pack changed during remediation
+     * @param violations the storage verdict's violations without the manifest gate, in registration's order; when the
+     *     pack held quoted numbers, those and the violations its copy held once they were written plain, each quoted
+     *     number worded for the refusal; or the one reason that the pack changed during remediation
      */
     public record Refused(List<Reason> violations) implements Outcome {
         /**
@@ -373,15 +380,17 @@ public final class PackRemediation {
             SortedMap<String, byte[]> copied = tree(staged);
             List<Repaired> repaired = List.of();
             if (!faults.isEmpty()) {
-                repaired = QuotedNumbers.repair(staged, faults);
+                QuotedNumbers.Repairs repairs = QuotedNumbers.repair(staged, faults);
+                if (repairs.gone().isPresent()) {
+                    return changed();
+                }
                 List<Reason> left = StorageRulesets.verdictWithoutTheManifestGate(new FileSystemPackInspector()
                                 .readTree(new PackRoot(root.name(), root.configuredLevel(), staged.toString())))
                         .violations();
                 if (!left.isEmpty()) {
-                    // Another fault beside the quoted numbers is named as the pack holds it; when there was none,
-                    // what the plain numbers still break (a range, say) is.
-                    return new Refused(faults.stream().allMatch(QuotedNumbers::namesTheFix) ? left : faults);
+                    return new Refused(refusal(faults, repairs, left));
                 }
+                repaired = repairs.repaired();
             }
             SortedMap<String, String> refused =
                     stage(id, staged, workDirectory().resolve("canonical"));
@@ -403,9 +412,7 @@ public final class PackRemediation {
                 // away. A change in the instant between this check and the move is the one window left: the move is
                 // one rename, and no lock a pack author's editor honours exists to close it.
                 if (!sameTree(tree(live), copied)) {
-                    return new Refused(List.of(Reason.failed(
-                            "the pack is not changed while it is remediated",
-                            "the pack changed during remediation: nothing was written; run remediate again")));
+                    return changed();
                 }
                 return new Rewritten(swap(sibling, live), repaired);
             }
@@ -500,6 +507,47 @@ public final class PackRemediation {
         }
     }
 
+    /** The pack changed while it was remediated: nothing was written. */
+    private static Refused changed() {
+        return new Refused(List.of(Reason.failed(
+                "the pack is not changed while it is remediated",
+                "the pack changed during remediation: nothing was written; run remediate again")));
+    }
+
+    /**
+     * What a pack whose copy still holds a fault once its quoted numbers were written plain is refused with, in the
+     * precondition's order and then the faults the plain numbers brought: each fault the copy still holds; a quoted
+     * number it wrote plain, unless the copy holds a fault at its place (a range, say), worded as one remediate repairs
+     * once the other faults are fixed; and a quoted number it could not write plain, worded with why. No detail of the
+     * refusal tells the author to run remediate.
+     */
+    private static List<Reason> refusal(List<Reason> faults, QuotedNumbers.Repairs repairs, List<Reason> left) {
+        Set<Location> written = new HashSet<>();
+        repairs.repaired().forEach(each -> written.add(new Location(each.file(), each.pointer())));
+        Set<Location> stillWrong = new HashSet<>();
+        left.forEach(fault -> stillWrong.add(fault.location()));
+        Set<Reason> said = new LinkedHashSet<>();
+        for (Reason fault : faults) {
+            if (written.contains(fault.location()) && QuotedNumbers.namesTheFix(fault)) {
+                if (!stillWrong.contains(fault.location())) {
+                    said.add(QuotedNumbers.blocked(fault));
+                }
+            } else if (left.contains(fault)) {
+                said.add(worded(fault, repairs));
+            }
+        }
+        left.forEach(fault -> said.add(worded(fault, repairs)));
+        return List.copyOf(said);
+    }
+
+    /** A fault the copy still holds; a quoted number left as it was says why remediate did not write it plain. */
+    private static Reason worded(Reason fault, QuotedNumbers.Repairs repairs) {
+        return QuotedNumbers.namesTheFix(fault)
+                ? QuotedNumbers.unrepaired(
+                        fault, repairs.unrepaired().getOrDefault(fault.location(), "it was left as it was"))
+                : fault;
+    }
+
     /**
      * Writes the remediated pack into {@code staged}, which holds a copy of the pack: each modelled file replaced by the
      * bytes the round trip writes for it (reading the copy, never the pack, so a pack edited meanwhile cannot make the
@@ -560,7 +608,10 @@ public final class PackRemediation {
                 if (!attributes.isRegularFile()) {
                     throw new IOException(source.relativize(file) + " is not a regular file");
                 }
-                Files.copy(file, target.resolve(source.relativize(file).toString()), LinkOption.NOFOLLOW_LINKS);
+                Path copy = target.resolve(source.relativize(file).toString());
+                Files.copy(file, copy, LinkOption.NOFOLLOW_LINKS);
+                // The copy takes the file's mode; a read-only file is rewritten in it, and its mode carried back after.
+                OwnerOnly.ownerReadWrite(copy);
                 return FileVisitResult.CONTINUE;
             }
         });

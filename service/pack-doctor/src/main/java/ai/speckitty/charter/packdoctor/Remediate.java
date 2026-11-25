@@ -20,7 +20,7 @@ import java.util.TreeMap;
  * <pre>
  * &lt;dir&gt;: rewritten
  * &lt;dir&gt;: rewritten, &lt;n&gt; quoted number(s) repaired
- *   repaired at &lt;file&gt;#&lt;pointer&gt;: "&lt;value&gt;" is now a number
+ *   repaired at &lt;file&gt;#&lt;pointer&gt;: "&lt;value&gt;" is now a number   (an integer, in an integer field)
  * &lt;dir&gt;: unchanged
  * &lt;dir&gt;: refused
  *   &lt;code&gt; at &lt;file&gt;[#&lt;pointer&gt;]: &lt;detail&gt;
@@ -29,7 +29,11 @@ import java.util.TreeMap;
  * </pre>
  *
  * <p>It judges nothing: a refusal is the storage verdict's, without the manifest gate, or the round trip's refusal of a
- * modelled file it cannot write in canonical form (Tier R B4), as the remediation states it. Either is a fault of the
+ * modelled file it cannot write in canonical form (Tier R B4), as the remediation states it. A pack whose quoted numbers
+ * the remediation wrote plain is judged again in its work copy (#651), and refused, nothing written, when anything is
+ * left: a fault beside the quoted numbers, a number the field's range refuses, or a quoted number it could not write
+ * plain; then a quoted number's detail says that remediate repairs it once the other faults are fixed, or why it
+ * cannot, never to run remediate. Either is a fault of the
  * pack's content, so the run exits 1, never 2. The check that follows, {@code validate --round-trip} over the same set,
  * is the main's.
  */
@@ -89,7 +93,8 @@ final class Remediate {
     /**
      * The pack holds a fault remediation does not repair: nothing was written.
      *
-     * @param violations the faults, as the storage verdict states them
+     * @param violations the faults, as the storage verdict states them (once the pack's quoted numbers were written plain
+     *     in its copy, as the remediation words them)
      */
     record Refused(List<Reason> violations) implements Result {
         /**
