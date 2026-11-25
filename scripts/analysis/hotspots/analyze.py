@@ -211,8 +211,8 @@ for r in CX0:
 md.append(f"## Trend: {BASE} .. {REV8} ({DAYS_AFTER:.1f} days, {len(after)} commits) vs 30 days before {BASE} ({len(before)} commits)\n")
 NA = sum(1 for c in nb if c["h"] in after); NBF = sum(1 for c in nb if c["h"] in before)
 md.append(f"Non-bookkeeping commits: {NBF} in the 30 days before ({NBF/DAYS_BEFORE*7:.0f}/week), {NA} after ({NA/DAYS_AFTER*7:.0f}/week). "
-          "The label compares each file's SHARE of the window's non-bookkeeping commits, so the faster commit rate after "
-          "2026-11-12 does not by itself read as heating: rel = (rev_after/NA) / (rev_before/NBF); heating rel >= 1.5 "
+          "The label compares each file's SHARE of the window's non-bookkeeping commits, so a different commit rate "
+          "between the two windows does not by itself read as heating or cooling: rel = (rev_after/NA) / (rev_before/NBF); heating rel >= 1.5 "
           "(and >= 3 revisions after), cooling rel <= 0.67, else stable.\n")
 def rel(p):
     sb = rev_before[p] / NBF
