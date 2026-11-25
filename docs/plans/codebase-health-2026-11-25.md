@@ -110,6 +110,6 @@ The four questions of 2026-11-20 are still open, and one is new:
    [static analysis page](/plans/engineering-notes/codebase-assessment-2026-11-20/static-analysis/).
 3. **Class-size gate:** bound file length and parameter count at today's maximum now, or after the splits?
 4. **A new module's first mutation run:** make it part of the module's landing? `routing` is the case
-   in point: it landed with a floor of 90 and first scored 83.5% a week later.
+   in point: it landed with a floor of 90 and first scored 83.5% four days later (landed 11-19 in `aa1ae67b`, scored 11-23).
 5. **`routing`'s floor (new):** raise the tests to meet 90, or rule a lower first floor in an ADR-0062
    amendment?
