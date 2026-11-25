@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.scope.edge-index-refusals`
 - **Input key:** `edge_index_refusals`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:01:22.632027+00:00`
+- **Resolved:** `2026-11-25T21:19:12.911167+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ D2: Edge-index refusals in #639 — move only the registration-side relation and
 
 ## Final answer
 
-_(none)_
+Unify read and registration codes
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-25T21:01:22.632027+00:00` - opened
+- `2026-11-25T21:19:12.911167+00:00` - resolved (final_answer="Unify read and registration codes")

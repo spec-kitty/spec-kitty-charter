@@ -4,10 +4,11 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.design.walker-shape`
 - **Input key:** `walker_shape`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:01:20.123371+00:00`
+- **Resolved:** `2026-11-25T21:19:10.250809+00:00`
 - **Opened by:** `cli`
-- **Other answer:** `false`
+- **Other answer:** `true`
 
 ## Question
 
@@ -21,7 +22,7 @@ D1: Walker shape for slice 3 — keep an intermediate phase runner (ValidationWa
 
 ## Final answer
 
-_(none)_
+Full GraphWalker/PackGraphNode/Scope in #638
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-25T21:01:20.123371+00:00` - opened
+- `2026-11-25T21:19:10.250809+00:00` - resolved (final_answer="Full GraphWalker/PackGraphNode/Scope in #638")

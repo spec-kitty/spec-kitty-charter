@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.scope.pack-doctor-pickup`
 - **Input key:** `pack_doctor_pickup`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:01:25.421330+00:00`
+- **Resolved:** `2026-11-25T21:19:15.399799+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ D3: #632 item 3 — pull a narrow pack-doctor pickup (specialization cycle + rel
 
 ## Final answer
 
-_(none)_
+WP05 in this mission
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-25T21:01:25.421330+00:00` - opened
+- `2026-11-25T21:19:15.399799+00:00` - resolved (final_answer="WP05 in this mission")
