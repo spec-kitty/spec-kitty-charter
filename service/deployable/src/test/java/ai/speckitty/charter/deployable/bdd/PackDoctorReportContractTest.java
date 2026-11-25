@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.packdoctor.PackDoctorMain;
 import ai.speckitty.charter.packdoctor.PackDoctorSeam;
 import ai.speckitty.charter.packdoctor.report.XmlReport;
+import ai.speckitty.charter.packdoctor.report.YamlReport;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
@@ -848,6 +849,105 @@ class PackDoctorReportContractTest {
         @Test
         void theStatusTableOfPackDoctorHoldsExactlyTheseCodes() {
             assertThat(PackDoctorSeam.statusTableCodes()).containsExactlyInAnyOrderElementsOf(emitted());
+        }
+    }
+
+    /**
+     * Operator ruling Q14 of 2026-11-25 (#651): {@code remediate}'s report carries the quoted numbers it wrote plain, in
+     * {@code repairs}, and validates against the schema; {@code validate}'s report has no {@code repairs}.
+     */
+    @Nested
+    @DisplayName("remediate's report lists its repairs, and validates against PackDoctorReport (#651, Q14)")
+    class Repairs {
+
+        private static final String CATALOG = "routing_catalogs/cost-led.routing-catalog.yaml";
+
+        /** The built-in and org example packs, the org pack's price and a profile's priority quoted. */
+        private Path[] quoted() throws IOException {
+            Path packs = temp.resolve("packs");
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, packs);
+            Path org = ExamplePacks.copyOf(ExamplePacks.ORG, packs);
+            replace(org.resolve(CATALOG), "input_per_1m_usd: 15\n", "input_per_1m_usd: \"15\"\n");
+            replace(
+                    org.resolve("agent_profiles/human-operator.agent.yaml"),
+                    "role: operator\n",
+                    "role: operator\nrouting-priority: '40'\n");
+            return new Path[] {builtIn, org};
+        }
+
+        private static void replace(Path file, String from, String to) throws IOException {
+            String text = Files.readString(file, StandardCharsets.UTF_8);
+            assertThat(text).containsOnlyOnce(from);
+            Files.writeString(file, text.replace(from, to), StandardCharsets.UTF_8);
+        }
+
+        private static Run remediate(Path... packs) {
+            String[] args = new String[packs.length + 1];
+            args[0] = "remediate";
+            for (int n = 0; n < packs.length; n++) {
+                args[n + 1] = packs[n] + ":" + (n == 0 ? "built-in" : "org");
+            }
+            Run lines = run((out, err) -> PackDoctorMain.run(args, out, err));
+            String out = lines.out();
+            int report = out.indexOf("{\n");
+            assertThat(report).as("a report after the outcome lines: %s %s", out, lines.err()).isNotNegative();
+            return new Run(lines.exit(), out.substring(report), lines.err());
+        }
+
+        @Test
+        void eachQuotedNumberRemediateWrotePlainIsARepairOfItsPack() throws IOException {
+            Path[] packs = quoted();
+
+            Run run = remediate(packs);
+
+            assertThat(run.exit()).as(run.err()).isZero();
+            assertConforms(run, packs);
+            JsonNode repairs = run.report().get("repairs");
+            assertThat(JSON.writeValueAsString(repairs))
+                    .isEqualTo("[{\"pack\":\"org-base\",\"file\":\"agent_profiles/human-operator.agent.yaml\","
+                            + "\"pointer\":\"/routing-priority\",\"value\":\"40\",\"type\":\"integer\"},"
+                            + "{\"pack\":\"org-base\",\"file\":\"" + CATALOG + "\","
+                            + "\"pointer\":\"/models/0/cost/input_per_1m_usd\",\"value\":\"15\",\"type\":\"number\"}]");
+            List<String> keys = new ArrayList<>();
+            run.report().propertyNames().forEach(keys::add);
+            assertThat(keys).as("repairs sits before the summary").containsSubsequence("problems", "repairs", "summary");
+        }
+
+        @Test
+        void aRemediationThatRepairedNothingHasAnEmptyRepairsList() throws IOException {
+            Path packs = temp.resolve("packs");
+            Path builtIn = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, packs);
+            Path org = ExamplePacks.copyOf(ExamplePacks.ORG, packs);
+
+            Run run = remediate(builtIn, org);
+
+            assertConforms(run, builtIn, org);
+            assertThat(run.report().get("repairs")).isNotNull();
+            assertThat(run.report().get("repairs").isEmpty()).isTrue();
+        }
+
+        @Test
+        void validatesReportHasNoRepairs() {
+            Run run = run("--config-root", configRoot().toString());
+
+            assertConforms(run);
+            assertThat(run.report().has("repairs")).isFalse();
+        }
+
+        @Test
+        void aReportWithRepairsIsTheSameTreeInYamlAndXml() throws IOException {
+            Path[] packs = quoted();
+            JsonNode tree = remediate(packs).report();
+
+            JsonNode fromYaml = JSON.valueToTree(
+                    new Load(LoadSettings.builder().build()).loadFromString(YamlReport.write(tree)));
+            JsonNode fromXml = XmlReport.read(XmlReport.write(tree));
+
+            for (JsonNode each : List.of(fromYaml, fromXml)) {
+                assertThat(contract.schemaViolations(SCHEMA, each)).isEmpty();
+                assertThat(JSON.writeValueAsString(each)).isEqualTo(JSON.writeValueAsString(tree));
+            }
+            assertThat(XmlReport.write(tree)).contains("<repairs type=\"array\">").contains("<repair>");
         }
     }
 }

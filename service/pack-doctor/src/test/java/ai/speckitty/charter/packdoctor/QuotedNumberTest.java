@@ -185,6 +185,12 @@ class QuotedNumberTest {
                 .contains("    output_per_1m_usd: 0.001\n")
                 .contains("    score: 0.6\n");
         assertThat(cost(packs).get("input_per_1m_usd")).isEqualTo(15);
+        assertThat(run.report().get("repairs").findValuesAsString("pointer"))
+                .as("the report lists the repairs in the outcome lines' order (#651, Q14)")
+                .containsExactly(
+                        "/models/0/cost/input_per_1m_usd",
+                        "/models/0/cost/output_per_1m_usd",
+                        "/models/0/task_fit/0/score");
         assertThat(validate(packs).exit()).isEqualTo(PackDoctorMain.VALID);
         assertThat(remediate(packs).outcome())
                 .as("a second run has nothing to repair")
