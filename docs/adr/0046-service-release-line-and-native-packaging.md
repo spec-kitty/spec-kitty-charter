@@ -92,15 +92,18 @@ serves is always one a consumer can download and pin. Decisions 3 and 7 now read
 `scripts/release/rehearse-service-release.sh` rehearses every case. Consumers read
 [For contract consumers](/development/contract-consumers/).
 
-**Open review items** (calls made in #650 without a ruling of their own):
+**Decided** ([the operator's rulings of 2026-11-25](https://github.com/spec-kitty/spec-kitty-charter/pull/653#issuecomment-7155881768) on PR #653; first raised as open review items of #650):
 
-1. R1's rule that a final service release bundles no candidate
-   ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/), note of 2026-11-16) is applied to the packs contract too.
-2. The packs contract counts as released while it is unchanged since its last release, because its heading is
-   reopened as a `-SNAPSHOT` right after each release. #650 asks for a packs release only "if the release changes it".
-3. The charter contract has no such exemption: its `info.version` is served (`GET /info`, `GET /openapi.yaml`) and a
-   `-SNAPSHOT` cannot be pinned. So a service fix released while `main` holds a `-SNAPSHOT` contract needs a contract
-   release, or a candidate, first. This narrows the "independent cadences" consequence.
+1. **Accepted:** R1's rule that a final service release bundles no candidate
+   ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/), note of 2026-11-16) covers the packs contract too.
+2. **Accepted:** the packs contract counts as released while it is unchanged since its last release, because its
+   heading is reopened as a `-SNAPSHOT` right after each release. Pack-content changes are the main reason for an
+   open-packs release; the current contract-changing releases that align open-packs are not expected to continue at
+   this frequency.
+3. **Agreed:** the charter contract has no such exemption. Every spec-kitty-charter release ships that release's
+   `openapi.yaml`, even when nothing in it changed: its `info.version` is served (`GET /info`, `GET /openapi.yaml`)
+   and a `-SNAPSHOT` cannot be pinned. So a service release while `main` holds a `-SNAPSHOT` contract releases the
+   contract, or a candidate of it, first. This narrows the "independent cadences" consequence.
 
 ## Context
 

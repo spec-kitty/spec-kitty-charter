@@ -128,7 +128,8 @@ tags: a tag ruleset on `contract-charter-v*` decides who can publish.
 **Every service release bundles a released contract** (#650). A `service-v*` release, a pre-release too, is published
 only when `contract-charter-v<info.version>` of the contract it bundles is merged into its commit and its GitHub
 release carries `charter-openapi.yaml` and `charter-openapi.yaml.sha256`; a final service release needs a final
-contract release, never a candidate. `ServiceReleaseGate` (build-logic) and `service-release.yml` enforce it, and
+contract release, never a candidate. There is no exception for an unchanged contract: every service release ships
+its own `openapi.yaml` release, even when nothing in it changed (operator ruling, 2026-11-25, PR #653). `ServiceReleaseGate` (build-logic) and `service-release.yml` enforce it, and
 `scripts/release/rehearse-service-release.sh` rehearses it
 ([Release a service version](../../docs/guides/service-build.md#release-a-service-version)). So release the contract
 before the service, from the same release pull request when both change, and reopen the `-SNAPSHOT` (step 3) only
