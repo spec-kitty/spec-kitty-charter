@@ -49,7 +49,7 @@ worse, and one new contract defect appeared.**
 - **The weekly mutation run is now red** (run 45101937079, 2026-11-23, alert #644):
   - `routing` was measured for the first time and is 6.5 points under its floor;
   - the `packs-core` shard ran into its 110-minute limit, so two `packs` groups have no report.
-- **The CPU-time budget nightly is still dead.** Five of six runs since 11-20 were cancelled at the
+- **The CPU-time budget nightly is still dead.** Five of the six runs from 11-20 to 11-25 were cancelled at the
   job timeout. The one that finished hid two failed budget tests, because its budget step may fail
   without failing the job. No commit touched the workflow or the two fixtures.
 - **The hotspots kept growing.**
@@ -72,9 +72,14 @@ worse, and one new contract defect appeared.**
 - **The per-file path does not.** `PackCommitStore.requireNoNewViolation` builds each
   `RefusalViolation` with `reason.location().file()` alone (`packs/infra/storage/PackCommitStore.java:436-440`).
   These lines are unchanged since the previous pin. The `Reason` already carries the in-file pointer.
-- **No test or scenario pins the pointer** on this refusal, so every gate stays green.
-- **Fix:** use `PackRefusalMapping.pointer(reason.location())` here, and add a scenario that pins
-  `file#/edges/<n>` on a refused per-file write. It is new work; no issue covers it.
+- **A test pins the wrong pointer.** `PackCommitStoreTest.aHeldFaultDoesNotBlockAWriteAndANewFaultIsRefused`
+  (`PackCommitStoreTest.java:258`) asserts the bare `RelationshipShard.SHARD_PATH` for a
+  `drg_schema_error` whose `Reason` carries `/edges/0`, so the gates stay green on the defect. No
+  scenario covers the pointer on this refusal.
+- **Fix:** build the violation through `PackRefusalMapping`'s one mapping, by making
+  `violation(Reason)` (or `pointer(Location)`) public, since `PackCommitStore` is outside
+  `packs.domain`. Update `PackCommitStoreTest.java:258` to `registered.graph.yaml#/edges/0`, and add a
+  scenario that pins `file#/edges/<n>` on a refused per-file write. It is new work; no issue covers it.
 
 ## Hotspots now
 
@@ -105,7 +110,7 @@ Trend compares each file's share of the 99 commits since 11-19 with its share in
 
 | # | Action | Status | Evidence |
 |---|---|---|---|
-| 1 | Revive the CPU-time budget nightly | **Untouched; still failing** | Runs on 11-21, 11-23, 11-24 and 11-25 were cancelled. Run 44984587709 (11-22) shows success, but 2 of its 6 budget tests failed on the same two fixtures (`ResolverCostBoundTest:139-140`, `ReachabilityBudgetTest:95-104`). The budgets it did measure were within their limits. `timing-nightly.yml` is unchanged |
+| 1 | Revive the CPU-time budget nightly | **Untouched; still failing** | Runs on 11-21, 11-23, 11-24 and 11-25 were cancelled. Run 44984587709 (11-22) shows success, but 2 of the 6 `:packs` budget tests failed on the same two fixtures (`ResolverCostBoundTest:139-140`, `ReachabilityBudgetTest:95-104`). The budgets it did measure were within their limits. `timing-nightly.yml` is unchanged |
 | 2 | Make the SonarCloud gate legible and green | **Untouched** | Run 45547043477 still logs "Quality Gate has FAILED" with no condition named. `pack-doctor` (2,513 lines) is still outside `sonar.yml:160-161`; the test-fixture gap is still open. #463 and #494 have had no activity |
 | 3 | Guard the five open planted-break rules | **Untouched** | Gaps 1, 2, 3, 5 and 6 are open. The `KindBindingsTest` friction bit as predicted: `29f0b4ed` had to change `hasSize(15)` to `hasSize(16)` for `ANTI_PATTERN` (`:75-77`) |
 | 4 | Measure what the floors claim | **Moved, and now red** | Run 45101937079 measured `routing` (83.5% against 90, −6 mutants) and `routing-edge` (92.4% against 85). `packs-core` ran its mutation step for 1h50m against a 110-minute limit (44 min on 11-16), so packs domain and application, and packs `infra.fetch`, have no report. `:profiles` is still 3 mutants over. #461 was closed on 11-21; #644 is the new alert. ADR-0062 has no amendment for routing |
@@ -114,7 +119,7 @@ Trend compares each file's share of the 99 commits since 11-19 with its share in
 | 7 | State waits instead of sleeps; one await helper | **Started** | `d04a8573` and `c3c59f00` replaced two fixed delays with signals. The 11-12 timing items and the six poll copies are unchanged, and no shared helper exists |
 | 8 | Test hooks out of main code | **Untouched** | Still six static read counters, the `JobGate` bean (`RegistrationWiring.java:83-84`), and the test-only constructors |
 | 9 | One read path for every kind | **Untouched** | Six per-kind read services; `ArtifactReadService` still takes 12 parameters |
-| 10 | Bound class size, forbid cycles, refresh the docs | **Untouched; worse** | No `FileLength`, `ParameterNumber` or cycle rule. The `packs.domain ⇄ packs.domain.rules` cycle widened (`rules/CaseOnlyRules`, `29f0b4ed`). The seven largest classes grew by 282 lines |
+| 10 | Bound class size, forbid cycles, refresh the docs | **Untouched; worse** | No `FileLength`, `ParameterNumber` or cycle rule. The `packs.domain ⇄ packs.domain.rules` cycle widened: three more `rules` classes import `packs.domain` (`CaseOnlyRules` and `PresetItemRules`, `29f0b4ed`; `Findings`, `ff46ac41`); the `PackCompositionResolver` → `rules.DescriptorChecks` back edge is unchanged. The seven largest classes grew by 282 lines |
 
 Issue #556 (slice 7, the closure checks behind ports) closed on 11-21 by PR #618. The 11-20 review had
 remapped actions 5, 6 and 8 away from it, and slice 7 did not change their findings. None of the
@@ -134,7 +139,7 @@ remapped actions 5, 6 and 8 away from it, and slice 7 did not change their findi
     - `PackCompositionResolver`: 1,480 → 1,542;
     - `FileSystemPackInspector`: 1,438 → 1,469;
     - `ClosureView`: 1,171 → 1,225.
-  - The `packs.domain ⇄ packs.domain.rules` cycle has one more back edge.
+  - The `packs.domain ⇄ packs.domain.rules` cycle has three more `rules` → `packs.domain` importers.
   - The retired "Doctrine" type names appear on one more line (`DomainRoundTrip`).
   - `pack-doctor` is a new module outside the Sonar scope.
 - **Open and unchanged:** the other 59, among them the text-matched fault identity, the double
@@ -193,7 +198,7 @@ git log --format='%h %cs %s' 25e24c37..4b95b915
 ```
 
 - **The scripts still reproduce the 11-20 tables.** With no variables set, `run-all.sh` still
-  reproduces them; only one heading label changed.
+  reproduces them; only the trend heading and its label sentence changed.
 - **CI runs read:**
   - timing-nightly: 44984587709 and 45546253555;
   - sonar: 45547043477;
