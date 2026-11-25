@@ -54,7 +54,6 @@ class PackUninstallServiceTest {
         return new ClosureImpactCheck(
                 new StagedPackViewFactory(rig.locations, strategy),
                 activations,
-                new OwnClosureWalk(),
                 new InboundReferences(rig.repository, rig.repository, rig.repository));
     }
 
@@ -121,7 +120,6 @@ class PackUninstallServiceTest {
                 new ClosureImpactCheck(
                         counted,
                         rig.activationPort,
-                        new OwnClosureWalk(),
                         new InboundReferences(rig.repository, rig.repository, rig.repository)));
 
         uninstalls.uninstall(new PackIdentifier("qa"), revision.token(), Mode.DRY_RUN, RevisionTrail.NONE);

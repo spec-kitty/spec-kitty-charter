@@ -12,9 +12,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * What the closure walk reads of one composed closure (#556, ADR-0075 decision 6, squad A1): the facts its rules need,
- * in domain terms only, so the {@link ClosureWalk} port names no type of the application ring. The closure's view, as
- * the reads compose it, answers them.
+ * What the own-closure rules read of one composed closure (#556, squad A1; #638): the facts they need, in domain terms
+ * only, so the rules ({@link ai.speckitty.charter.packs.domain.rules.PackRulesets#ownClosure}) name no type of the
+ * application ring. The rule factory binds them into the rules, which judge the declaring pack's node. The closure's
+ * view, as the reads compose it, answers them.
  */
 public interface ClosureFacts {
 
