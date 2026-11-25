@@ -8,12 +8,14 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
  * A known-bad control for {@code PackGraphWalkBoundaryTest}: an application class that walks the pack graph itself, as
  * {@code ClosureRoots#dependents} did before #637. It reads a descriptor's {@code depends_on} and {@code parent_pack}
- * and descends over a deque. The unchanged production rules must fail on it.
+ * by a call and by a method reference, and descends over a deque and over a priority queue. The unchanged production
+ * rules must fail on it.
  */
 public final class HandWrittenDescent {
 
@@ -44,5 +46,33 @@ public final class HandWrittenDescent {
             }
         }
         return reached;
+    }
+
+    /**
+     * Each descriptor's parent, read by a method reference.
+     *
+     * @param descriptors the descriptors
+     * @return the parents named
+     */
+    public static List<String> parentsByReference(Collection<PackDescriptor> descriptors) {
+        return descriptors.stream()
+                .map(PackDescriptor::parentPack)
+                .flatMap(java.util.Optional::stream)
+                .toList();
+    }
+
+    /**
+     * Pack ids in a priority order, as a hand-written ordering walk would hold them.
+     *
+     * @param packIds the ids
+     * @return the ids in natural order
+     */
+    public static List<String> cycleCandidates(Collection<String> packIds) {
+        PriorityQueue<String> ready = new PriorityQueue<>(packIds);
+        List<String> ordered = new ArrayList<>();
+        while (!ready.isEmpty()) {
+            ordered.add(ready.poll());
+        }
+        return ordered;
     }
 }

@@ -5,36 +5,45 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import java.util.Deque;
+import java.util.PriorityQueue;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * PACK_GRAPH_WALKS_LIVE_IN_THE_DOMAIN (ADR-0082 decision 1, #637): no class of the application layer walks the pack
- * graph for cycles, groups or descendants. Two rules pin it:
+ * PACK_GRAPH_WALKS_LIVE_IN_THE_DOMAIN (ADR-0082 decision 1, #637): the application layer leaves walking the pack graph
+ * to {@code PackGraph}. Two rules pin what a hand-written walk needs:
  *
  * <ul>
- *   <li>{@link #NO_HAND_WRITTEN_DESCENT}: no application class holds a work queue ({@link Deque}), which every
- *       hand-written descent and cycle search of the layer used; {@code OwnerOnly}, which walks up a file path, is the
- *       one exception;
- *   <li>{@link #EDGES_ARE_READ_IN_THE_DOMAIN}: no application class reads a descriptor's {@code depends_on} or
- *       {@code parent_pack} itself; it asks {@code PackGraph.buildsOn}. {@code ClosureQueries} (a lookup of each pack's
- *       parent for the read model) and {@code OfferingReadService} (the declared edges of the offering, projected with
- *       their held versions) read them to answer, not to walk.
+ *   <li>{@link #NO_WORK_QUEUE}: no application class holds a walk's work queue ({@link Deque} or
+ *       {@link PriorityQueue}), which every hand-written descent, ordering and cycle search of the layer used;
+ *       {@code OwnerOnly}, which walks up a file path, is the one exception. A blocking queue that feeds an executor
+ *       ({@code RegistrationJobs}) is no walk and is not matched;
+ *   <li>{@link #EDGES_ARE_READ_IN_THE_DOMAIN}: no application code reads a descriptor's {@code depends_on} or
+ *       {@code parent_pack}, by a call or a method reference; it asks {@code PackGraph.buildsOn}. Two read-model
+ *       projections read them to answer, not to walk: {@code ClosureQueries.parentsOf} (each pack's parent) and
+ *       {@code OfferingReadService.dependenciesOf} (the declared edges with their held versions).
  * </ul>
  *
- * <p>The known-bad control follows {@code OwnerOnlyBoundaryTest}: a test-only class in a {@code badfixture} package,
- * against which the unchanged production rules must fail.
+ * <p>A walk written with a list as its stack, or by recursion, over edges the domain already handed out is not caught
+ * here; review keeps it out. The known-bad control follows {@code OwnerOnlyBoundaryTest}: a test-only class in a
+ * {@code badfixture} package, against which the unchanged production rules must fail.
  */
 class PackGraphWalkBoundaryTest {
 
     private static final String ROOT = "ai.speckitty.charter.packs";
     private static final String APPLICATION = ROOT + ".application..";
+    private static final Set<String> EDGE_READS = Set.of("dependencies", "parentPack");
+    private static final Set<String> READ_MODEL_PROJECTIONS = Set.of(
+            ROOT + ".application.ClosureQueries.parentsOf", ROOT + ".application.OfferingReadService.dependenciesOf");
 
-    static final ArchRule NO_HAND_WRITTEN_DESCENT = noClasses()
+    static final ArchRule NO_WORK_QUEUE = noClasses()
             .that()
             .resideInAPackage(APPLICATION)
             .and()
@@ -42,19 +51,23 @@ class PackGraphWalkBoundaryTest {
             .should()
             .dependOnClassesThat()
             .areAssignableTo(Deque.class)
+            .orShould()
+            .dependOnClassesThat()
+            .areAssignableTo(PriorityQueue.class)
             .because("the packs domain owns every walk over the pack graph; call PackGraph (ADR-0082, #637)");
+
+    private static final DescribedPredicate<JavaAccess<?>> A_DESCRIPTOR_EDGE_READ = DescribedPredicate.describe(
+            "read PackDescriptor.dependencies() or parentPack() outside a read-model projection",
+            access -> access.getTargetOwner().isEquivalentTo(PackDescriptor.class)
+                    && EDGE_READS.contains(access.getName())
+                    && !READ_MODEL_PROJECTIONS.contains(
+                            access.getOrigin().getFullName().replaceAll("\\(.*", "")));
 
     static final ArchRule EDGES_ARE_READ_IN_THE_DOMAIN = noClasses()
             .that()
             .resideInAPackage(APPLICATION)
-            .and()
-            .doNotHaveFullyQualifiedName(ROOT + ".application.ClosureQueries")
-            .and()
-            .doNotHaveFullyQualifiedName(ROOT + ".application.OfferingReadService")
             .should()
-            .callMethod(PackDescriptor.class, "dependencies")
-            .orShould()
-            .callMethod(PackDescriptor.class, "parentPack")
+            .accessTargetWhere(A_DESCRIPTOR_EDGE_READ)
             .because("the packs domain decides which edges a walk follows; ask PackGraph.buildsOn (ADR-0082, #637)");
 
     @Test
@@ -63,7 +76,7 @@ class PackGraphWalkBoundaryTest {
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .importPackages(ROOT);
 
-        assertThatCode(() -> NO_HAND_WRITTEN_DESCENT.check(production)).doesNotThrowAnyException();
+        assertThatCode(() -> NO_WORK_QUEUE.check(production)).doesNotThrowAnyException();
         assertThatCode(() -> EDGES_ARE_READ_IN_THE_DOMAIN.check(production)).doesNotThrowAnyException();
     }
 
@@ -71,14 +84,16 @@ class PackGraphWalkBoundaryTest {
     void theRulesFailOnAHandWrittenDescent() {
         JavaClasses fixtures = new ClassFileImporter().importPackages(ROOT + ".application.badfixture");
 
-        assertThatThrownBy(() -> NO_HAND_WRITTEN_DESCENT.check(fixtures))
+        assertThatThrownBy(() -> NO_WORK_QUEUE.check(fixtures))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("HandWrittenDescent")
-                .hasMessageContaining("ArrayDeque");
+                .hasMessageContaining("HandWrittenDescent.dependents")
+                .hasMessageContaining("ArrayDeque")
+                .hasMessageContaining("HandWrittenDescent.cycleCandidates")
+                .hasMessageContaining("PriorityQueue");
         assertThatThrownBy(() -> EDGES_ARE_READ_IN_THE_DOMAIN.check(fixtures))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("HandWrittenDescent")
                 .hasMessageContaining("PackDescriptor.dependencies()")
-                .hasMessageContaining("PackDescriptor.parentPack()");
+                .hasMessageContaining("PackDescriptor.parentPack()")
+                .hasMessageContaining("HandWrittenDescent.parentsByReference");
     }
 }

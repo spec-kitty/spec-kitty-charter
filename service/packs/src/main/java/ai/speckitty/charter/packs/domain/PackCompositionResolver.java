@@ -408,7 +408,7 @@ public final class PackCompositionResolver {
                 .toList();
         // A twin pack_id is read as its first holder here too, so one cause is reported once.
         faults.addAll(siblingContests(distinct));
-        Ordering ordering = topologicalOrder(distinct, byId, edges);
+        OrderAndCycles ordering = orderAndCycles(distinct, byId, edges);
         faults.addAll(ordering.cycles());
         return new Composition(List.copyOf(faults), ordering.order(), List.copyOf(ordered));
     }
@@ -578,7 +578,7 @@ public final class PackCompositionResolver {
         for (PackUnderResolution pack : packs) {
             byName.putIfAbsent(pack.descriptor().name(), pack);
         }
-        Set<String> closure = PackGraph.dependsOnClosure(referringPackId, descriptorsOf(byId));
+        Set<String> closure = PackGraph.dependsOnClosure(referringPackId, descriptorLookup(byId));
         PackUnderResolution referring = byId.get(referringPackId);
         if (referring == null) {
             throw new IllegalArgumentException("the referring pack " + referringPackId + " is no pack of the compose");
@@ -682,7 +682,7 @@ public final class PackCompositionResolver {
         Map<String, PackUnderResolution> byId = indexById(packs);
         Map<String, PackUnderResolution> byName = new HashMap<>();
         packs.forEach(pack -> byName.putIfAbsent(pack.descriptor().name(), pack));
-        Set<String> closure = PackGraph.dependsOnClosure(referringPackId, descriptorsOf(byId));
+        Set<String> closure = PackGraph.dependsOnClosure(referringPackId, descriptorLookup(byId));
         PackUnderResolution referring = byId.get(referringPackId);
         for (SubstepDelegationRule.QualifiedCandidate candidate : candidates) {
             PackUnderResolution target =
@@ -751,7 +751,7 @@ public final class PackCompositionResolver {
     }
 
     /** The descriptor of a {@code pack_id} of the compose, the first holder's, for {@link PackGraph}'s walks. */
-    static Function<String, Optional<PackDescriptor>> descriptorsOf(Map<String, PackUnderResolution> byId) {
+    static Function<String, Optional<PackDescriptor>> descriptorLookup(Map<String, PackUnderResolution> byId) {
         return packId -> Optional.ofNullable(byId.get(packId)).map(PackUnderResolution::descriptor);
     }
 
@@ -1110,7 +1110,7 @@ public final class PackCompositionResolver {
     /** Whether one pack is on the other's {@code parent_pack} line ({@link PackGraph#related}). */
     private static boolean related(
             PackUnderResolution first, PackUnderResolution second, Map<String, PackUnderResolution> byId) {
-        return PackGraph.related(first.descriptor(), second.descriptor(), descriptorsOf(byId));
+        return PackGraph.related(first.descriptor(), second.descriptor(), descriptorLookup(byId));
     }
 
     /**
@@ -1289,9 +1289,9 @@ public final class PackCompositionResolver {
     }
 
     /** The packs Kahn's pass placed, in merge order, and a {@link Failure#CYCLE} for each cycle it left behind. */
-    private record Ordering(List<PackUnderResolution> order, List<Refusal> cycles) {}
+    private record OrderAndCycles(List<PackUnderResolution> order, List<Refusal> cycles) {}
 
-    private static Ordering topologicalOrder(
+    private static OrderAndCycles orderAndCycles(
             List<PackUnderResolution> packs,
             Map<String, PackUnderResolution> byId,
             Map<String, List<String>> dependenciesByPack) {
@@ -1306,7 +1306,7 @@ public final class PackCompositionResolver {
                 id -> Objects.requireNonNull(byId.get(id), "a dependent is in the compose"));
         List<PackUnderResolution> ordered = ordering.placed();
         List<Refusal> cycles = new ArrayList<>();
-        if (ordered.size() != packs.size()) {
+        if (!ordering.leftover().isEmpty()) {
             Set<String> placed = new LinkedHashSet<>();
             ordered.forEach(pack -> placed.add(pack.descriptor().packId()));
             for (List<String> ids : PackGraph.leftoverCycles(placed, dependenciesByPack)) {
@@ -1323,7 +1323,7 @@ public final class PackCompositionResolver {
                                 + cycle.getFirst().descriptor().name() + "`"));
             }
         }
-        return new Ordering(ordered, cycles);
+        return new OrderAndCycles(ordered, cycles);
     }
 
     // ---- how a refusal names a pack -----------------------------------------------------------------------------

@@ -195,13 +195,13 @@ An unrelated broken pack does not refuse an activation's closure.
 **C5 Order.** `C` is listed in a topological order of `succ` (dependencies first, a `parent_pack` before its child),
 ties broken by `lv` in merge order, then by `cid` in code points (a total order, so I1 holds; ADR-0048 d9).
 Each level stays contiguous, and the order never depends on how the packs were listed.
-*Source:* ADR-0048 d9; logical model (Composition); `PackCompositionResolver.topologicalOrder`, `dependenciesOf`,
-`STABLE_ORDER` (`service/packs/.../domain/PackCompositionResolver.java`). **Built.**
+*Source:* ADR-0048 d9; logical model (Composition); `PackGraph.topologicalOrder`,
+`PackCompositionResolver.dependenciesOf`, `STABLE_ORDER` (`service/packs/.../domain/PackCompositionResolver.java`). **Built.**
 
 **C6 No dependency cycle.** The graph of `succ` on `C` (`depends_on` and `parent_pack` edges) is acyclic, else
 `pack_dependency_cycle`; a pack that depends on itself or names itself as its `parent_pack` is a cycle.
 A dependency or lineage cycle refuses the compose.
-*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `cyclesOf`. **Built.**
+*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `PackGraph.leftoverCycles`. **Built.**
 
 **C7 Known dependency.** `∀p ∈ C, (q, ρ) ∈ deps(p): q ∈ P`, else `pack_dependency_unknown`.
 *Source:* ADR-0048 d4. **Built.**
@@ -225,7 +225,8 @@ A pack may build on, or derive from, only packs at its own level or one nearer b
 `pack_reference_pack_missing`; and `holds(q, u)`, else `pack_reference_artifact_missing`.
 A cross-pack reference must name the referring pack or a pack of its own `depends_on` closure (not its `parent_pack`
 line), and that pack must hold the artifact.
-*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`, `PackGraph.dependsOnClosure`. **Built.**
+*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`,
+`PackGraph.dependsOnClosure`. **Built.**
 
 **C13 Bare reference.** A bare `u` written in `p` resolves to `p` when `holds(p, u)`; it is refused
 `pack_reference_unqualified` when only another pack of `C` holds `u`; otherwise it has no holder.

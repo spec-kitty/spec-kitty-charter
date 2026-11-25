@@ -235,7 +235,7 @@ public final class EnhancementCompose {
             byName.putIfAbsent(pack.descriptor().name(), pack);
         }
         Set<String> dependsOn = PackGraph.dependsOnClosure(
-                enhancing.descriptor().packId(), PackCompositionResolver.descriptorsOf(byId));
+                enhancing.descriptor().packId(), PackCompositionResolver.descriptorLookup(byId));
         Map<String, Set<String>> heldBy = new HashMap<>();
         List<TargetViolation> violations = new ArrayList<>();
         for (StepEnhancement enhancement : enhancements) {

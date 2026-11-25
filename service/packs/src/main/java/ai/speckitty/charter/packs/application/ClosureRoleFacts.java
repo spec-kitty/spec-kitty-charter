@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * The fallback and the role pins in force for one set of packs: the one place that answers them, for the registration
@@ -29,7 +30,7 @@ import java.util.Set;
  *
  * <p>A pack is derived from another when it builds on it, through {@code depends_on} or {@code parent_pack}, directly or
  * transitively: the derivation the closure's own packs and their resolved edges record ({@link ClosureView#packs()},
- * {@link ClosureView#parentOf}). Nothing is composed or read again.
+ * {@link ClosureView#parentOf}), descended by {@link PackGraph#ancestorsOf}. Nothing is composed or read again.
  */
 public final class ClosureRoleFacts {
 
@@ -164,14 +165,16 @@ public final class ClosureRoleFacts {
         Map<String, PackCompositionFacts> facts = closure.mergeInputs().facts();
         List<Member> members = new ArrayList<>();
         for (OfferingReadService.OfferingEntry entry : closure.packs()) {
-            PackUnderResolution pack = Objects.requireNonNull(
-                    composed.get(entry.id()), "every offering entry is a pack the closure merges");
-            List<PackIdentifier> buildsOn = PackGraph.buildsOn(pack.descriptor()).stream()
-                    .map(PackUlid::new)
+            // The edges the offering resolved for the pack and its recorded parent: the read model's projection, which
+            // answers for a view whose layer merge is not built from the closure's packs too. PackGraph descends them.
+            List<PackIdentifier> buildsOn = Stream.concat(
+                            entry.dependencies().stream().map(edge -> new PackUlid(edge.to())),
+                            closure.parentOf(entry.descriptorPackId()).stream())
                     .map(byDescriptor::get)
                     .filter(Objects::nonNull)
                     .toList();
-            Optional<String> fallback = pack.descriptor().fallbackProfile();
+            Optional<String> fallback = Optional.ofNullable(composed.get(entry.id()))
+                    .flatMap(pack -> pack.descriptor().fallbackProfile());
             RolePins pins = Optional.ofNullable(facts.get(entry.id().value()))
                     .map(held -> held.policy().rolePins())
                     .orElse(RolePins.NONE);

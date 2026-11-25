@@ -284,6 +284,42 @@ class PackGraphTest {
         }
 
         @Test
+        @DisplayName("leftoverCycles names a pack the walks passed by with its shortest cycle, breadth first")
+        void leftoverCyclesTakesTheShortestCycleThroughAPassedPack() {
+            Map<String, List<String>> dependencies = new LinkedHashMap<>();
+            dependencies.put("s", List.of("u"));
+            dependencies.put("u", List.of("s"));
+            dependencies.put("a", List.of("s", "c", "e"));
+            dependencies.put("c", List.of("a"));
+            dependencies.put("e", List.of("f"));
+            dependencies.put("f", List.of("a"));
+
+            assertThat(PackGraph.leftoverCycles(Set.of(), dependencies))
+                    .as("a depth-first search would name a by the longer cycle a, e, f")
+                    .containsExactly(List.of("s", "u"), List.of("a", "c"), List.of("e", "f", "a"));
+        }
+
+        @Test
+        @DisplayName("topologicalOrder places the instance the lookup gives for a dependent")
+        void topologicalOrderPlacesTheLookedUpInstance() {
+            record Pack(String id, String copy) {}
+            Map<String, List<String>> dependencies = new LinkedHashMap<>();
+            dependencies.put("base", List.of());
+            dependencies.put("top", List.of("base"));
+            Pack looked = new Pack("top", "looked up");
+
+            PackGraph.Ordering<Pack> order = PackGraph.topologicalOrder(
+                    List.of(new Pack("base", "given"), new Pack("top", "given")),
+                    Pack::id,
+                    dependencies,
+                    Comparator.comparing(Pack::id),
+                    id -> id.equals("top") ? looked : new Pack(id, "looked up"));
+
+            assertThat(order.placed()).extracting(Pack::copy).containsExactly("given", "looked up");
+            assertThat(order.leftover()).isEmpty();
+        }
+
+        @Test
         @DisplayName("leftoverCycles on a chain into a cycle names only the cycle")
         void leftoverCyclesOnAChainIntoACycle() {
             int n = 2_000;

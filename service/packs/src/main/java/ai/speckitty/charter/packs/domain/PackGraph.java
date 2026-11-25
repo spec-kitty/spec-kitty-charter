@@ -23,10 +23,11 @@ import java.util.function.Function;
  * the descent along them ({@link #compositionClosure}, {@link #ancestorsOf}) and back up them
  * ({@link #dependentsClosure}, {@link #directDependents}), the cycles and strongly connected groups of a graph
  * ({@link #cyclesIn}), and the grounding of {@code enhances} chains ({@link #ungrounded}). No class of the application
- * layer walks the pack graph or reads a descriptor's edges itself; it hands this class what it read and takes the
- * answer ({@code PackGraphWalkBoundaryTest}). The composition resolver's walks are here too: the
- * {@code depends_on}-only closure ({@link #dependsOnClosure}), the {@code parent_pack} line ({@link #onParentLine}),
- * the dependency order ({@link #topologicalOrder}) and the cycles it leaves ({@link #leftoverCycles}).
+ * layer walks the pack graph with a work queue or reads a descriptor's edges itself, but two read-model projections; it
+ * hands this class what it read and takes the answer ({@code PackGraphWalkBoundaryTest}). The composition resolver's
+ * walks are here too: the {@code depends_on}-only closure ({@link #dependsOnClosure}), the {@code parent_pack} line
+ * ({@link #onParentLine}), the dependency order ({@link #topologicalOrder}) and the cycles it leaves
+ * ({@link #leftoverCycles}).
  *
  * <p>Every walk is iterative, so a long chain cannot exhaust the stack, and every answer is in a stable order: the
  * order of the inputs, never the hash order of a node (the determinism guard of the architecture page). A graph given
@@ -208,6 +209,8 @@ public final class PackGraph {
      */
     public static boolean related(
             PackDescriptor first, PackDescriptor second, Function<String, Optional<PackDescriptor>> descriptorOf) {
+        Objects.requireNonNull(first, "first");
+        Objects.requireNonNull(second, "second");
         return onParentLine(first, second.packId(), descriptorOf) || onParentLine(second, first.packId(), descriptorOf);
     }
 
@@ -240,8 +243,8 @@ public final class PackGraph {
      * The order Kahn's pass places packs in, and the packs it could not place.
      *
      * @param placed the packs placed, each after the packs it depends on
-     * @param leftover the packs no order places: those on a dependency cycle and those downstream of one, in input
-     *     order
+     * @param leftover the packs no order places, in input order: those on a dependency cycle, those downstream of one,
+     *     and those with no entry in the dependencies
      * @param <P> the pack type
      */
     public record Ordering<P>(List<P> placed, List<P> leftover) {
@@ -269,7 +272,7 @@ public final class PackGraph {
      * @param stable the order ready packs are taken in
      * @param byId the pack of a {@code pack_id} of the set
      * @param <P> the pack type
-     * @return the packs placed, and the packs left, in the order of {@code packs}
+     * @return the packs placed, each after the packs it depends on; and the packs left, in the order of {@code packs}
      */
     public static <P> Ordering<P> topologicalOrder(
             List<P> packs,
@@ -309,9 +312,13 @@ public final class PackGraph {
                 }
             }
         }
-        Set<P> placed = new LinkedHashSet<>(ordered);
+        Set<String> placed = new LinkedHashSet<>();
+        ordered.forEach(pack -> placed.add(idOf.apply(pack)));
         return new Ordering<>(
-                ordered, packs.stream().filter(pack -> !placed.contains(pack)).toList());
+                ordered,
+                packs.stream()
+                        .filter(pack -> !placed.contains(idOf.apply(pack)))
+                        .toList());
     }
 
     /**
@@ -325,11 +332,15 @@ public final class PackGraph {
      * after the walks, so every pack on a cycle is named by at least one. A pack only downstream of a cycle lies on
      * none, and is not named.
      *
+     * <p>Precondition: {@code placed} is what {@link #topologicalOrder} placed over the same {@code dependenciesById},
+     * so every pack left has an unplaced dependency. Only the composition resolver calls it.
+     *
      * @param placed the {@code pack_id}s Kahn's pass placed
      * @param dependenciesById each pack's dependencies within the set, by {@code pack_id}, in declared order
      * @return the cycles, each a list of {@code pack_id}s starting at a pack on it
+     * @throws java.util.NoSuchElementException when a pack left has no unplaced dependency (the precondition broken)
      */
-    public static List<List<String>> leftoverCycles(Set<String> placed, Map<String, List<String>> dependenciesById) {
+    static List<List<String>> leftoverCycles(Set<String> placed, Map<String, List<String>> dependenciesById) {
         Objects.requireNonNull(placed, "placed");
         Objects.requireNonNull(dependenciesById, "dependenciesById");
         Set<String> visited = new LinkedHashSet<>();
