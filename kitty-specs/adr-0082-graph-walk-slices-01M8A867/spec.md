@@ -103,7 +103,7 @@ The relation rules (self-override, conflicting relations, override not permitted
 | FR-008 | Relations phase from the factory | As a contributor, I want the relation rules and the specialization cycle handed out by `PackRulesets.relations()`, judging a domain subject of the composed closure, so that no application class builds a relation refusal. | High | Open | [build] | no --- `ImpactRelationsTest` cases rerun on the rules |
 | FR-009 | Edge-index refusals as rules | As a contributor, I want the edge-index refusals to be relations-phase rules, with the relations gate kept ahead of them, so that no application class builds one. | High | Open | [build] | no --- a mixed-fault fixture pins the gate |
 | FR-010 | Hand-written gates removed | As a contributor, I want the gates between the relations, edge-index and own-closure phases to be the walker's, with `ClosureImpactCheck#relationFaults` deleted, so that the application layer only orchestrates. | Medium | Open | [build] | no --- the census and write-path fixtures stay green |
-| FR-011 | One code per edge-index fault | As a pack author, I want a read and a registration of the same closure to answer an edge-index fault with the same code, so that the surfaces agree (operator ruling D2). | High | Open | [build] | no --- the read used to answer `500 pack_unreadable` |
+| FR-011 | One code per edge-index fault | As a pack author, I want a read and a registration of the same closure to answer an edge-index fault, and C21's forbidden layer override, with the same code, so that the surfaces agree (operator rulings D2 and Q-B); this also closes #667, where a registration answered `500 pack_unreadable` through the own-closure rules. | High | Open | [build] | no --- the read used to answer `500 pack_unreadable` |
 | FR-012 | pack-doctor picks up cycle and relations | As a pack author, I want `pack-doctor validate --full` to report the specialization cycle and the relation faults over each root's composed closure, with registration's codes, so that open-packs can retire its Python rules. | Medium | Open | [build] | no --- a parity row refuses on both surfaces |
 | FR-013 | Ordered collections | As a pack author, I want no walk or rule to order work by hash order, so that answers are deterministic. | Medium | In progress (PR #665) | [ratchet] | yes --- paired with order-pinning tests on the same fixtures |
 
@@ -133,7 +133,8 @@ The relation rules (self-override, conflicting relations, override not permitted
 - **Scope**: the roots of a walk and the predicate that selects nodes; it never names edges.
 - **Rule factory** (`PackRulesets`): hands out the phases of rules each surface runs.
 - **ValidationWalker**: runs a phase's rules on the nodes their predicates select, into one ordered ledger, behind a phase gate.
-- **Closure facts**: the subject the own-closure rules judge, including the declaring pack and its fallback profile.
+- **Closure facts**: what the own-closure rules read of one closure (winners, locks, pins, enhancements); the factory
+  binds them into the rules, and the declaring pack node is the subject they judge, carrying its fallback profile.
 
 ## Success Criteria *(mandatory)*
 

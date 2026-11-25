@@ -135,6 +135,8 @@ subject-major (squad S1) and gates on any fault; rebase it, do not keep its shap
 
 - No `ClosureWalk` type; `grep -rn "OwnClosureWalk\|ClosureWalk\b" service` finds nothing but history docs.
 - `:packs:test :pack-validation:test :pack-doctor:test` green, then `verifyAll` and the docs checks.
+- NFR-003: run `PackRegistrationScaleTest` on `main` and on the branch and report both times in the PR (report-only,
+  ADR-0057).
 
 ## Risks
 

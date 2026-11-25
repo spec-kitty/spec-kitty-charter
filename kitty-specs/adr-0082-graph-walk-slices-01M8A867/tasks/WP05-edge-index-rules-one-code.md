@@ -112,6 +112,7 @@ Requirements: FR-009, FR-010, FR-011, NFR-001. Research: `research.md` R-5. Clos
 
 - Each edge-index fault answers one code on reads and registration; the contract tests, the scenarios and
   `ReadConsistencySteps` agree; `verifyAll`; #667 closed by the PR.
+- NFR-003: `PackRegistrationScaleTest` times on `main` and on the branch, reported in the PR (report-only, ADR-0057).
 
 ## Risks
 

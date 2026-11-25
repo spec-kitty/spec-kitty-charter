@@ -70,7 +70,7 @@ service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/
   GraphWalker.java                 # generic GraphWalker<N, E> (slice 3)
 service/packs/src/main/java/ai/speckitty/charter/packs/
   domain/PackGraph.java            # walks (slice 2), graph of nodes and driver (slice 3)
-  domain/PackGraphNode.java, PackNode.java, ArtifactNode.java, EdgeNode.java, EdgeKind.java, Scope.java
+  domain/graph/PackGraphNode.java, PackNode.java, ArtifactNode.java, EdgeNode.java, EdgeKind.java, Scope.java
   domain/ValidationWalker.java, GraphCheck.java
   domain/PackCompositionResolver.java   # its five walks move out (slice 2)
   domain/rules/PackRulesets.java   # ownClosure(), references() on the walker, relations()
@@ -84,7 +84,8 @@ contracts/charter/schemas/CharterRefusalCode.yaml, responses/OfferingUnreadable.
 docs/architecture/architectural-patterns-applied.md   # determinism guard, built notes (Proposed)
 ```
 
-**Structure Decision**: no new module. The types go where ADR-0082 puts them: the visitor contract in the kernel, and the driver, nodes, scope and walker in `packs.domain`. `ValidationWalker` stays in `packs.domain` until slice 7 settles the ledger on `Rationale`, because its rules return `ClosureFault`s, which carry the packs and violations the edge maps.
+**Structure Decision**: no new module. The types go where ADR-0082 puts them: the visitor contract in the kernel, the driver and walker in `packs.domain`, and the node types and scope in
+`packs.domain.graph` (inside the domain ring `HexagonalArchitectureTest` pins). `ValidationWalker` stays in `packs.domain` until slice 7 settles the ledger on `Rationale`, because its rules return `ClosureFault`s, which carry the packs and violations the edge maps.
 
 ## Complexity Tracking
 
