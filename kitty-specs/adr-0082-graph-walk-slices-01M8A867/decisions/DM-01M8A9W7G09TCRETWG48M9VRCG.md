@@ -4,9 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.wire.stray-step-code`
 - **Input key:** `stray_step_code`
-- **Status:** `deferred`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:30:36.416912+00:00`
-- **Resolved:** `2026-11-25T21:30:47.481480+00:00`
+- **Resolved:** `2026-11-25T21:58:23.312971+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,13 +22,13 @@ Q-C: The stray step link (another pack's requires edge to an action that is no s
 
 ## Final answer
 
-_(none)_
+pack_reference_artifact_missing + violation mission_step_unlinked (recommended)
 
 ## Rationale
 
-Sent to the operator through the dispatcher on 2026-11-25; only WP04 depends on it, so WP01 to WP03 proceed.
+_(none)_
 
 ## Change log
 
 - `2026-11-25T21:30:36.416912+00:00` - opened
-- `2026-11-25T21:30:47.481480+00:00` - deferred
+- `2026-11-25T21:58:23.312971+00:00` - resolved (final_answer="pack_reference_artifact_missing + violation mission_step_unlinked (recommended)")

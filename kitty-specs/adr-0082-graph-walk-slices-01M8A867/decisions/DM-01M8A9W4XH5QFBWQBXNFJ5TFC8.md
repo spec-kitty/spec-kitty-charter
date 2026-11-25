@@ -4,9 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.scope.c21-layer-merge`
 - **Input key:** `c21_layer_merge`
-- **Status:** `deferred`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:30:33.777559+00:00`
-- **Resolved:** `2026-11-25T21:30:44.851814+00:00`
+- **Resolved:** `2026-11-25T21:58:20.289712+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,13 +22,13 @@ Q-B: C21 (a forbidden layer override in LayerMerge) has the same split --- read 
 
 ## Final answer
 
-_(none)_
+In scope, WP04
 
 ## Rationale
 
-Sent to the operator through the dispatcher on 2026-11-25; only WP04 depends on it, so WP01 to WP03 proceed.
+_(none)_
 
 ## Change log
 
 - `2026-11-25T21:30:33.777559+00:00` - opened
-- `2026-11-25T21:30:44.851814+00:00` - deferred
+- `2026-11-25T21:58:20.289712+00:00` - resolved (final_answer="In scope, WP04")

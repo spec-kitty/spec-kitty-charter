@@ -32,19 +32,20 @@ Gate before Phase 0, and again after design:
 |---|---|---|
 | The charter's model is canonical; replace outright | Each slice deletes what it replaces: `ClosureWalk`/`OwnClosureWalk` (slice 3), `relationFaults` and the application gates (slice 4), and the resolver's private walks (slice 2) | Pass |
 | Tests carry the canonical shape only | New fixtures use canonical pack shapes; the bad fixtures exist only to fail an ArchUnit rule | Pass |
-| Contract changes follow ADR-0022 | FR-011 is recorded as `### Breaking` in a `contracts/charter/changes` fragment; whether the version moves follows ADR-0022 D2 (0.x minor) | Pass, with Q-A and Q-C open |
+| Contract changes follow ADR-0022 | FR-011 is recorded as `### Breaking` in a `contracts/charter/changes` fragment; whether the version moves follows ADR-0022 D2 (0.x minor) | Pass |
 | Adversarial squad at plan and before merge | Pre-spec squad done; a review squad runs before each PR is marked ready, posted as "Independent adversarial review (agent)" | Pass |
 | No PIT in mission work | No `pitest` or `checkMutationFloors`; floors move from the weekly report | Pass |
 | Nits folded, issues small | Every squad finding is folded or recorded; one defect issue filed (research R-5) | Pass |
 | Gates before merge | `verifyAll` on Java 25, `check_docs.py all`, markdownlint, cspell per PR | Pass |
 
-## Open decisions (operator)
+## Operator decisions (resolved 2026-11-25)
 
-- **Q-A, status model for the unified codes.** Recommended: the ADR-0056 model. A read answers 500, because the configured packs are at fault, and the 13 impact-checked operations answer 422 through `x-refusal` operation overrides. [NEEDS CLARIFICATION: status model for self_override and override_not_permitted once reads answer them] <!-- decision_id: 01M8A9W2C4ZEYT5Q946PBW8JTB -->
-- **Q-B, C21's layer-merge refusal.** Recommended: out of scope, recorded on epic #636. [NEEDS CLARIFICATION: whether C21 joins the D2 unification] <!-- decision_id: 01M8A9W4XH5QFBWQBXNFJ5TFC8 -->
-- **Q-C, the stray step link's code.** Recommended: `pack_reference_artifact_missing`, with the violation `mission_step_unlinked`. [NEEDS CLARIFICATION: the refusal code of a stray step link] <!-- decision_id: 01M8A9W7G09TCRETWG48M9VRCG -->
-
-Only slice 4 (IC-05) depends on Q-A to Q-C. Slices 2 and 3 proceed.
+- **Q-A, status model**: the ADR-0056 model. A read answers the real code with 500; the 13 impact-checked operations
+  keep 422 through `x-refusal` operation overrides (decision 01M8A9W2C4ZEYT5Q946PBW8JTB).
+- **Q-B, C21**: in scope. `LayerMerge`'s forbidden layer override joins the unification in WP05, with its registration
+  twin `override_not_permitted` (decision 01M8A9W4XH5QFBWQBXNFJ5TFC8).
+- **Q-C, the stray step link**: `pack_reference_artifact_missing` with the violation `mission_step_unlinked`; no new
+  enum code (decision 01M8A9W7G09TCRETWG48M9VRCG).
 
 ## Project Structure
 
@@ -132,7 +133,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 - **Purpose**: the relation rules, the specialization cycle and the edge-index refusals become relations-phase rules. The relations gate stays ahead of the edge-index rules. A read and a registration answer one code per fault (D2).
 - **Relevant requirements**: FR-008, FR-009, FR-010, FR-011
 - **Affected surfaces**: `ImpactRelations` and `SpecializationCycleRule` (deleted), `EdgeIndex`, `ClosureView`, `ClosureImpactCheck`, `RefusalHandler`, `CharterRefusalCode.yaml`, `OfferingUnreadable.yaml`, `step-enhancement-compose.feature`, `mission-types.feature`, registration scenarios, the contract change fragment, `http-status-codes.md`, `composition-and-activation-rules.md`, `ruleset-scenario-trace.md`
-- **Sequencing/depends-on**: IC-04; Q-A to Q-C
+- **Sequencing/depends-on**: IC-04 (Q-A to Q-C resolved; C21 included)
 - **Risks**: registration starts refusing a re-pointed self-override and a stray step link, which it accepts today. That flips `ClosureImpactCheckTest`'s case for a layer-above override, and it closes the read leak in research R-5.
 
 ### IC-06 --- pack-doctor picks up the cycle and the relations

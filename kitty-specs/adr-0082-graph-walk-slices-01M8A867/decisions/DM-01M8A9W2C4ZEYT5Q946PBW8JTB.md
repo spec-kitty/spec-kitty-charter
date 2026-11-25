@@ -4,9 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.wire.unified-status`
 - **Input key:** `unified_status`
-- **Status:** `deferred`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:30:31.172743+00:00`
-- **Resolved:** `2026-11-25T21:30:42.273373+00:00`
+- **Resolved:** `2026-11-25T21:58:17.120008+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -22,13 +22,13 @@ Q-A: The unified edge-index codes (self_override, override_not_permitted) are 42
 
 ## Final answer
 
-_(none)_
+ADR-0056 model: 500 on reads, 422 on impact-checked writes (recommended)
 
 ## Rationale
 
-Sent to the operator through the dispatcher on 2026-11-25; only WP04 depends on it, so WP01 to WP03 proceed.
+_(none)_
 
 ## Change log
 
 - `2026-11-25T21:30:31.172743+00:00` - opened
-- `2026-11-25T21:30:42.273373+00:00` - deferred
+- `2026-11-25T21:58:17.120008+00:00` - resolved (final_answer="ADR-0056 model: 500 on reads, 422 on impact-checked writes (recommended)")

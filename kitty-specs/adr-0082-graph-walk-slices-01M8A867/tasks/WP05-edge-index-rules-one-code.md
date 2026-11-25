@@ -61,9 +61,10 @@ The edge-index refusals become relations-phase rules, and a read and a registrat
 fault with one code (operator ruling D2). `ClosureImpactCheck#relationFaults` and the hand-written gates are deleted.
 This is a wire change.
 
-**Blocked on the operator's answers to Q-A (status model), Q-B (C21) and Q-C (the stray step link's code)**: decisions
-01M8A9W2C4ZEYT5Q946PBW8JTB, 01M8A9W4XH5QFBWQBXNFJ5TFC8, 01M8A9W7G09TCRETWG48M9VRCG. The text below follows the
-recommendations; change it to the answers before starting.
+Operator answers (2026-11-25): Q-A the ADR-0056 status model; Q-B C21 (`LayerMerge`'s forbidden layer override)
+is in scope and answers `override_not_permitted` on both surfaces too; Q-C the stray link answers
+`pack_reference_artifact_missing` with the violation `mission_step_unlinked`. Start from `main` after the #659
+runner's `ClosureView` and `PackCompositionFacts` constructor deletions land (or rebase onto them); keep them.
 
 Requirements: FR-009, FR-010, FR-011, NFR-001. Research: `research.md` R-5. Closes #667.
 
@@ -72,7 +73,8 @@ Requirements: FR-009, FR-010, FR-011, NFR-001. Research: `research.md` R-5. Clos
 ### T020 Edge-index rules
 
 - The re-pointed self-override (`EdgeIndex.refuseSelfOverrides`), the stray step link
-  (`refuseStrayMissionTypeEdges`) and the locked step enhanced (`ClosureView.MergeInputs.merged`) become checks of
+  (`refuseStrayMissionTypeEdges`), the locked step enhanced (`ClosureView.MergeInputs.merged`) and C21's forbidden
+  layer override (`LayerMerge`) become checks of
   a second relations phase that runs only when the relation rules pass (the relations gate, today's order).
 - The qualified-endpoint faults (`EdgeIndex.of`) are unreachable after a compose: prove it with a test, then fold them
   into `references()` instead of moving them.
