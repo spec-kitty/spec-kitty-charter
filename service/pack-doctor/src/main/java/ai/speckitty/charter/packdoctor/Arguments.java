@@ -53,8 +53,9 @@ final class Arguments {
                                         [--report <file> [--format yaml|xml]]
                    pack-doctor remediate <dir>[:<level>][=<id>] ...
               validate                 check a set of packs and write the report to standard output
-              remediate                rewrite each pack in canonical form and restamp its manifest, print each
-                                       pack's outcome, then validate the set with --round-trip
+              remediate                write each quoted number in a number field plain, rewrite each pack in
+                                       canonical form and restamp its manifest, print each pack's outcome,
+                                       then validate the set with --round-trip
               --config-root <dir>      check every pack under <dir>/packs/, each at the level its pack.yaml declares
                                        and under its directory's name
               --pack <dir>[:<level>][=<id>]

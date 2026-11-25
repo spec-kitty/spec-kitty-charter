@@ -169,9 +169,15 @@ final class PolicyYaml {
                 .orElseThrow(() -> new IllegalStateException("level '" + token + "' passed the schema but is none"));
     }
 
+    /**
+     * The policy file's faults joined into one detail with no pointer. A quoted number's fault keeps its fix but not the
+     * promise that {@code pack-doctor remediate} makes it: remediate repairs a fault at its pointer, and this detail has
+     * none (#651).
+     */
     private static Unreadable unreadable(FileRead.Unreadable<?> bad) {
         return new Unreadable(FilesystemPackStore.violationsOf(bad).stream()
                 .map(PackElementViolation::reason)
+                .map(QuotedNumbers::withoutRemedy)
                 .collect(Collectors.joining("; ")));
     }
 }
