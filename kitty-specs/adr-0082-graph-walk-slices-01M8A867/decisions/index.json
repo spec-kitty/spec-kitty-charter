@@ -95,6 +95,78 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:30:31.172743Z",
+      "decision_id": "01M8A9W2C4ZEYT5Q946PBW8JTB",
+      "final_answer": null,
+      "input_key": "unified_status",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "ADR-0056 model: 500 on reads, 422 on impact-checked writes (recommended)",
+        "422 everywhere",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Q-A: The unified edge-index codes (self_override, override_not_permitted) are 422 on every operation today. Follow ADR-0056 (a read keeps 500 \u2014 the configured packs are at fault \u2014 and the 13 impact-checked operations keep 422 through x-refusal operations overrides; moves both codes to the 500 default), or keep 422 everywhere (a read would answer 422 for a stored-pack fault)?",
+      "rationale": "Sent to the operator through the dispatcher on 2026-11-25; only WP04 depends on it, so WP01 to WP03 proceed.",
+      "resolved_at": "2026-11-25T21:30:42.273373Z",
+      "resolved_by": null,
+      "slot_key": "plan.wire.unified-status",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:30:33.777559Z",
+      "decision_id": "01M8A9W4XH5QFBWQBXNFJ5TFC8",
+      "final_answer": null,
+      "input_key": "c21_layer_merge",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "Out of scope; record it on epic #636 (recommended)",
+        "In scope, WP04",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Q-B: C21 (a forbidden layer override in LayerMerge) has the same split \u2014 read 500 pack_unreadable, registration twin override_not_permitted \u2014 but is not an edge-index refusal. In scope for D2's unification?",
+      "rationale": "Sent to the operator through the dispatcher on 2026-11-25; only WP04 depends on it, so WP01 to WP03 proceed.",
+      "resolved_at": "2026-11-25T21:30:44.851814Z",
+      "resolved_by": null,
+      "slot_key": "plan.scope.c21-layer-merge",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:30:36.416912Z",
+      "decision_id": "01M8A9W7G09TCRETWG48M9VRCG",
+      "final_answer": null,
+      "input_key": "stray_step_code",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "pack_reference_artifact_missing + violation mission_step_unlinked (recommended)",
+        "New refusal code",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Q-C: The stray step link (another pack's requires edge to an action that is no step of the mission type in force) has no registration twin and no refusal code. Answer it with pack_reference_artifact_missing plus a mission_step_unlinked violation (C37 precedent, no new code), or add a new refusal code (a closed-enum addition)?",
+      "rationale": "Sent to the operator through the dispatcher on 2026-11-25; only WP04 depends on it, so WP01 to WP03 proceed.",
+      "resolved_at": "2026-11-25T21:30:47.481480Z",
+      "resolved_by": null,
+      "slot_key": "plan.wire.stray-step-code",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
