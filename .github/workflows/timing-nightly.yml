@@ -5,8 +5,8 @@ name: CPU-time budgets (nightly)
 # result that gated nothing, because the budgets are report-only: the runners differ in CPU speed by about 2x, so a
 # budget measures the runner as much as the code. This workflow has only the schedule and workflow_dispatch
 # triggers, so no pull-request run invokes it or waits for it.
-# - The budgets run alone on the runner (./gradlew :packs:timingBudgets :activations:timingBudgets --no-parallel), with
-#   the same symlink property as service.yml's Verify. Their correctness checks gate in Verify.
+# - The budgets run alone on the runner, one module's timingBudgets per Gradle invocation, with the same symlink
+#   property as service.yml's Verify. Their correctness checks gate in Verify.
 # - A failure in the report-only budget step never fails the job: the next step raises a warning and a job-summary
 #   line. The budgets are pull-only: no issue is opened and nobody is notified of an overrun; a slowdown that persists
 #   across nights, seen on the Actions page, is the signal to file an issue. The test classes compile in a gating step
@@ -72,17 +72,37 @@ jobs:
 
       # Compiled first and outside the report-only step, so a compile error or a dependency-verification failure fails
       # the job instead of reading as a budget over its limit. A red nightly notifies like any failed scheduled run.
+      # The dry run configures the timing tasks, so a configuration failure (onlyTimingClasses refusing a tag form, or
+      # finding no budget class) fails here, not in the report-only step as a budget over its limit (#644 review).
       - name: Compile the budget tests
-        run: ./gradlew :packs:testClasses :activations:testClasses -PrequireSymlinks=true
+        run: |
+          ./gradlew :packs:testClasses :activations:testClasses -PrequireSymlinks=true
+          ./gradlew :packs:timingBudgets :activations:timingBudgets --dry-run -PrequireSymlinks=true
 
       # Report-only (ADR-0057): a budget over its limit never fails the job; the next step makes it visible.
+      # -x :charter-api:validateContract: the compile step above validated the contract in this job, and the task
+      # declares no outputs, so it would run again for about 2 minutes (#644 triage).
+      # One invocation per module: with the configuration cache, --no-parallel did not keep the two tasks apart (run
+      # 45614144471 measured :activations' budgets while :packs' wall-time budget ran), so each runs alone. Both run
+      # whatever the other's result, and either one over its budget makes the step fail.
       - name: Check the CPU-time budgets (report-only)
         id: timing
         continue-on-error: true
-        run: ./gradlew :packs:timingBudgets :activations:timingBudgets --no-parallel -PrequireSymlinks=true
+        run: |
+          status=0
+          ./gradlew :packs:timingBudgets -PrequireSymlinks=true -x :charter-api:validateContract || status=1
+          ./gradlew :activations:timingBudgets -PrequireSymlinks=true -x :charter-api:validateContract || status=1
+          exit "$status"
 
+      # Gating, outside the continue-on-error above: a correctness check, not a timing one. Every class the build names as
+      # a budget (TimingBudgets.classes) must have left a test result, so a budget that never ran fails the job instead of
+      # leaving a gap in the report. It reads the results the step above wrote and runs no test.
+      - name: Check every budget class ran
+        run: ./gradlew :packs:verifyTimingBudgetsRan :activations:verifyTimingBudgetsRan -PrequireSymlinks=true -x :charter-api:validateContract
+
+      # !cancelled(): the warning still shows on a night the gating check above failed too.
       - name: Report a CPU-time budget over its limit
-        if: steps.timing.outcome == 'failure'
+        if: ${{ !cancelled() && steps.timing.outcome == 'failure' }}
         run: |
           echo "::warning title=CPU-time budget over its limit::A CPU-time budget failed (report-only, ADR-0057). Read the measured times in 'Check the CPU-time budgets'; compare with other nights before treating it as a regression."
           echo "### ⚠️ A CPU-time budget is over its limit (report-only, ADR-0057)" >> "$GITHUB_STEP_SUMMARY"
