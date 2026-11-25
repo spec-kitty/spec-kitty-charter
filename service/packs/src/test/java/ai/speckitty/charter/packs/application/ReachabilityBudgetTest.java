@@ -28,6 +28,13 @@ class ReachabilityBudgetTest {
 
     private static final int ARTIFACTS = 500;
 
+    private static final int TACTICS = 400;
+
+    private static final int PROFILES = 40;
+
+    /** Mission types; each has one action, which instantiates one template. */
+    private static final int MISSIONS = 20;
+
     private static final int STARTS = 20;
 
     private static final int WARM_UP = 10;
@@ -46,10 +53,15 @@ class ReachabilityBudgetTest {
     void aReachOverFiveHundredArtifactsReportsItsP95() {
         EdgeIndex index = fixture();
         Set<Urn> starts = new LinkedHashSet<>();
-        for (int start = 0; start < STARTS; start++) {
-            starts.add(tactic(start * (ARTIFACTS / STARTS)));
+        for (int start = 0; start < STARTS / 2; start++) {
+            starts.add(tactic(start * (TACTICS / (STARTS / 2))));
         }
-        Set<Urn> deny = Set.of(tactic(7), tactic(131), tactic(402));
+        for (int start = 0; start < STARTS / 4; start++) {
+            starts.add(EdgeIndexTest.urn(missionType(start * (MISSIONS / (STARTS / 4)))));
+            starts.add(EdgeIndexTest.urn(profile(start * (PROFILES / (STARTS / 4)) + 1)));
+        }
+        assertThat(starts).as("twenty distinct starts").hasSize(STARTS);
+        Set<Urn> deny = Set.of(tactic(7), tactic(131), tactic(302));
         ReachRequest request = new ReachRequest(
                 starts, cascadeRelations(), deny::contains, Optional.of(ReachRequest.Lineage.specializesFrom()));
         assertThat(Reachability.reach(index, request).reached())
@@ -81,32 +93,74 @@ class ReachabilityBudgetTest {
     }
 
     private static Urn tactic(int index) {
-        return EdgeIndexTest.urn("tactic:t" + index);
+        return EdgeIndexTest.urn(tacticText(index));
+    }
+
+    private static String tacticText(int index) {
+        return "tactic:t" + index;
+    }
+
+    private static String profile(int index) {
+        return "agent_profile:p" + index;
+    }
+
+    private static String missionType(int index) {
+        return "mission_type:m" + index;
+    }
+
+    private static String action(int index) {
+        return "action:m" + index + "/a";
+    }
+
+    private static String template(int index) {
+        return "template:m" + index + "/t.md";
     }
 
     /**
-     * Five hundred tactics in one pack: each {@code i} has a cascade edge of each of the five relations to
-     * {@code (i * k + 1) mod 500}, every tenth enhances its neighbour, and every twentieth specializes from the one
-     * before it, so the walk meets cycles, shared targets and lineage.
+     * Five hundred artifacts in one pack, every edge between kinds its relation allows (ADR-0064 decision 13):
+     * four hundred tactics, each with a {@code requires}, a {@code suggests} and a {@code refines} edge to
+     * {@code (i * k + 1) mod 400} and every tenth enhancing its neighbour; forty agent profiles that require and
+     * suggest tactics, every odd one specializing from the one before it; and twenty mission types, each scoping two
+     * tactics and a profile and requiring its one action, which scopes a tactic and instantiates its template. The
+     * walk meets cycles, shared targets, all five cascade relations and lineage.
      */
     private static EdgeIndex fixture() {
         List<String> held = new ArrayList<>();
         List<Relationship> edges = new ArrayList<>();
-        for (int i = 0; i < ARTIFACTS; i++) {
-            held.add("tactic:t" + i);
-            for (int k = 0; k < FIVE.length; k++) {
-                int target = (i * (k + 2) + 1) % ARTIFACTS;
+        RelationType[] betweenTactics = {RelationType.REQUIRES, RelationType.SUGGESTS, RelationType.REFINES};
+        for (int i = 0; i < TACTICS; i++) {
+            held.add(tacticText(i));
+            for (int k = 0; k < betweenTactics.length; k++) {
+                int target = (i * (k + 2) + 1) % TACTICS;
                 if (target != i) {
-                    edges.add(edge("tactic:t" + i, FIVE[k], "tactic:t" + target));
+                    edges.add(edge(tacticText(i), betweenTactics[k], tacticText(target)));
                 }
             }
             if (i % 10 == 0) {
-                edges.add(edge("tactic:t" + i, RelationType.ENHANCES, "tactic:t" + (i + 1)));
-            }
-            if (i % 20 == 1) {
-                edges.add(edge("tactic:t" + i, RelationType.SPECIALIZES_FROM, "tactic:t" + (i - 1)));
+                edges.add(edge(tacticText(i), RelationType.ENHANCES, tacticText(i + 1)));
             }
         }
+        for (int j = 0; j < PROFILES; j++) {
+            held.add(profile(j));
+            edges.add(edge(profile(j), RelationType.REQUIRES, tacticText(j * (TACTICS / PROFILES))));
+            edges.add(edge(profile(j), RelationType.SUGGESTS, tacticText(j * (TACTICS / PROFILES) + 3)));
+            if (j % 2 == 1) {
+                edges.add(edge(profile(j), RelationType.SPECIALIZES_FROM, profile(j - 1)));
+            }
+        }
+        for (int m = 0; m < MISSIONS; m++) {
+            held.add(missionType(m));
+            held.add(action(m));
+            held.add(template(m));
+            int spacing = TACTICS / MISSIONS;
+            edges.add(edge(missionType(m), RelationType.SCOPE, tacticText(m * spacing)));
+            edges.add(edge(missionType(m), RelationType.SCOPE, tacticText(m * spacing + 1)));
+            edges.add(edge(missionType(m), RelationType.SCOPE, profile(2 * m)));
+            edges.add(edge(missionType(m), RelationType.REQUIRES, action(m)));
+            edges.add(edge(action(m), RelationType.SCOPE, tacticText(m * spacing + 2)));
+            edges.add(edge(action(m), RelationType.INSTANTIATES, template(m)));
+        }
+        assertThat(held).as("the fixture holds five hundred artifacts").hasSize(ARTIFACTS);
         return new EdgeIndexTest.Closure()
                 .pack("alpha", held, edges.toArray(Relationship[]::new))
                 .index();

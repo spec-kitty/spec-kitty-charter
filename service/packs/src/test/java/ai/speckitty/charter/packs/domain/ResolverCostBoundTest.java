@@ -1,10 +1,10 @@
 package ai.speckitty.charter.packs.domain;
 
+import static ai.speckitty.charter.packs.fixtures.FixtureUlids.registeredIdOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -111,7 +111,7 @@ class ResolverCostBoundTest {
                 dependencies.add(new PackDependency(id(target), ">=1.0"));
             }
             packs.add(new PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(id(index)), level),
+                    new ConfiguredPack(registeredIdOf(id(index)), level),
                     new PackDescriptor(
                             id(index),
                             "1.0.0",
@@ -136,7 +136,7 @@ class ResolverCostBoundTest {
     }
 
     private static String id(int index) {
-        // Twenty-six characters, zero-padded, so the code-point order matches the index order.
-        return String.format("01CNZST0000000000000000000%020d", index);
+        // A descriptor ULID of twenty-six characters, zero-padded, so the code-point order matches the index order.
+        return String.format("01CNZST%019d", index);
     }
 }
