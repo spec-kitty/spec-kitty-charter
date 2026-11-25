@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
-import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
@@ -20,7 +19,7 @@ import java.util.Optional;
  * The profile enhancement rule of rulings D5 and D7 (#380), judged over the declaring pack's own closure with the write
  * in place, beside the fallback and role-pin rules: every {@code enhances} edge from an agent profile to an agent
  * profile among the closure's winners, read as the in-force resolution reads them
- * ({@link ClosureView.MergedView#resolutionEdges()}), names an enhancer whose merge with the profile it enhances
+ * (the closure view's resolution edges, through {@link ClosureFacts#profileEnhancements()}), names an enhancer whose merge with the profile it enhances
  * (the profiles slice's merge, through {@link ProfileEnhancementGateway}) loses no content ({@code profile_enhancement_drops_field}). Each enhanced profile is
  * merged with all its enhancers in closure order, the nearest pack last, so a later enhancer must keep what an earlier
  * one added. The enhanced profiles are judged in URN order, each enhanced profile its own fault (#556, FR-005): the
@@ -40,7 +39,7 @@ final class ProfileEnhancementRule {
      * @throws IllegalStateException when a profile enhances a profile and the deployment has no merge to judge it
      */
     static List<ClosureFault> check(
-            ClosureFacts closure, ClosureWalk.Profiles profiles, Optional<ProfileEnhancementGateway> merge) {
+            ClosureFacts closure, ProfileReader profiles, Optional<ProfileEnhancementGateway> merge) {
         Optional<ClosureFacts.ProfileEnhancements> enhancements = closure.profileEnhancements();
         if (enhancements.isEmpty()) {
             return List.of();
@@ -83,7 +82,7 @@ final class ProfileEnhancementRule {
     }
 
     private static Optional<CharterArtifact> profileOf(
-            Urn urn, Map<Urn, MergedClosure.Winner> winners, ClosureWalk.Profiles profiles) {
+            Urn urn, Map<Urn, MergedClosure.Winner> winners, ProfileReader profiles) {
         return Optional.ofNullable(winners.get(urn)).flatMap(winner -> profiles.read(winner.packId(), urn.id()));
     }
 }

@@ -13,7 +13,6 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.ClosureImpactCheck;
 import ai.speckitty.charter.packs.application.InboundReferences;
-import ai.speckitty.charter.packs.application.OwnClosureWalk;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Mode;
 import ai.speckitty.charter.packs.application.PackUninstallService;
 import ai.speckitty.charter.packs.application.RevisionTrail;
@@ -104,7 +103,6 @@ class QualifierLoadTest {
                 new ClosureImpactCheck(
                         views,
                         ActivationImpact.NONE,
-                        new OwnClosureWalk(),
                         new InboundReferences(repository, repository, repository)));
 
         assertThatThrownBy(() -> writes.authored(pack))

@@ -1,26 +1,24 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
-import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RolePins;
+import ai.speckitty.charter.packs.domain.ValidationWalker;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
@@ -33,11 +31,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * The closure walk behind its port (#556, FR-005): over a closure's facts alone, the fallback profile first, then the
- * pins, then the profile enhancements, every breach of each rule, and its kernel rule view in the same order.
+ * The own-closure rules from the factory, run by the one walker (#556 FR-005, #638): over a closure's facts, the
+ * fallback profile first, then the pins, then the profile enhancements, every breach of each rule, in one phase.
  */
-@DisplayName("OwnClosureWalk: every breach of a pack's own closure, behind the ClosureWalk port (#556)")
-class OwnClosureWalkTest {
+@DisplayName("PackRulesets.ownClosure: every breach of a pack's own closure, run by the ValidationWalker (#638)")
+class OwnClosureRulesTest {
 
     private static final PackIdentifier ACME = new PackIdentifier("acme");
     private static final PackIdentifier BASE = new PackIdentifier("base");
@@ -93,31 +91,16 @@ class OwnClosureWalkTest {
         }
     }
 
-    private static PackDescriptor declaring(Optional<String> fallback) {
-        return new PackDescriptor(
-                FixtureUlids.of("acme"),
-                "1.0.0",
-                Optional.empty(),
-                "acme",
-                Optional.empty(),
-                Optional.empty(),
-                PackPaths.none(),
-                List.of(),
-                List.of(),
-                Optional.empty(),
-                fallback);
-    }
-
-    private static ClosureWalk.OwnClosure own(
+    private static List<ClosureFault> walk(
             Optional<String> fallback,
             ClosureFacts facts,
-            ClosureWalk.Profiles profiles,
+            ProfileReader profiles,
             Optional<ProfileEnhancementGateway> merge) {
-        return new ClosureWalk.OwnClosure(ACME, declaring(fallback), facts, profiles, merge);
+        return ValidationWalker.of(PackRulesets.ownClosure(ACME, fallback, profiles, merge)).walk(facts);
     }
 
-    private static ClosureWalk.OwnClosure own(Optional<String> fallback, ClosureFacts facts) {
-        return own(fallback, facts, (holder, id) -> Optional.empty(), Optional.empty());
+    private static List<ClosureFault> walk(Optional<String> fallback, ClosureFacts facts) {
+        return walk(fallback, facts, (holder, id) -> Optional.empty(), Optional.empty());
     }
 
     private static Facts pinningTwoUnknown() {
@@ -128,11 +111,32 @@ class OwnClosureWalkTest {
     }
 
     @Test
+    @DisplayName("the factory hands out one collect-all phase: the fallback, the pins, then the enhancements")
+    void oneCollectAllPhase() {
+        List<ValidationWalker.Phase<ClosureFacts>> phases =
+                PackRulesets.ownClosure(ACME, Optional.empty(), (holder, id) -> Optional.empty(), Optional.empty());
+
+        assertThat(phases).singleElement().satisfies(phase -> assertThat(phase.rules())
+                .extracting(ValidationWalker.Selected::name)
+                .containsExactly("fallback_profile", "role_pins", "profile_enhancements"));
+    }
+
+    @Test
+    @DisplayName("the fallback rule runs only where a fallback is declared; the pins and the enhancements run everywhere")
+    void thePredicatesSelect() {
+        List<ValidationWalker.Selected<ClosureFacts>> rules = PackRulesets.ownClosure(
+                        ACME, Optional.empty(), (holder, id) -> Optional.empty(), Optional.empty())
+                .getFirst()
+                .rules();
+        Facts plain = new Facts();
+
+        assertThat(rules).extracting(rule -> rule.when().test(plain)).containsExactly(false, true, true);
+    }
+
+    @Test
     @DisplayName("the fallback's breach comes first, then every pin's, in one verdict")
     void theFallbackThenEveryPin() {
-        List<ClosureFault> faults = new OwnClosureWalk()
-                .walk(own(Optional.of("generic-agent"), pinningTwoUnknown()))
-                .faults();
+        List<ClosureFault> faults = walk(Optional.of("generic-agent"), pinningTwoUnknown());
 
         assertThat(faults)
                 .extracting(ClosureFault::code)
@@ -147,9 +151,7 @@ class OwnClosureWalkTest {
     @Test
     @DisplayName("a fallback or pin breach is about the declaring pack and the profile it names (R-o)")
     void aFallbackOrPinBreachIsAboutTheDeclaringPackAndTheProfile() {
-        List<ClosureFault> faults = new OwnClosureWalk()
-                .walk(own(Optional.of("generic-agent"), pinningTwoUnknown()))
-                .faults();
+        List<ClosureFault> faults = walk(Optional.of("generic-agent"), pinningTwoUnknown());
 
         assertThat(faults)
                 .extracting(fault -> fault.origin().id())
@@ -166,9 +168,7 @@ class OwnClosureWalkTest {
     @Test
     @DisplayName("no fallback declared: only the pins are judged")
     void noFallbackDeclaredJudgesOnlyThePins() {
-        assertThat(new OwnClosureWalk()
-                        .walk(own(Optional.empty(), pinningTwoUnknown()))
-                        .faults())
+        assertThat(walk(Optional.empty(), pinningTwoUnknown()))
                 .extracting(ClosureFault::code)
                 .containsExactly(RefusalCode.ROLE_PIN_UNKNOWN, RefusalCode.ROLE_PIN_UNKNOWN);
     }
@@ -181,10 +181,9 @@ class OwnClosureWalkTest {
         facts.pins.put("implementer", "b");
         facts.conflicts.put("reviewer", List.of(ACME, BASE));
         facts.conflicts.put("implementer", List.of(BASE, ACME));
-        ClosureWalk.Profiles fits = (holder, id) -> Optional.empty();
+        ProfileReader fits = (holder, id) -> Optional.empty();
 
-        List<ClosureFault> conflicts = new OwnClosureWalk()
-                .walk(own(Optional.empty(), facts, fits, Optional.empty())).faults().stream()
+        List<ClosureFault> conflicts = walk(Optional.empty(), facts, fits, Optional.empty()).stream()
                         .filter(fault -> fault.code() == RefusalCode.ROLE_PIN_CONFLICT)
                         .toList();
 
@@ -219,7 +218,7 @@ class OwnClosureWalkTest {
         enhancersOf.put(second, List.of(winner(enhancer, ACME)));
         Facts facts = new Facts();
         facts.enhancements = Optional.of(new ClosureFacts.ProfileEnhancements(winners, enhancersOf));
-        ClosureWalk.Profiles profiles = (holder, id) -> Optional.of(profile(id));
+        ProfileReader profiles = (holder, id) -> Optional.of(profile(id));
         ProfileEnhancementGateway dropsEverything = new ProfileEnhancementGateway() {
             @Override
             public Optional<Dropped> firstDrop(CharterArtifact base, List<Enhancing> inClosureOrder) {
@@ -231,13 +230,11 @@ class OwnClosureWalkTest {
 
             @Override
             public Composed compose(List<Layer> rootToLeaf) {
-                throw new UnsupportedOperationException("the walk only judges drops");
+                throw new UnsupportedOperationException("the rule only judges drops");
             }
         };
 
-        List<ClosureFault> faults = new OwnClosureWalk()
-                .walk(own(Optional.empty(), facts, profiles, Optional.of(dropsEverything)))
-                .faults();
+        List<ClosureFault> faults = walk(Optional.empty(), facts, profiles, Optional.of(dropsEverything));
 
         assertThat(faults)
                 .extracting(ClosureFault::code)
@@ -258,8 +255,7 @@ class OwnClosureWalkTest {
     @Test
     @DisplayName("a closure whose layers do not merge has no enhancement fault: the merge's owners refuse it")
     void aClosureThatDoesNotMergeHasNoEnhancementFault() {
-        assertThat(new OwnClosureWalk().walk(own(Optional.empty(), new Facts())).isPassing())
-                .isTrue();
+        assertThat(walk(Optional.empty(), new Facts())).isEmpty();
     }
 
     private static MergedClosure.Winner winner(Urn urn, PackIdentifier pack) {

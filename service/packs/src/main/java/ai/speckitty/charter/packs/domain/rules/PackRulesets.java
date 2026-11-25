@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.domain.rules;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -8,15 +10,18 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
+import ai.speckitty.charter.packs.domain.ValidationWalker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * The named compositions of the content rules, of {@code CLOSURE} and of {@code REFERENCES} (#554, FR-002, FR-003, S1 to
- * S3; #632 item 3): each surface runs a composition by its name,
+ * The named compositions of the content rules, of {@code CLOSURE}, of {@code REFERENCES} and of the own closure (#554,
+ * FR-002, FR-003, S1 to S3; #632 item 3; #638): each surface runs a composition by its name,
  * with no surface profile and no mode flag. The storage edge lifts {@link #content()} onto its one read
  * ({@code StorageRulesets.registration()}), and validate mode takes the same verdict through the domain port
  * {@code PackReading}, so what registration finds, validate mode finds too, by construction.
@@ -54,6 +59,9 @@ public final class PackRulesets {
             PackCompositionResolver::delegationFaultsOf,
             PackCompositionResolver::referenceFaultsOf,
             EnhancementCompose::targetFaultsOf);
+
+    /** The name of the own-closure phase: the closure walk's name, which ruling R-u keeps free for it. */
+    private static final String OWN_CLOSURE = "closure_walk";
 
     private PackRulesets() {}
 
@@ -156,6 +164,43 @@ public final class PackRulesets {
             }
         }
         return List.of();
+    }
+
+    /**
+     * The own-closure rules of one declaring pack (#556 FR-005, #638), as one collect-all phase for the
+     * {@link ValidationWalker} over the pack's own closure ({@link ClosureFacts}), with the write in place: its ADR-0068
+     * fallback profile ({@link FallbackProfileRule}), selected only when the pack declares one; then its role pins and the
+     * pins of its closure ({@link RolePinRule}); then the profile enhancements in force ({@link ProfileEnhancementRule}),
+     * which reads the closure's enhancements once and passes when there are none. Every breach of each rule is reported,
+     * in that order. Registration, every write and the census get the rules here and nowhere else.
+     *
+     * @param declaring the declaring pack, by registered id: the root of the closure the rules judge
+     * @param fallbackProfile the fallback profile its descriptor names, with the write in place; empty when none
+     * @param profiles where a winning profile's entity is read
+     * @param merge the profiles slice's merge, which judges an enhancement; empty when the deployment has none
+     * @return the phase, its rules named {@code fallback_profile}, {@code role_pins} and {@code profile_enhancements}
+     */
+    public static List<ValidationWalker.Phase<ClosureFacts>> ownClosure(
+            PackIdentifier declaring,
+            Optional<String> fallbackProfile,
+            ProfileReader profiles,
+            Optional<ProfileEnhancementGateway> merge) {
+        Objects.requireNonNull(declaring, "declaring");
+        Objects.requireNonNull(fallbackProfile, "fallbackProfile");
+        Objects.requireNonNull(profiles, "profiles");
+        Objects.requireNonNull(merge, "merge");
+        return List.of(new ValidationWalker.Phase<>(
+                OWN_CLOSURE,
+                List.of(
+                        new ValidationWalker.Selected<ClosureFacts>(
+                                "fallback_profile",
+                                facts -> fallbackProfile.isPresent(),
+                                facts -> FallbackProfileRule.check(
+                                        declaring, fallbackProfile.orElseThrow(), facts, profiles)),
+                        ValidationWalker.Selected.<ClosureFacts>always(
+                                "role_pins", facts -> RolePinRule.check(declaring, facts, profiles)),
+                        ValidationWalker.Selected.<ClosureFacts>always(
+                                "profile_enhancements", facts -> ProfileEnhancementRule.check(facts, profiles, merge)))));
     }
 
     /**

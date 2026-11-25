@@ -12,8 +12,8 @@ import java.util.function.UnaryOperator;
 /**
  * Port: the impact check of ADR-0075 decision 6 (#556), the closure difference of a pack write. With the write in place
  * it composes every closure that holds the written pack and judges each: the compose, the relation rules and the
- * closure walk ({@link ClosureWalk}); for a removal, the packs and activations that still depend on the pack come
- * first. It collects every fault into one {@link ClosureVerdict}, and answers the floor and lock changes the write
+ * own-closure rules ({@link ai.speckitty.charter.packs.domain.rules.PackRulesets#ownClosure}); for a removal, the packs
+ * and activations that still depend on the pack come first. It collects every fault into one {@link ClosureVerdict}, and answers the floor and lock changes the write
  * makes from the same compose. A pack that cannot be read is no fault: its refusal propagates. The service composes it
  * for every write; the validation edge and {@code pack-doctor} compose none of it.
  */

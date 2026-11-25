@@ -268,6 +268,11 @@ given.
   `GraphWalker` built from rules and predicates per node kind. It runs in phases behind a **phase gate**: once a
   phase records a `VIOLATION`, later phases do not run, so a client sees the root cause instead of its knock-on
   faults.
+- *Built (slice 3, #638):* `{@link ai.speckitty.charter.packs.domain.ValidationWalker}` runs phases of rules, each
+  rule with the `Predicate` that selects the subjects it runs on, every phase in one traversal, into one ledger of
+  `ClosureFault`s, behind the phase gate (a phase that finds a fault stops the later ones). Its first rules are the
+  own-closure rules, which judge `ClosureFacts`. The ledger becomes a `Rationale`, and the walker a `GraphWalker` over
+  `PackGraphNode`, in the later slices.
 
 Reference: [refactoring.guru: Strategy](https://refactoring.guru/design-patterns/strategy).
 
@@ -286,6 +291,9 @@ generic functional interfaces such as `Predicate<T>`.
   `ModularRuleset.of` builds a ruleset.
 - *Proposed:* `PackRulesets` grows `relations()`, `ownClosure()`, `mutability(policies)` and `dependents()`, and the
   scopes `activeSet(..)`, `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`.
+- *Built (slice 3, #638):* `PackRulesets.ownClosure(declaring, fallbackProfile, profiles, merge)` hands out the
+  own-closure phase: `FallbackProfileRule`, `RolePinRule` and `ProfileEnhancementRule`, now in `packs.domain.rules`.
+  It takes the declaring pack's context, since `ClosureFacts`, the subject, holds no declaring pack.
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
 
@@ -310,7 +318,7 @@ adapter (a file store) is called out to. The domain never names an adapter.
   and the stored reads share the wording in `{@link ai.speckitty.charter.packs.domain.PackRefusalMapping}`; slice 7
   settles where it lives.
 - *Proposed:* the judging ports of PR #618 (`ClosureWalk`, `ImpactCheck`, `MutabilityCheck`) are replaced.
-  `ClosureWalk` becomes a pure domain function. `MutabilityCheck` goes; the real port is
+  `ClosureWalk` becomes a pure domain function (*built*, slice 3, #638: the port and `OwnClosureWalk` are deleted). `MutabilityCheck` goes; the real port is
   `MutabilityPolicyRepository` plus a closure reader. `ImpactCheck` becomes an application use case with no domain
   port. `packs.application` keeps orchestration only: sessions, the before-and-after difference that yields notices,
   and the activations gate.
@@ -398,6 +406,8 @@ merged; otherwise they delete nothing and #618's ports are not built.
    `ValidationWalker` that reads it (slice 3).*
 3. **`ValidationWalker` and the factory.** `PackRulesets` becomes the factory; the own-closure rules move into
    `packs.domain.rules`; delete `ClosureWalk` and `OwnClosureWalk`.
+   *Built 2026-11-25 (#638): `ValidationWalker` runs the factory's own-closure phase; `ClosureWalk` (with
+   `Profiles`, now `ProfileReader`) and `OwnClosureWalk` are deleted.*
 4. **Relations as rules.** The relation refusals and the edge-index refusals become rules of the relations phase;
    `EdgeIndex` stays as the graph's index.
 5. **Mutability.** Delete `MutabilityCheck`.

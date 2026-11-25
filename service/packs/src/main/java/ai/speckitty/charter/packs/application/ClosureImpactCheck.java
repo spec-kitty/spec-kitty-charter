@@ -11,11 +11,12 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureVerdict;
-import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.ValidationWalker;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
+import ai.speckitty.charter.packs.domain.rules.ProfileReader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -93,41 +94,34 @@ public final class ClosureImpactCheck implements ImpactCheck {
 
     private final StagedPackViews views;
     private final ActivationImpact activations;
-    private final ClosureWalk walk;
     private final Optional<RemovalDependents> dependents;
 
     /**
-     * The check over the packs and the activations, with the service's closure walk, judging writes only: it has no
-     * dependents finder, so it cannot judge a removal.
+     * The check over the packs and the activations, judging writes only: it has no dependents finder, so it cannot
+     * judge a removal.
      *
      * @param views the stored packs, with a written pack laid over them
      * @param activations the stored activations' root sets
      */
     public ClosureImpactCheck(StagedPackViews views, ActivationImpact activations) {
-        this(views, activations, new OwnClosureWalk(), Optional.empty());
+        this(views, activations, Optional.empty());
     }
 
     /**
-     * The check over the packs, the activations, a closure walk and the inbound scan that finds a removal's referrers.
+     * The check over the packs, the activations and the inbound scan that finds a removal's referrers.
      *
      * @param views the stored packs, with a written pack laid over them
      * @param activations the stored activations' root sets
-     * @param walk the closure walk of each single-root closure
      * @param inbound the inbound scan
      */
-    public ClosureImpactCheck(
-            StagedPackViews views, ActivationImpact activations, ClosureWalk walk, InboundReferences inbound) {
-        this(views, activations, walk, Optional.of(new RemovalDependents(inbound, activations)));
+    public ClosureImpactCheck(StagedPackViews views, ActivationImpact activations, InboundReferences inbound) {
+        this(views, activations, Optional.of(new RemovalDependents(inbound, activations)));
     }
 
     private ClosureImpactCheck(
-            StagedPackViews views,
-            ActivationImpact activations,
-            ClosureWalk walk,
-            Optional<RemovalDependents> dependents) {
+            StagedPackViews views, ActivationImpact activations, Optional<RemovalDependents> dependents) {
         this.views = Objects.requireNonNull(views, "views");
         this.activations = Objects.requireNonNull(activations, "activations");
-        this.walk = Objects.requireNonNull(walk, "walk");
         this.dependents = dependents;
     }
 
@@ -136,16 +130,12 @@ public final class ClosureImpactCheck implements ImpactCheck {
      *
      * @param views the stored packs, with a written pack laid over them
      * @param activations the activations slice's port, when the deployment has that slice
-     * @param walk the closure walk
      * @param inbound the inbound scan
      */
     @Autowired
     public ClosureImpactCheck(
-            StagedPackViews views,
-            ObjectProvider<ActivationImpact> activations,
-            ClosureWalk walk,
-            InboundReferences inbound) {
-        this(views, activations.getIfAvailable(() -> ActivationImpact.NONE), walk, inbound);
+            StagedPackViews views, ObjectProvider<ActivationImpact> activations, InboundReferences inbound) {
+        this(views, activations.getIfAvailable(() -> ActivationImpact.NONE), inbound);
     }
 
     @Override
@@ -383,12 +373,10 @@ public final class ClosureImpactCheck implements ImpactCheck {
                             broken.packs()))
                     .toList();
             if (faults.isEmpty()) {
-                ClosureWalk.Profiles profiles =
-                        (holder, id) -> profileIn(requireStore(packsOfCensus).load(holder), id);
+                ProfileReader profiles = (holder, id) -> profileIn(requireStore(packsOfCensus).load(holder), id);
                 ClosureView own = composing.queries().snapshot(Optional.of(List.of(pack.id())));
-                faults = walk.walk(new ClosureWalk.OwnClosure(
-                                pack.id(), stored.descriptors().get(pack.id()), own, profiles, enhancementsOfCensus))
-                        .faults();
+                faults = ownClosureFaults(
+                        pack.id(), stored.descriptors().get(pack.id()), own, profiles, enhancementsOfCensus);
             }
             return faults.isEmpty()
                     ? Optional.empty()
@@ -396,6 +384,19 @@ public final class ClosureImpactCheck implements ImpactCheck {
         } catch (CharterRefusal refused) {
             return Optional.of(new Finding(name, refused));
         }
+    }
+
+    /**
+     * Every breach of one declaring pack's own closure: the factory's own-closure rules, run by the one walker (#638).
+     */
+    private static List<ClosureFault> ownClosureFaults(
+            PackIdentifier declaring,
+            PackDescriptor descriptor,
+            ClosureView own,
+            ProfileReader profiles,
+            Optional<ai.speckitty.charter.packs.domain.ProfileEnhancementGateway> merge) {
+        return ValidationWalker.of(PackRulesets.ownClosure(declaring, descriptor.fallbackProfile(), profiles, merge))
+                .walk(own);
     }
 
     private static String packsOf(ClosureFault broken) {
@@ -447,7 +448,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * builds on it, whose declared fallback or pinned profile may be held in the written pack and so be removed,
      * unlocked, given a role or a performer by this write, and whose closure may gain a differing pin or an enhancement
      * that drops part of the profile it enhances (rulings D5, D7). Each is judged over its own closure, the fallback
-     * first, then the pins, then the enhancements ({@link ClosureWalk}), every breach (#556, FR-005), and then the items
+     * first, then the pins, then the enhancements ({@link PackRulesets#ownClosure}), every breach (#556, FR-005), and then the items
      * of its presets ({@link #presetItemFaults}, #629, #632 item 1). A closure that did not compose or broke a relation
      * has no view, and is not walked.
      */
@@ -460,7 +461,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
         Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> judged = closures.changes();
         Faults faults = closures.faults();
         PackIdentifier written = replacement.configured().id();
-        ClosureWalk.Profiles profiles =
+        ProfileReader profiles =
                 (holder, id) -> holder.equals(written) && replacement.pack().isPresent()
                         ? profileIn(replacement.pack().get(), id)
                         : profileIn(storeOf(session).load(holder), id);
@@ -476,9 +477,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
                     .after();
             List<ClosureFault> breaches;
             try {
-                ClosureWalk.OwnClosure ownClosure =
-                        new ClosureWalk.OwnClosure(declaring, descriptor, own, profiles, session.enhancements());
-                breaches = walk.walk(ownClosure).faults();
+                breaches = ownClosureFaults(declaring, descriptor, own, profiles, session.enhancements());
             } catch (CharterRefusal unreadable) {
                 // A read failure of a later closure's walk never displaces a fault already found (D1).
                 if (faults.isEmpty()) {

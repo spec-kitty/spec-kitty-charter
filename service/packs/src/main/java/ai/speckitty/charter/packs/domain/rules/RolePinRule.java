@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
-import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.RolePins;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ final class RolePinRule {
      * @return every breach: each of the pack's pins in authored order, unknown or not fitting, then each role pinned in
      *     the closure, in closure order, that conflicts; empty when the pins hold
      */
-    static List<ClosureFault> check(PackIdentifier pack, ClosureFacts closure, ClosureWalk.Profiles profiles) {
+    static List<ClosureFault> check(PackIdentifier pack, ClosureFacts closure, ProfileReader profiles) {
         List<ClosureFault> breaches = new ArrayList<>();
         RolePins own = closure.pinsOf(pack);
         for (Map.Entry<String, String> pin : own.byRole().entrySet()) {
@@ -64,7 +63,7 @@ final class RolePinRule {
     }
 
     private static Optional<ClosureFault> judge(
-            PackIdentifier pack, String role, String profileId, ClosureFacts closure, ClosureWalk.Profiles profiles) {
+            PackIdentifier pack, String role, String profileId, ClosureFacts closure, ProfileReader profiles) {
         String named = "the role pin " + role + ": " + profileId + " of pack " + pack.value();
         Origin origin = FallbackProfileRule.profileOrigin(pack, profileId);
         Optional<RoleBearer> held = FallbackProfileRule.heldProfile(profileId, closure, profiles);
