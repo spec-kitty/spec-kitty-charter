@@ -196,10 +196,10 @@ time; the judging differs. A Visitor lets one walk serve every check.
   the reverse index of `ClosureRoots`, the cycle and strongly-connected-group code, and keeps `EdgeIndex` as its index.
 - *Built (slice 2, #637):* `{@link ai.speckitty.charter.packs.domain.PackGraph}` holds the walks the application layer
   wrote by hand: the edges a pack builds on, the descent along them, the composition closure, the packs building on a
-  pack, its direct dependents, `cyclesIn` (with the Tarjan pass) and the `enhances` grounding. No application class
-  walks the pack graph or reads a descriptor's edges to walk them (`PackGraphWalkBoundaryTest`). The resolver's ordering
-  and dependency-cycle walks stay in the domain beside it, and `EdgeIndex` is not yet its index. The node types and the
-  visitor driver are still proposed.
+  pack, its direct dependents, `cyclesIn` (with the Tarjan pass), the `enhances` grounding, and the composition
+  resolver's `depends_on`-only closure, `parent_pack` line, dependency order and leftover cycles. No application class
+  walks the pack graph or reads a descriptor's edges to walk them (`PackGraphWalkBoundaryTest`). `EdgeIndex` is not yet
+  its index. The node types and the visitor driver are still proposed.
 
 Reference: Gamma, Helm, Johnson and Vlissides, *Design Patterns* (1994);
 [refactoring.guru: Visitor](https://refactoring.guru/design-patterns/visitor).
@@ -395,8 +395,8 @@ merged; otherwise they delete nothing and #618's ports are not built.
 2. **`PackGraph` and `Scope` in the domain.** Move the composition closure, the `ClosureRoots` index, and the cycle
    and strongly-connected-group code; delete the duplicate walks in `InboundReferences`, `PackMutabilityPolicy` and
    `RemovalDependents`.
-   *Built 2026-11-25 (#637): `PackGraph` holds the walks, and the application walks are deleted. Which slice builds
-   `Scope` and the node types is an open decision of mission `adr-0082-graph-walk-slices` (D1).*
+   *Built 2026-11-25 (#637): `PackGraph` holds the walks, the application's and the resolver's, and the old ones are
+   deleted. `Scope` and the node types are built in slice 3 (operator ruling D1, 2026-11-25).*
 3. **`ValidationWalker` and the factory.** `PackRulesets` becomes the factory; the own-closure rules move into
    `packs.domain.rules`; delete `ClosureWalk` and `OwnClosureWalk`.
 4. **Relations as rules.** The relation refusals and the edge-index refusals become rules of the relations phase;

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -23,8 +24,9 @@ import java.util.function.Function;
  * ({@link #dependentsClosure}, {@link #directDependents}), the cycles and strongly connected groups of a graph
  * ({@link #cyclesIn}), and the grounding of {@code enhances} chains ({@link #ungrounded}). No class of the application
  * layer walks the pack graph or reads a descriptor's edges itself; it hands this class what it read and takes the
- * answer ({@code PackGraphWalkBoundaryTest}). The resolver's ordering and dependency-cycle walks
- * ({@link PackCompositionResolver}) stay in the domain beside it; later slices of epic #636 fold them in.
+ * answer ({@code PackGraphWalkBoundaryTest}). The composition resolver's walks are here too: the
+ * {@code depends_on}-only closure ({@link #dependsOnClosure}), the {@code parent_pack} line ({@link #onParentLine}),
+ * the dependency order ({@link #topologicalOrder}) and the cycles it leaves ({@link #leftoverCycles}).
  *
  * <p>Every walk is iterative, so a long chain cannot exhaust the stack, and every answer is in a stable order: the
  * order of the inputs, never the hash order of a node (the determinism guard of the architecture page). A graph given
@@ -168,6 +170,230 @@ public final class PackGraph {
             }
         }
         return new DirectDependents<>(dependsOn, parentPack);
+    }
+
+    /**
+     * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
+     * reference may name (FR-015), and the packs that may hold the step a step enhancement names (C37). It is not the
+     * {@linkplain #compositionClosure composition closure}, which also follows {@code parent_pack}. The descent takes
+     * the last pending target first, so a pack's dependencies are met last declared first.
+     *
+     * @param packId the descriptor {@code pack_id} of the pack the walk starts at
+     * @param descriptorOf the descriptor of a {@code pack_id}; empty for one no pack declares
+     * @return the {@code pack_id}s reached, the start included; a target no pack declares is included and not descended
+     *     from
+     */
+    public static Set<String> dependsOnClosure(String packId, Function<String, Optional<PackDescriptor>> descriptorOf) {
+        Objects.requireNonNull(packId, "packId");
+        Objects.requireNonNull(descriptorOf, "descriptorOf");
+        Set<String> reached = new LinkedHashSet<>();
+        List<String> pending = new ArrayList<>(List.of(packId));
+        while (!pending.isEmpty()) {
+            String next = pending.remove(pending.size() - 1);
+            Optional<PackDescriptor> pack = descriptorOf.apply(next);
+            if (reached.add(next) && pack.isPresent()) {
+                pack.get().dependencies().forEach(dependency -> pending.add(dependency.packId()));
+            }
+        }
+        return reached;
+    }
+
+    /**
+     * Whether one pack is on the other's {@code parent_pack} line, either way.
+     *
+     * @param first one pack
+     * @param second the other pack
+     * @param descriptorOf the descriptor of a {@code pack_id}; empty for one no pack declares
+     * @return {@code true} when either extends the other along its parent line
+     */
+    public static boolean related(
+            PackDescriptor first, PackDescriptor second, Function<String, Optional<PackDescriptor>> descriptorOf) {
+        return onParentLine(first, second.packId(), descriptorOf) || onParentLine(second, first.packId(), descriptorOf);
+    }
+
+    /**
+     * Whether a pack's {@code parent_pack} line reaches a pack: its parent, its parent's parent, and so on. The walk
+     * visits each pack once, so a parent cycle ends it.
+     *
+     * @param child the pack whose line is walked
+     * @param ancestorPackId the descriptor {@code pack_id} looked for
+     * @param descriptorOf the descriptor of a {@code pack_id}; empty for one no pack declares
+     * @return {@code true} when the line reaches the pack
+     */
+    public static boolean onParentLine(
+            PackDescriptor child, String ancestorPackId, Function<String, Optional<PackDescriptor>> descriptorOf) {
+        Objects.requireNonNull(child, "child");
+        Objects.requireNonNull(ancestorPackId, "ancestorPackId");
+        Objects.requireNonNull(descriptorOf, "descriptorOf");
+        Set<String> walked = new LinkedHashSet<>();
+        Optional<String> at = child.parentPack();
+        while (at.isPresent() && walked.add(at.get())) {
+            if (at.get().equals(ancestorPackId)) {
+                return true;
+            }
+            at = descriptorOf.apply(at.get()).flatMap(PackDescriptor::parentPack);
+        }
+        return false;
+    }
+
+    /**
+     * The order Kahn's pass places packs in, and the packs it could not place.
+     *
+     * @param placed the packs placed, each after the packs it depends on
+     * @param leftover the packs no order places: those on a dependency cycle and those downstream of one, in input
+     *     order
+     * @param <P> the pack type
+     */
+    public record Ordering<P>(List<P> placed, List<P> leftover) {
+
+        /**
+         * Copies the lists.
+         *
+         * @param placed the packs placed
+         * @param leftover the packs left
+         */
+        public Ordering {
+            placed = List.copyOf(placed);
+            leftover = List.copyOf(leftover);
+        }
+    }
+
+    /**
+     * Orders packs so each comes after the packs it depends on (Kahn's pass). Among the packs ready at once, the one
+     * first in {@code stable} order is taken, not the first that became ready: a pack whose dependency is met late
+     * would otherwise land after a dependency-free pack of a nearer level.
+     *
+     * @param packs the packs, each once
+     * @param idOf a pack's {@code pack_id}
+     * @param dependenciesById each pack's dependencies within the set, by {@code pack_id}, in declared order
+     * @param stable the order ready packs are taken in
+     * @param byId the pack of a {@code pack_id} of the set
+     * @param <P> the pack type
+     * @return the packs placed, and the packs left, in the order of {@code packs}
+     */
+    public static <P> Ordering<P> topologicalOrder(
+            List<P> packs,
+            Function<P, String> idOf,
+            Map<String, List<String>> dependenciesById,
+            Comparator<? super P> stable,
+            Function<String, P> byId) {
+        Objects.requireNonNull(packs, "packs");
+        Objects.requireNonNull(idOf, "idOf");
+        Objects.requireNonNull(dependenciesById, "dependenciesById");
+        Objects.requireNonNull(stable, "stable");
+        Objects.requireNonNull(byId, "byId");
+        Map<String, Integer> outstanding = new LinkedHashMap<>();
+        Map<String, List<String>> dependents = new LinkedHashMap<>();
+        dependenciesById.keySet().forEach(id -> dependents.put(id, new ArrayList<>()));
+        dependenciesById.forEach((packId, dependencies) -> {
+            outstanding.put(packId, dependencies.size());
+            for (String dependency : dependencies) {
+                dependents.computeIfAbsent(dependency, key -> new ArrayList<>()).add(packId);
+            }
+        });
+        PriorityQueue<P> ready = new PriorityQueue<>(stable);
+        packs.stream()
+                .filter(pack -> {
+                    Integer count = outstanding.get(idOf.apply(pack));
+                    return count != null && count == 0;
+                })
+                .forEach(ready::add);
+        List<P> ordered = new ArrayList<>(packs.size());
+        while (!ready.isEmpty()) {
+            P pack = ready.poll();
+            ordered.add(pack);
+            for (String dependent : dependents.getOrDefault(idOf.apply(pack), List.of())) {
+                int remaining = outstanding.merge(dependent, -1, Integer::sum);
+                if (remaining == 0) {
+                    ready.add(byId.apply(dependent));
+                }
+            }
+        }
+        Set<P> placed = new LinkedHashSet<>(ordered);
+        return new Ordering<>(
+                ordered, packs.stream().filter(pack -> !placed.contains(pack)).toList());
+    }
+
+    /**
+     * The cycles Kahn's pass left behind, each starting at a pack on it, by {@code pack_id}. What the pass leaves is
+     * the cycles and everything downstream of them, and a leftover may be only downstream. Every leftover has an
+     * unplaced dependency, so walking from one along its first unplaced dependency must repeat a pack, and the walk
+     * from the first repeat back to it is a cycle. The walks start at each leftover in turn, in the order of
+     * {@code dependenciesById}; a walk that reaches a pack an earlier walk visited finds no new cycle, so the first
+     * cycle is the one the resolver has always refused with. A walk follows one dependency only, so it can pass by a
+     * pack that lies on a cycle through another edge: each such pack is then named by the shortest cycle through it,
+     * after the walks, so every pack on a cycle is named by at least one. A pack only downstream of a cycle lies on
+     * none, and is not named.
+     *
+     * @param placed the {@code pack_id}s Kahn's pass placed
+     * @param dependenciesById each pack's dependencies within the set, by {@code pack_id}, in declared order
+     * @return the cycles, each a list of {@code pack_id}s starting at a pack on it
+     */
+    public static List<List<String>> leftoverCycles(Set<String> placed, Map<String, List<String>> dependenciesById) {
+        Objects.requireNonNull(placed, "placed");
+        Objects.requireNonNull(dependenciesById, "dependenciesById");
+        Set<String> visited = new LinkedHashSet<>();
+        List<List<String>> cycles = new ArrayList<>();
+        for (String start : dependenciesById.keySet()) {
+            if (placed.contains(start) || visited.contains(start)) {
+                continue;
+            }
+            Set<String> walked = new LinkedHashSet<>();
+            String current = start;
+            while (!visited.contains(current) && walked.add(current)) {
+                current = dependenciesById.getOrDefault(current, List.of()).stream()
+                        .filter(id -> !placed.contains(id))
+                        .findFirst()
+                        .orElseThrow();
+            }
+            if (walked.contains(current) && !visited.contains(current)) {
+                List<String> path = new ArrayList<>(walked);
+                cycles.add(List.copyOf(path.subList(path.indexOf(current), path.size())));
+            }
+            visited.addAll(walked);
+        }
+        Set<String> named = new LinkedHashSet<>();
+        cycles.forEach(named::addAll);
+        for (String pack : dependenciesById.keySet()) {
+            if (placed.contains(pack) || named.contains(pack)) {
+                continue;
+            }
+            List<String> cycle = shortestCycleThrough(pack, placed, dependenciesById);
+            if (!cycle.isEmpty()) {
+                cycles.add(cycle);
+                named.addAll(cycle);
+            }
+        }
+        return List.copyOf(cycles);
+    }
+
+    /**
+     * The shortest cycle through one unplaced pack, starting at it: a breadth-first search over the unplaced packs'
+     * dependencies, each in its declared order, back to the pack; empty when the pack is on no cycle.
+     */
+    private static List<String> shortestCycleThrough(
+            String pack, Set<String> placed, Map<String, List<String>> dependenciesById) {
+        Map<String, String> reachedFrom = new LinkedHashMap<>();
+        ArrayDeque<String> pending = new ArrayDeque<>(List.of(pack));
+        while (!pending.isEmpty()) {
+            String next = pending.removeFirst();
+            for (String dependency : dependenciesById.getOrDefault(next, List.of())) {
+                if (dependency.equals(pack)) {
+                    List<String> cycle = new ArrayList<>();
+                    for (String at = next; !at.equals(pack); ) {
+                        cycle.addFirst(at);
+                        at = Objects.requireNonNull(reachedFrom.get(at), "every pack the search reached has a source");
+                    }
+                    cycle.addFirst(pack);
+                    return List.copyOf(cycle);
+                }
+                if (!placed.contains(dependency) && !reachedFrom.containsKey(dependency)) {
+                    reachedFrom.put(dependency, next);
+                    pending.addLast(dependency);
+                }
+            }
+        }
+        return List.of();
     }
 
     /**

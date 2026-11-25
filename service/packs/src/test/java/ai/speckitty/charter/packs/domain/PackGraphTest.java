@@ -8,10 +8,13 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -190,6 +193,106 @@ class PackGraphTest {
 
             assertThat(found.dependsOn()).extracting(PackDescriptor::packId).containsExactly("b", "a");
             assertThat(found.parentPack()).extracting(PackDescriptor::packId).containsExactly("c", "a");
+        }
+    }
+
+    @Nested
+    @DisplayName("the composition resolver's walks")
+    class ResolverWalks {
+
+        private static Function<String, Optional<PackDescriptor>> lookup(PackDescriptor... descriptors) {
+            Map<String, PackDescriptor> byId = new LinkedHashMap<>();
+            for (PackDescriptor descriptor : descriptors) {
+                byId.putIfAbsent(descriptor.packId(), descriptor);
+            }
+            return id -> Optional.ofNullable(byId.get(id));
+        }
+
+        @Test
+        @DisplayName(
+                "dependsOnClosure: depends_on only, last declared first, a missing target recorded and not descended")
+        void dependsOnClosureIsLifoOverDependsOnOnly() {
+            Function<String, Optional<PackDescriptor>> packs = lookup(
+                    descriptor("a", Optional.of("parent"), "b", "c"),
+                    descriptor("b", Optional.empty(), "d"),
+                    descriptor("c", Optional.empty(), "missing"),
+                    descriptor("d", Optional.empty(), "a"),
+                    descriptor("parent", Optional.empty()));
+
+            assertThat(PackGraph.dependsOnClosure("a", packs)).containsExactly("a", "c", "missing", "b", "d");
+        }
+
+        @Test
+        @DisplayName("onParentLine: an ancestor on the parent_pack line, not a sibling, and a parent cycle ends")
+        void onParentLine() {
+            PackDescriptor child = descriptor("child", Optional.of("mid"));
+            Function<String, Optional<PackDescriptor>> packs = lookup(
+                    child,
+                    descriptor("mid", Optional.of("root")),
+                    descriptor("root", Optional.empty()),
+                    descriptor("sibling", Optional.of("root")),
+                    descriptor("loop-a", Optional.of("loop-b")),
+                    descriptor("loop-b", Optional.of("loop-a")));
+
+            assertThat(PackGraph.onParentLine(child, "root", packs)).isTrue();
+            assertThat(PackGraph.onParentLine(child, "sibling", packs)).isFalse();
+            assertThat(PackGraph.related(descriptor("sibling", Optional.of("root")), child, packs))
+                    .isFalse();
+            assertThat(PackGraph.related(descriptor("root", Optional.empty()), child, packs))
+                    .isTrue();
+            assertThat(PackGraph.onParentLine(descriptor("loop-a", Optional.of("loop-b")), "elsewhere", packs))
+                    .isFalse();
+        }
+
+        @Test
+        @DisplayName("topologicalOrder: a dependency before its dependents, ready packs taken in the given order")
+        void topologicalOrderTakesReadyPacksInStableOrder() {
+            Map<String, List<String>> dependencies = new LinkedHashMap<>();
+            dependencies.put("z", List.of("b"));
+            dependencies.put("b", List.of());
+            dependencies.put("a", List.of());
+            dependencies.put("y", List.of("a"));
+
+            PackGraph.Ordering<String> order = PackGraph.topologicalOrder(
+                    List.of("z", "b", "a", "y"), id -> id, dependencies, Comparator.naturalOrder(), id -> id);
+
+            assertThat(order.placed()).containsExactly("a", "b", "y", "z");
+            assertThat(order.leftover()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("topologicalOrder leaves a cycle and what depends on it; leftoverCycles names each cycle once")
+        void leftoverCyclesFirstWalkThenShortest() {
+            Map<String, List<String>> dependencies = new LinkedHashMap<>();
+            dependencies.put("a", List.of("b"));
+            dependencies.put("b", List.of("c", "a"));
+            dependencies.put("c", List.of("b"));
+            dependencies.put("down", List.of("a"));
+            dependencies.put("free", List.of());
+
+            PackGraph.Ordering<String> order = PackGraph.topologicalOrder(
+                    List.of("a", "b", "c", "down", "free"),
+                    id -> id,
+                    dependencies,
+                    Comparator.naturalOrder(),
+                    id -> id);
+
+            assertThat(order.placed()).containsExactly("free");
+            assertThat(order.leftover()).containsExactly("a", "b", "c", "down");
+            assertThat(PackGraph.leftoverCycles(Set.of("free"), dependencies))
+                    .containsExactly(List.of("b", "c"), List.of("a", "b"));
+        }
+
+        @Test
+        @DisplayName("leftoverCycles on a chain into a cycle names only the cycle")
+        void leftoverCyclesOnAChainIntoACycle() {
+            int n = 2_000;
+            Map<String, List<String>> dependencies = new LinkedHashMap<>();
+            IntStream.range(0, n).forEach(i -> dependencies.put("p" + i, List.of("p" + (i + 1))));
+            dependencies.put("p" + n, List.of("p" + (n - 1)));
+
+            assertThat(PackGraph.leftoverCycles(Set.of(), dependencies))
+                    .containsExactly(List.of("p" + (n - 1), "p" + n));
         }
     }
 

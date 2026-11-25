@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
-title: PackGraph owns the walks over the pack graph that the application layer wrote by hand
-description: The application layer's walks over the pack graph, its cycle finding and the enhances grounding move into one domain class; answers are unchanged.
+title: PackGraph owns every walk over the pack graph
+description: The walks over the pack graph, from the application layer and the composition resolver, move into one domain class; answers are unchanged.
 doc_status: active
 updated: 2026-11-25T00:00:00Z
 type: Changelog
@@ -14,7 +14,7 @@ audience:
     guidance_text: Read this before you write a walk over packs; call PackGraph instead.
 ---
 
-# 2026-11-25 — PackGraph owns the walks over the pack graph that the application layer wrote by hand
+# 2026-11-25 — PackGraph owns every walk over the pack graph
 
 **One domain class walks the pack graph** (ADR-0082 slice 2, #637). The service walked the packs' `depends_on` and
 `parent_pack` edges in several places, most of them in the application layer, and found cycles in application code.
@@ -25,16 +25,19 @@ audience:
 - the packs that build on a pack (`dependentsClosure`, the reverse index `ClosureRoots` used) and its direct dependents
   (`directDependents`, which a pack removal names);
 - the cycles of a graph, one per strongly connected group (`cyclesIn`, with its Tarjan pass, moved from
-  `ImpactRelations`), and the enhancers no `enhances` chain grounds (`ungrounded`).
+  `ImpactRelations`), and the enhancers no `enhances` chain grounds (`ungrounded`);
+- the composition resolver's own walks (operator ruling, 2026-11-25): the `depends_on`-only closure
+  (`dependsOnClosure`), the `parent_pack` line (`onParentLine`, `related`), the dependency order (`topologicalOrder`,
+  Kahn's pass) and the cycles it leaves (`leftoverCycles`), each moved as written and pinned by a test.
 
 `ImpactRelations`, `SpecializationCycleRule`, `ClosureRoots`, `RemovalDependents`, `PackMutabilityPolicy`,
 `OfferingReadService`, `InboundReferences` and `ClosureRoleFacts` call `PackGraph`; none keeps a walk of its own,
 and none reads a descriptor's `depends_on` or `parent_pack` to walk them. `PackGraphWalkBoundaryTest` pins both. The
 walks and the collections they order now use insertion-ordered collections, never hash order.
 
-`PackCompositionResolver`'s own walks (its dependency order, its dependency-cycle search and its `depends_on`-only
-closure) stay in the domain beside `PackGraph`, and so does `activations`' parent-line walk in its closure snapshot;
-later slices of epic #636 fold them in.
+Two walks stay outside it: `activations`' parent-line walk in its closure snapshot (another module), and the
+application layer's walks over artifact relationships (`GraphWalk`, `Reachability`, `GovernanceWalk`,
+`ActionContextWalk`), which epic #636 schedules.
 
 ## What did not change
 

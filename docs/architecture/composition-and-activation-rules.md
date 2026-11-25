@@ -225,7 +225,7 @@ A pack may build on, or derive from, only packs at its own level or one nearer b
 `pack_reference_pack_missing`; and `holds(q, u)`, else `pack_reference_artifact_missing`.
 A cross-pack reference must name the referring pack or a pack of its own `depends_on` closure (not its `parent_pack`
 line), and that pack must hold the artifact.
-*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`, `dependsOnClosure`. **Built.**
+*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`, `PackGraph.dependsOnClosure`. **Built.**
 
 **C13 Bare reference.** A bare `u` written in `p` resolves to `p` when `holds(p, u)`; it is refused
 `pack_reference_unqualified` when only another pack of `C` holds `u`; otherwise it has no holder.
@@ -1486,7 +1486,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C9 Parent resolves | ADR-0048 d6 | Built |
 | C10 Level direction | ADR-0048 d7; ADR-0053 d8 | Built |
 | C11 Pack identity | ADR-0053 d6, d7 | Built |
-| C12 Qualified reference | ADR-0053 d7; `dependsOnClosure` | Built |
+| C12 Qualified reference | ADR-0053 d7; `PackGraph.dependsOnClosure` | Built |
 | C13 Bare reference | ADR-0053 d7 | Built |
 | C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21; A14 | Built (PR A0) |
 | C15 Sibling settlement | ADR-0053 d5; spec FR-012; A14; #358 | Built (PR B; the distribution pack only, #358) |
