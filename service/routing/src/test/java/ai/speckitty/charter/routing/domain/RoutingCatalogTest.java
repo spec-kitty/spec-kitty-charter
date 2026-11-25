@@ -113,17 +113,21 @@ class RoutingCatalogTest {
     }
 
     @Test
-    @DisplayName("the bounds of the unit are admitted, and a price is not negative")
+    @DisplayName("the bounds of the unit are admitted, and neither price is negative")
     void theBoundsAreAdmitted() {
+        Optional<BigDecimal> negative = Optional.of(new BigDecimal("-1"));
+        Optional<BigDecimal> free = Optional.of(BigDecimal.ZERO);
+
         assertThat(fit("design", "0").score()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(weights("1").quality()).isEqualByComparingTo(BigDecimal.ONE);
-        assertThatThrownBy(() -> new ModelCost(
-                        CostTier.HIGH,
-                        Optional.of(new BigDecimal("-1")),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()))
+        assertThatThrownBy(() ->
+                        new ModelCost(CostTier.HIGH, negative, Optional.empty(), Optional.empty(), Optional.empty()))
                 .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() ->
+                        new ModelCost(CostTier.HIGH, Optional.empty(), negative, Optional.empty(), Optional.empty()))
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThat(new ModelCost(CostTier.LOW, free, free, Optional.empty(), Optional.empty()).outputPer1mUsd())
+                .isEqualTo(free);
     }
 
     @ParameterizedTest
@@ -135,9 +139,60 @@ class RoutingCatalogTest {
     }
 
     @Test
-    @DisplayName("a blank title is refused")
-    void aBlankTitleIsRefused() {
+    @DisplayName("a blank text is refused, whether the field is required or optional")
+    void aBlankTextIsRefused() {
+        Optional<String> blank = Optional.of(" ");
+        ModelCost low =
+                new ModelCost(CostTier.LOW, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+
         assertThatThrownBy(() -> new TaskType("design", " ", Optional.empty(), Optional.empty(), Optional.empty()))
+                .as("a task type's title")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new TaskType("design", "Design", blank, Optional.empty(), Optional.empty()))
+                .as("a task type's description")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new TaskFit("design", BigDecimal.ONE, Optional.empty(), blank))
+                .as("a fit's rationale")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(
+                        () -> new ModelCost(CostTier.LOW, Optional.empty(), Optional.empty(), blank, Optional.empty()))
+                .as("a cost's currency")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(
+                        () -> new ModelCost(CostTier.LOW, Optional.empty(), Optional.empty(), Optional.empty(), blank))
+                .as("a cost's pricing source")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new ModelEntry(
+                        "model-a",
+                        "example",
+                        blank,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(fit("design", "1")),
+                        low,
+                        Optional.empty()))
+                .as("a model's family")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new CatalogSource(
+                        "example", "https://example.invalid", AccessMethod.MANUAL, "2026-11-18", blank))
+                .as("a source's licence notes")
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> new RoutingCatalog(
+                        "default",
+                        new PackIdentifier("org-base"),
+                        blank,
+                        "2026-11-18T00:00:00Z",
+                        List.of(DESIGN),
+                        List.of(model("model-a", fit("design", "1"))),
+                        new RoutingPolicy(RoutingObjective.QUALITY_FIRST, weights("1"), List.of()),
+                        List.of(new CatalogSource(
+                                "example",
+                                "https://example.invalid",
+                                AccessMethod.MANUAL,
+                                "2026-11-18",
+                                Optional.empty()))))
+                .as("a catalog's description")
                 .isInstanceOf(ConstraintBreachException.class);
     }
 
