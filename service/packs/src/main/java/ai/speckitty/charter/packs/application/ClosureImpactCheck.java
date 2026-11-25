@@ -17,8 +17,8 @@ import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -269,7 +269,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
             Function<ClosureRoots.Roots, Optional<ClosureRoots.Roots>> judgedAs) {
         Views afterViews = Views.over(after);
         Views beforeViews = Views.over(stored);
-        Set<PackIdentifier> configuredBefore = new HashSet<>();
+        Set<PackIdentifier> configuredBefore = new LinkedHashSet<>();
         stored.catalog().configured().forEach(pack -> configuredBefore.add(pack.id()));
         ForceDiff diff = new ForceDiff();
         Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();

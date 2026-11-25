@@ -14,16 +14,11 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,7 +39,8 @@ import org.jspecify.annotations.Nullable;
  * {@code self_override} again.
  *
  * <p>One pass collects the {@code enhances} and {@code overrides} edges; each rule then reads that list, so the cost is
- * linear in the edges, and every walk is iterative, so a long chain cannot exhaust the stack.
+ * linear in the edges. The cycles and the grounding are {@link PackGraph}'s walks (ADR-0082, #637), iterative, so a
+ * long chain cannot exhaust the stack.
  */
 final class ImpactRelations {
 
@@ -68,11 +64,11 @@ final class ImpactRelations {
     private record Pair(Place source, Place target) {}
 
     private final List<PackUnderResolution> packs;
-    private final Map<PackIdentifier, PackUnderResolution> byConfigured = new HashMap<>();
+    private final Map<PackIdentifier, PackUnderResolution> byConfigured = new LinkedHashMap<>();
     private final List<Edge> edges = new ArrayList<>();
     private final OfferingReadService.ComposedClosure composed;
     private @Nullable Map<PackUlid, MutabilityPolicySource> scopedPolicies;
-    private final Set<Place> enhancesCycles = new HashSet<>();
+    private final Set<Place> enhancesCycles = new LinkedHashSet<>();
 
     private ImpactRelations(OfferingReadService.ComposedClosure composed) {
         this.composed = composed;
@@ -158,7 +154,7 @@ final class ImpactRelations {
 
     /** Every artifact that both enhances and overrides one target (A11). */
     private List<ClosureFault> conflicting() {
-        Set<Pair> enhanced = new HashSet<>();
+        Set<Pair> enhanced = new LinkedHashSet<>();
         edges.stream()
                 .filter(edge -> edge.is(RelationType.ENHANCES))
                 .forEach(edge -> edge.target().ifPresent(target -> enhanced.add(new Pair(edge.source(), target))));
@@ -184,7 +180,7 @@ final class ImpactRelations {
      */
     private List<ClosureFault> notPermitted() {
         Map<PackUlid, MutabilityPolicySource> scoped = scoped();
-        Map<PackIdentifier, PerPackPolicy> judging = new HashMap<>();
+        Map<PackIdentifier, PerPackPolicy> judging = new LinkedHashMap<>();
         List<ClosureFault> faults = new ArrayList<>();
         for (Edge edge : edges) {
             if (!edge.is(RelationType.OVERRIDES) || edge.target().isEmpty()) {
@@ -259,7 +255,7 @@ final class ImpactRelations {
 
     /** Every cycle of {@code overrides} edges, each once; a self-override is {@link #selfOverride}'s, not a cycle. */
     private List<ClosureFault> overrideCycle() {
-        return cyclesIn(graphOf(RelationType.OVERRIDES, edge -> !isSelfOverride(edge))).stream()
+        return PackGraph.cyclesIn(graphOf(RelationType.OVERRIDES, edge -> !isSelfOverride(edge))).stream()
                 .map(cycle -> violation(
                         RefusalCode.OVERRIDE_CYCLE,
                         "overrides edges form a cycle: " + describe(cycle),
@@ -269,7 +265,7 @@ final class ImpactRelations {
 
     /** Every cycle of {@code enhances} edges, each once; the places on them are remembered for the grounding rule. */
     private List<ClosureFault> enhancesCycle() {
-        List<List<Place>> cycles = cyclesIn(graphOf(RelationType.ENHANCES, edge -> true));
+        List<List<Place>> cycles = PackGraph.cyclesIn(graphOf(RelationType.ENHANCES, edge -> true));
         cycles.forEach(enhancesCycles::addAll);
         return cycles.stream()
                 .map(cycle -> violation(
@@ -283,44 +279,13 @@ final class ImpactRelations {
      * Every enhancer none of whose {@code enhances} chains reaches an artifact that enhances nothing (A8): an
      * enhancement never stands alone, and a chain that ends at an artifact nothing holds ends nowhere. Grounding spreads
      * from each edge onto a held non-enhancer to its enhancers, one pass over the reverse edges; an enhancer that is on,
-     * or reaches, a reported enhances cycle is that cycle's fault and is not found again here.
+     * or reaches, a reported enhances cycle is that cycle's fault and is not found again here. {@link PackGraph} walks
+     * the cycles and the grounding (#637).
      */
     private List<ClosureFault> ungroundedEnhancer() {
         Set<Place> enhancers = new LinkedHashSet<>();
         edges.stream().filter(edge -> edge.is(RelationType.ENHANCES)).forEach(edge -> enhancers.add(edge.source()));
-        Map<Place, List<Place>> enhancedBy = new HashMap<>();
-        Set<Place> grounded = new HashSet<>();
-        Deque<Place> spread = new ArrayDeque<>();
-        for (Edge edge : edges) {
-            Optional<Place> target = edge.target().filter(ignored -> edge.is(RelationType.ENHANCES));
-            if (target.isEmpty()) {
-                continue;
-            }
-            enhancedBy
-                    .computeIfAbsent(target.get(), ignored -> new ArrayList<>())
-                    .add(edge.source());
-            if (!enhancers.contains(target.get()) && grounded.add(edge.source())) {
-                spread.add(edge.source());
-            }
-        }
-        while (!spread.isEmpty()) {
-            for (Place enhancer : enhancedBy.getOrDefault(spread.removeFirst(), List.of())) {
-                if (grounded.add(enhancer)) {
-                    spread.add(enhancer);
-                }
-            }
-        }
-        Set<Place> reachesCycle = new HashSet<>(enhancesCycles);
-        Deque<Place> back = new ArrayDeque<>(enhancesCycles);
-        while (!back.isEmpty()) {
-            for (Place enhancer : enhancedBy.getOrDefault(back.removeFirst(), List.of())) {
-                if (reachesCycle.add(enhancer)) {
-                    back.add(enhancer);
-                }
-            }
-        }
-        return enhancers.stream()
-                .filter(enhancer -> !grounded.contains(enhancer) && !reachesCycle.contains(enhancer))
+        return PackGraph.ungrounded(enhancers, graphOf(RelationType.ENHANCES, edge -> true), enhancesCycles).stream()
                 .map(enhancer -> violation(
                         RefusalCode.ENHANCES_CYCLE,
                         enhancer + " in pack " + name(enhancer)
@@ -340,166 +305,6 @@ final class ImpactRelations {
             }
         }
         return graph;
-    }
-
-    /**
-     * Every cycle of a directed graph, one per strongly connected group of its nodes (#556, FR-003), whatever the order
-     * of the edges. The first is the cycle the walk that found only one always found, from the first node in the
-     * graph's order, so a single fault keeps its detail. Each other group that holds a cycle gives the first cycle that
-     * walk finds within the group, the groups in the order of their first node. A cycle is the nodes along it from the
-     * first one the walk meets twice. Iterative throughout, so a long chain cannot exhaust the stack, and linear in the
-     * edges: the groups are found in one pass (Tarjan), and each group is walked once.
-     *
-     * @param graph each node's successors; a node with no entry has none
-     * @param <N> the node type
-     * @return the cycles, the first one first, then one per other group; empty when the graph is acyclic
-     */
-    static <N> List<List<N>> cyclesIn(Map<N, List<N>> graph) {
-        Optional<List<N>> first = firstCycle(graph);
-        if (first.isEmpty()) {
-            return List.of();
-        }
-        List<List<N>> cycles = new ArrayList<>(List.of(first.get()));
-        for (Set<N> group : cyclicGroups(graph)) {
-            if (group.contains(first.get().getFirst())) {
-                continue;
-            }
-            Map<N, List<N>> within = new LinkedHashMap<>();
-            graph.forEach((node, successors) -> {
-                if (group.contains(node)) {
-                    within.put(node, successors.stream().filter(group::contains).toList());
-                }
-            });
-            cycles.add(firstCycle(within).orElseThrow(() -> new IllegalStateException("a cyclic group holds a cycle")));
-        }
-        return List.copyOf(cycles);
-    }
-
-    /** The first cycle an iterative depth-first walk from each node, in the graph's order, meets. */
-    private static <N> Optional<List<N>> firstCycle(Map<N, List<N>> graph) {
-        Set<N> finished = new HashSet<>();
-        for (N start : graph.keySet()) {
-            if (finished.contains(start)) {
-                continue;
-            }
-            List<N> path = new ArrayList<>(List.of(start));
-            Set<N> onPath = new HashSet<>(path);
-            Deque<Iterator<N>> next = new ArrayDeque<>(
-                    List.of(graph.getOrDefault(start, List.of()).iterator()));
-            while (!next.isEmpty()) {
-                if (!next.peek().hasNext()) {
-                    next.pop();
-                    N done = path.removeLast();
-                    onPath.remove(done);
-                    finished.add(done);
-                    continue;
-                }
-                N step = next.peek().next();
-                if (onPath.contains(step)) {
-                    return Optional.of(List.copyOf(path.subList(path.indexOf(step), path.size())));
-                }
-                if (!finished.contains(step) && graph.containsKey(step)) {
-                    path.add(step);
-                    onPath.add(step);
-                    next.push(graph.getOrDefault(step, List.of()).iterator());
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * The strongly connected groups of a graph that hold a cycle (more than one node, or a node that is its own
-     * successor), found by an iterative Tarjan pass, in the order of each group's first node in the graph.
-     */
-    private static <N> List<Set<N>> cyclicGroups(Map<N, List<N>> graph) {
-        Tarjan<N> pass = new Tarjan<>(graph);
-        graph.keySet().forEach(pass::from);
-        Map<N, Integer> position = new HashMap<>();
-        for (N node : graph.keySet()) {
-            position.put(node, position.size());
-        }
-        List<Set<N>> groups = new ArrayList<>(pass.groups);
-        groups.sort(Comparator.comparingInt(group -> group.stream()
-                .mapToInt(node -> position.getOrDefault(node, Integer.MAX_VALUE))
-                .min()
-                .orElse(Integer.MAX_VALUE)));
-        return groups;
-    }
-
-    /** One iterative Tarjan pass over a graph: each node is visited once, each edge followed once. */
-    private static final class Tarjan<N> {
-        private final Map<N, List<N>> graph;
-        private final Map<N, Integer> index = new HashMap<>();
-        private final Map<N, Integer> low = new HashMap<>();
-        private final Deque<N> stack = new ArrayDeque<>();
-        private final Set<N> onStack = new HashSet<>();
-        private final Deque<N> nodes = new ArrayDeque<>();
-        private final Deque<Iterator<N>> successors = new ArrayDeque<>();
-        private final List<Set<N>> groups = new ArrayList<>();
-
-        Tarjan(Map<N, List<N>> graph) {
-            this.graph = graph;
-        }
-
-        void from(N root) {
-            if (index.containsKey(root)) {
-                return;
-            }
-            enter(root);
-            while (!nodes.isEmpty()) {
-                N node = nodes.peek();
-                Iterator<N> next = successors.peek();
-                if (next.hasNext()) {
-                    follow(node, next.next());
-                } else {
-                    leave(node);
-                }
-            }
-        }
-
-        private void follow(N node, N next) {
-            if (!index.containsKey(next)) {
-                enter(next);
-            } else if (onStack.contains(next)) {
-                low.put(node, Math.min(at(low, node), at(index, next)));
-            }
-        }
-
-        private void enter(N node) {
-            index.put(node, index.size());
-            low.put(node, at(index, node));
-            stack.push(node);
-            onStack.add(node);
-            nodes.push(node);
-            successors.push(graph.getOrDefault(node, List.of()).iterator());
-        }
-
-        private void leave(N node) {
-            nodes.pop();
-            successors.pop();
-            if (!nodes.isEmpty()) {
-                N parent = nodes.peek();
-                low.put(parent, Math.min(at(low, parent), at(low, node)));
-            }
-            if (at(low, node) != at(index, node)) {
-                return;
-            }
-            Set<N> group = new HashSet<>();
-            N member;
-            do {
-                member = stack.pop();
-                onStack.remove(member);
-                group.add(member);
-            } while (!member.equals(node));
-            if (group.size() > 1 || graph.getOrDefault(node, List.of()).contains(node)) {
-                groups.add(group);
-            }
-        }
-
-        private static <N> int at(Map<N, Integer> numbers, N node) {
-            return Objects.requireNonNull(numbers.get(node), "a visited node");
-        }
     }
 
     // ---- naming -------------------------------------------------------------------------------------------------

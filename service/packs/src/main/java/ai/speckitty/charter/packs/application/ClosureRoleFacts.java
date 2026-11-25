@@ -4,12 +4,11 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.RolePins;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -142,9 +141,9 @@ public final class ClosureRoleFacts {
 
     private ClosureRoleFacts(List<Member> members) {
         this.members = List.copyOf(members);
-        Map<PackIdentifier, Member> byPack = new HashMap<>();
+        Map<PackIdentifier, Member> byPack = new LinkedHashMap<>();
         this.members.forEach(member -> byPack.putIfAbsent(member.pack(), member));
-        Map<PackIdentifier, Set<PackIdentifier>> along = new HashMap<>();
+        Map<PackIdentifier, Set<PackIdentifier>> along = new LinkedHashMap<>();
         this.members.forEach(member -> along.put(member.pack(), ancestorsOf(member, byPack)));
         this.ancestors = along;
     }
@@ -295,16 +294,12 @@ public final class ClosureRoleFacts {
         return winner;
     }
 
-    /** Every pack of the set a member builds on, transitively. */
+    /** Every pack of the set a member builds on, transitively: {@link PackGraph#reachable} from what it builds on. */
     private static Set<PackIdentifier> ancestorsOf(Member member, Map<PackIdentifier, Member> byPack) {
-        Set<PackIdentifier> seen = new HashSet<>();
-        Deque<PackIdentifier> pending = new ArrayDeque<>(member.buildsOn());
-        while (!pending.isEmpty()) {
-            PackIdentifier next = pending.pop();
-            if (seen.add(next)) {
-                Optional.ofNullable(byPack.get(next)).ifPresent(found -> pending.addAll(found.buildsOn()));
-            }
-        }
-        return seen;
+        return PackGraph.reachable(
+                member.buildsOn(),
+                next -> Optional.ofNullable(byPack.get(next))
+                        .map(Member::buildsOn)
+                        .orElse(List.of()));
     }
 }

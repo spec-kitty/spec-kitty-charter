@@ -8,8 +8,8 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * pack's own closure lacks is refused, by registration, by every write and by pack-doctor alike.
  *
  * <p>The own closure is the declaring pack and every pack it reaches over {@code depends_on} and {@code parent_pack}
- * ({@link PackCompositionResolver#compositionClosure} rooted at the pack, never its dependents, R-k): no walk of its
+ * ({@link PackGraph#compositionClosure} rooted at the pack, never its dependents, R-k): no walk of its
  * own. Over it, each item of each preset the pack holds is judged once:
  *
  * <ol>
@@ -110,8 +110,8 @@ public final class PresetItemRules {
             return Optional.empty();
         }
         List<PackUnderResolution> closure = new ArrayList<>();
-        for (String packId : PackCompositionResolver.compositionClosure(
-                List.of(pack.descriptor().packId()), byPackId)) {
+        for (String packId :
+                PackGraph.compositionClosure(List.of(pack.descriptor().packId()), byPackId)) {
             PackUnderResolution member = byPackId.get(packId);
             if (member == null) {
                 return Optional.empty();

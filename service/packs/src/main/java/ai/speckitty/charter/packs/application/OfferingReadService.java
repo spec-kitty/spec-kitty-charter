@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Refusal;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import ai.speckitty.charter.packs.domain.rules.CaseOnlyRules;
@@ -491,7 +492,7 @@ public final class OfferingReadService {
      */
     private static Set<String> closureMembers(List<DescriptorRead> reads, Collection<PackIdentifier> roots) {
         Map<String, PackUnderResolution> firstByPackId = new LinkedHashMap<>();
-        Map<PackIdentifier, DescriptorRead> byConfigured = new HashMap<>();
+        Map<PackIdentifier, DescriptorRead> byConfigured = new LinkedHashMap<>();
         for (DescriptorRead read : reads) {
             byConfigured.putIfAbsent(read.configured().id(), read);
             read.descriptor()
@@ -506,7 +507,7 @@ public final class OfferingReadService {
             }
             read.descriptor().ifPresent(descriptor -> rootPackIds.add(descriptor.packId()));
         }
-        return PackCompositionResolver.compositionClosure(rootPackIds, firstByPackId);
+        return PackGraph.compositionClosure(rootPackIds, firstByPackId);
     }
 
     /**

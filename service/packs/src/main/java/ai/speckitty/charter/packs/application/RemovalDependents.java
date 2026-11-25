@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackUlid;
@@ -12,6 +11,7 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -114,43 +114,44 @@ final class RemovalDependents {
         return List.copyOf(found);
     }
 
-    /** The packs whose {@code depends_on}, then whose {@code parent_pack}, names the removed pack. */
+    /** One configured pack other than the removed one, read. */
+    private record Other(ConfiguredPack configured, PackDescriptor descriptor) {
+
+        RefusalPack named() {
+            return new RefusalPack(new PackUlid(descriptor.packId()), configured.id(), descriptor.name());
+        }
+    }
+
+    /**
+     * The packs whose {@code depends_on}, then whose {@code parent_pack}, names the removed pack, each by configured
+     * name; {@link PackGraph#directDependents} finds them.
+     */
     private static List<Dependent> packsBuildingOn(StagedPackViews.View stored, ImpactCheck.Removal removed) {
         // A pack whose pack.yaml cannot be read declares no pack_id an edge could name; every other pack is still read,
         // so one that cannot be judged fails the removal closed.
-        Optional<String> target = packIdOf(removed).map(PackUlid::value);
-        List<Dependent> dependsOn = new ArrayList<>();
-        List<Dependent> parentOf = new ArrayList<>();
-        List<ConfiguredPack> others = stored.catalog().configured().stream()
+        List<Other> others = stored.catalog().configured().stream()
                 .filter(configured ->
                         !configured.id().equals(removed.configured().id()))
                 .sorted(Comparator.comparing(configured -> configured.id().value()))
+                .map(configured -> new Other(configured, descriptorOf(stored, configured)))
                 .toList();
-        for (ConfiguredPack other : others) {
-            PackDescriptor descriptor = descriptorOf(stored, other);
-            RefusalPack pack = new RefusalPack(new PackUlid(descriptor.packId()), other.id(), descriptor.name());
-            if (descriptor.dependencies().stream()
-                    .map(PackDependency::packId)
-                    .anyMatch(packId -> target.filter(packId::equals).isPresent())) {
-                dependsOn.add(new Dependent(
-                        Kind.DEPENDS_ON,
-                        Optional.of(pack),
-                        "The pack " + other.id().value() + " declares depends_on "
-                                + removed.configured().id().value() + "."));
-            }
-            if (descriptor
-                    .parentPack()
-                    .filter(parent -> target.filter(parent::equals).isPresent())
-                    .isPresent()) {
-                parentOf.add(new Dependent(
-                        Kind.PARENT_PACK,
-                        Optional.of(pack),
-                        "The pack " + other.id().value() + " declares parent_pack "
-                                + removed.configured().id().value() + "."));
-            }
+        Optional<String> target = packIdOf(removed).map(PackUlid::value);
+        if (target.isEmpty()) {
+            return List.of();
         }
-        List<Dependent> packs = new ArrayList<>(dependsOn);
-        packs.addAll(parentOf);
+        String removedName = removed.configured().id().value();
+        PackGraph.DirectDependents<Other> found = PackGraph.directDependents(target.get(), others, Other::descriptor);
+        List<Dependent> packs = new ArrayList<>();
+        found.dependsOn()
+                .forEach(other -> packs.add(new Dependent(
+                        Kind.DEPENDS_ON,
+                        Optional.of(other.named()),
+                        "The pack " + other.configured().id().value() + " declares depends_on " + removedName + ".")));
+        found.parentPack()
+                .forEach(other -> packs.add(new Dependent(
+                        Kind.PARENT_PACK,
+                        Optional.of(other.named()),
+                        "The pack " + other.configured().id().value() + " declares parent_pack " + removedName + ".")));
         return packs;
     }
 

@@ -438,7 +438,7 @@ public final class PackCompositionResolver {
 
     /**
      * The compose rooted at a set of configured packs (#360), with every composition fault of its closure (#556,
-     * FR-006): every check {@link #resolve} runs, over the {@linkplain #compositionClosure composition closure} of the
+     * FR-006): every check {@link #resolve} runs, over the {@linkplain PackGraph#compositionClosure composition closure} of the
      * roots only, so a pack outside it is never judged. A duplicate {@code pack_id} or {@code name} outside the closure
      * is no fault; one inside it is, naming both holders, because every pack declaring an id of the closure is
      * selected. A {@code depends_on} or {@code parent_pack} target no available pack declares stays missing, and is a
@@ -469,45 +469,11 @@ public final class PackCompositionResolver {
             }
             rootPackIds.add(packId);
         }
-        Set<String> closure = compositionClosure(rootPackIds, firstByPackId);
+        Set<String> closure = PackGraph.compositionClosure(rootPackIds, firstByPackId);
         Composition composition = compose(available.stream()
                 .filter(pack -> closure.contains(pack.descriptor().packId()))
                 .toList());
         return new Rooted(composition.order(), composition.faults());
-    }
-
-    /**
-     * The composition closure of a set of packs: the roots and every pack they reach over {@code depends_on} and
-     * {@code parent_pack}, by descriptor {@code pack_id}, in first-seen order. It is the one closure rule of a rooted
-     * compose. A target no pack of {@code byPackId} declares is recorded but not descended from: the walk tolerates it,
-     * and {@link #resolve} refuses it. A cycle terminates, since each id is walked once.
-     *
-     * @param rootPackIds the descriptor {@code pack_id}s of the roots
-     * @param byPackId the packs the walk may descend into, by descriptor {@code pack_id}
-     * @return the {@code pack_id}s of the closure, missing targets included
-     */
-    public static Set<String> compositionClosure(
-            Collection<String> rootPackIds, Map<String, PackUnderResolution> byPackId) {
-        Objects.requireNonNull(rootPackIds, "rootPackIds");
-        Objects.requireNonNull(byPackId, "byPackId");
-        Set<String> reached = new LinkedHashSet<>();
-        ArrayDeque<String> pending = new ArrayDeque<>(rootPackIds);
-        while (!pending.isEmpty()) {
-            String next = pending.removeFirst();
-            PackUnderResolution pack = byPackId.get(next);
-            if (reached.add(next) && pack != null) {
-                pending.addAll(successorsOf(pack));
-            }
-        }
-        return reached;
-    }
-
-    /** The packs one pack builds on: its {@code depends_on} targets, then its {@code parent_pack}, by {@code pack_id}. */
-    private static List<String> successorsOf(PackUnderResolution pack) {
-        List<String> successors = new ArrayList<>();
-        pack.descriptor().dependencies().forEach(dependency -> successors.add(dependency.packId()));
-        pack.descriptor().parentPack().ifPresent(successors::add);
-        return successors;
     }
 
     /**
@@ -787,7 +753,7 @@ public final class PackCompositionResolver {
     /**
      * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
      * reference may name (FR-015), and the packs that may hold the step a step enhancement names (C37,
-     * {@link EnhancementCompose#targetFaults}). It is not the {@linkplain #compositionClosure composition closure}, which
+     * {@link EnhancementCompose#targetFaults}). It is not the {@linkplain PackGraph#compositionClosure composition closure}, which
      * also follows {@code parent_pack}.
      *
      * @param packId the descriptor {@code pack_id} of the pack the walk starts at
@@ -1098,23 +1064,17 @@ public final class PackCompositionResolver {
 
     /** The {@code pack_id}s a pack names by {@code depends_on} and {@code parent_pack}. */
     private static List<String> targetsOf(PackUnderResolution pack) {
-        List<String> targets = new ArrayList<>();
-        pack.descriptor().dependencies().forEach(dependency -> targets.add(dependency.packId()));
-        pack.descriptor().parentPack().ifPresent(targets::add);
-        return targets;
+        return PackGraph.buildsOn(pack.descriptor());
     }
 
     /** Every {@code pack_id} a pack reaches over {@code depends_on} and {@code parent_pack} within the compose. */
     private static Set<String> reach(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
-        Set<String> reached = new HashSet<>();
-        ArrayDeque<String> pending = new ArrayDeque<>(targetsOf(pack));
-        while (!pending.isEmpty()) {
-            String next = pending.poll();
-            PackUnderResolution target = byId.get(next);
-            if (target != null && reached.add(next)) {
-                pending.addAll(targetsOf(target));
-            }
-        }
+        Set<String> reached = new LinkedHashSet<>(PackGraph.reachable(
+                targetsOf(pack),
+                next -> Optional.ofNullable(byId.get(next))
+                        .map(PackCompositionResolver::targetsOf)
+                        .orElse(List.of())));
+        reached.retainAll(byId.keySet());
         return reached;
     }
 
