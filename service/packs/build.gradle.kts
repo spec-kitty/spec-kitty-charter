@@ -150,6 +150,8 @@ tasks.register<Test>("timingBudgets") {
     testClassesDirs = testSourceSet.output.classesDirs
     classpath = testSourceSet.runtimeClasspath
     useJUnitPlatform { includeTags("timing") }
+    // Only the classes tagged timing reach a fork: one JVM per tagged class, not per test class (TimingBudgets.kt).
+    onlyTimingClasses(file("src/test/java"))
     maxParallelForks = 1
     // Each budget measures in a fresh JVM: a timing class that ran earlier in the same JVM leaves heap and JIT state
     // that costs the next one's measured thread about 10% (ResolverCostBoundTest before PackFileSetBudgetTest).
@@ -164,6 +166,10 @@ tasks.register<Test>("timingBudgets") {
     // shows in every run.
     testLogging { showStandardStreams = true }
 }
+
+// Gates what the report-only run above cannot: every tagged budget class left a result. The nightly runs it after
+// timingBudgets, outside that step's continue-on-error (#644 landing).
+registerVerifyTimingBudgetsRan(file("src/test/java"))
 
 // What the unit tests need from the repository, shared by `test` and `pitest` (below), which runs the same tests in its
 // own JVMs: the tags they leave out, the system properties they read and the repository files they read, declared as
@@ -267,6 +273,11 @@ mutationFloors {
         packages.addAll("$packsPackage.domain", "$packsPackage.application", "$packsPackage.infra.storage.rules")
         excludes.add("$packsPackage.application.config")
         floor = 85
+        // Too big for one runner's 110 minutes (#644): the mutation run takes it in three parts, one shard each, and
+        // the summary scores the group once on the merged parts. A whole-module run still scores it whole.
+        part("domain", "$packsPackage.domain")
+        part("application", "$packsPackage.application")
+        part("rules", "$packsPackage.infra.storage.rules")
     }
     group("infra.storage") {
         packages.add("$packsPackage.infra.storage")

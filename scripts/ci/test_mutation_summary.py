@@ -28,6 +28,8 @@ import mutation_summary as ms  # noqa: E402
 
 # Written by MutationFloors.toJson, through build-logic's MutationFloorsTest (the key contract).
 KOTLIN_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "floors.json"
+# Two part entries of one group (#644), written by MutationFloors.toJson through MutationFloorsTest.
+KOTLIN_PARTS_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "floors-parts.json"
 SUMMARY_KEYS = {"project", "mutants", "groups"}
 GROUP_KEYS = {
     "group", "packages", "excludes", "mutants", "detected", "survived", "noCoverage", "timedOut", "score", "strength",
@@ -40,6 +42,8 @@ MODULES = [
     "service/profiles", "service/profiles-edge",
 ]
 TOP_CLASS_KEYS = {"class", "survived", "noCoverage"}
+# A part entry has the keys of a group entry and the part it holds, among all the group's parts (#644).
+PART_KEYS = GROUP_KEYS | {"part", "parts"}
 
 # A real summary, from `./gradlew :profiles:pitest` (MutationFloors.toJson's exact layout).
 PROFILES = """{
@@ -90,6 +94,19 @@ def group(name: str, *, score: str, floor: int, passed: bool, top: list[dict] | 
         "passed": passed,
         "topClasses": top or [],
     }
+
+
+def part(
+    name: str, part_name: str, parts: list[str], *, mutants: int, detected: int, floor: int = 85,
+    survived: int = 0, no_coverage: int = 0, timed_out: int = 0, top: list[dict] | None = None,
+) -> dict:
+    """A part entry as MutationFloors.toJson writes it (#644): the part's own figures, its floor and its siblings."""
+    entry = group(name, score="0.0", floor=floor, passed=False, top=top)
+    entry.update(
+        part=part_name, parts=sorted(parts), mutants=mutants, detected=detected, survived=survived,
+        noCoverage=no_coverage, timedOut=timed_out,
+    )
+    return entry
 
 
 def summary(project: str, *groups: dict) -> str:
@@ -425,6 +442,96 @@ class RenderTest(unittest.TestCase):
         with redirect_stdout(io.StringIO()) as out:
             ms.main(["--root", str(self.root), "--modules", str(listed)])
         self.assertIn("⚠️ **no report**", self.row(out.getvalue(), "| `:kernel` kernel.extra |"))
+
+
+class PartsTest(unittest.TestCase):
+    """A group too big for one runner runs as parts on several shards; the summary scores it once, merged (#644)."""
+
+    setUp = RenderTest.setUp
+    tearDown = RenderTest.tearDown
+    write = RenderTest.write
+    write_shard = RenderTest.write_shard
+    row = RenderTest.row
+
+    PARTS = ["application", "domain"]
+    EXPECTED = {"service/packs": ["domain+application"]}
+
+    def parts(self, domain: dict, application: dict | None) -> None:
+        self.write_shard("packs", "domain-application-domain", summary(":packs", domain))
+        if application is not None:
+            self.write_shard("packs", "domain-application-application", summary(":packs", application))
+
+    def test_the_parts_merge_into_one_row_scored_once(self) -> None:
+        self.parts(
+            part("domain+application", "domain", self.PARTS, mutants=60, detected=55, survived=5,
+                 top=[{"class": "ai.x.Pack", "survived": 5, "noCoverage": 0}]),
+            part("domain+application", "application", self.PARTS, mutants=40, detected=36, survived=2, no_coverage=2,
+                 timed_out=3, top=[{"class": "ai.x.Reader", "survived": 2, "noCoverage": 2}]),
+        )
+        text, gaps = ms.render_with_gaps(self.root, ["service/packs"], expected=self.EXPECTED)
+        # 91 of 100 detected, 91 of 98 covered; the floor of 85 needs 85: a margin of 6.
+        self.assertEqual(
+            self.row(text, "| `:packs` domain+application |"),
+            "| `:packs` domain+application | 100 | 91.0 % | 92.8 % | 2 | 3 | 85 % | +6.0 pts, 6 | ✅ pass |"
+            " `Pack` (5 survived)<br>`Reader` (2 survived, 2 uncovered) |",
+        )
+        self.assertEqual(gaps, [])
+        self.assertIn("**✅ Every group is at or above its floor.**", text)
+
+    def test_a_merged_group_below_its_floor_fails_the_summary_itself(self) -> None:
+        # No shard fails on a part's floor, so the summary is what turns the run red.
+        self.parts(
+            part("domain+application", "domain", self.PARTS, mutants=60, detected=50, survived=10),
+            part("domain+application", "application", self.PARTS, mutants=40, detected=34, survived=6),
+        )
+        text, gaps = ms.render_with_gaps(self.root, ["service/packs"], expected=self.EXPECTED)
+        self.assertIn("❌ **FAIL**", self.row(text, "| `:packs` domain+application |"))
+        self.assertIn("-1.0 pts, -1", self.row(text, "| `:packs` domain+application |"))
+        self.assertEqual(gaps, ["`:packs` domain+application (below its floor, merged from 2 parts)"])
+        listed = self.root / "modules.txt"
+        listed.write_text("service/packs\tdomain+application\n", encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(ms.main(["--root", str(self.root), "--modules", str(listed)]), 1)
+        self.assertIn("below its floor, merged from 2 parts", err.getvalue())
+
+    def test_a_missing_part_leaves_the_group_without_a_report(self) -> None:
+        self.parts(part("domain+application", "domain", self.PARTS, mutants=60, detected=60), None)
+        text, gaps = ms.render_with_gaps(self.root, ["service/packs"], expected=self.EXPECTED)
+        self.assertIn(ms.NO_REPORT, self.row(text, "| `:packs` domain+application |"))
+        self.assertEqual(gaps, ["`:packs` domain+application (no report from part application)"])
+
+    def test_parts_that_disagree_or_a_group_reported_whole_and_in_parts_are_unreadable(self) -> None:
+        self.parts(
+            part("domain+application", "domain", self.PARTS, mutants=60, detected=60),
+            part("domain+application", "application", self.PARTS, mutants=40, detected=40, floor=80),
+        )
+        text, gaps = ms.render_with_gaps(self.root, ["service/packs"], expected=self.EXPECTED)
+        self.assertIn(ms.UNREADABLE, self.row(text, "| `:packs` domain+application |"))
+        self.assertEqual(gaps, ["`:packs` domain+application (parts that disagree on the floor or the parts)"])
+
+        self.write_shard("packs", "domain-application-application", summary(
+            ":packs", part("domain+application", "application", self.PARTS, mutants=40, detected=40)))
+        self.write_shard("packs", "domain-application", summary(
+            ":packs", group("domain+application", score="91.0", floor=85, passed=True)))
+        text, gaps = ms.render_with_gaps(self.root, ["service/packs"], expected=self.EXPECTED)
+        self.assertIn(ms.UNREADABLE, self.row(text, "| `:packs` domain+application |"))
+        self.assertEqual(gaps, ["`:packs` domain+application (reported whole and in parts)"])
+
+    def test_the_kotlin_parts_have_exactly_the_keys_this_reader_knows_and_merge(self) -> None:
+        data = json.loads(KOTLIN_PARTS_FIXTURE.read_text(encoding="utf-8"))
+        self.assertEqual(set(data), SUMMARY_KEYS)
+        self.assertEqual([entry["part"] for entry in data["groups"]], ["domain", "application"])
+        for entry in data["groups"]:
+            self.assertEqual(set(entry), PART_KEYS)
+        self.write("packs", KOTLIN_PARTS_FIXTURE.read_text(encoding="utf-8"))
+        text = ms.render(self.root, ["service/packs"], expected=self.EXPECTED)
+        # 8 + 10 detected (a TIMED_OUT counts) of 20; 18 of the 19 covered.
+        self.assertEqual(
+            self.row(text, "| `:packs` domain+application |"),
+            # A tie is ordered by class name, as MutationFloors.score orders it.
+            "| `:packs` domain+application | 20 | 90.0 % | 94.7 % | 1 | 1 | 85 % | +5.0 pts, 1 | ✅ pass |"
+            " `Reader` (1 uncovered)<br>`Pack` (1 survived) |",
+        )
 
 
 if __name__ == "__main__":

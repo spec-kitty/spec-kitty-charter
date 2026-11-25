@@ -2,7 +2,7 @@
 title: "ADR-0062: Weekly mutation floor"
 description: "The scheduled PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the weekly run red, never a pull request."
 doc_status: active
-updated: 2026-11-20T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -446,3 +446,55 @@ Status: Accepted, as an amendment of this accepted ADR. No floor is moved.
 - **The root cause in open-packs.** The testing pack's directive tells agents to run mutation testing on the changed
   scope of each work package; [spec-kitty-open-packs#326](https://github.com/spec-kitty/spec-kitty-open-packs/issues/326)
   makes the cadence the project's call.
+
+## Amendment, 2026-11-25 (#644): `:packs` runs in three shards
+
+Status: Accepted, as an amendment of this accepted ADR (operator rulings, 2026-11-25). No floor, budget or PIT scope
+moves.
+
+The weekly run of 2026-11-23 (45101937079) failed. Its packs-core shard (domain+application with infra.fetch) ran out of
+its 110-minute step and wrote no report: 44 minutes on 2026-11-16 (43794141037), over 110 a week later. The other packs
+shard (infra.storage with infra.archive) went from 40 to 78 minutes.
+
+- **Why.** The `:packs` suite grew in that week, mostly with #554: 101 more test classes (366 to 445 in a local run),
+  7368 tests against 5350, and their summed time from 135 to 191 seconds; PIT sent 1431 test classes to its minion,
+  against 1243, and its coverage phase took 113 seconds against 57. A narrowed local run (`pit-targets.init.gradle`)
+  of `Reachability`, unchanged in that week, with `PackCompositionResolver`, compared on both commits: 263 to 340
+  mutants, 6.17 to 7.81 tests per mutation, and mutation analysis from 75 to 121 seconds. Every mutant costs more, and
+  there are more of them. No single test or hang accounts for it: the slow concurrency tests are tagged `stress`, which
+  PIT leaves out.
+- **Change.** `:packs`'s floor groups run in three shards: `domain+application` (packs-core), `infra.storage`
+  (packs-storage), and `infra.fetch` with `infra.archive` (packs-edges), beside the shard of every other module. Each
+  group is still scored on all of its mutants, as in a whole-module run, and the 120-minute budget stays.
+- **Measured (dispatch 45618347444, 2026-11-25), and not enough.** packs-edges took 13 min 20 s and packs-storage
+  76 min 21 s, but packs-core, `domain+application` alone, ran out of its 110 minutes again and wrote no report. On
+  2026-11-16 the same group with `infra.fetch` took 44 minutes. The group's growth is more than the 1.6 times of the
+  narrowed run; the likeliest share is `infra.storage.rules`, which joined `domain+application` by the amendment of
+  2026-11-17 and is tested by the storage tests, which run about 22 tests per mutation. `domain+application` must
+  therefore be split across runners (a new floor group, or one group's score merged across shards), or its mutants
+  made cheaper (#530, #531), hence parts (below).
+- **Parts: one floor group across shards (operator ruling, 2026-11-25, option (a)).** A floor group may declare parts
+  that split its packages exactly, each package in one part (`part("domain", ...)` in `mutationFloors`), so every
+  mutant lies in exactly one part. `-PmutationGroups=<group>/<part>` makes a shard mutate one part; that shard scores
+  the part (`floors-<shard>.json` entries carry `part` and `parts`) but never fails on the floor. The summary job
+  merges a group's parts, whose mutants are disjoint, and scores the group once with decision 5's rules: the exact
+  comparison, the truncated percentages and the margins. A missing part leaves the group with no report; parts that
+  disagree, or a group reported whole and in parts, make it unreadable; a merged group below its floor fails the
+  summary job, so the run is red and the alert fires. A whole-module run still scores the group whole. Floors, the
+  PIT scope and the cron are unchanged. `domain+application` runs as three parts: `domain`, `application` and
+  `rules` (`infra.storage.rules`), so the run has six shards: those three, packs-storage, packs-edges and others.
+  Measured (dispatch 45652654509, 2026-11-25), every shard within its 110 minutes and the run green, the summary
+  scoring `domain+application` once from its three parts: packs-domain 60 min, packs-application 30, packs-rules 12,
+  packs-storage 77, packs-edges 12 and others 29. **packs-storage is the shard at risk**: on the same storage code it
+  took 76 min 21 s (45618347444), 108 min 9 s (45640124780) and 77 min 6 s (45652654509), so a slow runner brings it
+  within two minutes of its 110. The plan, ruled by the operator on 2026-11-25 and tracked in
+  [#657](https://github.com/spec-kitty/spec-kitty-charter/issues/657): land the parts with storage at risk, let #530
+  and #531 make its mutants cheaper first, and split `infra.storage`, one flat package, into class-pattern parts if a
+  weekly run takes it over about 95 minutes.
+- **Routing, first measured.** `:routing` joined the run without a measured first floor: its floor of 90 came with
+  `aa1ae67b`, and the weekly run of 2026-11-23 measured it at 66 of 79 (83.5 %). The operator ruled on 2026-11-25 to
+  keep 90 and add the missing tests: #655 strengthens two existing tests, and a narrowed local run measured 74 of 79
+  (93.6 %, margin 2), confirmed by dispatch 45652654509 (79 mutants, 93.6 %). The five survivors left are equivalent
+  ([routing survivor triage](/plans/engineering-notes/routing-survivor-triage-2026-11-25/)).
+- **Not done.** The minion JVM flags (#530) and the test fixes of #531 remain open; they cut the cost of a mutant, where
+  this change only spreads the mutants over runners, a group's parts included.

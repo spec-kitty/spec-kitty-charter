@@ -51,6 +51,10 @@ tasks.test {
     val fixture = layout.projectDirectory.file("../scripts/ci/fixtures/floors.json").asFile
     inputs.files(fixture).withPathSensitivity(PathSensitivity.NONE).withPropertyName("mutationFloorsFixture")
     systemProperty("mutationFloors.fixture", fixture.absolutePath)
+    // The part entries of a group run as parts (#644), which the summary script merges.
+    val partsFixture = layout.projectDirectory.file("../scripts/ci/fixtures/floors-parts.json").asFile
+    inputs.files(partsFixture).withPathSensitivity(PathSensitivity.NONE).withPropertyName("mutationFloorsPartsFixture")
+    systemProperty("mutationFloors.partsFixture", partsFixture.absolutePath)
     val update = providers.gradleProperty("updateMutationFixture").orElse("false")
     inputs.property("updateMutationFixture", update)
     systemProperty("mutationFloors.updateFixture", update.get())
