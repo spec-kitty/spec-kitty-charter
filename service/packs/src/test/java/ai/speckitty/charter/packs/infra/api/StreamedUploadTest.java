@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import ai.speckitty.charter.web.RefusalHandler;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -173,11 +174,8 @@ class StreamedUploadTest {
                 .isEmpty();
     }
 
-    private void awaitExtraction() throws InterruptedException {
-        long deadline = System.nanoTime() + 10_000_000_000L;
-        while (extracted.isEmpty() && System.nanoTime() < deadline) {
-            Thread.sleep(10);
-        }
+    private void awaitExtraction() {
+        Await.until("the archive to be extracted", () -> !extracted.isEmpty());
     }
 
     private List<Path> stagingEntries() throws IOException {

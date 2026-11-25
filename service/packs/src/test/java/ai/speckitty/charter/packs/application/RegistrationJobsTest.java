@@ -558,12 +558,15 @@ class RegistrationJobsTest {
         assertThat(entered.await(10, TimeUnit.SECONDS))
                 .as("exactly the running limit of stagers is entered")
                 .isTrue();
-        // A job over the limit would enter soon after the first two; give it the time to, and watch the count.
-        long watchUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(300);
-        while (System.nanoTime() < watchUntil) {
-            assertThat(inside.get()).isLessThanOrEqualTo(RegistrationJobs.RUNNING_LIMIT);
-            Thread.sleep(5);
-        }
+        // A job over the limit could only enter on a worker beyond the limit, and a pool that makes one makes it as
+        // the job is submitted: no such thread lives, so none will enter.
+        assertThat(workerNumbers())
+                .as("no registration worker beyond the running limit was made")
+                .allMatch(number -> number <= RegistrationJobs.RUNNING_LIMIT);
+        assertThat(accepted.subList(RegistrationJobs.RUNNING_LIMIT, admitted))
+                .extracting(reservation -> h.status(reservation).state())
+                .as("the jobs over the limit wait")
+                .containsOnly(State.PENDING);
         assertThat(entries.get())
                 .as("the jobs over the limit wait for a worker and are not inside a stager")
                 .isEqualTo(RegistrationJobs.RUNNING_LIMIT);
@@ -870,6 +873,15 @@ class RegistrationJobsTest {
             }
             return now;
         }
+    }
+
+    /** The numbers of the registration workers alive in this JVM: {@code charter-registration-<n>}, one pool's each. */
+    private static List<Integer> workerNumbers() {
+        return Thread.getAllStackTraces().keySet().stream()
+                .map(Thread::getName)
+                .filter(name -> name.matches("charter-registration-\\d+"))
+                .map(name -> Integer.parseInt(name.substring("charter-registration-".length())))
+                .toList();
     }
 
     private static final Origin ORIGIN_FOR_ORDER = new Origin(

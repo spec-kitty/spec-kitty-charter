@@ -222,28 +222,28 @@ public class PackRegistrationSteps {
 
     private void pollUntilEnded(String location) throws Exception {
         String path = belowBase(location);
-        long deadline = System.nanoTime() + WAIT.toNanos();
-        while (true) {
+        await(() -> ended(path), "the registration did not end within " + WAIT);
+        String state = JSON.readTree(http.body()).path("state").asString();
+        if (state.equals("refused")) {
+            // A scenario that expected another end finds its reason here, not only "refused".
+            JsonNode problem = JSON.readTree(http.body()).path("problem");
+            LOG.log(
+                    System.Logger.Level.WARNING,
+                    "The registration at {0} ended refused: code {1}, detail {2}",
+                    location,
+                    problem.path("code").asString(),
+                    problem.path("detail").asString());
+        }
+    }
+
+    /** GETs the registration and answers whether it ended; the last answer stays the scenario's response. */
+    private boolean ended(String path) {
+        try {
             http.get(path);
             String state = JSON.readTree(http.body()).path("state").asString();
-            if (state.equals("refused")) {
-                // A scenario that expected another end finds its reason here, not only "refused".
-                JsonNode problem = JSON.readTree(http.body()).path("problem");
-                LOG.log(
-                        System.Logger.Level.WARNING,
-                        "The registration at {0} ended refused: code {1}, detail {2}",
-                        location,
-                        problem.path("code").asString(),
-                        problem.path("detail").asString());
-                return;
-            }
-            if (state.equals("succeeded")) {
-                return;
-            }
-            if (System.nanoTime() > deadline) {
-                throw new AssertionError("the registration did not end within " + WAIT + ": " + http.body());
-            }
-            Thread.sleep(10);
+            return state.equals("refused") || state.equals("succeeded");
+        } catch (Exception unreadable) {
+            throw new IllegalStateException("the registration at " + path + " could not be read", unreadable);
         }
     }
 

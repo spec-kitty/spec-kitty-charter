@@ -101,8 +101,7 @@ class RegistrationWiringStagingTest {
     }
 
     @Test
-    void withoutAConfigRootTheSweepNeverTouchesTheTemporaryDirectory(@TempDir Path temporary)
-            throws IOException, InterruptedException {
+    void withoutAConfigRootTheSweepNeverTouchesTheTemporaryDirectory(@TempDir Path temporary) throws IOException {
         Path stale = Files.createDirectories(temporary.resolve("staging").resolve("left-by-someone-else"));
         Files.writeString(stale.resolve("file"), "not the service's");
         Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
@@ -111,9 +110,10 @@ class RegistrationWiringStagingTest {
         try {
             RegistrationWiring.RegistrationStagingRoot staging =
                     wiring.registrationStagingRoot(new RegistrationProperties(false, null), noRoot);
+            // A sweep that starts sweeps once before it returns (StagingSweeper.start), so what it would remove is gone
+            // by the time the runner is handed back; the next sweep is five minutes away.
             try (RegistrationWiring.SweepRunner sweep =
                     wiring.stagingSweeper(staging, noRoot, mock(RegistrationJobs.class), Clock.systemUTC())) {
-                Thread.sleep(1500);
                 assertThat(sweep).isNotNull();
             }
         } finally {

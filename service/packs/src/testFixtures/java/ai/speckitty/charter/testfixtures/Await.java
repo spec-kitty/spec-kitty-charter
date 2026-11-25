@@ -28,16 +28,30 @@ public final class Await {
      * @throws AssertionError when the state does not hold within {@link #LIMIT}
      */
     public static void until(String what, BooleanSupplier state) {
-        long deadline = System.nanoTime() + LIMIT.toNanos();
-        while (!state.getAsBoolean()) {
-            if (System.nanoTime() - deadline > 0) {
-                throw new AssertionError("waited " + LIMIT.toSeconds() + " s for " + what + "; it never came");
-            }
-            LockSupport.parkNanos(PAUSE_NANOS);
-            if (Thread.interrupted()) {
-                Thread.currentThread().interrupt();
+        if (!within(LIMIT, state)) {
+            if (Thread.currentThread().isInterrupted()) {
                 throw new AssertionError("interrupted while waiting for " + what);
             }
+            throw new AssertionError("waited " + LIMIT.toSeconds() + " s for " + what + "; it never came");
         }
+    }
+
+    /**
+     * Waits until {@code state} holds, or {@code limit} passed, or the thread is interrupted: for a stress test that
+     * holds a window open until a state comes and goes on without it, which its own count then reports.
+     *
+     * @param limit how long to wait at most
+     * @param state the state
+     * @return whether the state holds
+     */
+    public static boolean within(Duration limit, BooleanSupplier state) {
+        long deadline = System.nanoTime() + limit.toNanos();
+        while (!state.getAsBoolean()) {
+            if (System.nanoTime() - deadline > 0 || Thread.currentThread().isInterrupted()) {
+                return false;
+            }
+            LockSupport.parkNanos(PAUSE_NANOS);
+        }
+        return true;
     }
 }

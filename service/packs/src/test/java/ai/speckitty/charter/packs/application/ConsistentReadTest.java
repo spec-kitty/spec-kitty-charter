@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -405,12 +406,12 @@ class ConsistentReadTest {
         generation.begin("pack-a");
         assertThat(generation.awaitIdle(java.time.Duration.ofMillis(20))).isFalse();
 
+        Thread waiting = Thread.currentThread();
         Thread ender = new Thread(() -> {
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            // The swap ends once the test thread waits for it, so the wait is what sees it end.
+            Await.until(
+                    "the test thread waiting for the swap to end",
+                    () -> waiting.getState() == Thread.State.TIMED_WAITING);
             generation.end("pack-a");
         });
         ender.start();

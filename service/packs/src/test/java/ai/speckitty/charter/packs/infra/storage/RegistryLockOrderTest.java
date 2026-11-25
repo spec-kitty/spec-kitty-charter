@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -106,8 +108,17 @@ class RegistryLockOrderTest {
         try {
             Future<?> first = pool.submit(() -> slowWrites.registerDirective(PACK, directive("ONE"), true, null));
             assertThat(swapping.await(10, TimeUnit.SECONDS)).isTrue();
-            Future<String> other = pool.submit(() -> second.exclusively(PACK, () -> "done"));
-            Thread.sleep(300);
+            AtomicReference<Thread> otherThread = new AtomicReference<>();
+            Future<String> other = pool.submit(() -> {
+                otherThread.set(Thread.currentThread());
+                return second.exclusively(PACK, () -> "done");
+            });
+            // The second writer waits on the registry lock the swap holds (a timed tryLock): it is in the swap's
+            // window.
+            Await.until("the second writer waiting on the registry lock", () -> {
+                Thread waiting = otherThread.get();
+                return waiting != null && waiting.getState() == Thread.State.TIMED_WAITING;
+            });
             release.countDown();
             first.get(20, TimeUnit.SECONDS);
 

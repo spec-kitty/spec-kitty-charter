@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.application.SourceRefusal;
 import ai.speckitty.charter.packs.application.SourceUpstreamException;
 import ai.speckitty.charter.packs.infra.archive.BoundedTreeStager;
 import ai.speckitty.charter.packs.infra.fetch.GuideAllowlist;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -597,14 +599,12 @@ class GitSourceFetcherTest {
     void atMostTheConfiguredNumberOfFetchesRunAtOnce() throws Exception {
         AtomicInteger inFlight = new AtomicInteger();
         AtomicInteger highest = new AtomicInteger();
-        CountDownLatch twoArrived = new CountDownLatch(2);
+        CountDownLatch release = new CountDownLatch(1);
         GitRemote counting = (repository, address) -> {
             int now = inFlight.incrementAndGet();
             highest.accumulateAndGet(now, Math::max);
-            twoArrived.countDown();
             try {
-                twoArrived.await(5, TimeUnit.SECONDS);
-                Thread.sleep(150);
+                release.await(30, TimeUnit.SECONDS);
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
             }
@@ -613,10 +613,24 @@ class GitSourceFetcherTest {
         };
         GitSourceFetcher fetcher = fetcher(Duration.ofSeconds(60), 1L << 30, 2, counting);
         List<Future<Staged>> done = new ArrayList<>();
+        Set<Thread> fetching = ConcurrentHashMap.newKeySet();
         for (int i = 0; i < 6; i++) {
             Path job = Files.createDirectories(temp.resolve("job-" + i));
-            done.add(executor.submit(() -> fetcher.fetch(request(URL, REF, null), job)));
+            done.add(executor.submit(() -> {
+                fetching.add(Thread.currentThread());
+                return fetcher.fetch(request(URL, REF, null), job);
+            }));
         }
+        // Every fetch waits: inside the remote, held, or for a slot. A fetch past the limit would be inside the remote
+        // by now, so the count is read with all six settled, not after a pause.
+        Await.until(
+                "the six fetches waiting, inside the remote or for a slot",
+                () -> inFlight.get() >= 2
+                        && fetching.size() == 6
+                        && fetching.stream()
+                                .allMatch(thread -> thread.getState() == Thread.State.WAITING
+                                        || thread.getState() == Thread.State.TIMED_WAITING));
+        release.countDown();
 
         for (Future<Staged> one : done) {
             assertThat(one.get(60, TimeUnit.SECONDS).source()).containsEntry("commit", COMMIT);
