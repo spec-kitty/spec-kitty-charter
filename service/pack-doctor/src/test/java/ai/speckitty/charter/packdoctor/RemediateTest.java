@@ -509,7 +509,7 @@ class RemediateTest {
     void anOldCopyLeftBehindIsAWarningNamingItAndTheExitStands() throws IOException {
         Path packs = packs();
         Remediate.Repair leftBehind =
-                root -> new Remediate.Rewritten(Optional.of(Path.of("/planted/.org-base.aside-1")));
+                root -> new Remediate.Rewritten(Optional.of(Path.of("/planted/.org-base.aside-1")), List.of());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String[] given = values(packs);

@@ -702,7 +702,7 @@
         }, {
           "pointer" : "agent_profiles/p.agent.yaml#/routing-priority",
           "code" : "artifact_schema_error",
-          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority': \"50\" must be an integer: write 50 without quotes, or run pack-doctor remediate"
         } ]
       }
     },
@@ -721,14 +721,14 @@
         "violations" : [ {
           "pointer" : "agent_profiles/p.agent.yaml#/routing-priority",
           "code" : "artifact_schema_error",
-          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+          "detail" : "agent_profiles/p.agent.yaml: 'routing-priority': \"50\" must be an integer: write 50 without quotes, or run pack-doctor remediate"
         } ]
       }
     },
     "composeRead" : {
       "refused" : {
         "code" : "pack_unreadable",
-        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: 'routing-priority' must be an integer"
+        "detail" : "the file agent_profiles/p.agent.yaml of qa cannot be read: 'routing-priority': \"50\" must be an integer: write 50 without quotes, or run pack-doctor remediate"
       }
     }
   },

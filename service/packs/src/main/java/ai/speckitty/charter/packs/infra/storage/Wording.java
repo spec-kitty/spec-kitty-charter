@@ -310,11 +310,27 @@ public final class Wording {
                 };
             case "array" -> o + " " + key + ": expected a list";
             case "string" -> o + ": " + quoted + " must be a string";
-            case "number" -> o + ": " + quoted + " must be a number";
-            case "integer" -> o + ": " + quoted + " must be an integer";
+            case "number", "integer" -> {
+                boolean integer = "integer".equals(expected);
+                Optional<String> fixable = quotedNumber(v, integer);
+                yield fixable.isPresent()
+                        ? o + ": " + quoted + ": " + QuotedNumbers.fault(fixable.get(), integer)
+                        : o + ": " + quoted + (integer ? " must be an integer" : " must be a number");
+            }
             case "boolean" -> o + ": " + quoted + " must be a boolean";
             default -> fallback(o, v);
         };
+    }
+
+    /**
+     * The quoted value of a {@code type} fault that {@code pack-doctor remediate} repairs (#651): a string where the field
+     * is typed {@code number} or {@code integer}, in a YAML file, that is a number of that type written plain
+     * ({@link QuotedNumbers#qualifies}).
+     */
+    private static Optional<String> quotedNumber(SchemaViolation v, boolean integer) {
+        return v.value()
+                .filter(value -> "string".equals(v.args().get("0")) && v.file().endsWith(".yaml"))
+                .filter(value -> QuotedNumbers.qualifies(value, integer));
     }
 
     private static String patternDetail(

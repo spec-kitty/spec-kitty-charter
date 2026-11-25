@@ -173,7 +173,7 @@ class PackRemediationTest {
 
         PackRemediation.Outcome outcome = new PackRemediation().remediate(root(red));
 
-        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
         assertThat(violationCodes(red)).isEmpty();
         assertThat(Files.readString(red.resolve(EDITED), StandardCharsets.UTF_8))
                 .isEqualTo(canonicalOf(ExamplePacks.pack(ExamplePacks.ORG), EDITED))
@@ -191,7 +191,7 @@ class PackRemediationTest {
     void aSecondRunIsUnchanged() throws IOException {
         Path red = redForManifestAndForm();
         assertThat(new PackRemediation().remediate(root(red)))
-                .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
         SortedMap<String, String> remediated = treeHash(red);
 
         assertThat(new PackRemediation().remediate(root(red))).isEqualTo(new PackRemediation.Unchanged());
@@ -205,7 +205,7 @@ class PackRemediationTest {
         Files.delete(pack.resolve(PackFileSet.MANIFEST));
 
         assertThat(new PackRemediation().remediate(root(pack)))
-                .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
         assertThat(pack.resolve(PackFileSet.MANIFEST)).isRegularFile();
         assertThat(violationCodes(pack)).isEmpty();
     }
@@ -408,7 +408,7 @@ class PackRemediationTest {
         Files.setPosixFilePermissions(red, PosixFilePermissions.fromString("r-xr-xr-x"));
         try {
             assertThat(new PackRemediation().remediate(root(red)))
-                    .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+                    .isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
             assertThat(besides(red)).containsExactly(ExamplePacks.ORG);
             assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(profiles)))
                     .as("the rewritten pack keeps its own modes")
@@ -443,7 +443,7 @@ class PackRemediationTest {
 
         PackRemediation.Outcome outcome = remediation.remediate(root(red));
 
-        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.of(asides.getFirst())));
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.of(asides.getFirst()), List.of()));
         assertThat(violationCodes(red)).as("the swap stands").isEmpty();
         assertThat(asides.getFirst()).isDirectory();
     }
@@ -464,7 +464,7 @@ class PackRemediationTest {
         PackRemediation.Outcome outcome =
                 new PackRemediation().remediate(new PackRoot(ExamplePacks.ORG, Optional.empty(), link.toString()));
 
-        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+        assertThat(outcome).isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
         assertThat(Files.isSymbolicLink(link)).isTrue();
         assertThat(Files.readSymbolicLink(link)).isEqualTo(red);
         assertThat(violationCodes(red)).isEmpty();
@@ -478,7 +478,7 @@ class PackRemediationTest {
     void anUnchangedPackHasNothingWrittenBesideItOrInIt() throws IOException {
         Path red = redForManifestAndForm();
         assertThat(new PackRemediation().remediate(root(red)))
-                .isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
         FileTime longAgo = FileTime.from(Instant.parse("2001-01-01T00:00:00Z"));
         Files.setLastModifiedTime(red.getParent(), longAgo);
         Files.setLastModifiedTime(red, longAgo);
@@ -559,7 +559,8 @@ class PackRemediationTest {
                 },
                 hooks);
 
-        assertThat(remediation.remediate(root(red))).isEqualTo(new PackRemediation.Rewritten(Optional.empty()));
+        assertThat(remediation.remediate(root(red)))
+                .isEqualTo(new PackRemediation.Rewritten(Optional.empty(), List.of()));
         hooks.registered.getFirst().join(10_000);
 
         assertThat(violationCodes(red)).isEmpty();
