@@ -41,8 +41,9 @@ The checks around the code got worse:
 - the SonarCloud gate still fails without naming why.
 
 A new contract defect appeared (#654): a refused per-file write drops the in-file pointer that the
-contract promises, and a unit test pins the wrong output. Production code still has no correctness
-defect beyond that one.
+contract promises, and a unit test pins the wrong output. One more open defect sits in the window,
+issue #648, filed on 2026-11-24 by the review of #647, where collecting a file's schema violations is
+quadratic in their number, a denial-of-service risk within the size cap.
 
 ## Scorecard
 
@@ -51,7 +52,7 @@ defect beyond that one.
 | A. Inventory and structure | 4 / 5 | **4 / 5** | Not re-measured; no test module shrank, and `pack-doctor` arrived with 14 test files | `routing-edge`, `missions` and `kernel` still have the thinnest tests |
 | B. Effectiveness | 3 / 5 | **3 / 5** | Two fixed delays became signals (`d04a8573`, `c3c59f00`) | The five planted-break gaps and the timing items are unchanged; a unit test pins the defect of #654 |
 | C. CI and quality gates | 3 / 5 | **2 / 5** | `service.yml` green on every run since 11-19; `verifyAll` 12 min 57 s | The mutation run is red (#644): `routing` −6.5 points, two `packs` groups unreported; the timing nightly cancelled on 5 of 6 runs; the Sonar gate still unnamed; `pack-doctor` outside the Sonar scope |
-| D. Production code | 3 / 5 | **3 / 5** | Typed fault identity in progress (#647 `Origin`, one `ClosureFault`); the closure checks are behind ports (#556) | A new contract defect (#654); the seven largest classes +282 lines; the `rules` cycle has three more importers; `PackElementViolation` references 115 → 141 |
+| D. Production code | 3 / 5 | **3 / 5** | Typed fault identity in progress (#647 `Origin`, one `ClosureFault`); the closure checks are behind ports (#556) | A new contract defect (#654); an open denial-of-service risk in schema-violation collection (#648); the seven largest classes +282 lines; the `rules` cycle has three more importers; `PackElementViolation` references 115 → 141 |
 | E. Hotspots and churn | 2 / 5 | **2 / 5** | 6 of the top 25 cooled, among them `EffectiveReadService` and `RegistrationJobs` | `packs` is 81.0% of the score with 64% of main code lines; `packs.infra.storage` is 51.4% with 23%; 8 of the top 25 heat |
 
 - **C drops** because a gate that was green on 11-20, the weekly mutation run, is now red, and
@@ -100,14 +101,15 @@ there.
 
 ## Questions for the operator
 
-1. The four model rulings of 2026-11-12 are still open:
-   - the activation store's version 1 reader;
-   - the unversioned pack descriptor;
-   - the "Doctrine" type names;
-   - the null-check constructor tests.
-2. **`routing`'s floor:** raise the tests to meet 90, or rule a lower first floor in an ADR-0062
-   amendment?
-3. **SonarCloud:** export the gate status, ratings, issues by rule, hotspots and duplication for
+The four questions of 2026-11-20 are still open, and one is new:
+
+1. **The model rulings:** the activation store's version 1 reader, the unversioned pack descriptor
+   and the "Doctrine" type names. Rule on each, or record that they wait for the RC.
+2. **SonarCloud:** export the gate status, ratings, issues by rule, hotspots and duplication for
    `spec-kitty_spec-kitty-charter`. The calls are listed on the 2026-11-20
    [static analysis page](/plans/engineering-notes/codebase-assessment-2026-11-20/static-analysis/).
-4. **Class-size gate:** bound file length and parameter count at today's maximum now, or after the splits?
+3. **Class-size gate:** bound file length and parameter count at today's maximum now, or after the splits?
+4. **A new module's first mutation run:** make it part of the module's landing? `routing` is the case
+   in point: it landed with a floor of 90 and first scored 83.5% a week later.
+5. **`routing`'s floor (new):** raise the tests to meet 90, or rule a lower first floor in an ADR-0062
+   amendment?
