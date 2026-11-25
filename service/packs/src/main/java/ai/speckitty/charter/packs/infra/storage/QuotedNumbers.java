@@ -48,7 +48,8 @@ import org.snakeyaml.engine.v2.nodes.Tag;
  * the text written plain would still be refused. {@link Wording} words a qualifying value's fault with its fix, and
  * {@link PackRemediation} repairs the faults whose detail carries it, so the fix the detail promises is the one the
  * repair makes. "Quoted" is any string the reader reads there: single- or double-quoted, escaped, tagged {@code !!str},
- * or a block scalar; the repair writes the value in place of the whole node. An anchored value, a file with an alias or
+ * or a block scalar; the repair writes the value in place of the whole node, so a comment on a block scalar's header
+ * line goes with it (the canonical rewrite drops a modelled file's comments anyway, ADR-0036). An anchored value, a file with an alias or
  * more than one document is left, and the refusal says why.
  */
 final class QuotedNumbers {
@@ -216,6 +217,30 @@ final class QuotedNumbers {
         return new Repairs(List.copyOf(repaired.values()), unrepaired, Optional.empty());
     }
 
+    /**
+     * The guard against a repair that changes more than the values it writes plain: whether {@code after} loads as
+     * {@code before} does with the value at each pointer of {@code plain} read as the number its text is. Either text
+     * failing the reader's guards, or a pointer {@code before} does not hold, is {@code false}.
+     *
+     * @param before the file's text
+     * @param after the repaired text
+     * @param plain each repaired value's pointer and its text
+     * @return whether the repair changed those values alone
+     */
+    static boolean readsAs(String before, String after, Map<String, String> plain) {
+        ParsedYaml was = ParsedYaml.parse(before, "before");
+        ParsedYaml now = ParsedYaml.parse(after, "after");
+        if (was.failure() != null || now.failure() != null) {
+            return false;
+        }
+        Object expected = was.document();
+        for (Map.Entry<String, String> value : plain.entrySet()) {
+            expected = FileRepair.replaced(
+                    expected, Findings.segments(value.getKey()), FileRepair.number(value.getValue()));
+        }
+        return Objects.equals(expected, now.document());
+    }
+
     /** What a place the repaired text does not hold reads as: equal to no loaded document. */
     private static final Object NOT_FOUND = new Object();
 
@@ -253,6 +278,7 @@ final class QuotedNumbers {
                 return; // a second finding at a node already taken: it is replaced once
             }
             spans.put(index, span.get());
+            left.remove(place); // an earlier finding at this place was left; this one is repaired
             repaired.put(
                     index,
                     new PackRemediation.Repaired(
@@ -278,16 +304,9 @@ final class QuotedNumbers {
 
         /** Whether the repaired text loads as the old text does with each repaired value read as a number. */
         private boolean readsAsExpected(String after, List<Span> replaced) {
-            ParsedYaml was = ParsedYaml.parse(text, "before");
-            ParsedYaml now = ParsedYaml.parse(after, "after");
-            if (was.failure() != null || now.failure() != null) {
-                return false;
-            }
-            Object expected = was.document();
-            for (Span span : replaced) {
-                expected = replaced(expected, Findings.segments(span.pointer()), number(span.value()));
-            }
-            return Objects.equals(expected, now.document());
+            Map<String, String> plain = new LinkedHashMap<>();
+            replaced.forEach(span -> plain.put(span.pointer(), span.value()));
+            return readsAs(text, after, plain);
         }
 
         /** The loaded document with the node at {@code place} replaced; {@code NOT_FOUND} when there is none there. */

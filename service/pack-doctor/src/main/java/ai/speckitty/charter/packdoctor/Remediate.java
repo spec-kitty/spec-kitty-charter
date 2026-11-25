@@ -32,8 +32,8 @@ import java.util.TreeMap;
  * </pre>
  *
  * <p>It judges nothing: a refusal is the storage verdict's, without the manifest gate, or the round trip's refusal of a
- * modelled file it cannot write in canonical form (Tier R B4), as the remediation states it. A pack whose quoted numbers
- * the remediation wrote plain is judged again in its work copy (#651), and refused, nothing written, when anything is
+ * modelled file it cannot write in canonical form (Tier R B4), as the remediation states it. The remediation, not this
+ * command, judges a pack whose quoted numbers it wrote plain again in its work copy (#651), and refuses it, nothing written, when anything is
  * left: a fault beside the quoted numbers, a number the field's range refuses, or a quoted number it could not write
  * plain; then a quoted number's detail says that remediate repairs it once the other faults are fixed, or why it
  * cannot, never to run remediate. Either is a fault of the
