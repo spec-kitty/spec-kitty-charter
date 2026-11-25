@@ -398,6 +398,33 @@ class PackRemediationTest {
     }
 
     @Test
+    void aReadOnlyFileIsRepairedAndRewrittenInTheCopyAndKeepsItsMode() throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"), "no POSIX modes here");
+        assumeTrue(!bypassesPermissions(), "this process writes through any mode (root with a DAC override)");
+        Path red = orgPack("red");
+        Path profile = red.resolve(EDITED);
+        String text = Files.readString(profile, StandardCharsets.UTF_8);
+        Files.writeString(
+                profile, text.replace("role: operator\n", "role: operator\nrouting-priority: \"40\"\n"),
+                StandardCharsets.UTF_8);
+        Files.setPosixFilePermissions(profile, PosixFilePermissions.fromString("r--r--r--"));
+        try {
+            PackRemediation.Outcome outcome = new PackRemediation().remediate(root(red));
+
+            assertThat(outcome)
+                    .isEqualTo(new PackRemediation.Rewritten(
+                            Optional.empty(),
+                            List.of(new PackRemediation.Repaired(EDITED, "/routing-priority", "40", true))));
+            assertThat(Files.readString(profile, StandardCharsets.UTF_8)).contains("routing-priority: 40\n");
+            assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(profile)))
+                    .as("the rewritten file keeps its own mode")
+                    .isEqualTo("r--r--r--");
+        } finally {
+            Files.setPosixFilePermissions(profile, PosixFilePermissions.fromString("rw-r--r--"));
+        }
+    }
+
+    @Test
     void aPackWithReadOnlyDirectoriesIsRewrittenAndNoOldCopyIsLeftBesideIt() throws IOException {
         assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"), "no POSIX modes here");
         assumeTrue(!bypassesPermissions(), "this process writes through any mode (root with a DAC override)");

@@ -123,6 +123,19 @@ class SurfaceSubsetTest {
     private static final String FIXED_PAYLOAD_ROW =
             "planted/asset-path-inside-through-a-symlink-is-contained" + GoldenSubjects.WITH_DESCRIPTOR;
 
+    /**
+     * The rows whose baseline answer names a quoted number, which #651 (operator ruling of 2026-11-25) words with its
+     * fix: the one change their rows may carry, made by {@link #quotedNumberHint}.
+     */
+    private static final Set<String> QUOTED_NUMBER_ROWS =
+            Set.of("planted/c10-agent-quoted-integer" + GoldenSubjects.WITH_DESCRIPTOR);
+
+    /** #651's rewording of the one quoted number the baseline names: its detail before, and after. */
+    private static final String QUOTED_BEFORE = "'routing-priority' must be an integer";
+
+    private static final String QUOTED_AFTER =
+            "'routing-priority': \\\"50\\\" must be an integer: write 50 without quotes, or run pack-doctor remediate";
+
     /** W1's fix: the sidecar's payload path before the landing, and after it. */
     private static final String PAYLOAD_BEFORE = "assets/in/x.txt";
 
@@ -302,7 +315,9 @@ class SurfaceSubsetTest {
                     .isFalse();
             return;
         }
-        JsonNode before = FIXED_PAYLOAD_ROW.equals(key) ? fixedPayload(BEFORE.get(key)) : BEFORE.get(key);
+        JsonNode before = FIXED_PAYLOAD_ROW.equals(key)
+                ? fixedPayload(BEFORE.get(key))
+                : QUOTED_NUMBER_ROWS.contains(key) ? quotedNumberHint(BEFORE.get(key)) : BEFORE.get(key);
         List<Fault> was = faults(before);
         List<Fault> atFiles = faults(atFiles(SURFACES.get(key).get("registration")));
         assertPlacesAreValidateModes(key, faults);
@@ -341,6 +356,16 @@ class SurfaceSubsetTest {
                 .as("the baseline names the payload path the landing fixed")
                 .contains(PAYLOAD_BEFORE);
         return JSON.readTree(text.replace(PAYLOAD_BEFORE, PAYLOAD_AFTER));
+    }
+
+    /**
+     * The baseline answer of a row that names a quoted number, its detail worded with the fix as #651 words it: the one
+     * change its rows may carry.
+     */
+    private static JsonNode quotedNumberHint(JsonNode before) {
+        String text = JSON.writeValueAsString(before);
+        assertThat(text).as("the baseline names the quoted number without its fix").contains(QUOTED_BEFORE);
+        return JSON.readTree(text.replace(QUOTED_BEFORE, QUOTED_AFTER));
     }
 
     private static List<Fault> faults(JsonNode registration) {

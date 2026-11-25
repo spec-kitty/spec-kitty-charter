@@ -1,10 +1,13 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.validation.Location;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.rules.Findings;
+import ai.speckitty.charter.packs.infra.storage.QuotedNumbers.Repairs;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,8 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * {@link QuotedNumbers} (#651): which quoted values qualify, and the repair of a file's text, which unquotes only a
- * quoted scalar at the finding's place whose finding words its fix, and leaves the rest of the text as it was.
+ * {@link QuotedNumbers} (#651): which quoted values qualify, and the repair of a file's text, which writes the value of a
+ * scalar at the finding's place whose finding words its fix in place of the whole node (quotes, tag, escapes or block
+ * indicator), leaves the rest of the text as it was, and says why it left a value it could not repair.
  */
 class QuotedNumbersTest {
 
@@ -34,9 +38,13 @@ class QuotedNumbersTest {
     }
 
     private String repaired(String text, Reason... findings) throws IOException {
-        Files.writeString(pack.resolve(FILE), text, StandardCharsets.UTF_8);
-        QuotedNumbers.repair(pack, List.of(findings));
+        repairs(text, findings);
         return Files.readString(pack.resolve(FILE), StandardCharsets.UTF_8);
+    }
+
+    private Repairs repairs(String text, Reason... findings) throws IOException {
+        Files.writeString(pack.resolve(FILE), text, StandardCharsets.UTF_8);
+        return QuotedNumbers.repair(pack, List.of(findings));
     }
 
     @Test
@@ -69,16 +77,106 @@ class QuotedNumbersTest {
     }
 
     @Test
-    void aTaggedAnAnchoredOrAPlainScalarIsLeftAsItIs() throws IOException {
-        String text = "a: !!str \"15\"\nb: &n \"15\"\nc: *n\nd: 15\n";
+    void aTaggedAnEscapedOrABlockScalarIsWrittenAsItsValueInPlaceOfItsWholeNode() throws IOException {
+        String text = "a: !!str \"15\"\nb: !!str 16\nc: \"1\\x37\"\nd: |-\n  18\ne: >-  # folded\n  19\n\nf: 1\n";
 
         assertThat(repaired(
                         text,
                         fixable("15", false, "a"),
-                        fixable("15", false, "b"),
-                        fixable("15", false, "c"),
-                        fixable("15", false, "d")))
-                .isEqualTo(text);
+                        fixable("16", false, "b"),
+                        fixable("17", false, "c"),
+                        fixable("18", false, "d"),
+                        fixable("19", false, "e")))
+                .isEqualTo("a: 15\nb: 16\nc: 17\nd: 18\ne: 19\n\nf: 1\n");
+    }
+
+    @Test
+    void aPlainScalarIsLeftAsItIs() throws IOException {
+        String text = "d: 15\n";
+
+        Repairs repairs = repairs(text, fixable("15", false, "d"));
+
+        assertThat(Files.readString(pack.resolve(FILE), StandardCharsets.UTF_8)).isEqualTo(text);
+        assertThat(repairs.repaired()).isEmpty();
+        assertThat(repairs.unrepaired()).containsOnlyKeys(new Location(FILE, "/d"));
+    }
+
+    @Test
+    void anAnchoredScalarOrAFileWithAnAliasIsLeftAsItIsAndSaysWhy() throws IOException {
+        String anchored = "a: &n \"15\"\nb: \"16\"\n";
+        Repairs repairs = repairs(anchored, fixable("15", false, "a"), fixable("16", false, "b"));
+        assertThat(Files.readString(pack.resolve(FILE), StandardCharsets.UTF_8))
+                .as("the scalar without the anchor is repaired")
+                .isEqualTo("a: &n \"15\"\nb: 16\n");
+        assertThat(repairs.unrepaired()).containsOnlyKeys(new Location(FILE, "/a"));
+        assertThat(repairs.unrepaired().get(new Location(FILE, "/a"))).contains("anchor");
+
+        String aliased = "a: &n {x: \"15\"}\nb: *n\n";
+        repairs = repairs(aliased, fixable("15", false, "a", "x"), fixable("15", false, "b", "x"));
+        assertThat(Files.readString(pack.resolve(FILE), StandardCharsets.UTF_8)).isEqualTo(aliased);
+        assertThat(repairs.repaired()).isEmpty();
+        assertThat(repairs.unrepaired().values()).allMatch(why -> why.contains("alias"));
+    }
+
+    @Test
+    void twoFindingsAtOnePlaceRepairItOnce() throws IOException {
+        Reason finding = fixable("15", false, "a");
+
+        Repairs repairs = repairs("a: \"15\"\nb: 2\n", finding, finding);
+
+        assertThat(Files.readString(pack.resolve(FILE), StandardCharsets.UTF_8)).isEqualTo("a: 15\nb: 2\n");
+        assertThat(repairs.repaired()).hasSize(1);
+    }
+
+    @Test
+    void thePlaceIsFoundPastClosedNestedCollectionsAndUnderKeysWithEscapedPointerCharacters() throws IOException {
+        String text = "a: {b: [1, {c: x}], d: [[2]]}\ne:\n  f:\n  - g: 1\n  h: \"15\"\n\"i/j\": {\"k~l\": '16'}\n";
+
+        Repairs repairs = repairs(text, fixable("15", false, "e", "h"), fixable("16", true, "i/j", "k~l"));
+
+        assertThat(Files.readString(pack.resolve(FILE), StandardCharsets.UTF_8))
+                .isEqualTo("a: {b: [1, {c: x}], d: [[2]]}\ne:\n  f:\n  - g: 1\n  h: 15\n\"i/j\": {\"k~l\": 16}\n");
+        assertThat(repairs.repaired())
+                .extracting(PackRemediation.Repaired::pointer)
+                .containsExactly("/e/h", "/i~1j/k~0l");
+    }
+
+    @Test
+    void theRepairsAreInTheFindingsOrderAcrossFiles() throws IOException {
+        Files.writeString(pack.resolve("b.yaml"), "x: \"1\"\n", StandardCharsets.UTF_8);
+        Reason inB = Findings.at(
+                PackCodes.ARTIFACT_SCHEMA_ERROR, "b.yaml", List.of("x"), "b.yaml: 'x': " + QuotedNumbers.fault("1", true));
+
+        Repairs repairs = repairs("y: \"2\"\nz: \"3\"\n", fixable("2", true, "y"), inB, fixable("3", true, "z"));
+
+        assertThat(repairs.repaired())
+                .extracting(PackRemediation.Repaired::file, PackRemediation.Repaired::pointer)
+                .containsExactly(tuple(FILE, "/y"), tuple("b.yaml", "/x"), tuple(FILE, "/z"));
+    }
+
+    @Test
+    void aFileGoneFromTheCopyIsNamed() throws IOException {
+        Repairs repairs = QuotedNumbers.repair(pack, List.of(fixable("15", false, "a")));
+
+        assertThat(repairs.gone()).contains(FILE);
+        assertThat(repairs.repaired()).isEmpty();
+    }
+
+    @Test
+    void theRemedyIsDroppedWhereRemediateCannotRepairAndReworded() {
+        String detail = FILE + ": 'a': " + QuotedNumbers.fault("15", false);
+
+        assertThat(QuotedNumbers.withoutRemedy(detail)).isEqualTo(FILE + ": 'a': \"15\" must be a number: write 15"
+                + " without quotes");
+        assertThat(QuotedNumbers.withoutRemedy("other")).isEqualTo("other");
+        Reason finding = fixable("15", false, "a");
+        assertThat(QuotedNumbers.blocked(finding).detail())
+                .isEqualTo(FILE + ": 'a': \"15\" must be a number: write 15 without quotes; remediate does once the"
+                        + " pack's other faults are fixed");
+        assertThat(QuotedNumbers.unrepaired(finding, "it carries an anchor").detail())
+                .isEqualTo(FILE + ": 'a': \"15\" must be a number: write 15 without quotes; remediate cannot: it"
+                        + " carries an anchor");
+        assertThat(QuotedNumbers.blocked(finding).location()).isEqualTo(finding.location());
     }
 
     @Test
