@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * One read per surface call (#554, S1, T028, NFR-004): counting seams on the tree walk ({@link PackFileSet#walks()})
- * and on the store's whole read ({@link FilesystemPackStore#reads()}) see one walk and one read of the staged tree per
+ * One read per surface call (#554, S1, T028, NFR-004): a {@link ReadCounters} meter around each call counts the
+ * walks of the tree and the store's whole reads, and sees one walk and one read of the staged tree per
  * registration load, the census, the validate facts and the assembly input all from that walk, and the composition
  * facts built from that read without reading again. The second read the registration made through
  * {@code contentsOf} and a single-pack {@link DomainRepositoryService} is gone.
@@ -33,18 +33,13 @@ class OneReadTest {
     @DisplayName("a registration's load reads the staged tree once, its composition facts included")
     void theRegistrationLoadReadsOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
-        long walks = PackFileSet.walks();
-        long runs = StoreRead.runs();
-        long before = FilesystemPackStore.reads();
+        ReadCounters.Measured<WholePackWriteStore.Contents> load =
+                ReadCounters.measured(() -> StagedReads.contents(new WholePackStore(STRATEGY), pack));
 
-        WholePackWriteStore.Contents contents = StagedReads.contents(new WholePackStore(STRATEGY), pack);
-
-        assertThat(PackFileSet.walks() - walks)
-                .as("one walk of the staged tree")
-                .isOne();
-        assertThat(StoreRead.runs() - runs).as("one run of the store half").isOne();
-        assertThat(FilesystemPackStore.reads() - before).isOne();
-        assertThat(contents.facts().held()).isNotEmpty();
+        assertThat(load.read().walks()).as("one walk of the staged tree").isOne();
+        assertThat(load.read().runs()).as("one run of the store half").isOne();
+        assertThat(load.read().reads()).isOne();
+        assertThat(load.value().facts().held()).isNotEmpty();
     }
 
     @Test
@@ -54,18 +49,14 @@ class OneReadTest {
         Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
         WholePackStore store = new WholePackStore(STRATEGY);
         ai.speckitty.charter.packs.application.PackRegistrationService.ReadUpload read = StagedReads.read(store, pack);
-        long walks = PackFileSet.walks();
-        long runs = StoreRead.runs();
-        long before = FilesystemPackStore.reads();
+        ReadCounters steps = ReadCounters.during(() -> {
+            store.removeNotHeld(
+                    new ai.speckitty.charter.packs.application.StagedPack(pack),
+                    read.read().notHeld());
+            store.stampManifest(new ai.speckitty.charter.packs.application.StagedPack(pack), read.read());
+        });
 
-        store.removeNotHeld(
-                new ai.speckitty.charter.packs.application.StagedPack(pack),
-                read.read().notHeld());
-        store.stampManifest(new ai.speckitty.charter.packs.application.StagedPack(pack), read.read());
-
-        assertThat(PackFileSet.walks()).isEqualTo(walks);
-        assertThat(StoreRead.runs()).isEqualTo(runs);
-        assertThat(FilesystemPackStore.reads()).isEqualTo(before);
+        assertThat(steps).isEqualTo(new ReadCounters(0, 0, 0));
         assertThat(pack.resolve(PackFileSet.MANIFEST)).exists();
     }
 
@@ -73,13 +64,11 @@ class OneReadTest {
     @DisplayName("a stored pack's load walks and reads it once, its composition facts included")
     void theStoredLoadReadsOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
-        long walks = PackFileSet.walks();
-        long before = FilesystemPackStore.reads();
+        ReadCounters load = ReadCounters.during(
+                () -> new WholePackStore(STRATEGY).loadStored(new PackIdentifier(ExamplePacks.BUILT_IN), pack));
 
-        new WholePackStore(STRATEGY).loadStored(new PackIdentifier(ExamplePacks.BUILT_IN), pack);
-
-        assertThat(PackFileSet.walks() - walks).isOne();
-        assertThat(FilesystemPackStore.reads() - before).isOne();
+        assertThat(load.walks()).isOne();
+        assertThat(load.reads()).isOne();
     }
 
     @Test
@@ -89,18 +78,15 @@ class OneReadTest {
         DomainRepositoryService service = new DomainRepositoryService(
                 () -> List.of(new PackLocation(ExamplePacks.BUILT_IN, ExamplePacks.level(ExamplePacks.BUILT_IN), pack)),
                 STRATEGY);
-        long walks = PackFileSet.walks();
-        long before = FilesystemPackStore.reads();
-        long runs = StoreRead.runs();
+        ReadCounters.Measured<PackCompositionFacts> facts =
+                ReadCounters.measured(() -> service.compositionFacts(new PackIdentifier(ExamplePacks.BUILT_IN)));
 
-        PackCompositionFacts facts = service.compositionFacts(new PackIdentifier(ExamplePacks.BUILT_IN));
-
-        assertThat(PackFileSet.walks() - walks).isOne();
-        assertThat(FilesystemPackStore.reads() - before).isOne();
-        assertThat(StoreRead.runs() - runs)
+        assertThat(facts.read().walks()).isOne();
+        assertThat(facts.read().reads()).isOne();
+        assertThat(facts.read().runs())
                 .as("the composing read runs the one reader's StoreRead half (operator decision 2026-11-17)")
                 .isOne();
-        assertThat(facts.held()).isNotEmpty();
+        assertThat(facts.value().held()).isNotEmpty();
     }
 
     @Test
@@ -109,30 +95,22 @@ class OneReadTest {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
         ConfiguredPack configured = new ConfiguredPack(
                 new PackIdentifier(ExamplePacks.BUILT_IN), ExamplePacks.level(ExamplePacks.BUILT_IN));
-        long walks = PackFileSet.walks();
-        long before = FilesystemPackStore.reads();
-        long runs = StoreRead.runs();
+        ReadCounters read =
+                ReadCounters.during(() -> CompositionFactsBuilder.underResolution(configured, pack, STRATEGY));
 
-        CompositionFactsBuilder.underResolution(configured, pack, STRATEGY);
-
-        assertThat(PackFileSet.walks() - walks).isOne();
-        assertThat(FilesystemPackStore.reads() - before).isOne();
-        assertThat(StoreRead.runs() - runs).isOne();
+        assertThat(read).isEqualTo(new ReadCounters(1, 1, 1));
     }
 
     @Test
     @DisplayName("the one reader walks the tree once: the validate facts, the census and the assembly input share it")
     void theOneReaderWalksOnce(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
-        long walks = PackFileSet.walks();
-        long before = FilesystemPackStore.reads();
-
-        new FileSystemPackInspector()
+        ReadCounters read = ReadCounters.during(() -> new FileSystemPackInspector()
                 .readTree(new ai.speckitty.charter.packs.domain.PackRoot(
-                        "built-in", java.util.Optional.empty(), pack.toString()));
+                        "built-in", java.util.Optional.empty(), pack.toString())));
 
-        assertThat(PackFileSet.walks() - walks).isOne();
-        assertThat(FilesystemPackStore.reads() - before).isOne();
+        assertThat(read.walks()).isOne();
+        assertThat(read.reads()).isOne();
     }
 
     @Test
@@ -145,10 +123,9 @@ class OneReadTest {
         FilesystemPackStore.PackRead read = store.read(PackDirectory.of(pack), graphs);
         Pack assembled = StoreRead.assembly(key, read, new HashMap<>(), graphs, new ArrayList<>())
                 .build();
-        long before = FilesystemPackStore.reads();
+        ReadCounters built = ReadCounters.during(() ->
+                CompositionFactsBuilder.build(assembled, read, graphs.documents(), MutabilityPolicySource.empty()));
 
-        CompositionFactsBuilder.build(assembled, read, graphs.documents(), MutabilityPolicySource.empty());
-
-        assertThat(FilesystemPackStore.reads() - before).isZero();
+        assertThat(built).isEqualTo(new ReadCounters(0, 0, 0));
     }
 }

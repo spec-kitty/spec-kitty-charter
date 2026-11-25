@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.ReferenceFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
+import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
@@ -65,8 +66,6 @@ record StoreRead(
         List<GraphDocument> graphs,
         Optional<PackManifestDso> manifest,
         List<PackElementViolation> graphFaults) {
-
-    private static final java.util.concurrent.atomic.LongAdder RUNS = new java.util.concurrent.atomic.LongAdder();
 
     /**
      * Copies the lists.
@@ -161,7 +160,7 @@ record StoreRead(
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
-        RUNS.increment();
+        WorkMeter.count(WorkMeter.Work.STORE_RUN);
         Path packDir = directory.toAbsolutePath().normalize();
         List<StoreRead> refusal = new ArrayList<>();
         DsoRead dso = dsoRead(packDir, id.value(), strategy, companionRules, bindings, walk, refusal);
@@ -216,16 +215,6 @@ record StoreRead(
                 selfJoins,
                 references.stream().findFirst().orElse(ReferenceFacts.NONE));
         return new StoreRead(assembled, new PackLayout(places), graphs.documents(), manifest, graphs.violations());
-    }
-
-    /**
-     * How many times this JVM has run the DSO half: the counter that tells every surface reads through this one
-     * implementation (#554, T028; the composing read included, operator decision 2026-11-17).
-     *
-     * @return the count
-     */
-    static long runs() {
-        return RUNS.sum();
     }
 
     /**

@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
@@ -978,11 +979,10 @@ class WholePackStoreTest {
                     "schema_version: \"1.0\"\nid: D" + i + "\ntitle: T\nintent: I\nenforcement: required\n");
         }
         AtomicInteger reads = new AtomicInteger();
-        long lookupsBefore = FilesystemPackStore.lookupParses();
-        WholePackWriteStore.Remains remains =
-                new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(STORED, pack);
-        assertThat(remains.held()).hasSize(files);
-        return reads.get() + (int) (FilesystemPackStore.lookupParses() - lookupsBefore);
+        WorkMeter.Measured<WholePackWriteStore.Remains> remains = WorkMeter.measure(
+                () -> new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(STORED, pack));
+        assertThat(remains.value().held()).hasSize(files);
+        return reads.get() + (int) remains.work().of(WorkMeter.Work.LOOKUP_PARSE);
     }
 
     @Test

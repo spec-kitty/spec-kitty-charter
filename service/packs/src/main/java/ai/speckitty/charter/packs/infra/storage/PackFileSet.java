@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import java.io.IOException;
@@ -225,7 +226,7 @@ final class PackFileSet {
      * census), every link, never followed (the census, which refuses it, D6), and every special file, never opened (the
      * census, which refuses it, R-ad), each pack-relative, {@code /}-separated and in {@link String} order. No surface
      * reads a file but through {@link #regular()}, so none reads through a link or opens a FIFO. Every tree walk of a
-     * pack goes through here, so a test counts them ({@link #walks()}).
+     * pack goes through here, each counted as a {@link WorkMeter.Work#TREE_WALK}.
      *
      * @param regular every regular file that is not itself a link
      * @param links every symbolic link, to a file, a directory or nothing
@@ -249,17 +250,6 @@ final class PackFileSet {
         static final Walk NONE = new Walk(List.of(), List.of(), List.of());
     }
 
-    private static final java.util.concurrent.atomic.LongAdder WALKS = new java.util.concurrent.atomic.LongAdder();
-
-    /**
-     * How many walks of a pack tree this JVM has made: the counter that tells a surface walks a pack once.
-     *
-     * @return the count
-     */
-    static long walks() {
-        return WALKS.sum();
-    }
-
     /**
      * Walks a pack tree once, from the directory's real path, so a root configured through a link is entered (#174,
      * #284); a link below the root is listed as a link and never read through, a special file is listed as one and never
@@ -272,7 +262,7 @@ final class PackFileSet {
      *     listed
      */
     static Walk walk(Path directory, String packName) {
-        WALKS.increment();
+        WorkMeter.count(WorkMeter.Work.TREE_WALK);
         List<String> regular = new ArrayList<>();
         List<String> links = new ArrayList<>();
         List<String> special = new ArrayList<>();
