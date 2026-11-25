@@ -14,8 +14,8 @@ import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.domain.PackCodes;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.SpecialFileRules;
@@ -423,7 +423,8 @@ public final class PackCommitStore implements WholePackWriteStore {
      * then in any words,
      * one for one, so a write that changes a held fault's wording (a count it names) is not refused for it, and a write
      * that adds a second fault of that code at that file is. The refusal is {@code validation_failed}, one violation per
-     * new fault at its file, as a registration states them; nothing is swapped.
+     * new fault at its file and its place in it ({@code file#pointer}, #654), as a registration states them; nothing is
+     * swapped.
      */
     private void requireNoNewViolation(String name, Path liveDir, Path staging) {
         List<Reason> after = violationsOf(name, staging);
@@ -434,10 +435,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         List<Reason> unmatched = withoutHeld(after, before, PackCommitStore::wording);
         List<Reason> unmatchedBefore = withoutHeld(before, after, PackCommitStore::wording);
         List<RefusalViolation> added = withoutHeld(unmatched, unmatchedBefore, PackCommitStore::place).stream()
-                .map(reason -> new RefusalViolation(
-                        reason.location().file(),
-                        reason.code().value(),
-                        PackCodes.detail(reason.location().file(), reason.detail())))
+                .map(PackRefusalMapping::violation)
                 .toList();
         if (!added.isEmpty()) {
             throw CharterRefusal.withViolations(

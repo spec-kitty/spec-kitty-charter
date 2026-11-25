@@ -258,7 +258,7 @@ class PackCommitStoreTest {
                                 assertThat(violation.pointer())
                                         .as("the file, then # and the pointer into it, as a registration states it"
                                                 + " (#654)")
-                                        .isEqualTo(RelationshipShard.SHARD_PATH + "#/edges/0");
+                                        .isEqualTo(RelationshipShard.SHARD_PATH + "#/edges/0/relation");
                                 assertThat(violation.code()).isEqualTo("drg_schema_error");
                             });
                 });

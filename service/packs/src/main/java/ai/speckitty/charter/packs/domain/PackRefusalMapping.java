@@ -91,7 +91,15 @@ public final class PackRefusalMapping {
         return verdict.warnings().stream().map(PackRefusalMapping::diagnostic).toList();
     }
 
-    private static RefusalViolation violation(Reason reason) {
+    /**
+     * A pack-file finding as the wire lists it: at its {@linkplain #pointer pointer}, with its code and its detail led by
+     * its file. A registration and a per-file write refused because its pack would not revalidate state a violation
+     * through this one mapping (#654).
+     *
+     * @param reason the finding
+     * @return the violation
+     */
+    public static RefusalViolation violation(Reason reason) {
         String file = reason.location().file();
         return new RefusalViolation(
                 pointer(reason.location()), reason.code().value(), PackCodes.detail(file, reason.detail()));
