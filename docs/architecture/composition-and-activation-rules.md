@@ -174,7 +174,7 @@ Composition decides which packs one request sees, in what order, and which versi
 
 **C1 Closure.** `C(S) = lfp X. S ∪ ⋃ {succ(p) | p ∈ X}`.
 The composition closure is every pack reachable from the roots over `depends_on` and `parent_pack`.
-*Source:* ADR-0048 d8; ADR-0053 d6 (amended 2026-11-03); `PackCompositionResolver.compositionClosure`. **Built.**
+*Source:* ADR-0048 d8; ADR-0053 d6 (amended 2026-11-03); `PackGraph.compositionClosure`. **Built.**
 > ⚠ **Unclear:** ADR-0048 and ADR-0053 speak of the `depends_on` closure, and ADR-0048 d5 says `parent_pack` "sets no
 > load order". The built resolver walks `parent_pack` into the closure, orders by it and counts it as a cycle edge
 > (C5, C6); qualified references use the `depends_on`-only closure (C12). No ADR records that lineage widens the

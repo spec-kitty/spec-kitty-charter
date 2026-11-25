@@ -656,8 +656,7 @@ class PackCompositionResolverTest {
             PackUnderResolution second =
                     withParent("01SECNZND00000000000000000", "second", "01FHZRST000000000000000000");
 
-            assertThat(PackCompositionResolver.compositionClosure(
-                            List.of("01FHZRST000000000000000000"), byPackId(first, second)))
+            assertThat(PackGraph.compositionClosure(List.of("01FHZRST000000000000000000"), byPackId(first, second)))
                     .containsExactly("01FHZRST000000000000000000", "01SECNZND00000000000000000");
             assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FHZRST000000000000000000"))
                             .failure())
@@ -740,8 +739,7 @@ class PackCompositionResolverTest {
                     PackLevel.ORG,
                     List.of(new PackDependency("01FHZRST000000000000000000", ">=1.0")));
 
-            assertThat(PackCompositionResolver.compositionClosure(
-                            List.of("01FHZRST000000000000000000"), byPackId(first, second)))
+            assertThat(PackGraph.compositionClosure(List.of("01FHZRST000000000000000000"), byPackId(first, second)))
                     .containsExactly("01FHZRST000000000000000000", "01SECNZND00000000000000000");
             assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FHZRST000000000000000000"))
                             .failure())
@@ -753,7 +751,7 @@ class PackCompositionResolverTest {
             PackUnderResolution orphan =
                     withParent("01NZRPH0000000000000000000", "orphan", "01MHZSSHZNG000000000000000");
 
-            assertThat(PackCompositionResolver.compositionClosure(
+            assertThat(PackGraph.compositionClosure(
                             List.of("01AKZPHA000000000000000000", "01NZRPH0000000000000000000"),
                             byPackId(alpha, beta, orphan)))
                     .containsExactly(
