@@ -20,7 +20,7 @@ audience:
 **Status: assessment, not a decision.** This note re-measures the
 [codebase assessment of 2026-11-20](/plans/engineering-notes/codebase-assessment-2026-11-20/) on
 current `main`. It reports only what moved; the method, the definitions and the full findings are
-in that note. It changes no code and files no issue.
+in that note. It changes no code and files one issue: the defect below, #654.
 
 ## Baseline
 
@@ -79,7 +79,7 @@ worse, and one new contract defect appeared.**
 - **Fix:** build the violation through `PackRefusalMapping`'s one mapping, by making
   `violation(Reason)` (or `pointer(Location)`) public, since `PackCommitStore` is outside
   `packs.domain`. Update `PackCommitStoreTest.java:258` to `registered.graph.yaml#/edges/0`, and add a
-  scenario that pins `file#/edges/<n>` on a refused per-file write. It is new work; no issue covers it.
+  scenario that pins `file#/edges/<n>` on a refused per-file write. Tracked in #654, filed on 2026-11-25 at the orchestrator's request.
 
 ## Hotspots now
 
@@ -168,7 +168,7 @@ are within a point of their 11-16 margins.
 The ranking of 11-20 stands, with three changes:
 
 1. **New, first:** fix the pointer of the per-file write refusal and pin it with a scenario
-   (above). Size S. No issue.
+   (above). Size S. #654.
 2. **Action 4 rises to second.** The run is red: bring `routing` over its floor or amend ADR-0062
    with a ruled floor, and get `packs-core` inside its time limit (#644, #530, #531). The
    `ExampleVocabularyReadTest` cost from 11-20 is a likely part of the shard's time.
@@ -180,9 +180,7 @@ the largest classes grew 3% in 5.4 days with no gate on them.
 ## Questions for the operator
 
 1. The four questions of 11-20 are still open.
-2. **The per-file pointer defect.** File it as an issue (the issue rules allow one for a
-   correctness risk, with the `follow-up` label), or fold it into the next `packs` landing?
-3. **`routing`'s floor.** Raise the tests to meet 90, or rule a lower first floor in an ADR-0062
+2. **`routing`'s floor.** Raise the tests to meet 90, or rule a lower first floor in an ADR-0062
    amendment? No amendment exists for either `routing` module.
 
 ## Reproduce
