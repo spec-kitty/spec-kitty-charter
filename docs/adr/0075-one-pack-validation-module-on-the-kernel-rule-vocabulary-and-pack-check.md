@@ -3,7 +3,7 @@ title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, pa
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
 updated: 2026-11-25T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full); and a note on remediate (2026-11-25, #651)
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full); and an amendment of decision 9 (2026-11-25, #651: remediate repairs a quoted number)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR

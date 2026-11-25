@@ -10,5 +10,12 @@
   <file> of <pack> cannot be read: '<field>': "15" must be a number: write 15 without quotes, or run pack-doctor
   remediate`. A file that is not `.yaml` (a Markdown file's frontmatter, say) keeps the plain text, and a quoted
   number in `policy.yaml`, whose faults join into one detail with no pointer, says `write 15 without quotes` without
-  the remediate clause. Detail text only; no code, schema or accepted shape changes. `pack-doctor remediate` prints
-  its repairs on its own outcome lines; `PackDoctorReport` is unchanged.
+  the remediate clause. Detail text only; no code, schema or accepted shape changes.
+- `pack-doctor remediate` repairs that fault instead of refusing the pack (#651). It writes the value plain in its work
+  copy and judges the copy again; anything left refuses the pack, nothing written. Its outcome line for a pack it
+  repaired is `<dir>: rewritten, <n> quoted numbers repaired` (`1 quoted number`), followed by one indented line a
+  repair, `repaired at <file>#<pointer>: "<value>" is now a number` (`an integer` in an integer field), so a script
+  that matches `: rewritten` at the end of the line no longer matches such a pack. In its refusal a quoted number's
+  detail ends `; remediate does once the pack's other faults are fixed` or `; remediate cannot: <why>` instead of the
+  remediate clause. A read-only file in the pack is repaired and rewritten too, and keeps its mode. Its report lists the
+  repairs (`2026-11-25-pack-doctor-report-repairs.md`). Core's seam: none; the CLI is not part of the API core calls.

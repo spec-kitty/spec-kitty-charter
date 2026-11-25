@@ -9,6 +9,7 @@ kind: Changelog
 related:
   - guides/check-packs
   - changelog/2026-11-22-pack-doctor
+  - adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor
 audience:
   - profile: pack-author
     guidance_text: Read this if a pack is refused because a price, a score or a priority is written in quotes.
@@ -31,11 +32,10 @@ too.
 
   An `integer` field says `must be an integer`. The registration, every write and `pack-doctor validate` give the same
   detail.
-- **`pack-doctor remediate` repairs it.** It writes the value in place of the whole value as written (its quotes, an
-  escape, a `!!str` tag or a block scalar), in the file's canonical form (`"1e-3"` ends as `0.001`), and restamps the
-  manifest, a read-only file included. Its outcome line counts the repairs, and one line under it names each:
-  `repaired at <file>#<pointer>: "15" is now a number` (`is now an integer` in an integer field). The repairs are in
-  the printed lines only; the report's JSON has no field for them.
+- **`pack-doctor remediate` repairs it.** It writes the value plain (quoted, escaped, `!!str` or a block scalar), in
+  canonical form (`"1e-3"` ends as `0.001`), and restamps the manifest. Its outcome line counts the repairs, a line
+  names each (`repaired at <file>#<pointer>: "15" is now a number`), and its report lists them in the new `repairs`
+  (operator ruling Q14).
 - **Only a real number is repaired.** A value that, written plain, is a finite number of the field's type gets the fix;
   an integer field takes integers only. `"fifteen"`, `"1.5"` in an integer field, any other fault beside the quoted
   numbers, and a number the field's range refuses once it is plain all still refuse the pack, and remediate writes
@@ -46,7 +46,7 @@ too.
 ## What did not change
 
 The service accepts only the number. `15` and `15.0` stay equally valid; a quoted `"15"` is still refused, and the round
-trip still tells a string from a number. The schema is unchanged, and the violation keeps its code: no refusal code is
-added or changed.
+trip still tells a string from a number. The pack schemas are unchanged, and the violation keeps its code: no refusal
+code is added or changed. `PackDoctorReport` gains `repairs`, a breaking change for a reader of remediate's report.
 
 See [Check packs](/guides/check-packs/#repair-a-pack).

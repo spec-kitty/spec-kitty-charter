@@ -213,7 +213,8 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     `number` or `integer` (`"15"` where the field takes `15`), whose detail now ends `write 15 without quotes, or run
     pack-doctor remediate`, is repaired too: written plain in the work copy, after which the copy is judged again and
     the pack refused, nothing written, when anything is left. The schema does not change and the service still
-    accepts only the number. The repairs are printed on the outcome lines only; the report's JSON is unchanged.
+    accepts only the number. The repairs are printed on the outcome lines, and, by operator ruling Q14 of the same day,
+    listed in the report's new `repairs`.
     [Check packs](/guides/check-packs/#repair-a-pack) holds the detail.*
     - **Staging.** The work is done in a copy under the JVM's temporary directory. A copy equal to the pack, byte for
       byte, is `unchanged`, and nothing is written in or beside the pack, so a canonical pack needs no write access.
@@ -439,7 +440,7 @@ Two further Decision Moments confirm without a letter: the intent and the alignm
   they registered before. `antiPatterns` leaves `Styleguide`, `StyleguideRegistration` and `Procedure`, and two schemas
   are deleted. The report schema is renamed.
 - spec-kitty-open-packs' content is refused at its repin until it is curated: its inline entries, its file-less nodes,
-  and any preset item or manifest that breaks the new rules. `remediate` restamps manifests; the rest is curation.
+  and any preset item or manifest that breaks the new rules. `remediate` restamps manifests (and, since 2026-11-25, writes quoted numbers plain, #651); the rest is curation.
 - The `PackDoctorReport` on standard output gains three keys; a strict reader of the old shape must accept them.
 - `--full` is narrower than its first ruling (R-h): a pack it passes can still be refused at registration for a
   `specializes_from` cycle, a relation, an edge-index refusal or its own-closure walk.
