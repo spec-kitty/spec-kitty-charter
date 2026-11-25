@@ -1,0 +1,21 @@
+{
+  "create_return_branch": "test/659-state-waits-and-main-hooks",
+  "created_at": "2026-11-25T21:40:36.071004+00:00",
+  "flattened": false,
+  "friendly_name": "Service tests wait for states; test hooks out of main",
+  "mid8": "01M8AAEG",
+  "mission_base_sha": "6da6cfaced0df3b1bb211e7a52d0b03bd323c6e0",
+  "mission_branch": "kitty/mission-service-test-reliability-01M8AAEG",
+  "mission_id": "01M8AAEGAWWX40BC7NQ6GAZVQ2",
+  "mission_number": null,
+  "mission_slug": "service-test-reliability-01M8AAEG",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Actions 8 and 9 of the 2026-11-25 codebase-health summary (ADR-0075 AA5): vacuous passes on a loaded runner and global state across parallel tests. Retrofit: the code was written as an Op on test/659-state-waits-and-main-hooks before this Mission existed; the Mission specifies, reviews and lands it.",
+  "purpose_tldr": "Make the service tests reliable: state waits instead of sleeps, and no static counters, JobGate or test-only constructors in main code (#659).",
+  "slug": "service-test-reliability-01M8AAEG",
+  "target_branch": "test/659-state-waits-and-main-hooks",
+  "topology": "single_branch",
+  "topology_settled": false,
+  "topology_source": "default"
+}
