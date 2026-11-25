@@ -548,7 +548,7 @@
       "severity" : "violation",
       "file" : "agent_profiles/p.agent.yaml",
       "place" : [ "routing-priority" ],
-      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority': \"50\" must be an integer: write 50 without quotes, or run pack-doctor remediate"
     } ]
   },
   "planted/c10-agent-quoted-integer+pack.yaml" : {
@@ -563,7 +563,7 @@
       "severity" : "violation",
       "file" : "agent_profiles/p.agent.yaml",
       "place" : [ "routing-priority" ],
-      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority' must be an integer"
+      "detail" : "agent_profiles/p.agent.yaml: 'routing-priority': \"50\" must be an integer: write 50 without quotes, or run pack-doctor remediate"
     } ]
   },
   "planted/c10-agent-role-uppercase" : {

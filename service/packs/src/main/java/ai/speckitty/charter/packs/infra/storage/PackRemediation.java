@@ -38,9 +38,14 @@ import org.jspecify.annotations.Nullable;
  * <ol>
  *   <li>the precondition: the storage verdict without the manifest gate
  *       ({@link StorageRulesets#verdictWithoutTheManifestGate}); any violation there is {@link Refused}, and nothing is
- *       written;
+ *       written, except a quoted number in a number field, the one fault of a file's content it repairs (#651,
+ *       {@link QuotedNumbers});
  *   <li>a work directory under the JVM's temporary directory takes a copy of the pack, every file byte for byte, so a
  *       file the census does not hold (a stray file, an author's note) stays as it was;
+ *   <li>when the precondition found quoted numbers, each is written plain in the copy, as the text inside its quotes,
+ *       and the copy is judged again: any violation left is {@link Refused}, and nothing is written. So a quoted value
+ *       that is no number of the field's type, any other fault beside a quoted number, and a number the field's range
+ *       refuses once it is plain all refuse the pack;
  *   <li>each modelled file is rewritten in the copy in the round trip's canonical form (ADR-0036: the same meaning;
  *       formatting and comments may change), the bytes {@link DomainRoundTrip}'s writer writes for it. A modelled file
  *       the round trip refuses (its canonical form past the code-point cap, say) cannot be rewritten: the pack is
@@ -88,19 +93,47 @@ public final class PackRemediation {
     public sealed interface Outcome permits Rewritten, Unchanged, Refused, NotRoundTripped {}
 
     /**
-     * The pack was rewritten: its modelled files in canonical form and its manifest derived and stamped.
+     * The pack was rewritten: its quoted numbers written plain, its modelled files in canonical form and its manifest
+     * derived and stamped.
      *
      * @param oldCopyLeft the hidden copy of the pack as it was, {@code .<pack>.aside-<uuid>}, when it could not be
      *     deleted after the swap; the swap stands, so it is the caller's to report and the user's to delete
+     * @param repaired each quoted number written plain, in the order the verdict found them; empty when there was none
      */
-    public record Rewritten(Optional<Path> oldCopyLeft) implements Outcome {
+    public record Rewritten(Optional<Path> oldCopyLeft, List<Repaired> repaired) implements Outcome {
         /**
-         * Checks the field.
+         * Checks the fields and copies the list.
          *
          * @param oldCopyLeft the copy left behind, if any
+         * @param repaired the quoted numbers written plain
          */
         public Rewritten {
             Objects.requireNonNull(oldCopyLeft, "oldCopyLeft");
+            repaired = List.copyOf(repaired);
+        }
+    }
+
+    /**
+     * A quoted number in a number field, written plain (#651).
+     *
+     * @param file the pack-relative path of the file that held it
+     * @param pointer the JSON pointer of the value, as the verdict's finding names it
+     * @param value the text that was inside the quotes
+     * @param integer whether the field is typed {@code integer}, else {@code number}
+     */
+    public record Repaired(String file, String pointer, String value, boolean integer) {
+        /**
+         * Checks the fields.
+         *
+         * @param file the file
+         * @param pointer the pointer
+         * @param value the value
+         * @param integer whether the field takes integers only
+         */
+        public Repaired {
+            Objects.requireNonNull(file, "file");
+            Objects.requireNonNull(pointer, "pointer");
+            Objects.requireNonNull(value, "value");
         }
     }
 
@@ -110,8 +143,9 @@ public final class PackRemediation {
     /**
      * The pack holds a fault remediation does not repair, or changed while it was remediated: nothing was written.
      *
-     * @param violations the storage verdict's violations without the manifest gate, in registration's order, or the one
-     *     reason that the pack changed during remediation
+     * @param violations the storage verdict's violations without the manifest gate, in registration's order (when the
+     *     pack's only violations were quoted numbers, those of its copy once they were written plain), or the one reason
+     *     that the pack changed during remediation
      */
     public record Refused(List<Reason> violations) implements Outcome {
         /**
@@ -290,22 +324,30 @@ public final class PackRemediation {
         List<Reason> violations = StorageRulesets.verdictWithoutTheManifestGate(
                         new FileSystemPackInspector().readTree(root))
                 .violations();
-        if (!violations.isEmpty()) {
+        if (!violations.isEmpty() && violations.stream().noneMatch(QuotedNumbers::namesTheFix)) {
             return new Refused(violations);
         }
-        return new Run(root).remediate();
+        return new Run(root, violations).remediate();
     }
 
     /** One remediation past its precondition: its work directory, its sibling and the hook that cleans them up. */
     private final class Run {
         private final PackRoot root;
+        private final List<Reason> faults;
         private final Object swapping = new Object();
         private boolean stopped;
         private @Nullable Path work;
         private @Nullable Path besides;
 
-        Run(PackRoot root) {
+        /**
+         * The run of one pack.
+         *
+         * @param root the pack
+         * @param faults the precondition's violations: none, or some that name a quoted number's fix
+         */
+        Run(PackRoot root, List<Reason> faults) {
             this.root = root;
+            this.faults = List.copyOf(faults);
         }
 
         Outcome remediate() {
@@ -327,8 +369,20 @@ public final class PackRemediation {
             PackIdentifier id = new PackIdentifier(root.name());
             Path staged = workDirectory().resolve("pack");
             copyTree(live, staged);
-            // The pack as it was copied: the one snapshot the round trip reads and the swap is checked against.
+            // The pack as it was copied: the snapshot the swap is checked against.
             SortedMap<String, byte[]> copied = tree(staged);
+            List<Repaired> repaired = List.of();
+            if (!faults.isEmpty()) {
+                repaired = QuotedNumbers.repair(staged, faults);
+                List<Reason> left = StorageRulesets.verdictWithoutTheManifestGate(new FileSystemPackInspector()
+                                .readTree(new PackRoot(root.name(), root.configuredLevel(), staged.toString())))
+                        .violations();
+                if (!left.isEmpty()) {
+                    // Another fault beside the quoted numbers is named as the pack holds it; when there was none,
+                    // what the plain numbers still break (a range, say) is.
+                    return new Refused(faults.stream().allMatch(QuotedNumbers::namesTheFix) ? left : faults);
+                }
+            }
             SortedMap<String, String> refused =
                     stage(id, staged, workDirectory().resolve("canonical"));
             if (!refused.isEmpty()) {
@@ -353,7 +407,7 @@ public final class PackRemediation {
                             "the pack is not changed while it is remediated",
                             "the pack changed during remediation: nothing was written; run remediate again")));
                 }
-                return new Rewritten(swap(sibling, live));
+                return new Rewritten(swap(sibling, live), repaired);
             }
         }
 

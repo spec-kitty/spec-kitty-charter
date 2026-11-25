@@ -190,6 +190,61 @@ class WordingTest {
         assertDetail(typeAt(SHARD, "string", "boolean", "edges", "0", "b"), "tactic.graph.yaml: 'b' must be a boolean");
     }
 
+    /** A {@code type} violation of a quoted value: the string {@code value} found where {@code expected} is declared. */
+    private static SchemaViolation quotedAt(String file, String value, String expected, String... pointer) {
+        return violation(file, List.of(pointer), "type", null, value, Map.of("0", "string", "1", expected));
+    }
+
+    @Test
+    void aQuotedNumberInANumberFieldSaysHowToFixIt() {
+        assertDetail(
+                quotedAt("routing_catalogs/c.routing-catalog.yaml", "15", "number", "models", "0", "cost", "price"),
+                "routing_catalogs/c.routing-catalog.yaml: 'price': \"15\" must be a number: write 15 without quotes,"
+                        + " or run pack-doctor remediate");
+        assertDetail(
+                quotedAt(SHARD, "0.6", "number", "edges", "0", "impacts"),
+                "tactic.graph.yaml: 'impacts': \"0.6\" must be a number: write 0.6 without quotes, or run pack-doctor"
+                        + " remediate");
+        assertDetail(
+                quotedAt(SHARD, "1e-3", "number", "edges", "0", "impacts"),
+                "tactic.graph.yaml: 'impacts': \"1e-3\" must be a number: write 1e-3 without quotes, or run"
+                        + " pack-doctor remediate");
+    }
+
+    @Test
+    void aQuotedIntegerInAnIntegerFieldSaysHowToFixIt() {
+        assertDetail(
+                quotedAt(SHARD, "50", "integer", "edges", "0", "n"),
+                "tactic.graph.yaml: 'n': \"50\" must be an integer: write 50 without quotes, or run pack-doctor"
+                        + " remediate");
+    }
+
+    @Test
+    void aQuotedValueThatIsNotThatNumberKeepsThePlainText() {
+        // Not a number at all, or not one the reader reads plain as a finite number of the field's type.
+        for (String text : List.of("fifteen", "", " 15", "+1", ".5", "1_000", "0x1F", "015", "1e400", ".inf", ".nan")) {
+            assertDetail(quotedAt(SHARD, text, "number", "edges", "0", "x"), "tactic.graph.yaml: 'x' must be a number");
+        }
+        // An integer field takes integers only.
+        for (String text : List.of("1.5", "15.0", "1e3")) {
+            assertDetail(
+                    quotedAt(SHARD, text, "integer", "edges", "0", "n"), "tactic.graph.yaml: 'n' must be an integer");
+        }
+        // A number of the wrong kind is no quoted value.
+        assertDetail(
+                violation(
+                        SHARD, List.of("edges", "0", "n"), "type", null, "2.5", Map.of("0", "number", "1", "integer")),
+                "tactic.graph.yaml: 'n' must be an integer");
+    }
+
+    @Test
+    void aQuotedNumberOutsideAYamlFileKeepsThePlainText() {
+        // Remediate repairs YAML files only; a Markdown front matter's fault names no repair it cannot make.
+        assertDetail(
+                quotedAt("missions/m/steps/s.prompt.md", "15", "number", "frontmatter", "x"),
+                "missions/m/steps/s.prompt.md: 'x' must be a number");
+    }
+
     @Test
     void aTypeViolationWithoutTheExpectedTypeUsesTheFallback() {
         assertDetail(

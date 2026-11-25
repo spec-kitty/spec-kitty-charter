@@ -180,7 +180,13 @@ public final class PackDoctorMain {
     /** The production remediation of one pack ({@link PackRemediation}), its outcome in the command's words. */
     static Remediate.Result remediated(PackRoot root) {
         return switch (new PackRemediation().remediate(root)) {
-            case PackRemediation.Rewritten rewritten -> new Remediate.Rewritten(rewritten.oldCopyLeft());
+            case PackRemediation.Rewritten rewritten ->
+                new Remediate.Rewritten(
+                        rewritten.oldCopyLeft(),
+                        rewritten.repaired().stream()
+                                .map(repaired -> new Remediate.Repaired(
+                                        repaired.file(), repaired.pointer(), repaired.value(), repaired.integer()))
+                                .toList());
             case PackRemediation.Unchanged unchanged -> new Remediate.Unchanged();
             case PackRemediation.Refused refused -> new Remediate.Refused(refused.violations());
             case PackRemediation.NotRoundTripped notRoundTripped ->
