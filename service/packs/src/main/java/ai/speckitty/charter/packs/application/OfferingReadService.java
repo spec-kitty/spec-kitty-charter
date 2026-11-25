@@ -507,7 +507,9 @@ public final class OfferingReadService {
             }
             read.descriptor().ifPresent(descriptor -> rootPackIds.add(descriptor.packId()));
         }
-        return PackGraph.compositionClosure(rootPackIds, firstByPackId);
+        return PackGraph.compositionClosure(
+                rootPackIds,
+                packId -> Optional.ofNullable(firstByPackId.get(packId)).map(PackUnderResolution::descriptor));
     }
 
     /**

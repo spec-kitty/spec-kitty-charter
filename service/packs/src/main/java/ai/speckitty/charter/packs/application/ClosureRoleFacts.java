@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * The fallback and the role pins in force for one set of packs: the one place that answers them, for the registration
@@ -165,14 +164,14 @@ public final class ClosureRoleFacts {
         Map<String, PackCompositionFacts> facts = closure.mergeInputs().facts();
         List<Member> members = new ArrayList<>();
         for (OfferingReadService.OfferingEntry entry : closure.packs()) {
-            List<PackIdentifier> buildsOn = Stream.concat(
-                            entry.dependencies().stream().map(edge -> new PackUlid(edge.to())),
-                            closure.parentOf(entry.descriptorPackId()).stream())
+            PackUnderResolution pack = Objects.requireNonNull(
+                    composed.get(entry.id()), "every offering entry is a pack the closure merges");
+            List<PackIdentifier> buildsOn = PackGraph.buildsOn(pack.descriptor()).stream()
+                    .map(PackUlid::new)
                     .map(byDescriptor::get)
                     .filter(Objects::nonNull)
                     .toList();
-            Optional<String> fallback = Optional.ofNullable(composed.get(entry.id()))
-                    .flatMap(pack -> pack.descriptor().fallbackProfile());
+            Optional<String> fallback = pack.descriptor().fallbackProfile();
             RolePins pins = Optional.ofNullable(facts.get(entry.id().value()))
                     .map(held -> held.policy().rolePins())
                     .orElse(RolePins.NONE);
@@ -294,9 +293,9 @@ public final class ClosureRoleFacts {
         return winner;
     }
 
-    /** Every pack of the set a member builds on, transitively: {@link PackGraph#reachable} from what it builds on. */
+    /** Every pack of the set a member builds on, transitively: {@link PackGraph#ancestorsOf} from what it builds on. */
     private static Set<PackIdentifier> ancestorsOf(Member member, Map<PackIdentifier, Member> byPack) {
-        return PackGraph.reachable(
+        return PackGraph.ancestorsOf(
                 member.buildsOn(),
                 next -> Optional.ofNullable(byPack.get(next))
                         .map(Member::buildsOn)

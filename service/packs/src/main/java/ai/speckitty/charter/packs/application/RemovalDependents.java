@@ -114,11 +114,14 @@ final class RemovalDependents {
         return List.copyOf(found);
     }
 
-    /** One configured pack other than the removed one, read. */
-    private record Other(ConfiguredPack configured, PackDescriptor descriptor) {
+    /** One configured pack other than the removed one, read, with the name a refusal gives it. */
+    private record Other(ConfiguredPack configured, PackDescriptor descriptor, RefusalPack named) {
 
-        RefusalPack named() {
-            return new RefusalPack(new PackUlid(descriptor.packId()), configured.id(), descriptor.name());
+        Other(ConfiguredPack configured, PackDescriptor descriptor) {
+            this(
+                    configured,
+                    descriptor,
+                    new RefusalPack(new PackUlid(descriptor.packId()), configured.id(), descriptor.name()));
         }
     }
 
@@ -128,14 +131,15 @@ final class RemovalDependents {
      */
     private static List<Dependent> packsBuildingOn(StagedPackViews.View stored, ImpactCheck.Removal removed) {
         // A pack whose pack.yaml cannot be read declares no pack_id an edge could name; every other pack is still read,
-        // so one that cannot be judged fails the removal closed.
+        // so one that cannot be judged fails the removal closed. The order of the reads and checks is the one the
+        // hand-written scan had: the removed pack's id first, then each other pack, read and named in turn.
+        Optional<String> target = packIdOf(removed).map(PackUlid::value);
         List<Other> others = stored.catalog().configured().stream()
                 .filter(configured ->
                         !configured.id().equals(removed.configured().id()))
                 .sorted(Comparator.comparing(configured -> configured.id().value()))
                 .map(configured -> new Other(configured, descriptorOf(stored, configured)))
                 .toList();
-        Optional<String> target = packIdOf(removed).map(PackUlid::value);
         if (target.isEmpty()) {
             return List.of();
         }

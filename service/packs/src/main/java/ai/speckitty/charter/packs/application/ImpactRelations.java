@@ -69,6 +69,7 @@ final class ImpactRelations {
     private final OfferingReadService.ComposedClosure composed;
     private @Nullable Map<PackUlid, MutabilityPolicySource> scopedPolicies;
     private final Set<Place> enhancesCycles = new LinkedHashSet<>();
+    private @Nullable Map<Place, List<Place>> enhances;
 
     private ImpactRelations(OfferingReadService.ComposedClosure composed) {
         this.composed = composed;
@@ -265,7 +266,7 @@ final class ImpactRelations {
 
     /** Every cycle of {@code enhances} edges, each once; the places on them are remembered for the grounding rule. */
     private List<ClosureFault> enhancesCycle() {
-        List<List<Place>> cycles = PackGraph.cyclesIn(graphOf(RelationType.ENHANCES, edge -> true));
+        List<List<Place>> cycles = PackGraph.cyclesIn(enhancesGraph());
         cycles.forEach(enhancesCycles::addAll);
         return cycles.stream()
                 .map(cycle -> violation(
@@ -285,7 +286,7 @@ final class ImpactRelations {
     private List<ClosureFault> ungroundedEnhancer() {
         Set<Place> enhancers = new LinkedHashSet<>();
         edges.stream().filter(edge -> edge.is(RelationType.ENHANCES)).forEach(edge -> enhancers.add(edge.source()));
-        return PackGraph.ungrounded(enhancers, graphOf(RelationType.ENHANCES, edge -> true), enhancesCycles).stream()
+        return PackGraph.ungrounded(enhancers, enhancesGraph(), enhancesCycles).stream()
                 .map(enhancer -> violation(
                         RefusalCode.ENHANCES_CYCLE,
                         enhancer + " in pack " + name(enhancer)
@@ -293,6 +294,14 @@ final class ImpactRelations {
                                 + " nothing",
                         enhancer))
                 .toList();
+    }
+
+    /** The {@code enhances} edges onto a held target, built once for the cycle and the grounding rules. */
+    private Map<Place, List<Place>> enhancesGraph() {
+        if (enhances == null) {
+            enhances = graphOf(RelationType.ENHANCES, edge -> true);
+        }
+        return enhances;
     }
 
     private Map<Place, List<Place>> graphOf(RelationType type, Predicate<Edge> kept) {

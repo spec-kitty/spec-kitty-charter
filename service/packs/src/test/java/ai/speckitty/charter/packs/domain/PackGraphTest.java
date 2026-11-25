@@ -1,10 +1,10 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import java.util.ArrayList;
@@ -67,7 +67,7 @@ class PackGraphTest {
     }
 
     @Nested
-    @DisplayName("reachable: one breadth-first descent")
+    @DisplayName("ancestorsOf: one breadth-first descent over what each pack builds on")
     class Reachable {
 
         @Test
@@ -75,7 +75,7 @@ class PackGraphTest {
         void firstSeenOrder() {
             Map<String, List<String>> graph = graph("a>c", "a>b", "b>d", "c>d");
 
-            assertThat(PackGraph.reachable(List.of("a"), node -> graph.getOrDefault(node, List.of())))
+            assertThat(PackGraph.ancestorsOf(List.of("a"), node -> graph.getOrDefault(node, List.of())))
                     .containsExactly("a", "c", "b", "d");
         }
 
@@ -84,7 +84,7 @@ class PackGraphTest {
         void aCycleTerminates() {
             Map<String, List<String>> graph = graph("a>b", "b>a", "b>x");
 
-            assertThat(PackGraph.reachable(List.of("b"), node -> graph.getOrDefault(node, List.of())))
+            assertThat(PackGraph.ancestorsOf(List.of("b"), node -> graph.getOrDefault(node, List.of())))
                     .containsExactly("b", "a", "x");
         }
 
@@ -93,8 +93,17 @@ class PackGraphTest {
         void severalStarts() {
             Map<String, List<String>> graph = graph("z>a");
 
-            assertThat(PackGraph.reachable(List.of("z", "a", "q"), node -> graph.getOrDefault(node, List.of())))
+            assertThat(PackGraph.ancestorsOf(List.of("z", "a", "q"), node -> graph.getOrDefault(node, List.of())))
                     .containsExactly("z", "a", "q");
+        }
+
+        @Test
+        @DisplayName("a self-loop is met once, and a start with no successors ends at itself")
+        void aSelfLoopAndALoneStart() {
+            Map<String, List<String>> graph = graph("a>a");
+
+            assertThat(PackGraph.ancestorsOf(List.of("a", "lone"), node -> graph.getOrDefault(node, List.of())))
+                    .containsExactly("a", "lone");
         }
 
         @Test
@@ -102,7 +111,7 @@ class PackGraphTest {
         void aLongChain() {
             int n = 200_000;
 
-            assertThat(PackGraph.reachable(List.of(0), node -> node < n ? List.of(node + 1) : List.of()))
+            assertThat(PackGraph.ancestorsOf(List.of(0), node -> node < n ? List.of(node + 1) : List.of()))
                     .hasSize(n + 1);
         }
     }
@@ -116,17 +125,46 @@ class PackGraphTest {
         void compositionClosure() {
             PackDescriptor alpha = descriptor("alpha", Optional.empty(), "beta");
             PackDescriptor beta = descriptor("beta", Optional.of("missing"));
-            Map<String, PackCompositionResolver.PackUnderResolution> byPackId = new LinkedHashMap<>();
-            byPackId.put("alpha", under(alpha));
-            byPackId.put("beta", under(beta));
+            Map<String, PackDescriptor> byPackId = Map.of("alpha", alpha, "beta", beta);
 
-            assertThat(PackGraph.compositionClosure(List.of("alpha"), byPackId))
+            assertThat(PackGraph.compositionClosure(List.of("alpha"), id -> Optional.ofNullable(byPackId.get(id))))
                     .containsExactly("alpha", "beta", "missing");
         }
 
         @Test
-        @DisplayName("buildingOn: the pack and every pack that reaches it, over depends_on or parent_pack")
-        void buildingOn() {
+        @DisplayName("the composition closure terminates on a cycle, each pack once")
+        void compositionClosureOverACycle() {
+            Map<String, PackDescriptor> byPackId =
+                    Map.of("a", descriptor("a", Optional.empty(), "b"), "b", descriptor("b", Optional.of("a")));
+
+            assertThat(PackGraph.compositionClosure(List.of("b"), id -> Optional.ofNullable(byPackId.get(id))))
+                    .containsExactly("b", "a");
+        }
+
+        @Test
+        @DisplayName("dependentsClosure follows the order of the descriptors given, not the dependency order")
+        void dependentsClosureFollowsInputOrder() {
+            List<PackDescriptor> descriptors = List.of(
+                    descriptor("second", Optional.empty(), "base"),
+                    descriptor("first", Optional.of("base")),
+                    descriptor("base", Optional.empty()));
+
+            assertThat(PackGraph.dependentsClosure("base", descriptors)).containsExactly("base", "second", "first");
+        }
+
+        @Test
+        @DisplayName("directDependents lists a pack that names the target twice in depends_on once")
+        void aTwiceNamedDependencyIsOneDependent() {
+            PackGraph.DirectDependents<PackDescriptor> found = PackGraph.directDependents(
+                    "target", List.of(descriptor("twice", Optional.empty(), "target", "target")), p -> p);
+
+            assertThat(found.dependsOn()).extracting(PackDescriptor::packId).containsExactly("twice");
+            assertThat(found.parentPack()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("dependentsClosure: the pack and every pack that reaches it, over depends_on or parent_pack")
+        void dependentsClosure() {
             List<PackDescriptor> descriptors = List.of(
                     descriptor("base", Optional.empty()),
                     descriptor("middle", Optional.empty(), "base"),
@@ -134,8 +172,9 @@ class PackGraphTest {
                     descriptor("other", Optional.empty()),
                     descriptor("loop", Optional.empty(), "child", "loop"));
 
-            assertThat(PackGraph.buildingOn("base", descriptors)).containsExactly("base", "middle", "child", "loop");
-            assertThat(PackGraph.buildingOn("other", descriptors)).containsExactly("other");
+            assertThat(PackGraph.dependentsClosure("base", descriptors))
+                    .containsExactly("base", "middle", "child", "loop");
+            assertThat(PackGraph.dependentsClosure("other", descriptors)).containsExactly("other");
         }
 
         @Test
@@ -151,11 +190,6 @@ class PackGraphTest {
 
             assertThat(found.dependsOn()).extracting(PackDescriptor::packId).containsExactly("b", "a");
             assertThat(found.parentPack()).extracting(PackDescriptor::packId).containsExactly("c", "a");
-        }
-
-        private static PackCompositionResolver.PackUnderResolution under(PackDescriptor descriptor) {
-            return new PackCompositionResolver.PackUnderResolution(
-                    new ConfiguredPack(new PackIdentifier(descriptor.packId()), PackLevel.ORG), descriptor);
         }
     }
 
@@ -198,6 +232,13 @@ class PackGraphTest {
         }
 
         @Test
+        @DisplayName("a successor with no entry of its own is a dead end, never part of a cycle")
+        void aSuccessorWithNoEntryIsADeadEnd() {
+            assertThat(PackGraph.cyclesIn(graph("a>outside", "a>b", "b>a"))).containsExactly(List.of("a", "b"));
+            assertThat(PackGraph.cyclesIn(graph("a>outside"))).isEmpty();
+        }
+
+        @Test
         @DisplayName("a long chain ending in a cycle does not exhaust the stack")
         void aLongChainDoesNotExhaustTheStack() {
             int n = 200_000;
@@ -210,8 +251,37 @@ class PackGraphTest {
     }
 
     @Nested
+    @DisplayName("every walk refuses a missing argument")
+    class Arguments {
+
+        @Test
+        @DisplayName("null inputs are refused with the parameter's name")
+        void nullsAreRefused() {
+            assertThatThrownBy(() -> PackGraph.buildsOn(null)).hasMessage("descriptor");
+            assertThatThrownBy(() -> PackGraph.compositionClosure(List.of(), null))
+                    .hasMessage("descriptorOf");
+            assertThatThrownBy(() -> PackGraph.dependentsClosure(null, List.of()))
+                    .hasMessage("packId");
+            assertThatThrownBy(() -> PackGraph.directDependents("p", null, p -> null))
+                    .hasMessage("packs");
+            assertThatThrownBy(() -> PackGraph.cyclesIn(null)).hasMessage("graph");
+            assertThatThrownBy(() -> PackGraph.ungrounded(List.of(), Map.of(), null))
+                    .hasMessage("excused");
+        }
+    }
+
+    @Nested
     @DisplayName("ungrounded: enhancers no chain grounds")
     class Ungrounded {
+
+        @Test
+        @DisplayName("an enhancer that is grounded but also reaches an excused cycle is excused, not found")
+        void groundedAndExcusedIsNotFound() {
+            Map<String, List<String>> enhances = graph("both>held", "both>x", "x>y", "y>x");
+
+            assertThat(PackGraph.ungrounded(List.of("both", "x", "y"), enhances, List.of("x", "y")))
+                    .isEmpty();
+        }
 
         @Test
         @DisplayName("a chain that reaches a non-enhancer grounds every enhancer along it")

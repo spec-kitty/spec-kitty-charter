@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,14 +18,17 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * The one owner of how the pack graph is walked (ADR-0082 decisions 1 and 2, #637): which edges a pack builds on, the
- * descent along them ({@link #compositionClosure}) and back up them ({@link #buildingOn}, {@link #directDependents}),
- * the cycles and strongly connected groups of a graph ({@link #cyclesIn}), and the grounding of {@code enhances} chains
- * ({@link #ungrounded}). No class outside {@code packs.domain} walks the pack graph for cycles, groups or descendants;
- * it hands this class the nodes and edges it read and takes the answer.
+ * Where the pack graph is walked (ADR-0082 decisions 1 and 2, #637): which edges a pack builds on ({@link #buildsOn}),
+ * the descent along them ({@link #compositionClosure}, {@link #ancestorsOf}) and back up them
+ * ({@link #dependentsClosure}, {@link #directDependents}), the cycles and strongly connected groups of a graph
+ * ({@link #cyclesIn}), and the grounding of {@code enhances} chains ({@link #ungrounded}). No class of the application
+ * layer walks the pack graph or reads a descriptor's edges itself; it hands this class what it read and takes the
+ * answer ({@code PackGraphWalkBoundaryTest}). The resolver's ordering and dependency-cycle walks
+ * ({@link PackCompositionResolver}) stay in the domain beside it; later slices of epic #636 fold them in.
  *
  * <p>Every walk is iterative, so a long chain cannot exhaust the stack, and every answer is in a stable order: the
- * order of the inputs, never the hash order of a node (the determinism guard of the architecture page).
+ * order of the inputs, never the hash order of a node (the determinism guard of the architecture page). A graph given
+ * as a map is walked in the map's iteration order, so a caller passes an insertion-ordered map, never a hash map.
  */
 public final class PackGraph {
 
@@ -48,15 +50,22 @@ public final class PackGraph {
     }
 
     /**
-     * Every node reachable from the starts, the starts included, in breadth-first first-seen order, each once. A cycle
-     * terminates, since each node is expanded once.
+     * The starts and every pack they build on, transitively, each once, in breadth-first first-seen order. The edges
+     * are a pack's {@link #buildsOn}: the caller maps each pack to the packs its {@code depends_on} and
+     * {@code parent_pack} name, by its own key, and gives none for a pack it does not hold. A cycle terminates.
      *
-     * @param starts where the walk starts, in order
-     * @param successors each node's successors; empty for a node with none
-     * @param <N> the node type
-     * @return the nodes reached, in the order they are first met
+     * @param starts the packs the descent starts at, in order
+     * @param buildsOn each pack's {@link #buildsOn} edges, as the caller keys its packs
+     * @param <K> how the caller keys a pack
+     * @return the starts, then each pack they build on in the order first met; a key with no pack is included, with no
+     *     descent from it
      */
-    public static <N> Set<N> reachable(Collection<N> starts, Function<N, ? extends Collection<N>> successors) {
+    public static <K> Set<K> ancestorsOf(Collection<K> starts, Function<K, ? extends Collection<K>> buildsOn) {
+        return reachable(starts, buildsOn);
+    }
+
+    /** Every node reachable from the starts, the starts included, in breadth-first first-seen order, each once. */
+    private static <N> Set<N> reachable(Collection<N> starts, Function<N, ? extends Collection<N>> successors) {
         Objects.requireNonNull(starts, "starts");
         Objects.requireNonNull(successors, "successors");
         Set<N> reached = new LinkedHashSet<>();
@@ -73,22 +82,20 @@ public final class PackGraph {
     /**
      * The composition closure of a set of packs: the roots and every pack they reach over {@code depends_on} and
      * {@code parent_pack}, by descriptor {@code pack_id}, in first-seen order. It is the one closure rule of a rooted
-     * compose. A target no pack of {@code byPackId} declares is recorded but not descended from: the walk tolerates it,
+     * compose. A target no descriptor is found for is recorded but not descended from: the walk tolerates it,
      * and {@link PackCompositionResolver#resolve} refuses it. A cycle terminates, since each id is walked once.
      *
      * @param rootPackIds the descriptor {@code pack_id}s of the roots
-     * @param byPackId the packs the walk may descend into, by descriptor {@code pack_id}
+     * @param descriptorOf the descriptor the walk descends into for a {@code pack_id}; empty for one no pack declares
      * @return the {@code pack_id}s of the closure, missing targets included
      */
     public static Set<String> compositionClosure(
-            Collection<String> rootPackIds, Map<String, PackUnderResolution> byPackId) {
+            Collection<String> rootPackIds, Function<String, Optional<PackDescriptor>> descriptorOf) {
         Objects.requireNonNull(rootPackIds, "rootPackIds");
-        Objects.requireNonNull(byPackId, "byPackId");
+        Objects.requireNonNull(descriptorOf, "descriptorOf");
         return reachable(
                 rootPackIds,
-                packId -> Optional.ofNullable(byPackId.get(packId))
-                        .map(pack -> buildsOn(pack.descriptor()))
-                        .orElse(List.of()));
+                packId -> descriptorOf.apply(packId).map(PackGraph::buildsOn).orElse(List.of()));
     }
 
     /**
@@ -97,9 +104,10 @@ public final class PackGraph {
      *
      * @param packId the descriptor {@code pack_id} of the pack built on
      * @param descriptors the descriptors that may build on it
-     * @return the {@code pack_id} itself first, then each pack building on it in first-seen order
+     * @return the {@code pack_id} itself first, then each pack building on it in first-seen order, which follows the
+     *     order of {@code descriptors}
      */
-    public static Set<String> buildingOn(String packId, Collection<PackDescriptor> descriptors) {
+    public static Set<String> dependentsClosure(String packId, Collection<PackDescriptor> descriptors) {
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(descriptors, "descriptors");
         Map<String, List<String>> reverse = new LinkedHashMap<>();
@@ -134,7 +142,8 @@ public final class PackGraph {
 
     /**
      * The packs one {@code depends_on} or {@code parent_pack} edge up from a pack: those whose descriptor names its
-     * {@code pack_id}. A pack that names it both ways is in both lists.
+     * {@code pack_id}. A pack that names it both ways is in both lists; one that names it twice in {@code depends_on}
+     * is listed once.
      *
      * @param packId the descriptor {@code pack_id} of the pack depended on
      * @param packs the packs that may depend on it, in the order the answer keeps
@@ -169,7 +178,8 @@ public final class PackGraph {
      * first one the walk meets twice. Iterative throughout, so a long chain cannot exhaust the stack, and linear in the
      * edges: the groups are found in one pass (Tarjan), and each group is walked once.
      *
-     * @param graph each node's successors, in a stable order; a node with no entry has none
+     * @param graph each node's successors; the map's iteration order is the graph's order, so an insertion-ordered map,
+     *     never a hash map; a node with no entry has none
      * @param <N> the node type
      * @return the cycles, the first one first, then one per other group; empty when the graph is acyclic
      */
@@ -196,14 +206,15 @@ public final class PackGraph {
     }
 
     /**
-     * The enhancers none of whose {@code enhances} chains reaches an artifact that enhances nothing (A8): an enhancement
-     * never stands alone, and a chain that ends at an artifact nothing holds ends nowhere. Grounding spreads from each
-     * edge onto a held non-enhancer to its enhancers, one pass over the reverse edges; an enhancer that is on, or
-     * reaches, an excused node (one of a reported {@code enhances} cycle) is that cycle's fault and is not found here.
+     * The enhancers none of whose {@code enhances} chains reaches an artifact that enhances nothing (A8): an
+     * enhancement never stands alone, and a chain that ends at an artifact nothing holds ends nowhere. Grounding
+     * spreads from each edge onto a held non-enhancer to its enhancers, one pass over the reverse edges; an enhancer
+     * that is on, or reaches, an excused node (one of a reported {@code enhances} cycle) is that cycle's fault and is
+     * not found here.
      *
      * @param enhancers every node that enhances, held target or not, in the order the answer keeps
      * @param enhances each enhancer's held targets
-     * @param excused the nodes already reported, with every enhancer that reaches them
+     * @param excused the nodes already reported; every enhancer that reaches one is excused too
      * @param <N> the node type
      * @return the ungrounded enhancers, in the order of {@code enhancers}
      */

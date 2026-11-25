@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -783,11 +784,11 @@ class PackCompositionResolverTest {
                             packId, "1.0.0", Optional.empty(), name, Optional.of(PackLevel.ORG), Optional.empty()));
         }
 
-        private Map<String, PackUnderResolution> byPackId(PackUnderResolution... packs) {
+        private Function<String, Optional<PackDescriptor>> byPackId(PackUnderResolution... packs) {
             Map<String, PackUnderResolution> index = new LinkedHashMap<>();
             Arrays.stream(packs)
                     .forEach(each -> index.putIfAbsent(each.descriptor().packId(), each));
-            return index;
+            return packId -> Optional.ofNullable(index.get(packId)).map(PackUnderResolution::descriptor);
         }
 
         private Collection<PackIdentifier> configuredIds(String... ids) {

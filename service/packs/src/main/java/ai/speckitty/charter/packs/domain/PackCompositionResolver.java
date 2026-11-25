@@ -438,13 +438,13 @@ public final class PackCompositionResolver {
 
     /**
      * The compose rooted at a set of configured packs (#360), with every composition fault of its closure (#556,
-     * FR-006): every check {@link #resolve} runs, over the {@linkplain PackGraph#compositionClosure composition closure} of the
-     * roots only, so a pack outside it is never judged. A duplicate {@code pack_id} or {@code name} outside the closure
-     * is no fault; one inside it is, naming both holders, because every pack declaring an id of the closure is
-     * selected. A {@code depends_on} or {@code parent_pack} target no available pack declares stays missing, and is a
-     * fault as {@link #resolve} refuses it. With every available pack a root, the order and the faults are those of
-     * {@link #faults}. The offering refuses the phase with all of them; a caller that answers one refusal takes
-     * {@link #refuseFirst}.
+     * FR-006): every check {@link #resolve} runs, over the {@linkplain PackGraph#compositionClosure composition
+     * closure} of the roots only, so a pack outside it is never judged. A duplicate {@code pack_id} or {@code name}
+     * outside the closure is no fault; one inside it is, naming both holders, because every pack declaring an id of the
+     * closure is selected. A {@code depends_on} or {@code parent_pack} target no available pack declares stays missing,
+     * and is a fault as {@link #resolve} refuses it. With every available pack a root, the order and the faults are
+     * those of {@link #faults}. The offering refuses the phase with all of them; a caller that answers one refusal
+     * takes {@link #refuseFirst}.
      *
      * @param available the configured packs with their descriptors
      * @param roots the configured identifiers the compose is rooted at
@@ -469,7 +469,9 @@ public final class PackCompositionResolver {
             }
             rootPackIds.add(packId);
         }
-        Set<String> closure = PackGraph.compositionClosure(rootPackIds, firstByPackId);
+        Set<String> closure = PackGraph.compositionClosure(
+                rootPackIds,
+                packId -> Optional.ofNullable(firstByPackId.get(packId)).map(PackUnderResolution::descriptor));
         Composition composition = compose(available.stream()
                 .filter(pack -> closure.contains(pack.descriptor().packId()))
                 .toList());
@@ -753,7 +755,8 @@ public final class PackCompositionResolver {
     /**
      * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
      * reference may name (FR-015), and the packs that may hold the step a step enhancement names (C37,
-     * {@link EnhancementCompose#targetFaults}). It is not the {@linkplain PackGraph#compositionClosure composition closure}, which
+     * {@link EnhancementCompose#targetFaults}). It is not the
+     * {@linkplain PackGraph#compositionClosure composition closure}, which
      * also follows {@code parent_pack}.
      *
      * @param packId the descriptor {@code pack_id} of the pack the walk starts at
@@ -1069,11 +1072,11 @@ public final class PackCompositionResolver {
 
     /** Every {@code pack_id} a pack reaches over {@code depends_on} and {@code parent_pack} within the compose. */
     private static Set<String> reach(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
-        Set<String> reached = new LinkedHashSet<>(PackGraph.reachable(
+        Set<String> reached = PackGraph.ancestorsOf(
                 targetsOf(pack),
                 next -> Optional.ofNullable(byId.get(next))
                         .map(PackCompositionResolver::targetsOf)
-                        .orElse(List.of())));
+                        .orElse(List.of()));
         reached.retainAll(byId.keySet());
         return reached;
     }

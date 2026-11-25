@@ -122,7 +122,7 @@ final class ClosureRoots {
 
     /** The written pack's {@code pack_id} and every {@code pack_id} that reaches it over {@code depends_on} or lineage. */
     private Set<String> dependents() {
-        return PackGraph.buildingOn(writtenPackId, readable.values());
+        return PackGraph.dependentsClosure(writtenPackId, readable.values());
     }
 
     /**
@@ -167,6 +167,8 @@ final class ClosureRoots {
                 .map(id ->
                         Objects.requireNonNull(readable.get(id), "read above").packId())
                 .toList();
-        return PackGraph.compositionClosure(rootPackIds, firstByPackId);
+        return PackGraph.compositionClosure(
+                rootPackIds,
+                packId -> Optional.ofNullable(firstByPackId.get(packId)).map(PackUnderResolution::descriptor));
     }
 }

@@ -301,9 +301,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             Pack staged) {
-        Set<String> named =
-                new LinkedHashSet<>(staged.descriptor().parentPack().stream().toList());
-        staged.descriptor().dependencies().forEach(dependency -> named.add(dependency.packId()));
+        Set<String> named = new LinkedHashSet<>(PackGraph.buildsOn(staged.descriptor()));
         List<PackIdentifier> roots = catalog.configured().stream()
                 .map(ConfiguredPack::id)
                 .filter(candidate -> named.stream().anyMatch(packId -> declares(descriptors, candidate, packId)))
@@ -353,11 +351,11 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
 
     /**
      * What a pack and every pack it builds on, transitively, hold; a pack outside the closure holds nothing here. The
-     * descent is {@link PackGraph#reachable}'s.
+     * descent is {@link PackGraph#ancestorsOf}'s.
      */
     private static Set<Urn> heldAlong(Scope from, Map<PackUlid, Scope> byId) {
         Set<Urn> held = new LinkedHashSet<>();
-        PackGraph.reachable(
+        PackGraph.ancestorsOf(
                         List.of(from.packId()),
                         packId -> Optional.ofNullable(byId.get(packId))
                                 .map(Scope::buildsOn)

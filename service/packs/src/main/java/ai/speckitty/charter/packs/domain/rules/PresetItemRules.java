@@ -110,8 +110,9 @@ public final class PresetItemRules {
             return Optional.empty();
         }
         List<PackUnderResolution> closure = new ArrayList<>();
-        for (String packId :
-                PackGraph.compositionClosure(List.of(pack.descriptor().packId()), byPackId)) {
+        for (String packId : PackGraph.compositionClosure(
+                List.of(pack.descriptor().packId()),
+                packId -> Optional.ofNullable(byPackId.get(packId)).map(PackUnderResolution::descriptor))) {
             PackUnderResolution member = byPackId.get(packId);
             if (member == null) {
                 return Optional.empty();

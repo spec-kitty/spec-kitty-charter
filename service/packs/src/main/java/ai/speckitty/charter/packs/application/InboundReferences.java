@@ -143,7 +143,7 @@ public final class InboundReferences {
             return facts.holds(urn);
         }
 
-        /** The descriptor {@code pack_id}s the pack builds on: {@link PackGraph#buildsOn}; none when it has no descriptor. */
+        /** The {@code pack_id}s the pack builds on ({@link PackGraph#buildsOn}); none when it has no descriptor. */
         List<String> buildsOn() {
             return descriptor.map(PackGraph::buildsOn).orElse(List.of());
         }
@@ -319,7 +319,7 @@ public final class InboundReferences {
     }
 
     /**
-     * The pack and every pack it builds on, transitively, the pack first, each once: {@link PackGraph#reachable} from
+     * The pack and every pack it builds on, transitively, the pack first, each once: {@link PackGraph#ancestorsOf} from
      * the pack over the members' {@code depends_on} and {@code parent_pack}. Only a described member starts a closure
      * or is reached by an edge.
      */
@@ -330,7 +330,7 @@ public final class InboundReferences {
         String start = member.descriptor().orElseThrow().packId();
         Function<String, Optional<Member>> at =
                 packId -> packId.equals(start) ? Optional.of(member) : Optional.ofNullable(byPackId.get(packId));
-        return PackGraph.reachable(
+        return PackGraph.ancestorsOf(
                         List.of(start),
                         packId -> at.apply(packId).map(Member::buildsOn).orElse(List.of()))
                 .stream()
