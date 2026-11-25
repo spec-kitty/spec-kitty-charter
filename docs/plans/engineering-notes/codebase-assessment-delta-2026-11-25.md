@@ -20,7 +20,7 @@ audience:
 **Status: assessment, not a decision.** This note re-measures the
 [codebase assessment of 2026-11-20](/plans/engineering-notes/codebase-assessment-2026-11-20/) on
 current `main`. It reports only what moved; the method, the definitions and the full findings are
-in that note. It changes no code and files one issue: the defect below, #654.
+in that note. It changes no production code and files one issue: the defect below, #654.
 
 ## Baseline
 
@@ -102,7 +102,7 @@ Trend compares each file's share of the 99 commits since 11-19 with its share in
 - **Heating outside the top 10:** `CompositionFactsBuilder` (8 commits in 5.4 days, against 7 in
   the 30 days before), `StorageRootLocations`, `CommitStorePackWriteStore` and `WholePackExpectation`.
 - **By module:** `packs` is 81.0% of the score (80.4% on 11-20). The new `pack-doctor` module
-  enters with 1,592 code lines and a total CCN of 377.
+  enters with 1,592 code lines (lizard NLOC; 2,513 physical lines) and a total CCN of 377.
 - **The squash filter still holds.** 18 of the top 20 stay when only commits of 30 files or fewer
   count. `29f0b4ed` (279 files) is the largest new commit.
 
@@ -111,7 +111,7 @@ Trend compares each file's share of the 99 commits since 11-19 with its share in
 | # | Action | Status | Evidence |
 |---|---|---|---|
 | 1 | Revive the CPU-time budget nightly | **Untouched; still failing** | Runs on 11-21, 11-23, 11-24 and 11-25 were cancelled. Run 44984587709 (11-22) shows success, but 2 of the 6 `:packs` budget tests failed on the same two fixtures (`ResolverCostBoundTest:139-140`, `ReachabilityBudgetTest:95-104`). The budgets it did measure were within their limits. `timing-nightly.yml` is unchanged |
-| 2 | Make the SonarCloud gate legible and green | **Untouched** | Run 45547043477 still logs "Quality Gate has FAILED" with no condition named. `pack-doctor` (2,513 lines) is still outside `sonar.yml:160-161`; the test-fixture gap is still open. #463 and #494 have had no activity |
+| 2 | Make the SonarCloud gate legible and green | **Untouched** | Run 45547043477 still logs "Quality Gate has FAILED" with no condition named. `pack-doctor` (2,513 physical lines) is still outside `sonar.yml:160-161`; the test-fixture gap is still open. #463 and #494 have had no activity |
 | 3 | Guard the five open planted-break rules | **Untouched** | Gaps 1, 2, 3, 5 and 6 are open. The `KindBindingsTest` friction bit as predicted: `29f0b4ed` had to change `hasSize(15)` to `hasSize(16)` for `ANTI_PATTERN` (`:75-77`) |
 | 4 | Measure what the floors claim | **Moved, and now red** | Run 45101937079 measured `routing` (83.5% against 90, −6 mutants) and `routing-edge` (92.4% against 85). `packs-core` ran its mutation step for 1h50m against a 110-minute limit (44 min on 11-16), so packs domain and application, and packs `infra.fetch`, have no report. `:profiles` is still 3 mutants over. #461 was closed on 11-21; #644 is the new alert. ADR-0062 has no amendment for routing |
 | 5 | Typed fault identity | **In progress** | #647 added `Origin` to `Reason` and one `ClosureFault`, and `ff46ac41` gave `PackElementViolation` its in-file pointer. The text matching is unchanged (`AssemblyRules.java:194`, `:206-215`, `:235`; `FilesystemPackStore.reasonOf :1675-1683`). Main-code references to `PackElementViolation` grew from 115 to 141. #614 remains open for `ClosureVerdict` |
@@ -157,7 +157,7 @@ remapped actions 5, 6 and 8 away from it, and slice 7 did not change their findi
 | packs `infra.archive` | 82.9% | 80 | +2.9 points, 12 mutants | the same |
 | pack-validation | 90.1% | 85 | +5.1 points, 23 mutants | +3.0, 10 |
 | packs `infra.storage` | 90.5% | 85 | +5.5 points, 199 mutants | +5.4, 175 |
-| pack-check | 96.3% | 90 | +6.3 points, 12 mutants | — |
+| pack-check (now pack-doctor) | 96.3% | 90 | +6.3 points, 12 mutants | — |
 | packs domain and application; packs `infra.fetch` | no report | 85 / 70 | — | +5.3, 219 / +8.2, 56 |
 
 The other groups (activations, artifacts-edge, kernel, missions, missions-edge, profiles-edge)
@@ -185,8 +185,11 @@ the largest classes grew 3% in 5.4 days with no gate on them.
 
 ## Reproduce
 
+Run from this PR's scripts (or any later `main`), not from a checkout of the pin: the scripts at
+`4b95b915` predate the `ANALYSIS_*` parameters and would silently produce the 11-20 tables. The pin
+is stated through the parameters.
+
 ```bash
-git checkout 4b95b9151f0fb42c9d184f1b831e01f843a36002
 ANALYSIS_REV=4b95b9151f0fb42c9d184f1b831e01f843a36002 \
 ANALYSIS_BASE=25e24c372bae838d95a9328be57ee2063f6c05d1 \
 ANALYSIS_OUT=build/analysis/hotspots-4b95b915 \

@@ -27,4 +27,4 @@ current `main`, 109 commits later.
 - The weekly mutation run is red: `routing` is under its floor, and the `packs-core` shard ran out of time.
 - Of the ten ranked actions, one moved (and went red), one is in progress, one has started and seven are untouched.
 
-The hotspot scripts now take the two pins as parameters. The note changes no code; the defect is tracked in #654.
+The hotspot scripts now take the two pins as parameters. The note changes no production code; the defect is tracked in #654.
