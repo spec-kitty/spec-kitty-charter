@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -192,6 +193,34 @@ class QuotedNumbersTest {
         assertThat(repaired(text, fixable("15", true, "a")))
                 .as("an integer field's fault repairs an integer")
                 .isEqualTo("a: 15\nb: \"16\"\n");
+    }
+
+    @Test
+    void theOffsetsHoldInACrlfFileWithAByteOrderMarkAndABlockScalarKeepsItsLineEnd() throws IOException {
+        String text = "\uFEFFa: \"15\"\r\nb: |-\r\n  16\r\nc: 1\r\n";
+
+        assertThat(repaired(text, fixable("15", false, "a"), fixable("16", true, "b")))
+                .isEqualTo("\uFEFFa: 15\r\nb: 16\r\nc: 1\r\n");
+    }
+
+    @Test
+    void theGuardRefusesARepairThatChangesMoreThanItsValues() {
+        String before = "a: \"15\"\nb: x\n";
+
+        assertThat(QuotedNumbers.readsAs(before, "a: 15\nb: x\n", Map.of("/a", "15")))
+                .isTrue();
+        assertThat(QuotedNumbers.readsAs(before, "a: 15\nb: y\n", Map.of("/a", "15")))
+                .as("another value changed")
+                .isFalse();
+        assertThat(QuotedNumbers.readsAs(before, "a: 15\n", Map.of("/a", "15")))
+                .as("a key went missing")
+                .isFalse();
+        assertThat(QuotedNumbers.readsAs(before, "a: 15\nb: x\n", Map.of("/z", "15")))
+                .as("a place the file does not hold")
+                .isFalse();
+        assertThat(QuotedNumbers.readsAs(before, "a: [15\n", Map.of("/a", "15")))
+                .as("a text the reader refuses")
+                .isFalse();
     }
 
     @Test
