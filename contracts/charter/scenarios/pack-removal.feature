@@ -1291,3 +1291,48 @@ Feature: One artifact or one registered relationship is removed from a pack
       | query                         | detail                                                                                                      |
       | from=D1&to=directive:D2       | The query parameter from is \"D1\", which is not in the form this parameter accepts. |
       | from=directive:D1             | The query parameter to is missing, and it is required.                                                      |
+
+  # bound by: #654 (a write refused because the pack it would leave does not revalidate names the place in the file)
+  Scenario: A directive write that turns a tension's stored orientation is 422 at the edge, and nothing is written
+    #654: a per-file write is judged on the pack it would leave. qa holds D3 and writes its tension with the built-in
+    D0 from D3, the side it holds. Holding D0 too would make D0, the smaller of the two, the source the edge must have,
+    so the write is refused validation_failed with tension_orientation listed at the shard and the RFC 6901 pointer of
+    the edge, as a registration lists it. Nothing is written.
+    Given the built-in pack "core" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: core
+      pack_level: built-in
+      """
+    And the built-in pack "core" with the file "directives/D0.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D0
+      title: D0
+      intent: The built-in side of the tension
+      enforcement: required
+      """
+    And the org pack "qa" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:D3
+        target: directive:D0
+        relation: tension
+      """
+    When I PUT "/packs/qa/artifacts/directive/D0" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "D0", "intent": "qa holds D0 too", "enforcement": "required"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field at "/violations" holds exactly 1 item(s)
+    And the field at "/violations/0/code" is "tension_orientation"
+    And the field at "/violations/0/pointer" is "tension.graph.yaml#/edges/0"
+    When I GET "/packs/qa/artifacts/directive/D0"
+    Then the response status is 404
+    And the problem code is "directive_not_found"

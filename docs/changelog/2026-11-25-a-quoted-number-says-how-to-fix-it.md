@@ -47,6 +47,6 @@ too.
 
 The service accepts only the number. `15` and `15.0` stay equally valid; a quoted `"15"` is still refused, and the round
 trip still tells a string from a number. The pack schemas are unchanged, and the violation keeps its code: no refusal
-code is added or changed. `PackDoctorReport` gains `repairs`, a breaking change for a reader of remediate's report.
+code is added or changed. `PackDoctorReport` gains `repairs`, written by remediate only.
 
 See [Check packs](/guides/check-packs/#repair-a-pack).

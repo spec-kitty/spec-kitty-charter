@@ -199,7 +199,7 @@ properties:
           description: The JSON pointer of the value in its file.
         value:
           type: string
-          description: The text the value held inside its quotes, now written as a number.
+          description: The scalar's value as the file held it, a string (quoted, escaped, tagged !!str or a block scalar), now written as a number.
         type:
           type: string
           enum: [number, integer]
