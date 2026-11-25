@@ -164,8 +164,11 @@ PIT alone, such as `stress` in packs.
 Packs never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `whole-pack`, `git-host` or
 `timing`. A whole `:packs:pitest` took 1h06m34s on an idle 4-core machine (2026-11-12, 7129 mutants), so the mutation
-run splits the packs groups across two shards (below). In the first sharded run (43209733136, 2026-11-12) the packs
-shards took 41 and 47 minutes, and every other module together took 13.
+run splits the packs groups across shards (below). In the first sharded run (43209733136, 2026-11-12) the two packs
+shards took 41 and 47 minutes, and every other module together took 13. By 2026-11-23 the packs suite had grown and
+one of them ran out of its 110 minutes (#644), so packs now runs in five shards: `domain+application` in three parts
+(`domain`, `application` and `rules`), `infra.storage`, and `infra.fetch` with `infra.archive`. A split into three
+shards left `domain+application` alone over its time, hence the parts.
 
 **The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
 floor is raised by a pull request once the weekly score clears it by 5 points, and lowered only by an amendment to
@@ -190,9 +193,11 @@ fail the check too.
 not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
 
 **The mutation run.** `.github/workflows/mutation-testing.yml` runs on its schedule and on `workflow_dispatch` only;
-the schedule is the operator's to set. PIT runs in three shards, each on its own runner with a 120-minute timeout, 110 of them for the
-mutation step (#461): `:packs`'s floor groups in two halves (`-PmutationGroups=domain+application,infra.fetch` and
-`-PmutationGroups=infra.storage,infra.archive`) and every other module. A shard mutates and scores only its groups, so
+the schedule is the operator's to set. PIT runs in six shards, each on its own runner with a 120-minute timeout, 110 of them for the
+mutation step (#461, #644): `:packs`'s floor groups in five (`domain+application` in three parts,
+`-PmutationGroups=domain+application/domain`, `/application` and `/rules`; `-PmutationGroups=infra.storage`; and
+`-PmutationGroups=infra.fetch,infra.archive`) and every other module. A part's shard never checks the floor: the summary
+job merges a group's parts and scores it once, and fails when it is below its floor. A shard mutates and scores only its groups, so
 each group's score is the one a whole-module run gives, and writes `floors-<shard>.json`. Each shard syncs the packs at
 the pin, then runs `./gradlew mutationModules <its tasks> --continue`. `mutationModules` writes the modules that apply
 `charter.mutation-conventions`, with their floor groups (#388). A summary job then runs, whatever the shards' results:

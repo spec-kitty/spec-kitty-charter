@@ -49,12 +49,18 @@ tasks.register<Test>("timingBudgets") {
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform { includeTags("timing") }
+    // Only the classes tagged timing reach a fork: one JVM per tagged class, not per test class (TimingBudgets.kt).
+    onlyTimingClasses(file("src/test/java"))
     maxParallelForks = 1
     setForkEvery(1)
     mustRunAfter(tasks.test)
     doNotTrackState("a budget measured on another run says nothing about this one (#316)")
     testLogging { showStandardStreams = true }
 }
+
+// Gates what the report-only run above cannot: every tagged budget class left a result. The nightly runs it after
+// timingBudgets, outside that step's continue-on-error (#644 landing).
+registerVerifyTimingBudgetsRan(file("src/test/java"))
 
 // The weekly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
 // (a trial run scored 91.4 %); raised by PR once the score clears it by 5.

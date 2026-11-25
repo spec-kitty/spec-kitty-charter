@@ -390,6 +390,127 @@ class MutationFloorsTest {
         assertThat(fixture).describedAs("rewrite it with -PupdateMutationFixture=true").hasContent(json)
     }
 
+    // #644: a group too big for one runner runs as parts, each on its own shard; the summary scores it once, merged.
+    private val partitioned = MutationFloors.Group(
+        "domain+application",
+        listOf(
+            "ai.speckitty.charter.packs.application",
+            "ai.speckitty.charter.packs.domain",
+            "ai.speckitty.charter.packs.infra.storage.rules",
+        ),
+        listOf("ai.speckitty.charter.packs.application.config"),
+        85,
+        partition = mapOf(
+            "domain" to listOf("ai.speckitty.charter.packs.domain"),
+            "application" to listOf("ai.speckitty.charter.packs.application"),
+            "rules" to listOf("ai.speckitty.charter.packs.infra.storage.rules"),
+        ),
+    )
+
+    @Test
+    fun aGroupsPartsPartitionItsPackagesExactly() {
+        fun parts(vararg part: Pair<String, List<String>>) = MutationFloors.Group(
+            "g", listOf("p.a", "p.b"), emptyList(), 80, partition = mapOf(*part),
+        )
+
+        assertThat(parts("one" to listOf("p.a"), "two" to listOf("p.b")).partition.keys).containsExactly("one", "two")
+        assertThatThrownBy { parts("one" to listOf("p.a")) }
+            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("p.b").hasMessageContaining("no part")
+        assertThatThrownBy { parts("one" to listOf("p.a", "p.b"), "two" to listOf("p.b")) }
+            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("p.b").hasMessageContaining("two parts")
+        assertThatThrownBy { parts("one" to listOf("p.a", "p.b"), "two" to listOf("p.c")) }
+            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("p.c")
+        assertThatThrownBy { parts("one" to listOf("p.a", "p.b"), "two" to emptyList()) }
+            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("two")
+        assertThatThrownBy { parts("one" to listOf("p.a", "p.b"), "bad/name" to emptyList()) }
+            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("bad/name")
+        // A package holds its sub-packages, so a part nested in another's package would score its mutants twice.
+        val nested = { MutationFloors.Group(
+            "g", listOf("p.a", "p.a.b"), emptyList(), 80, partition = mapOf("one" to listOf("p.a"), "two" to listOf("p.a.b")),
+        ) }
+        assertThatThrownBy { nested() }
+            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("p.a.b").hasMessageContaining("inside")
+    }
+
+    @Test
+    fun aShardCanTakeOnePartOfAGroupWithTheGroupsExcludesAndFloor() {
+        val shard = MutationFloors.shard(":packs", "domain+application/application", listOf(partitioned) + packs.drop(1))
+
+        val part = shard.groups.single()
+        assertThat(part.name).isEqualTo("domain+application")
+        assertThat(part.part).isEqualTo("application")
+        assertThat(part.parts).containsExactly("application", "domain", "rules")
+        assertThat(part.packages).containsExactly("ai.speckitty.charter.packs.application")
+        assertThat(part.floor).isEqualTo(85)
+        assertThat(shard.name).isEqualTo("domain-application-application")
+        assertThat(shard.targetClasses).containsExactly("ai.speckitty.charter.packs.application.*")
+        assertThat(shard.excludedClasses).containsExactly("ai.speckitty.charter.packs.application.config.*")
+    }
+
+    @Test
+    fun aShardRefusesAPartItCannotTakeWhole() {
+        val groups = listOf(partitioned) + packs.drop(1)
+
+        assertThatThrownBy { MutationFloors.shard(":packs", "infra.fetch/x", groups) }
+            .hasMessageContaining("infra.fetch").hasMessageContaining("declares no parts")
+        assertThatThrownBy { MutationFloors.shard(":packs", "domain+application/nope", groups) }
+            .hasMessageContaining("nope").hasMessageContaining("application, domain, rules")
+        assertThatThrownBy { MutationFloors.shard(":packs", "domain+application,domain+application/domain", groups) }
+            .hasMessageContaining("domain+application").hasMessageContaining("whole and in part")
+    }
+
+    @Test
+    fun aPartIsScoredButOnlyTheMergedGroupMeetsTheFloor() {
+        val part = partitioned.part("domain")
+        val below = mutations(
+            mutation("ai.speckitty.charter.packs.domain.Pack", "KILLED"),
+            mutation("ai.speckitty.charter.packs.domain.Pack", "SURVIVED"),
+        )
+
+        val outcome = MutationFloors.evaluate(":packs", "mutations.xml", below, listOf(part))
+
+        assertThat(outcome.failures).isEmpty()
+        assertThat(outcome.lines.single()).contains("domain+application (part domain of application, domain, rules)")
+        assertThat(outcome.summary).contains("\"part\": \"domain\"").contains("\"parts\": [\"application\", \"domain\", \"rules\"]")
+        assertThat(MutationFloors.evaluate(":packs", "mutations.xml", EMPTY_REPORT, listOf(part)).failures.single())
+            .contains("domain+application").contains("no mutant")
+    }
+
+    /**
+     * The part entries the summary script merges ([theCommittedSummaryFixtureIsWhatToJsonWrites] for a whole group):
+     * `scripts/ci/fixtures/floors-parts.json`, two shards' entries of one group, read by test_mutation_summary.py.
+     */
+    @Test
+    fun theCommittedPartsFixtureIsWhatToJsonWrites() {
+        val two = MutationFloors.Group(
+            "domain+application",
+            listOf("ai.speckitty.charter.packs.application", "ai.speckitty.charter.packs.domain"),
+            listOf("ai.speckitty.charter.packs.application.config"),
+            85,
+            partition = mapOf(
+                "domain" to listOf("ai.speckitty.charter.packs.domain"),
+                "application" to listOf("ai.speckitty.charter.packs.application"),
+            ),
+        )
+        val xml = mutations(
+            *(List(8) { mutation("ai.speckitty.charter.packs.domain.Pack", "KILLED") } +
+                mutation("ai.speckitty.charter.packs.domain.Pack", "SURVIVED") +
+                List(9) { mutation("ai.speckitty.charter.packs.application.Reader", "KILLED") } +
+                mutation("ai.speckitty.charter.packs.application.Reader", "NO_COVERAGE") +
+                mutation("ai.speckitty.charter.packs.application.Reader\$Step", "TIMED_OUT")).toTypedArray(),
+        )
+        val mutants = MutationFloors.parse(xml).mutants
+        val parts = listOf(two.part("domain"), two.part("application"))
+        val json = MutationFloors.toJson(":packs", mutants.size, MutationFloors.score(mutants, parts))
+
+        val fixture = File(checkNotNull(System.getProperty("mutationFloors.partsFixture")) { "mutationFloors.partsFixture is not set" })
+        if (System.getProperty("mutationFloors.updateFixture") == "true") {
+            fixture.parentFile.mkdirs()
+            fixture.writeText(json)
+        }
+        assertThat(fixture).describedAs("rewrite it with -PupdateMutationFixture=true").hasContent(json)
+    }
+
     private companion object {
         /** Every status PIT writes, and whether PIT counts it as detected (`DetectionStatus.isDetected`). */
         val PIT_STATUSES: Map<String, Boolean> = linkedMapOf(

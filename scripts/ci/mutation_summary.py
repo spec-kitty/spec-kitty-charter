@@ -12,10 +12,17 @@ PIT did not run there, or its report could not be scored (the check deletes a st
 one). A listed group that no summary of its module holds shows as "no report" too: its shard did not finish. Without
 the list the summary says so and is never green.
 
+A group too big for one runner runs as parts (#644): each part's shard writes an entry with ``part`` and ``parts``, and
+never fails on the floor. The summary merges a group's part entries, whose mutants are disjoint, and scores the group
+once with ``MutationFloors``' rules: the exact floor comparison, truncated percentages and the same margins. A part
+that wrote nothing leaves the group without a report; parts that disagree on the floor or the parts, or a group
+reported both whole and in parts, make it unreadable.
+
 The table goes to standard output and, when ``$GITHUB_STEP_SUMMARY`` is set, is appended to the job summary.
 The exit status is 1 when an expected module or group has no report or an unreadable one: no shard may have mutated
-it, yet every job could be green, so the summary job itself goes red and the alert fires. A group below its floor
-exits 0: the ``pitest`` step is what fails the run for that.
+it, yet every job could be green, so the summary job itself goes red and the alert fires. It is 1 too when a group
+merged from parts is below its floor, since no shard checked that floor. A whole group below its floor exits 0: the
+``pitest`` step is what fails the run for that.
 
 Standard library only. Run locally from the repository root after ``./gradlew mutationModules pitest --continue``::
 
@@ -168,6 +175,107 @@ def group_row(module: str, group: dict) -> tuple[str, bool]:
     return row, passed
 
 
+def tenths(numerator: int, denominator: int) -> int:
+    """``numerator`` over ``denominator`` in tenths of a percent, truncated toward zero; 0 for no denominator."""
+    if denominator <= 0:
+        return 0
+    value = numerator * 1000
+    return value // denominator if value >= 0 else -((-value) // denominator)
+
+
+def merged_group(entries: list[dict]) -> dict:
+    """One group's part entries merged and scored as ``MutationFloors.GroupResult`` scores a whole group (#644)."""
+    first = entries[0]
+    mutants = sum(e["mutants"] for e in entries)
+    detected = sum(e["detected"] for e in entries)
+    no_coverage = sum(e["noCoverage"] for e in entries)
+    floor = first["floor"]
+    top = sorted(
+        (gaps for e in entries for gaps in (e.get("topClasses") or [])),
+        key=lambda gaps: (-(gaps.get("survived", 0) + gaps.get("noCoverage", 0)), str(gaps.get("class", ""))),
+    )[:5]
+    margin_tenths = tenths(detected, mutants) - floor * 10
+    return {
+        "group": first["group"],
+        "packages": sorted(p for e in entries for p in e.get("packages", [])),
+        "excludes": first.get("excludes", []),
+        "parts": first["parts"],
+        "mutants": mutants,
+        "detected": detected,
+        "survived": sum(e["survived"] for e in entries),
+        "noCoverage": no_coverage,
+        "timedOut": sum(e["timedOut"] for e in entries),
+        "score": tenths(detected, mutants) / 10,
+        "strength": tenths(detected, mutants - no_coverage) / 10,
+        "floor": floor,
+        "marginMutants": detected - (floor * mutants + 99) // 100,
+        "marginPoints": margin_tenths / 10,
+        "passed": mutants > 0 and detected * 100 >= floor * mutants,
+        "topClasses": top,
+    }
+
+
+def count(entry: dict, key: str) -> bool:
+    value = entry.get(key)
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def parts_fault(name: str, entries: list[dict], whole: bool) -> tuple[str, str] | None:
+    """Why a group's part entries cannot be merged, as (verdict, reason), or None when they can."""
+    if whole:
+        return UNREADABLE, "reported whole and in parts"
+    first = entries[0]
+    declared = first.get("parts")
+    names = [e.get("part") for e in entries]
+    consistent = (
+        isinstance(declared, list)
+        and all(e.get("parts") == declared and e.get("floor") == first.get("floor") for e in entries)
+        and is_number(first.get("floor"))
+        and len(set(names)) == len(names)
+        and all(n in declared for n in names)
+        and all(count(e, k) for e in entries for k in ("mutants", "detected", "survived", "noCoverage", "timedOut"))
+    )
+    if not consistent:
+        return UNREADABLE, "parts that disagree on the floor or the parts"
+    missing = [p for p in declared if p not in names]
+    if missing:
+        return NO_REPORT, "no report from part " + ", ".join(missing)
+    return None
+
+
+def merge_parts(groups: list[dict]) -> list[tuple[dict | None, str, str | None, str | None]]:
+    """The module's entries with each group's parts merged, in first-seen order: (entry, name, verdict, reason).
+
+    A whole group passes through with no verdict; a merged group carries its merged entry; a group whose parts cannot
+    be merged has no entry, and the verdict and reason of its row.
+    """
+    whole = {g.get("group") for g in groups if "part" not in g}
+    by_name: dict[str, list[dict]] = {}
+    for g in groups:
+        if "part" in g:
+            by_name.setdefault(g.get("group"), []).append(g)
+    out: list[tuple[dict | None, str, str | None, str | None]] = []
+    seen: set[str] = set()
+    for g in groups:
+        name = g.get("group")
+        if name not in by_name:
+            out.append((g, name, None, None))
+            continue
+        if name in seen:
+            continue
+        seen.add(name)
+        fault = parts_fault(name, by_name[name], name in whole)
+        if fault:
+            out.append((None, name, fault[0], fault[1]))
+        else:
+            out.append((merged_group(by_name[name]), name, None, None))
+    return out
+
+
+def group_label(entry: dict) -> str:
+    return str(entry.get("group", "?"))
+
+
 def missing_row(module: str, verdict: str, group: str | None = None) -> str:
     label = f"`:{cell(module)}`" + (f" {cell(group)}" if group else "")
     return f"| {label} | — | — | — | — | — | — | — | {verdict} | — |"
@@ -220,11 +328,22 @@ def render_with_gaps(
             failing.append(f"`:{module}` (no group)")
             gaps.append(f"`:{module}` (no group)")
             continue
-        for group in groups:
-            row, passed = group_row(module, group)
+        for entry, name, verdict, reason in merge_parts(groups):
+            if entry is None:
+                rows.append(missing_row(module, verdict, name))
+                failing.append(f"`:{module}` {name} ({reason})")
+                gaps.append(f"`:{module}` {name} ({reason})")
+                continue
+            row, passed = group_row(module, entry)
             rows.append(row)
             if not passed:
-                failing.append(f"`:{module}` {group.get('group', '?')}")
+                if "parts" in entry:
+                    # No shard checked a merged group's floor: the summary is what fails the run (#644).
+                    reason = f"below its floor, merged from {len(entry['parts'])} parts"
+                    failing.append(f"`:{module}` {name} ({reason})")
+                    gaps.append(f"`:{module}` {name} ({reason})")
+                else:
+                    failing.append(f"`:{module}` {group_label(entry)}")
         reported = {group.get("group") for group in groups}
         for name in (expected or {}).get(directory, []):
             if name not in reported:
@@ -290,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
         with open(step_summary, "a", encoding="utf-8") as out:
             out.write(summary)
     if gaps:
-        print("no readable report for: " + ", ".join(gaps), file=sys.stderr)
+        print("the summary fails for: " + ", ".join(gaps), file=sys.stderr)
         return 1
     return 0
 

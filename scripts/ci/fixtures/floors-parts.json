@@ -1,0 +1,48 @@
+{
+  "project": ":packs",
+  "mutants": 20,
+  "groups": [
+    {
+      "group": "domain+application",
+      "part": "domain",
+      "parts": ["application", "domain"],
+      "packages": ["ai.speckitty.charter.packs.domain"],
+      "excludes": ["ai.speckitty.charter.packs.application.config"],
+      "mutants": 9,
+      "detected": 8,
+      "survived": 1,
+      "noCoverage": 0,
+      "timedOut": 0,
+      "score": 88.8,
+      "strength": 88.8,
+      "floor": 85,
+      "marginMutants": 0,
+      "marginPoints": 3.8,
+      "passed": true,
+      "topClasses": [
+        {"class": "ai.speckitty.charter.packs.domain.Pack", "survived": 1, "noCoverage": 0}
+      ]
+    },
+    {
+      "group": "domain+application",
+      "part": "application",
+      "parts": ["application", "domain"],
+      "packages": ["ai.speckitty.charter.packs.application"],
+      "excludes": ["ai.speckitty.charter.packs.application.config"],
+      "mutants": 11,
+      "detected": 10,
+      "survived": 0,
+      "noCoverage": 1,
+      "timedOut": 1,
+      "score": 90.9,
+      "strength": 100.0,
+      "floor": 85,
+      "marginMutants": 0,
+      "marginPoints": 5.9,
+      "passed": true,
+      "topClasses": [
+        {"class": "ai.speckitty.charter.packs.application.Reader", "survived": 0, "noCoverage": 1}
+      ]
+    }
+  ]
+}

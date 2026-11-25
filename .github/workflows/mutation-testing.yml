@@ -12,8 +12,8 @@ name: Mutation testing
 #   modules and their groups come from the build (`mutationModules`, #388), not from a list kept beside it.
 # - The rules of this paragraph are pinned by build-logic's MutationWorkflowGuardTest, and the root build fails any
 #   invocation in which verifyAll or a check depends on pitest (MutationIsolation, ADR-0060, #387).
-# - PIT runs in three shards, each on its own runner: :packs's floor groups in two halves, and the other modules
-#   (#461). Each shard's PIT reports, floors files and log go up as a `mutation-report-<shard>` artifact, on a red run
+# - PIT runs in six shards, each on its own runner: :packs's floor groups in five (#461, #644), and the other
+#   modules. domain+application runs as three parts, one shard each; the summary merges them and scores the group once. Each shard's PIT reports, floors files and log go up as a `mutation-report-<shard>` artifact, on a red run
 #   too, kept 14 days.
 # - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
 #   `mutation-testing`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
@@ -44,13 +44,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # PIT runs in three shards, each on its own 4-core runner (#461). A full :packs:pitest measured 1h06m34s alone on an
+  # PIT runs in six shards, each on its own 4-core runner (#461, #644). A full :packs:pitest measured 1h06m34s alone on an
   # idle 4-core machine (2026-11-12, 7129 mutants, 69 timed out), and a GitHub runner is ~1.4x slower through the
-  # whole mutation phase (run 43176780670 ran out of its 80-minute step), so :packs runs as two shards of its floor
-  # groups, about half of its test runs each (`-PmutationGroups`, charter.mutation-conventions): ~47 min each on a
-  # runner. Every group is scored on all of its mutants, as in a whole-module run. The other modules take ~15 min.
+  # whole mutation phase (run 43176780670 ran out of its 80-minute step), so from #461 :packs ran as two shards of its
+  # floor groups, about half of its test runs each (`-PmutationGroups`, charter.mutation-conventions): ~47 min each on
+  # a runner then. Every group is scored on all of its mutants, as in a whole-module run. The other modules take ~15 min.
   # Budget (operator ruling, 2026-11-12, raising ADR-0062's 90): 120 minutes a shard, 110 of them for the mutation
   # step, so the copy and the upload still run when PIT runs out of time. A timeout raises the mutation-testing issue.
+  # #644: in the week to 2026-11-23 the :packs suite grew (101 test classes and 38 % more tests, from #554), and the
+  # packs-core shard (domain+application with infra.fetch) ran out of its 110 minutes, from 44 the week before;
+  # infra.storage with infra.archive went from 40 to 78. A narrowed run of the same, unchanged class (Reachability)
+  # with PackCompositionResolver took 61 % longer in mutation analysis, at 27 % more tests per mutation. So :packs
+  # runs as three shards: domain+application alone, infra.storage alone, and infra.fetch with infra.archive. The budget
+  # and the floors are unchanged. domain+application alone still ran out of its 110 minutes (45618347444), so it runs
+  # as three parts (operator ruling, 2026-11-25): domain, application and storage.rules, one shard each
+  # (`-PmutationGroups=<group>/<part>`). A part's shard never checks the floor; the summary job merges the parts, whose
+  # mutants are disjoint, scores the group once, and fails when it is below its floor.
   # The summary job merges the shards' reports into one table.
   pitest:
     name: pitest (${{ matrix.shard }})
@@ -61,11 +70,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # :packs's floor groups in two halves, by test runs (domain+application with infra.fetch ~50 %).
-          - shard: packs-core
-            tasks: ":packs:pitest -PmutationGroups=domain+application,infra.fetch"
+          # :packs's floor groups in five shards (#644): domain+application in three parts, infra.storage alone, and
+          # the two smallest together.
+          - shard: packs-domain
+            tasks: ":packs:pitest -PmutationGroups=domain+application/domain"
+          - shard: packs-application
+            tasks: ":packs:pitest -PmutationGroups=domain+application/application"
+          - shard: packs-rules
+            tasks: ":packs:pitest -PmutationGroups=domain+application/rules"
           - shard: packs-storage
-            tasks: ":packs:pitest -PmutationGroups=infra.storage,infra.archive"
+            tasks: ":packs:pitest -PmutationGroups=infra.storage"
+          - shard: packs-edges
+            tasks: ":packs:pitest -PmutationGroups=infra.fetch,infra.archive"
           # -x: :packs:pitest is skipped here, and with it its checkMutationFloors finalizer.
           - shard: others
             tasks: "pitest -x :packs:pitest"
@@ -149,7 +165,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # The three shards' reports in one table, whatever their results.
+  # The six shards' reports in one table, whatever their results.
   summary:
     needs: pitest
     if: always()
@@ -168,7 +184,7 @@ jobs:
       - name: Test the summary script
         run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
 
-      # Both shards' artifacts merged at their repository paths; a shard that uploaded nothing leaves its modules as
+      # Every shard's artifacts merged at their repository paths; a shard that uploaded nothing leaves its modules as
       # "no report" rows.
       - name: Download the mutation reports
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -176,7 +192,8 @@ jobs:
           pattern: mutation-report-*
           merge-multiple: true
 
-      # A group below its floor exits 0 here (the shards' mutation steps make the run red for that). A listed module or
+      # A whole group below its floor exits 0 here (the shards' mutation steps make the run red for that); a group merged
+      # from parts below its floor exits 1, since no shard checked it (#644). A listed module or
       # group with no readable report exits 1, so a group no shard names turns this job red and the alert fires. The
       # same table is passed to the alert job as the `summary` output. The script's status is kept in `status`, so the
       # output is written first, and is the step's exit status (never swallowed).

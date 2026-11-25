@@ -9,6 +9,7 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
@@ -75,18 +76,70 @@ object MutationFloors {
     /**
      * A floor group: the mutants whose class lies in one of [packages] and in none of [excludes], held to [floor]
      * percent. A package matches itself and its sub-packages.
+     *
+     * **Parts (#644).** A group too big for one runner declares a [partition]: named parts that split its [packages]
+     * exactly, each package in one part, so a mutant lies in exactly one part. A shard can then take one part
+     * ([part], `-PmutationGroups=<group>/<part>`); that shard scores the part but never holds it to the floor, and the
+     * summary script merges the parts' figures and scores the group once (`scripts/ci/mutation_summary.py`). A part is
+     * itself a [Group] with the part's packages, the group's excludes and floor, its [part] name and the group's
+     * [parts]; it has no partition of its own.
      */
     data class Group(
         val name: String,
         val packages: List<String>,
         val excludes: List<String>,
         val floor: Int,
+        val partition: Map<String, List<String>> = emptyMap(),
+        val part: String? = null,
+        val parts: List<String> = emptyList(),
     ) : Serializable {
         init {
             require(name.isNotBlank()) { "A mutation floor group needs a name" }
             require(packages.isNotEmpty()) { "Mutation floor group '$name' names no package" }
             require(floor in 0..100) { "Mutation floor group '$name' has floor $floor, which is not a percentage" }
+            partition.forEach { (partName, partPackages) ->
+                require(PART_NAME.matches(partName)) {
+                    "Mutation floor group '$name' has a part named '$partName': letters, digits, '.' and '-' only"
+                }
+                require(partPackages.isNotEmpty()) { "Mutation floor group '$name' has part '$partName' with no package" }
+                val foreign = partPackages.filter { it !in packages }
+                require(foreign.isEmpty()) {
+                    "Mutation floor group '$name' has part '$partName' naming ${foreign.joinToString()}, which is not" +
+                        " among the group's packages $packages"
+                }
+            }
+            if (partition.isNotEmpty()) {
+                // A package holds its sub-packages: one part's package inside another's would score its mutants twice.
+                val owned = partition.flatMap { (partName, pkgs) -> pkgs.map { partName to it.removeSuffix(".*") } }
+                owned.forEach { (partName, pkg) ->
+                    owned.filter { (other, outer) -> other != partName && pkg.startsWith("$outer.") }.forEach { (other, outer) ->
+                        throw IllegalArgumentException(
+                            "Mutation floor group '$name' has part '$partName' with package $pkg inside part '$other'" +
+                                "'s $outer, so its mutants would be scored twice",
+                        )
+                    }
+                }
+                packages.forEach { pkg ->
+                    val holders = partition.filterValues { pkg in it }.keys
+                    require(holders.isNotEmpty()) { "Mutation floor group '$name' has package $pkg in no part" }
+                    require(holders.size == 1) {
+                        "Mutation floor group '$name' has package $pkg in two parts (${holders.joinToString()})," +
+                            " so its mutants would be scored twice"
+                    }
+                }
+            }
         }
+
+        /** The part [partName] of this group, as a group of its own (see [Group]). */
+        fun part(partName: String): Group {
+            val partPackages = requireNotNull(partition[partName]) {
+                "Mutation floor group '$name' has no part '$partName' (${partition.keys.sorted().joinToString()})"
+            }
+            return Group(name, partPackages.sorted(), excludes, floor, part = partName, parts = partition.keys.sorted())
+        }
+
+        /** The group's name, and the part it is when it is one. */
+        val label: String get() = part?.let { "$name (part $it of ${parts.joinToString()})" } ?: name
 
         fun contains(mutatedClass: String): Boolean =
             packages.any { inPackage(mutatedClass, it) } && excludes.none { inPackage(mutatedClass, it) }
@@ -98,6 +151,7 @@ object MutationFloors {
 
         companion object {
             private const val serialVersionUID = 1L
+            private val PART_NAME = Regex("[A-Za-z0-9.-]+")
         }
     }
 
@@ -147,11 +201,15 @@ object MutationFloors {
         /** Whether the group has mutants and its exact score is at or above its floor. */
         val passes: Boolean get() = mutants > 0 && detected.toLong() * 100 >= group.floor.toLong() * mutants
 
-        /** The failure line for [projectPath], or null when the group passes. */
+        /**
+         * The failure line for [projectPath], or null when the group passes. A part fails only when it has no mutant:
+         * its floor is checked on the merged group, by the summary script (#644).
+         */
         fun failure(projectPath: String): String? = when {
             mutants == 0 ->
-                "$projectPath ${group.name}: no mutant lies in its packages ${group.packages}, so its floor" +
+                "$projectPath ${group.label}: no mutant lies in its packages ${group.packages}, so its floor" +
                     " ${group.floor} % cannot be checked $REFERENCE"
+            group.part != null -> null
             !passes ->
                 "$projectPath ${group.name}: mutation score ${percent(detected, mutants)} % is below its floor" +
                     " ${group.floor} % $REFERENCE"
@@ -160,7 +218,7 @@ object MutationFloors {
 
         /** The log line of the group. */
         fun line(projectPath: String): String =
-            "$projectPath ${group.name}: $mutants mutants, score ${percent(detected, mutants)} %," +
+            "$projectPath ${group.label}: $mutants mutants, score ${percent(detected, mutants)} %," +
                 " strength ${percent(detected, mutants - noCoverage)} %, floor ${group.floor} %"
     }
 
@@ -224,29 +282,59 @@ object MutationFloors {
      * each other.
      */
     data class Shard(val name: String, val groups: List<Group>) {
+        // A part's groups carry the part's packages, so a part shard mutates only its part (#644).
         val targetClasses: Set<String> get() = groups.flatMap { it.packages }.map { "$it.*" }.toSet()
         val excludedClasses: Set<String> get() = groups.flatMap { it.excludes }.map { "$it.*" }.toSet()
     }
 
     /**
-     * The shard that [requested] (`-PmutationGroups`, comma-separated group names) selects from a module's [groups].
-     * Every name must be one of the module's groups, and at least one must be given: a misspelt name never widens a
-     * shard back to the whole module, nor narrows it to nothing.
+     * The shard that [requested] (`-PmutationGroups`, comma-separated) selects from a module's [groups]: a group by its
+     * name, or one part of a group that declares parts as `<group>/<part>` (#644). Every name must be one of the
+     * module's groups, every part one of its group's parts, and at least one must be given: a misspelt name never
+     * widens a shard back to the whole module, nor narrows it to nothing. A group is taken whole or in parts, never
+     * both, so no mutant is scored twice.
      */
     fun shard(projectPath: String, requested: String, groups: List<Group>): Shard {
         val names = requested.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
         if (names.isEmpty()) {
             throw GradleException("$projectPath: -PmutationGroups names no floor group")
         }
-        val unknown = names - groups.map { it.name }.toSet()
+        val byName = groups.associateBy { it.name }
+        val unknown = names.map { it.substringBefore('/') }.toSet() - byName.keys
         if (unknown.isNotEmpty()) {
             throw GradleException(
                 "$projectPath: -PmutationGroups names ${unknown.sorted().joinToString()}, which are not among its" +
                     " floor groups (${groups.joinToString { it.name }})",
             )
         }
-        val selected = groups.filter { it.name in names }
-        return Shard(selected.joinToString("_") { it.name.replace(Regex("[^A-Za-z0-9.-]"), "-") }, selected)
+        val wanted = names.groupBy({ it.substringBefore('/') }, { it.substringAfter('/', "") })
+        val selected = groups.filter { it.name in wanted }.flatMap { group ->
+            val parts = wanted.getValue(group.name)
+            when {
+                parts == listOf("") -> listOf(group)
+                "" in parts -> throw GradleException(
+                    "$projectPath: -PmutationGroups names ${group.name} whole and in part, so its mutants would be" +
+                        " scored twice",
+                )
+                group.partition.isEmpty() -> throw GradleException(
+                    "$projectPath: -PmutationGroups names ${parts.joinToString { "${group.name}/$it" }}, but" +
+                        " ${group.name} declares no parts",
+                )
+                else -> parts.sorted().map { partName ->
+                    if (partName !in group.partition) {
+                        throw GradleException(
+                            "$projectPath: -PmutationGroups names ${group.name}/$partName; the parts of" +
+                                " ${group.name} are ${group.partition.keys.sorted().joinToString()}",
+                        )
+                    }
+                    group.part(partName)
+                }
+            }
+        }
+        val name = selected.joinToString("_") { group ->
+            (group.name + (group.part?.let { "/$it" } ?: "")).replace(Regex("[^A-Za-z0-9.-]"), "-")
+        }
+        return Shard(name, selected)
     }
 
     /**
@@ -336,6 +424,11 @@ object MutationFloors {
             append(if (index == 0) "\n" else ",\n")
             append("    {\n")
             append("      \"group\": ").append(quote(result.group.name)).append(",\n")
+            result.group.part?.let { partName ->
+                append("      \"part\": ").append(quote(partName)).append(",\n")
+                append("      \"parts\": ").append(result.group.parts.joinToString(", ", "[", "]") { quote(it) })
+                    .append(",\n")
+            }
             append("      \"packages\": ").append(result.group.packages.joinToString(", ", "[", "]") { quote(it) })
                 .append(",\n")
             append("      \"excludes\": ").append(result.group.excludes.joinToString(", ", "[", "]") { quote(it) })
@@ -409,11 +502,20 @@ abstract class MutationFloorGroupSpec @Inject constructor(private val groupName:
     /** The floor, in percent of PIT's mutation score. */
     abstract val floor: Property<Int>
 
+    /** The group's parts, by name: each a list of its [packages], together splitting them exactly (#644). */
+    abstract val parts: MapProperty<String, List<String>>
+
+    /** Declares the part [name], holding [partPackages] of the group's [packages] (see [MutationFloors.Group]). */
+    fun part(name: String, vararg partPackages: String) {
+        parts.put(name, partPackages.toList())
+    }
+
     internal fun toGroup(): MutationFloors.Group = MutationFloors.Group(
         name = groupName,
         packages = packages.get().sorted(),
         excludes = excludes.getOrElse(emptySet()).sorted(),
         floor = floor.orNull ?: throw GradleException("Mutation floor group '$groupName' declares no floor"),
+        partition = parts.getOrElse(emptyMap()).mapValues { it.value.sorted() }.toSortedMap(),
     )
 }
 
