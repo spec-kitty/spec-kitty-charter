@@ -1,0 +1,102 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-25T21:01:20.123371Z",
+      "decision_id": "01M8A86MBV5V3Q7MS3CTNP31QR",
+      "final_answer": null,
+      "input_key": "walker_shape",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "Intermediate phase runner (recommended)",
+        "Full GraphWalker/PackGraphNode/Scope in #638",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D1: Walker shape for slice 3 \u2014 keep an intermediate phase runner (ValidationWalker<S> over a List<ClosureFault> ledger, rule-ordered buckets, VIOLATION gate, ClosureFacts gains declaring()/fallbackProfile(); Scope in #639, visitor driver in slice 7) or build the full GraphWalker/PackGraphNode/Scope design in #638?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.design.walker-shape",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:01:22.632027Z",
+      "decision_id": "01M8A86PT7KJSXW37HJEB4RSZJ",
+      "final_answer": null,
+      "input_key": "edge_index_refusals",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "Registration-side only, reads unchanged (recommended)",
+        "Unify read and registration codes",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D2: Edge-index refusals in #639 \u2014 move only the registration-side relation and edge-index checks into relations() and keep the read-time merge refusals (500 pack_unreadable) as they are, or unify read and registration codes (a wire change)?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.edge-index-refusals",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:01:25.421330Z",
+      "decision_id": "01M8A86SHD5PGJZ1ZBEC7EVHV3",
+      "final_answer": null,
+      "input_key": "pack_doctor_pickup",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "Keep in slice 7, file the child now (recommended)",
+        "WP05 in this mission",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D3: #632 item 3 \u2014 pull a narrow pack-doctor pickup (specialization cycle + relations over each root's composed closure, parity rows) into this mission as WP05, or keep it in slice 7 and file the slice-7 child now?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.pack-doctor-pickup",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:01:28.144324Z",
+      "decision_id": "01M8A86W6GE722R8GB91ENG2E8",
+      "final_answer": null,
+      "input_key": "issue_done_when",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "cli",
+      "options": [
+        "Yes, edit both",
+        "No",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "D4: May the runner edit #638's done-when (registration, every write and the census get the own-closure rules only from PackRulesets.ownClosure; pack-doctor in slice 7) and #639's text (name SpecializationCycleRule, the relations subject and EdgeIndex's home)?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.scope.issue-done-when",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+  "version": 1
+}
