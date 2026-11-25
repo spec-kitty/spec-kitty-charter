@@ -632,6 +632,8 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - the tag is not the build version;
   - a bundled contract is unreleased, its tag is not merged into the commit, or its GitHub release is not published
     with its contract assets (on a pre-release too);
+  - a bundled contract's files changed since its released version's tag, or differ from that release's published
+    assets: reopen the version as a `-SNAPSHOT` and release the changed contract first;
   - a final release bundles a contract release candidate;
   - any target fails;
   - the tag moved while the assets were built;
@@ -640,9 +642,10 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - A manual run of the workflow with a tag name builds the assets as a workflow artifact and publishes
     nothing.
   - `scripts/release/rehearse-service-release.sh` rehearses every gate refusal and the asset set without
-    any remote, including a pre-release of an unreleased contract, a changed or an unchanged packs contract, and the
-    refusal of a set without the pack-doctor jar. It runs in CI on every change. That the contract releases are
-    published with their assets needs the remote, so the workflow checks it, on a manual run too.
+    any remote, including the refusal of a pre-release of an unreleased contract, a changed or an unchanged packs
+    contract, a released contract edited without reopening its version, and the refusal of a set without the
+    pack-doctor jar. It runs in CI on every change. That the contract releases are published with assets that match
+    the commit needs the remote, so the workflow checks it, on a manual run too.
   - **Before the very first `service-v*` tag,** do one manual `workflow_dispatch` run against a candidate
     tag name. The publish job and the two remote gate-checks (on-main, tag-still-names-the-commit) run only
     on a real tag push, so a dispatch run is their first exercise end to end, while still publishing nothing.

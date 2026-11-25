@@ -27,14 +27,17 @@ included, generate their client from it, and a charter release is cut only with 
   bundles is released (`contract-charter-v<info.version>` merged into the commit) and so is the packs contract
   (`contract-packs-v<version>` merged, or, while the packs CHANGELOG heading is a reopened `-SNAPSHOT` and no packs
   contract file changed since, the release it is unchanged since). ADR-0046 records it in its amendment of
-  2026-11-25; the operator accepted its three calls the same day (PR #653). Until now a pre-release could bundle an unreleased contract.
+  2026-11-25; the operator accepted its three calls the same day (PR #653). Until now a pre-release could bundle an
+  unreleased contract.
+- **The bytes.** A released contract version must hold its tag's files: an edit that keeps the version is refused.
 - **Final releases.** A final service release refuses a packs contract release candidate, as it already refused a
   charter one.
-- **The workflow.** `service-release.yml` also checks that both contract releases are published with their assets
-  (`charter-openapi.yaml` and `packs-contract.tar.gz`, with their checksums), and the release notes name both
-  contract releases. `gate.properties` names `packsContract` in place of `contractReleased`.
+- **The workflow.** `service-release.yml` also checks that both contract releases are published with all their
+  assets, and that those match the commit: the bundle's checksum, the scenarios, the activation document and the packs
+  contract's files. The release notes name both contract releases. `gate.properties` names `packsContract` in place of `contractReleased`.
 - **The rehearsal.** `rehearse-service-release.sh` rehearses a pre-release of an unreleased contract, an unreleased,
-  unmerged, changed and unchanged packs contract, and a final release over a packs candidate.
+  unmerged, changed and unchanged packs contract, a final release over a packs candidate, and a released contract
+  edited without reopening its version.
 - **The docs.** [For contract consumers](/development/contract-consumers/) says where both contracts are published,
   what to pin under the 0.x rules, the generator pin and options, and that core writes declared ids through its
   generated client, never file slugs (#485). [Generate your own client](/guides/generate-a-client/) pins the newest

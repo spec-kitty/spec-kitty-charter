@@ -11,16 +11,18 @@ name: service-release
 #   - the tagged commit is on main, and its build version is the tag's;
 #   - every release, a pre-release too, bundles released contracts (#650): contract-charter-v<info.version> and the
 #     packs contract's contract-packs-v<version> are merged into the commit (an unchanged packs contract is the release
-#     it is unchanged since), both GitHub Releases are published with the contract assets and their checksums
-#     (charter-openapi.yaml, packs-contract.tar.gz), and a final release bundles no contract release candidate;
+#     it is unchanged since), the commit holds their files unchanged since those tags, both GitHub Releases are
+#     published with all their assets, those assets match the commit's contracts (the bundle's checksum, the
+#     scenarios, the activation document, the packs contract's files), and a final release bundles no release
+#     candidate;
 #   - verifyAll, the jar and all four native executables built and passed their start-and-answer check, and the
 #     pack-doctor jar built and checked the example packs;
 #   - the tag still names the built commit when publishing starts.
 # The gate is :checkServiceReleaseTag (ServiceReleaseGate in build-logic); the commit's place on main, the contract
-# releases' assets and the tag's stability are checked here, where the remote is. Only the publish job can write, and it runs no build. A release is
-# never marked latest, and a tag with a pre-release suffix makes a GitHub pre-release. An existing release fails the run;
-# nothing is replaced. The workflow runs from the tagged commit, so these checks guard against mistakes, not against
-# someone who can push tags: a tag ruleset on service-v* limits who can publish.
+# releases' assets and the tag's stability are checked here, where the remote is. Only the publish job can write, and
+# it runs no build. A release is never marked latest, and a tag with a pre-release suffix makes a GitHub pre-release.
+# An existing release fails the run; nothing is replaced. The workflow runs from the tagged commit, so these checks
+# guard against mistakes, not against someone who can push tags: a tag ruleset on service-v* limits who can publish.
 #
 # The build it calls (service.yml) also checks out spec-kitty-open-packs at the commit pinned in gradle.properties
 # (openPacksRef) to sync packs/internal and packs/qa for governance; no test reads it, and it is never part of an asset.
@@ -61,7 +63,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          # The gate reads the contract-charter-v* tags; the main check reads origin/main.
+          # The gate reads the contract-charter-v* and contract-packs-v* tags; the main check reads origin/main.
           fetch-depth: 0
           persist-credentials: false
 
@@ -120,10 +122,11 @@ jobs:
             echo "contract-note=$(value contractNote)"
           } >> "$GITHUB_OUTPUT"
 
-      # The gate proved both contract tags are merged; this proves their releases are published, with the assets a
-      # consumer fetches and verifies (docs/development/contract-consumers.md). A draft or a release without them stops
-      # the run, on a rehearsal too.
-      - name: Check the contract releases are published
+      # The gate proved both contract tags are merged and their files unchanged since; this proves their releases are
+      # published with the assets a consumer fetches (docs/development/contract-consumers.md), and that those assets
+      # are what this commit bundles: the bundle's checksum, the scenarios, the activation document and the packs
+      # contract's files. A draft, a missing asset or a difference stops the run, on a rehearsal too.
+      - name: Check the contract releases are published with this commit's contracts
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -131,24 +134,46 @@ jobs:
           PACKS_CONTRACT: ${{ steps.gate.outputs.packs-contract }}
         run: |
           set -euo pipefail
-          published() { # published <tag> <asset>...
-            local tag="$1" assets
-            shift
-            if ! assets="$(gh release view "$tag" --repo "$REPO" --json isDraft,assets \
-                --jq 'if .isDraft then "draft" else .assets[].name end')"; then
-              echo "::error::No release $tag is published (none exists, or it is a draft): publish it before this service release (#650)"
-              exit 1
-            fi
+          fail() { echo "::error::$1"; exit 1; }
+          download() { # download <tag> <dir> <asset>...: the release's assets, refused when a draft or incomplete
+            local tag="$1" dir="$2" names
+            shift 2
+            names="$(gh release view "$tag" --repo "$REPO" --json isDraft,assets \
+                --jq 'if .isDraft then "draft" else .assets[].name end')" \
+              || fail "No release $tag is published (none exists, or it is a draft): publish it first (#650)"
             for asset in "$@"; do
-              if ! grep -qxF "$asset" <<<"$assets"; then
-                echo "::error::The release $tag has no $asset: it is a draft or incomplete; publish it before this service release (#650)"
-                exit 1
-              fi
+              grep -qxF "$asset" <<<"$names" \
+                || fail "The release $tag has no $asset: it is a draft or incomplete; publish it first (#650)"
+              gh release download "$tag" --repo "$REPO" --dir "$dir" --pattern "$asset"
             done
-            echo "$tag is published with $*"
           }
-          published "contract-charter-v$CONTRACT" charter-openapi.yaml charter-openapi.yaml.sha256
-          published "contract-packs-v$PACKS_CONTRACT" packs-contract.tar.gz packs-contract.tar.gz.sha256 packs-contract.sha256
+          charter="$RUNNER_TEMP/charter" packs="$RUNNER_TEMP/packs"
+          mkdir -p "$charter/scenarios" "$packs/archive"
+
+          tag="contract-charter-v$CONTRACT"
+          download "$tag" "$charter" charter-openapi.yaml charter-openapi.yaml.sha256 charter-scenarios.tar.gz \
+            ActivationConfig.schema.json
+          (cd "$charter" && sha256sum --check --strict charter-openapi.yaml.sha256)
+          ./gradlew --quiet --no-build-cache :contracts:bundleContract
+          built="$(awk '{print $1}' build/contracts/contract/charter-openapi.yaml.sha256)"
+          [ "$built" = "$(awk '{print $1}' "$charter/charter-openapi.yaml.sha256")" ] \
+            || fail "This commit's charter-openapi.yaml ($built) is not the one $tag published"
+          tar -xzf "$charter/charter-scenarios.tar.gz" -C "$charter/scenarios"
+          diff -r "$charter/scenarios/scenarios" contracts/charter/scenarios \
+            || fail "This commit's contract scenarios are not those $tag published"
+          cmp "$charter/ActivationConfig.schema.json" contracts/offering/schemas/ActivationConfig.schema.json \
+            || fail "This commit's ActivationConfig.schema.json is not the one $tag published"
+
+          tag="contract-packs-v$PACKS_CONTRACT"
+          download "$tag" "$packs" packs-contract.tar.gz packs-contract.tar.gz.sha256 packs-contract.sha256
+          (cd "$packs" && sha256sum --check --strict packs-contract.tar.gz.sha256)
+          tar -xzf "$packs/packs-contract.tar.gz" -C "$packs/archive"
+          (cd "$packs/archive" && sha256sum --check --strict --quiet ../packs-contract.sha256)
+          for file in file-kinds.yaml schemas conformance; do # the contract, as its CHANGELOG defines it
+            diff -r "$packs/archive/packs-contract/$file" "contracts/packs/$file" \
+              || fail "This commit's packs contract $file is not what $tag published"
+          done
+          echo "$CONTRACT and $PACKS_CONTRACT are published with this commit's contracts"
 
   # The whole service build (verifyAll) and the jars: the service's jar, started and checked, is the `service-jar`
   # artifact; the pack-doctor jar, run over the example packs, is the `pack-doctor-jar` artifact.
