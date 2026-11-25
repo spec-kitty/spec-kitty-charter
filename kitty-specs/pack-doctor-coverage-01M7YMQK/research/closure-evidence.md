@@ -22,8 +22,9 @@ slices 2-7 remain, slice 7 with #614's ClosureVerdict clause.
 Closed with evidence, not by this PR's keywords: #52 item 3 (obsolete) and #535 (not_planned), ruling R-g.
 Epics: tick #549 for #629 and #630 (#614 and #632 stay open under it); tick #142 for #154.
 Kept in view: #158 (manifest_stale is its first step).
-Open-packs drafts (not filed): open-packs#TBD-pack-doctor-repin, #TBD-preset-item-refusals, #TBD-manifest-stale,
-#TBD-retire-python-rules, #TBD-report-format, #TBD-anti-pattern-files (research/open-packs-drafts.md).
+Open-packs issues (filed at landing; research/open-packs-drafts.md): open-packs#345 (pack-doctor repin), #346
+(preset-item refusals), #347 (manifest stale), #348 (retire Python rules), #349 (report format), #350 (anti-pattern
+files).
 ```
 
 ## Closes
@@ -87,7 +88,8 @@ decisions 12-14; SC-004). The rows follow the acceptance criteria.
 | `rejects` across packs and no cascade | `anti-pattern-nodes.feature:115` (outside `depends_on`: refused) and `:164` (inside: resolves). `activations/…/domain/RejectsIsNotCascadedTest.java` |
 | The canonical example packs | 18 files under `service/packs/src/testFixtures/resources/example-packs/built-in/anti_patterns/`, each with its node and a `rejects` edge in `procedure.graph.yaml` or `styleguide.graph.yaml`. The inline blocks are removed from the five example files that carried them (two procedures, three styleguides). `packs/…/examples/ExamplePackCoverageTest.java`: `everyPresetAntiPatternIsAFileItsPackHolds` `:93`, `everyExampleAntiPatternNodeNamesAFileItsPackHolds` `:117`, `theExampleAntiPatternsCoverEverySeverity` `:142` and `noExampleStyleguideOrProcedureCarriesAnInlineAntiPattern` `:160` |
 
-Open-packs' consequence is draft (f), `open-packs#TBD-anti-pattern-files`. Link it from the closing comment on #154.
+Open-packs' consequence is draft (f), filed as spec-kitty/spec-kitty-open-packs#350 and linked from the closing
+comment on #154.
 
 ## Refs
 
@@ -179,5 +181,5 @@ These close through a comment, not a PR keyword (Rule 2, step 3). Each comment n
 
 - **open-packs #343** (`charter:main-red`) is open-packs' issue. Its two lagging fixtures are item 8 of draft (a). The
   alignment pull request in open-packs closes it.
-- **The six `open-packs#TBD-*` drafts** are in `research/open-packs-drafts.md`. The orchestrator files them before
-  merge and replaces each placeholder here and in the PR body.
+- **The six open-packs drafts** are in `research/open-packs-drafts.md`. They were filed at landing as
+  spec-kitty/spec-kitty-open-packs#345 to #350, one per draft, (a) to (f) in order.

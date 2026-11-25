@@ -1,9 +1,9 @@
-# Drafts for spec-kitty-open-packs (not filed)
+# Drafts for spec-kitty-open-packs (filed)
 
 WP09, T035 (C-006; `charter.md`, "Orchestrating cloud sessions"; `docs/development/issue-tracker.md`, Rule 4). Six
-issue drafts for `spec-kitty/spec-kitty-open-packs`. **None is filed.** The orchestrator files each one at landing,
-replaces its `open-packs#TBD-<slug>` placeholder with the real number here and in the PR body, and links (f) from
-spec-kitty-charter#154.
+issue drafts for `spec-kitty/spec-kitty-open-packs`. **All six were filed at landing** (PR #647), as
+spec-kitty/spec-kitty-open-packs#345 to #350, (a) to (f) in order. (f) is linked from spec-kitty-charter#154. The
+curation issue `open-packs#TBD-anti-pattern-curation`, named in draft (f), is not filed yet.
 
 ## Sources
 
@@ -45,7 +45,7 @@ real tag.
 
 ---
 
-## (a) `open-packs#TBD-pack-doctor-repin`
+## (a) `open-packs#345`
 
 > **Align with the charter release that carries pack-doctor: jar, lock field, command line, report and refusals**
 >
@@ -65,8 +65,8 @@ real tag.
 > `:pack-check:packCheckJar` (`open-packs:scripts/ci/charter_pack_check_jar.sh:55-56`), and that task no longer
 > exists. It also meets the refusals below. The red track opens or updates the `charter:main-red` issue (#343). The
 > release track stays green on `service-v0.1.0-rc.3` until `service-v<version>` is published. Land this alignment
-> against that release, in one pull request with the curation of `open-packs#TBD-anti-pattern-files`. Do not repin
-> before the curation lands: the release refuses the current tree (see "New refusals" below).
+> against that release, in one pull request with the curation of `open-packs#350`. Do not repin before the
+> curation lands: the release refuses the current tree (see "New refusals" below).
 >
 > **What changes: the touchpoints.** Each touchpoint below gives the current value in open-packs, then the new value.
 >
@@ -208,7 +208,7 @@ real tag.
 
 ---
 
-## (b) `open-packs#TBD-preset-item-refusals`
+## (b) `open-packs#346`
 
 > **Preset items are judged against their pack's own closure: `preset_item_not_held`, `preset_item_undeclared`**
 >
@@ -265,7 +265,7 @@ real tag.
 
 ---
 
-## (c) `open-packs#TBD-manifest-stale`
+## (c) `open-packs#347`
 
 > **A stale manifest hash is `manifest_stale` on every surface; restamp with `pack-doctor remediate`**
 >
@@ -323,7 +323,7 @@ real tag.
 
 ---
 
-## (d) `open-packs#TBD-retire-python-rules`
+## (d) `open-packs#348`
 
 > **Retire the Python rules that pack-doctor now judges; keep the house rules**
 >
@@ -385,7 +385,7 @@ real tag.
 
 ---
 
-## (e) `open-packs#TBD-report-format`
+## (e) `open-packs#349`
 
 > **Parse pack-doctor's report: the standard-output JSON and the `--report` file**
 >
@@ -447,7 +447,7 @@ real tag.
 
 ---
 
-## (f) `open-packs#TBD-anti-pattern-files`
+## (f) `open-packs#350`
 
 This draft is `research/open-packs-TBD-anti-pattern-files.md` (plan D12-D14, ruling R-r), carried over and updated
 with what WP10, WP11 and WP12 shipped and with the jar run. That file stays as the WP10 record; this text supersedes
