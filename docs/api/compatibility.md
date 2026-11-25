@@ -2,7 +2,7 @@
 title: Versioning and compatibility
 description: How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -18,7 +18,7 @@ audience:
 
 How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows until the cutover retires it. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/). No Python package ships from this repository ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/), [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)).
 
-> **Partly built.** The service contract exists at `0.1.0-SNAPSHOT`, and its build checks that response schemas are closed and runs the breaking-change check; no contract version is released yet. The Python surface below is core's, not a package of this repository. See the [API overview](/api/).
+> **Partly built.** The service contract is released as release candidates (`contract-charter-v0.2.0-rc.1` to `rc.3`; operator ruling R1), and its build checks that response schemas are closed and runs the breaking-change check. Every service release bundles a released contract; where to get it and what to pin: [For contract consumers](/development/contract-consumers/). The Python surface below is core's, not a package of this repository. See the [API overview](/api/).
 
 ## Core's in-process seam surface
 

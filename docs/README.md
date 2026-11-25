@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: spec-kitty-charter documentation
 description: Documentation home for the Java charter service and its OpenAPI contract, the Brain Kitty governance producer of Spec Kitty.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 kind: Hub
 audience:
   - profile: charter-service-contributor
@@ -61,8 +61,8 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 
 ## Status
 
-The first code lives here: the charter contract at `0.1.0-SNAPSHOT` with three read
-operations, and the Java service that answers them ([Roadmap](/plans/roadmap/) steps 1 and
+The first code lives here: the charter contract, released as candidates
+(`contract-charter-v0.2.0-rc.*`), and the Java service that answers it ([Roadmap](/plans/roadmap/) steps 1 and
 2). Everything else the pages describe is the agreed direction and the target design. Each
 page opens with what it gives you, then carries one status line, using these labels:
 

@@ -125,6 +125,15 @@ the tagged commit is on `main`; it also refuses a tag that moved while the asset
 The workflow runs from the tagged commit, so these checks catch mistakes, not someone who can push
 tags: a tag ruleset on `contract-charter-v*` decides who can publish.
 
+**Every service release bundles a released contract** (#650). A `service-v*` release, a pre-release too, is published
+only when `contract-charter-v<info.version>` of the contract it bundles is merged into its commit and its GitHub
+release carries `charter-openapi.yaml` and `charter-openapi.yaml.sha256`; a final service release needs a final
+contract release, never a candidate. `ServiceReleaseGate` (build-logic) and `service-release.yml` enforce it, and
+`scripts/release/rehearse-service-release.sh` rehearses it
+([Release a service version](../../docs/guides/service-build.md#release-a-service-version)). So release the contract
+before the service, from the same release pull request when both change, and reopen the `-SNAPSHOT` (step 3) only
+after the service is tagged.
+
 Nothing publishes without a tag. `service.yml` rehearses the whole path on every change
 (`scripts/release/rehearse-contract-release.sh`): in a throwaway clone with no remote it expects
 the unreleased commit to be refused, a release that leaves a changelog fragment unassembled to be

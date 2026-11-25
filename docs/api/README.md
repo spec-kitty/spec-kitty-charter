@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: API
 description: The charter API — four operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: API
 kind: Hub
 related:
@@ -38,7 +38,8 @@ audience:
 > [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)
 > (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/)
 > and [ADR-0002](/adr/0002-contract-source-of-record/). Their names and shapes may change
-> until code and a released contract land here.
+> until the contract's final 0.x release; the released candidates are listed in
+> [For contract consumers](/development/contract-consumers/).
 
 The charter has two public surfaces. The Python one stays in core until the Java service
 replaces it ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/),

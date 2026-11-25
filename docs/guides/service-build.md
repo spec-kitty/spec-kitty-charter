@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-21T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -575,11 +575,23 @@ Core's service pin fetches and verifies these assets by name.
 
    The service stays at 0.x until contract 1.0.0. A pre-release uses only letters, digits and dots
    (`0.2.0-rc.1`), because core's tag rule refuses `0.2.0-rc-1` and any `+build` metadata.
-2. **For a final release, release the bundled contract first, as a final release.** It is `info.version` of
-   `contracts/charter/openapi.yaml`, released as `contract-charter-v<info.version>`
-   ([Release a contract version](#release-a-contract-version)). A contract release candidate (`0.2.0-rc.1`) is not
-   enough: the gate refuses a final service release that bundles one. A pre-release may bundle a contract release
-   candidate or an unreleased contract; its release notes say which.
+2. **Release the contracts the service bundles first, for every release, a pre-release too** (#650). A service
+   release ships only when both contracts it bundles are published, so a consumer can fetch the contract the service
+   serves ([For contract consumers](/development/contract-consumers/)):
+   - **The charter contract**, `info.version` of `contracts/charter/openapi.yaml`, released as
+     `contract-charter-v<info.version>` with `charter-openapi.yaml` and its `.sha256`
+     ([Release a contract version](#release-a-contract-version)). A `-SNAPSHOT` is never bundled.
+   - **The packs contract**, the top heading of `contracts/packs/CHANGELOG.md`, released as `contract-packs-v<version>`
+     with `packs-contract.tar.gz` and its checksums
+     ([Releasing the packs contract](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/packs/README.md#releasing-the-packs-contract)).
+     While the heading is a `-SNAPSHOT` and no packs contract file (`file-kinds.yaml`, `schemas/`, `conformance/`)
+     changed since the highest merged `contract-packs-v*` release, the bundled packs contract is that release, and
+     none is needed. An edit to its README or CHANGELOG alone needs none.
+
+   A final release bundles final releases of both: a release candidate (`0.2.0-rc.1`) is not enough. A pre-release
+   may bundle candidates; its release notes name both contract releases. One release pull request can carry all
+   three versions: tag the contracts at its merge commit, wait for their releases, then tag the service at the same
+   commit, before step 3 of the contract procedure reopens the `-SNAPSHOT`.
 3. **In a pull request, set `version` in `gradle.properties` to the release** (`0.2.0`, no `-SNAPSHOT`). Check
    the gate locally:
 
@@ -617,7 +629,9 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - the tag's form is wrong;
   - the commit is not on `main`;
   - the tag is not the build version;
-  - a final release's contract is unreleased, or only a release candidate;
+  - a bundled contract is unreleased, its tag is not merged into the commit, or its GitHub release is not published
+    with its contract assets (on a pre-release too);
+  - a final release bundles a contract release candidate;
   - any target fails;
   - the tag moved while the assets were built;
   - a release of the tag already exists.
@@ -625,7 +639,9 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
   - A manual run of the workflow with a tag name builds the assets as a workflow artifact and publishes
     nothing.
   - `scripts/release/rehearse-service-release.sh` rehearses every gate refusal and the asset set without
-    any remote, including the refusal of a set without the pack-doctor jar. It runs in CI on every change.
+    any remote, including a pre-release of an unreleased contract, a changed or an unchanged packs contract, and the
+    refusal of a set without the pack-doctor jar. It runs in CI on every change. That the contract releases are
+    published with their assets needs the remote, so the workflow checks it, on a manual run too.
   - **Before the very first `service-v*` tag,** do one manual `workflow_dispatch` run against a candidate
     tag name. The publish job and the two remote gate-checks (on-main, tag-still-names-the-commit) run only
     on a real tag push, so a dispatch run is their first exercise end to end, while still publishing nothing.
@@ -687,8 +703,9 @@ The nightly SonarCloud report does not cover `client-java`: `sonar.yml` names th
 
 Never edit generated code: change the contract, and the next build regenerates the client. The coordinates are group
 `ai.speckitty.charter`, artifact `charter-client`, package `ai.speckitty.charter.client`, version the contract's
-`info.version`. Nothing is published yet: the release zip, the JDK 21/25 matrix and the quickstart wait for contract
-0.1.0 ([#217](https://github.com/spec-kitty/spec-kitty-charter/issues/217)). Consumers in other languages, or who want
+`info.version`. The client itself is not published yet: its release zip, the JDK 21/25 matrix and the quickstart are
+[#217](https://github.com/spec-kitty/spec-kitty-charter/issues/217); the contract it is generated from is
+([For contract consumers](/development/contract-consumers/)). Consumers in other languages, or who want
 their own Java client, follow [Generate your own client](/guides/generate-a-client/).
 
 ## Change a dependency

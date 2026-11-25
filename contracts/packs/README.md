@@ -198,3 +198,14 @@ nothing, unless the tag and the top heading name one release or release candidat
 tagged commit is on `main`; it also refuses a tag that moved while the assets were built. `service.yml` rehearses the whole path on every change
 (`scripts/release/rehearse-packs-contract-release.sh`), a release candidate and its refusals included. To rehearse a real release, run the assets script with the tag
 on the release pull request's branch, or the workflow by hand (workflow_dispatch): neither creates a Release.
+
+**Every service release bundles a released packs contract** (#650). A `service-v*` release, a pre-release too, is
+published only when the packs contract it bundles is released: `contract-packs-v<version>` of the top heading is
+merged into its commit, or, while that heading is a `-SNAPSHOT` and no file of the packs contract (`file-kinds.yaml`,
+`schemas/`, `conformance/`; not this README or the CHANGELOG) changed since the highest merged `contract-packs-v*`
+release, the bundled contract is that release. Its
+GitHub release must carry `packs-contract.tar.gz`, `packs-contract.tar.gz.sha256` and `packs-contract.sha256`, and a
+final service release needs a final packs release, never a candidate. `ServiceReleaseGate` (build-logic) and
+`service-release.yml` enforce it, and `scripts/release/rehearse-service-release.sh` rehearses it
+([Release a service version](../../docs/guides/service-build.md#release-a-service-version)). So when a service release
+changes the packs contract, release the packs contract first.
