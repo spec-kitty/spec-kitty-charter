@@ -28,6 +28,7 @@
       "last_transition_at": "2026-11-25T22:17:36.874880+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
+        "WP01 is PR #665 (refactor/637-pack-graph), built and reviewed before the lane worktrees existed",
         "WP01 is PR #665 (refactor/637-pack-graph), built and reviewed before the lane worktrees existed"
       ],
       "provider": "__resolved_provider_absent__",
