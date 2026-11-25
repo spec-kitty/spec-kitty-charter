@@ -40,8 +40,8 @@ in that note. It changes no code and files no issue.
 ## Short answer
 
 **The work since 11-20 went to the closure checks and `pack-doctor`. Of the ten ranked actions,
-one moved, one is in progress, and the other eight are untouched. Two nightly checks got worse, and
-one new contract defect appeared.**
+one moved (and went red), one is in progress, one has started and seven are untouched. Two nightly checks got
+worse, and one new contract defect appeared.**
 
 - **A new contract defect** (MEDIUM). A per-file write refused because its pack would not
   revalidate drops the place inside the file from its violation pointer. The contract promises
