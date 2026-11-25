@@ -2,7 +2,7 @@
 title: Generate your own client
 description: Fetch the published charter contract, verify its SHA-256, and generate a Java or Python client with the pinned generator and the options that tolerate additive 0.x changes.
 doc_status: draft
-updated: 2026-11-16T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -12,6 +12,7 @@ related:
   - adr/0004-public-api-returns-generated-dtos
   - adr/0021-contract-first-seam-generated-client-and-routing-proxy
   - adr/0022-contract-versions-start-at-0-x
+  - development/contract-consumers
 audience:
   - profile: contract-consumer
     guidance_text: Follow this to generate a client for the charter service in your language, and for what it must tolerate.
@@ -23,14 +24,16 @@ This page shows how to generate a client for the charter service from its publis
 with the generator version and options this repository uses. The steps for other languages are the same except the
 generator name; the [caveats](#caveats-for-any-language) hold for every language.
 
-**The contract is not released yet.** Until contract 0.1.0 is tagged, the published contract is the snapshot of `main`
-(`info.version` ends in `-SNAPSHOT`, for example `0.2.0-SNAPSHOT`), and it can change without notice
-([#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)). Generate against it to try the service; pin a
-release once there is one ([compatibility](/api/compatibility/)).
+**The published contract is the newest `contract-charter-v*` release.** Every service release bundles one
+([For contract consumers](/development/contract-consumers/)). Only release candidates exist so far (operator ruling R1):
+`0.2.0-rc.1` to `0.2.0-rc.3`, published as GitHub pre-releases. Pin the newest one, and move to the final `0.2.0` once
+it is released. While the major is 0 a minor may break, so read a release's `### Breaking` notes before you raise your
+pin ([compatibility](/api/compatibility/)). The snapshot of `main` on the docsite is the next version, still changing
+(`info.version` ends in `-SNAPSHOT`): look at it, but do not pin it.
 
 Java consumers can also use the client this repository generates in its build (`client-java/`,
-[Building the service](/guides/service-build/#the-java-client)). It is not published yet; a release zip follows contract
-0.1.0 ([#220](https://github.com/spec-kitty/spec-kitty-charter/issues/220)). No Python client is published; generate
+[Building the service](/guides/service-build/#the-java-client)). It is not published yet; its release zip is
+[#220](https://github.com/spec-kitty/spec-kitty-charter/issues/220). No Python client is published; generate
 your own (Step 4).
 
 ## Before you start
@@ -46,16 +49,22 @@ your own (Step 4).
 Pick one source. Each gives you the single-file contract and a SHA-256 to check it against. The commands below call
 the file `openapi.yaml`.
 
-**From the docsite** (the snapshot of `main`, rendered at [the API reference](/reference/api/main/)):
+**From a release** (the one to pin). Each release `contract-charter-v<version>`, candidate or final, carries the
+contract as `charter-openapi.yaml` with `charter-openapi.yaml.sha256`. Name the release you pin; the newest is listed
+at `https://github.com/spec-kitty/spec-kitty-charter/releases?q=contract-charter-v`:
 
 ```bash
-curl -fsSLO https://spec-kitty.github.io/spec-kitty-charter/reference/api/main/openapi.yaml
-curl -fsSLO https://spec-kitty.github.io/spec-kitty-charter/reference/api/main/openapi.yaml.sha256
-sha256sum -c openapi.yaml.sha256
+version=0.2.0-rc.3
+base="https://github.com/spec-kitty/spec-kitty-charter/releases/download/contract-charter-v$version"
+curl -fsSLO "$base/charter-openapi.yaml"
+curl -fsSLO "$base/charter-openapi.yaml.sha256"
+sha256sum -c charter-openapi.yaml.sha256
+cp charter-openapi.yaml openapi.yaml
 ```
 
-**From a running service** (optional; the docsite needs no token). `GET /api/v1/openapi.yaml` answers the contract the
-service was built with. Like every operation it needs the service's worktree token, which whoever started the service
+**From a running service** (to check what a service answers). `GET /api/v1/openapi.yaml` answers the contract the
+service was built with; from the next service release on, that is a released contract. Like every operation it needs
+the service's worktree token, which whoever started the service
 configured ([security](/api/service-contract/#security-and-freshness),
 [run in a container](/guides/run-in-a-container/)). Its `ETag` is `"sha256:<digest>"`, the SHA-256 of the body:
 
@@ -67,15 +76,18 @@ echo "$digest  openapi.yaml" | sha256sum -c -
 
 `$CHARTER_URL` is the service's address, for example `http://127.0.0.1:8080`, and `$CHARTER_TOKEN` its token.
 
-**From a release** (from the first release candidate on, such as `0.2.0-rc.1`; operator ruling R1). Each release
-`contract-charter-v<version>`, candidate or final, carries the contract as
-`charter-openapi.yaml` with `charter-openapi.yaml.sha256`, at
-`https://github.com/spec-kitty/spec-kitty-charter/releases/download/contract-charter-v<version>/`. Download both, check
-with `sha256sum -c charter-openapi.yaml.sha256`, and use `charter-openapi.yaml` in place of `openapi.yaml` below.
+**From the docsite** (the snapshot of `main`, to look at the next version; never to pin), rendered at
+[the API reference](/reference/api/main/):
 
-`sha256sum -c` prints `openapi.yaml: OK`. On `FAILED`, download again; never generate from a file that does not match.
-A checksum served beside its file proves the download is whole, not where it came from; a pinned release is the
-reference to trust once there is one.
+```bash
+curl -fsSLO https://spec-kitty.github.io/spec-kitty-charter/reference/api/main/openapi.yaml
+curl -fsSLO https://spec-kitty.github.io/spec-kitty-charter/reference/api/main/openapi.yaml.sha256
+sha256sum -c openapi.yaml.sha256
+```
+
+`sha256sum -c` prints `<file>: OK`. On `FAILED`, download again; never generate from a file that does not match.
+A checksum served beside its file proves the download is whole, not where it came from: record the release's SHA-256
+with your pin, keep `charter-openapi.yaml.sha256` beside it, and compare it on every later download.
 
 ## Step 2: Get the generator at the pinned version
 

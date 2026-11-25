@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Development
 description: The conventions contributors follow when they change the charter API and the service, so every operation reads and behaves the same way.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Guide
 kind: Hub
 audience:
@@ -38,6 +38,9 @@ operations themselves are in the [service contract](/api/service-contract/).
   each one means, its body and whether a client may retry.
 - [Set up a Claude Code cloud session](/development/cloud-session-setup/) — Java 25, the domains to
   allow and the per-session steps, so a cloud session runs what CI runs.
+- [For contract consumers](/development/contract-consumers/) — for core, spec-kitty-open-packs and any
+  other client: where the charter and packs contracts are published, which release to pin, how to generate a
+  client, and why core writes declared ids, never file slugs.
 - [Keep the issue tracker small](/development/issue-tracker/) — when to file or fold a
   finding, the closing pass at every closeout, and where pack and core work is tracked.
 - [Epic 186 sanitized-shape follow-ups](/development/epic-186-sanitized-shape-follow-ups/) — the

@@ -2,8 +2,8 @@
 title: "ADR-0046: The service releases on its own service-v* line, native per OS with the jar as fallback"
 description: A service-v tag line apart from the contract's; the service's own SemVer; four native executables and the jar under names core pins, with SHA256SUMS and provenance.
 doc_status: active
-updated: 2026-11-19T00:00:00Z
-decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0060 (2026-11-05); decision 4's asset set amended to add the pack-check jar (2026-11-19, #478)
+updated: 2026-11-25T00:00:00Z
+decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0060 (2026-11-05); decision 4's asset set amended to add the pack-check jar (2026-11-19, #478); decisions 3 and 7 amended: every release bundles released contracts (2026-11-25, #650)
 decision_date: '2026-10-31'
 type: ADR
 kind: ADR
@@ -69,6 +69,39 @@ back every other name. The only extras it takes are the `*.tar.gz` stems, so a `
 of them, and the pin of the service's own assets reads as before. Decision 4's bullet on extras still holds: no
 `*.tar.gz` archive is attached.
 
+### Amendment 2026-11-25 (#650): every release bundles released contracts
+
+The operator's rulings of 2026-11-25 ([#650](https://github.com/spec-kitty/spec-kitty-charter/issues/650)): *"Charter
+must publish/distribute it's openAPI config so downstream consumers ( incl core ) may generate/implement a client
+against it"*, and a charter release is cut *"only if the openAPI publishing is included"*. So the contract a service
+serves is always one a consumer can download and pin. Decisions 3 and 7 now read:
+
+- **Two bundled contracts.** A release bundles the charter contract (`info.version` of
+  `contracts/charter/openapi.yaml`) and the packs contract (the top heading of `contracts/packs/CHANGELOG.md`), which
+  its pack-doctor jar and its pack reads check against.
+- **Every release, a pre-release too, bundles released contracts.** `contract-charter-v<info.version>` is merged into
+  the tagged commit, and its GitHub release is published with `charter-openapi.yaml` and its `.sha256`. The packs
+  contract's `contract-packs-v<version>` is merged and published with `packs-contract.tar.gz` and its checksums; while
+  the packs heading is a `-SNAPSHOT` and no packs contract file (`file-kinds.yaml`, `schemas/`, `conformance/`)
+  changed since the highest merged `contract-packs-v*` release, the bundled packs contract is that release. A pre-release no longer bundles a
+  `-SNAPSHOT` contract.
+- **A final release bundles final releases of both**, never a release candidate.
+- **The release notes** name both contract releases.
+
+`ServiceReleaseGate` judges the tags, `service-release.yml` checks the two releases' assets, and
+`scripts/release/rehearse-service-release.sh` rehearses every case. Consumers read
+[For contract consumers](/development/contract-consumers/).
+
+**Open review items** (calls made in #650 without a ruling of their own):
+
+1. R1's rule that a final service release bundles no candidate
+   ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/), note of 2026-11-16) is applied to the packs contract too.
+2. The packs contract counts as released while it is unchanged since its last release, because its heading is
+   reopened as a `-SNAPSHOT` right after each release. #650 asks for a packs release only "if the release changes it".
+3. The charter contract has no such exemption: its `info.version` is served (`GET /info`, `GET /openapi.yaml`) and a
+   `-SNAPSHOT` cannot be pinned. So a service fix released while `main` holds a `-SNAPSHOT` contract needs a contract
+   release, or a candidate, first. This narrows the "independent cadences" consequence.
+
 ## Context
 
 - **Only the contract is released today.** The repository has one release line, `contract-charter-v*`
@@ -113,6 +146,8 @@ of them, and the pin of the service's own assets reads as before. Decision 4's b
    - That is `info.version` of `contracts/charter/openapi.yaml` at the tagged commit. `GET /info` reports it
      as `contractVersion`, and the release notes name it.
    - A **pre-release** (a `-` suffix) may bundle an unreleased `-SNAPSHOT` contract, and its notes say so.
+     *2026-11-25: amended (#650): every release, a pre-release too, bundles released charter and packs contracts; see
+     the amendment above.*
    - A **final release** requires the tag `contract-charter-v<info.version>` to be merged into the tagged
      commit. So a released service never claims an unreleased contract.
 4. **A release carries exactly these assets.** `<ver>` is the tag without `service-v`:
@@ -165,6 +200,7 @@ of them, and the pin of the service's own assets reads as before. Decision 4's b
    - the commit is on `main`;
    - the tag equals the build's version;
    - a final release's contract is released (decision 3);
+     *2026-11-25: amended (#650): every release's charter and packs contracts are released and published.*
    - every target and the jar were built and checked;
    - the tag still names the built commit when publishing starts.
 
@@ -189,6 +225,8 @@ of them, and the pin of the service's own assets reads as before. Decision 4's b
   repository's CI logs.
 - **Independent cadences:** the service and the contract release on their own schedules. A service fix
   needs no contract release.
+  *2026-11-25: narrowed (#650): a service release needs its bundled contracts released, so a fix over a `-SNAPSHOT`
+  contract releases that contract, or a candidate of it, first.*
 - **A trigger for the image:** the container image (#234) gets a trigger and a version.
 
 ### Negative
@@ -198,6 +236,7 @@ of them, and the pin of the service's own assets reads as before. Decision 4's b
   executables on every change to the service or the build, not only on release.
   *2026-11-05: superseded by [ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/): nightly and per release.*
 - **A final service release waits for its contract release** (decision 3).
+  *2026-11-25: every service release, a pre-release too, waits for its contract releases (#650).*
 
 ### Risks
 
