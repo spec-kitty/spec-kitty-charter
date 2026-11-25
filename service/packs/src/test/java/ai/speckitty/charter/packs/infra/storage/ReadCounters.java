@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.packs.domain.WorkMeter;
-import ai.speckitty.charter.packs.domain.WorkMeter.Work;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 
 /**
  * What a call read, from a {@link WorkMeter} bound around it alone (#554, FR-016, #659): the walks of a pack tree, the
@@ -13,14 +12,6 @@ import ai.speckitty.charter.packs.domain.WorkMeter.Work;
  * @param reads the store's whole reads
  */
 public record ReadCounters(long walks, long runs, long reads) {
-
-    /** A step to measure. */
-    @FunctionalInterface
-    public interface Step {
-
-        /** Does the step. */
-        void run();
-    }
 
     /**
      * What a call answered and what it read.
@@ -37,7 +28,7 @@ public record ReadCounters(long walks, long runs, long reads) {
      * @param step the step
      * @return what it read
      */
-    public static ReadCounters during(Step step) {
+    public static ReadCounters during(Runnable step) {
         return measured(() -> {
                     step.run();
                     return Boolean.TRUE;
@@ -66,6 +57,7 @@ public record ReadCounters(long walks, long runs, long reads) {
      * @return its walks, runs and whole reads
      */
     public static ReadCounters of(WorkMeter.Counts work) {
-        return new ReadCounters(work.of(Work.TREE_WALK), work.of(Work.STORE_RUN), work.of(Work.WHOLE_READ));
+        return new ReadCounters(
+                work.of(StoreWork.TREE_WALK), work.of(StoreWork.STORE_RUN), work.of(StoreWork.WHOLE_READ));
     }
 }

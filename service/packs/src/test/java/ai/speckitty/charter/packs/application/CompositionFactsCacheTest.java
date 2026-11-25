@@ -262,10 +262,20 @@ class CompositionFactsCacheTest {
             }
         }
 
-        assertThat(cache.size()).isLessThanOrEqualTo(3);
         assertThat(loads)
                 .as("a bound smaller than the working set only costs reloads")
                 .hasValueGreaterThan(10);
+        int before = loads.get();
+        for (int pack = 9; pack >= 7; pack--) {
+            cache.facts(new PackIdentifier("pack-" + pack), this::load);
+        }
+        assertThat(loads.get() - before)
+                .as("the three packs read last are kept")
+                .isZero();
+        cache.facts(new PackIdentifier("pack-6"), this::load);
+        assertThat(loads.get() - before)
+                .as("and no fourth: the cache stays within its bound")
+                .isOne();
     }
 
     @Test

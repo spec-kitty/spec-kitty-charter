@@ -94,10 +94,16 @@ final class EffectiveReadFixture {
     /** The length of the chain of overrides: thirty links, from the first artifact of the first pack. */
     static final int CHAIN = 30;
 
-    final CompositionFactsCache cache;
-    final MockMvc mvc;
+    /** The service over a cache of its own; {@link #coldStart()} builds it again over an empty cache. */
+    MockMvc mvc;
+
     final CountingSources digests;
     private final AtomicInteger revision = new AtomicInteger();
+    private final PackCatalogRepository catalog;
+    private final PackDescriptorRepository descriptors;
+    private final PackWriteGeneration generation = new PackWriteGeneration();
+    private final ConsistentRead read;
+    private final boolean withTensions;
 
     /** The digests the real sources took, as a read asks for them: whole digests, and the packs closure digests read. */
     static final class CountingSources implements PackSources {
@@ -151,8 +157,9 @@ final class EffectiveReadFixture {
             configured.add(new ConfiguredPack(new PackIdentifier(name(pack)), PackLevel.ORG));
             locations.add(new PackLocation(name(pack), PackLevel.ORG, directory(root, pack)));
         }
-        PackCatalogRepository catalog = () -> configured;
-        PackDescriptorRepository descriptors = new PackDescriptorRepository() {
+        this.withTensions = withTensions;
+        this.catalog = () -> configured;
+        this.descriptors = new PackDescriptorRepository() {
             @Override
             public PackDescriptor get(PackIdentifier pack) {
                 return find(pack).orElseThrow();
@@ -176,10 +183,18 @@ final class EffectiveReadFixture {
                 throw new UnsupportedOperationException("the closure never writes");
             }
         };
-        PackWriteGeneration generation = new PackWriteGeneration();
         this.digests = new CountingSources(new FileSystemPackSources(() -> locations));
-        ConsistentRead read = new ConsistentRead(digests, generation);
-        this.cache = new CompositionFactsCache(
+        this.read = new ConsistentRead(digests, generation);
+        this.mvc = wired();
+    }
+
+    /** Builds the service again over an empty facts cache: the next read is cold. */
+    void coldStart() {
+        mvc = wired();
+    }
+
+    private MockMvc wired() {
+        CompositionFactsCache cache = new CompositionFactsCache(
                 pack -> PackRevision.compute(List.of(pack.value(), Integer.toString(revision.get()))),
                 generation,
                 new RegistryWriteLock(Duration.ofSeconds(5)),
@@ -193,7 +208,7 @@ final class EffectiveReadFixture {
         PacksAvailability packs = new PacksAvailability(new ClosureQueries(offering, catalog, read));
         InMemoryActivationRepository repository = new InMemoryActivationRepository();
         repository.create(new ActivationId("a-1"), activation(withTensions));
-        this.mvc = StandaloneActivationMvc.over(repository, packs);
+        return StandaloneActivationMvc.over(repository, packs);
     }
 
     /** Gives every pack a new revision: the facts cache misses on the next read. */

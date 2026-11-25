@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Reason;
 import ai.speckitty.charter.kernel.validation.Severity;
@@ -23,7 +24,6 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.ReferenceFacts;
 import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.SubstepDelegationRule;
-import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.FragmentRules;
 import ai.speckitty.charter.packs.domain.rules.PromptSlotRules;
@@ -160,7 +160,7 @@ record StoreRead(
             SerializationStrategy strategy,
             List<KindBinding<?, ?>> bindings,
             Companions.Rules companionRules) {
-        WorkMeter.count(WorkMeter.Work.STORE_RUN);
+        WorkMeter.count(StoreWork.STORE_RUN);
         Path packDir = directory.toAbsolutePath().normalize();
         List<StoreRead> refusal = new ArrayList<>();
         DsoRead dso = dsoRead(packDir, id.value(), strategy, companionRules, bindings, walk, refusal);

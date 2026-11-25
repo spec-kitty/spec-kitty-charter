@@ -3,8 +3,8 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
-import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
 import java.io.IOException;
@@ -226,7 +226,7 @@ final class PackFileSet {
      * census), every link, never followed (the census, which refuses it, D6), and every special file, never opened (the
      * census, which refuses it, R-ad), each pack-relative, {@code /}-separated and in {@link String} order. No surface
      * reads a file but through {@link #regular()}, so none reads through a link or opens a FIFO. Every tree walk of a
-     * pack goes through here, each counted as a {@link WorkMeter.Work#TREE_WALK}.
+     * pack goes through here, each counted as a {@link StoreWork#TREE_WALK}.
      *
      * @param regular every regular file that is not itself a link
      * @param links every symbolic link, to a file, a directory or nothing
@@ -262,7 +262,7 @@ final class PackFileSet {
      *     listed
      */
     static Walk walk(Path directory, String packName) {
-        WorkMeter.count(WorkMeter.Work.TREE_WALK);
+        WorkMeter.count(StoreWork.TREE_WALK);
         List<String> regular = new ArrayList<>();
         List<String> links = new ArrayList<>();
         List<String> special = new ArrayList<>();
