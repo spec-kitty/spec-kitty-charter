@@ -163,12 +163,13 @@ class GraphWalkTest {
                 .containsExactly(urn("directive:X"), urn("directive:Y"), urn("directive:Z"), urn("directive:Y"));
     }
 
-    private static void walkFrom(EdgeIndex index, String pack, String start, GraphWalker visitor) {
+    private static void walkFrom(
+            EdgeIndex index, String pack, String start, GraphWalker<DrgNode, Relationship> visitor) {
         new GraphWalk(index).walk(index.nodeAt(new EdgeIndex.Place(pack(pack), urn(start))), visitor);
     }
 
     /** Records the order components are visited and relationships crossed, and drives the configured descent. */
-    private static final class Recorder implements GraphWalker {
+    private static final class Recorder implements GraphWalker<DrgNode, Relationship> {
         private final List<Urn> visited = new ArrayList<>();
         private final List<Relationship> crossed = new ArrayList<>();
         private Descent nodeDescent = Descent.CONTINUE;

@@ -73,7 +73,7 @@ public final class GraphWalk {
      * @param visitor the visitor notified of every node and relationship
      * @throws IllegalArgumentException when no pack of the compose is registered under the start's pack id
      */
-    public void walk(CharterArtifact start, GraphWalker visitor) {
+    public void walk(CharterArtifact start, GraphWalker<DrgNode, Relationship> visitor) {
         Objects.requireNonNull(start, "start");
         Objects.requireNonNull(visitor, "visitor");
         PackUlid pack = resolvers
@@ -88,7 +88,8 @@ public final class GraphWalk {
      *
      * @return {@code true} to keep the overall walk going, {@code false} once a {@link Descent#STOP} has halted it
      */
-    private boolean visit(Held place, CharterArtifact component, GraphWalker visitor, Set<Held> visited) {
+    private boolean visit(
+            Held place, CharterArtifact component, GraphWalker<DrgNode, Relationship> visitor, Set<Held> visited) {
         visited.add(place);
         Descent nodeDescent = visitor.onNode(new DrgNode(component.urn(), Optional.of(component.label())));
         if (nodeDescent == Descent.STOP) {
