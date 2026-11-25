@@ -21,7 +21,8 @@ runs over charter's own example packs; spec-kitty-open-packs proves its content 
 Amended 2026-11-11 (operator, issue triage Op 01M75XTFKEJG0AGWB78QZMCC12): rules for filing and
 closing issues. Amended 2026-11-20 (operator): mutation testing never runs in mission work; only the
 weekly scheduled run (or a manual dispatch) runs it (ADR-0062). Amended 2026-11-22 (operator): nits
-and minors are folded before the merge.
+and minors are folded before the merge. Amended 2026-11-25 (operator): reviews run in the
+runner's session, with subagents.
 
 ## What this repository is for
 
@@ -115,6 +116,9 @@ When a session hands Missions to child cloud sessions, it follows these rules. T
   replaces the placeholders before merge.
 - An ADR number is chosen when the ADR is written, against `main` and the open PRs.
 - A session the permission classifier blocks is replaced, not retried.
+- No reviewer sessions (operator, 2026-11-25): the runner runs its own adversarial review with
+  in-session subagents, folds every finding, confirms the fold and posts the "Independent
+  adversarial review (agent)" comment.
 
 ## Gates before merge
 
