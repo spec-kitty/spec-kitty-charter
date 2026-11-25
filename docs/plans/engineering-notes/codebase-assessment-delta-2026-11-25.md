@@ -58,6 +58,9 @@ worse, and one new contract defect appeared.**
   - The seven classes over 1,000 lines grew from 9,462 to 9,744 lines. `FilesystemPackStore` alone
     gained 146 lines.
 - **Of the 69 findings re-checked:** 4 fixed, 2 partly fixed, 4 worse and 59 open.
+- **Another open defect in the window:** #648 (Bug, filed 2026-11-24 by the review of #647).
+  Collecting a file's schema violations is quadratic in their number, a denial-of-service risk within
+  the size cap. It predates #647, and this delta did not re-measure it.
 
 ## New defect: the per-file write refusal loses its in-file pointer
 
@@ -99,6 +102,8 @@ Trend compares each file's share of the 99 commits since 11-19 with its share in
 | 9 | activations `application/EffectiveReadService` | 31 | 101 | 3,131 | 8 | cooling (no change) |
 | 10 | packs `application/RegistrationJobs` | 17 | 151 | 2,567 | 10 | cooling (no change) |
 
+- **Of the top 25:** 8 heating, 6 cooling (among them `EffectiveReadService`, `RegistrationJobs`,
+  `ClosureViewSession` and `InForceResolution`) and 11 stable. On 11-20 it was 13, 4 and 8.
 - **Heating outside the top 10:** `CompositionFactsBuilder` (8 commits in 5.4 days, against 7 in
   the 30 days before), `StorageRootLocations`, `CommitStorePackWriteStore` and `WholePackExpectation`.
 - **By module:** `packs` is 81.0% of the score (80.4% on 11-20). The new `pack-doctor` module
