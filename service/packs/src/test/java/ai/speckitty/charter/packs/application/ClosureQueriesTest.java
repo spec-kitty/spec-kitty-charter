@@ -25,6 +25,7 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,7 +99,7 @@ class ClosureQueriesTest {
     }
 
     private static PackCompositionFacts holding(List<String> held, MutabilityPolicySource policy, Preset... presets) {
-        return new PackCompositionFacts(List.of(), held, List.of(), List.of(), policy, List.of(presets));
+        return CompositionFacts.of(List.of(), held, List.of(), List.of(), policy, List.of(presets));
     }
 
     private static PackCompositionFacts holding(String... held) {
@@ -698,7 +699,7 @@ class ClosureQueriesTest {
                 "alpha",
                 PackLevel.ORG,
                 named("alpha", "1.0.0", new PackDependency(FixtureUlids.of("beta"), ">=1.0")),
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         List.of("directive:A1", "tactic:e"),
                         List.of(),

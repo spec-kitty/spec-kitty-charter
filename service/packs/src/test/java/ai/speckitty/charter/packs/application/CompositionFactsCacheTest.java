@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
@@ -60,7 +61,7 @@ class CompositionFactsCacheTest {
     }
 
     private static PackCompositionFacts factsOf(String text) {
-        return new PackCompositionFacts(List.of(), List.of("directive:" + text), List.of(), List.of());
+        return CompositionFacts.of(List.of(), List.of("directive:" + text), List.of(), List.of());
     }
 
     private CompositionFactsCache cache(int capacity) {
@@ -287,7 +288,7 @@ class CompositionFactsCacheTest {
     /** Facts whose prompt member is all the text says: the slot the plan step declares and the fill's text. */
     private static PackCompositionFacts promptFactsOf(String text) {
         SlotId reasons = new SlotId("spdd:reasons-block");
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 List.of(),
                 List.of("mission_type:software-dev"),
                 List.of(),
@@ -399,7 +400,7 @@ class CompositionFactsCacheTest {
             } catch (IOException failure) {
                 throw new UncheckedIOException(failure);
             }
-            return new PackCompositionFacts(List.of(), List.copyOf(seen), List.of(), List.of());
+            return CompositionFacts.of(List.of(), List.copyOf(seen), List.of(), List.of());
         };
         cache.facts(ALPHA, readFiles);
 

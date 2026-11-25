@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
@@ -118,7 +119,7 @@ class ClosureViewGovernanceTest {
                 .toList();
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         held,
                         List.of(),
@@ -144,7 +145,7 @@ class ClosureViewGovernanceTest {
         PackCompositionFacts plain = facts.get(name);
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         plain.changed(),
                         plain.held(),
                         plain.declared(),
@@ -401,7 +402,7 @@ class ClosureViewGovernanceTest {
         PackCompositionFacts held = facts.get("builtin");
         facts.put(
                 "builtin",
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         held.changed(),
                         held.held(),
                         held.declared(),

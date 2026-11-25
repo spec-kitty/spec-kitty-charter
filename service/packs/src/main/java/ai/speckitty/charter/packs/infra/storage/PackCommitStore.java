@@ -202,7 +202,8 @@ public final class PackCommitStore implements WholePackWriteStore {
         };
     }
 
-    private static final DirectoryRename MOVE_ASIDE = moveAside(SwapPhases.NONE);
+    /** The production swap: the move aside, with no pause. */
+    static final DirectoryRename MOVE_ASIDE = moveAside(SwapPhases.NONE);
 
     private static final Logger LOG = LoggerFactory.getLogger(PackCommitStore.class);
 
@@ -225,35 +226,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     /**
-     * A commit store over an explicit registry lock and write generation; a test injects a short lock timeout and a
-     * generation of its own.
-     *
-     * @param locations the configured pack locations
-     * @param strategy the serialization format
-     * @param registryLock the lock a whole-pack registration takes before the pack's own
-     * @param generation the write generation a whole-pack swap is bracketed with
-     */
-    public PackCommitStore(
-            Locations locations,
-            SerializationStrategy strategy,
-            RegistryWriteLock registryLock,
-            PackWriteGeneration generation) {
-        this(locations, strategy, MOVE_ASIDE, registryLock, generation);
-    }
-
-    /**
-     * A commit store with an injected swap step; the seam for the NFR-002 atomicity test.
-     *
-     * @param locations the configured pack locations
-     * @param strategy the serialization format
-     * @param rename the directory-swap step
-     */
-    PackCommitStore(Locations locations, SerializationStrategy strategy, DirectoryRename rename) {
-        this(locations, strategy, rename, RegistryWriteLock.shared(), PackWriteGeneration.shared());
-    }
-
-    /**
-     * A commit store with an injected swap step, lock and generation.
+     * A commit store over every collaborator: the directory swap, the registry lock and the write generation.
      *
      * @param locations the configured pack locations
      * @param strategy the serialization format

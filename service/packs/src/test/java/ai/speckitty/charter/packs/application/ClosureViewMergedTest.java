@@ -27,6 +27,8 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.ClosureViews;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -76,8 +78,7 @@ class ClosureViewMergedTest {
             Map<String, List<String>> languages,
             List<Relationship> edges,
             String... held) {
-        return new PackCompositionFacts(
-                List.of(), List.of(held), List.of(), List.of(), policy, List.of(), edges, languages);
+        return CompositionFacts.of(List.of(), List.of(held), List.of(), List.of(), policy, List.of(), edges, languages);
     }
 
     private static PackCompositionFacts holding(String... held) {
@@ -286,7 +287,7 @@ class ClosureViewMergedTest {
 
     @Test
     void aViewBuiltWithoutThePacksMergesNothing() {
-        ClosureView view = new ClosureView(
+        ClosureView view = ClosureViews.of(
                 List.of(),
                 Map.of(),
                 Map.of(),

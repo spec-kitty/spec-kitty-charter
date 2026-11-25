@@ -318,7 +318,8 @@ final class FilesystemPackStore {
     /** The code of a violation of a companion the store refuses; the load seat reads it back to remap it. */
     static final ReasonCode COMPANION_KIND = StorageCodes.COMPANION;
 
-    private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
+    /** The move step of an atomic write: a rename that replaces the target in one step. */
+    static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
     /** The store's read of a pack file: opened without following a link (D6, {@link PackFileSet#noFollowBytes}). */
     static final PayloadRead FILES = PackFileSet::noFollowBytes;
@@ -336,18 +337,7 @@ final class FilesystemPackStore {
      * @param strategy the format
      */
     FilesystemPackStore(Path root, SerializationStrategy strategy) {
-        this(root, strategy, ATOMIC);
-    }
-
-    /**
-     * A store with an injected rename step; the seam for tests of write atomicity.
-     *
-     * @param root the directory that holds the pack directories
-     * @param strategy the format
-     * @param rename the move step
-     */
-    FilesystemPackStore(Path root, SerializationStrategy strategy, Rename rename) {
-        this(root, strategy, rename, Companions.Rules.bundled(), FILES);
+        this(root, strategy, ATOMIC, Companions.Rules.bundled(), FILES);
     }
 
     /**
@@ -364,17 +354,17 @@ final class FilesystemPackStore {
     }
 
     /**
-     * A store with an injected payload read; the seam for tests of a payload that is listed but cannot be read (#301).
+     * A store over every collaborator: the format, the move step of an atomic write, the table and schemas of the pack's
+     * files and companions, and the read of a payload's bytes.
      *
      * @param root the directory that holds the pack directories
      * @param strategy the format
+     * @param rename the move step of an atomic write
+     * @param companionRules the table that classifies the pack's files and companion paths, and the schemas of
+     *     Markdown companions
      * @param payloadRead the read of an asset file's or a template's bytes
      */
-    FilesystemPackStore(Path root, SerializationStrategy strategy, PayloadRead payloadRead) {
-        this(root, strategy, ATOMIC, Companions.Rules.bundled(), payloadRead);
-    }
-
-    private FilesystemPackStore(
+    FilesystemPackStore(
             Path root,
             SerializationStrategy strategy,
             Rename rename,

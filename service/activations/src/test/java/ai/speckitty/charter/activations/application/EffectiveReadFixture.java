@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
@@ -263,7 +264,7 @@ final class EffectiveReadFixture {
                 edges.add(edge("directive:" + RECONCILER, RelationType.RECONCILES_TENSION, "directive:" + TENSION_B));
             }
         }
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 changed, held, declared, List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
     }
 

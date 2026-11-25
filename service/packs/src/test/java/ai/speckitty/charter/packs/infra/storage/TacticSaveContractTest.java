@@ -70,7 +70,7 @@ class TacticSaveContractTest {
 
         // Atomicity: the create goes through the rename step; when it fails, nothing is left behind.
         boolean[] tempSeen = {false};
-        FilesystemPackStore failing = new FilesystemPackStore(host, new YamlSerializationStrategy(), (temp, to) -> {
+        FilesystemPackStore failing = StoreSeams.renamingWith(host, new YamlSerializationStrategy(), (temp, to) -> {
             tempSeen[0] = Files.exists(temp);
             throw new IOException("injected failure");
         });

@@ -59,8 +59,18 @@ public record PackCompositionFacts(
         List<SubstepDelegationRule.QualifiedCandidate> delegations) {
 
     /** A pack that changes, holds and writes nothing, declares no policy and holds no preset, prompt or enhancement. */
-    public static final PackCompositionFacts NONE =
-            new PackCompositionFacts(List.of(), List.of(), List.of(), List.of());
+    public static final PackCompositionFacts NONE = new PackCompositionFacts(
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            MutabilityPolicySource.empty(),
+            List.of(),
+            List.of(),
+            Map.of(),
+            PromptFacts.NONE,
+            List.of(),
+            List.of());
 
     /**
      * Checks the fields and copies the lists.
@@ -102,157 +112,6 @@ public record PackCompositionFacts(
         languages.forEach((urn, applies) -> copy.put(urn, List.copyOf(applies)));
         languages = Collections.unmodifiableMap(copy);
         terms = List.copyOf(terms);
-    }
-
-    /**
-     * The facts of a pack that holds no glossary context.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     * @param policy the mutability policy it declares
-     * @param presets the presets it holds
-     * @param edges the typed edges it writes
-     * @param languages the languages each held artifact applies to, by bare URN text
-     * @param prompts the slots its step prompts declare and its step enhancements fill
-     */
-    public PackCompositionFacts(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy,
-            List<Preset> presets,
-            List<Relationship> edges,
-            Map<String, List<String>> languages,
-            PromptFacts prompts) {
-        this(changed, held, declared, references, policy, presets, edges, languages, prompts, List.of(), List.of());
-    }
-
-    /**
-     * The facts of a pack whose mission types delegate to no candidate of another pack.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     * @param policy the mutability policy it declares
-     * @param presets the presets it holds
-     * @param edges the typed edges it writes
-     * @param languages the languages each held artifact applies to, by bare URN text
-     * @param prompts the slots its step prompts declare and its step enhancements fill
-     * @param terms the terms its glossary contexts hold, as bare URNs
-     */
-    public PackCompositionFacts(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy,
-            List<Preset> presets,
-            List<Relationship> edges,
-            Map<String, List<String>> languages,
-            PromptFacts prompts,
-            List<String> terms) {
-        this(changed, held, declared, references, policy, presets, edges, languages, prompts, terms, List.of());
-    }
-
-    /**
-     * The facts of a pack that holds no step prompt and no step enhancement.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     * @param policy the mutability policy it declares
-     * @param presets the presets it holds
-     * @param edges the typed edges it writes
-     * @param languages the languages each held artifact applies to, by bare URN text
-     */
-    public PackCompositionFacts(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy,
-            List<Preset> presets,
-            List<Relationship> edges,
-            Map<String, List<String>> languages) {
-        this(changed, held, declared, references, policy, presets, edges, languages, PromptFacts.NONE);
-    }
-
-    /**
-     * The facts of a pack whose artifacts declare no language.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     * @param policy the mutability policy it declares
-     * @param presets the presets it holds
-     * @param edges the typed edges it writes
-     */
-    public PackCompositionFacts(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy,
-            List<Preset> presets,
-            List<Relationship> edges) {
-        this(changed, held, declared, references, policy, presets, edges, Map.of());
-    }
-
-    /**
-     * The facts of a pack that writes no typed edge.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     * @param policy the mutability policy it declares
-     * @param presets the presets it holds
-     */
-    public PackCompositionFacts(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy,
-            List<Preset> presets) {
-        this(changed, held, declared, references, policy, presets, List.of());
-    }
-
-    /**
-     * The facts of a pack that holds no preset.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     * @param policy the mutability policy it declares
-     */
-    public PackCompositionFacts(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy) {
-        this(changed, held, declared, references, policy, List.of());
-    }
-
-    /**
-     * The facts of a pack that declares no mutability policy and holds no preset.
-     *
-     * @param changed the artifacts it changes
-     * @param held the artifacts it holds as artifact files
-     * @param declared the graph-node URNs it declares, {@code held} added to them
-     * @param references the references it writes
-     */
-    public PackCompositionFacts(
-            List<String> changed, List<String> held, List<String> declared, List<String> references) {
-        this(changed, held, declared, references, MutabilityPolicySource.empty());
     }
 
     /**

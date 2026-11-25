@@ -59,6 +59,7 @@ import ai.speckitty.charter.packs.domain.TermStatus;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
@@ -1243,7 +1244,7 @@ class ArtifactReadServiceTest {
          */
         @Override
         public PackCompositionFacts compositionFacts(PackIdentifier pack) {
-            return new PackCompositionFacts(
+            return CompositionFacts.of(
                     List.of(),
                     contents(pack).artifacts().stream()
                             .map(artifact -> artifact.urn().toString())

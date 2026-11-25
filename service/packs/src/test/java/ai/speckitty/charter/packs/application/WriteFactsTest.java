@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +42,7 @@ class WriteFactsTest {
     }
 
     private static PackCompositionFacts facts(List<Relationship> edges, List<Preset> presets) {
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 List.of("base::directive:OLD"),
                 List.of("directive:A", "directive:B"),
                 List.of(STEP),
@@ -181,7 +182,7 @@ class WriteFactsTest {
 
     private static PackCompositionFacts withPrompts(List<Relationship> edges) {
         PackCompositionFacts facts = facts(edges, List.of());
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 facts.changed(),
                 facts.held(),
                 facts.declared(),
@@ -246,7 +247,7 @@ class WriteFactsTest {
 
     private static PackCompositionFacts withTerms() {
         PackCompositionFacts facts = withPrompts(List.of());
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 facts.changed(),
                 List.of("glossary_context:g", "glossary_context:h", "directive:A"),
                 List.of(),

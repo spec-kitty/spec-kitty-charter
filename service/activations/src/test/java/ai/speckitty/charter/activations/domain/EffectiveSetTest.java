@@ -40,6 +40,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -765,7 +766,7 @@ class EffectiveSetTest {
                 RelationType.ENHANCES,
                 Optional.empty(),
                 Optional.empty());
-        PackCompositionFacts facts = new PackCompositionFacts(
+        PackCompositionFacts facts = CompositionFacts.of(
                 List.of(),
                 List.of("mission_type:M", "step_enhancement:x"),
                 List.of("action:M/s"),

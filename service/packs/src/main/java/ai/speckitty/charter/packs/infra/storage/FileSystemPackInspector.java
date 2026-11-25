@@ -170,7 +170,7 @@ public final class FileSystemPackInspector implements PackReading {
 
     /** An inspector over the bundled file-kinds table; it keeps no state. */
     public FileSystemPackInspector() {
-        this(PackFileKind.bundled());
+        this(new YamlSerializationStrategy());
     }
 
     /**
@@ -181,20 +181,6 @@ public final class FileSystemPackInspector implements PackReading {
      */
     public FileSystemPackInspector(SerializationStrategy strategy) {
         this(PackFileKind.bundled(), strategy, KindBindings.all(), Companions.Rules.bundled());
-    }
-
-    /**
-     * An inspector that classifies with {@code table} in place of the bundled one: the seam a test uses to classify
-     * with rules of its own, retired ones included (#194).
-     *
-     * @param table the file-kinds table
-     */
-    FileSystemPackInspector(PackFileKind table) {
-        this(
-                table,
-                new YamlSerializationStrategy(),
-                KindBindings.all(),
-                new Companions.Rules(table, PackSchemas::bundled));
     }
 
     /**

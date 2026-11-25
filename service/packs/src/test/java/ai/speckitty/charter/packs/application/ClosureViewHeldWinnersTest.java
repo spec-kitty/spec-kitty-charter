@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,7 +60,7 @@ class ClosureViewHeldWinnersTest {
     }
 
     private static PackCompositionFacts holding(MutabilityPolicySource policy, String... held) {
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 List.of(), List.of(held), List.of(), List.of(), policy, List.of(), List.of(), Map.of());
     }
 

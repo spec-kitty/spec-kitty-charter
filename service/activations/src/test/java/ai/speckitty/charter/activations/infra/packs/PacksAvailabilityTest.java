@@ -56,6 +56,8 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import ai.speckitty.charter.packs.fixtures.ClosureViews;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
@@ -82,6 +84,9 @@ import org.junit.jupiter.api.io.TempDir;
  * of the compose passed on unchanged.
  */
 class PacksAvailabilityTest {
+
+    /** The no-override facts: the answer is empty, so no requirement is satisfied by an override. */
+    private static final InForceFacts NO_OVERRIDES = query -> InForceAnswer.empty();
 
     private static final String ALPHA = "01M4P01D5TWB5FKZGNNQG3943R";
     private static final String BETA = "01M4P01D5TWB5FKZGNNQG3943S";
@@ -139,7 +144,7 @@ class PacksAvailabilityTest {
                         List.of(PresetItem.mustHave("D2"), PresetItem.of("D1")),
                         ArtifactKind.MISSION_TYPE,
                         List.of(PresetItem.of("software-dev"))));
-        return new ClosureView(
+        return ClosureViews.of(
                 List.of(
                         new OfferingEntry(
                                 new PackIdentifier("beta"),
@@ -277,7 +282,7 @@ class PacksAvailabilityTest {
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("D1"))
                 .build();
 
-        assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
+        assertThat(DocumentRules.check(built, snapshot, NO_OVERRIDES)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
             assertThat(refusal.requiredBy()).extracting(by -> by.packId()).containsExactly("core");
         });
@@ -291,7 +296,7 @@ class PacksAvailabilityTest {
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("D2"))
                 .build();
 
-        assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
+        assertThat(DocumentRules.check(built, snapshot, NO_OVERRIDES)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
             assertThat(refusal.requiredBy()).extracting(by -> by.packId()).containsExactly("alpha");
         });
@@ -324,7 +329,7 @@ class PacksAvailabilityTest {
         ActivationDocument.Built built = ActivationDocument.builder()
                 .packs(List.of(PackRef.of(new PackIdentifier("alpha")), PackRef.of(new PackIdentifier("ghost"))))
                 .build();
-        assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
+        assertThat(DocumentRules.check(built, snapshot, NO_OVERRIDES)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
             assertThat(refusal.violations()).singleElement().satisfies(violation -> {
                 assertThat(violation.pointer()).isEqualTo("/packs/1/packId");
@@ -472,7 +477,7 @@ class PacksAvailabilityTest {
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), held));
             facts.put(
                     name,
-                    new PackCompositionFacts(
+                    CompositionFacts.of(
                             List.of(), held, List.of(), List.of(), policy, presets, Arrays.asList(edges), languages));
             policies.put(new PackUlid(descriptorId(name)), policy);
             return this;
@@ -499,7 +504,7 @@ class PacksAvailabilityTest {
         private ClosureView view(
                 String closureFingerprint, Map<ArtifactKind, Set<String>> held, List<OfferingEntry> offered) {
             PerPackPolicy policy = new PerPackPolicy(policies);
-            return new ClosureView(
+            return ClosureViews.of(
                     offered,
                     held,
                     Map.of(),

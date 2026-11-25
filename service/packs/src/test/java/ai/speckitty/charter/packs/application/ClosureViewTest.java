@@ -36,6 +36,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
@@ -121,7 +122,7 @@ class ClosureViewTest {
                                 .toList()));
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(), held, List.of(), List.of(), policy, List.of(), List.of(edges), Map.of()));
     }
 
@@ -597,7 +598,7 @@ class ClosureViewTest {
         PackCompositionFacts held = facts.get(name);
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         held.changed(),
                         held.held(),
                         held.declared(),
