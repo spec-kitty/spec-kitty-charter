@@ -41,6 +41,6 @@ Read `docs/development/issue-tracker.md` before you file or close an issue. In s
 
 ## Orchestration rules for agents (operator, 2026-11-25)
 
-- No reviewer sessions: a runner runs its own adversarial review with in-session subagents, folds
+- No reviewer sessions: the runner runs its own adversarial review with in-session subagents, folds
   every finding, confirms the fold and posts the "Independent adversarial review (agent)" comment.
   Detail: `docs/development/cloud-session-setup.md`, "Running several cloud sessions".

@@ -261,8 +261,8 @@ ruling of 2026-11-25.
   sessions open on one open-packs Mission prompted this rule.
 - **Run a missing review skill by hand.** If a skill the brief names (for example
   `adversarial-squad`) is not installed, run the squad as parallel subagents, one per lens, each
-  with its profile loaded by `spec-kitty agent profile show <id>`. The runner's
-  in-session review (above) takes the same form.
+  with its profile loaded by `spec-kitty agent profile show <id>`. The runner's in-session review
+  (above) takes the same form.
 
 ### Setup-script addition for the CLI
 
