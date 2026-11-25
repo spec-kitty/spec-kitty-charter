@@ -55,7 +55,6 @@ class RegistrationJobsUpstreamTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 audit::add,
-                RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 new FileStagingArea(host)));
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN);

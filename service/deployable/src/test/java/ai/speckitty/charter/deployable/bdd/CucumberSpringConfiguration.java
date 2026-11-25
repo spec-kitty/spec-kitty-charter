@@ -4,6 +4,8 @@ import ai.speckitty.charter.activations.infra.storage.InMemoryActivationReposito
 import ai.speckitty.charter.deployable.CharterServiceApplication;
 import ai.speckitty.charter.deployable.CharterWiring;
 import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.application.RegistrationJobs;
+import ai.speckitty.charter.packs.fixtures.HeldRoom;
 import ai.speckitty.charter.packs.infra.fetch.git.GitVersion;
 import ai.speckitty.charter.packs.infra.fetch.git.GitVersionCheck;
 import ai.speckitty.charter.packs.infra.storage.Locations;
@@ -17,6 +19,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -164,11 +167,14 @@ public final class CucumberSpringConfiguration {
             return new ScenarioLocations(packs);
         }
 
-        /** Holds registration jobs where a scenario asks (the latch seam of T077); production lets every job through. */
+        /**
+         * The production storage room, held where a scenario asks (T077, #659): a job held at its run-time check is
+         * running and has done nothing, and two held there keep every later job pending, as the queue holds it.
+         */
         @Bean
         @Primary
-        HoldableGate scenarioJobGate() {
-            return new HoldableGate();
+        HeldRoom scenarioStorageRoom(@Qualifier("storageRoom") RegistrationJobs.StorageRoom storageRoom) {
+            return new HeldRoom(storageRoom);
         }
 
         /** The clock of the registration jobs: real time, moved on by the step that lets the retention hour pass. */

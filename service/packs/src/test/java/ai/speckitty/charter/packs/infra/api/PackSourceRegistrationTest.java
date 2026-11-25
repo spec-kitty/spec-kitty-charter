@@ -73,7 +73,6 @@ class PackSourceRegistrationTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 audit::add,
-                RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 new FileStagingArea(staging)));
         info = new ServiceInfoQuery("worktree-source", new ConsistentRead(new FileSystemPackSources(List::of)));

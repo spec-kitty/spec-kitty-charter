@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.HeldRoom;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.FreeSpaceCheck;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -81,8 +81,8 @@ class ExampleCoverageTest {
     private static final long MIB = 1024L * 1024L;
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final MovableClock CLOCK = new MovableClock();
-    private static final HeldGate GATE = new HeldGate();
     private static final AtomicLong USABLE = new AtomicLong(Long.MAX_VALUE / 2);
+    private static final HeldRoom ROOM = new HeldRoom(new FreeSpaceCheck(() -> new SizedStore(USABLE.get())));
     private static Path configRoot = Path.of("");
 
     @LocalServerPort
@@ -103,14 +103,8 @@ class ExampleCoverageTest {
 
         @Bean
         @Primary
-        RegistrationJobs.JobGate heldJobGate() {
-            return GATE;
-        }
-
-        @Bean
-        @Primary
         RegistrationJobs.StorageRoom sizedStorageRoom() {
-            return new FreeSpaceCheck(() -> new SizedStore(USABLE.get()));
+            return ROOM;
         }
     }
 
@@ -182,17 +176,18 @@ class ExampleCoverageTest {
         }
     }
 
-    /** Registers it with the job held at the gate past the deadline; returns the refusal's code. */
+    /** Registers it with the job held running past the deadline; returns the refusal's code. */
     private String timedOutCode(Path scratch) throws Exception {
-        GATE.hold();
+        ROOM.hold();
         try {
             HttpResponse<String> accepted = put(archive(scratch.resolve("late")));
             assertThat(accepted.statusCode()).as(accepted.body()).isEqualTo(202);
+            ROOM.awaitHeld(1);
             CLOCK.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
             jobs.expireOverdue();
             return refusalCode(accepted);
         } finally {
-            GATE.release();
+            ROOM.releaseAll();
         }
     }
 
@@ -203,19 +198,31 @@ class ExampleCoverageTest {
             return body.path("code").asString();
         }
         String id = body.path("registrationId").asString();
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-        while (System.nanoTime() < deadline) {
-            JsonNode status = JSON.readTree(send(to("/pack-registrations/" + id)
+        AtomicReference<JsonNode> ended = new AtomicReference<>();
+        Await.until("registration " + id + " to end", () -> {
+            JsonNode status = status(id);
+            String state = status.path("state").asString();
+            boolean done = "refused".equals(state) || "succeeded".equals(state);
+            if (done) {
+                ended.set(status);
+            }
+            return done;
+        });
+        return ended.get().path("problem").path("code").asString();
+    }
+
+    private JsonNode status(String id) {
+        try {
+            return JSON.readTree(send(to("/pack-registrations/" + id)
                             .header("Authorization", "Bearer " + TOKEN)
                             .GET())
                     .body());
-            String state = status.path("state").asString();
-            if ("refused".equals(state) || "succeeded".equals(state)) {
-                return status.path("problem").path("code").asString();
-            }
-            Thread.sleep(50);
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(interrupted);
         }
-        throw new AssertionError("registration " + id + " did not end");
     }
 
     private HttpResponse<String> put(byte[] archive) throws Exception {
@@ -280,31 +287,6 @@ class ExampleCoverageTest {
         public Instant instant() {
             return now.get();
         }
-    }
-
-    /** A job gate that holds a job before it runs until released. */
-    private static final class HeldGate implements RegistrationJobs.JobGate {
-        private volatile CountDownLatch latch = new CountDownLatch(0);
-
-        void hold() {
-            latch = new CountDownLatch(1);
-        }
-
-        void release() {
-            latch.countDown();
-        }
-
-        @Override
-        public void beforeRun(String id) {
-            try {
-                latch.await(30, TimeUnit.SECONDS);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        @Override
-        public void whileRunning(String id) {}
     }
 
     /** A volume that reports one usable size. */

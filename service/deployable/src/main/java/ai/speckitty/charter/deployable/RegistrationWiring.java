@@ -78,12 +78,6 @@ public class RegistrationWiring {
         return Clock.systemUTC();
     }
 
-    /** Lets every job through; a test supplies a gate that holds one as {@code @Primary}. */
-    @Bean
-    RegistrationJobs.JobGate registrationJobGate() {
-        return RegistrationJobs.JobGate.OPEN;
-    }
-
     /**
      * The directory registrations spool and extract in: configured, else {@code <config-root>/staging}. Registration
      * switched on needs the configuration root, since that is where a registered pack is stored, and the service does not
@@ -179,11 +173,10 @@ public class RegistrationWiring {
             PackRegistrationService service,
             PackRevisions revisions,
             AuditLog audit,
-            RegistrationJobs.JobGate gate,
             RegistrationJobs.StorageRoom room,
             StagingArea staging) {
-        return new RegistrationJobs(new RegistrationJobs.Dependencies(
-                        registrationClock, service, revisions, audit, gate, room, staging))
+        return new RegistrationJobs(
+                        new RegistrationJobs.Dependencies(registrationClock, service, revisions, audit, room, staging))
                 .startWatchdog(WATCHDOG_PERIOD);
     }
 

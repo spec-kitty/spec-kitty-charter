@@ -74,7 +74,6 @@ class SlowUploadTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 (AuditLog) entry -> {},
-                RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 new FileStagingArea(staging)));
         ServiceInfoQuery info =

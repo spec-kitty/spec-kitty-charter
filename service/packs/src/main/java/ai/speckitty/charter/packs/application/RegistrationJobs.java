@@ -211,27 +211,6 @@ public final class RegistrationJobs implements AutoCloseable {
         Staged stage(Path directory) throws Exception;
     }
 
-    /** The seam a test holds a job at; production passes through. */
-    public interface JobGate {
-
-        /** A gate that holds nothing. */
-        JobGate OPEN = new JobGate() {};
-
-        /**
-         * Called by the worker before the job is {@link State#RUNNING}.
-         *
-         * @param id the registration id
-         */
-        default void beforeRun(String id) {}
-
-        /**
-         * Called by the worker once the job is {@link State#RUNNING}, before its work starts.
-         *
-         * @param id the registration id
-         */
-        default void whileRunning(String id) {}
-    }
-
     /**
      * Where a job's attempt came from, for its audit entry, and whether it asked for the write or only a dry run of it.
      *
@@ -349,7 +328,6 @@ public final class RegistrationJobs implements AutoCloseable {
      * @param service the registration flow
      * @param revisions the stored revisions
      * @param audit the audit trail
-     * @param gate the test seam
      * @param room the free-space check
      * @param staging the staging area the jobs stage in
      */
@@ -358,7 +336,6 @@ public final class RegistrationJobs implements AutoCloseable {
             PackRegistrationService service,
             PackRevisions revisions,
             AuditLog audit,
-            JobGate gate,
             StorageRoom room,
             StagingArea staging) {
 
@@ -369,7 +346,6 @@ public final class RegistrationJobs implements AutoCloseable {
          * @param service the registration flow
          * @param revisions the stored revisions
          * @param audit the audit trail
-         * @param gate the test seam
          * @param room the free-space check
          * @param staging the staging area the jobs stage in
          */
@@ -378,7 +354,6 @@ public final class RegistrationJobs implements AutoCloseable {
             Objects.requireNonNull(service, "service");
             Objects.requireNonNull(revisions, "revisions");
             Objects.requireNonNull(audit, "audit");
-            Objects.requireNonNull(gate, "gate");
             Objects.requireNonNull(room, "room");
             Objects.requireNonNull(staging, "staging");
         }
@@ -1014,11 +989,9 @@ public final class RegistrationJobs implements AutoCloseable {
                 if (ended()) {
                     return null;
                 }
-                owner.dependencies.gate().beforeRun(id);
                 if (!markRunning()) {
                     return null;
                 }
-                owner.dependencies.gate().whileRunning(id);
                 return work();
             } catch (JobEnded gone) {
                 // The deadline or the shutdown ended the job first: its answer stands, and nothing was written.
