@@ -95,7 +95,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 
 ## Implementation Concern Map
 
-### IC-01 — The application layer's walks and their guard
+### IC-01 --- The application layer's walks and their guard
 
 - **Purpose**: every walk the application layer wrote by hand lives in `PackGraph`, and an ArchUnit rule keeps it so.
 - **Relevant requirements**: FR-001, FR-003, FR-013
@@ -103,7 +103,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 - **Sequencing/depends-on**: none (in PR #665)
 - **Risks**: the order of each moved walk; review finding 1 (the read order in `RemovalDependents`) is folded
 
-### IC-02 — The resolver's walks
+### IC-02 --- The resolver's walks
 
 - **Purpose**: the dependency order (Kahn's pass), the dependency-cycle search, the shortest-cycle search, the `depends_on`-only closure and the `parent_pack` line move into `PackGraph`, each pinned by a test.
 - **Relevant requirements**: FR-002, NFR-001, NFR-002
@@ -111,7 +111,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 - **Sequencing/depends-on**: IC-01 (same PR, #665)
 - **Risks**: `dependsOnClosure` is a LIFO descent and Kahn's pass takes packs in a priority order; both orders reach refusal details, so each is moved as written and pinned
 
-### IC-03 — Graph nodes, scope and the walker
+### IC-03 --- Graph nodes, scope and the walker
 
 - **Purpose**: the kernel visitor contract becomes generic. `PackGraph` is built once per judge from packs in merge order and walks a `Scope` in one of the domain's walk modes. `ValidationWalker` keeps one bucket per rule and gates phases on `VIOLATION`.
 - **Relevant requirements**: FR-004, FR-005, NFR-002, NFR-003
@@ -119,7 +119,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 - **Sequencing/depends-on**: IC-02
 - **Risks**: a god walker (the walk keeps three parameters); facts read eagerly (they are read lazily and memoized)
 
-### IC-04 — The own-closure rules and REFERENCES on the walker
+### IC-04 --- The own-closure rules and REFERENCES on the walker
 
 - **Purpose**: the three own-closure rules move into `packs.domain.rules`, and `PackRulesets.ownClosure(..)` hands out one phase over the root `PackNode`: fallback, own pins, pin conflicts, enhancements, in that order. `references()` becomes three one-check phases. `ClosureWalk` and `OwnClosureWalk` are deleted.
 - **Relevant requirements**: FR-006, FR-007
@@ -127,7 +127,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 - **Sequencing/depends-on**: IC-03
 - **Risks**: write-path order is closure-major, and preset items stay ungated beside the breaches (squad S8); the declaring pack comes from the root node, not from `ClosureFacts` (spec Key Entities amended)
 
-### IC-05 — Relations and edge-index rules, one code per fault
+### IC-05 --- Relations and edge-index rules, one code per fault
 
 - **Purpose**: the relation rules, the specialization cycle and the edge-index refusals become relations-phase rules. The relations gate stays ahead of the edge-index rules. A read and a registration answer one code per fault (D2).
 - **Relevant requirements**: FR-008, FR-009, FR-010, FR-011
@@ -135,7 +135,7 @@ docs/architecture/architectural-patterns-applied.md   # determinism guard, built
 - **Sequencing/depends-on**: IC-04; Q-A to Q-C
 - **Risks**: registration starts refusing a re-pointed self-override and a stray step link, which it accepts today. That flips `ClosureImpactCheckTest`'s case for a layer-above override, and it closes the read leak in research R-5.
 
-### IC-06 — pack-doctor picks up the cycle and the relations
+### IC-06 --- pack-doctor picks up the cycle and the relations
 
 - **Purpose**: `pack-doctor validate --full` runs the factory's relations phase over each root's composed closure, reporting a fault that several roots find once, with registration's codes.
 - **Relevant requirements**: FR-012

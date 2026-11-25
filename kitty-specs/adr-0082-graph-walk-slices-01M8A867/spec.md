@@ -85,7 +85,7 @@ The relation rules (self-override, conflicting relations, override not permitted
 - A successor that is no key of the graph is a dead end, never part of a cycle.
 - A closure with no `enhances` or `overrides` edges skips the relation rules but still runs the specialization cycle.
 - A preset-item fault beside an own-closure breach is reported with it, not gated away.
-- The census decorates details differently from the write path (" (packs …)" against "In the closure rooted at …"); both stay until slice 6.
+- The census decorates details differently from the write path (" (packs ...)" against "In the closure rooted at ..."); both stay until slice 6.
 
 ## Requirements *(mandatory)*
 
@@ -93,19 +93,19 @@ The relation rules (self-override, conflicting relations, override not permitted
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Application walks move to the domain | As a contributor, I want every walk over the pack graph that the application layer wrote by hand to live in `PackGraph`, so that walks cannot disagree. | High | In progress (PR #665) | [build] | no — the guard's bad fixture fails |
-| FR-002 | Resolver walks move to the domain | As a contributor, I want the composition resolver's dependency order, dependency-cycle search, shortest-cycle search, `depends_on`-only closure and `parent_pack` line walk in `PackGraph`, each proved by a test, so that one class walks the graph. | High | Open | [build] | no — each moved walk has a test that pins its order |
-| FR-003 | Walk-containment guard | As a contributor, I want the build to fail when an application class walks the pack graph or reads a descriptor's edges to walk them, so that the containment holds. | High | In progress (PR #665) | [build] | no — a known-bad fixture must fail it |
-| FR-004 | Graph nodes, scope and driver | As a contributor, I want `PackGraph` to drive one visitor over typed graph nodes (pack, artifact, edge), constrained by a scope that only selects, so that a check is a rule plus a scope. | High | Open | [build] | no — a walk over a scope visits only selected nodes |
-| FR-005 | One walker with rule-first order | As a pack author, I want the walker to report findings rule first, then subject in input order, and stop later phases after a phase records a violation, so that the refusal code stays the same. | High | Open | [build] | no — a multi-rule fixture pins the order |
-| FR-006 | Own-closure rules from the factory | As a contributor, I want the fallback-profile, role-pin and profile-enhancement rules in `packs.domain.rules`, handed out by `PackRulesets.ownClosure()` and selected by predicates on the closure's facts, so that registration, every write and the census get them from one place. | High | Open | [build] | no — the deleted port no longer compiles; order fixture |
-| FR-007 | References on the walker | As a contributor, I want the `REFERENCES` checks to run on the same walker with no hand-written phase loop beside it, so that there is one mechanism. | Medium | Open | [build] | no — `FullPassParityTest` rows stay green |
-| FR-008 | Relations phase from the factory | As a contributor, I want the relation rules and the specialization cycle handed out by `PackRulesets.relations()`, judging a domain subject of the composed closure, so that no application class builds a relation refusal. | High | Open | [build] | no — `ImpactRelationsTest` cases rerun on the rules |
-| FR-009 | Edge-index refusals as rules | As a contributor, I want the edge-index refusals to be relations-phase rules, with the relations gate kept ahead of them, so that no application class builds one. | High | Open | [build] | no — a mixed-fault fixture pins the gate |
-| FR-010 | Hand-written gates removed | As a contributor, I want the gates between the relations, edge-index and own-closure phases to be the walker's, with `ClosureImpactCheck#relationFaults` deleted, so that the application layer only orchestrates. | Medium | Open | [build] | no — the census and write-path fixtures stay green |
-| FR-011 | One code per edge-index fault | As a pack author, I want a read and a registration of the same closure to answer an edge-index fault with the same code, so that the surfaces agree (operator ruling D2). | High | Open | [build] | no — the read used to answer `500 pack_unreadable` |
-| FR-012 | pack-doctor picks up cycle and relations | As a pack author, I want `pack-doctor validate --full` to report the specialization cycle and the relation faults over each root's composed closure, with registration's codes, so that open-packs can retire its Python rules. | Medium | Open | [build] | no — a parity row refuses on both surfaces |
-| FR-013 | Ordered collections | As a pack author, I want no walk or rule to order work by hash order, so that answers are deterministic. | Medium | In progress (PR #665) | [ratchet] | yes — paired with order-pinning tests on the same fixtures |
+| FR-001 | Application walks move to the domain | As a contributor, I want every walk over the pack graph that the application layer wrote by hand to live in `PackGraph`, so that walks cannot disagree. | High | In progress (PR #665) | [build] | no --- the guard's bad fixture fails |
+| FR-002 | Resolver walks move to the domain | As a contributor, I want the composition resolver's dependency order, dependency-cycle search, shortest-cycle search, `depends_on`-only closure and `parent_pack` line walk in `PackGraph`, each proved by a test, so that one class walks the graph. | High | Open | [build] | no --- each moved walk has a test that pins its order |
+| FR-003 | Walk-containment guard | As a contributor, I want the build to fail when an application class walks the pack graph or reads a descriptor's edges to walk them, so that the containment holds. | High | In progress (PR #665) | [build] | no --- a known-bad fixture must fail it |
+| FR-004 | Graph nodes, scope and driver | As a contributor, I want `PackGraph` to drive one visitor over typed graph nodes (pack, artifact, edge), constrained by a scope that only selects, so that a check is a rule plus a scope. | High | Open | [build] | no --- a walk over a scope visits only selected nodes |
+| FR-005 | One walker with rule-first order | As a pack author, I want the walker to report findings rule first, then subject in input order, and stop later phases after a phase records a violation, so that the refusal code stays the same. | High | Open | [build] | no --- a multi-rule fixture pins the order |
+| FR-006 | Own-closure rules from the factory | As a contributor, I want the fallback-profile, role-pin and profile-enhancement rules in `packs.domain.rules`, handed out by `PackRulesets.ownClosure()` and selected by predicates on the closure's facts, so that registration, every write and the census get them from one place. | High | Open | [build] | no --- the deleted port no longer compiles; order fixture |
+| FR-007 | References on the walker | As a contributor, I want the `REFERENCES` checks to run on the same walker with no hand-written phase loop beside it, so that there is one mechanism. | Medium | Open | [build] | no --- `FullPassParityTest` rows stay green |
+| FR-008 | Relations phase from the factory | As a contributor, I want the relation rules and the specialization cycle handed out by `PackRulesets.relations()`, judging a domain subject of the composed closure, so that no application class builds a relation refusal. | High | Open | [build] | no --- `ImpactRelationsTest` cases rerun on the rules |
+| FR-009 | Edge-index refusals as rules | As a contributor, I want the edge-index refusals to be relations-phase rules, with the relations gate kept ahead of them, so that no application class builds one. | High | Open | [build] | no --- a mixed-fault fixture pins the gate |
+| FR-010 | Hand-written gates removed | As a contributor, I want the gates between the relations, edge-index and own-closure phases to be the walker's, with `ClosureImpactCheck#relationFaults` deleted, so that the application layer only orchestrates. | Medium | Open | [build] | no --- the census and write-path fixtures stay green |
+| FR-011 | One code per edge-index fault | As a pack author, I want a read and a registration of the same closure to answer an edge-index fault with the same code, so that the surfaces agree (operator ruling D2). | High | Open | [build] | no --- the read used to answer `500 pack_unreadable` |
+| FR-012 | pack-doctor picks up cycle and relations | As a pack author, I want `pack-doctor validate --full` to report the specialization cycle and the relation faults over each root's composed closure, with registration's codes, so that open-packs can retire its Python rules. | Medium | Open | [build] | no --- a parity row refuses on both surfaces |
+| FR-013 | Ordered collections | As a pack author, I want no walk or rule to order work by hash order, so that answers are deterministic. | Medium | In progress (PR #665) | [ratchet] | yes --- paired with order-pinning tests on the same fixtures |
 
 ### Non-Functional Requirements
 
@@ -139,10 +139,10 @@ The relation rules (self-override, conflicting relations, override not permitted
 
 ### Measurable Outcomes
 
-- **SC-001**: No class outside the packs domain walks the pack graph, as the build's guard proves. — [build] · no-op passable: no
-- **SC-002**: Every existing registration, write, removal, read and pack-doctor test passes with 0 changed expected codes or details, except the edge-index rows that FR-011 changes. — [ratchet] · no-op passable: yes — paired with the guard and the new rule tests
-- **SC-003**: A read and a registration of the same faulty closure answer with 1 code, for every edge-index fault. — [build] · no-op passable: no
-- **SC-004**: pack-doctor and registration agree on 100% of the specialization-cycle and relation parity rows. — [build] · no-op passable: no
+- **SC-001**: No class outside the packs domain walks the pack graph, as the build's guard proves. --- [build] · no-op passable: no
+- **SC-002**: Every existing registration, write, removal, read and pack-doctor test passes with 0 changed expected codes or details, except the edge-index rows that FR-011 changes. --- [ratchet] · no-op passable: yes --- paired with the guard and the new rule tests
+- **SC-003**: A read and a registration of the same faulty closure answer with 1 code, for every edge-index fault. --- [build] · no-op passable: no
+- **SC-004**: pack-doctor and registration agree on 100% of the specialization-cycle and relation parity rows. --- [build] · no-op passable: no
 
 ## Assumptions
 

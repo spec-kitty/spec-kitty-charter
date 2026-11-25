@@ -8,7 +8,7 @@ requirement_refs:
 - SC-004
 planning_base_branch: feat/adr-0082-graph-walk-slices
 merge_target_branch: feat/adr-0082-graph-walk-slices
-branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. WP06 lands on main as its own pull request; execution worktrees are allocated per computed lane from lanes.json.
+branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/adr-0082-graph-walk-slices unless the human explicitly redirects the landing branch.
 subtasks:
 - T024
 - T025
@@ -18,19 +18,21 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-authoritative_surface: service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/
+authoritative_surface: service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/
 create_intent:
-- service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/RelationsPhase.java
-- service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/RelationsPhaseTest.java
+- service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/RelationsPhase.java
+- service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/set/RelationsPhaseTest.java
 - docs/changelog/2026-11-26-pack-doctor-judges-relations.md
 execution_mode: code_change
 owned_files:
-- service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/RelationsPhase.java
-- service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/PackSetCheck.java
-- service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/RelationsPhaseTest.java
-- service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/FullPassParityTest.java
+- service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/RelationsPhase.java
+- service/pack-validation/src/main/java/ai/speckitty/charter/packvalidation/set/PackSetCheck.java
+- service/pack-validation/src/test/java/ai/speckitty/charter/packvalidation/set/RelationsPhaseTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/FullPassParityTest.java
 - docs/guides/check-packs.md
 - docs/changelog/2026-11-26-pack-doctor-judges-relations.md
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP06 - pack-doctor picks up the specialization cycle and the relations (#632 item 3)

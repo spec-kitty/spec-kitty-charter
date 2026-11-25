@@ -12,7 +12,7 @@
 
 ## Question
 
-D3: #632 item 3 — pull a narrow pack-doctor pickup (specialization cycle + relations over each root's composed closure, parity rows) into this mission as WP05, or keep it in slice 7 and file the slice-7 child now?
+D3: #632 item 3 --- pull a narrow pack-doctor pickup (specialization cycle + relations over each root's composed closure, parity rows) into this mission as WP05, or keep it in slice 7 and file the slice-7 child now?
 
 ## Options
 

@@ -12,7 +12,7 @@
 
 ## Question
 
-D2: Edge-index refusals in #639 — move only the registration-side relation and edge-index checks into relations() and keep the read-time merge refusals (500 pack_unreadable) as they are, or unify read and registration codes (a wire change)?
+D2: Edge-index refusals in #639 --- move only the registration-side relation and edge-index checks into relations() and keep the read-time merge refusals (500 pack_unreadable) as they are, or unify read and registration codes (a wire change)?
 
 ## Options
 

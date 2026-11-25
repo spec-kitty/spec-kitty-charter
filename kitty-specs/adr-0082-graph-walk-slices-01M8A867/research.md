@@ -39,7 +39,7 @@ ebe6eca72.
 ## R-4 Own closure: the root pack node is the subject
 
 - **Decision**: `PackRulesets.ownClosure(ClosureFacts, ProfileReader, Optional<ProfileEnhancementGateway>)` returns
-  a `GraphCheck(PACKS, …)` whose scope selects the declaring `PackNode`; its checks are the fallback (when the
+  a `GraphCheck(PACKS, ...)` whose scope selects the declaring `PackNode`; its checks are the fallback (when the
   descriptor names one), the pack's own pins, the pin conflicts (`OnClose`) and the enhancements (`OnClose`).
 - **Rationale**: `ClosureFacts` describes a closure, not a pack; the node carries the declaring pack and its fallback,
   so the predicate tests the subject (squad S7). This replaces the spec's "ClosureFacts carries the declaring pack".

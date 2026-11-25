@@ -10,7 +10,7 @@ requirement_refs:
 - C-006
 planning_base_branch: feat/adr-0082-graph-walk-slices
 merge_target_branch: feat/adr-0082-graph-walk-slices
-branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. WP02 and WP03 land on main together as the slice 3 pull request; execution worktrees are allocated per computed lane from lanes.json.
+branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/adr-0082-graph-walk-slices unless the human explicitly redirects the landing branch.
 subtasks:
 - T007
 - T008
@@ -42,6 +42,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphWalkTest.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/graph/**
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackGraphWalkTest.java
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 - Slice 3a: graph nodes, scope and the driver (#638)

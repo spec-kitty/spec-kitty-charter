@@ -8,7 +8,7 @@ requirement_refs:
 - NFR-001
 planning_base_branch: feat/adr-0082-graph-walk-slices
 merge_target_branch: feat/adr-0082-graph-walk-slices
-branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. WP04 and WP05 land on main together as the slice 4 pull request; execution worktrees are allocated per computed lane from lanes.json.
+branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/adr-0082-graph-walk-slices unless the human explicitly redirects the landing branch.
 subtasks:
 - T017
 - T018
@@ -35,6 +35,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/ImpactRelationsEnhancementTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/RelationRulesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/RelationRulesEnhancementTest.java
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP04 - Slice 4a: the relations phase (#639)

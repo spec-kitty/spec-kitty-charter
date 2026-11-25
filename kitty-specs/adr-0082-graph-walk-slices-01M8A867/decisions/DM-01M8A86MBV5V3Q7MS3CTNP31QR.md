@@ -12,7 +12,7 @@
 
 ## Question
 
-D1: Walker shape for slice 3 — keep an intermediate phase runner (ValidationWalker<S> over a List<ClosureFault> ledger, rule-ordered buckets, VIOLATION gate, ClosureFacts gains declaring()/fallbackProfile(); Scope in #639, visitor driver in slice 7) or build the full GraphWalker/PackGraphNode/Scope design in #638?
+D1: Walker shape for slice 3 --- keep an intermediate phase runner (ValidationWalker<S> over a List<ClosureFault> ledger, rule-ordered buckets, VIOLATION gate, ClosureFacts gains declaring()/fallbackProfile(); Scope in #639, visitor driver in slice 7) or build the full GraphWalker/PackGraphNode/Scope design in #638?
 
 ## Options
 

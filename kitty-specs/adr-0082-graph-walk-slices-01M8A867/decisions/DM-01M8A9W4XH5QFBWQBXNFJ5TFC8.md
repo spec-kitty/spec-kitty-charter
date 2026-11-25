@@ -12,7 +12,7 @@
 
 ## Question
 
-Q-B: C21 (a forbidden layer override in LayerMerge) has the same split — read 500 pack_unreadable, registration twin override_not_permitted — but is not an edge-index refusal. In scope for D2's unification?
+Q-B: C21 (a forbidden layer override in LayerMerge) has the same split --- read 500 pack_unreadable, registration twin override_not_permitted --- but is not an edge-index refusal. In scope for D2's unification?
 
 ## Options
 

@@ -12,7 +12,7 @@
 
 ## Question
 
-Q-A: The unified edge-index codes (self_override, override_not_permitted) are 422 on every operation today. Follow ADR-0056 (a read keeps 500 — the configured packs are at fault — and the 13 impact-checked operations keep 422 through x-refusal operations overrides; moves both codes to the 500 default), or keep 422 everywhere (a read would answer 422 for a stored-pack fault)?
+Q-A: The unified edge-index codes (self_override, override_not_permitted) are 422 on every operation today. Follow ADR-0056 (a read keeps 500 --- the configured packs are at fault --- and the 13 impact-checked operations keep 422 through x-refusal operations overrides; moves both codes to the 500 default), or keep 422 everywhere (a read would answer 422 for a stored-pack fault)?
 
 ## Options
 

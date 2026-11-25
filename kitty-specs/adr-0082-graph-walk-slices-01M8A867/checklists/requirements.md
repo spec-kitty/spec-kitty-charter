@@ -6,9 +6,9 @@
 
 ## Content Quality
 
-- [x] No implementation details (languages, frameworks, APIs) — see note 1
+- [x] No implementation details (languages, frameworks, APIs) --- see note 1
 - [x] Focused on user value and business needs
-- [x] Written for non-technical stakeholders — see note 1
+- [x] Written for non-technical stakeholders --- see note 1
 - [x] All mandatory sections completed
 
 ## Requirement Completeness
@@ -21,7 +21,7 @@
 - [x] Non-functional requirements include measurable thresholds
 - [x] Every FR row and success criterion carries a delivery label and no-op mark
 - [x] Success criteria are measurable
-- [x] Success criteria are technology-agnostic (no implementation details) — see note 1
+- [x] Success criteria are technology-agnostic (no implementation details) --- see note 1
 - [x] All acceptance scenarios are defined
 - [x] Edge cases are identified
 - [x] Scope is clearly bounded
@@ -32,7 +32,7 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Mission meets measurable outcomes defined in Success Criteria
-- [x] No implementation details leak into specification — see note 1
+- [x] No implementation details leak into specification --- see note 1
 
 ## Notes
 

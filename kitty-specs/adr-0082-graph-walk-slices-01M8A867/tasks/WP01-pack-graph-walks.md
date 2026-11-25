@@ -15,7 +15,7 @@ requirement_refs:
 - SC-001
 planning_base_branch: feat/adr-0082-graph-walk-slices
 merge_target_branch: feat/adr-0082-graph-walk-slices
-branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. This WP was started before the mission as PR
+branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/adr-0082-graph-walk-slices unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -31,6 +31,9 @@ history:
 agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackGraph.java
 create_intent:
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackGraph.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackGraphTest.java
+- docs/changelog/2026-11-25-pack-graph-owns-the-walks.md
 - service/packs/src/test/java/ai/speckitty/charter/packs/PackGraphWalkBoundaryTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/badfixture/HandWrittenDescent.java
 execution_mode: code_change
@@ -52,6 +55,8 @@ owned_files:
 - docs/architecture/composition-and-activation-rules.md
 - docs/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor.md
 - docs/_meta/spelling-words.txt
+tags: []
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP01 - Slice 2: PackGraph holds every pack-graph walk (#637)
