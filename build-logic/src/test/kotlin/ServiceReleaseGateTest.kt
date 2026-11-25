@@ -1,32 +1,53 @@
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** The publishing gate of a service release (ADR-0046 decisions 1 to 3 and 7). */
+/**
+ * The publishing gate of a service release (ADR-0046 decisions 1 to 3 and 7): every release, a pre-release too, ships
+ * only when the charter contract and the packs contract it bundles are released (#650).
+ */
 class ServiceReleaseGateTest {
 
-    private fun refusal(tag: String, build: String = "0.2.0", contract: String = "0.1.0", merged: Boolean = true) =
-        (ServiceReleaseGate.check(tag, build, contract, merged) as ServiceReleaseGate.Refusal).reason
+    private val charter = ServiceReleaseGate.Bundled("0.1.0", tagMerged = true)
+    private val packs = ServiceReleaseGate.Bundled("0.1.0", tagMerged = true)
+
+    private fun check(
+        tag: String,
+        build: String = tag.removePrefix("service-v"),
+        contract: ServiceReleaseGate.Bundled = charter,
+        packsContract: ServiceReleaseGate.Bundled = packs,
+    ) = ServiceReleaseGate.check(tag, build, contract, packsContract)
+
+    private fun refusal(
+        tag: String,
+        build: String = "0.2.0",
+        contract: ServiceReleaseGate.Bundled = charter,
+        packsContract: ServiceReleaseGate.Bundled = packs,
+    ) = (check(tag, build, contract, packsContract) as ServiceReleaseGate.Refusal).reason
 
     @Test
-    fun aFinalReleaseOfTheBuildVersionWithAReleasedContractPasses() {
-        assertThat(ServiceReleaseGate.check("service-v0.2.0", "0.2.0", "0.1.0", contractTagMerged = true))
-            .isEqualTo(ServiceReleaseGate.Release("0.2.0", prerelease = false, contract = "0.1.0", contractReleased = true))
+    fun aFinalReleaseOfTheBuildVersionWithBothContractsReleasedPasses() {
+        assertThat(check("service-v0.2.0"))
+            .isEqualTo(ServiceReleaseGate.Release("0.2.0", prerelease = false, contract = "0.1.0", packsContract = "0.1.0"))
     }
 
     @Test
-    fun aPreReleaseMayBundleAnUnreleasedContractAndSaysSo() {
-        assertThat(ServiceReleaseGate.check("service-v0.2.0-rc.1", "0.2.0-rc.1", "0.2.0-SNAPSHOT", contractTagMerged = false))
-            .isEqualTo(
-                ServiceReleaseGate.Release(
-                    "0.2.0-rc.1", prerelease = true, contract = "0.2.0-SNAPSHOT", contractReleased = false,
-                ),
-            )
+    fun aPreReleaseOfAnUnreleasedContractIsRefused() {
+        assertThat(refusal("service-v0.2.0-rc.1", build = "0.2.0-rc.1", contract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", false)))
+            .contains("service-v0.2.0-rc.1", "0.2.0-SNAPSHOT", "unreleased", "release the contract first")
+        assertThat(refusal("service-v0.2.0-rc.1", build = "0.2.0-rc.1", contract = ServiceReleaseGate.Bundled("0.2.0-rc.1", false)))
+            .contains("contract-charter-v0.2.0-rc.1", "not merged")
     }
 
     @Test
-    fun aPreReleaseWithAReleasedContractSaysSoToo() {
-        assertThat(ServiceReleaseGate.check("service-v1.0.0-beta.2", "1.0.0-beta.2", "1.0.0", contractTagMerged = true))
-            .isEqualTo(ServiceReleaseGate.Release("1.0.0-beta.2", prerelease = true, contract = "1.0.0", contractReleased = true))
+    fun aSnapshotContractIsUnreleasedEvenWhenATagOfThatNameIsMerged() {
+        assertThat(refusal("service-v0.2.0", contract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", tagMerged = true)))
+            .contains("0.2.0-SNAPSHOT", "unreleased")
+    }
+
+    @Test
+    fun aPreReleaseWithReleasedContractsPasses() {
+        assertThat(check("service-v1.0.0-beta.2", contract = ServiceReleaseGate.Bundled("1.0.0", true)))
+            .isEqualTo(ServiceReleaseGate.Release("1.0.0-beta.2", prerelease = true, contract = "1.0.0", packsContract = "0.1.0"))
     }
 
     @Test
@@ -59,34 +80,97 @@ class ServiceReleaseGateTest {
 
     @Test
     fun aFinalReleaseOfAnUnreleasedContractIsRefused() {
-        assertThat(refusal("service-v0.2.0", contract = "0.2.0-SNAPSHOT", merged = false))
+        assertThat(refusal("service-v0.2.0", contract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", false)))
             .contains("0.2.0-SNAPSHOT", "unreleased")
-        assertThat(refusal("service-v0.2.0", contract = "0.2.0", merged = false))
+        assertThat(refusal("service-v0.2.0", contract = ServiceReleaseGate.Bundled("0.2.0", false)))
             .contains("contract-charter-v0.2.0", "not merged")
     }
 
     @Test
     fun aFinalReleaseOfAContractReleaseCandidateIsRefused() {
-        assertThat(refusal("service-v0.2.0", contract = "0.2.0-rc.1", merged = true))
+        assertThat(refusal("service-v0.2.0", contract = ServiceReleaseGate.Bundled("0.2.0-rc.1", true)))
             .contains("needs a final contract release", "0.2.0-rc.1", "release candidate")
-        assertThat(refusal("service-v0.2.0", contract = "0.2.0-rc.1", merged = false))
+        assertThat(refusal("service-v0.2.0", contract = ServiceReleaseGate.Bundled("0.2.0-rc.1", false)))
             .contains("contract-charter-v0.2.0-rc.1", "not merged")
     }
 
     @Test
-    fun aPreReleaseMayBundleAContractReleaseCandidateAndSaysSo() {
-        val release = ServiceReleaseGate.check("service-v0.2.0-rc.1", "0.2.0-rc.1", "0.2.0-rc.1", contractTagMerged = true)
+    fun aPreReleaseMayBundleContractReleaseCandidatesAndSaysSo() {
+        val release = check(
+            "service-v0.2.0-rc.1",
+            contract = ServiceReleaseGate.Bundled("0.2.0-rc.1", true),
+            packsContract = ServiceReleaseGate.Bundled("0.1.0-rc.2", true),
+        )
         assertThat(release)
-            .isEqualTo(ServiceReleaseGate.Release("0.2.0-rc.1", prerelease = true, contract = "0.2.0-rc.1", contractReleased = true))
+            .isEqualTo(ServiceReleaseGate.Release("0.2.0-rc.1", prerelease = true, contract = "0.2.0-rc.1", packsContract = "0.1.0-rc.2"))
         assertThat((release as ServiceReleaseGate.Release).contractNote())
-            .isEqualTo("It implements the charter contract release candidate 0.2.0-rc.1 (contract-charter-v0.2.0-rc.1).")
+            .isEqualTo(
+                "It implements the charter contract release candidate 0.2.0-rc.1 (contract-charter-v0.2.0-rc.1) and" +
+                    " the packs contract release candidate 0.1.0-rc.2 (contract-packs-v0.1.0-rc.2).",
+            )
     }
 
     @Test
-    fun theReleaseNotesLineNamesTheContractAndWhetherItIsReleased() {
-        assertThat(ServiceReleaseGate.Release("0.2.0", false, "0.1.0", true).contractNote())
-            .isEqualTo("It implements the charter contract 0.1.0 (released as contract-charter-v0.1.0).")
-        assertThat(ServiceReleaseGate.Release("0.2.0-rc.1", true, "0.2.0-SNAPSHOT", false).contractNote())
-            .isEqualTo("It implements the charter contract 0.2.0-SNAPSHOT, which is not released yet.")
+    fun theReleaseNotesLineNamesBothContractReleases() {
+        assertThat(ServiceReleaseGate.Release("0.2.0", false, "0.2.0", "0.1.0").contractNote())
+            .isEqualTo(
+                "It implements the charter contract 0.2.0 (contract-charter-v0.2.0) and the packs contract 0.1.0" +
+                    " (contract-packs-v0.1.0).",
+            )
+    }
+
+    @Test
+    fun aPreReleaseOfAnUnreleasedPacksContractIsRefused() {
+        assertThat(refusal("service-v0.2.0-rc.1", build = "0.2.0-rc.1", packsContract = ServiceReleaseGate.Bundled("0.1.0-SNAPSHOT", false)))
+            .contains("service-v0.2.0-rc.1", "packs contract 0.1.0-SNAPSHOT", "changed since its last release", "release the packs contract first")
+    }
+
+    @Test
+    fun aPacksContractReleaseWhoseTagIsNotMergedIsRefusedEvenWhenItIsUnchanged() {
+        assertThat(refusal("service-v0.2.0", packsContract = ServiceReleaseGate.Bundled("0.1.0-rc.3", false)))
+            .contains("contract-packs-v0.1.0-rc.3", "not merged")
+        assertThat(refusal("service-v0.2.0", packsContract = ServiceReleaseGate.Bundled("0.2.0", false, unchangedSince = "0.1.0")))
+            .contains("contract-packs-v0.2.0", "not merged")
+    }
+
+    @Test
+    fun aSnapshotPacksContractIsUnreleasedEvenWhenATagOfThatNameIsMerged() {
+        assertThat(refusal("service-v0.2.0", packsContract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", tagMerged = true)))
+            .contains("packs contract 0.2.0-SNAPSHOT", "unreleased")
+    }
+
+    @Test
+    fun anUnchangedPacksContractIsTheReleaseItIsUnchangedSince() {
+        // The packs contract's version is its CHANGELOG's top heading, reopened as -SNAPSHOT right after each release;
+        // while no file but the CHANGELOG changed since the newest merged contract-packs-v* tag, the bundled packs
+        // contract is that release.
+        assertThat(check("service-v0.2.0", packsContract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", false, unchangedSince = "0.1.0")))
+            .isEqualTo(ServiceReleaseGate.Release("0.2.0", prerelease = false, contract = "0.1.0", packsContract = "0.1.0"))
+    }
+
+    @Test
+    fun theCharterContractHasNoUnchangedExemption() {
+        // Its info.version is served by GET /openapi.yaml and named in the release notes: a -SNAPSHOT is never pinnable.
+        assertThat(refusal("service-v0.2.0", contract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", false, unchangedSince = "0.1.0")))
+            .contains("0.2.0-SNAPSHOT", "unreleased")
+    }
+
+    @Test
+    fun aFinalReleaseOfAPacksContractReleaseCandidateIsRefused() {
+        assertThat(refusal("service-v0.2.0", packsContract = ServiceReleaseGate.Bundled("0.1.0-rc.2", true)))
+            .contains("needs a final packs contract release", "0.1.0-rc.2", "release candidate")
+        assertThat(refusal("service-v0.2.0", packsContract = ServiceReleaseGate.Bundled("0.1.0-SNAPSHOT", false, unchangedSince = "0.1.0-rc.2")))
+            .contains("needs a final packs contract release", "0.1.0-rc.2")
+    }
+
+    @Test
+    fun theCharterContractIsJudgedBeforeThePacksContract() {
+        assertThat(
+            refusal(
+                "service-v0.2.0",
+                contract = ServiceReleaseGate.Bundled("0.2.0-SNAPSHOT", false),
+                packsContract = ServiceReleaseGate.Bundled("0.1.0-SNAPSHOT", false),
+            ),
+        ).contains("charter contract 0.2.0-SNAPSHOT").doesNotContain("packs contract")
     }
 }
