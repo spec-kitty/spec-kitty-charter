@@ -17,5 +17,7 @@
   "target_branch": "test/659-state-waits-and-main-hooks",
   "topology": "single_branch",
   "topology_settled": false,
-  "topology_source": "default"
+  "topology_source": "default",
+  "contracts": "none",
+  "contracts_rationale": "Test remediation and removal of test-only seams from main code: no interface, endpoint or payload changes; the OpenAPI contract is untouched."
 }
