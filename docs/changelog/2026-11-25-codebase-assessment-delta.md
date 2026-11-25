@@ -23,8 +23,8 @@ A [delta note](/plans/engineering-notes/codebase-assessment-delta-2026-11-25/) r
 current `main`, 109 commits later.
 
 - A per-file write refused because its pack would not revalidate drops the in-file pointer that the
-  contract has promised since 2026-11-23.
+  contract has promised since 2026-11-23 (#654).
 - The weekly mutation run is red: `routing` is under its floor, and the `packs-core` shard ran out of time.
 - Of the ten ranked actions, one moved (and went red), one is in progress, one has started and seven are untouched.
 
-The hotspot scripts now take the two pins as parameters. The note changes no code and files no issue.
+The hotspot scripts now take the two pins as parameters. The note changes no code; the defect is tracked in #654.
