@@ -29,6 +29,31 @@ findings-disposition contract of procedure `adversarial-squad-deployment`.
 | 20 | doctrine | LOW | changelog `related:` and wording | accepted | FR-009 |
 | 21 | doctrine | LOW | health plan rows 8 and 9 status | accepted | FR-009 |
 
+## Plan-point squad (2026-11-25)
+
+Lenses: architect-alphonso, reviewer-renata, randy-reducer, each profile-loaded and read-only.
+
+| # | Lens | Severity | Finding | Disposition | Where |
+|---|------|----------|---------|-------------|-------|
+| 22 | reviewer | HIGH | FR-003 fix cannot guarantee nothing written: a freed worker may commit a waiting job before `stop` reaches it | accepted: hold the room again before `close()` | FR-003, IC-02 |
+| 23 | reviewer | HIGH | FR-002a mutant NPEs; no-root staging is a relative path, not tmpdir | accepted: entry at `<tmpdir>/staging/<job id>`, null-safe mutant, configured-root positive control | FR-002a, IC-02 |
+| 24 | reviewer | MEDIUM | counting resolver answers does not place the fetch threads past the lookup | accepted: `acquireSlot` on the stack of the four waiting threads | FR-002b, IC-02 |
+| 25 | reviewer | MEDIUM | FR-004 reachable without a seam through the job's monitor | accepted: new test; `ended()` recorded as equivalent mutant | FR-004, IC-02 |
+| 26 | reviewer | LOW | minimal positive control per budgeted unit | accepted | FR-005b |
+| 27 | reviewer | LOW | spec says "nothing written" is a close guarantee | accepted: reworded | spec Edge Cases |
+| 28 | architect | MEDIUM | `OfferingReadServiceCacheWiringTest` reads `loads()`/`hits()` | accepted | FR-005c, IC-01 |
+| 29 | architect | MEDIUM | `CompositionFactsCache.clear()`/`size()` test-only | accepted: leave main | FR-005c, IC-01 |
+| 30 | architect | MEDIUM | purity rule misses infra.storage, where four counters were | accepted: rule over all main classes with a named allowlist | FR-005d |
+| 31 | architect | LOW | `WorkMeter` has no kernel unit test | accepted | IC-01 |
+| 32 | architect | LOW | pre-filled `EnumMap` cannot span three unit enums | accepted: lazy map | IC-01 |
+| 33 | architect | LOW | new package needs `package-info.java` `@NullMarked` | accepted | IC-01 |
+| 34 | reducer | MEDIUM | `CompositionFacts.of`/`ClosureViews.of` ladders: unused arities | accepted: delete arities with no caller | IC-03 |
+| 35 | reducer | LOW | `RemovalConcurrencyTest` hand-rolled wait loop | accepted | IC-02 |
+| 36 | reducer | LOW | private `await` wrappers | accepted: inline to `Await.until` | IC-02 |
+| 37 | reducer | LOW | "ended" predicate written three times | accepted for the two reservation-based ones (one fixture helper); the HTTP one stays | IC-02 |
+| 38 | reducer | LOW | registry-hold latch duplicated across modules | deferred_with_rationale: the two tests sit in `activations` and `deployable`; a shared fixture would need a new cross-module dependency for two call sites | - |
+| 39 | reducer | LOW | `ReadCounters.Step` duplicates `Runnable` | accepted | IC-01 |
+
 ## Full-suite red (2026-11-25, 7389 tests, 1 failed)
 
 `RegistrationJobsTest.closingTheJobsEndsWhatWaitsRefusedBusyAndAuditsEachOnce`: 4 arrivals at the room check, 2
