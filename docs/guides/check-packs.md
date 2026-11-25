@@ -297,7 +297,7 @@ java -jar pack-doctor-<version>.jar remediate packs/built-in:built-in packs/org-
 
 It prints one line per pack, `<dir>: rewritten`, `<dir>: unchanged` or `<dir>: refused` followed by the faults or the
 files the round trip refused. A pack whose quoted numbers it repaired is `<dir>: rewritten, <n> quoted numbers
-repaired` (`1 quoted number` for one), followed by one line for each, in the order `validate` reports them. The line
+repaired` (`1 quoted number` for one), followed by one line for each, in the order the storage verdict finds them. The line
 ends `is now a number` in a `number` field and `is now an integer` in an `integer` field:
 
 ```text
@@ -306,12 +306,14 @@ packs/org-base: rewritten, 2 quoted numbers repaired
   repaired at agent_profiles/human-operator.agent.yaml#/routing-priority: "40" is now an integer
 ```
 
-The repairs are in these lines only. The report that follows is `validate`'s, and its JSON has no field for them.
+The report that follows the lines lists the same repairs in `repairs` (operator ruling Q14 of 2026-11-25, #651): each
+with its `pack`, `file`, `pointer`, `value` and `type` (`number` or `integer`), per pack in the order given, and empty
+when nothing was repaired. `validate`'s report has no `repairs`.
 
-Then it checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no pack was
-refused and the check finds no problem, `1` when a pack was refused or the check finds a problem, and `2` on a usage
-fault or a failure. Give the packs a pack depends on too, as for `validate`. A usage fault names `remediate`, as in
-`remediate . holds the working directory`.
+Then it checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no
+pack was refused and the check finds no problem, `1` when a pack was refused or the check finds a problem, and `2` on a
+usage fault or a failure. Give the packs a pack depends on too, as for `validate`. A usage fault names `remediate`, as
+in `remediate . holds the working directory`.
 
 ## The report
 
