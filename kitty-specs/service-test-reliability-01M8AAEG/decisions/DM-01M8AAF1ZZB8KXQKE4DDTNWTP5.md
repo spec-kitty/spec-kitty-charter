@@ -4,8 +4,10 @@
 - **Origin flow:** `specify`
 - **Slot key:** `f12`
 - **Input key:** `f12-scope`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-25T21:40:53.375043+00:00`
+- **Resolved:** `2026-11-25T21:58:35.098781+00:00`
+- **Resolved by:** `operator (relayed by dispatcher session_019C2Tk6DpTSEBeTcn9F6smy)`
 - **Opened by:** `claude::java-jenny`
 - **Other answer:** `false`
 
@@ -20,12 +22,13 @@ Q6: Bring the F12 test-only methods into scope (CompositionFactsCache.loads/hits
 
 ## Final answer
 
-_(none)_
+in, as recommended
 
 ## Rationale
 
-_(none)_
+Operator ruling 2026-11-25, relayed by the dispatcher: Q6=a.
 
 ## Change log
 
 - `2026-11-25T21:40:53.375043+00:00` - opened
+- `2026-11-25T21:58:35.098781+00:00` - resolved (final_answer="in, as recommended")
