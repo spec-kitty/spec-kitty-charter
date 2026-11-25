@@ -27,7 +27,7 @@ included, generate their client from it, and a charter release is cut only with 
   bundles is released (`contract-charter-v<info.version>` merged into the commit) and so is the packs contract
   (`contract-packs-v<version>` merged, or, while the packs CHANGELOG heading is a reopened `-SNAPSHOT` and no packs
   contract file changed since, the release it is unchanged since). ADR-0046 records it in its amendment of
-  2026-11-25, with three open review items. Until now a pre-release could bundle an unreleased contract.
+  2026-11-25; the operator accepted its three calls the same day (PR #653). Until now a pre-release could bundle an unreleased contract.
 - **Final releases.** A final service release refuses a packs contract release candidate, as it already refused a
   charter one.
 - **The workflow.** `service-release.yml` also checks that both contract releases are published with their assets

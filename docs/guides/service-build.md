@@ -580,7 +580,8 @@ Core's service pin fetches and verifies these assets by name.
    serves ([For contract consumers](/development/contract-consumers/)):
    - **The charter contract**, `info.version` of `contracts/charter/openapi.yaml`, released as
      `contract-charter-v<info.version>` with `charter-openapi.yaml` and its `.sha256`
-     ([Release a contract version](#release-a-contract-version)). A `-SNAPSHOT` is never bundled.
+     ([Release a contract version](#release-a-contract-version)). A `-SNAPSHOT` is never bundled, so every service
+     release ships its own contract release, even when nothing in the contract changed (operator ruling, 2026-11-25).
    - **The packs contract**, the top heading of `contracts/packs/CHANGELOG.md`, released as `contract-packs-v<version>`
      with `packs-contract.tar.gz` and its checksums
      ([Releasing the packs contract](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/packs/README.md#releasing-the-packs-contract)).
