@@ -212,7 +212,7 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     `remediate` no longer refuses every violation but the manifest gate's. A quoted number in a field the schema types
     `number` or `integer` (`"15"` where the field takes `15`), whose detail now ends `write 15 without quotes, or run
     pack-doctor remediate`, is repaired too: written plain in the work copy, after which the copy is judged again and
-    the pack refused, nothing written, when anything is left. The schema does not change and the service still
+    the pack refused, nothing written, when anything is left. The pack schemas do not change and the service still
     accepts only the number. The repairs are printed on the outcome lines, and, by operator ruling Q14 of the same day,
     listed in the report's new `repairs`.
     [Check packs](/guides/check-packs/#repair-a-pack) holds the detail.*

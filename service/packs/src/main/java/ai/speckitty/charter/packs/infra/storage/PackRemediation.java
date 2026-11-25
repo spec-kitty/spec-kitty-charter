@@ -125,7 +125,7 @@ public final class PackRemediation {
      *
      * @param file the pack-relative path of the file that held it
      * @param pointer the JSON pointer of the value, as the verdict's finding names it
-     * @param value the text that was inside the quotes
+     * @param value the scalar's value as the file held it, a string, now written as a number
      * @param integer whether the field is typed {@code integer}, else {@code number}
      */
     public record Repaired(String file, String pointer, String value, boolean integer) {
@@ -141,6 +141,9 @@ public final class PackRemediation {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(pointer, "pointer");
             Objects.requireNonNull(value, "value");
+            if (!pointer.startsWith("/")) {
+                throw new IllegalArgumentException("a repair is at a field, never a file's root: '" + pointer + "'");
+            }
         }
     }
 

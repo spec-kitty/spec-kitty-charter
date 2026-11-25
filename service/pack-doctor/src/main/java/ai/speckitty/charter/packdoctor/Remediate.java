@@ -109,7 +109,7 @@ final class Remediate {
      *
      * @param file the pack-relative path of the file that held it
      * @param pointer the JSON pointer of the value
-     * @param value the text that was inside the quotes
+     * @param value the scalar's value as the file held it, a string, now written as a number
      * @param integer whether the field is typed {@code integer}, else {@code number}
      */
     record Repaired(String file, String pointer, String value, boolean integer) {
@@ -125,6 +125,9 @@ final class Remediate {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(pointer, "pointer");
             Objects.requireNonNull(value, "value");
+            if (!pointer.startsWith("/")) {
+                throw new IllegalArgumentException("a repair is at a field, never a file's root: '" + pointer + "'");
+            }
         }
     }
 
@@ -241,8 +244,8 @@ final class Remediate {
 
     /** One repair: where the value lies, and what it is now. */
     static String line(Repaired repaired) {
-        String pointer = repaired.pointer();
-        return "repaired at " + repaired.file() + (pointer.isEmpty() ? "" : "#" + pointer) + ": \"" + repaired.value()
+        // A repair is always at a typed field, never a file's root, so its pointer is never empty (the report's ^/).
+        return "repaired at " + repaired.file() + "#" + repaired.pointer() + ": \"" + repaired.value()
                 + "\" is now " + (repaired.integer() ? "an integer" : "a number");
     }
 
