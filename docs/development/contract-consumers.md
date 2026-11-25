@@ -150,8 +150,8 @@ Pack authors and spec-kitty-open-packs validate against the **packs contract**, 
   has the commands, and how to run the classifier conformance cases against your own reader. Only candidates exist so
   far (`0.1.0-rc.1`, `0.1.0-rc.2`).
 - **Check packs with `pack-doctor`**, the pack checker attached to each service release, from the next one on, as
-  `pack-doctor-<version>.jar` (Java 25, no service needed); `service-v0.1.0-rc.3` carries it under its old name,
-  `pack-check-0.1.0-rc.3.jar`. It runs the checks a registration runs, in the same codes and words, against the packs
+  `pack-doctor-<version>.jar` (Java 25, no service needed); `service-v0.1.0-rc.3` carries the checker under its
+  former name, before the rename to pack-doctor. It runs the checks a registration runs, in the same codes and words, against the packs
   contract that service release bundles. [Check packs](/guides/check-packs/) shows how to download, verify and run it.
 - **Align to the latest charter.** spec-kitty-open-packs checks its packs with the `pack-doctor` CLI and aligns to the
   latest charter, `main`, without waiting for a release (operator ruling, 2026-11-25, #549). A pack author outside it
