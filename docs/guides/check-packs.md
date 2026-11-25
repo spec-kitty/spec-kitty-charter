@@ -65,8 +65,8 @@ tag and the jar's SHA-256, as you pin any other tool.
 
 - **`validate`** checks a set of packs and writes the report. Everything below is about it, except
   [Repair a pack](#repair-a-pack).
-- **`remediate`** repairs what can be repaired mechanically: a pack's manifest and the form of its files. See
-  [Repair a pack](#repair-a-pack).
+- **`remediate`** repairs what can be repaired mechanically: a pack's manifest, the form of its files, and a quoted
+  number in a number field. See [Repair a pack](#repair-a-pack).
 
 A command line with no command, such as the options alone, is a usage fault (`2`), except `--help`, which prints the
 usage and exits `0`.
@@ -238,12 +238,18 @@ For each pack, in the order given, it:
    that is not a directory is a usage fault (`2`).
 2. repairs a quoted number in a field the schema types `number` or `integer`: `input_per_1m_usd: "15"` becomes
    `input_per_1m_usd: 15`. This is the one fault of a file's content it repairs, the one whose detail ends `write 15
-   without quotes, or run pack-doctor remediate`. It writes the text inside the quotes without them, and step 3 puts
-   it in canonical form (`"1e-3"` ends as `0.001`). Only a value that, written plain, is a finite number of the field's
-   type is repaired; an `integer` field takes integers only, so `"1.5"` there is not. It then checks the pack again,
-   and refuses it, writing nothing, when anything is still wrong: a quoted value that is no such number (`"fifteen"`),
-   any other fault beside the quoted numbers, or a number the field's range refuses once it is plain (`"-15"` for a
-   price). A quoted string in a field typed `string` is never touched, even one that looks like a number.
+   without quotes, or run pack-doctor remediate`. It writes the value in place of the whole value as written: its
+   quotes, an escape (`"1\x35"`), a `!!str` tag, or a block scalar (`|-`); step 3 puts it in canonical form (`"1e-3"`
+   ends as `0.001`). Only a value that, written plain, is a finite number of the field's type is repaired; an
+   `integer` field takes integers only, so `"1.5"` there is not. It leaves a value with an anchor (`&price "15"`), and
+   every value in a file that uses an alias or holds more than one document. It then checks the pack again, and
+   refuses it, writing nothing, when anything is still wrong: a quoted value that is no such number (`"fifteen"`), a
+   value it left, any other fault beside the quoted numbers, or a number the field's range refuses once it is plain
+   (`"-15"` for a price). In that refusal a quoted number's detail ends `write 15 without quotes; remediate does once
+   the pack's other faults are fixed`, or, for a value it left, `; remediate cannot:` and why. A quoted string in a
+   field typed `string` is never touched, even one that looks like a number. A quoted number in `policy.yaml` is not
+   repaired: its fault is joined into the file's one detail, which has no pointer, and says `write 1 without quotes`
+   alone.
 3. rewrites each file the charter models in the round trip's canonical form. The meaning stays the same; comments,
    quoting, key order and line folding may change. A file the round trip refuses, such as one whose canonical form is
    past the size bound, cannot be rewritten: the pack is refused, each such file named on an indented
@@ -256,7 +262,8 @@ it on a directory a running service reads packs from.
 
 How it writes:
 
-- **In a copy.** It does its work in a copy under the Java temporary directory (`java.io.tmpdir`). A pack the copy
+- **In a copy.** It does its work in a copy under the Java temporary directory (`java.io.tmpdir`), each file of it
+  writable by you, so a read-only file is repaired and rewritten too and keeps its mode. A pack the copy
   equals byte for byte is `unchanged`, and nothing is written in or beside it, so a canonical pack needs no write
   access. A pack it rewrites is written to a hidden sibling, `.<pack>.remediate-<uuid>`, keeping the files' modes
   (a file the pack never had, such as a manifest it lacked, takes the mode of the directory it is in, without search
@@ -266,7 +273,8 @@ How it writes:
   a `pack-doctor: warning:` line on standard error names the copy, `.<pack>.aside-<uuid>`; delete it.
 - **A pack edited meanwhile** is not overwritten. The copy is the one thing `remediate` reads, and just before the pack
   is moved aside it is compared with the copy it was made from: a pack that changed meanwhile is `refused`, with
-  `the pack changed during remediation` on its line, nothing is written, and the edit stays. Run `remediate` again.
+  `the pack changed during remediation` on its line, nothing is written, and the edit stays. A file deleted before
+  its quoted numbers are repaired is refused the same way. Run `remediate` again.
 - **A pack root that is a link** is followed: the directory it resolves to is rewritten and swapped, and the link is
   kept.
 - **Not from inside the pack.** A pack that is, or holds, the working directory is a usage fault (`2`): run
@@ -289,12 +297,16 @@ java -jar pack-doctor-<version>.jar remediate packs/built-in:built-in packs/org-
 
 It prints one line per pack, `<dir>: rewritten`, `<dir>: unchanged` or `<dir>: refused` followed by the faults or the
 files the round trip refused. A pack whose quoted numbers it repaired is `<dir>: rewritten, <n> quoted numbers
-repaired` (`1 quoted number` for one), followed by one line for each, in the order `validate` reports them:
+repaired` (`1 quoted number` for one), followed by one line for each, in the order `validate` reports them. The line
+ends `is now a number` in a `number` field and `is now an integer` in an `integer` field:
 
 ```text
-packs/org-base: rewritten, 1 quoted number repaired
+packs/org-base: rewritten, 2 quoted numbers repaired
   repaired at routing_catalogs/cost-led.routing-catalog.yaml#/models/0/cost/input_per_1m_usd: "15" is now a number
+  repaired at agent_profiles/human-operator.agent.yaml#/routing-priority: "40" is now an integer
 ```
+
+The repairs are in these lines only. The report that follows is `validate`'s, and its JSON has no field for them.
 
 Then it checks the same set with `validate --round-trip` and writes that report after the lines. It exits `0` when no pack was
 refused and the check finds no problem, `1` when a pack was refused or the check finds a problem, and `2` on a usage

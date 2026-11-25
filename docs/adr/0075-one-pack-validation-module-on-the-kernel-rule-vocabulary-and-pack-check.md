@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-23T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full)
+updated: 2026-11-25T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full); and a note on remediate (2026-11-25, #651)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -382,6 +382,9 @@ decision carries a note where it stands.
   - `pack-doctor remediate <dir>[:<level>][=<id>]...` (R-j): it refuses a pack with a fault it does not repair,
     writing nothing; it rewrites each modelled file in the round trip's canonical form and derives and stamps the
     manifest, through the storage edge's `PackRemediation`; then it validates the set with `--round-trip`.
+    *Amended 2026-11-25 (operator ruling of 2026-11-25,
+    [#651](https://github.com/spec-kitty/spec-kitty-charter/issues/651)): it also repairs a quoted number in a number
+    field, so that fault no longer refuses the pack; see ADR-0083 decision 11's amendment.*
   - A command line with no command word is a usage fault. The exit codes are unchanged.
 - **The manifest gate** (ruling R-b) now refuses a stale hash with `manifest_stale` in validate mode as in
   registration, and `--round-trip` no longer reports the same cause as `round_trip_red`
