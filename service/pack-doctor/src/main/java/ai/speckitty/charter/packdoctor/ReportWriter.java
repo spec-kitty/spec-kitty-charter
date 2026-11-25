@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Stream;
 import tools.jackson.databind.JsonNode;
@@ -53,6 +55,24 @@ final class ReportWriter {
      * @return the tree, in the report's key order
      */
     static ObjectNode tree(Parsed parsed, PackSetVerdict verdict, List<Problem> problems) {
+        return tree(parsed, verdict, problems, Optional.empty());
+    }
+
+    /**
+     * The report of a run, with {@code repairs} before the summary when remediate ran (operator ruling Q14 of
+     * 2026-11-25, #651): each item's keys in their order, an empty list when it repaired nothing.
+     *
+     * @param parsed the command line the check was given
+     * @param verdict the pack-set verdict
+     * @param problems its problems ({@link Problems#of})
+     * @param repairs remediate's repairs ({@link Remediate#reported}); empty for {@code validate}, which writes no key
+     * @return the tree, in the report's key order
+     */
+    static ObjectNode tree(
+            Parsed parsed,
+            PackSetVerdict verdict,
+            List<Problem> problems,
+            Optional<List<Map<String, String>>> repairs) {
         ObjectNode report = JSON.createObjectNode();
         report.putObject("tool").put("name", TOOL).put("version", version());
         ObjectNode inputs = report.putObject("inputs");
@@ -78,6 +98,13 @@ final class ReportWriter {
         }
         ArrayNode written = report.putArray("problems");
         problems.forEach(problem -> problem(written.addObject(), problem));
+        repairs.ifPresent(items -> {
+            ArrayNode listed = report.putArray("repairs");
+            items.forEach(item -> {
+                ObjectNode node = listed.addObject();
+                item.forEach(node::put);
+            });
+        });
         report.putObject("summary")
                 .put("packs", verdict.packs().size())
                 .put("violations", Problems.violations(verdict))

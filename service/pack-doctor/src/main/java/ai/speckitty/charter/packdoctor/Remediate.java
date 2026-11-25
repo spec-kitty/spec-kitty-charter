@@ -5,8 +5,11 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packvalidation.set.PackSetEntry;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -40,6 +43,44 @@ import java.util.TreeMap;
 final class Remediate {
 
     private Remediate() {}
+
+    /**
+     * What a run of {@code remediate} did: whether a pack was refused, and each quoted number written plain, which the
+     * report lists as its {@code repairs} (operator ruling Q14 of 2026-11-25, #651).
+     *
+     * @param refused whether any pack was refused
+     * @param repairs the quoted numbers written plain, per pack in the order given, each pack's in its lines' order
+     */
+    record Done(boolean refused, List<Listed> repairs) {
+        /**
+         * Copies the list.
+         *
+         * @param refused whether a pack was refused
+         * @param repairs the repairs
+         */
+        Done {
+            repairs = List.copyOf(repairs);
+        }
+    }
+
+    /**
+     * One quoted number written plain, with the pack it is in.
+     *
+     * @param pack the pack's id, the name the report's pack list gives it
+     * @param repaired the repair
+     */
+    record Listed(String pack, Repaired repaired) {
+        /**
+         * Checks the fields.
+         *
+         * @param pack the pack
+         * @param repaired the repair
+         */
+        Listed {
+            Objects.requireNonNull(pack, "pack");
+            Objects.requireNonNull(repaired, "repaired");
+        }
+    }
 
     /** What remediating one pack did, as the remediation answers it. */
     sealed interface Result permits Rewritten, Unchanged, Refused, NotRoundTripped {}
@@ -150,17 +191,21 @@ final class Remediate {
      * @param repair the remediation
      * @param out where the outcomes go
      * @param err where a warning goes
-     * @return whether any pack was refused
+     * @return whether any pack was refused, and the quoted numbers written plain
      */
-    static boolean run(List<PackSetEntry> packs, Repair repair, PrintStream out, PrintStream err) {
+    static Done run(List<PackSetEntry> packs, Repair repair, PrintStream out, PrintStream err) {
         Objects.requireNonNull(repair, "repair");
         boolean refused = false;
+        List<Listed> listed = new ArrayList<>();
         for (PackSetEntry pack : packs) {
             String locator = pack.root().locator();
             switch (repair.repair(pack.root())) {
                 case Rewritten rewritten -> {
                     out.println(locator + ": rewritten" + repairedCount(rewritten.repaired()));
-                    rewritten.repaired().forEach(repaired -> out.println("  " + line(repaired)));
+                    rewritten.repaired().forEach(repaired -> {
+                        out.println("  " + line(repaired));
+                        listed.add(new Listed(pack.name(), repaired));
+                    });
                     rewritten
                             .oldCopyLeft()
                             .ifPresent(copy -> err.println("pack-doctor: warning: " + locator
@@ -182,7 +227,7 @@ final class Remediate {
                 }
             }
         }
-        return refused;
+        return new Done(refused, listed);
     }
 
     /** What the outcome line adds for the quoted numbers repaired: nothing when there was none. */
@@ -199,6 +244,21 @@ final class Remediate {
         String pointer = repaired.pointer();
         return "repaired at " + repaired.file() + (pointer.isEmpty() ? "" : "#" + pointer) + ": \"" + repaired.value()
                 + "\" is now " + (repaired.integer() ? "an integer" : "a number");
+    }
+
+    /** Each repair of the run as the report's {@code repairs} item: pack, file, pointer, value and type. */
+    static List<Map<String, String>> reported(Done done) {
+        return done.repairs().stream()
+                .map(listed -> {
+                    Map<String, String> item = new LinkedHashMap<>();
+                    item.put("pack", listed.pack());
+                    item.put("file", listed.repaired().file());
+                    item.put("pointer", listed.repaired().pointer());
+                    item.put("value", listed.repaired().value());
+                    item.put("type", listed.repaired().integer() ? "integer" : "number");
+                    return item;
+                })
+                .toList();
     }
 
     /** One fault: its code, where it lies, and its detail. */

@@ -333,7 +333,8 @@ final class QuotedNumbers {
         /** The span of a scalar whose finding is the fault worded for its value, with no anchor. */
         static Optional<Span> of(String text, String pointer, ScalarEvent scalar, Reason finding) {
             // A plain scalar with no tag is read by its form, so it is no string the reader holds there.
-            boolean readAsText = scalar.getScalarStyle() != ScalarStyle.PLAIN || scalar.getTag().isPresent();
+            boolean readAsText = scalar.getScalarStyle() != ScalarStyle.PLAIN
+                    || scalar.getTag().isPresent();
             if (!readAsText
                     || scalar.getAnchor().isPresent()
                     || scalar.getStartMark().isEmpty()

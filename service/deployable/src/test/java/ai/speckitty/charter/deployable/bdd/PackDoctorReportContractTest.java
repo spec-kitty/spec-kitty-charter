@@ -890,7 +890,9 @@ class PackDoctorReportContractTest {
             Run lines = run((out, err) -> PackDoctorMain.run(args, out, err));
             String out = lines.out();
             int report = out.indexOf("{\n");
-            assertThat(report).as("a report after the outcome lines: %s %s", out, lines.err()).isNotNegative();
+            assertThat(report)
+                    .as("a report after the outcome lines: %s %s", out, lines.err())
+                    .isNotNegative();
             return new Run(lines.exit(), out.substring(report), lines.err());
         }
 
@@ -910,7 +912,9 @@ class PackDoctorReportContractTest {
                             + "\"pointer\":\"/models/0/cost/input_per_1m_usd\",\"value\":\"15\",\"type\":\"number\"}]");
             List<String> keys = new ArrayList<>();
             run.report().propertyNames().forEach(keys::add);
-            assertThat(keys).as("repairs sits before the summary").containsSubsequence("problems", "repairs", "summary");
+            assertThat(keys)
+                    .as("repairs sits before the summary")
+                    .containsSubsequence("problems", "repairs", "summary");
         }
 
         @Test
@@ -939,15 +943,17 @@ class PackDoctorReportContractTest {
             Path[] packs = quoted();
             JsonNode tree = remediate(packs).report();
 
-            JsonNode fromYaml = JSON.valueToTree(
-                    new Load(LoadSettings.builder().build()).loadFromString(YamlReport.write(tree)));
+            JsonNode fromYaml =
+                    JSON.valueToTree(new Load(LoadSettings.builder().build()).loadFromString(YamlReport.write(tree)));
             JsonNode fromXml = XmlReport.read(XmlReport.write(tree));
 
             for (JsonNode each : List.of(fromYaml, fromXml)) {
                 assertThat(contract.schemaViolations(SCHEMA, each)).isEmpty();
                 assertThat(JSON.writeValueAsString(each)).isEqualTo(JSON.writeValueAsString(tree));
             }
-            assertThat(XmlReport.write(tree)).contains("<repairs type=\"array\">").contains("<repair>");
+            assertThat(XmlReport.write(tree))
+                    .contains("<repairs type=\"array\">")
+                    .contains("<repair>");
         }
     }
 }
