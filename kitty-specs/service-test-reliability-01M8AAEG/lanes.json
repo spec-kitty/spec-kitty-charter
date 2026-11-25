@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "mission_slug": "service-test-reliability-01M8AAEG",
+  "mission_id": "01M8AAEGAWWX40BC7NQ6GAZVQ2",
+  "mission_branch": "kitty/mission-service-test-reliability-01M8AAEG",
+  "target_branch": "test/659-state-waits-and-main-hooks",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadFixture.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadOperationBudgetTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/OfferingReadServiceCacheWiringTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/archfixtures/StaticCounterFixture.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/metering/WorkMeter.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/metering/WorkUnit.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/metering/package-info.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/metering/WorkMeterTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/CacheWork.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/CompositionFactsCache.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ReadWork.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/WorkMeter.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StoreRead.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StoreWork.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositionFactsCacheTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/OneReadRegistrationTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/OneReadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackReadingTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ReadCounters.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ReadoutFactsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreReadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/RegistrationWiringStagingTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackRegistrationSteps.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RegistrationJobs.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ConsistentReadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationJobsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationJobsUploadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RemovalConcurrencyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ChunkedArchiveBodyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/PackSourceRegistrationTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/SlowUploadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/StorageRoomAdmissionTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/StreamedUploadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/GitSourceFetcherTest.java",
+        "service/packs/src/testFixtures/java/ai/speckitty/charter/packs/fixtures/HeldRoom.java",
+        "service/packs/src/testFixtures/java/ai/speckitty/charter/testfixtures/Await.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/RegistrationWiring.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureQueries.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/RegistryWriteLock.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackCommitStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureQueriesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewGovernanceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewHeldWinnersTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewMergedTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CommitStores.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StoreSeams.java",
+        "service/packs/src/testFixtures/java/ai/speckitty/charter/packs/fixtures/ClosureViews.java",
+        "service/packs/src/testFixtures/java/ai/speckitty/charter/packs/fixtures/CompositionFacts.java",
+        "service/packs/src/testFixtures/java/ai/speckitty/charter/packs/infra/storage/CommitStores.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/registration/whole-pack-registration.feature",
+        "docs/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check.md",
+        "docs/changelog/2026-11-25-service-tests-wait-for-states.md",
+        "docs/development/notes/pack-code-unification.md",
+        "docs/plans/codebase-health-2026-11-25.md"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-c"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "kitty-specs/service-test-reliability-01M8AAEG/quickstart.md",
+        "kitty-specs/service-test-reliability-01M8AAEG/research.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-11-25T22:15:18.075383+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP05"
+  ],
+  "planning_commit_sha": "6da6cfaced0df3b1bb211e7a52d0b03bd323c6e0"
+}
