@@ -27,6 +27,9 @@
       "last_event_id": "01M8ACJ1622696BBMWV01GDYJ0",
       "last_transition_at": "2026-11-25T22:17:28.002367+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP01 is PR #665 (refactor/637-pack-graph), built and reviewed before the lane worktrees existed"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "subtasks": {
