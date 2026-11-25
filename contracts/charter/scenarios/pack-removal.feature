@@ -30,7 +30,7 @@ Feature: One artifact or one registered relationship is removed from a pack
   author wrote. A refused DELETE changes nothing (FR-007). Both answer 428 without If-Match and 412 with a stale one.
   PR A is strict: a removal that leaves a closure unable to compose, or breaking a relation rule, is refused 422.
   It also holds one per-file write (#654): a directive PUT refused because the pack it would leave does not revalidate
-  lists each violation at its file and the RFC 6901 pointer into it, as a removal refused that way does.
+  lists each violation at its file and the RFC 6901 pointer into it, as a registration lists it.
 
   Background:
     Given registration is switched on
