@@ -2,8 +2,8 @@
 title: "ADR-0083: One answer on every surface: preset items, stale manifests and the pack-doctor CLI"
 description: "Registration and pack-doctor refuse an unheld or undeclared preset item and a stale manifest hash alike; pack-check becomes pack-doctor; #154 lands whole."
 doc_status: active
-updated: 2026-11-23T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-25T00:00:00Z
+decision_status: Accepted, with an amendment of decision 11 (2026-11-25, #651)
 decision_date: '2026-11-22'
 type: ADR
 kind: ADR
@@ -207,6 +207,14 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
     nothing is written (Tier R review B4). Each pack's outcome is `rewritten`, `unchanged` or `refused`; then
     `remediate` runs `validate --round-trip` over the same set. It is `PackRemediation`, a facade at the storage edge
     (`packs.infra.storage`) that composes the existing writer and stamp, judges nothing new, and takes no lock.
+
+    *Amended 2026-11-25 (operator ruling of 2026-11-25, [#651](https://github.com/spec-kitty/spec-kitty-charter/issues/651)):
+    `remediate` no longer refuses every violation but the manifest gate's. A quoted number in a field the schema types
+    `number` or `integer` (`"15"` where the field takes `15`), whose detail now ends `write 15 without quotes, or run
+    pack-doctor remediate`, is repaired too: written plain in the work copy, after which the copy is judged again and
+    the pack refused, nothing written, when anything is left. The schema does not change and the service still
+    accepts only the number. The repairs are printed on the outcome lines only; the report's JSON is unchanged.
+    [Check packs](/guides/check-packs/#repair-a-pack) holds the detail.*
     - **Staging.** The work is done in a copy under the JVM's temporary directory. A copy equal to the pack, byte for
       byte, is `unchanged`, and nothing is written in or beside the pack, so a canonical pack needs no write access.
       Otherwise the copy is written to a hidden sibling, `.<pack>.remediate-<uuid>`, with the pack's file modes; the pack

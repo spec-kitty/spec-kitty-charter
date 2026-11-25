@@ -6,4 +6,9 @@
   pack-doctor remediate` (`must be an integer` in an integer field). Only a value that, written plain, is a finite
   number of the field's type gets the fix (an integer field takes integers only); any other value keeps
   `<file>: '<field>' must be a number`. The registration, every write and `pack-doctor validate` give the same detail
-  (#651). Detail text only; no code, schema or accepted shape changes.
+  (#651), and a composing read that refuses the pack as `pack_unreadable` carries it in its detail too: `the file
+  <file> of <pack> cannot be read: '<field>': "15" must be a number: write 15 without quotes, or run pack-doctor
+  remediate`. A file that is not `.yaml` (a Markdown file's frontmatter, say) keeps the plain text, and a quoted
+  number in `policy.yaml`, whose faults join into one detail with no pointer, says `write 15 without quotes` without
+  the remediate clause. Detail text only; no code, schema or accepted shape changes. `pack-doctor remediate` prints
+  its repairs on its own outcome lines; `PackDoctorReport` is unchanged.
