@@ -188,6 +188,14 @@ class ArgumentsTest {
                     .contains("pack-doctor remediate <dir>[:<level>][=<id>] ...");
         }
 
+        /** #651: remediate repairs a quoted number too, and the usage says so. */
+        @Test
+        void theUsageSaysRemediateRepairsQuotedNumbers() {
+            assertThat(Arguments.USAGE)
+                    .contains("remediate                write each quoted number in a number field plain, rewrite each"
+                            + " pack in");
+        }
+
         /** Tier R N1: under the POSIX locale Java reads file names as ASCII; the usage says to run under UTF-8. */
         @Test
         void theUsageStatesTheUtf8LocaleItNeeds() {

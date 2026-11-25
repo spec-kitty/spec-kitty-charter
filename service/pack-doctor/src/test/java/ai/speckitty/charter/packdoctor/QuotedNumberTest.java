@@ -118,7 +118,12 @@ class QuotedNumberTest {
 
     /** Replaces the one occurrence of {@code from} in the org pack's {@code file}. */
     private static void edit(Path packs, String file, String from, String to) throws IOException {
-        Path path = packs.resolve(ExamplePacks.ORG).resolve(file);
+        edit(packs, ExamplePacks.ORG, file, from, to);
+    }
+
+    /** Replaces the one occurrence of {@code from} in {@code pack}'s {@code file}. */
+    private static void edit(Path packs, String pack, String file, String from, String to) throws IOException {
+        Path path = packs.resolve(pack).resolve(file);
         String text = Files.readString(path, StandardCharsets.UTF_8);
         assertThat(text).as("the fixture holds %s once", from).containsOnlyOnce(from);
         Files.writeString(path, text.replace(from, to), StandardCharsets.UTF_8);
@@ -199,6 +204,30 @@ class QuotedNumberTest {
                 .contains("routing-priority: 40\n");
     }
 
+    @Test
+    void remediateRepairsATaggedOrEscapedStringAsItsValue() throws IOException {
+        Path packs = packs();
+        edit(packs, CATALOG, "input_per_1m_usd: 15\n", "input_per_1m_usd: !!str \"15\"\n");
+        edit(packs, CATALOG, "output_per_1m_usd: 75\n", "output_per_1m_usd: \"7\\x35\"\n");
+
+        Run run = validate(packs);
+        assertThat(run.violations())
+                .as(run.out())
+                .contains("artifact_schema_error " + PRICE + ": " + CATALOG
+                        + ": 'input_per_1m_usd': \"15\" must be a number: write 15 without quotes, or run pack-doctor"
+                        + " remediate");
+
+        run = remediate(packs);
+
+        assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.VALID);
+        assertThat(run.outcome())
+                .containsSubsequence(
+                        packs.resolve(ExamplePacks.ORG) + ": rewritten, 2 quoted numbers repaired",
+                        "  repaired at " + PRICE + ": \"15\" is now a number",
+                        "  repaired at " + CATALOG + "#/models/0/cost/output_per_1m_usd: \"75\" is now a number");
+        assertThat(cost(packs)).containsEntry("input_per_1m_usd", 15).containsEntry("output_per_1m_usd", 75);
+    }
+
     // --- not repaired -----------------------------------------------------------------------------------------------
 
     @Test
@@ -214,7 +243,8 @@ class QuotedNumberTest {
     }
 
     @Test
-    void aRepairableQuotedNumberBesideAnotherFaultIsRefusedAndNothingIsWritten() throws IOException {
+    void aRepairableQuotedNumberBesideAnotherFaultIsRefusedSaysRemediateRepairsItLaterAndNothingIsWritten()
+            throws IOException {
         Path packs = packs();
         edit(packs, CATALOG, "input_per_1m_usd: 15\n", "input_per_1m_usd: \"15\"\n");
         edit(packs, CATALOG, "output_per_1m_usd: 75\n", "output_per_1m_usd: \"fifteen\"\n");
@@ -223,11 +253,64 @@ class QuotedNumberTest {
         Run run = remediate(packs);
 
         assertThat(run.exit()).isEqualTo(PackDoctorMain.PROBLEMS);
-        assertThat(run.outcome()).contains(packs.resolve(ExamplePacks.ORG) + ": refused");
+        assertThat(run.outcome())
+                .contains(
+                        packs.resolve(ExamplePacks.ORG) + ": refused",
+                        "  artifact_schema_error at " + PRICE + ": " + CATALOG + ": 'input_per_1m_usd': \"15\" must be"
+                                + " a number: write 15 without quotes; remediate does once the pack's other faults are"
+                                + " fixed");
         assertThat(String.join("\n", run.outcome()))
-                .contains("'input_per_1m_usd': \"15\" must be a number: write 15 without quotes")
-                .contains("'output_per_1m_usd' must be a number");
+                .contains("'output_per_1m_usd' must be a number")
+                .doesNotContain("run pack-doctor remediate");
         assertThat(treeHash(packs.resolve(ExamplePacks.ORG))).isEqualTo(before);
+    }
+
+    @Test
+    void aMixedRefusalAlsoNamesWhatTheUnquotedNumbersBreak() throws IOException {
+        Path packs = packs();
+        edit(packs, CATALOG, "input_per_1m_usd: 15\n", "input_per_1m_usd: \"-15\"\n");
+        edit(packs, CATALOG, "output_per_1m_usd: 75\n", "output_per_1m_usd: \"fifteen\"\n");
+
+        Run run = remediate(packs);
+
+        assertThat(run.exit()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(run.outcome())
+                .contains("  artifact_schema_error at " + PRICE + ": " + CATALOG + ": 'input_per_1m_usd' -15 is out of"
+                        + " range");
+        assertThat(String.join("\n", run.outcome()))
+                .contains("'output_per_1m_usd' must be a number")
+                .doesNotContain("\"-15\" must be a number");
+    }
+
+    @Test
+    void anAnchoredQuotedNumberIsRefusedSayingWhyRemediateCannotAndNothingIsWritten() throws IOException {
+        Path packs = packs();
+        edit(packs, CATALOG, "input_per_1m_usd: 15\n", "input_per_1m_usd: &price \"15\"\n");
+        SortedMap<String, String> before = treeHash(packs.resolve(ExamplePacks.ORG));
+
+        Run run = remediate(packs);
+
+        assertThat(run.exit()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(run.outcome())
+                .contains(
+                        packs.resolve(ExamplePacks.ORG) + ": refused",
+                        "  artifact_schema_error at " + PRICE + ": " + CATALOG + ": 'input_per_1m_usd': \"15\" must be"
+                                + " a number: write 15 without quotes; remediate cannot: it carries an anchor");
+        assertThat(treeHash(packs.resolve(ExamplePacks.ORG))).isEqualTo(before);
+    }
+
+    @Test
+    void aQuotedNumberInThePolicyFileSaysHowToFixItButNotRemediate() throws IOException {
+        Path packs = packs();
+        edit(packs, ExamplePacks.BUILT_IN, "policy.yaml", "schema_version: 1\n", "schema_version: \"1\"\n");
+
+        Run run = validate(packs);
+
+        assertThat(run.exit()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(String.join("\n", run.violations()))
+                .as(run.out())
+                .contains("\"1\" must be an integer: write 1 without quotes")
+                .doesNotContain("run pack-doctor remediate");
     }
 
     @Test
