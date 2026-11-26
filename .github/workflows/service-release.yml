@@ -169,7 +169,8 @@ jobs:
           (cd "$packs" && sha256sum --check --strict packs-contract.tar.gz.sha256)
           tar -xzf "$packs/packs-contract.tar.gz" -C "$packs/archive"
           (cd "$packs/archive" && sha256sum --check --strict --quiet ../packs-contract.sha256)
-          for file in file-kinds.yaml schemas conformance; do # the contract, as its CHANGELOG defines it
+          # The contract, as its CHANGELOG defines it: build-logic ContractReleaseGit.kt PACKS_CONTRACT_FILES.
+          for file in file-kinds.yaml schemas conformance; do
             diff -r "$packs/archive/packs-contract/$file" "contracts/packs/$file" \
               || fail "This commit's packs contract $file is not what $tag published"
           done

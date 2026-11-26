@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 class ReleaseGateTest {
 
+    private static final Set<String> NO_TAGS = Set.of();
+
     private static final String SNAPSHOT_ONLY = "# Changelog\n\nIntro.\n\n## 1.0.0-SNAPSHOT\n\n### Added\n\n- x\n";
 
     /** The gate with HEAD at no release tag, which is every case but the release commit itself. */
@@ -674,6 +676,85 @@ class ReleaseGateTest {
             assertThat(ReleaseGate.packsReleaseRefusal("contract-packs-v0.1.0", "# Changelog\n"))
                     .hasValueSatisfying(r -> assertThat(r.message())
                             .isEqualTo("contracts/packs/CHANGELOG.md has no version heading (## X.Y.Z)."));
+        }
+    }
+
+    /**
+     * Once {@code contract-packs-v<version>} is merged into HEAD, a change to a packs contract file under the released
+     * heading is refused until the {@code -SNAPSHOT} is reopened (#663), as the charter contract refuses any commit
+     * after its release. A released heading below the top without its merged tag fails closed.
+     */
+    @Nested
+    class PacksReleasedHeading {
+
+        private static final String RC2 = "contract-packs-v0.1.0-rc.2";
+        private static final String RC3 = "contract-packs-v0.1.0-rc.3";
+        private static final Set<String> BOTH = Set.of(RC2, RC3);
+        private static final String CANDIDATE = "## 0.1.0-rc.3\n\n## 0.1.0-rc.2\n";
+
+        @Test
+        void aChangedPacksFileUnderAReleasedTaggedHeadingIsRefused() {
+            assertThat(ReleaseGate.packsChangelogRefusal(CANDIDATE, BOTH, Set.of(RC3)))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("The top heading 0.1.0-rc.3 of contracts/packs/CHANGELOG.md is released")
+                            .contains(RC3 + " is merged into HEAD")
+                            .contains("differ from that release")
+                            .endsWith("reopen ## 0.1.0-SNAPSHOT above ## 0.1.0-rc.3."));
+        }
+
+        @Test
+        void aReleasedTaggedHeadingWithTheReleasedFilesPasses() {
+            assertThat(ReleaseGate.packsChangelogRefusal(CANDIDATE, BOTH, NO_TAGS))
+                    .isEmpty();
+        }
+
+        @Test
+        void afterAFinalReleaseTheRefusalNamesTheNextSnapshotToOpen() {
+            assertThat(ReleaseGate.packsChangelogRefusal(
+                            "## 0.1.0\n\n## 0.1.0-rc.3\n",
+                            Set.of("contract-packs-v0.1.0", RC3),
+                            Set.of("contract-packs-v0.1.0")))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("contract-packs-v0.1.0 is merged into HEAD")
+                            .endsWith("open the next -SNAPSHOT above ## 0.1.0."));
+        }
+
+        @Test
+        void theReleasePullRequestPassesBeforeItsTagIsMerged() {
+            // The pending release: the heading is released and the files differ from the previous release, but no tag
+            // for the top heading is merged yet.
+            assertThat(ReleaseGate.packsChangelogRefusal(CANDIDATE, Set.of(RC2), Set.of(RC2)))
+                    .isEmpty();
+        }
+
+        @Test
+        void aCloneWithoutTheTagsFailsClosed() {
+            // A clone without tags (git clone --no-tags) lists none merged: the released rc.2 below the top names the
+            // missing tag rather than letting a changed rc.3 pass unjudged.
+            assertThat(ReleaseGate.packsChangelogRefusal(CANDIDATE, NO_TAGS, Set.of(RC3)))
+                    .hasValueSatisfying(r -> assertThat(r.message())
+                            .contains("The released heading ## 0.1.0-rc.2 of contracts/packs/CHANGELOG.md has no " + RC2
+                                    + " tag merged into HEAD")
+                            .contains("git fetch --tags"));
+        }
+
+        @Test
+        void aSnapshotHeadingIsNeverFrozen() {
+            // A -SNAPSHOT is never published: neither a stray tag of its name nor the release below it freezes it.
+            String snapshotTag = "contract-packs-v0.1.0-SNAPSHOT";
+            assertThat(ReleaseGate.packsChangelogRefusal(
+                            "## 0.1.0-SNAPSHOT\n\n" + CANDIDATE,
+                            Set.of(RC2, RC3, snapshotTag),
+                            Set.of(RC3, snapshotTag)))
+                    .isEmpty();
+        }
+
+        @Test
+        void theTopTagIsNamedByTheGatesOwnHeadingGrammar() {
+            // A heading the gate reads as 0.1.0-rc.3 ("v" prefix, brackets, a date) names contract-packs-v0.1.0-rc.3.
+            assertThat(ReleaseGate.packsChangelogRefusal(
+                            "## [v0.1.0-rc.3] - 2026-12-01\n\n## 0.1.0-rc.2\n", BOTH, Set.of(RC3)))
+                    .hasValueSatisfying(r -> assertThat(r.message()).contains(RC3 + " is merged into HEAD"));
         }
     }
 
