@@ -1,13 +1,13 @@
 {
-  "event_count": 33,
-  "last_event_id": "01M8CJXWRMB9Q0X8CVNH1X2TN1",
-  "materialized_at": "2026-11-26T18:47:16.839841+00:00",
+  "event_count": 38,
+  "last_event_id": "01M8CND4SCE284M2Q21W84B2QT",
+  "materialized_at": "2026-11-26T19:30:33.695887+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 3,
+    "approved": 4,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 1,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -125,26 +125,50 @@
     },
     "WP04": {
       "actor": "claude",
+      "agent": "claude::reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "approved",
+      "last_event_id": "01M8CN9DF1A4SPYBD1R9HB6RPM",
+      "last_transition_at": "2026-11-26T19:28:31.713181+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP04 on lane-d (e52cd32ad): ComposedRelations (subject) and RelationRules on the walker via PackRulesets.relations() and relationFaults(); ImpactRelations and SpecializationCycleRule deleted; tests moved to domain/rules plus a rule-vs-edge-order case. The in-session adversarial review found no behaviour difference and 12 LOW/NIT findings, all folded in e52cd32ad, including ScopedPolicies moving into packs.domain and replacing PackMutabilityPolicy.scopedPolicies outright. verifyAll, check_docs, markdownlint and cspell green. Design note: all eight checks are OnClose over the subject, since an edge's placement (holderOf) is a closure fact. Out-of-map: PackRulesets, ClosureImpactCheck and the architecture page (WP03-owned); PackMutabilityPolicy, ClosureQueries and composition-and-activation-rules.md (WP01-owned); ScopedPolicies (new, no owner); the changelog fragment.",
+        "Review passed (reviewer-renata) on lane-d e52cd32ad (service/docs tree identical to 5a01fc756, the cherry-pick source, so the CLI's not_on_lane range warning is a rewrite artefact). Behaviour identity checked line by line against 9ccefaff7 ImpactRelations, SpecializationCycleRule and PackMutabilityPolicy.scopedPolicies: same codes, details, origins, packs named, finding order; edges collected first and policies read lazily as before, so exceptions keep their order; the walk adds no throw (all packs are roots of their own graph). B8/A15 kept in notPermitted; lockedStepEnhanced still shares EnhancementCompose.lockedTargets. ScopedPolicies.of/scoped return a new LinkedHashMap, so judgingOf's remove still works; ComposedRelations wraps its own copy unmodifiable and judgedWithout copies it. Callers checked: judgingOf, ancestorsJudging, policiesOver, ClosureQueries.policyOf, and ClosureImpactCheck.relationFaults on the write/registration judge and the census. All-OnClose is acceptable: a placement is a closure fact, the walker runs every check of a phase in declared order, and the empty-edges guard stays on the seven relation checks only. Moved test cases unchanged; theRuleOrderIsNotTheEdgeOrder tells rule order from edge order. check_docs all, markdownlint-cli2 0.18.1 and cspell 9.2.0 green on the changed docs (rerun); test-results show 0 failures (verifyAll itself not rerun, Gradle not allowed). WP commits signed; no model name or Co-Authored-By. Checklist 1-8 PASS. Coordination: out-of-map PackRulesets, ClosureImpactCheck, architecture page (WP03); PackMutabilityPolicy, composition-and-activation-rules.md (WP01); ClosureQueries and ScopedPolicies have no owner (the note says ClosureQueries is WP01's: NIT). LOW: the spec-kitty CLI commits after e52cd32ad are unsigned and need re-signing before landing. NITs: e52cd32ad's message cites pre-cherry-pick d3a536415; conflicting() keys a List.of pair where a record would read better. PRE-EXISTING, not WP04 (moved verbatim, RelationRules.java:99, was ImpactRelations.java:193): notPermitted passes PerPackPolicy.byPack().keySet() to levelIn, and byPack is Map.copyOf, whose order changes from one JVM run to the next (reproduced). When two packs tie on a target's level, setBy, the detail's 'by the pack X' and the second pack named can differ between runs. Fix outside this behaviour-identical WP (closure order, as lockedTargets does); the operator should file a follow-up."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/adr-0082-graph-walk-slices-01M8A867-coord/kitty-specs/adr-0082-graph-walk-slices-01M8A867/tasks/WP04-relations-phase/review-cycle-1.md",
+        "reference": "review-cycle://adr-0082-graph-walk-slices-01M8A867/WP04-relations-phase/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 25971,
+      "shell_pid_created_at": "1795720967.01",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude",
       "agent": "claude::java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude::java-jenny",
       "lane": "in_progress",
-      "last_event_id": "01M8CJXWRMB9Q0X8CVNH1X2TN1",
-      "last_transition_at": "2026-11-26T18:47:16.839841+00:00",
+      "last_event_id": "01M8CND4SCE284M2Q21W84B2QT",
+      "last_transition_at": "2026-11-26T19:30:33.695887+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
-      "shell_pid": 30640,
-      "shell_pid_created_at": "1795718827.48"
-    },
-    "WP05": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M8AA86JAKTQEQRS0BSMYFQVP",
-      "last_transition_at": "2026-11-25T21:37:08.682662+00:00"
+      "shell_pid": 31061,
+      "shell_pid_created_at": "1795721424.18"
     },
     "WP06": {
       "actor": "finalize-tasks",
