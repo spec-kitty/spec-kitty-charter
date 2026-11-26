@@ -2,7 +2,7 @@
 title: Architectural patterns applied
 description: How the charter service applies hexagonal, onion and screaming architecture - the layout, the pattern role of each concern, and a walk through Pack, Tactic and its steps.
 doc_status: active
-updated: 2026-11-23T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -311,11 +311,13 @@ generic functional interfaces such as `Predicate<T>`.
   `PACKS` mode, one phase: fallback profile, own role pins, pin conflicts, profile enhancements), run over
   `ownClosureOf(declaring)`; `references(..)` runs its three checks as three phases of the walker.
 - *Built (slice 4, #639):* `PackRulesets.relations(composedRelations)` hands out a `GraphCheck` (the `RELATIONS` mode,
-  one phase of eight whole-closure checks in the old order); `PackRulesets.relationFaults(packs, factsOf)` runs it over
-  a closure, every pack a root. `ComposedRelations` in `packs.domain` is the subject: the placed `enhances` and
-  `overrides` edges, the `specializes_from` graph, the enhances cycles computed once, and the policies scoped by
-  `ScopedPolicies`, which moved into `packs.domain` from `PackMutabilityPolicy`. `ImpactRelations` and
-  `SpecializationCycleRule` are deleted.
+  one phase of eight whole-closure checks in the old order). `ComposedRelations` in `packs.domain` is the subject: the
+  placed `enhances` and `overrides` edges, the `specializes_from` graph, the enhances cycles computed once, and the
+  policies scoped by `ScopedPolicies`, which moved into `packs.domain` from `PackMutabilityPolicy`. `ImpactRelations`
+  and `SpecializationCycleRule` are deleted. `PackRulesets.edgeIndex(merged)` hands out the edge-index phase over the
+  layer merge (`MergedRelations`: C21, the inherited lock, the re-pointed self-override, another pack's stray step
+  link), which a read runs alone (`edgeIndexFaults`), and `composedClosure(..)` the relations, edge-index and, for a
+  declaring pack, own-closure phases as one walker, which `ClosureImpactCheck` runs per closure.
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
 

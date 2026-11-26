@@ -420,7 +420,14 @@ from ready to held, is a breaking change of the contract.
   `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, bound by WP19.
 - `mission-types.feature`: the mission type, step and skeleton reads (#99, #100, #96), and the `DELETE` of a mission
   type with its step files and skeletons as one removal, refused `409` while an edge names one of its action nodes
-  (D10), but for its own step links and the scope edges from its own step actions, which go with it.
+  (D10), but for its own step links and the scope edges from its own step actions, which go with it. Another pack's
+  step link that names no step of the type refuses a read `500 pack_reference_artifact_missing`, with the violation
+  `mission_step_unlinked` (#639, ruling Q-C).
+- `registration/closure-faults.feature`: a registration names every fault of its closure in one refusal (#556), and
+  refuses each fault of the closure's layer merge with the code a read answers (#639, #667; rulings D2, Q-A, Q-B and
+  Q-C): a re-pointed self-override (`self_override`), a forbidden layer override (`override_not_permitted`) and another
+  pack's stray step link (`pack_reference_artifact_missing`), all `422`, each beside its passing twin; a relation fault
+  beside an edge-index fault is refused for the relation fault alone.
 - `effective-mission-types.feature`: the same mission type, step and skeleton reads under an activation (#99, FR-007):
   the layer-merge winner with the holding pack's skeletons and step files, links under the activation and an
   `artifact` link to the winner's pack read, and the refusals in order.
@@ -433,8 +440,9 @@ from ready to held, is a breaking change of the contract.
   `pack_sibling_conflict`, and two enhancers of one step with different ids compose.
 - `step-enhancement-compose.feature`: the two compose checks of a step enhancement (ADR-0066 decision 8, #438): its
   step held by a pack of the enhancing pack's `depends_on` closure (C37, `pack_reference_pack_missing` or
-  `pack_reference_artifact_missing`), and the lock a step inherits from its mission type (`422 override_not_permitted`
-  at registration and on the impact-checked writes, `500 pack_unreadable` on the reads), each beside its passing twin.
+  `pack_reference_artifact_missing`), and the lock a step inherits from its mission type (`override_not_permitted` on
+  every surface: `422` at registration and on the impact-checked writes, `500` on the reads, #639), each beside its
+  passing twin.
 - `prompt-fragment-refusals.feature`: a malformed step enhancement or prompt fragment, refused `prompt_fragment_invalid`
   at its file (a violation of a `422 validation_failed` registration, `500 pack_unreadable` on a read, and the top-level
   code of `putPackRelationship`'s `422`), each refusal beside its passing twin.

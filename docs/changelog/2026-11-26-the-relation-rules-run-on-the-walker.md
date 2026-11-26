@@ -35,7 +35,9 @@ audience:
   - the enhances cycles, computed once;
   - the closure's mutability policies, scoped by `ScopedPolicies`, which moved into `packs.domain` from
     `PackMutabilityPolicy`; the mutability check and the read side's locks call it there.
-- `PackRulesets.relationFaults(packs, factsOf)` runs the check over a closure; `ClosureImpactCheck` calls it.
+- `PackRulesets.relationFaults(packs, factsOf)` ran the check over a closure for `ClosureImpactCheck`; the edge-index
+  slice replaced it the same day with one walker per closure
+  ([The edge-index rules answer one code per fault](/changelog/2026-11-26-edge-index-refusal-codes/)).
 - `ImpactRelations` and `SpecializationCycleRule` are deleted. `ImpactRelations`' tests move to `packs.domain.rules`
   unchanged; `SpecializationCycleImpactTest` stays where it is, since it judges through registration. A new case pins
   that a rule's findings come in rule order, not in the order the edges are written.

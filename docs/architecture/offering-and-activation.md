@@ -2,7 +2,7 @@
 title: Offering and activation
 description: "The /offering tree, the activation document, its closure read, the per-artifact writes and their cascade, the two ways core builds one, and how each maps onto the service."
 doc_status: draft
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -513,9 +513,12 @@ counts (`StepHolding`, [DIV-243](/conformance/divergence-register/)).
 the context's `enhancements`); `ArtifactReference` stays activatable-only and `Urn` names a graph identity.
 
 **Refusals.** An unknown activation is `404 activation_not_found`. A closure that cannot compose or merge is `500` with
-its code (`pack_unreadable` for an override the level forbids, an override cycle, an unstable answer or an `overrides`
-edge that ends at its own source;
-`pack_sibling_conflict` for a step contest no entry settles), and the answer is never partial. The context adds the
+its code (`pack_unreadable` for an override cycle or an unstable answer; `pack_sibling_conflict` for a step contest no
+entry settles; and, with the code a registration of the same closure answers, every such fault in one refusal (#639,
+operator ruling D2): `override_not_permitted` for an override the level forbids (C21) or an enhancement of a step whose
+mission type is locked, `self_override` for an `overrides` edge the merge re-points to its own source, and
+`pack_reference_artifact_missing` with the violation `mission_step_unlinked` for another pack's step link that names no
+step of the type), and the answer is never partial. The context adds the
 `404`s of an unknown mission type or action. `stale_input` and
 `internal_error` may be retried. `getActivation` answers the same `500`s, because it too reads the closure, and also for a
 document that names a pack no longer configured; it serves a stale document unchanged only while the closure can be read

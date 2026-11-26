@@ -10,7 +10,7 @@
 # whose document holds the deny entry and no override is 409. Their titles say "regression control, green before".
 #
 # The merge refusal is the one case that is neither: the write consults the merged closure for a deny entry on a
-# required artifact, so a closure whose layer merge is refused (ADR-0063 D3) answers 500 pack_unreadable where #399
+# required artifact, so a closure whose layer merge is refused (ADR-0063 D3) answers 500 override_not_permitted where #399
 # answered 409 artifact_required. A deny entry on an artifact nothing requires never consults the merge.
 #
 # The fixture is one org pack, main. Its governing preset requires directives T and T2 and its policy locks LK. F
@@ -397,7 +397,8 @@ Feature: A deny entry on a required artifact is accepted when an active override
     ADR-0063 D3, C21; the write consults the merged closure for a deny entry on a required artifact only. core
     (built-in) locks LK, leaves OP open and has a governing preset requiring OP. The project pack proj replaces LK,
     which a locked artifact does not allow, so the layer merge of core and proj is refused. A PUT that denies OP, which
-    core requires, is therefore 500 pack_unreadable, naming LK, where #399 answered 409 artifact_required, and nothing
+    core requires, is therefore 500 override_not_permitted (#639, ruling Q-B), naming LK, where #399 answered 409
+    artifact_required, and nothing
     is stored. The control, in the same scenario, denies X, which nothing requires: the merge is not consulted, and the
     document is stored (201).
     Given the built-in pack "core" with the file "pack.yaml":
@@ -469,7 +470,7 @@ Feature: A deny entry on a required artifact is accepted when an active override
       {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "proj"}], "deactivated": {"directive": ["OP"]}}
       """
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
     And the field at "/detail" contains "directive:LK"
     When I GET "/activations/a-2"
     Then the response status is 404

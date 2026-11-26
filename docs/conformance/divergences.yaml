@@ -1079,10 +1079,11 @@
   service: >-
     A layer override is allowed only when the overridden artifact is `open`. The level is judged
     along the closure with the winning pack left out, so the losers' own files and any pack that
-    raised the level count, and a pack never blocks its own override. Otherwise the read refuses
-    `500 pack_unreadable`, naming the artifact, both packs and the level; it is not
-    `governance_policy_violation`, which ADR-0012 d9 names. Every write that builds the merge
-    answers it too (DIV-230).
+    raised the level count, and a pack never blocks its own override. Otherwise it is refused
+    `override_not_permitted`, naming the artifact, both packs and the level: `500` on a read and on
+    every activation write that builds the merge (DIV-230), `422` at registration and on the
+    impact-checked writes, every such override named (#639, operator rulings D2, Q-A and Q-B); it
+    is not `governance_policy_violation`, which ADR-0012 d9 names.
   rationale: >-
     Only an `open` artifact may be replaced by a later level (ADR-0012 d1). The contract answers
     a read that cannot merge with the composition's `500` codes, and a refusal of the closure is
@@ -1092,7 +1093,7 @@
   status: open
   since: 2026-11-08
   evidence:
-    - "charter: contracts/charter/scenarios/layer-merge.feature (A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served)"
+    - "charter: contracts/charter/scenarios/layer-merge.feature (A layer override the overridden artifact's level forbids is 500 override_not_permitted, and one of an open artifact is served)"
     - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java"
     - "corpus case: layer-override-mutability-gate"
 

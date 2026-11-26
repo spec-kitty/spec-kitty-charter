@@ -5,7 +5,7 @@
 # the same answer. The fixture packs are authored inline, per rule (plan.md, Fixtures).
 #
 # Scenarios: US3 AS1, the A1 union, US6 AS1 (the #357 settlement), US6 AS2, and the refusal of a layer override the
-# mutability level forbids (500 pack_unreadable, ADR-0063 D3, C21).
+# mutability level forbids (500 override_not_permitted, ADR-0063 D3, C21; #639, operator rulings D2 and Q-B).
 #
 # Steps these scenarios add to the vocabulary of README.md (WP25 binds them in EffectiveReadSteps):
 # - `When I GET "<path>" with If-None-Match the remembered header "ETag"` sends the `ETag` last remembered with
@@ -491,9 +491,9 @@ Feature: The layer merge decides which version of an artifact the effective read
       directive:A1
       """
 
-  Scenario: A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served
+  Scenario: A layer override the overridden artifact's level forbids is 500 override_not_permitted, and one of an open artifact is served
     FR-011, ADR-0063 D3, C21: core (built-in) locks LK and leaves OP open. The project pack proj replaces LK, which a
-    locked artifact does not allow, so the read of an activation over core and proj refuses 500 pack_unreadable,
+    locked artifact does not allow, so the read of an activation over core and proj refuses 500 override_not_permitted,
     naming the artifact, both packs and the level. The project pack proj-ok replaces the open OP: the control, an
     activation over core and proj-ok, answers 200 and lists OP with proj-ok's provenance in the same scenario, beside LK,
     which core's lock keeps in force whatever the activation selects. Both refused and served activations are stored
@@ -571,7 +571,7 @@ Feature: The layer merge decides which version of an artifact the effective read
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
     And the field at "/detail" contains "directive:LK"
     And the field at "/detail" contains "proj-pack"
     And the field at "/detail" contains "core-pack"
@@ -580,7 +580,7 @@ Feature: The layer merge decides which version of an artifact the effective read
     And the field at "/packs/1/name" is "core-pack"
     When I GET "/activations/a-1/skipped"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
     When I GET "/activations/a-2/artifacts?kind=directive&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
