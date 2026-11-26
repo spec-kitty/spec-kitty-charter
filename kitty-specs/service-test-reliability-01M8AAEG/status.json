@@ -1,7 +1,7 @@
 {
-  "event_count": 16,
-  "last_event_id": "01M8B81V57S1ABE5WHQJ3VVXAT",
-  "materialized_at": "2026-11-26T06:17:57.671115+00:00",
+  "event_count": 17,
+  "last_event_id": "01M8B828HYGQ670B1QR584ZKXQ",
+  "materialized_at": "2026-11-26T06:18:11.390935+00:00",
   "mission_number": "",
   "mission_slug": "service-test-reliability-01M8AAEG",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 2,
+    "in_review": 3,
     "planned": 2
   },
   "work_packages": {
@@ -76,22 +76,22 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M8B74WHE0CVRX3KZKTE5DXGW",
-      "last_transition_at": "2026-11-26T06:02:08.814687+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M8B828HYGQ670B1QR584ZKXQ",
+      "last_transition_at": "2026-11-26T06:18:11.390935+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-26T06:02:01Z – claude::java-jenny – shell_pid=495 – Suites on lane-c: 7389 tests, 1 red attributed to the first-pass closingTheJobs defect fixed by WP02 on lane-b (not retried). CommitStores stays public in src/test (PerArtifactImpactTest in packs.application uses it). Seams outside the F3/F12 scope recorded as Not done."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 495,
-      "shell_pid_created_at": "1795670383.67",
+      "role": "reviewer",
+      "shell_pid": 24875,
+      "shell_pid_created_at": "1795673855.14",
       "subtasks": {
         "T015": "done",
         "T016": "done",
