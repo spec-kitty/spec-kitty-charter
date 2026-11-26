@@ -13,8 +13,10 @@ import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
+import ai.speckitty.charter.testfixtures.Await;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
@@ -113,18 +115,13 @@ class RemovalConcurrencyTest {
                 .isFalse();
     }
 
-    /** Polls the lock until the other writer's thread is queued for it; false when it never is. */
+    /** Waits until the other writer's thread is queued for the lock; false when it never is within 10 s. */
     private static boolean awaitTheOtherWriterWaiting(RegistryWriteLock lock, AtomicReferenceArray<Thread> writers) {
         Thread self = Thread.currentThread();
-        Thread other = self.equals(writers.get(0)) ? writers.get(1) : writers.get(0);
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-        while (System.nanoTime() < deadline) {
-            if (other != null && lock.hasQueuedThread(other)) {
-                return true;
-            }
-            Thread.onSpinWait();
-        }
-        return false;
+        return Await.within(Duration.ofSeconds(10), () -> {
+            Thread other = self.equals(writers.get(0)) ? writers.get(1) : writers.get(0);
+            return other != null && lock.hasQueuedThread(other);
+        });
     }
 
     private static String dependsOnA() {

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import tools.jackson.databind.JsonNode;
@@ -222,7 +221,7 @@ public class PackRegistrationSteps {
 
     private void pollUntilEnded(String location) throws Exception {
         String path = belowBase(location);
-        await(() -> ended(path), "the registration did not end within " + WAIT);
+        Await.until("the registration to end within " + WAIT, () -> ended(path));
         String state = JSON.readTree(http.body()).path("state").asString();
         if (state.equals("refused")) {
             // A scenario that expected another end finds its reason here, not only "refused".
@@ -407,10 +406,10 @@ public class PackRegistrationSteps {
     }
 
     private void awaitFillersEnded() {
-        await(
+        Await.until(
+                "the filler registrations to end",
                 () -> fillers.stream()
-                        .allMatch(id -> jobs.status(id).map(this::ended).orElse(true)),
-                "the filler registrations did not end");
+                        .allMatch(id -> jobs.status(id).map(this::ended).orElse(true)));
         fillers.clear();
     }
 
@@ -419,10 +418,8 @@ public class PackRegistrationSteps {
     }
 
     private void awaitNoRunningJob() {
-        await(() -> jobs.owned().isEmpty(), "registration jobs of the scenario were still running when it ended");
-    }
-
-    private static void await(BooleanSupplier condition, String failure) {
-        Await.until(failure, condition);
+        Await.until(
+                "the scenario's registration jobs to end before it does",
+                () -> jobs.owned().isEmpty());
     }
 }

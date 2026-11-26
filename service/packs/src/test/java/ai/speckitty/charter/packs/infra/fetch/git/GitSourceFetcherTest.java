@@ -621,21 +621,30 @@ class GitSourceFetcherTest {
                 return fetcher.fetch(request(URL, REF, null), job);
             }));
         }
-        // Every fetch waits: inside the remote, held, or for a slot. A fetch past the limit would be inside the remote
-        // by now, so the count is read with all six settled, not after a pause.
+        // Two fetches are inside the remote, held, and the other four are parked in the fetcher's wait for a slot: past
+        // their address lookup, so a slot beyond the limit would have let a third into the remote by now.
         Await.until(
-                "the six fetches waiting, inside the remote or for a slot",
-                () -> inFlight.get() >= 2
+                "two fetches inside the remote and four parked waiting for a slot",
+                () -> inFlight.get() == 2
                         && fetching.size() == 6
                         && fetching.stream()
-                                .allMatch(thread -> thread.getState() == Thread.State.WAITING
-                                        || thread.getState() == Thread.State.TIMED_WAITING));
+                                        .filter(GitSourceFetcherTest::waitsForASlot)
+                                        .count()
+                                == 4);
         release.countDown();
 
         for (Future<Staged> one : done) {
             assertThat(one.get(60, TimeUnit.SECONDS).source()).containsEntry("commit", COMMIT);
         }
         assertThat(highest.get()).isEqualTo(2);
+    }
+
+    /** Whether the thread is parked in {@code GitSourceFetcher.acquireSlot}: past its lookup, waiting for a slot. */
+    private static boolean waitsForASlot(Thread thread) {
+        return thread.getState() == Thread.State.TIMED_WAITING
+                && Stream.of(thread.getStackTrace())
+                        .anyMatch(frame -> frame.getClassName().equals(GitSourceFetcher.class.getName())
+                                && frame.getMethodName().equals("acquireSlot"));
     }
 
     @Test

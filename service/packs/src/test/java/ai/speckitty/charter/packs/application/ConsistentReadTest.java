@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
@@ -407,6 +408,7 @@ class ConsistentReadTest {
         assertThat(generation.awaitIdle(java.time.Duration.ofMillis(20))).isFalse();
 
         Thread waiting = Thread.currentThread();
+        AtomicReference<Throwable> enderFailed = new AtomicReference<>();
         Thread ender = new Thread(() -> {
             // The swap ends once the test thread waits for it, so the wait is what sees it end.
             Await.until(
@@ -414,9 +416,12 @@ class ConsistentReadTest {
                     () -> waiting.getState() == Thread.State.TIMED_WAITING);
             generation.end("pack-a");
         });
+        ender.setUncaughtExceptionHandler((thread, failure) -> enderFailed.set(failure));
         ender.start();
 
-        assertThat(generation.awaitIdle(java.time.Duration.ofSeconds(10))).isTrue();
+        boolean idle = generation.awaitIdle(java.time.Duration.ofSeconds(10));
         ender.join();
+        assertThat(enderFailed.get()).as("the thread that ends the swap").isNull();
+        assertThat(idle).isTrue();
     }
 }

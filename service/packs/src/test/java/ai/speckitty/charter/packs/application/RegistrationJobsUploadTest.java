@@ -17,7 +17,6 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
 import ai.speckitty.charter.packs.application.RegistrationJobsTest.ManualClock;
 import ai.speckitty.charter.packs.application.RegistrationJobsTest.RecordingAudit;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
-import ai.speckitty.charter.testfixtures.Await;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -280,7 +279,7 @@ class RegistrationJobsUploadTest {
         reservation.start(directory -> {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "the test ends the job at once");
         });
-        awaitEnd(reservation);
+        RegistrationJobsTest.awaitEnded(reservation);
 
         assertThat(runAsked)
                 .as("a spooled archive is on disk already: the job asks what is left to write, for that archive")
@@ -340,12 +339,5 @@ class RegistrationJobsUploadTest {
 
     private static void assertThatCodeNothing(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
         org.assertj.core.api.Assertions.assertThatCode(call).doesNotThrowAnyException();
-    }
-
-    private static void awaitEnd(Reservation reservation) {
-        Await.until("the job to end", () -> {
-            State state = reservation.status().state();
-            return state == State.REFUSED || state == State.SUCCEEDED;
-        });
     }
 }
