@@ -3,6 +3,8 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ai.speckitty.charter.kernel.metering.WorkMeter;
+import ai.speckitty.charter.packs.application.CacheWork;
 import ai.speckitty.charter.packs.application.CompositionFactsCache;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +29,6 @@ class OfferingReadServiceCacheWiringTest {
     @Autowired
     MockMvc mvc;
 
-    @Autowired
-    CompositionFactsCache cache;
-
     private int read() throws Exception {
         return mvc.perform(get("/api/v1/offering")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + ActivationTestWiring.TOKEN))
@@ -40,22 +39,20 @@ class OfferingReadServiceCacheWiringTest {
 
     @Test
     void theWiredOfferingReadsTheFactsOfEachPackThroughTheSharedCache() throws Exception {
-        cache.clear();
-        long loads = cache.loads();
-        long hits = cache.hits();
+        WorkMeter.Measured<Integer> first = WorkMeter.measure(this::read);
+        WorkMeter.Measured<Integer> second = WorkMeter.measure(this::read);
 
-        assertThat(read()).isEqualTo(200);
-        long loadedByTheFirstRead = cache.loads() - loads;
-        long hitsOfTheFirstRead = cache.hits() - hits;
-        assertThat(read()).isEqualTo(200);
-
-        assertThat(loadedByTheFirstRead)
-                .as("the first read of the configured packs loads their facts from the store, through the cache")
+        assertThat(first.value()).isEqualTo(200);
+        assertThat(second.value()).isEqualTo(200);
+        long throughTheCache = first.work().of(CacheWork.LOAD) + first.work().of(CacheWork.HIT);
+        assertThat(throughTheCache)
+                .as("the first read takes the facts of the configured packs through the cache, loaded or kept")
                 .isPositive();
-        assertThat(hitsOfTheFirstRead).as("a cold cache answers nothing").isZero();
-        assertThat(cache.loads() - loads)
-                .as("the second read loads nothing more: the cache answers each pack")
-                .isEqualTo(loadedByTheFirstRead);
-        assertThat(cache.hits() - hits).as("and it answers once per pack").isEqualTo(loadedByTheFirstRead);
+        assertThat(second.work().of(CacheWork.LOAD))
+                .as("the second read loads nothing: the cache answers each pack")
+                .isZero();
+        assertThat(second.work().of(CacheWork.HIT))
+                .as("and it answers once per pack the first read took")
+                .isEqualTo(throughTheCache);
     }
 }

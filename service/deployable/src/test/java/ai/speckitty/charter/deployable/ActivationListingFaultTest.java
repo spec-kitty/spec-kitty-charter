@@ -9,8 +9,10 @@ import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,8 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -211,17 +213,25 @@ class ActivationListingFaultTest {
                 .contains(org.assertj.core.api.Assertions.tuple("registerPackFromArchive", "failed:internal_error"));
     }
 
-    private JsonNode awaitEnd(String statusUri) throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-        JsonNode status;
-        do {
-            Thread.sleep(50);
-            HttpResponse<String> answer = send(HttpRequest.newBuilder(
-                    URI.create(statusUri.startsWith("http") ? statusUri : "http://127.0.0.1:" + port + statusUri)));
-            status = JSON.readTree(answer.body());
-        } while (System.nanoTime() < deadline
-                && !List.of("succeeded", "refused")
-                        .contains(status.path("state").asString()));
-        return status;
+    private JsonNode awaitEnd(String statusUri) {
+        URI uri = URI.create(statusUri.startsWith("http") ? statusUri : "http://127.0.0.1:" + port + statusUri);
+        AtomicReference<JsonNode> last = new AtomicReference<>();
+        Await.until("the registration at " + statusUri + " to end", () -> {
+            JsonNode status = statusAt(uri);
+            last.set(status);
+            return List.of("succeeded", "refused").contains(status.path("state").asString());
+        });
+        return last.get();
+    }
+
+    private JsonNode statusAt(URI uri) {
+        try {
+            return JSON.readTree(send(HttpRequest.newBuilder(uri)).body());
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(interrupted);
+        }
     }
 }

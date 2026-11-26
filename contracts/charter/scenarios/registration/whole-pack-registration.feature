@@ -16,7 +16,7 @@
 #
 # Steps the serving WPs add (listed in scenarios/README.md, "Registration steps"): the archive steps (an archive is
 # built from the files named, as tar.gz unless a step says zip), the registration steps (poll the Location until the job
-# ends, hold and release the jobs at the RegistrationJobs seam, forget the ended jobs), and one source seam per kind (a
+# ends, hold and release the jobs at their storage-room check, forget the ended jobs), and one source seam per kind (a
 # stub https exchange, a local bare git repository, a configured filesystem root).
 
 @contract @registration
@@ -262,7 +262,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     And I poll the registration until it ends
     And I GET "/packs/acme"
     And I remember the ETag
-    And the registration jobs are held before they run
+    And the registration workers are busy
     And I PUT "/packs/acme" with the archive "next-version" and the remembered ETag
     Then the response status is 202
     When I remember the Location header
@@ -282,7 +282,7 @@ Feature: Registering a whole pack replaces the pack the service holds
 
   # bound by: WP16 (FR-024, the status lifecycle)
   Scenario: A registration is observed pending, running and succeeded, and its status is forgotten later
-    Given the registration jobs are held before they run
+    Given the registration workers are busy
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
     When I remember the Location header
@@ -972,7 +972,7 @@ Feature: Registering a whole pack replaces the pack the service holds
 
   # bound by: WP16 (spec edge case, ADR-0065 D8: two registrations run and eight wait; the next is refused with Retry-After)
   Scenario: A full registration queue answers 503 with Retry-After, and nothing is stored
-    Given the registration jobs are held before they run
+    Given the registration workers are busy
     And the registration queue is full
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 503
