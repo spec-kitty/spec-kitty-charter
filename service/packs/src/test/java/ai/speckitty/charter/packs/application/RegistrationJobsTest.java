@@ -434,6 +434,11 @@ class RegistrationJobsTest {
         assertThat(h.audited().getFirst().outcome()).isEqualTo("refused:registration_timed_out");
     }
 
+    /**
+     * A worker that takes a job the deadline ended meanwhile drops it before its work. The guards are {@code ended()} and
+     * the phase check of {@code markRunning()}; each covers for the other, so taking out either alone changes nothing
+     * observable (an equivalent mutant). This test fails when both are gone: the ended job then reaches its work.
+     */
     @Test
     void aWorkerThatTakesAJobEndedMeanwhileDropsItAndWritesNothing(@TempDir Path host) {
         Harness h = new Harness(host);
@@ -490,7 +495,7 @@ class RegistrationJobsTest {
             }
             return h.stage(h.pack("pack-x", "1.0.0")).stage(directory);
         });
-        Await.until("the state the test waits for", () -> inside.getCount() == 0);
+        Await.until("the stager entered", () -> inside.getCount() == 0);
 
         h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
         h.jobs.expireOverdue();
@@ -745,7 +750,7 @@ class RegistrationJobsTest {
         h.held.hold();
         Thread releaser = new Thread(() -> {
             Await.until(
-                    "the state the test waits for",
+                    "all four waiting jobs refused busy",
                     () -> waiting.stream()
                             .allMatch(reservation -> h.jobs.status(reservation.id())
                                     .map(Status::state)
@@ -781,7 +786,7 @@ class RegistrationJobsTest {
         Reservation job = h.jobs.reserve("pack-x", Preconditions.none(), ORIGIN_FOR_ORDER);
         Thread reader = new Thread(() -> {
             Await.until(
-                    "the state the test waits for",
+                    "the job seen ended",
                     () -> h.jobs.status(job.id())
                             .map(Status::state)
                             .filter(s -> s == State.SUCCEEDED || s == State.REFUSED)
@@ -1072,7 +1077,8 @@ class RegistrationJobsTest {
         }
 
         Status awaitEnd(Reservation reservation) {
-            return awaitEnded(reservation);
+            awaitEnded(reservation);
+            return status(reservation);
         }
 
         List<String> stagingEntries() {

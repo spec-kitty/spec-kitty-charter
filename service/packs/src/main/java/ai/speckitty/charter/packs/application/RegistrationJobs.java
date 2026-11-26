@@ -778,9 +778,10 @@ public final class RegistrationJobs implements AutoCloseable {
     }
 
     /**
-     * The statuses held now, ended ones included. It is the one observable of whether a request made a job at all: a job
-     * that ended has given back its slot and its staging directory, but its status is held for {@link #RETENTION}. Kept
-     * on purpose for the tests of refusals made before a job exists (operator ruling, #659).
+     * The statuses held now, ended ones included: the size of the retention that {@link #RETENTION} and
+     * {@link #MAX_RETAINED} bound. A job that ended has given back its slot and its staging directory but keeps its
+     * status here, so this count is also the one observable of whether a request made a job at all (kept by operator
+     * ruling, #659).
      *
      * @return how many
      */
