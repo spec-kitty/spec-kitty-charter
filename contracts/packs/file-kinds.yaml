@@ -35,14 +35,18 @@
 #                    graph fragment of the folded step contracts at the pack root is a `*/*.graph.yaml`
 #                    its retired rule refuses.
 #   ignored          The last-resort rules (`match`, `reason`, both required; any other key fails the table;
-#                    #451). A file that no `files`, `exclusions`, `retired` or `payloads` rule takes and that no
-#                    kind claims as a companion is excluded by the first `ignored` rule that matches it, with
-#                    that rule's reason: not held, not served, not refused, not digested. The rule matches
-#                    case-insensitively (`NOTES.MD` is Markdown too). It is a fallback and not an exclusion:
-#                    an exclusion glob over `**/*.md` would come before `retired` and `payloads`, and would
-#                    take the Markdown that rules and companions model. An `ignored` rule is never among the
-#                    rules the overlap check compares, and a root file that differs only in letter case from a
-#                    `files` or `retired` rule's file is refused by name before the fallback is consulted.
+#                    #451). A file that no `files`, `exclusions`, `retired` or `payloads` rule takes and that
+#                    no kind claims as a companion is excluded by the first `ignored` rule that matches it,
+#                    with that rule's reason: not held, not served, not refused, not digested. The rule
+#                    matches case-insensitively (`NOTES.MD` is Markdown too), but it does not take a file that
+#                    the `files`, `exclusions`, `retired` and `payloads` rules, run with path and globs in
+#                    lower case, map or retire (`core/toolguides/a.guide.MD` stays unmodelled), though it may still
+#                    take one that run excludes (`core/Assets/logos/README.md`; #645). It is a fallback and not an
+#                    exclusion: an exclusion glob over `**/*.md` would come before `retired` and `payloads`,
+#                    and would take the Markdown that rules and companions model. An `ignored` rule is never
+#                    among the rules the overlap check compares, and a root file that differs only in letter
+#                    case from a `files` or `retired` rule's file is refused by name before the fallback is
+#                    consulted.
 #   Any other top-level key fails when the table loads.
 #
 # Content form

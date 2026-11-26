@@ -22,8 +22,8 @@
 #                 a payload, which has no schema.
 #   content_form  for `mapped`: yaml, markdown or bytes.
 #
-# How a path is classified. Globs are matched case-sensitively, except where step 6 says otherwise; `*` matches within
-# one segment, `**/` matches zero or more whole segments, every other character is literal.
+# How a path is classified. Globs are matched case-sensitively, except where steps 3 and 4 say otherwise; `*` matches
+# within one segment, `**/` matches zero or more whole segments, every other character is literal.
 #   1. `files`, then `exclusions`, then `retired`: the first rule that matches, in table order, decides, except that a
 #      `retired` rule beats a `files` rule that also matches, unless an `exclusions` rule matches too:
 #      `core/mission_step_contract.graph.yaml` is retired, not a graph shard. Within `files` table order matters:
@@ -33,8 +33,10 @@
 #      `<name>`. A path `<pack>/<other>` where `<other>` equals `<name>` ignoring letter case is `retired` under that
 #      rule (`core/Readme.md` under `*/README.md`). Its violation code is `case_variant`, not `retired` (#624). The
 #      refusal's reason text is not part of the contract.
-#   4. `ignored`, matched ignoring letter case (`core/docs/NOTES.MD` is excluded), except for a path that a `files`,
-#      `retired` or `payloads` rule would take with path and glob both in lower case: that path is `unmodelled`.
+#   4. `ignored`, matched ignoring letter case (`core/docs/NOTES.MD` is excluded), except for a path that steps 1 and 2,
+#      run in full with path and globs in lower case, make `mapped` or `retired`: that path is `unmodelled`. A path
+#      whose lower-cased run ends at an `exclusions` rule (`core/Assets/logos/README.md`) falls through to `ignored`
+#      like any other (#645).
 #   5. Anything else is `unmodelled`.
 #
 cases:
@@ -124,10 +126,20 @@ cases:
   - {path: core/docs/notes.md, expect: excluded, rule: "**/*.md"}
   - {path: CHANGELOG.md, expect: excluded, rule: "**/*.md"}
   - {path: core/docs/NOTES.MD, expect: excluded, rule: "**/*.md"}
-  # ...but never a path that a files, retired or payloads rule takes in another letter case: that is unmodelled.
+  # ...but never a path that steps 1 and 2, run in lower case, map or retire: that is unmodelled.
   - {path: core/toolguides/a.guide.MD, expect: unmodelled}
   - {path: core/Mission-Steps/plan/specify.md, expect: unmodelled}
   - {path: core/Templates/spec-template.md, expect: unmodelled}
+  # A path whose lower-cased run ends at an exclusions rule is still excluded by the fallback: in that run the
+  # exclusion beats the payload or retired rule that also matches the path (#645). `**/` may match no segment.
+  - {path: core/missions/plan/Templates/README.md, expect: excluded, rule: "**/*.md"}
+  - {path: core/Assets/logos/README.md, expect: excluded, rule: "**/*.md"}
+  - {path: core/Missions/Mission-Steps/README.md, expect: excluded, rule: "**/*.md"}
+  # The lower-cased exclusion does not exclude by itself: a file that no ignored rule matches stays unmodelled.
+  - {path: core/Assets/.DS_Store, expect: unmodelled}
+  # In the lower-cased run a files rule still beats an exclusion that also matches: this is mapped in lower case
+  # (`*/missions/*/steps/*.prompt.md` before `*/missions/*/steps/.*`), so it is unmodelled, not excluded.
+  - {path: core/Missions/plan/steps/.x.prompt.md, expect: unmodelled}
 
   # unmodelled: no rule takes the file.
   - {path: core/notes.txt, expect: unmodelled}
