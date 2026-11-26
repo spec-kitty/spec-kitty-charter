@@ -88,7 +88,7 @@ class ClassifierConformanceTest {
                 assertThat(mapped.contentForm().token())
                         .as("content form of %s", c.path())
                         .isEqualTo(c.contentForm());
-                assertThat(decidingRule(c.path())).as("rule of %s", c.path()).isEqualTo(c.rule());
+                assertThat(decidingRule(c)).as("rule of %s", c.path()).isEqualTo(c.rule());
             }
             case "excluded" -> {
                 assertThat(actual).as(c.path()).isInstanceOf(Excluded.class);
@@ -137,8 +137,9 @@ class ClassifierConformanceTest {
 
     /**
      * The section and glob of the rule that decides {@code c}, or empty for an unmodelled case or a root case variant
-     * (refused as {@code case_variant}, never as {@code Retired}, so it covers no rule, as the class Javadoc says). The section is the one that holds the glob, so a letter-case variant decided in the
-     * lower-cased run (#661) covers its rule as an exact match does.
+     * (refused as {@code case_variant}, never as {@code Retired}, so it covers no rule, as the class Javadoc says). The
+     * section is the one that holds the glob, so a letter-case variant decided in the lower-cased run (#661) covers its
+     * rule as an exact match does.
      */
     private static Optional<String> coveredRule(Case c) {
         String rule = c.rule();
@@ -174,21 +175,22 @@ class ClassifierConformanceTest {
     }
 
     /**
-     * The first {@code files} rule that maps {@code path} in lower case, which decides its kind in any spelling (#661),
-     * or else the {@code payloads} rule.
+     * The rule that decides a mapped case, from the section its schema names: for a {@code files} kind (a schema), the
+     * first {@code files} rule that maps the path in lower case, which decides its kind in any spelling (#661); for a
+     * payload (no schema), the first {@code payloads} rule that matches the path as written.
      */
-    private static @Nullable String decidingRule(String path) {
-        Set<String> files = new LinkedHashSet<>();
-        KINDS.fileRules().forEach(r -> files.add(r.match()));
-        return Stream.of(
-                        KINDS.matchingRulesFolded(path).stream()
-                                .filter(files::contains)
-                                .toList(),
-                        KINDS.matchingPayloadRules(path))
-                .filter(rules -> !rules.isEmpty())
-                .map(rules -> rules.get(0))
-                .findFirst()
-                .orElse(null);
+    private static @Nullable String decidingRule(Case c) {
+        List<String> rules;
+        if (c.schema() != null) {
+            Set<String> files = new LinkedHashSet<>();
+            KINDS.fileRules().forEach(r -> files.add(r.match()));
+            rules = KINDS.matchingRulesFolded(c.path()).stream()
+                    .filter(files::contains)
+                    .toList();
+        } else {
+            rules = KINDS.matchingPayloadRules(c.path());
+        }
+        return rules.isEmpty() ? null : rules.get(0);
     }
 
     private static void assertNoMappedFields(Case c) {

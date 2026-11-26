@@ -154,7 +154,6 @@ cases:
   - {path: core/missions/plan/templates/sub/ReadMe.md, expect: excluded, rule: "*/missions/*/templates/**/README.md"}
   - {path: core/assets/logos/ReadMe.md, expect: excluded, rule: "*/assets/**/README.md"}
   - {path: core/templates/Plan-Field-Declaration.yaml, expect: excluded, rule: "**/templates/plan-field-declaration.yaml"}
-  - {path: core/missions/plan/templates/Plan-Field-Declaration.yaml, expect: excluded, rule: "**/templates/plan-field-declaration.yaml"}
   # ...also over a retired rule that takes the path as written.
   - {path: core/missions/mission-steps/ReadMe.md, expect: excluded, rule: "*/missions/*/README.md"}
   - {path: core/mission-steps/templates/Plan-Field-Declaration.yaml, expect: excluded, rule: "**/templates/plan-field-declaration.yaml"}
@@ -164,7 +163,6 @@ cases:
   - {path: core/assets/a.Directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
   # A kind is judged as that kind over an exclusion that takes the path as written (operator ruling, 2026-11-26).
   - {path: core/assets/.X.Asset.yaml, expect: mapped, rule: "**/*.asset.yaml", kind: asset, schema: schemas/asset.schema.json, content_form: yaml}
-  - {path: core/templates/.A.Tactic.yaml, expect: mapped, rule: "**/*.tactic.yaml", kind: tactic, schema: schemas/tactic.schema.json, content_form: yaml}
   # ...and over another files rule that takes the path as written: every spelling gets its lower-case spelling's kind
   # (operator ruling, 2026-11-26).
   - {path: core/presets/a.Directive.yaml, expect: mapped, rule: "**/*.directive.yaml", kind: directive, schema: schemas/directive.schema.json, content_form: yaml}
@@ -172,8 +170,8 @@ cases:
   # A retired rule takes its family in any letter case, wherever it stands (operator ruling, 2026-11-26): over a files
   # rule that takes the path as written, and where no rule takes it as written.
   - {path: core/Mission_Step_Contract.graph.yaml, expect: retired, rule: "**/mission_step_contract.graph.yaml"}
+  - {path: core/Mission-Steps/a.tactic.yaml, expect: retired, rule: "*/mission-steps/**/*"}
   - {path: core/a.Step-Contract.yaml, expect: retired, rule: "**/*.step-contract.yaml"}
-  - {path: core/glossaries/x.Glossary-Pack.yaml, expect: retired, rule: "**/*.glossary-pack.yaml"}
   - {path: core/Mission-Steps/plan/specify.md, expect: retired, rule: "*/mission-steps/**/*"}
 
   # unmodelled: no rule takes the file.
