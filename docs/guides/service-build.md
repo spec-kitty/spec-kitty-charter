@@ -46,8 +46,10 @@ How to build the charter service and run every check CI runs.
   (`.kittify/config.yaml` and the `qa-*` agent profiles), not for `verifyAll`. See [Syncing the packs](#syncing-the-packs).
 - **The full Git history and tags.** The breaking-change check compares the contract with its
   last released version (see [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)) and refuses a shallow clone. In a clone
-  you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
-  never does. `verifyAll` in any shallow clone needs `-PcontractBaseline=none`, because the build
+  you cannot deepen, pass `-PcontractBaseline=none` to skip that check on purpose; CI
+  refuses it. The same property skips the tag rules of the packs contract's CHANGELOG check
+  (`:contracts:checkPacksChangelog`, #663), which reads the `contract-packs-v*` tags, refuses a
+  shallow clone too, and refuses a released CHANGELOG heading whose tag is not merged into HEAD. `verifyAll` in any shallow clone needs `-PcontractBaseline=none`, because the build
   refuses a shallow clone before it looks at tags. In a full clone, the check needs the
   `contract-charter-v*` tag of its baseline, merged into HEAD: the newest release the CHANGELOG
   records with the contract's major version. A release whose tag is not yet merged (as on a

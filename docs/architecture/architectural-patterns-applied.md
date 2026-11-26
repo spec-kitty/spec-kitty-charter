@@ -194,6 +194,12 @@ time; the judging differs. A Visitor lets one walk serve every check.
   (`DEPENDS_ON`, `PARENT_PACK`, `OVERRIDES`, `ENHANCES`, `SPECIALIZES`, `REFERENCES`, `STEP_LINK`, `DELEGATES`). Rules
   use a pattern switch over `PackGraphNode`; there is no double dispatch. `PackGraph` absorbs the duplicate walks,
   the reverse index of `ClosureRoots`, the cycle and strongly-connected-group code, and keeps `EdgeIndex` as its index.
+- *Built (slice 2, #637):* `PackGraph` (`packs.domain`) holds the walks the application layer
+  wrote by hand: the edges a pack builds on, the descent along them, the composition closure, the packs building on a
+  pack, its direct dependents, `cyclesIn` (with the Tarjan pass), the `enhances` grounding, and the composition
+  resolver's `depends_on`-only closure, `parent_pack` line, dependency order and leftover cycles. No application class
+  walks the pack graph or reads a descriptor's edges to walk them (`PackGraphWalkBoundaryTest`). `EdgeIndex` is not yet
+  its index. The node types and the visitor driver are still proposed.
 
 Reference: Gamma, Helm, Johnson and Vlissides, *Design Patterns* (1994);
 [refactoring.guru: Visitor](https://refactoring.guru/design-patterns/visitor).
@@ -389,6 +395,8 @@ merged; otherwise they delete nothing and #618's ports are not built.
 2. **`PackGraph` and `Scope` in the domain.** Move the composition closure, the `ClosureRoots` index, and the cycle
    and strongly-connected-group code; delete the duplicate walks in `InboundReferences`, `PackMutabilityPolicy` and
    `RemovalDependents`.
+   *Built 2026-11-25 (#637): `PackGraph` holds the walks, the application's and the resolver's, and the old ones are
+   deleted. `Scope` and the node types are built in slice 3 (operator ruling D1, 2026-11-25).*
 3. **`ValidationWalker` and the factory.** `PackRulesets` becomes the factory; the own-closure rules move into
    `packs.domain.rules`; delete `ClosureWalk` and `OwnClosureWalk`.
 4. **Relations as rules.** The relation refusals and the edge-index refusals become rules of the relations phase;

@@ -286,9 +286,16 @@ class GuardedHttpsExchangeTest {
     }
 
     @Test
-    void aPolicyNeedsAPositiveCapBelowTwoGibibytes() {
-        assertThatThrownBy(() -> new BodyPolicy(0, ACCEPT)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new BodyPolicy(Integer.MAX_VALUE, ACCEPT))
-                .isInstanceOf(IllegalArgumentException.class);
+    void theCapIsTheSoftMaximumArrayLength() {
+        // Both bounds of the cap, probed at the edge (#658, planted break 5): the largest and the smallest are
+        // accepted, one more and one less are not.
+        assertThat(new BodyPolicy(Integer.MAX_VALUE - 8, ACCEPT).maxBytes()).isEqualTo(Integer.MAX_VALUE - 8L);
+        assertThatThrownBy(() -> new BodyPolicy(Integer.MAX_VALUE - 7L, ACCEPT))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("the body size cap must be positive and below 2 GiB");
+        assertThat(new BodyPolicy(1, ACCEPT).maxBytes()).isEqualTo(1L);
+        assertThatThrownBy(() -> new BodyPolicy(0, ACCEPT))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("the body size cap must be positive and below 2 GiB");
     }
 }

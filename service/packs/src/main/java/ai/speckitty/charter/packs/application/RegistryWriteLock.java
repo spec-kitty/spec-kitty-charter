@@ -97,8 +97,8 @@ public final class RegistryWriteLock {
     }
 
     /**
-     * Whether {@code thread} is queued for the lock, which is exact where a thread's state is not. For tests of this
-     * package, which wait until a writer is seen blocked on the lock.
+     * Whether {@code thread} is queued for the lock: the one exact sign that a thread waits on this lock. A thread's
+     * state cannot say so, since a thread in a timed wait may wait on anything.
      *
      * @param thread the thread asked about
      * @return true while it waits to take the lock

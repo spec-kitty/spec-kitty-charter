@@ -6,7 +6,9 @@ import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
+import ai.speckitty.charter.packs.fixtures.HeldRoom;
 import ai.speckitty.charter.packs.infra.api.RegistrationSwitch;
+import ai.speckitty.charter.testfixtures.Await;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -19,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import tools.jackson.databind.JsonNode;
@@ -49,7 +50,7 @@ public class PackRegistrationSteps {
     private final RegistrationSteps writes;
     private final RegistrationSwitch registration;
     private final RegistrationJobs jobs;
-    private final HoldableGate gate;
+    private final HeldRoom room;
     private final ScenarioClock clock;
     private final ScenarioArchives archives = new ScenarioArchives();
     private final List<String> fillers = new ArrayList<>();
@@ -64,7 +65,7 @@ public class PackRegistrationSteps {
      * @param writes the write steps, which remember the {@code ETag}
      * @param registration whether registration is switched on
      * @param jobs the registration jobs
-     * @param gate the latch seam of the jobs
+     * @param room the jobs' storage room, which holds a job where a scenario asks
      * @param clock the jobs' clock
      */
     public PackRegistrationSteps(
@@ -73,14 +74,14 @@ public class PackRegistrationSteps {
             RegistrationSteps writes,
             RegistrationSwitch registration,
             RegistrationJobs jobs,
-            HoldableGate gate,
+            HeldRoom room,
             ScenarioClock clock) {
         this.http = http;
         this.charter = charter;
         this.writes = writes;
         this.registration = registration;
         this.jobs = jobs;
-        this.gate = gate;
+        this.room = room;
         this.clock = clock;
     }
 
@@ -97,9 +98,10 @@ public class PackRegistrationSteps {
     @After(order = 20000)
     public void putTheSeamsBack() {
         releaseTheRegistry();
-        gate.releaseAll();
+        room.releaseAll();
         registration.set(false);
         awaitNoRunningJob();
+        room.requireNoHoldTimedOut();
     }
 
     // ---- the switches and the archives ----------------------------------------------------------------------------
@@ -220,28 +222,28 @@ public class PackRegistrationSteps {
 
     private void pollUntilEnded(String location) throws Exception {
         String path = belowBase(location);
-        long deadline = System.nanoTime() + WAIT.toNanos();
-        while (true) {
+        Await.until("the registration to end within " + WAIT, () -> ended(path));
+        String state = JSON.readTree(http.body()).path("state").asString();
+        if (state.equals("refused")) {
+            // A scenario that expected another end finds its reason here, not only "refused".
+            JsonNode problem = JSON.readTree(http.body()).path("problem");
+            LOG.log(
+                    System.Logger.Level.WARNING,
+                    "The registration at {0} ended refused: code {1}, detail {2}",
+                    location,
+                    problem.path("code").asString(),
+                    problem.path("detail").asString());
+        }
+    }
+
+    /** GETs the registration and answers whether it ended; the last answer stays the scenario's response. */
+    private boolean ended(String path) {
+        try {
             http.get(path);
             String state = JSON.readTree(http.body()).path("state").asString();
-            if (state.equals("refused")) {
-                // A scenario that expected another end finds its reason here, not only "refused".
-                JsonNode problem = JSON.readTree(http.body()).path("problem");
-                LOG.log(
-                        System.Logger.Level.WARNING,
-                        "The registration at {0} ended refused: code {1}, detail {2}",
-                        location,
-                        problem.path("code").asString(),
-                        problem.path("detail").asString());
-                return;
-            }
-            if (state.equals("succeeded")) {
-                return;
-            }
-            if (System.nanoTime() > deadline) {
-                throw new AssertionError("the registration did not end within " + WAIT + ": " + http.body());
-            }
-            Thread.sleep(10);
+            return state.equals("refused") || state.equals("succeeded");
+        } catch (Exception unreadable) {
+            throw new IllegalStateException("the registration at " + path + " could not be read", unreadable);
         }
     }
 
@@ -309,13 +311,25 @@ public class PackRegistrationSteps {
     // ---- the registration jobs seam
     // ----------------------------------------------------------------------------------------
 
-    @Given("the registration jobs are held before they run")
-    public void holdBeforeTheyRun() {
-        gate.holdBeforeRun();
+    /**
+     * Holds both workers running, each on a filler of its own, so every job started next is {@code pending}: the jobs'
+     * queue holds it as it holds any job while both workers are busy.
+     */
+    @Given("the registration workers are busy")
+    public void occupyTheWorkers() {
+        room.hold();
+        startFillers(RegistrationJobs.RUNNING_LIMIT);
+        room.awaitHeld(RegistrationJobs.RUNNING_LIMIT);
+        room.stopHolding();
     }
 
+    /** Two held jobs run and eight wait (ADR-0065 D8): fillers take every place the workers left. */
     @Given("the registration queue is full")
     public void queueFull() {
+        startFillers(FILLERS - fillers.size());
+    }
+
+    private void startFillers(int count) {
         RegistrationJobs.Origin origin = new RegistrationJobs.Origin(
                 "scenario-worktree",
                 AuditLog.Credential.WORKTREE_TOKEN,
@@ -323,8 +337,9 @@ public class PackRegistrationSteps {
                 "archive",
                 "",
                 ai.speckitty.charter.packs.application.PackRegistrationService.Mode.COMMIT);
-        for (int i = 0; i < FILLERS; i++) {
-            RegistrationJobs.Reservation filler = jobs.reserve("filler-" + i, Preconditions.none(), origin);
+        for (int i = 0; i < count; i++) {
+            RegistrationJobs.Reservation filler =
+                    jobs.reserve("filler-" + fillers.size(), Preconditions.none(), origin);
             filler.start(directory -> {
                 throw new ai.speckitty.charter.kernel.domain.CharterRefusal(
                         ai.speckitty.charter.kernel.domain.RefusalCode.VALIDATION_FAILED,
@@ -336,20 +351,22 @@ public class PackRegistrationSteps {
 
     @When("I release the held registration jobs")
     public void release() {
-        gate.releaseAll();
+        room.releaseAll();
         awaitFillersEnded();
     }
 
+    /** The fillers go, the scenario's job takes a worker, and it is held as it starts to run. */
     @When("I release the held registration jobs and hold them while they run")
     public void releaseAndHoldWhileRunning() {
-        gate.holdWhileRunning();
-        gate.releaseBeforeRun();
-        gate.awaitHeldWhileRunning();
+        room.hold();
+        room.release(RegistrationJobs.RUNNING_LIMIT);
+        awaitFillersEnded();
+        room.awaitHeld(1);
     }
 
     @When("the service forgets the ended registrations")
     public void forget() {
-        gate.releaseAll();
+        room.releaseAll();
         awaitNoRunningJob();
         clock.advance(RETENTION_PLUS);
     }
@@ -390,10 +407,10 @@ public class PackRegistrationSteps {
     }
 
     private void awaitFillersEnded() {
-        await(
+        Await.until(
+                "the filler registrations to end",
                 () -> fillers.stream()
-                        .allMatch(id -> jobs.status(id).map(this::ended).orElse(true)),
-                "the filler registrations did not end");
+                        .allMatch(id -> jobs.status(id).map(this::ended).orElse(true)));
         fillers.clear();
     }
 
@@ -402,21 +419,8 @@ public class PackRegistrationSteps {
     }
 
     private void awaitNoRunningJob() {
-        await(() -> jobs.owned().isEmpty(), "registration jobs of the scenario were still running when it ended");
-    }
-
-    private static void await(BooleanSupplier condition, String failure) {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT.toSeconds());
-        while (!condition.getAsBoolean()) {
-            if (System.nanoTime() > deadline) {
-                throw new AssertionError(failure);
-            }
-            try {
-                Thread.sleep(5);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-                throw new AssertionError(failure, interrupted);
-            }
-        }
+        Await.until(
+                "the scenario's registration jobs to end before it does",
+                () -> jobs.owned().isEmpty());
     }
 }

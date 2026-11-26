@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.rules.Precedence;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -154,15 +155,22 @@ public final class Wording {
                         .add(v);
             }
         }
-        List<SchemaViolation> kept = new ArrayList<>(violations);
-        for (List<SchemaViolation> branches : types.values()) {
-            if (branches.size() < 2 || branches.stream().allMatch(Wording::expectsNull)) {
-                continue;
+        Set<Spot> collapsed = new HashSet<>();
+        types.forEach((spot, branches) -> {
+            if (branches.size() >= 2 && !branches.stream().allMatch(Wording::expectsNull)) {
+                collapsed.add(spot);
             }
-            SchemaViolation first = branches.get(0);
-            kept.removeIf(v -> v.file().equals(first.file())
-                    && v.pointer().equals(first.pointer())
-                    && ("anyOf".equals(v.keyword()) || ("type".equals(v.keyword()) && expectsNull(v))));
+        });
+        if (collapsed.isEmpty()) {
+            return violations;
+        }
+        // One pass over the violations, so the cost is linear in their number, not in places times violations (#648).
+        List<SchemaViolation> kept = new ArrayList<>(violations.size());
+        for (SchemaViolation v : violations) {
+            boolean branch = "anyOf".equals(v.keyword()) || ("type".equals(v.keyword()) && expectsNull(v));
+            if (!branch || !collapsed.contains(new Spot(v.file(), v.pointer()))) {
+                kept.add(v);
+            }
         }
         return kept;
     }

@@ -148,7 +148,7 @@ class LinkedPackCommitTest {
         };
         Map<String, String> before = snapshot(target);
 
-        assertThatThrownBy(() -> new PackCommitStore(locations, strategy, recording)
+        assertThatThrownBy(() -> CommitStores.swappingWith(locations, strategy, recording)
                         .commit(PACK, null, toolguide("ripgrep"), SHARD))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));

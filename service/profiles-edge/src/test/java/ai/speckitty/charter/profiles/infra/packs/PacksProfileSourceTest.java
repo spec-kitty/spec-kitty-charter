@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.application.EdgeWords;
 import ai.speckitty.charter.profiles.application.GovernanceEntry;
@@ -97,7 +98,7 @@ class PacksProfileSourceTest {
         descriptors.put(name, descriptor);
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         Stream.concat(profiles.stream().map(id -> "agent_profile:" + id), held.stream())
                                 .toList(),

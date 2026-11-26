@@ -14,8 +14,10 @@ import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.fixtures.HeldRoom;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,15 +28,13 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
- * What an upload leaves on disk while its job is held or running is the owner's alone (plan, security squad 8): the
+ * What an upload leaves on disk while its job is held running is the owner's alone (plan, security squad 8): the
  * staging root the service created, the job's directory, the spooled archive and the directory the archive is
  * extracted into. Read as POSIX permissions, as the other staging tests do.
  */
@@ -50,11 +50,11 @@ class StagingPermissionsTest {
     @Test
     void theStagingRootTheJobDirectoryTheArchiveAndTheExtractDirectoryAreOwnerOnly() throws Exception {
         Path staging = host.resolve("spool").resolve("staging");
-        CountDownLatch held = new CountDownLatch(1);
-        CountDownLatch release = new CountDownLatch(1);
+        HeldRoom room = new HeldRoom(RegistrationJobs.StorageRoom.UNBOUNDED);
+        room.hold();
         List<Set<PosixFilePermission>> extractModes = new CopyOnWriteArrayList<>();
         PackArchiveReader reader = readerRecordingTheExtractMode(extractModes);
-        try (RegistrationJobs jobs = jobsStagingIn(staging, gateHeldUntilReleased(held, release))) {
+        try (RegistrationJobs jobs = jobsStagingIn(staging, room)) {
             MockMvc mvc = mvc(jobs, reader);
 
             mvc.perform(put("/api/v1/packs/acme")
@@ -62,9 +62,7 @@ class StagingPermissionsTest {
                             .content(GZIP))
                     .andExpect(status().isAccepted());
 
-            assertThat(held.await(10, TimeUnit.SECONDS))
-                    .as("the job reached its gate")
-                    .isTrue();
+            room.awaitHeld(1);
             assertThat(Files.getPosixFilePermissions(staging))
                     .as("the staging root the service created")
                     .isEqualTo(DIRECTORY);
@@ -82,16 +80,13 @@ class StagingPermissionsTest {
                     .as("the uploaded archive")
                     .isEqualTo(FILE);
 
-            release.countDown();
-            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while (extractModes.isEmpty() && System.nanoTime() < deadline) {
-                Thread.sleep(20);
-            }
+            room.releaseAll();
+            Await.until("the extract directory's mode", () -> !extractModes.isEmpty());
             assertThat(extractModes)
                     .as("the directory the archive is extracted into")
                     .containsExactly(DIRECTORY);
         } finally {
-            release.countDown();
+            room.releaseAll();
         }
     }
 
@@ -106,21 +101,7 @@ class StagingPermissionsTest {
         };
     }
 
-    private static RegistrationJobs.JobGate gateHeldUntilReleased(CountDownLatch held, CountDownLatch release) {
-        return new RegistrationJobs.JobGate() {
-            @Override
-            public void beforeRun(String id) {
-                held.countDown();
-                try {
-                    release.await(30, TimeUnit.SECONDS);
-                } catch (InterruptedException interrupted) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
-    }
-
-    private static RegistrationJobs jobsStagingIn(Path staging, RegistrationJobs.JobGate gate) {
+    private static RegistrationJobs jobsStagingIn(Path staging, RegistrationJobs.StorageRoom room) {
         return new RegistrationJobs(new RegistrationJobs.Dependencies(
                 Clock.systemUTC(),
                 mock(PackRegistrationService.class),
@@ -128,8 +109,7 @@ class StagingPermissionsTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 (AuditLog) entry -> {},
-                gate,
-                RegistrationJobs.StorageRoom.UNBOUNDED,
+                room,
                 new FileStagingArea(staging)));
     }
 

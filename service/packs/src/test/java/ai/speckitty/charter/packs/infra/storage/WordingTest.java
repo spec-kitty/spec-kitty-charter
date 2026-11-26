@@ -10,9 +10,11 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 /** One test per row of the plan's detail vocabulary, with the exact text each produces. */
@@ -552,6 +554,39 @@ class WordingTest {
                 .containsExactly(
                         "tactic.graph.yaml: '/a/b' breaks schema keyword 'type'",
                         "tactic.graph.yaml: 'a/b' must be a string");
+    }
+
+    @Test
+    void twentyThousandNullableViolationsAreWordedOnceEachInPlaceOrder() {
+        // #648: the collapse dropped the null branch of each place with one pass over every violation, so 20 000
+        // places took a square of passes. Each step breaks a nullable string as networknt reports
+        // it: an anyOf and one type violation per branch, listed in reverse so the order comes from the sort.
+        String tactic = "tactics/x.tactic.yaml";
+        List<SchemaViolation> violations = new ArrayList<>();
+        for (int i = 19_999; i >= 0; i--) {
+            List<String> pointer = List.of("steps", Integer.toString(i), "description");
+            violations.add(violation(tactic, pointer, "anyOf", null, "1", Map.of()));
+            violations.add(violation(tactic, pointer, "type", null, "1", Map.of("0", "integer", "1", "string")));
+            violations.add(violation(tactic, pointer, "type", null, "1", Map.of("0", "integer", "1", "null")));
+        }
+
+        List<Reason> findings = Wording.schemaFindings("qa", violations);
+
+        assertThat(findings).hasSize(20_000);
+        assertThat(findings.subList(0, 100))
+                .containsExactlyElementsOf(IntStream.range(0, 100)
+                        .mapToObj(i -> Findings.at(
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
+                                tactic,
+                                List.of("steps", Integer.toString(i), "description"),
+                                tactic + ": 'description' must be a string"))
+                        .toList());
+        assertThat(findings.get(19_999))
+                .isEqualTo(Findings.at(
+                        PackCodes.ARTIFACT_SCHEMA_ERROR,
+                        tactic,
+                        List.of("steps", "19999", "description"),
+                        tactic + ": 'description' must be a string"));
     }
 
     @Test

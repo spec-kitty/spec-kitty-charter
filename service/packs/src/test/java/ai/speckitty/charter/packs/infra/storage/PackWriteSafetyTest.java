@@ -62,7 +62,7 @@ class PackWriteSafetyTest {
         byte[] before = Files.readAllBytes(target);
         List<String> namesBefore = fileNames(pack);
         boolean[] tempSeen = {false};
-        FilesystemPackStore failing = new FilesystemPackStore(host, new YamlSerializationStrategy(), (temp, to) -> {
+        FilesystemPackStore failing = StoreSeams.renamingWith(host, new YamlSerializationStrategy(), (temp, to) -> {
             tempSeen[0] = Files.exists(temp);
             throw new IOException("injected failure");
         });

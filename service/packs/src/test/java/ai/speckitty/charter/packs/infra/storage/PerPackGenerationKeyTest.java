@@ -76,7 +76,7 @@ class PerPackGenerationKeyTest {
             YamlSerializationStrategy strategy = new YamlSerializationStrategy();
             RegistryWriteLock lock = new RegistryWriteLock(Duration.ofSeconds(5));
             service = new DomainRepositoryService(locations(packs), strategy);
-            commits = new PackCommitStore(locations(packs), strategy, lock, generation);
+            commits = CommitStores.over(locations(packs), strategy, lock, generation);
             writeStore = new CommitStorePackWriteStore(locations(packs), strategy, commits, lock, generation);
         }
     }

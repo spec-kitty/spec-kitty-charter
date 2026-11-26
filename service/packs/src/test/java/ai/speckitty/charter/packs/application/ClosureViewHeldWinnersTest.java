@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,7 +60,7 @@ class ClosureViewHeldWinnersTest {
     }
 
     private static PackCompositionFacts holding(MutabilityPolicySource policy, String... held) {
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 List.of(), List.of(held), List.of(), List.of(), policy, List.of(), List.of(), Map.of());
     }
 
@@ -88,7 +89,7 @@ class ClosureViewHeldWinnersTest {
         PackCatalogRepository catalog = () -> List.copyOf(configured);
         OfferingReadService offering =
                 new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
-        return new ClosureQueries(offering, catalog, read).allConfigured();
+        return new ClosureQueries(offering, catalog, read).snapshot(Optional.empty());
     }
 
     private static String described(MergedClosure.Winner winner) {

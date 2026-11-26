@@ -82,7 +82,10 @@ import java.util.stream.IntStream;
  *       version is the top heading of {@code contracts/packs/CHANGELOG.md}, and rules 1, 2 and 8 hold over that
  *       file. A tag pushed to publish it must be {@code contract-packs-v<version>} for a final release or a release
  *       candidate equal to that heading ({@link #packsReleaseRefusal}); {@code packs-contract-release.yml} publishes nothing when this
- *       refuses. The other rules read the charter contract only.</li>
+ *       refuses. Once that tag is merged into HEAD, a change to the packs contract's files under the released heading
+ *       is refused on every build until the next {@code -SNAPSHOT} is opened, and a released heading below the top
+ *       whose tag is not merged fails the build closed ({@link #packsChangelogRefusal(String, Set, Set)}, #663).
+ *       The other rules read the charter contract only.</li>
  * </ol>
  */
 public final class ReleaseGate {
@@ -521,8 +524,10 @@ public final class ReleaseGate {
     }
 
     /**
-     * The packs contract's CHANGELOG rules on every build (#559): the heading, order and Breaking rules (1, 2 and 8)
-     * over {@code contracts/packs/CHANGELOG.md}, whose top heading, released or not, is the packs contract's version.
+     * The packs contract's CHANGELOG heading rules (#559): the heading, order and Breaking rules (1, 2 and 8) over
+     * {@code contracts/packs/CHANGELOG.md}, whose top heading, released or not, is the packs contract's version. No
+     * tag is read: {@code checkPacksChangelog} runs only these when {@code -PcontractBaseline=none} skips the tag rules
+     * on purpose outside CI. Every other build runs {@link #packsChangelogRefusal(String, Set, Set)}.
      *
      * @param changelog the text of {@code contracts/packs/CHANGELOG.md}
      * @return the refusal, or empty when the rules pass
@@ -539,6 +544,55 @@ public final class ReleaseGate {
         }
         String version = top.version().get().text();
         return changelogRefusal(version, sections, Line.packs(PACKS_TAG_PREFIX + version));
+    }
+
+    /**
+     * The packs contract's CHANGELOG rules on every build: the heading rules of {@link #packsChangelogRefusal(String)},
+     * then two tag rules (#663), with each heading's tag named by this gate's heading grammar.
+     *
+     * <ul>
+     *   <li>Every released heading below the top has its {@code contract-packs-v<version>} tag merged into HEAD. A
+     *       missing one means the clone lacks the tags, or the release was never tagged; either way the freeze below
+     *       could not be judged, so the build fails closed rather than passing unchecked.</li>
+     *   <li>When the top heading is released and its tag is merged into HEAD, the packs contract's files at HEAD are
+     *       those of the tag: a change after a release belongs under the next {@code -SNAPSHOT}. Unlike the charter
+     *       contract's rule 6, which refuses any later commit, other files may change. Before its tag is merged (the
+     *       release pull request) the top heading is not judged.</li>
+     * </ul>
+     *
+     * @param changelog    the text of {@code contracts/packs/CHANGELOG.md}
+     * @param mergedTags   the {@code contract-packs-v*} tags merged into HEAD
+     * @param changedSince those of them whose packs contract files differ at HEAD
+     * @return the refusal, or empty when the rules pass
+     */
+    public static Optional<Decision.Refused> packsChangelogRefusal(
+            String changelog, Set<String> mergedTags, Set<String> changedSince) {
+        Optional<Decision.Refused> refused = packsChangelogRefusal(changelog);
+        if (refused.isPresent()) {
+            return refused;
+        }
+        List<Section> sections = sections(changelog);
+        for (Section below : sections.subList(1, sections.size())) {
+            Optional<Version> released = below.version().filter(Version::published);
+            if (released.isPresent()
+                    && !mergedTags.contains(PACKS_TAG_PREFIX + released.get().text())) {
+                return refuse("The released heading ## " + released.get().text() + " of " + PACKS_CHANGELOG
+                        + " has no " + PACKS_TAG_PREFIX + released.get().text() + " tag merged into HEAD, so the"
+                        + " packs contract's files cannot be checked against the releases. Fetch the tags (git fetch"
+                        + " --tags; actions/checkout fetch-depth: 0), or tag that release.");
+            }
+        }
+        Version version = sections.getFirst().version().orElseThrow();
+        String tag = PACKS_TAG_PREFIX + version.text();
+        if (version.published() && mergedTags.contains(tag) && changedSince.contains(tag)) {
+            return refuse("The top heading " + version.text() + " of " + PACKS_CHANGELOG + " is released: " + tag
+                    + " is merged into HEAD, and the packs contract's files (file-kinds.yaml, schemas/, conformance/)"
+                    + " differ from that release. A change after a release belongs under the next version: "
+                    + (version.preRelease()
+                            ? "reopen ## " + version.numbers() + "-SNAPSHOT above ## " + version.text() + "."
+                            : "open the next -SNAPSHOT above ## " + version.text() + "."));
+        }
+        return Optional.empty();
     }
 
     /**

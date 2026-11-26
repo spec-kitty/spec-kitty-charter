@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Composes whole-pack registration (IC-14, IC-18): the switch and the properties, the archive extractor, the audit trail,
- * the registration jobs with their clock and test seam, the free-space check and the sweep of what a registration leaves
+ * the registration jobs with their clock, the free-space check and the sweep of what a registration leaves
  * when it does not end. The ports and adapters are the packs slice's; only the composition root names both sides.
  *
  * <p>The registry lock is the one the pack writes share ({@link RegistryWriteLock#shared()}), so the jobs, the
@@ -76,12 +76,6 @@ public class RegistrationWiring {
     @Bean
     Clock registrationClock() {
         return Clock.systemUTC();
-    }
-
-    /** Lets every job through; a test supplies a gate that holds one as {@code @Primary}. */
-    @Bean
-    RegistrationJobs.JobGate registrationJobGate() {
-        return RegistrationJobs.JobGate.OPEN;
     }
 
     /**
@@ -179,11 +173,10 @@ public class RegistrationWiring {
             PackRegistrationService service,
             PackRevisions revisions,
             AuditLog audit,
-            RegistrationJobs.JobGate gate,
             RegistrationJobs.StorageRoom room,
             StagingArea staging) {
-        return new RegistrationJobs(new RegistrationJobs.Dependencies(
-                        registrationClock, service, revisions, audit, gate, room, staging))
+        return new RegistrationJobs(
+                        new RegistrationJobs.Dependencies(registrationClock, service, revisions, audit, room, staging))
                 .startWatchdog(WATCHDOG_PERIOD);
     }
 

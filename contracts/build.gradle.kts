@@ -960,15 +960,68 @@ tasks.register<JavaExec>("checkPacksReleaseTag") {
 
 // The packs contract's CHANGELOG rules on every build (#559): the heading, order and Breaking rules over
 // contracts/packs/CHANGELOG.md, so a malformed heading or a missing ### Breaking fails the pull request, not the tag.
+// Once the top heading's contract-packs-v<version> tag is merged into HEAD, HEAD's packs contract files must be those
+// of the tag until the next -SNAPSHOT is opened, and every released heading below the top must have its tag merged
+// (#663). The gate reads the headings; this task only lists the merged contract-packs-v* tags and those whose files
+// differ at HEAD, with ContractReleaseGit.kt's probes, which the service release gate uses too. The tag rules fail
+// closed: a shallow clone is refused, a git failure fails the build, and a clone without the tags fails on the first
+// released heading whose tag is missing. -PcontractBaseline=none skips the tag rules on purpose outside CI, as it
+// skips checkContractCompatibility, and is refused under CI=true.
+val packsMergedTags: Provider<List<String>> = tagsMerged("contract-packs-v*")
+val packsChangedTags: Provider<List<String>> = tagsChangedSince(packsMergedTags, PACKS_CONTRACT_FILES)
+val packsShallow: Provider<Boolean> = shallowClone()
 val checkPacksChangelog = tasks.register<JavaExec>("checkPacksChangelog") {
     group = "contract"
-    description = "Checks contracts/packs/CHANGELOG.md: its headings, their order and the Breaking subsection."
+    description = "Checks contracts/packs/CHANGELOG.md: its headings, their order, the Breaking subsection, and that " +
+        "HEAD under a released and tagged heading holds its release's packs contract files."
     classpath(sourceSets.main.map { it.runtimeClasspath })
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
     mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
     val changelog = layout.projectDirectory.file("packs/CHANGELOG.md")
+    val mergedFile = layout.buildDirectory.file("packs-gate/merged-tags.txt")
+    val changedFile = layout.buildDirectory.file("packs-gate/changed-tags.txt")
+    val merged = packsMergedTags
+    val changed = packsChangedTags
+    val shallow = packsShallow
+    val baseline = providers.gradleProperty("contractBaseline")
+    val ci = providers.environmentVariable("CI")
+    val skipped = baseline.map { it == "none" }.orElse(false)
     args("--packs-changelog", changelog.asFile.absolutePath)
+    argumentProviders.add(CommandLineArgumentProvider {
+        if (skipped.get()) {
+            listOf("--no-git")
+        } else {
+            listOf(mergedFile.get().asFile.absolutePath, changedFile.get().asFile.absolutePath)
+        }
+    })
     inputs.file(changelog).withPathSensitivity(PathSensitivity.NONE)
+    doFirst {
+        if (baseline.isPresent && baseline.get() != "none") {
+            throw GradleException("-PcontractBaseline accepts only 'none', not '${baseline.get()}'.")
+        }
+        if (skipped.get()) {
+            if (ci.orNull.equals("true", ignoreCase = true)) {
+                throw GradleException("-PcontractBaseline=none is refused when CI=true: CI must check the packs " +
+                    "contract against its released tags. Fetch the full history and tags (actions/checkout " +
+                    "fetch-depth: 0) and drop the property.")
+            }
+            logger.lifecycle("The tag rules of the packs contract's CHANGELOG are skipped on request " +
+                "(-PcontractBaseline=none): no contract-packs-v* tag was read.")
+            return@doFirst
+        }
+        if (shallow.get()) {
+            throw GradleException("This is a shallow clone, so a released packs contract's tag may be missing and the " +
+                "packs contract files would go unchecked against it. Fetch the full history and tags " +
+                "(actions/checkout fetch-depth: 0). Locally, -PcontractBaseline=none skips the tag rules on purpose; " +
+                "CI refuses it.")
+        }
+        mergedFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(merged.get().joinToString("\n", postfix = "\n"))
+        }
+        changedFile.get().asFile.writeText(changed.get().joinToString("\n", postfix = "\n"))
+    }
+    doNotTrackState("Reads git history and tags, which are not file inputs.")
 }
 
 // The release pull request's step (ADR-0047): assembles charter/changes/*.md into the top CHANGELOG section and deletes

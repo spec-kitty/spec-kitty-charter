@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.rules.CaseOnlyRules;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -492,7 +493,7 @@ class CompositionGoldenTest {
     private static PackCompositionFacts lockingFacts(List<String> urns) {
         MutabilityPolicySource.Builder policy = MutabilityPolicySource.builder();
         urns.forEach(urn -> policy.entry(Urn.parse(urn).orElseThrow(), MutabilityLevel.LOCKED));
-        return new PackCompositionFacts(List.of(), List.of(), List.of(), List.of(), policy.build(), List.of());
+        return CompositionFacts.of(List.of(), List.of(), List.of(), List.of(), policy.build(), List.of());
     }
 
     /** The offering's composition sequence over the case, and what it answers. */

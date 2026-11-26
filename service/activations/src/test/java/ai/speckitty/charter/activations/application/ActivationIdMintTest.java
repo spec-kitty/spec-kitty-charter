@@ -73,6 +73,15 @@ class ActivationIdMintTest {
     }
 
     @Test
+    void theLastMillisecondOfFortyEightBitsIsMinted() {
+        // The boundary of MAX_TIME, probed from inside (#658, planted break 3): ten base32 characters hold 50 bits, so
+        // the largest 48-bit time is 7 then nine Z.
+        assertThat(at((1L << 48) - 1, 1).mint().value())
+                .startsWith("7ZZZZZZZZZ")
+                .matches(ULID);
+    }
+
+    @Test
     void aClockOutsideFortyEightBitsIsRefused() {
         assertThatThrownBy(() -> at(1L << 48, 1).mint()).isInstanceOf(IllegalStateException.class);
         assertThatThrownBy(() -> at(-1, 1).mint()).isInstanceOf(IllegalStateException.class);

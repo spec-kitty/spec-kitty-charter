@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -60,9 +61,7 @@ class ImpactRelationsEnhancementTest {
                         .toList());
         packs.add(new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier(name), PackLevel.ORG), descriptor, List.of(), held));
-        facts.put(
-                name,
-                new PackCompositionFacts(List.of(), held, List.of(), List.of(), policy, List.of(), List.of(edges)));
+        facts.put(name, CompositionFacts.of(List.of(), held, List.of(), List.of(), policy, List.of(), List.of(edges)));
     }
 
     private static Relationship enhances(String from, String to) {

@@ -15,12 +15,6 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 public interface InForceFacts {
 
     /**
-     * The no-override form, for tests only: the answer is empty, so no requirement is satisfied by an override. Main
-     * code always passes the facts of the verified read ({@code PacksSession::inForce}).
-     */
-    InForceFacts NONE = query -> InForceAnswer.empty();
-
-    /**
      * What the resolution puts in force for a document's request.
      *
      * @param query what the document selects, denies and filters

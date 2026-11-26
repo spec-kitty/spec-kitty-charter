@@ -19,11 +19,13 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
@@ -186,11 +188,16 @@ final class PackSchemas {
                     .computeIfAbsent(refusal.pointer(), k -> new ArrayList<>())
                     .add(refusal);
         }
+        // The places the first run already refuses, looked up once each, so the cost is linear in the number of
+        // non-finite values and violations, not their product (#648).
+        Set<List<String>> refused = new HashSet<>();
+        for (SchemaViolation v : violations) {
+            refused.add(v.pointer());
+        }
         List<SchemaViolation> judged = new ArrayList<>();
         for (NonFinite entry : nonFinite) {
             List<String> pointer = entry.pointer();
-            boolean refused = violations.stream().anyMatch(v -> v.pointer().equals(pointer));
-            if (!refused && refusingNumbers.containsKey(pointer)) {
+            if (!refused.contains(pointer) && refusingNumbers.containsKey(pointer)) {
                 // The token string was accepted, but a number is refused here: the schema declares a string. The
                 // violation carries the arguments of the probe run's own (the expected type), one per branch, so the
                 // domain words it, and collapses a nullable, as it would a number the file really holds.

@@ -149,7 +149,7 @@ class LinkSwapReadTest {
             return FilesystemPackStore.FILES.read(file);
         };
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(
+        FilesystemPackStore.PackRead read = StoreSeams.readingPayloadsWith(
                         host.resolve("packs"), new YamlSerializationStrategy(), swapping)
                 .read(PackDirectory.of(new PackIdentifier(PACK)));
 

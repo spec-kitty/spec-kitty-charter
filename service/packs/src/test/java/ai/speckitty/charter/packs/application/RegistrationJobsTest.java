@@ -21,7 +21,11 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
 import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Succeeded;
+import ai.speckitty.charter.packs.fixtures.HeldRoom;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
+import ai.speckitty.charter.testfixtures.Await;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -32,21 +36,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The registration jobs of IC-14 over the real flow and the real stores, with a fake clock for retention and the
- * deadline and a gate that holds a job where a test needs it (T077): the lifecycle, the bounds, the preconditions
+ * deadline and a storage room that holds a job running where a test needs it (T077, #659): the lifecycle, the bounds, the preconditions
  * judged again under the lock, the registry lock's refusal, nothing slow under the lock, the deadline, the crash
  * leftovers a job owns and the one audit entry of every attempt.
  */
@@ -64,14 +64,16 @@ class RegistrationJobsTest {
     private final List<Harness> opened = new ArrayList<>();
 
     /**
-     * Lets every held worker go before closing: a test that failed while a worker waited on a gate, the audit or the
+     * Lets every held worker go before closing: a test that failed while a worker waited in the held room, the audit or the
      * clock would otherwise keep {@code close()} waiting out its 30 s grace, and under PIT turn a killed mutant into a
-     * timed-out one (#461). A mutant that breaks the shutdown itself still hangs {@code close()}.
+     * timed-out one (#461). A mutant that breaks the shutdown itself still hangs {@code close()}. A hold that ran out
+     * its limit instead of being released fails the test here.
      */
     @AfterEach
     void closeTheJobs() {
         opened.forEach(Harness::releaseEveryHold);
         opened.forEach(harness -> harness.jobs.close());
+        opened.forEach(harness -> harness.held.requireNoHoldTimedOut());
     }
 
     // ---- the limits --------------------------------------------------------------------------------------------
@@ -97,17 +99,18 @@ class RegistrationJobsTest {
     @Test
     void aJobIsPendingThenRunningThenSucceeded(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.gate.holdBeforeRun();
+        h.occupyWorkers();
         Reservation reservation = h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0")));
 
         assertThat(h.status(reservation).state()).isEqualTo(State.PENDING);
         assertThat(h.status(reservation).finishedAt()).isNull();
-        h.gate.releaseBeforeRun();
-        h.gate.holdWhileRunning();
-        h.await(() -> h.status(reservation).state() == State.RUNNING);
+        h.held.hold();
+        h.freeWorkers();
+        h.held.awaitHeld(1);
+        assertThat(h.status(reservation).state()).isEqualTo(State.RUNNING);
         assertThat(h.status(reservation).ending()).isNull();
-        h.gate.releaseWhileRunning();
-        Status ended = h.awaitEnd(reservation);
+        h.held.releaseAll();
+        Status ended = awaitEnded(reservation);
 
         assertThat(ended.state()).isEqualTo(State.SUCCEEDED);
         assertThat(ended.finishedAt()).isEqualTo(START);
@@ -121,9 +124,9 @@ class RegistrationJobsTest {
     @Test
     void anIdenticalReSendEndsSucceededUnchanged(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
 
-        Status again = h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        Status again = awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
 
         assertThat(again.ending())
                 .isInstanceOfSatisfying(
@@ -134,9 +137,9 @@ class RegistrationJobsTest {
     @Test
     void aRefusalOfTheFlowIsTheRefusedStatusWithItsCode(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
 
-        Status refused = h.awaitEnd(h.start(
+        Status refused = awaitEnded(h.start(
                 "pack-x",
                 Preconditions.none(),
                 h.stage(h.pack("pack-x", "1.0.0").directive("CHANGED", "Same version, other content"))));
@@ -161,7 +164,7 @@ class RegistrationJobsTest {
         Reservation reservation = h.jobs.reserve("pack-x", Preconditions.none(), dryRun);
         reservation.start(h.stage(h.pack("pack-x", "1.0.0")));
 
-        Status ended = h.awaitEnd(reservation);
+        Status ended = awaitEnded(reservation);
 
         assertThat(ended.state()).isEqualTo(State.SUCCEEDED);
         assertThat(ended.ending()).isInstanceOfSatisfying(Succeeded.class, done -> {
@@ -173,7 +176,7 @@ class RegistrationJobsTest {
                 .as("a dry run is not audited (NFR-002, review R5-2)")
                 .isEmpty();
 
-        Status written = h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        Status written = awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
         assertThat(written.state()).as("the control: the write itself").isEqualTo(State.SUCCEEDED);
         assertThat(h.audit.entries()).as("the control is audited").hasSize(1);
     }
@@ -182,7 +185,7 @@ class RegistrationJobsTest {
     void aFailureNoRefusalNamesIsAnInternalErrorThatLeaksNothing(@TempDir Path host) {
         Harness h = new Harness(host);
 
-        Status failed = h.awaitEnd(h.start("pack-x", Preconditions.none(), directory -> {
+        Status failed = awaitEnded(h.start("pack-x", Preconditions.none(), directory -> {
             throw new IllegalStateException("secret path /etc/shadow");
         }));
 
@@ -201,11 +204,18 @@ class RegistrationJobsTest {
     @Test
     void twoRunAndEightWaitAndTheNextIsToldToRetryLater(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.gate.holdBeforeRun();
+        h.held.hold();
         List<Reservation> accepted = new ArrayList<>();
         for (int i = 1; i <= RegistrationJobs.RUNNING_LIMIT + RegistrationJobs.WAITING_LIMIT; i++) {
             accepted.add(h.start("pack-" + i, Preconditions.none(), h.stage(h.pack("pack-" + i, "1.0.0"))));
         }
+        h.held.awaitHeld(RegistrationJobs.RUNNING_LIMIT);
+        assertThat(accepted)
+                .extracting(reservation -> h.status(reservation).state())
+                .as("two run and eight wait")
+                .containsOnly(State.RUNNING, State.PENDING)
+                .filteredOn(state -> state == State.RUNNING)
+                .hasSize(RegistrationJobs.RUNNING_LIMIT);
 
         assertThatThrownBy(() -> h.jobs.reserve("pack-eleven", Preconditions.none(), ORIGIN))
                 .isInstanceOfSatisfying(
@@ -213,10 +223,10 @@ class RegistrationJobsTest {
                         busy -> assertThat(busy.retryAfterSeconds()).isGreaterThanOrEqualTo(1));
         assertThat(h.rig.packs.resolve("pack-eleven")).doesNotExist();
 
-        h.gate.releaseBeforeRun();
-        accepted.forEach(h::awaitEnd);
+        h.held.releaseAll();
+        accepted.forEach(RegistrationJobsTest::awaitEnded);
         Reservation control = h.start("pack-eleven", Preconditions.none(), h.stage(h.pack("pack-eleven", "1.0.0")));
-        assertThat(h.awaitEnd(control).ending())
+        assertThat(awaitEnded(control).ending())
                 .as("a slot is free again once the jobs ended")
                 .isInstanceOf(Succeeded.class);
     }
@@ -227,7 +237,7 @@ class RegistrationJobsTest {
         Reservation first = h.start("p-0", Preconditions.none(), directory -> {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "refused at once");
         });
-        h.awaitEnd(first);
+        awaitEnded(first);
         h.clock.advance(RegistrationJobs.RETENTION.minusSeconds(1));
         assertThat(h.jobs.status(first.id()))
                 .as("kept until the hour has passed")
@@ -240,11 +250,13 @@ class RegistrationJobsTest {
             Reservation next = h.start("p-" + i, Preconditions.none(), directory -> {
                 throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "refused at once");
             });
-            h.awaitEnd(next);
+            awaitEnded(next);
             many.add(next);
         }
 
-        assertThat(h.jobs.retained()).isLessThanOrEqualTo(RegistrationJobs.MAX_RETAINED);
+        assertThat(h.jobs.retained())
+                .as("held at the bound, the oldest evicted")
+                .isEqualTo(RegistrationJobs.MAX_RETAINED);
         assertThat(h.jobs.status(many.getFirst().id()))
                 .as("the oldest ended status is evicted")
                 .isEmpty();
@@ -263,7 +275,7 @@ class RegistrationJobsTest {
     @Test
     void aStaleIfMatchIsRefusedBeforeAnySlotIsTaken(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
 
         assertThatThrownBy(() ->
                         h.jobs.reserve("pack-x", Preconditions.ifMatch("\"sha256:" + "0".repeat(64) + "\""), ORIGIN))
@@ -288,10 +300,10 @@ class RegistrationJobsTest {
     @Test
     void theIfMatchIsJudgedAgainUnderTheLockAndARevisionThatMovedEndsTheJobRefused(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
         String current =
                 h.rig.writeStore.currentRevision(new PackIdentifier("pack-x")).token();
-        h.gate.holdBeforeRun();
+        h.occupyWorkers();
         Reservation held = h.start(
                 "pack-x",
                 Preconditions.ifMatch(current),
@@ -303,8 +315,8 @@ class RegistrationJobsTest {
         // A competing commit while the job waits.
         h.rig.register(
                 "pack-x", h.rig.stage(h.pack("pack-x", "1.0.1").directive("C", "Competing")), Preconditions.none());
-        h.gate.releaseBeforeRun();
-        Status ended = h.awaitEnd(held);
+        h.freeWorkers();
+        Status ended = awaitEnded(held);
 
         assertThat(ended.state()).isEqualTo(State.REFUSED);
         assertThat(ended.ending())
@@ -323,7 +335,7 @@ class RegistrationJobsTest {
         Harness h = new Harness(host, Duration.ofMillis(50));
         CountDownLatch release = holdTheRegistryLock(h.rig);
         try {
-            Status busy = h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+            Status busy = awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
 
             assertThat(busy.state()).isEqualTo(State.REFUSED);
             assertThat(busy.ending())
@@ -333,7 +345,7 @@ class RegistrationJobsTest {
         } finally {
             release.countDown();
         }
-        Status control = h.awaitEnd(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
+        Status control = awaitEnded(h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0"))));
         assertThat(control.state())
                 .as("the control: the same registration with the lock free")
                 .isEqualTo(State.SUCCEEDED);
@@ -348,7 +360,7 @@ class RegistrationJobsTest {
             return h.stage(h.pack("pack-x", "1.0.0")).stage(directory);
         };
 
-        h.awaitEnd(h.start("pack-x", Preconditions.none(), watching));
+        awaitEnded(h.start("pack-x", Preconditions.none(), watching));
 
         assertThat(lockedWhileStaging)
                 .as("the stager ran, and the registry lock was free")
@@ -359,7 +371,7 @@ class RegistrationJobsTest {
         CountDownLatch release = holdTheRegistryLock(other.rig);
         try {
             List<Boolean> seen = Collections.synchronizedList(new ArrayList<>());
-            other.awaitEnd(other.start("pack-y", Preconditions.none(), directory -> {
+            awaitEnded(other.start("pack-y", Preconditions.none(), directory -> {
                 seen.add(other.rig.lock.isLocked());
                 return other.stage(other.pack("pack-y", "1.0.0")).stage(directory);
             }));
@@ -381,7 +393,7 @@ class RegistrationJobsTest {
         };
         AtomicBoolean staged = new AtomicBoolean();
 
-        Status ended = h.awaitEnd(h.start("pack-x", Preconditions.none(), directory -> {
+        Status ended = awaitEnded(h.start("pack-x", Preconditions.none(), directory -> {
             staged.set(true);
             return h.stage(h.pack("pack-x", "1.0.0")).stage(directory);
         }));
@@ -397,9 +409,9 @@ class RegistrationJobsTest {
     // ---- the deadline ------------------------------------------------------------------------------------------
 
     @Test
-    void aJobNotFinishedAtTheDeadlineEndsRefusedTimedOutAndWritesNothingWhenItWakes(@TempDir Path host) {
+    void aQueuedJobPastTheDeadlineIsWithdrawnRefusedTimedOutAndWritesNothing(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.gate.holdBeforeRun();
+        h.occupyWorkers();
         Reservation held = h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0")));
 
         h.clock.advance(RegistrationJobs.DEADLINE.minusSeconds(1));
@@ -413,15 +425,63 @@ class RegistrationJobsTest {
             assertThat(why.kind()).isEqualTo(Kind.CODED);
             assertThat(why.refusal().code()).isEqualTo(RefusalCode.REGISTRATION_TIMED_OUT);
         });
-        h.gate.releaseBeforeRun();
+        h.freeWorkers();
         h.jobs.close();
         assertThat(h.rig.packs.resolve("pack-x"))
-                .as("the timed-out job wrote nothing when it woke")
+                .as("the job withdrawn from the queue wrote nothing")
                 .doesNotExist();
-        assertThat(h.audit.entries())
+        assertThat(h.audited())
                 .as("one entry for the attempt, however it ended")
                 .hasSize(1);
-        assertThat(h.audit.entries().getFirst().outcome()).isEqualTo("refused:registration_timed_out");
+        assertThat(h.audited().getFirst().outcome()).isEqualTo("refused:registration_timed_out");
+    }
+
+    /**
+     * A worker that takes a job the deadline ended meanwhile drops it before its work. The guards are {@code ended()} and
+     * the phase check of {@code markRunning()}; each covers for the other, so taking out either alone changes nothing
+     * observable (an equivalent mutant). This test fails when both are gone: the ended job then reaches its work.
+     */
+    @Test
+    void aWorkerThatTakesAJobEndedMeanwhileDropsItAndWritesNothing(@TempDir Path host) {
+        Harness h = new Harness(host);
+        h.occupyWorkers();
+        Reservation job = h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0")));
+
+        // The job's monitor guards every change of its phase. Held here, it stops the worker that takes the job off the
+        // queue at its first look at the job, so the deadline ends the job between the take and the look.
+        synchronized (job) {
+            h.held.release(RegistrationJobs.RUNNING_LIMIT);
+            Await.until("a worker blocked on the job it took", () -> workerBlockedOn(job));
+            h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
+            h.jobs.expireOverdue();
+        }
+        awaitEnded(job);
+        h.jobs.close();
+
+        assertThat(h.status(job).ending())
+                .isInstanceOfSatisfying(
+                        Refused.class,
+                        why -> assertThat(why.refusal().code()).isEqualTo(RefusalCode.REGISTRATION_TIMED_OUT));
+        assertThat(h.held.arrivals())
+                .as("the worker dropped the ended job before its work: only the fillers reached the room")
+                .isEqualTo(RegistrationJobs.RUNNING_LIMIT);
+        assertThat(h.rig.packs.resolve("pack-x")).doesNotExist();
+        assertThat(h.audited()).as("one entry for the attempt").hasSize(1);
+        assertThat(h.stagingEntries()).isEmpty();
+    }
+
+    /** Whether a registration worker is blocked on {@code job}'s monitor. */
+    private static boolean workerBlockedOn(Object job) {
+        ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+        int identity = System.identityHashCode(job);
+        return Thread.getAllStackTraces().keySet().stream()
+                .filter(thread -> thread.getName().matches("charter-registration-\\d+"))
+                .filter(thread -> thread.getState() == Thread.State.BLOCKED)
+                .map(thread -> threads.getThreadInfo(thread.threadId()))
+                .anyMatch(info -> info != null
+                        && info.getLockInfo() != null
+                        && info.getLockInfo().getIdentityHashCode() == identity
+                        && info.getLockName().contains("RegistrationJobs$Job"));
     }
 
     @Test
@@ -438,7 +498,7 @@ class RegistrationJobsTest {
             }
             return h.stage(h.pack("pack-x", "1.0.0")).stage(directory);
         });
-        h.await(() -> inside.getCount() == 0);
+        Await.until("the stager entered", () -> inside.getCount() == 0);
 
         h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
         h.jobs.expireOverdue();
@@ -459,7 +519,7 @@ class RegistrationJobsTest {
             swapping.countDown();
             await(release);
         });
-        slow.awaitEnd(slow.start("pack-x", Preconditions.none(), slow.stage(slow.pack("pack-x", "1.0.0"))));
+        awaitEnded(slow.start("pack-x", Preconditions.none(), slow.stage(slow.pack("pack-x", "1.0.0"))));
         Reservation replacing = slow.start(
                 "pack-x",
                 Preconditions.none(),
@@ -474,7 +534,7 @@ class RegistrationJobsTest {
                 .as("past the point of no return the job is not timed out")
                 .isEqualTo(State.RUNNING);
         release.countDown();
-        Status ended = slow.awaitEnd(replacing);
+        Status ended = awaitEnded(replacing);
 
         assertThat(ended.state()).isEqualTo(State.SUCCEEDED);
         assertThat(slow.audit.entries().getLast().outcome()).isEqualTo("succeeded:replaced");
@@ -489,12 +549,12 @@ class RegistrationJobsTest {
             await(finishSwap);
         });
         h.rig.install("pack-x", h.pack("pack-x", "1.0.0"));
-        h.gate.holdWhileRunning();
+        h.held.hold();
         Reservation replacing = h.start(
                 "pack-x",
                 Preconditions.none(),
                 h.stage(h.pack("pack-x", "1.1.0").directive("N", "New")));
-        h.await(() -> h.status(replacing).state() == State.RUNNING);
+        h.held.awaitHeld(1);
         h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
         CountDownLatch inTheEnd = new CountDownLatch(1);
         CountDownLatch goOn = new CountDownLatch(1);
@@ -509,14 +569,14 @@ class RegistrationJobsTest {
                 .as("the watchdog is about to end the job")
                 .isTrue();
 
-        h.gate.releaseWhileRunning();
+        h.held.releaseAll();
         assertThat(swapping.await(10, TimeUnit.SECONDS))
                 .as("the job began its commit")
                 .isTrue();
         goOn.countDown();
         watchdog.join(TimeUnit.SECONDS.toMillis(10));
         finishSwap.countDown();
-        Status ended = h.awaitEnd(replacing);
+        Status ended = awaitEnded(replacing);
 
         assertThat(ended.state())
                 .as("a job that began its commit is never reported refused, whoever reaches it")
@@ -551,18 +611,16 @@ class RegistrationJobsTest {
         assertThat(entered.await(10, TimeUnit.SECONDS))
                 .as("exactly the running limit of stagers is entered")
                 .isTrue();
-        // A job over the limit would enter soon after the first two; give it the time to, and watch the count.
-        long watchUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(300);
-        while (System.nanoTime() < watchUntil) {
-            assertThat(inside.get()).isLessThanOrEqualTo(RegistrationJobs.RUNNING_LIMIT);
-            Thread.sleep(5);
-        }
+        assertThat(accepted.subList(RegistrationJobs.RUNNING_LIMIT, admitted))
+                .extracting(reservation -> h.status(reservation).state())
+                .as("the jobs over the limit wait")
+                .containsOnly(State.PENDING);
         assertThat(entries.get())
                 .as("the jobs over the limit wait for a worker and are not inside a stager")
                 .isEqualTo(RegistrationJobs.RUNNING_LIMIT);
 
         release.countDown();
-        accepted.forEach(h::awaitEnd);
+        accepted.forEach(RegistrationJobsTest::awaitEnded);
         assertThat(entries.get()).as("every job ran in the end").isEqualTo(admitted);
         assertThat(mostInside.get())
                 .as("never more than the running limit inside a stager at once")
@@ -630,14 +688,19 @@ class RegistrationJobsTest {
     @Test
     void theStagingDirectoryIsOwnedWhileTheJobLivesAndGoneWhenItEnds(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.gate.holdBeforeRun();
+        h.occupyWorkers();
         Reservation reservation = h.jobs.reserve("pack-x", Preconditions.none(), ORIGIN);
         assertThat(reservation.directory()).isDirectory().startsWith(h.staging);
-        assertThat(h.jobs.owned()).containsExactly(reservation.directory());
+        List<Path> expected =
+                new ArrayList<>(h.fillers.stream().map(Reservation::directory).toList());
+        expected.add(reservation.directory());
+        assertThat(h.jobs.owned())
+                .as("the two fillers' directories and the reservation's, and no other")
+                .containsExactlyInAnyOrderElementsOf(expected);
         reservation.start(h.stage(h.pack("pack-x", "1.0.0")));
 
-        h.gate.releaseBeforeRun();
-        h.awaitEnd(reservation);
+        h.freeWorkers();
+        awaitEnded(reservation);
 
         assertThat(reservation.directory()).doesNotExist();
         assertThat(h.jobs.owned()).isEmpty();
@@ -648,7 +711,7 @@ class RegistrationJobsTest {
     void aRefusedJobLeavesNoStagingDirectoryEither(@TempDir Path host) {
         Harness h = new Harness(host);
 
-        h.awaitEnd(h.start("pack-x", Preconditions.none(), directory -> {
+        awaitEnded(h.start("pack-x", Preconditions.none(), directory -> {
             Files.writeString(directory.resolve("half-extracted"), "x");
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "refused");
         }));
@@ -659,7 +722,6 @@ class RegistrationJobsTest {
     @Test
     void anAbandonedReservationFreesItsSlotAndItsDirectory(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.gate.holdBeforeRun();
         for (int i = 0; i < RegistrationJobs.RUNNING_LIMIT + RegistrationJobs.WAITING_LIMIT; i++) {
             Reservation reservation = h.jobs.reserve("pack-" + i, Preconditions.none(), ORIGIN);
             reservation.abandon();
@@ -679,21 +741,30 @@ class RegistrationJobsTest {
     @Test
     void closingTheJobsEndsWhatWaitsRefusedBusyAndAuditsEachOnce(@TempDir Path host) {
         Harness h = new Harness(host);
-        h.gate.holdBeforeRun();
+        CountDownLatch allRefused = new CountDownLatch(1);
+        // close() interrupts the fillers' workers, and a filler that goes on would free its worker to take a waiting
+        // job
+        // before close() reaches it. Here each filler stays in its stager until the four waiting jobs are refused, so
+        // no waiting job is ever taken: refused while still queued, none of them runs. After that the workers wake
+        // inside close()'s grace and must write nothing. Left waiting, they would keep close() waiting out its whole
+        // 30 s grace on every run (#461).
+        h.occupyWorkers(directory -> {
+            awaitUninterruptibly(allRefused);
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "a filler that held a worker");
+        });
         List<Reservation> waiting = new ArrayList<>();
         for (int i = 1; i <= 4; i++) {
             waiting.add(h.start("pack-" + i, Preconditions.none(), h.stage(h.pack("pack-" + i, "1.0.0"))));
         }
-        // The two workers stay held until close() has refused all four jobs, then wake inside close()'s grace and must
-        // neither run a refused job nor write anything. Left held, they would keep close() waiting out its whole 30 s
-        // grace on every run, and under PIT on every mutant this test covers (#461).
         Thread releaser = new Thread(() -> {
-            h.await(() -> waiting.stream()
-                    .allMatch(reservation -> h.jobs.status(reservation.id())
-                            .map(Status::state)
-                            .filter(state -> state == State.REFUSED)
-                            .isPresent()));
-            h.gate.releaseBeforeRun();
+            Await.until(
+                    "all four waiting jobs refused busy",
+                    () -> waiting.stream()
+                            .allMatch(reservation -> h.jobs.status(reservation.id())
+                                    .map(Status::state)
+                                    .filter(state -> state == State.REFUSED)
+                                    .isPresent()));
+            allRefused.countDown();
         });
         releaser.setDaemon(true);
         releaser.start();
@@ -707,8 +778,10 @@ class RegistrationJobsTest {
                     .isInstanceOfSatisfying(
                             Refused.class, why -> assertThat(why.kind()).isEqualTo(Kind.BUSY));
         }
-        assertThat(h.gate.ran()).as("a job refused before it ran never runs").isEmpty();
-        assertThat(h.audit.entries()).hasSize(4);
+        assertThat(h.held.arrivals())
+                .as("a job refused before it ran never ran: only the fillers reached the room")
+                .isEqualTo(RegistrationJobs.RUNNING_LIMIT);
+        assertThat(h.audited()).as("each waiting job is entered once").hasSize(4);
         assertThat(h.stagingEntries()).isEmpty();
         assertThat(h.rig.packs).isEmptyDirectory();
     }
@@ -723,10 +796,12 @@ class RegistrationJobsTest {
         CountDownLatch observed = new CountDownLatch(1);
         Reservation job = h.jobs.reserve("pack-x", Preconditions.none(), ORIGIN_FOR_ORDER);
         Thread reader = new Thread(() -> {
-            h.await(() -> h.jobs.status(job.id())
-                    .map(Status::state)
-                    .filter(s -> s == State.SUCCEEDED || s == State.REFUSED)
-                    .isPresent());
+            Await.until(
+                    "the job seen ended",
+                    () -> h.jobs.status(job.id())
+                            .map(Status::state)
+                            .filter(s -> s == State.SUCCEEDED || s == State.REFUSED)
+                            .isPresent());
             entriesWhenSeenEnded.set(h.audit.entries().size());
             observed.countDown();
         });
@@ -761,13 +836,13 @@ class RegistrationJobsTest {
 
         Reservation created = h.jobs.reserve("pack-x", Preconditions.none(), origin);
         created.start(h.stage(h.pack("pack-x", "1.0.0")));
-        h.awaitEnd(created);
+        awaitEnded(created);
         Reservation replaced = h.jobs.reserve("pack-x", Preconditions.none(), origin);
         replaced.start(h.stage(h.pack("pack-x", "1.1.0").directive("D", "Two")));
-        h.awaitEnd(replaced);
+        awaitEnded(replaced);
         Reservation refused = h.jobs.reserve("pack-x", Preconditions.none(), origin);
         refused.start(h.stage(h.pack("pack-x", "1.1.0").directive("D", "Other content, same version")));
-        h.awaitEnd(refused);
+        awaitEnded(refused);
 
         List<AuditLog.Entry> entries = h.audit.entries();
         assertThat(entries).hasSize(3);
@@ -808,6 +883,29 @@ class RegistrationJobsTest {
         holder.start();
         assertThat(holding.await(10, TimeUnit.SECONDS)).isTrue();
         return release;
+    }
+
+    /** Waits for {@code latch}, whatever interrupts the thread meanwhile (a shutdown's), and leaves the interrupt set. */
+    // Runs on a worker, inside a filler's stager, so its AssertionError would surface as a failed job rather than
+    // as the test's failure; the releaser's Await on the same state fails first, with a message naming it.
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        boolean interrupted = false;
+        try {
+            while (true) {
+                try {
+                    if (latch.await(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)) {
+                        return;
+                    }
+                    throw new AssertionError("waited " + Await.LIMIT.toSeconds() + " s for the latch; it never came");
+                } catch (InterruptedException interruption) {
+                    interrupted = true;
+                }
+            }
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private static void await(CountDownLatch latch) {
@@ -864,48 +962,19 @@ class RegistrationJobsTest {
         }
     }
 
-    /** A gate that holds the workers where a test asks. */
-    static final class TestGate implements RegistrationJobs.JobGate {
-        private volatile CountDownLatch before = new CountDownLatch(0);
-        private volatile CountDownLatch running = new CountDownLatch(0);
-        private final Set<String> ran = ConcurrentHashMap.newKeySet();
-
-        void holdBeforeRun() {
-            before = new CountDownLatch(1);
-        }
-
-        void releaseBeforeRun() {
-            before.countDown();
-        }
-
-        void holdWhileRunning() {
-            running = new CountDownLatch(1);
-        }
-
-        void releaseWhileRunning() {
-            running.countDown();
-        }
-
-        void releaseAll() {
-            releaseBeforeRun();
-            releaseWhileRunning();
-        }
-
-        @Override
-        public void beforeRun(String id) {
-            await(before);
-        }
-
-        @Override
-        public void whileRunning(String id) {
-            ran.add(id);
-            await(running);
-        }
-
-        /** The jobs whose worker reached the running step. */
-        Set<String> ran() {
-            return Set.copyOf(ran);
-        }
+    /**
+     * Waits until the job ended, succeeded or refused, and answers its status: the registration tests' one wait for an
+     * end.
+     *
+     * @param reservation the job
+     * @return its ended status
+     */
+    static Status awaitEnded(Reservation reservation) {
+        Await.until("the job " + reservation.id() + " to end", () -> {
+            State state = reservation.status().state();
+            return state == State.SUCCEEDED || state == State.REFUSED;
+        });
+        return reservation.status();
     }
 
     private static final Origin ORIGIN_FOR_ORDER = new Origin(
@@ -941,15 +1010,16 @@ class RegistrationJobsTest {
         }
     }
 
-    /** The jobs over a rig, the manual clock, the test gate and the recording audit. */
+    /** The jobs over a rig, the manual clock, the held room and the recording audit. */
     final class Harness {
         final Rig rig;
         final ManualClock clock = new ManualClock();
-        final TestGate gate = new TestGate();
         final RecordingAudit audit = new RecordingAudit();
         final Path staging;
         final RegistrationJobs jobs;
         volatile RegistrationJobs.StorageRoom room = RegistrationJobs.StorageRoom.UNBOUNDED;
+        final HeldRoom held = new HeldRoom(() -> room.require());
+        private final List<Reservation> fillers = new ArrayList<>();
 
         Harness(Path host) {
             this(host, Duration.ofSeconds(30));
@@ -964,18 +1034,12 @@ class RegistrationJobsTest {
             this.rig.midSwap = midSwap;
             this.staging = host.resolve("job-staging");
             this.jobs = new RegistrationJobs(new RegistrationJobs.Dependencies(
-                    clock,
-                    rig.service,
-                    rig.writeStore,
-                    audit,
-                    gate,
-                    () -> room.require(),
-                    new FileStagingArea(staging)));
+                    clock, rig.service, rig.writeStore, audit, held, new FileStagingArea(staging)));
             opened.add(this);
         }
 
         void releaseEveryHold() {
-            gate.releaseAll();
+            held.releaseAll();
             audit.releaseWrites();
             clock.releasePause();
         }
@@ -995,6 +1059,43 @@ class RegistrationJobsTest {
             };
         }
 
+        /**
+         * Holds both workers running, on fillers of their own, so every job started next waits {@code pending}, as the
+         * queue holds it when the workers are busy.
+         */
+        void occupyWorkers() {
+            occupyWorkers(directory -> {
+                throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "a filler that held a worker");
+            });
+        }
+
+        /** As {@link #occupyWorkers()}, with the stager each filler runs once it is let go from the room. */
+        void occupyWorkers(Stager filler) {
+            held.hold();
+            for (int i = 0; i < RegistrationJobs.RUNNING_LIMIT; i++) {
+                fillers.add(start("filler-" + i, Preconditions.none(), filler));
+            }
+            held.awaitHeld(RegistrationJobs.RUNNING_LIMIT);
+            held.stopHolding();
+        }
+
+        /** Lets the fillers go and waits until they ended, so the workers take the jobs that wait. */
+        void freeWorkers() {
+            held.release(RegistrationJobs.RUNNING_LIMIT);
+            fillers.forEach(RegistrationJobsTest::awaitEnded);
+        }
+
+        /**
+         * The audit entries of the test's own jobs, the fillers' left out.
+         *
+         * @return the entries
+         */
+        List<AuditLog.Entry> audited() {
+            return audit.entries().stream()
+                    .filter(entry -> !entry.packId().startsWith("filler-"))
+                    .toList();
+        }
+
         Reservation start(String packId, Preconditions preconditions, Stager stager) {
             Reservation reservation = jobs.reserve(packId, preconditions, ORIGIN);
             reservation.start(stager);
@@ -1003,32 +1104,6 @@ class RegistrationJobsTest {
 
         Status status(Reservation reservation) {
             return jobs.status(reservation.id()).orElseThrow();
-        }
-
-        Status awaitEnd(Reservation reservation) {
-            await(() -> {
-                State state = jobs.status(reservation.id()).map(Status::state).orElse(State.PENDING);
-                return state == State.SUCCEEDED || state == State.REFUSED;
-            });
-            return status(reservation);
-        }
-
-        /**
-         * Polls every 100 µs: a test that waits for a thousand short jobs one after another spent most of its time in
-         * a coarser poll's sleeps (#461).
-         */
-        void await(BooleanSupplier condition) {
-            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
-            while (!condition.getAsBoolean()) {
-                if (System.nanoTime() > deadline) {
-                    throw new AssertionError("the condition did not hold within 20 s");
-                }
-                LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(100));
-                if (Thread.interrupted()) {
-                    Thread.currentThread().interrupt();
-                    throw new AssertionError("interrupted while waiting");
-                }
-            }
         }
 
         List<String> stagingEntries() {

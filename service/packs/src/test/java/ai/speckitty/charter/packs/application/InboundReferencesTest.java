@@ -22,6 +22,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -450,7 +451,7 @@ class InboundReferencesTest {
         Urn gone = new Urn(NodeKind.DIRECTIVE, "GONE");
         PackDescriptor descriptor =
                 new PackDescriptor(OTHER_ID, "1.0.0", Optional.empty(), "new_pack", Optional.empty(), Optional.empty());
-        PackCompositionFacts facts = new PackCompositionFacts(
+        PackCompositionFacts facts = CompositionFacts.of(
                 List.of(),
                 List.of(keep.toString(), gone.toString()),
                 List.of(),

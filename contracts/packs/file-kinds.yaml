@@ -19,7 +19,8 @@
 #   exclusions       Rules for files that are not pack content or have no schema, each with a
 #                    reviewable reason.
 #   payloads         Rules for files with no schema (`match`, `kind`, `content_form`, all
-#                    required), consulted only when no `files` or `exclusions` rule matches.
+#                    required), consulted only when no `files` or `exclusions` rule matches (but see
+#                    "Letter case").
 #   retired          Rules for files of a retired layout (`match`, `reason`, both required;
 #                    ADR-0044 decision 6). A retired file is refused by name in the store's load and
 #                    in validate mode, YAML and Markdown alike, is never a companion, is never read
@@ -27,23 +28,41 @@
 #                    digested in the fingerprint tail. Optional; consulted after `files` and
 #                    `exclusions` and before `payloads`, but a `retired` rule beats a `files` rule
 #                    that also matches (an `exclusions` rule still beats it). No file may match a
-#                    `retired` rule and a `files` or `exclusions` rule, but for three known
+#                    `retired` rule and a `files` or `exclusions` rule, but for four known
 #                    overlaps, pinned by RetiredFilesTest: a README directly in the old built-in
-#                    `missions/mission-steps/` is excluded (not held, not refused), never read; a
+#                    `missions/mission-steps/`, and the plan-field declaration of the old
+#                    `mission-steps/templates/`, are excluded (not held, not refused), never read; a
 #                    `*.mission-type.yaml` directly under the old `mission_types/` is refused by its
 #                    family (`*/mission_types/*.yaml`), not read as a misplaced mission type; and the
 #                    graph fragment of the folded step contracts at the pack root is a `*/*.graph.yaml`
 #                    its retired rule refuses.
 #   ignored          The last-resort rules (`match`, `reason`, both required; any other key fails the table;
-#                    #451). A file that no `files`, `exclusions`, `retired` or `payloads` rule takes and that no
-#                    kind claims as a companion is excluded by the first `ignored` rule that matches it, with
-#                    that rule's reason: not held, not served, not refused, not digested. The rule matches
-#                    case-insensitively (`NOTES.MD` is Markdown too). It is a fallback and not an exclusion:
-#                    an exclusion glob over `**/*.md` would come before `retired` and `payloads`, and would
-#                    take the Markdown that rules and companions model. An `ignored` rule is never among the
-#                    rules the overlap check compares, and a root file that differs only in letter case from a
-#                    `files` or `retired` rule's file is refused by name before the fallback is consulted.
+#                    #451). A file that no `files`, `exclusions`, `retired` or `payloads` rule takes and that
+#                    no kind claims as a companion is excluded by the first `ignored` rule that matches it,
+#                    with that rule's reason: not held, not served, not refused, not digested. The rule
+#                    matches case-insensitively (`NOTES.MD` is Markdown too), but it does not take a file that
+#                    the `files`, `exclusions`, `retired` and `payloads` rules, run with path and globs in
+#                    lower case, map (`core/toolguides/a.guide.MD` stays unmodelled) or retire ("Letter case"). It
+#                    is a fallback and not an exclusion: an exclusion glob over `**/*.md` would come before
+#                    `retired` and `payloads`, and would take the Markdown that rules and companions model. An
+#                    `ignored` rule is never among the rules the overlap check compares, and a root file that
+#                    differs only in letter case from a `files` or `retired` rule's file is refused by name
+#                    before the fallback is consulted.
 #   Any other top-level key fails when the table loads.
+#
+# Letter case
+#   Globs match as written, but the rules are also run with the path and the globs in lower case, precedence
+#   included (#645, #661), and that run decides where it reaches another rule. An `exclusions` rule excludes
+#   the file whatever takes it as written, unless a `files` rule maps it (`Assets/logos/README.md`,
+#   `missions/plan/templates/sub/ReadMe.md`). A `retired` rule refuses its family wherever it stands: over a
+#   `files` or `payloads` rule that takes it as written, and also where no rule takes it as written (after the
+#   root case variants) (`Mission_Step_Contract.graph.yaml`, `Mission-Steps/a.tactic.yaml`,
+#   `a.Step-Contract.yaml`). A
+#   `files` rule judges the file as its kind over a `payloads`, `exclusions` or other `files` rule that takes
+#   it as written, so every spelling of a file has the kind of its lower-case spelling
+#   (`assets/a.Directive.yaml`, `assets/.X.Asset.yaml`, `presets/a.Directive.yaml`). A file no rule takes as
+#   written that only a `files` or `payloads` rule takes in lower case stays unmodelled
+#   (`toolguides/a.guide.MD`, `Templates/spec-template.md`), and a root case variant keeps its own code.
 #
 # Content form
 #   `content_form` says how a file is read, held, written and compared: `yaml` (the default, so
@@ -74,9 +93,11 @@
 #   directories (`<checkout>/packs/`), written with forward slashes. `*` matches within one path
 #   segment, `**/` matches zero or more whole segments, every other character is literal. There
 #   is no trailing `**`: a rule spans nested files with `**/*`.
-#   The sections are consulted in the order `files`, `exclusions`, `retired`, `payloads`, then a
-#   root case variant, then `ignored`; within a section the first matching rule in table order
-#   decides (a payload rule overlaps the others by design, and only the first match counts). A file that no
+#   The sections are consulted in the order `files`, `exclusions`, `retired`, `payloads`, then
+#   the same in lower case, whose exclusion, `files` kind or retired-over-a-written-match verdict
+#   decides ("Letter case"), then a root case variant, then a lower-case `retired` verdict on a
+#   path nothing takes as written, then `ignored`; within a section the first matching rule in
+#   table order decides (a payload rule overlaps the others by design, and only the first match counts). A file that no
 #   rule takes is `unmodelled`: it is warned as `file_not_held` and not held, as an excluded file is
 #   (#554, operator ruling Q1). conformance/classifier-cases.yaml states the order
 #   exactly, with a case for every rule, and is what another implementation is held to.
@@ -339,7 +360,8 @@ retired:
   - match: "**/mission_step_contract.graph.yaml"
     reason: folded into the mission-type steps' substeps (slice F)
 
-# Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
+# Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches, but a payload that
+# an exclusion, a files rule or a retired rule takes in lower case is that rule's file ("Letter case", #661).
 payloads:
   - match: "*/assets/**/*"
     kind: asset-payload

@@ -74,7 +74,6 @@ class StorageRoomAdmissionTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 (AuditLog) entry -> {},
-                RegistrationJobs.JobGate.OPEN,
                 room,
                 new FileStagingArea(staging)));
         ServiceInfoQuery info =

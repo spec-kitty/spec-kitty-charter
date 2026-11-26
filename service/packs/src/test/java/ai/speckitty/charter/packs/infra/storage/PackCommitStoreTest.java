@@ -292,7 +292,7 @@ class PackCommitStoreTest {
         PackCommitStore.DirectoryRename failingSwap = (staging, live) -> {
             throw new IOException("injected pre-swap failure");
         };
-        PackCommitStore store = new PackCommitStore(locations(packDir), strategy, failingSwap);
+        PackCommitStore store = CommitStores.swappingWith(locations(packDir), strategy, failingSwap);
 
         Map<String, String> before = snapshot(packDir);
 
@@ -582,7 +582,7 @@ class PackCommitStoreTest {
     }
 
     private static PackCommitStore wholePackStore(Path packs, PackWriteGeneration generation) {
-        return new PackCommitStore(
+        return CommitStores.over(
                 new StorageRootLocations(packs),
                 new YamlSerializationStrategy(),
                 new RegistryWriteLock(Duration.ofSeconds(5)),

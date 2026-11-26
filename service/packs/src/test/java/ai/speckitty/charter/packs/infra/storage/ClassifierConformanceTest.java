@@ -88,7 +88,7 @@ class ClassifierConformanceTest {
                 assertThat(mapped.contentForm().token())
                         .as("content form of %s", c.path())
                         .isEqualTo(c.contentForm());
-                assertThat(decidingRule(c.path())).as("rule of %s", c.path()).isEqualTo(c.rule());
+                assertThat(decidingRule(c)).as("rule of %s", c.path()).isEqualTo(c.rule());
             }
             case "excluded" -> {
                 assertThat(actual).as(c.path()).isInstanceOf(Excluded.class);
@@ -135,19 +135,35 @@ class ClassifierConformanceTest {
         assertThat(rules).as("the rules of file-kinds.yaml, by section").containsAll(covered);
     }
 
-    /** The section and glob of the rule that decides {@code c}, or empty for an unmodelled or case-variant case. */
+    /**
+     * The section and glob of the rule that decides {@code c}, or empty for an unmodelled case or a root case variant
+     * (refused as {@code case_variant}, never as {@code Retired}, so it covers no rule, as the class Javadoc says). The
+     * section is the one that holds the glob, so a letter-case variant decided in the lower-cased run (#661) covers its
+     * rule as an exact match does.
+     */
     private static Optional<String> coveredRule(Case c) {
         String rule = c.rule();
         if (rule == null) {
             return Optional.empty();
         }
-        boolean exact = KINDS.matchingRules(c.path()).contains(rule);
         return switch (c.expect()) {
-            case "mapped" -> Optional.of((exact ? "files " : "payloads ") + rule);
-            case "excluded" -> Optional.of((exact ? "exclusions " : "ignored ") + rule);
-            case "retired" -> exact ? Optional.of("retired " + rule) : Optional.empty();
+            case "mapped" -> Optional.of((c.schema() != null ? "files " : "payloads ") + rule);
+            case "excluded" ->
+                Optional.of((holds(KINDS.exclusionRules().stream().map(PackFileKind.ExclusionRule::match), rule)
+                                ? "exclusions "
+                                : "ignored ")
+                        + rule);
+            case "retired" ->
+                KINDS.classify(c.path()) instanceof PackFileKind.Retired
+                                && holds(KINDS.retiredRules().stream().map(PackFileKind.RetiredRule::match), rule)
+                        ? Optional.of("retired " + rule)
+                        : Optional.empty();
             default -> Optional.empty();
         };
+    }
+
+    private static boolean holds(Stream<String> globs, String glob) {
+        return globs.anyMatch(glob::equals);
     }
 
     @Test
@@ -158,13 +174,23 @@ class ClassifierConformanceTest {
         assertThat(cases.stream().map(Case::path)).doesNotHaveDuplicates();
     }
 
-    /** The {@code files} rule that maps {@code path}, or else the {@code payloads} rule. */
-    private static @Nullable String decidingRule(String path) {
-        return Stream.of(KINDS.matchingRules(path), KINDS.matchingPayloadRules(path))
-                .filter(rules -> !rules.isEmpty())
-                .map(rules -> rules.get(0))
-                .findFirst()
-                .orElse(null);
+    /**
+     * The rule that decides a mapped case, from the section its schema names: for a {@code files} kind (a schema), the
+     * first {@code files} rule that maps the path in lower case, which decides its kind in any spelling (#661); for a
+     * payload (no schema), the first {@code payloads} rule that matches the path as written.
+     */
+    private static @Nullable String decidingRule(Case c) {
+        List<String> rules;
+        if (c.schema() != null) {
+            Set<String> files = new LinkedHashSet<>();
+            KINDS.fileRules().forEach(r -> files.add(r.match()));
+            rules = KINDS.matchingRulesFolded(c.path()).stream()
+                    .filter(files::contains)
+                    .toList();
+        } else {
+            rules = KINDS.matchingPayloadRules(c.path());
+        }
+        return rules.isEmpty() ? null : rules.get(0);
     }
 
     private static void assertNoMappedFields(Case c) {

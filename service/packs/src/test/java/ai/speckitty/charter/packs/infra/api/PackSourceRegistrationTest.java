@@ -24,6 +24,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -31,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +73,6 @@ class PackSourceRegistrationTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 audit::add,
-                RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 new FileStagingArea(staging)));
         info = new ServiceInfoQuery("worktree-source", new ConsistentRead(new FileSystemPackSources(List::of)));
@@ -126,12 +125,8 @@ class PackSourceRegistrationTest {
         return mvc.perform(request);
     }
 
-    private void awaitAudit() throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-        while (audit.isEmpty() && System.nanoTime() < deadline) {
-            Thread.sleep(5);
-        }
-        assertThat(audit).isNotEmpty();
+    private void awaitAudit() {
+        Await.until("the job's audit entry", () -> !audit.isEmpty());
     }
 
     @Test

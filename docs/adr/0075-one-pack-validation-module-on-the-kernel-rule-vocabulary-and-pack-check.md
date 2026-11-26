@@ -2,8 +2,8 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-25T00:00:00Z
-decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full); and an amendment of decision 9 (2026-11-25, #651: remediate repairs a quoted number)
+updated: 2026-11-26T00:00:00Z
+decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full); and an amendment of decision 9 (2026-11-25, #651: remediate repairs a quoted number); and an amendment of AA5 (2026-11-26, #659, accepted 2026-11-26: the read counters are a meter bound per call)
 decision_date: '2026-11-13'
 type: ADR
 kind: ADR
@@ -220,6 +220,7 @@ rules live.
     binding seam a test uses, and parse the owners again. The unification gives "held" one resolution.
   - **AA5.** The read counters (`LOOKUP_PARSES`, `READS`, `WALKS`, `RUNS`) are global static `LongAdder`s that the
     one-read tests sample, so a concurrent read can miscount. The unification gives the reader its own counter.
+    *Resolved by the amendment of 2026-11-26 (#659, accepted 2026-11-26): a meter bound per call replaces them.*
 
   The note `docs/development/notes/pack-code-unification.md` records both, with AA2's deferred half (whether the
   aggregate holds a `Reason` in place of `PackElementViolation`), under the outcomes of WP05.
@@ -556,6 +557,29 @@ has not ruled a new title, so both stand as history; this amendment names the to
       [`sddevelopment-be/modular-validators#13`](https://github.com/sddevelopment-be/modular-validators/issues/13).
     - Once upstream releases a core with no dependencies and this vocabulary, charter swaps the port for it in one
       change and deletes the port. The two never sit side by side.
+
+### Amendment 2026-11-26 (operator, #659, accepted 2026-11-26): AA5, the read counters are a meter bound per call
+
+AA5 is resolved ahead of the single-parse unification, and not by a counter the reader owns. The six JVM-wide static
+counters (`LOOKUP_PARSES`, `READS`, `WALKS`, `RUNS` and `InForceResolution`'s `RESOLUTIONS` and `WALK_VISITS`) are
+gone. Each counting point counts a unit on `kernel.metering.WorkMeter`, which a caller binds around one call through a
+`ScopedValue`; the units belong to their modules (`ResolutionWork` in `packs.domain`, `StoreWork` in `packs.infra.storage`,
+`CacheWork` in `packs.application`, which also replaces `CompositionFactsCache`'s `loads()` and `hits()`).
+
+- **Kept on purpose.** The meter is a measurement point of the read budgets (#554, NFR-003), not production
+  telemetry: only tests call `WorkMeter.measure`. It holds no state between two measurements, so two tests that measure
+  at once never see each other's work. With no meter bound, a count does nothing.
+- **Its limit.** It counts on the thread that bound it, and on any thread the binding is inherited by (today none
+  other: the forks of a structured task scope would, but the service opens none). Work handed to any other thread is
+  not counted, so each budget asserts every unit it bounds at least once.
+- **Guarded.** `HexagonalArchitectureTest.noMainClassKeepsAStaticCounter` refuses a static field that is not final, or
+  that holds an atomic, an atomic array, an adder or an accumulator, in any main class, and
+  `HexagonalArchitectureTest.noMainClassMeasuresWork` refuses a main class that calls `WorkMeter.measure`, so the meter
+  stays a measurement point for tests and never becomes telemetry. The first rule exempts the test fixtures and four named fields, none a
+  count of a read's work: `PackCommitStore.COUNTER` (it makes temporary names unique),
+  `GlobalAddressResolverProvider.ALLOWLIST` and `LOADED_BY_JDK` (the JDK loads that resolver as a service provider,
+  outside any wiring), and `PackSchemas.bundled` (the bundled schemas, built once on first use and built again after a
+  failed build).
 
 ### Amends, as each slice lands
 
