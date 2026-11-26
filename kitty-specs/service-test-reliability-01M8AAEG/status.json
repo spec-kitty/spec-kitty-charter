@@ -154,7 +154,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude::reviewer-renata",
+      "agent": "claude::architect-alphonso",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -164,7 +164,8 @@
       "last_transition_at": "2026-11-26T11:18:10.229596+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Gates run and attributed; NFR-003 met (+0.7 %)"
+        "Gates run and attributed; NFR-003 met (+0.7 %)",
+        "Independent re-review APPROVE (in-session reviewer subagent; WP05 was claimed under reviewer-renata by mistake, so the verdict is recorded under architect-alphonso). Red-first row for every changed test (ec4d955fd); re-review folds f61ec4b09, a9bda16ab; earlier REJECT findings all folded."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
