@@ -114,7 +114,7 @@ public final class Reachability {
     }
 
     /** The state of one forward walk, keyed by place, and its visitor. */
-    private static final class Cascade implements GraphWalker {
+    private static final class Cascade implements GraphWalker<DrgNode, Relationship> {
 
         private final EdgeIndex index;
         private final ReachRequest request;
@@ -302,7 +302,7 @@ public final class Reachability {
         }
 
         /** The lineage walk from one descendant: up the ancestry chain, passing only the pass-through relations. */
-        private final class Ancestry implements GraphWalker {
+        private final class Ancestry implements GraphWalker<DrgNode, Relationship> {
 
             private final Place descendant;
             private final ReachRequest.Lineage lineage;
