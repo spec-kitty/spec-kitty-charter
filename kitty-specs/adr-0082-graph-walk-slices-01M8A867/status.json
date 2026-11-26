@@ -99,6 +99,9 @@
       "last_event_id": "01M8CF2EJBQA7RH0MZBEA3WWEY",
       "last_transition_at": "2026-11-26T17:39:52.011699+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP03 on lane-c (bee30da5b): ValidationWalker (per-check buckets, OnNode/OnClose, VIOLATION gate, one run at a time), Ledger, GraphCheck; own-closure rules moved to packs.domain.rules behind PackRulesets.ownClosure/ownClosureOf; REFERENCES runs on the walker; ClosureWalk and OwnClosureWalk deleted; determinism guard amended (Proposed, D1). verifyAll, check_docs, markdownlint and cspell green on lane-c. The code equals refactor/638-graph-walker (3119fb476). The in-session adversarial review found no behaviour difference and 13 LOW/NIT findings, all folded (70fcac5f9). Out-of-map: the ledger is Ledger.java, not Findings.java (renamed in the review); the changelog fragment is 2026-11-25-one-walker-runs-the-own-closure-rules.md, not ...-own-closure-rules-from-the-factory.md; the rules moved to domain/rules; ProfileEnhancers' Javadoc link; PackUninstallServiceTest and QualifierLoadTest (constructor change); bee30da5b folds WP02's two cycle-2 NITs in PackGraph and PackGraphWalkTest (WP01/WP02-owned, both approved)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 19209,
