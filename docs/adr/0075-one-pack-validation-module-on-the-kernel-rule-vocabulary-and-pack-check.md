@@ -220,7 +220,8 @@ rules live.
     binding seam a test uses, and parse the owners again. The unification gives "held" one resolution.
   - **AA5.** The read counters (`LOOKUP_PARSES`, `READS`, `WALKS`, `RUNS`) are global static `LongAdder`s that the
     one-read tests sample, so a concurrent read can miscount. The unification gives the reader its own counter.
-    *Resolved 2026-11-26 (#659): a meter bound per call replaces them; see the amendment of that date.*
+    *Resolved by the Proposed amendment of 2026-11-26 (#659), pending its acceptance: a meter bound per call replaces
+    them.*
 
   The note `docs/development/notes/pack-code-unification.md` records both, with AA2's deferred half (whether the
   aggregate holds a `Reason` in place of `PackElementViolation`), under the outcomes of WP05.

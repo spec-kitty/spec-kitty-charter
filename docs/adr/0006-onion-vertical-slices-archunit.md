@@ -2,7 +2,7 @@
 title: "ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit"
 description: The service is onion-layered and cut into vertical concern slices, one Gradle module per slice with layers as packages; ArchUnit enforces inward dependencies and a pure domain.
 doc_status: draft
-updated: 2026-11-18T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-21'
 type: ADR
@@ -43,7 +43,8 @@ The pack repositories and validation mission (`pack-repositories-validation-01M5
 decision. The realized module set is:
 
 - **`kernel`** — `kernel.domain` (the shared Pack and CRG vocabulary) and `kernel.validation` (a
-  pure guard library, `java` and `jspecify` only);
+  pure guard library, `java` and `jspecify` only); since 2026-11-26 (#659, ADR-0075's AA5 amendment) also
+  `kernel.metering`, the work meter a domain may count on (`java` and `jspecify` only);
 - **`packs`** — the first slice, with the layer packages `domain`, `application`, `infra.storage`
   (the outbound adapter) and `infra.api` (the inbound adapter);
 - **`bootstrap`** — the composition root;
@@ -170,7 +171,7 @@ domain-service *implementations* live (pure domain vs application ring), and the
 
    | Rule | Statement |
    |---|---|
-   | `DOMAIN_IS_PURE` | classes in `..domain..` depend only on `java..`, `..kernel.domain..`, and their own slice's `..domain..` |
+   | `DOMAIN_IS_PURE` | classes in `..domain..` depend only on `java..`, the kernel (`..kernel.domain..`, and since 2026-11-26 `..kernel.metering..`), and their own slice's `..domain..` |
    | `NO_INFRA_ANNOTATIONS_IN_DOMAIN` | no class/field/method in `..domain..` carries a Spring, Jakarta, Jackson/YAML, JPA or GraphQL annotation |
    | `ONION_DEPENDS_INWARD` | `..infra..` → `{..application.., ..domain..}`; `..application..` → `..domain..`; `..domain..` → nothing outward |
    | `ENTRYPOINT_OVER_APPLICATION` | `..infra.api.rest..` / `..infra.api.graphql..` depend on `..application..` (and generated API/GraphQL types) but **not** on `..infra.storage..` |

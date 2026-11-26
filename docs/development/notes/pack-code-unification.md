@@ -631,7 +631,7 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
   - **AA5: the read counters are global statics.** `FilesystemPackStore`'s `LOOKUP_PARSES` and `READS`,
     `PackFileSet`'s `WALKS` and `StoreRead`'s `RUNS` are static `LongAdder`s that the one-read tests sample before
     and after a call. They count every read of the JVM, so a test that runs beside another read can miscount. The
-    unification replaces them with a counter the reader is given. *Resolved 2026-11-26 (#659) without the unification:
+    unification replaces them with a counter the reader is given. *Resolved 2026-11-26 (#659), by a Proposed ADR-0075 amendment and without the unification:
     a `WorkMeter` bound around one call counts each unit (ADR-0075, amendment of that date).*
 
 ## Outcomes of WP04
