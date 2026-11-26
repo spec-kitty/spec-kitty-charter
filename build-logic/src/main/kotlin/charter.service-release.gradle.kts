@@ -13,35 +13,14 @@
 
 val root = layout.projectDirectory.asFile.absolutePath
 
-/** Whether `refs/tags/<tag>` is an ancestor of HEAD; a tag that does not exist is not. */
-fun tagMerged(tag: Provider<String>): Provider<Boolean> = tag.flatMap { name ->
-    providers.exec {
-        commandLine("git", "-C", root, "merge-base", "--is-ancestor", "refs/tags/$name", "HEAD")
-        isIgnoreExitValue = true
-    }.result.map { it.exitValue == 0 }
-}
-
-/**
- * Whether the files of [paths] at HEAD differ from those at `refs/tags/<tag>`; a tag that does not exist differs. It is
- * consulted only for a tag the gate found merged.
- */
-fun changedSince(tag: Provider<String>, paths: List<String>): Provider<Boolean> = tag.flatMap { name ->
-    providers.exec {
-        commandLine(listOf("git", "-C", root, "diff", "--quiet", "refs/tags/$name", "HEAD", "--") + paths)
-        isIgnoreExitValue = true
-    }.result.map { it.exitValue != 0 }
-}
+// tagMerged, changedSince and PACKS_CONTRACT_FILES are ContractReleaseGit.kt's, shared with the packs contract's
+// CHANGELOG check (#663).
 
 // The files of the charter contract's release assets (scripts/release/contract-release-assets.sh): the YAML the bundle
 // is built from, the scenarios and the activation document. The CHANGELOG and its change notes are not the contract.
 val charterContractFiles = listOf(
     ":(glob)contracts/charter/**/*.yaml", ":(glob)contracts/_shared/**/*.yaml", "contracts/charter/scenarios",
     "contracts/offering/schemas/ActivationConfig.schema.json",
-)
-
-// The packs contract's files, as its CHANGELOG defines them. The README and the CHANGELOG are not the contract.
-val packsContractFiles = listOf(
-    "contracts/packs/file-kinds.yaml", "contracts/packs/schemas", "contracts/packs/conformance",
 )
 
 val contractVersion: Provider<String> = contractInfoVersion
@@ -70,7 +49,7 @@ val packsUnchangedSince: Provider<String> = newestPacksTag.flatMap { tag ->
     if (tag.isEmpty()) {
         providers.provider { "" }
     } else {
-        changedSince(providers.provider { tag }, packsContractFiles)
+        changedSince(providers.provider { tag }, PACKS_CONTRACT_FILES)
             .map { changed -> if (changed) "" else tag.removePrefix("contract-packs-v") }
     }
 }
@@ -85,7 +64,7 @@ tasks.register("checkServiceReleaseTag") {
     val contractChanged = changedSince(contractVersion.map { "contract-charter-v$it" }, charterContractFiles)
     val packs = packsVersion
     val packsMerged = tagMerged(packsVersion.map { "contract-packs-v$it" })
-    val packsChanged = changedSince(packsVersion.map { "contract-packs-v$it" }, packsContractFiles)
+    val packsChanged = changedSince(packsVersion.map { "contract-packs-v$it" }, PACKS_CONTRACT_FILES)
     val packsUnchanged = packsUnchangedSince
     val gate = layout.buildDirectory.file("service-release/gate.properties")
     outputs.file(gate)
