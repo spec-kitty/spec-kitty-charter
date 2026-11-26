@@ -13,8 +13,10 @@
 #      letters, digits and dots), from the unreleased commit;
 #   4. commits the next unused release candidate <version>-rc.N (rc.1 when none is recorded; operator ruling R1) from
 #      the unreleased commit, and expects its three assets as in step 2;
-#   5. reopens <version>-SNAPSHOT above the candidate and expects the packs CHANGELOG check (:contracts:checkPacksChangelog)
-#      to pass, and a later version above the candidate, before its final release, to be refused.
+#   5. at the tagged candidate, expects the packs CHANGELOG check (:contracts:checkPacksChangelog) to pass after a
+#      commit outside the packs contract, and to refuse a commit that changes a packs contract file (#663);
+#   6. reopens <version>-SNAPSHOT above the candidate and expects the packs CHANGELOG check to pass, and a later version
+#      above the candidate, before its final release, to be refused.
 # On the release pull request, where the top heading is already the release or a release candidate, it skips the
 # other steps and rehearses that release as it stands. The clone has no remote, so its tags can never be pushed. service.yml runs it after verifyAll.
 set -euo pipefail
@@ -127,12 +129,21 @@ sed -i "0,/^## $snapshot\$/s//## $rc/" "$changelog"
 commit "rehearsal: release candidate $rc"
 assemble "$rc"
 
-echo "== 5. After the candidate, $snapshot is open again"
+echo "== 5. Under the tagged candidate $rc, the packs contract's files are those of the release (#663)"
+echo "rehearsal" >> README.md
+commit "rehearsal: a change outside the packs contract under $rc"
+./gradlew --quiet :contracts:checkPacksChangelog
+echo "# rehearsal" >> contracts/packs/file-kinds.yaml
+commit "rehearsal: a packs contract change under $rc"
+refused_by :contracts:checkPacksChangelog "differ from that release"
+git reset --quiet --hard "contract-packs-v$rc"
+
+echo "== 6. After the candidate, $snapshot is open again"
 sed -i "0,/^## $rc\$/s//## $snapshot\n\nWork toward the next candidate or the final $version.\n\n## $rc/" "$changelog"
 ./gradlew --quiet :contracts:checkPacksChangelog
 next="${version%.*}.$(( ${version##*.} + 1 ))-SNAPSHOT"
 sed -i "0,/^## $snapshot\$/s//## $next/" "$changelog"
 refused_by :contracts:checkPacksChangelog "follows the release candidate $rc"
 git checkout --quiet -- "$changelog"
-echo "Rehearsed $tag and $rc: refused while unreleased or malformed, assembled once released, and $snapshot reopens"
-echo "after the candidate. Nothing was published."
+echo "Rehearsed $tag and $rc: refused while unreleased or malformed, assembled once released, the packs contract's"
+echo "files frozen under the tagged candidate, and $snapshot reopens after it. Nothing was published."

@@ -37,9 +37,12 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * release or release candidate ({@link ReleaseGate#packsReleaseRefusal}, #559): it prints {@code RELEASE <version>} and exits 0, or prints
  * the refusal and exits 1. The Gradle task {@code checkPacksReleaseTag} runs it.
  *
- * <p>{@code CheckReleaseGate --packs-changelog <CHANGELOG.md>} checks the packs contract's CHANGELOG on every build
- * ({@link ReleaseGate#packsChangelogRefusal}): it prints a {@code PACKS} line and exits 0, or prints the refusal and
- * exits 1. The Gradle task {@code checkPacksChangelog}, part of {@code check}, runs it.
+ * <p>{@code CheckReleaseGate --packs-changelog <CHANGELOG.md> <merged-tags> <changed-tags>} checks the packs
+ * contract's CHANGELOG on every build ({@link ReleaseGate#packsChangelogRefusal}), given the {@code contract-packs-v*}
+ * tags merged into HEAD and those of them whose packs contract files differ at HEAD, one per line: it prints a
+ * {@code PACKS} line and exits 0, or prints the refusal and exits 1. The Gradle task {@code checkPacksChangelog}, part
+ * of {@code check}, runs it. {@code --packs-changelog <CHANGELOG.md> --no-git} runs only the heading rules, for
+ * {@code -PcontractBaseline=none} outside CI.
  *
  * <p>{@code CheckReleaseGate --previous-breaking <openapi.yaml> <CHANGELOG.md> <merged-tags>} prints
  * {@code PREVIOUS_BREAKING <tag>} when the version is a breaking bump (a major bump, or a minor bump while the major
@@ -53,7 +56,7 @@ public final class CheckReleaseGate {
                     + " | CheckReleaseGate --baseline <openapi.yaml> <tag>"
                     + " | CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag> [<changes-dir>]"
                     + " | CheckReleaseGate --packs-release <CHANGELOG.md> <tag>"
-                    + " | CheckReleaseGate --packs-changelog <CHANGELOG.md>"
+                    + " | CheckReleaseGate --packs-changelog <CHANGELOG.md> (<merged-tags> <changed-tags> | --no-git)"
                     + " | CheckReleaseGate --previous-breaking <openapi.yaml> <CHANGELOG.md> <merged-tags>";
 
     private CheckReleaseGate() {}
@@ -93,8 +96,12 @@ public final class CheckReleaseGate {
             @Nullable Path changes = args.size() == 5 ? Path.of(args.get(4)) : null;
             return OptionalInt.of(release(Path.of(args.get(1)), Path.of(args.get(2)), args.get(3), changes, out));
         }
-        if (args.size() == 2 && "--packs-changelog".equals(args.get(0))) {
-            return OptionalInt.of(packsChangelog(Path.of(args.get(1)), out));
+        if (packsChangelogArgs(args)) {
+            Path changelog = Path.of(args.get(1));
+            return OptionalInt.of(
+                    args.size() == 4
+                            ? packsChangelog(changelog, Path.of(args.get(2)), Path.of(args.get(3)), out)
+                            : packsChangelog(changelog, null, null, out));
         }
         if (args.size() == 3 && "--packs-release".equals(args.get(0))) {
             return OptionalInt.of(packsRelease(Path.of(args.get(1)), args.get(2), out));
@@ -203,15 +210,25 @@ public final class CheckReleaseGate {
         return 0;
     }
 
-    private static int packsChangelog(Path changelog, PrintStream out) {
-        String log;
+    /** {@code --packs-changelog <CHANGELOG.md>} followed by the two tag files, or by {@code --no-git}. */
+    private static boolean packsChangelogArgs(List<String> args) {
+        return "--packs-changelog".equals(args.isEmpty() ? null : args.get(0))
+                && (args.size() == 4 || (args.size() == 3 && "--no-git".equals(args.get(2))));
+    }
+
+    /** Without tag files ({@code --no-git}), only the heading rules run. */
+    private static int packsChangelog(
+            Path changelog, @Nullable Path mergedTags, @Nullable Path changedTags, PrintStream out) {
+        Optional<Decision.Refused> refused;
         try {
-            log = Files.readString(changelog);
+            String log = Files.readString(changelog);
+            refused = mergedTags == null || changedTags == null
+                    ? ReleaseGate.packsChangelogRefusal(log)
+                    : ReleaseGate.packsChangelogRefusal(log, tags(mergedTags), tags(changedTags));
         } catch (IOException e) {
             out.println("Cannot read the release gate's inputs: " + e.getMessage());
             return 2;
         }
-        Optional<Decision.Refused> refused = ReleaseGate.packsChangelogRefusal(log);
         if (refused.isPresent()) {
             out.println(refused.get().message());
             return 1;

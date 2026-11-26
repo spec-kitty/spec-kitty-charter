@@ -125,12 +125,27 @@ class CheckReleaseGateTest {
     @Test
     void everyBuildChecksThePacksChangelog() throws IOException {
         Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.2.0-SNAPSHOT\n\n## 0.1.0\n");
-        List<String> args = List.of("--packs-changelog", log.toString());
+        Path merged = Files.writeString(dir.resolve("merged.txt"), "contract-packs-v0.1.0\n");
+        Path changed = Files.writeString(dir.resolve("changed.txt"), "");
+        List<String> args = List.of("--packs-changelog", log.toString(), merged.toString(), changed.toString());
         assertThat(CheckReleaseGate.run(args, out)).isEqualTo(1);
         assertThat(printed()).contains("### Breaking");
         output.reset();
         Files.writeString(log, "## 0.2.0-SNAPSHOT\n\n### Breaking\n\n- x\n\n## 0.1.0\n");
         assertThat(CheckReleaseGate.run(args, out)).isZero();
+        assertThat(printed()).startsWith("PACKS ");
+        output.reset();
+        // The tag files reach the gate: under the released, tagged 0.1.0, a changed packs file is refused, and
+        // --no-git (-PcontractBaseline=none) runs only the heading rules.
+        Files.writeString(log, "## 0.1.0\n");
+        Files.writeString(changed, "contract-packs-v0.1.0\n");
+        assertThat(CheckReleaseGate.run(args, out)).isEqualTo(1);
+        assertThat(printed()).contains("differ from that release");
+        output.reset();
+        // The released rc.1 below the top has no merged tag: only --no-git, which reads no tags, passes it.
+        Files.writeString(log, "## 0.1.0\n\n## 0.1.0-rc.1\n");
+        assertThat(CheckReleaseGate.run(List.of("--packs-changelog", log.toString(), "--no-git"), out))
+                .isZero();
         assertThat(printed()).startsWith("PACKS ");
     }
 
@@ -235,6 +250,20 @@ class CheckReleaseGateTest {
     void wrongArgumentsAreAUsageError() {
         assertThat(CheckReleaseGate.run(List.of("a", "b"), out)).isEqualTo(2);
         assertThat(printed()).startsWith("usage:");
+    }
+
+    @Test
+    void thePacksChangelogModeNeedsBothTagFiles() throws IOException {
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-SNAPSHOT\n");
+        assertThat(CheckReleaseGate.run(List.of("--packs-changelog", log.toString()), out))
+                .isEqualTo(2);
+        assertThat(printed()).startsWith("usage:");
+        output.reset();
+        Path missing = dir.resolve("absent.txt");
+        assertThat(CheckReleaseGate.run(
+                        List.of("--packs-changelog", log.toString(), missing.toString(), missing.toString()), out))
+                .isEqualTo(2);
+        assertThat(printed()).startsWith("Cannot read the release gate's inputs");
     }
 
     private int run(String version, String changelog, String tags, String headTags) throws IOException {
