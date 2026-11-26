@@ -1,7 +1,7 @@
 {
-  "event_count": 26,
-  "last_event_id": "01M8CFFGTCFS9KKPNSZ3558C91",
-  "materialized_at": "2026-11-26T17:47:00.300520+00:00",
+  "event_count": 28,
+  "last_event_id": "01M8CFGYFAN3WGT4P9CEWQGYJ1",
+  "materialized_at": "2026-11-26T17:47:46.866091+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -95,9 +95,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M8CFFGTCFS9KKPNSZ3558C91",
-      "last_transition_at": "2026-11-26T17:47:00.300520+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M8CFGYFAN3WGT4P9CEWQGYJ1",
+      "last_transition_at": "2026-11-26T17:47:46.866091+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP03 on lane-c (bee30da5b): ValidationWalker (per-check buckets, OnNode/OnClose, VIOLATION gate, one run at a time), Ledger, GraphCheck; own-closure rules moved to packs.domain.rules behind PackRulesets.ownClosure/ownClosureOf; REFERENCES runs on the walker; ClosureWalk and OwnClosureWalk deleted; determinism guard amended (Proposed, D1). verifyAll, check_docs, markdownlint and cspell green on lane-c. The code equals refactor/638-graph-walker (3119fb476). The in-session adversarial review found no behaviour difference and 13 LOW/NIT findings, all folded (70fcac5f9). Out-of-map: the ledger is Ledger.java, not Findings.java (renamed in the review); the changelog fragment is 2026-11-25-one-walker-runs-the-own-closure-rules.md, not ...-own-closure-rules-from-the-factory.md; the rules moved to domain/rules; ProfileEnhancers' Javadoc link; PackUninstallServiceTest and QualifierLoadTest (constructor change); bee30da5b folds WP02's two cycle-2 NITs in PackGraph and PackGraphWalkTest (WP01/WP02-owned, both approved)."
@@ -110,7 +110,7 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
