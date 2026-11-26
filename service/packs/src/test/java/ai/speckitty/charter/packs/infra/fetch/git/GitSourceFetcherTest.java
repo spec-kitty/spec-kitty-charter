@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.application.SourceRefusal;
 import ai.speckitty.charter.packs.application.SourceUpstreamException;
 import ai.speckitty.charter.packs.infra.archive.BoundedTreeStager;
 import ai.speckitty.charter.packs.infra.fetch.GuideAllowlist;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -597,14 +599,12 @@ class GitSourceFetcherTest {
     void atMostTheConfiguredNumberOfFetchesRunAtOnce() throws Exception {
         AtomicInteger inFlight = new AtomicInteger();
         AtomicInteger highest = new AtomicInteger();
-        CountDownLatch twoArrived = new CountDownLatch(2);
+        CountDownLatch release = new CountDownLatch(1);
         GitRemote counting = (repository, address) -> {
             int now = inFlight.incrementAndGet();
             highest.accumulateAndGet(now, Math::max);
-            twoArrived.countDown();
             try {
-                twoArrived.await(5, TimeUnit.SECONDS);
-                Thread.sleep(150);
+                release.await(30, TimeUnit.SECONDS);
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
             }
@@ -613,15 +613,38 @@ class GitSourceFetcherTest {
         };
         GitSourceFetcher fetcher = fetcher(Duration.ofSeconds(60), 1L << 30, 2, counting);
         List<Future<Staged>> done = new ArrayList<>();
+        Set<Thread> fetching = ConcurrentHashMap.newKeySet();
         for (int i = 0; i < 6; i++) {
             Path job = Files.createDirectories(temp.resolve("job-" + i));
-            done.add(executor.submit(() -> fetcher.fetch(request(URL, REF, null), job)));
+            done.add(executor.submit(() -> {
+                fetching.add(Thread.currentThread());
+                return fetcher.fetch(request(URL, REF, null), job);
+            }));
         }
+        // Two fetches are inside the remote, held, and the other four are parked in the fetcher's wait for a slot: past
+        // their address lookup, so a slot beyond the limit would have let a third into the remote by now.
+        Await.until(
+                "two fetches inside the remote and four parked waiting for a slot",
+                () -> inFlight.get() == 2
+                        && fetching.size() == 6
+                        && fetching.stream()
+                                        .filter(GitSourceFetcherTest::waitsForASlot)
+                                        .count()
+                                == 4);
+        release.countDown();
 
         for (Future<Staged> one : done) {
             assertThat(one.get(60, TimeUnit.SECONDS).source()).containsEntry("commit", COMMIT);
         }
         assertThat(highest.get()).isEqualTo(2);
+    }
+
+    /** Whether the thread is parked in {@code GitSourceFetcher.acquireSlot}: past its lookup, waiting for a slot. */
+    private static boolean waitsForASlot(Thread thread) {
+        return thread.getState() == Thread.State.TIMED_WAITING
+                && Stream.of(thread.getStackTrace())
+                        .anyMatch(frame -> frame.getClassName().equals(GitSourceFetcher.class.getName())
+                                && frame.getMethodName().equals("acquireSlot"));
     }
 
     @Test

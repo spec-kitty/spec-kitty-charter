@@ -58,7 +58,7 @@ import org.springframework.stereotype.Service;
  * one artefact the registration added or replaced and (when it changed) the registered-relationship shard into the
  * staging copy through the {@link SerializationStrategy}, so the copied descriptor and siblings stay byte-identical,
  * then <em>atomically swaps</em> the staging directory into place. The swap is the
- * {@link DirectoryRename} seam: its default moves the live directory aside with an atomic rename, moves the staging
+ * {@link DirectoryRename}: its default moves the live directory aside with an atomic rename, moves the staging
  * directory into place, and deletes the aside copy; a failure at the second step restores the live directory and
  * rethrows. On any failure <em>before</em> the swap, the live directory is byte-for-byte unchanged and the staging
  * directory is cleaned up.
@@ -90,9 +90,9 @@ import org.springframework.stereotype.Service;
 public final class PackCommitStore implements WholePackWriteStore {
 
     /**
-     * The failure-injection seam: the atomic swap of the fully staged directory into the live directory's place. The
-     * default moves the live directory aside and the staging directory into place; a test supplies one that throws
-     * to prove that a pre-swap failure changes no live file.
+     * The atomic swap of the fully staged directory into the live directory's place. The default moves the live
+     * directory aside and the staging directory into place. A swap that throws is how a failure before the swap is
+     * shown to change no live file, which no real file system fails on demand.
      */
     @FunctionalInterface
     interface DirectoryRename {
@@ -121,8 +121,9 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     /**
-     * The test seam inside the real swap (#490): the points between its steps where a test pauses it, so a reader can be
-     * run in each state of the pack directory. Production uses {@link #NONE}, which does nothing.
+     * The points between the steps of the real swap (#490), where a swap can be paused so a reader runs in each state of
+     * the pack directory. Production uses {@link #NONE}, which does nothing. Kept on purpose: no state outside the swap
+     * shows a reader the directory between its two moves, and the tests of reads in that window need it (#659).
      */
     interface SwapPhases {
 
@@ -202,7 +203,8 @@ public final class PackCommitStore implements WholePackWriteStore {
         };
     }
 
-    private static final DirectoryRename MOVE_ASIDE = moveAside(SwapPhases.NONE);
+    /** The production swap: the move aside, with no pause. */
+    static final DirectoryRename MOVE_ASIDE = moveAside(SwapPhases.NONE);
 
     private static final Logger LOG = LoggerFactory.getLogger(PackCommitStore.class);
 
@@ -225,35 +227,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     /**
-     * A commit store over an explicit registry lock and write generation; a test injects a short lock timeout and a
-     * generation of its own.
-     *
-     * @param locations the configured pack locations
-     * @param strategy the serialization format
-     * @param registryLock the lock a whole-pack registration takes before the pack's own
-     * @param generation the write generation a whole-pack swap is bracketed with
-     */
-    public PackCommitStore(
-            Locations locations,
-            SerializationStrategy strategy,
-            RegistryWriteLock registryLock,
-            PackWriteGeneration generation) {
-        this(locations, strategy, MOVE_ASIDE, registryLock, generation);
-    }
-
-    /**
-     * A commit store with an injected swap step; the seam for the NFR-002 atomicity test.
-     *
-     * @param locations the configured pack locations
-     * @param strategy the serialization format
-     * @param rename the directory-swap step
-     */
-    PackCommitStore(Locations locations, SerializationStrategy strategy, DirectoryRename rename) {
-        this(locations, strategy, rename, RegistryWriteLock.shared(), PackWriteGeneration.shared());
-    }
-
-    /**
-     * A commit store with an injected swap step, lock and generation.
+     * A commit store over every collaborator: the directory swap, the registry lock and the write generation.
      *
      * @param locations the configured pack locations
      * @param strategy the serialization format
@@ -720,14 +694,14 @@ public final class PackCommitStore implements WholePackWriteStore {
         removeWhole(live, packId, PackCommitStore::moveDirectory);
     }
 
-    /** The rename a removal makes, a seam so a test can make it fail. */
+    /** The rename a removal makes; one that fails shows the removal leaves the pack whole. */
     @FunctionalInterface
     interface DirectoryMove {
         void move(Path from, Path to) throws IOException;
     }
 
     /**
-     * {@link #removeWhole(Path, String)} with the rename given: a test's seam.
+     * {@link #removeWhole(Path, String)} with the rename given, the one the other overload passes being the atomic move.
      *
      * @param live the pack's live directory
      * @param packId the name the pack is stored under
@@ -849,7 +823,7 @@ public final class PackCommitStore implements WholePackWriteStore {
         }
     }
 
-    /** {@link Files#move} as a seam, so a test can make the atomic replace fail as Windows does. */
+    /** {@link Files#move}; one that fails shows the atomic replace failing as it does on Windows. */
     @FunctionalInterface
     interface Mover {
         void move(Path source, Path target, CopyOption... options) throws IOException;

@@ -36,6 +36,7 @@ import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
@@ -121,7 +122,7 @@ class ClosureViewTest {
                                 .toList()));
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(), held, List.of(), List.of(), policy, List.of(), List.of(edges), Map.of()));
     }
 
@@ -156,7 +157,7 @@ class ClosureViewTest {
                     return facts.get(pack.value());
                 },
                 read);
-        return new ClosureQueries(offering, catalog, read).allConfigured();
+        return new ClosureQueries(offering, catalog, read).snapshot(Optional.empty());
     }
 
     private InForceStates select(String... selected) {
@@ -597,7 +598,7 @@ class ClosureViewTest {
         PackCompositionFacts held = facts.get(name);
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         held.changed(),
                         held.held(),
                         held.declared(),
@@ -699,7 +700,7 @@ class ClosureViewTest {
         DomainRepositoryService store = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         ConsistentRead read = new ConsistentRead(() -> "sha256:" + "a".repeat(64));
         OfferingReadService offering = new OfferingReadService(store, store, store, read);
-        return new ClosureQueries(offering, store, read, store, store).allConfigured();
+        return new ClosureQueries(offering, store, read, store, store).snapshot(Optional.empty());
     }
 
     @Test
@@ -817,7 +818,7 @@ class ClosureViewTest {
                                 Optional.of(Payload.of(text.getBytes(StandardCharsets.UTF_8))), Optional.empty())))
                 .orElse(Map.of());
         return new ClosureQueries(offering, catalog, read, pack -> stored.get(pack.value()), companions)
-                .allConfigured();
+                .snapshot(Optional.empty());
     }
 
     @Test

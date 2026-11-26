@@ -25,6 +25,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -103,7 +104,7 @@ class EdgeIndexTest {
                     Set.copyOf(terms)));
             facts.put(
                     name,
-                    new PackCompositionFacts(
+                    CompositionFacts.of(
                             List.of(),
                             held,
                             List.of(),

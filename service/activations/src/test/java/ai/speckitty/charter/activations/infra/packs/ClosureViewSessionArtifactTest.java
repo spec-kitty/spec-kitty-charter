@@ -37,6 +37,8 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.ClosureViews;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -414,14 +416,14 @@ class ClosureViewSessionArtifactTest {
             MutabilityPolicySource policy = MutabilityPolicySource.empty();
             facts.put(
                     name,
-                    new PackCompositionFacts(
+                    CompositionFacts.of(
                             List.of(), held, List.of(), List.of(), policy, List.of(), Arrays.asList(edges), Map.of()));
             policies.put(new PackUlid(id), policy);
             return this;
         }
 
         PacksSession session() {
-            ClosureView view = new ClosureView(
+            ClosureView view = ClosureViews.of(
                     List.of(),
                     Map.<ArtifactKind, Set<String>>of(),
                     Map.of(),

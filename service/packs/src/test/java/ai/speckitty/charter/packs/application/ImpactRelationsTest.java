@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -89,7 +90,7 @@ class ImpactRelationsTest {
         Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
         facts.put(
                 "acme",
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         held,
                         List.of(),

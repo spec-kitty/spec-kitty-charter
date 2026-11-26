@@ -375,7 +375,8 @@ class AssetStoreTest {
             return Files.readAllBytes(file);
         };
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy, failing).read(SOURCE_DIRECTORY);
+        FilesystemPackStore.PackRead read =
+                StoreSeams.readingPayloadsWith(host, strategy, failing).read(SOURCE_DIRECTORY);
 
         assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("kept.bin");
         assertThat(read.violations())

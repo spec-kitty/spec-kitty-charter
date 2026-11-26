@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PromptFacts;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
@@ -118,7 +119,7 @@ class ClosureViewGovernanceTest {
                 .toList();
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         held,
                         List.of(),
@@ -144,7 +145,7 @@ class ClosureViewGovernanceTest {
         PackCompositionFacts plain = facts.get(name);
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         plain.changed(),
                         plain.held(),
                         plain.declared(),
@@ -263,7 +264,7 @@ class ClosureViewGovernanceTest {
     @Test
     void theActivationScopedWalkResolvesAParentQualifiedWithAnotherPackAndNamesTheWinnerOfEachEntry() {
         qualifiedParentInAnotherPack();
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         ProfileGovernance.Governance governance = view.governance(P, 1, selecting(view, P, Q, D));
 
@@ -283,7 +284,7 @@ class ClosureViewGovernanceTest {
     @Test
     void anAncestorThePredicateRefusesIsNotListedAndSeedsNothingUnderAnActivation() {
         qualifiedParentInAnotherPack();
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         ProfileGovernance.Governance governance = view.governance(P, 1, selecting(view, P, D));
 
@@ -293,7 +294,7 @@ class ClosureViewGovernanceTest {
     @Test
     void aProfileOutOfForceIsStillWalkedUnderAnActivation() {
         qualifiedParentInAnotherPack();
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         ProfileGovernance.Governance governance = view.governance(P, 1, selecting(view, Q, D));
 
@@ -316,7 +317,7 @@ class ClosureViewGovernanceTest {
                 List.of("P"),
                 List.of(),
                 edge("agent_profile:P", RelationType.REQUIRES, "builtin::directive:New"));
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
         Urn old = urn("directive:Old");
         Urn fresh = urn("directive:New");
 
@@ -343,7 +344,7 @@ class ClosureViewGovernanceTest {
                 List.of("P"),
                 List.of(),
                 edge("agent_profile:P", RelationType.REQUIRES, "builtin::directive:D"));
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         Optional<ClosureView.EffectiveArtifactView> found =
                 view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 1, selecting(view, P, D));
@@ -361,7 +362,7 @@ class ClosureViewGovernanceTest {
     @Test
     void theWinnerReadOfAnotherKindCarriesNoGovernanceAndAnAbsentArtifactIsEmpty() {
         pack("builtin", PackLevel.BUILT_IN, List.of(), List.of("P"), List.of("directive:D"));
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
         InForceStates states = selecting(view, P, D);
 
         assertThat(view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "Missing", 1, states))
@@ -375,7 +376,7 @@ class ClosureViewGovernanceTest {
     @Test
     void theWinnerEntityIsReadAgainstTheDigestOfTheClosureTheViewWasVerifiedAt() {
         pack("builtin", PackLevel.BUILT_IN, List.of(), List.of("P"), List.of());
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
         digest = "2";
 
         assertThatThrownBy(() -> view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 0, selecting(view, P)))
@@ -401,7 +402,7 @@ class ClosureViewGovernanceTest {
         PackCompositionFacts held = facts.get("builtin");
         facts.put(
                 "builtin",
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         held.changed(),
                         held.held(),
                         held.declared(),
@@ -430,7 +431,7 @@ class ClosureViewGovernanceTest {
     @Test
     void theStepPromptIsReadAgainstTheDigestOfTheClosureTheViewWasVerifiedAt() {
         aStepWithAStoredPrompt();
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
         InForceStates states = selecting(view, urn("mission_type:M"));
         digest = "2";
 
@@ -443,7 +444,7 @@ class ClosureViewGovernanceTest {
     @Test
     void theTwinTheStepPromptOfAClosureThatDidNotMoveIsServedAsStored() {
         aStepWithAStoredPrompt();
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         EffectivePromptQuery.EffectivePrompt prompt =
                 view.effectivePrompt("M", "s", selecting(view, urn("mission_type:M")));
@@ -461,7 +462,7 @@ class ClosureViewGovernanceTest {
                         .id(new PackIdentifier("builtin"))
                         .descriptor(descriptors.get("builtin"))
                         .build());
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThatThrownBy(() -> view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 0, selecting(view, P)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -473,7 +474,7 @@ class ClosureViewGovernanceTest {
     @Test
     void aViewBuiltWithoutAPackStoreFailsTheWinnerReadAsAWiringFaultNotAsAnUnreadablePack() {
         pack("builtin", PackLevel.BUILT_IN, List.of(), List.of("P"), List.of());
-        ClosureView view = queries(false).allConfigured();
+        ClosureView view = queries(false).snapshot(Optional.empty());
 
         assertThatThrownBy(() -> view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 0, selecting(view, P)))
                 .isInstanceOf(IllegalStateException.class)
@@ -488,7 +489,7 @@ class ClosureViewGovernanceTest {
     @Test
     void aTermIsListedUnderAnActivationWhileItsContextsWinningCopyIsInForceAndHoldsIt() {
         aProfileWhoseVocabularyNamesTwoTermsOfAnOverriddenContext();
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
         Urn context = urn("glossary_context:g");
 
         ProfileGovernance.Governance inForce = view.governance(P, 1, selecting(view, P, context));
@@ -519,7 +520,7 @@ class ClosureViewGovernanceTest {
                 List.of("P"),
                 List.of("directive:D"),
                 edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "builtin::agent_profile:Q"));
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         ProfileGovernance.Governance governance = view.packGovernance(P, 1);
 
@@ -553,7 +554,7 @@ class ClosureViewGovernanceTest {
                 List.of("P"),
                 List.of(),
                 edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "agent_profile:Base"));
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         ProfileGovernance.Governance governance = view.packGovernance(P, 1);
 

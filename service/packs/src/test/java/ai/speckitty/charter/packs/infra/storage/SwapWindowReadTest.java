@@ -102,7 +102,7 @@ class SwapWindowReadTest {
 
     /** A commit of the toolguide {@code fd}, run in its own thread through the real swap paused by {@code phases}. */
     private CompletableFuture<PackRevision> commitPausedBy(PackCommitStore.SwapPhases phases) {
-        PackCommitStore commits = new PackCommitStore(locations, strategy, PackCommitStore.moveAside(phases));
+        PackCommitStore commits = CommitStores.swappingWith(locations, strategy, PackCommitStore.moveAside(phases));
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations, strategy, commits);
         CompletableFuture<PackRevision> done = new CompletableFuture<>();
         Thread.ofPlatform().start(() -> {

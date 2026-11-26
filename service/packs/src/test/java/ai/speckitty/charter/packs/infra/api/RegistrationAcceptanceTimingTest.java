@@ -83,7 +83,6 @@ class RegistrationAcceptanceTimingTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 quiet,
-                RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 new FileStagingArea(staging)));
     }

@@ -285,7 +285,7 @@ class PerArtifactImpactTest {
                 new ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore(
                         counting,
                         strategy,
-                        new ai.speckitty.charter.packs.infra.storage.PackCommitStore(
+                        ai.speckitty.charter.packs.infra.storage.CommitStores.over(
                                 counting, strategy, rig.lock, rig.generation),
                         rig.lock,
                         rig.generation);

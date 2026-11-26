@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -110,7 +111,7 @@ class EffectivePromptQueryTest {
         for (String pack : packs) {
             facts.put(
                     pack,
-                    new PackCompositionFacts(
+                    CompositionFacts.of(
                             List.of(),
                             List.of(),
                             List.of(),

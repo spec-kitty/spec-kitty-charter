@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -101,7 +102,7 @@ class CompositionFactsBuilderTest {
             "a step is referable only when the pack holds its mission type's file: a step a graph declares without it is"
                     + " declared and never referable (WP03 LOW, ruling R-v)")
     void aStepWithoutItsMissionTypeFileIsDeclaredAndNotReferable() {
-        PackCompositionFacts facts = new PackCompositionFacts(
+        PackCompositionFacts facts = CompositionFacts.of(
                 List.of(),
                 List.of("directive:A", "mission_type:held"),
                 List.of("directive:A", "mission_type:held", "action:held/build", "action:ghost/build"),

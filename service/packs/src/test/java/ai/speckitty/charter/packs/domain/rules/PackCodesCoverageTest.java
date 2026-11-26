@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.infra.storage.TreeReads;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageRulesets;
@@ -622,9 +623,9 @@ class PackCodesCoverageTest {
     private static Function<PackUnderResolution, PackCompositionFacts> facts(
             PackUnderResolution holder, Preset preset, List<String> held, List<String> declared) {
         return pack -> pack.equals(holder)
-                ? new PackCompositionFacts(
+                ? CompositionFacts.of(
                         List.of(), List.of(), List.of(), List.of(), MutabilityPolicySource.empty(), List.of(preset))
-                : new PackCompositionFacts(List.of(), held, declared, List.of());
+                : CompositionFacts.of(List.of(), held, declared, List.of());
     }
 
     static Stream<ReasonCode> closureCodes() {

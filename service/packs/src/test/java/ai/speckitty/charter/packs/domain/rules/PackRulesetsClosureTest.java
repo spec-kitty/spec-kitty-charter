@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PackReadout;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -116,7 +117,7 @@ class PackRulesetsClosureTest {
     void thePresetPhaseRunsTheContestsThenThePresetItems() {
         Function<PackUnderResolution, PackCompositionFacts> factsOf =
                 pack -> pack.descriptor().packId().equals(LEFT_ID)
-                        ? new PackCompositionFacts(
+                        ? CompositionFacts.of(
                                 List.of(),
                                 List.of(),
                                 List.of(),
@@ -171,7 +172,7 @@ class PackRulesetsClosureTest {
 
     /** Each pack's facts with the presets of the given ids, by the pack's descriptor id; no item, so no item fault. */
     private static Function<PackUnderResolution, PackCompositionFacts> presetsHeld(Map<String, List<String>> presets) {
-        return pack -> new PackCompositionFacts(
+        return pack -> CompositionFacts.of(
                 List.of(),
                 List.of(),
                 List.of(),
