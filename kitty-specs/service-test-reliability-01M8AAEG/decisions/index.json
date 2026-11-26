@@ -1,0 +1,53 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-25T21:40:50.803708Z",
+      "decision_id": "01M8AAEZFK3YV64F8WMK3AR12C",
+      "final_answer": "keep + ADR-0075 AA5 amendment + move out of packs.domain (recommended)",
+      "input_key": "workmeter-disposition",
+      "mission_id": "01M8AAEGAWWX40BC7NQ6GAZVQ2",
+      "mission_slug": "service-test-reliability-01M8AAEG",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "keep + ADR-0075 AA5 amendment + move out of packs.domain (recommended)",
+        "give it a production consumer (per-request read-work metrics)",
+        "keep as is in packs.domain"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Q5: The six static counters are replaced by WorkMeter, a ScopedValue-bound meter only tests call. Keep it on purpose (ADR-0075 AA5 amendment) and move it out of packs.domain, give it a production consumer, or something else?",
+      "rationale": "Operator ruling 2026-11-25, relayed by the dispatcher: keep WorkMeter, record an ADR-0075 AA5 amendment (Proposed), move it out of packs.domain and correct the javadoc.",
+      "resolved_at": "2026-11-25T21:58:32.557793Z",
+      "resolved_by": "operator (relayed by dispatcher session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "workmeter",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-25T21:40:53.375043Z",
+      "decision_id": "01M8AAF1ZZB8KXQKE4DDTNWTP5",
+      "final_answer": "in, as recommended",
+      "input_key": "f12-scope",
+      "mission_id": "01M8AAEGAWWX40BC7NQ6GAZVQ2",
+      "mission_slug": "service-test-reliability-01M8AAEG",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "in, as recommended",
+        "out: named items only"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Q6: Bring the F12 test-only methods into scope (CompositionFactsCache.loads/hits, RegistrationJobs.retained, ClosureQueries.allConfigured; keep RegistryWriteLock.hasQueuedThread and PackCommitStore.SwapPhases with a recorded reason)?",
+      "rationale": "Operator ruling 2026-11-25, relayed by the dispatcher: Q6=a.",
+      "resolved_at": "2026-11-25T21:58:35.098781Z",
+      "resolved_by": "operator (relayed by dispatcher session_019C2Tk6DpTSEBeTcn9F6smy)",
+      "slot_key": "f12",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M8AAEGAWWX40BC7NQ6GAZVQ2",
+  "version": 1
+}
