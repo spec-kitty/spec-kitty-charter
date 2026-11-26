@@ -11,8 +11,9 @@ import java.util.concurrent.atomic.LongAdder;
  * budgets that hold a surface to one walk, one store run and one whole read (#554), and a request to one in-force
  * resolution (NFR-003). Kept on purpose as a measurement point for those budgets (ADR-0075 AA5 amendment, #659).
  *
- * <p>A meter counts only the work done inside {@link #measure} on the thread that called it: work handed to another
- * thread is not counted, so a budget asserts each of its units at least once. With no meter bound, {@link #count}
+ * <p>A meter counts only the work done inside {@link #measure} on the thread that called it, and on the forks of a
+ * structured task scope opened there, which inherit the binding (hence a concurrent map of adders); work handed to any
+ * other thread is not counted, so a budget asserts each of its units at least once. With no meter bound, {@link #count}
  * does nothing. Nothing is kept between two measurements, so two calls measured at once never see each other's work.
  */
 public final class WorkMeter {

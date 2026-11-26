@@ -2517,14 +2517,18 @@ class HexagonalArchitectureTest {
      */
     private static ArchRule noStaticCounterInMain() {
         DescribedPredicate<JavaField> kept = DescribedPredicate.describe(
-                "kept on purpose (PackCommitStore.COUNTER, GlobalAddressResolverProvider, PackSchemas.bundled) or test"
+                "kept on purpose (PackCommitStore.COUNTER, GlobalAddressResolverProvider.ALLOWLIST and LOADED_BY_JDK,"
+                        + " PackSchemas.bundled) or test"
                         + " fixtures",
                 field -> isNamed(field, ".PackCommitStore", "COUNTER")
-                        || field.getOwner().getName().endsWith(".GlobalAddressResolverProvider")
+                        || isNamed(field, ".GlobalAddressResolverProvider", "ALLOWLIST")
+                        || isNamed(field, ".GlobalAddressResolverProvider", "LOADED_BY_JDK")
                         || isNamed(field, ".PackSchemas", "bundled")
                         || field.getOwner()
                                 .getSource()
-                                .map(source -> source.getUri().toString().matches(".*(testFixtures|test-fixtures).*"))
+                                .map(source -> source.getUri()
+                                        .toString()
+                                        .matches(".*(/build/classes/java/testFixtures/|-test-fixtures\\.jar!).*"))
                                 .orElse(false));
         ArchCondition<JavaField> beAConstant = new ArchCondition<>("be final and hold no atomic or adder") {
             @Override
