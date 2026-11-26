@@ -65,7 +65,8 @@
       "last_transition_at": "2026-11-26T06:19:39.983656+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "- 2026-11-26T05:40:39Z – claude::java-jenny – shell_pid=233 – Full packs/activations/deployable suites green (9m). Red-first: 5 mutants, 5 target tests red, reverted. retained() kept by operator ruling 2026-11-26. ended()/markRunning guards mask each other; the new test kills the both-removed mutant."
+        "- 2026-11-26T05:40:39Z – claude::java-jenny – shell_pid=233 – Full packs/activations/deployable suites green (9m). Red-first: 5 mutants, 5 target tests red, reverted. retained() kept by operator ruling 2026-11-26. ended()/markRunning guards mask each other; the new test kills the both-removed mutant.",
+        "Independent review (reviewer-renata subagent): APPROVE. Findings folded in lane-b (named wait states, awaitEnd reads the held status, masking-guard javadoc, retained() reason in domain terms); the 'suites pending' commit wording is corrected at the squash."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
