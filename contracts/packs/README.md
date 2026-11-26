@@ -41,9 +41,9 @@ case (`Readme.md`, `Pack.md`) is refused by name under that rule, with the viola
 also judged in lower case (#661): an exclusion takes its file in any letter case (`assets/logos/ReadMe.md` is the
 excluded README), a retired rule refuses its family in any letter case wherever it stands (`a.Step-Contract.yaml`),
 and a `files` rule judges its kind over a payload, an exclusion or another `files` rule that takes the file as
-written, so every spelling has its lower-case spelling's kind (`assets/a.Directive.yaml` is a directive). Last, after the companion claims of the kind
-bindings (a skill's body, a toolguide's guide), the `ignored` rules (`match` and `reason`, both required) take what
-nothing else took: `**/*.md`, so Markdown no rule models (an author's `docs/notes.md`) is excluded. An excluded file,
+written, so every spelling has its lower-case spelling's kind (`assets/a.Directive.yaml` is a directive). Last,
+after the companion claims of the kind bindings (a skill's body, a toolguide's guide), the `ignored` rules (`match`
+and `reason`, both required) take what nothing else took: `**/*.md`, so Markdown no rule models (an author's `docs/notes.md`) is excluded. An excluded file,
 whether an `exclusions` or an `ignored` match, is not held, not served, not digested and not refused: a registration
 removes it before it commits and reports it as a `file_not_held` diagnostic (ADR-0073). A file that no step takes
 is `unmodelled`: it is warned as `file_not_held` and not held, as an excluded file is (#554, operator ruling Q1). Each
