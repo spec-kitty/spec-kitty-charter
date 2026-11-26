@@ -134,6 +134,9 @@
       "last_event_id": "01M8CMY0H10KWZQV9MNS25YTJ6",
       "last_transition_at": "2026-11-26T19:22:18.017706+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP04 on lane-d (e52cd32ad): ComposedRelations (subject) and RelationRules on the walker via PackRulesets.relations() and relationFaults(); ImpactRelations and SpecializationCycleRule deleted; tests moved to domain/rules plus a rule-vs-edge-order case. The in-session adversarial review found no behaviour difference and 12 LOW/NIT findings, all folded in e52cd32ad, including ScopedPolicies moving into packs.domain and replacing PackMutabilityPolicy.scopedPolicies outright. verifyAll, check_docs, markdownlint and cspell green. Design note: all eight checks are OnClose over the subject, since an edge's placement (holderOf) is a closure fact. Out-of-map: PackRulesets, ClosureImpactCheck and the architecture page (WP03-owned); PackMutabilityPolicy, ClosureQueries and composition-and-activation-rules.md (WP01-owned); ScopedPolicies (new, no owner); the changelog fragment."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 30640,
